@@ -1,0 +1,1 @@
+"""The Group test suite."""
