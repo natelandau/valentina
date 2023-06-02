@@ -9,6 +9,7 @@ from loguru import logger
 from valentina.models import Valentina
 from valentina.models.dicerolls import Roll
 from valentina.models.enums import DiceType
+from valentina.views.roll_display import RollDisplay
 
 
 class Gameplay(commands.Cog):
@@ -26,18 +27,19 @@ class Gameplay(commands.Cog):
             int,
             "The difficulty of the roll",
             required=True,
+            default=6,
         ),
         dice_type: Option(
             str, "The type of dice to roll in the format 'd10'", required=False, default="d10"
         ),
-        comment: Option(str, "A comment to display with the roll", required=False, default=""),
+        comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll the dice."""
         dice_type = DiceType[dice_type.upper()]
-
         roll = Roll(pool=pool, difficulty=difficulty, dice_type=dice_type)
-        logger.info("ROLL: Rolling dice")
-        await ctx.respond("Rolling dice...\n" + str(roll.roll) + "\n" + comment)
+        logger.info(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
+
+        await RollDisplay(ctx, roll, comment).display()
 
 
 def setup(bot: Valentina) -> None:

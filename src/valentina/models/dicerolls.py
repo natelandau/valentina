@@ -36,7 +36,7 @@ class Roll:
         is_critical (bool): Whether the roll is a critical success.
         is_failure (bool): Whether the roll is a failure.
         is_success (bool): Whether the roll is a success.
-        main_takeaway (str): The roll's main takeaway - i.e. "SUCCESS", "FAILURE", etc.
+        takeaway (str): The roll's main takeaway - i.e. "SUCCESS", "FAILURE", etc.
         pool (int): The pool's total size, including hunger.
         result (int): The number of successes after accounting for botches and cancelling ones and tens.
         roll (list[int]): A list of the result all rolled dice.
@@ -66,59 +66,80 @@ class Roll:
         self.difficulty = difficulty
         self.pool = pool
         self.dice_type = dice_type
+        self._roll: list[int] = None
+        self._botches: int = None
+        self._criticals: int = None
+        self._failures: int = None
+        self._successes: int = None
+        self._result: int = None
 
     @property
     def roll(self) -> list[int]:
         """Roll the dice and return the results."""
-        return list(map(int, _rng.integers(1, self.dice_type.value + 1, self.pool)))
+        if not self._roll:
+            self._roll = list(map(int, _rng.integers(1, self.dice_type.value + 1, self.pool)))
+
+        return self._roll
 
     @property
     def botches(self) -> int:
         """Retrieve the number of ones in the dice."""
-        return self.roll.count(1)
+        if not self._botches:
+            self._botches = self.roll.count(1)
+        return self._botches
 
     @property
     def criticals(self) -> int:
         """Retrieve the number of rolled criticals (Highest number on dice)."""
-        return self.roll.count(self.dice_type.value)
+        if not self._criticals:
+            self._criticals = self.roll.count(self.dice_type.value)
+        return self._criticals
 
     @property
     def failures(self) -> int:
         """Retrieve the number of unsuccessful dice not including botches."""
-        count = 0
-        for die in self.roll:
-            if 2 <= die <= self.difficulty - 1:  # noqa: PLR2004
-                count += 1
-        return count
+        if not self._failures:
+            count = 0
+            for die in self.roll:
+                if 2 <= die <= self.difficulty - 1:  # noqa: PLR2004
+                    count += 1
+            self._failures = count
+        return self._failures
 
     @property
     def successes(self) -> int:
         """Retrieve the total number of dice which beat the difficulty not including criticals."""
-        count = 0
-        for die in self.roll:
-            if self.difficulty <= die <= self.dice_type.value - 1:
-                count += 1
-        return count
+        if not self._successes:
+            count = 0
+            for die in self.roll:
+                if self.difficulty <= die <= self.dice_type.value - 1:
+                    count += 1
+            self._successes = count
+        return self._successes
 
     @property
     def result(self) -> int:
         """Retrieve the number of successes to count."""
-        if self.dice_type != DiceType.D10:
-            return self.successes + self.criticals - self.failures - self.botches
+        if not self._result:
+            if self.dice_type != DiceType.D10:
+                self._result = self.successes + self.criticals - self.failures - self.botches
+            else:
+                botches = self.botches - self.criticals
+                botches = botches if botches > 0 else 0
+                criticals = self.criticals - self.botches
+                criticals = criticals if criticals > 0 else 0
 
-        botches = self.botches - self.criticals
-        botches = botches if botches > 0 else 0
-        criticals = self.criticals - self.botches
-        criticals = criticals if criticals > 0 else 0
+                self._result = self.successes + (criticals * 2) - (botches * 2)
 
-        return self.successes + (criticals * 2) - (botches * 2)
+        return self._result
 
     @property
     def is_botch(self) -> bool:
         """Determine if the roll is a botch."""
-        if self.result < 0:
-            return True
-        return False
+        if self.result >= 0:
+            return False
+
+        return True
 
     @property
     def is_failure(self) -> bool:
@@ -142,35 +163,50 @@ class Roll:
         return False
 
     @property
+    def thumbnail_url(self) -> str:
+        """Determine the thumbnail to use for the Discord embed."""
+        if self.dice_type != DiceType.D10:
+            return "https://em-content.zobj.net/thumbs/240/google/350/game-die_1f3b2.png"
+        if self.is_botch:
+            return "https://em-content.zobj.net/source/animated-noto-color-emoji/356/face-vomiting_1f92e.gif"
+        if self.is_critical:
+            return (
+                "https://em-content.zobj.net/source/animated-noto-color-emoji/356/rocket_1f680.gif"
+            )
+        if self.is_success:
+            return "https://em-content.zobj.net/thumbs/240/apple/354/thumbs-up_1f44d.png"
+        if self.is_failure:
+            return "https://em-content.zobj.net/source/animated-noto-color-emoji/356/crying-face_1f622.gif"
+        return None
+
+    @property
     def embed_color(self) -> int:
         """Determine the Discord embed color based on the result of the roll."""
         if self.dice_type != DiceType.D10:
-            return 0xEA3323  # Red-orange
-
+            return 0xEA3323
         if self.is_botch:
-            return 0x000000  # Black
+            return 0xFF2400
         if self.is_critical:
-            return 0x00FF00  # Green
+            return 0x37FD12
         if self.is_success:
-            return 0x7777FF  # Blurple-ish
+            return 0x4FC978
         if self.is_failure:
-            return 0x808080  # Gray
+            return 0x808080
 
         return None
 
     @property
-    def main_takeaway(self) -> str:
+    def takeaway(self) -> str:
         """The roll's main takeaway--i.e. "SUCCESS", "FAILURE", etc."""
         if self.dice_type != DiceType.D10:
             return "Result"
-
         if self.is_botch:
-            return "Botch"
+            return f"{self.result} successes • 🤮 BOTCH!"
         if self.is_critical:
-            return "Critical Success"
+            return f"{self.result} successes • 🎉 CRITICAL SUCCESS!"
         if self.is_success:
-            return "Success"
+            return f"{self.result} successes • 🙂 SUCCESS!"
         if self.is_failure:
-            return "Failure"
+            return f"{self.result} successes • 😢 FAILURE!"
 
         return None
