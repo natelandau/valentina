@@ -60,6 +60,7 @@ def main(
         intents=intents,
         debug_guilds=[int(g) for g in config["GUILDS"].split(",")],
         parent_dir=DIR,
+        owner_ids=[int(o) for o in config["OWNER_IDS"].split(",")],
     )
 
     bot.run(config["DISCORD_TOKEN"])  # run the bot

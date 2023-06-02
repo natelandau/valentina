@@ -19,12 +19,12 @@
     [tool.poetry.dependencies]
         asyncio       = "^3.4.3"
         loguru        = "^0.7.0"
+        numpy         = "^1.24.3"
         py-cord       = "^2.4.1"
         python        = "^3.11"
         python-dotenv = "^1.0.0"
         shellingham   = "^1.4.0"
         typer         = "^0.9.0"
-    numpy = "^1.24.3"
 
     [tool.poetry.group.test.dependencies]
         coverage               = "^7.2.2"
