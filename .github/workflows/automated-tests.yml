@@ -89,6 +89,6 @@ jobs:
               if: github.ref == 'refs/heads/main' && matrix.python-version == '3.11'
               uses: codecov/codecov-action@v3
               with:
-                  # token: ${{ secrets.CODECOV_TOKEN }} # Only required for private repositories
+                  token: ${{ secrets.CODECOV_TOKEN }}
                   files: reports/coverage.xml
                   fail_ci_if_error: true
