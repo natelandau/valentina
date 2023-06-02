@@ -3,28 +3,31 @@
     requires      = ["poetry-core>=1.0.0"]
 
 [tool.poetry]
-    authors     = ["nate landau <thegroup@natenate.org>"]
-    description = "Runs the group's gaming sessions"
-    homepage    = "https://some.url/to/the/package.git"
+    authors     = ["nate landau <valentina@natenate.org>"]
+    description = "Valentina is a Discord bot that helps you run TTRPGs."
+    homepage    = "https://github.com/natelandau/valentina"
     keywords    = []
     license     = ""
-    name        = "the-group"
+    name        = "valentina"
     readme      = "README.md"
-    repository  = "https://some.url/to/the/package.git"
+    repository  = "https://github.com/natelandau/valentina"
     version     = "0.0.0"
 
     [tool.poetry.scripts] # https://python-poetry.org/docs/pyproject/#scripts
-        the-group = "the_group.cli:app"
+        valentina = "valentina.main:app"
 
     [tool.poetry.dependencies]
-        loguru      = "^0.7.0"
-        python      = "^3.11"
-        rich        = "^13.3.5"
-        shellingham = "^1.4.0"
-        typer       = "^0.9.0"
+        asyncio       = "^3.4.3"
+        loguru        = "^0.7.0"
+        py-cord       = "^2.4.1"
+        python        = "^3.11"
+        python-dotenv = "^1.0.0"
+        shellingham   = "^1.4.0"
+        typer         = "^0.9.0"
+    numpy = "^1.24.3"
 
     [tool.poetry.group.test.dependencies]
-        coverage              = "^7.2.2"
+        coverage               = "^7.2.2"
         pytest                 = "^7.3.1"
         pytest-clarity         = "^1.0.1"
         pytest-mock            = "^3.10.0"
@@ -32,33 +35,29 @@
         pytest-xdist           = "^3.2.1"
 
     [tool.poetry.group.dev.dependencies]
-        black                 = "^23.3.0"
-        commitizen            = "^3.2.1"
-        coverage              = "^7.2.5"
-        interrogate           = "^1.5.0"
-        mypy                  = "^1.2.0"
-        pdoc                  = "^13.1.1"
-        poethepoet            = "^0.20.0"
-        pre-commit            = "^3.3.1"
-        ruff                  = "^0.0.270"
-        sh                    = "^2.0.3"
-        shellcheck-py         = "^0.9.0.2"
-        typeguard             = "^4.0.0"
-        vulture               = "^2.7"
-
+        black         = "^23.3.0"
+        commitizen    = "^3.2.1"
+        coverage      = "^7.2.5"
+        interrogate   = "^1.5.0"
+        mypy          = "^1.2.0"
+        pdoc          = "^13.1.1"
+        poethepoet    = "^0.20.0"
+        pre-commit    = "^3.3.1"
+        ruff          = "^0.0.270"
+        sh            = "^2.0.3"
+        shellcheck-py = "^0.9.0.2"
+        typeguard     = "^4.0.0"
+        vulture       = "^2.7"
 
 [tool.black]
     line-length = 100
 
 [tool.commitizen]
-    bump_message = "bump(release): v$current_version → v$new_version"
-    tag_format = "v$version"
+    bump_message             = "bump(release): v$current_version → v$new_version"
+    tag_format               = "v$version"
     update_changelog_on_bump = true
-    version = "0.0.0"
-    version_files = [
-        "pyproject.toml:version",
-        "src/the_group/__version__.py:__version__",
-    ]
+    version                  = "0.0.0"
+    version_files            = ["pyproject.toml:version", "src/valentina/__version__.py:__version__"]
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/latest/config.html#report
     exclude_lines = [
@@ -243,7 +242,7 @@
     pdoc
       --docformat google
       --output-directory docs
-      src/the_group
+      src/valentina
     """
         help = "Generate this package's docs"
 

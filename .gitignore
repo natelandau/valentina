@@ -1,3 +1,7 @@
+# Secrets
+secrets.txt
+.env.secret
+
 # Scratch folder for temporary files
 scratch/
 

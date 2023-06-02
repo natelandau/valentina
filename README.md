@@ -1,6 +1,6 @@
-# The Group
+# Valentina
 
-Runs the group's gaming sessions
+A Discord bot used to help manage TTRPGs.
 
 ## Install CLI apps
 

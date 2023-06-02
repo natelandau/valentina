@@ -143,7 +143,7 @@ DRYRUN=false
 declare -a ARGS=()
 
 # Script specific
-WORKSPACE_DIR="/workspaces/the-group"
+WORKSPACE_DIR="/workspaces/valentina"
 
 # ################################## Custom utility functions (Pasted from repository)
 _execute_() {
@@ -467,7 +467,6 @@ fatal() {
     _alert_ fatal "${1}" "${2-}"
     _safeExit_ "1"
 }
-
 
 _printFuncStack_() {
     # DESC:

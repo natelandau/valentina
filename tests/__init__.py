@@ -1,1 +1,1 @@
-"""The Group test suite."""
+"""Test suite for Valentina."""
