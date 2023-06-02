@@ -4,10 +4,7 @@ name: "Create Release"
 on:
     push:
         tags:
-            - "v*"
-        branches:
-            - main # Push events to matching v*, i.e. v1.0, v20.15.10
-
+            - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}

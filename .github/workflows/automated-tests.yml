@@ -7,8 +7,7 @@ on:
         paths:
             - ".github/workflows/python-code-checker.yml"
             - ".github/actions/**"
-            - "src/**"
-            - "tests/**"
+            - "**.py"
             - "pyproject.toml"
             - "poetry.lock"
         branches:
@@ -21,8 +20,7 @@ on:
         paths:
             - ".github/workflows/python-code-checker.yml"
             - ".github/actions/**"
-            - "src/**"
-            - "tests/**"
+            - "**.py"
             - "pyproject.toml"
             - "poetry.lock"
 
