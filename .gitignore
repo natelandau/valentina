@@ -2,6 +2,10 @@
 secrets.txt
 .env.secret
 
+# Databases
+*.sqlite
+*.db
+
 # Scratch folder for temporary files
 scratch/
 

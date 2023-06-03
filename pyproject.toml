@@ -17,6 +17,7 @@
         valentina = "valentina.main:app"
 
     [tool.poetry.dependencies]
+        aiosqlite     = "^0.19.0"
         asyncio       = "^3.4.3"
         loguru        = "^0.7.0"
         numpy         = "^1.24.3"
