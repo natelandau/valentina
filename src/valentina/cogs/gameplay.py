@@ -27,7 +27,6 @@ class Gameplay(commands.Cog):
             int,
             "The difficulty of the roll",
             required=True,
-            default=6,
         ),
         dice_type: Option(
             str, "The type of dice to roll in the format 'd10'", required=False, default="d10"
