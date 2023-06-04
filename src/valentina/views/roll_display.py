@@ -32,9 +32,10 @@ class RollDisplay:
 
         # Fields
         embed.add_field(name="Roll", value=roll_string, inline=False)
-        embed.add_field(name="Pool", value=str(self.roll.pool), inline=True)
-        embed.add_field(name="Difficulty", value=str(self.roll.difficulty), inline=True)
-        embed.add_field(name="Dice Type", value=str(self.roll.dice_type.name), inline=True)
+        if self.roll.dice_type.name == "D10":
+            embed.add_field(name="Pool", value=str(self.roll.pool), inline=True)
+            embed.add_field(name="Difficulty", value=str(self.roll.difficulty), inline=True)
+            embed.add_field(name="Dice Type", value=str(self.roll.dice_type.name), inline=True)
 
         # Footer
         if self.comment is not None:

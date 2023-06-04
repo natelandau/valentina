@@ -204,14 +204,14 @@ class Roll:
     def takeaway(self) -> str:
         """The roll's main takeaway--i.e. "SUCCESS", "FAILURE", etc."""
         if self.dice_type != DiceType.D10:
-            return "Result"
+            return f"Rolled {self.pool}d{self.dice_type.value}"
         if self.is_botch:
-            return f"{self.result} successes • 🤮 BOTCH!"
+            return f"{self.result} successes • BOTCH!"
         if self.is_critical:
-            return f"{self.result} successes • 🎉 CRITICAL SUCCESS!"
+            return f"{self.result} successes • CRITICAL SUCCESS!"
         if self.is_success:
-            return f"{self.result} successes • 🙂 SUCCESS!"
+            return f"{self.result} successes • SUCCESS!"
         if self.is_failure:
-            return f"{self.result} successes • 😢 FAILURE!"
+            return f"{self.result} successes • FAILURE!"
 
         return None
