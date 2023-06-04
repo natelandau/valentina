@@ -44,19 +44,25 @@ class Roll:
 
     """
 
-    def __init__(self, pool: int, difficulty: int = 6, dice_type: DiceType = DiceType.D10):
+    def __init__(self, pool: int, difficulty: int = 6, dice_size: int = 10) -> None:
         """A container class that determines the result of a roll.
 
         Args:
-            pool (int): The pool's total size, including hunger
+            dice_size (int, optional): The size of the dice. Defaults to 10.
             difficulty (int, optional): The difficulty of the roll. Defaults to 6.
-            dice_type (DiceType, optional): The type of dice to roll. Defaults to DiceType.D10.
+            pool (int): The pool's total size, including hunger
         """
+        dice_size_values = [member.value for member in DiceType]
+        if dice_size not in dice_size_values:
+            raise ValueError(f"Invalid dice size `{dice_size}`.")
+
+        self.dice_type = DiceType(dice_size)
+
         if difficulty < 0:
             raise ValueError(f"Difficulty cannot be less than 0. (Got `{difficulty}`.)")
-        if difficulty > dice_type.value:
+        if difficulty > self.dice_type.value:
             raise ValueError(
-                f"Difficulty cannot exceed the size of the dice. (Got `{difficulty}` for `{dice_type.name}`.)"
+                f"Difficulty cannot exceed the size of the dice. (Got `{difficulty}` for `{self.dice_type.name}`.)"
             )
         if pool < 0:
             raise ValueError(f"Pool cannot be less than 0. (Got `{pool}`.)")
@@ -65,7 +71,6 @@ class Roll:
 
         self.difficulty = difficulty
         self.pool = pool
-        self.dice_type = dice_type
         self._roll: list[int] = None
         self._botches: int = None
         self._criticals: int = None

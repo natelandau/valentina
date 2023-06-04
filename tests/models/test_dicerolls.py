@@ -3,7 +3,6 @@
 import pytest
 
 from valentina.models.dicerolls import Roll
-from valentina.models.enums import DiceType
 
 
 def test_roll_exceptions():
@@ -25,20 +24,23 @@ def test_roll_exceptions():
     with pytest.raises(ValueError, match="Difficulty cannot be less than 0."):
         Roll(difficulty=-1, pool=1)
 
+    with pytest.raises(ValueError, match="Invalid dice size"):
+        Roll(difficulty=6, pool=6, dice_size=3)
+
 
 @pytest.mark.parametrize(
     (
         "pool",
-        "dice_type",
+        "dice_size",
     ),
     [
-        (10, DiceType.D10),
-        (3, DiceType.D6),
-        (7, DiceType.D4),
-        (5, DiceType.D10),
+        (10, 10),
+        (3, 6),
+        (7, 4),
+        (5, 100),
     ],
 )
-def test_rolling_dice(pool: int, dice_type: DiceType) -> None:
+def test_rolling_dice(pool: int, dice_size: int) -> None:
     """Ensure that the correct number of dice are rolled.
 
     GIVEN a call to Roll
@@ -46,9 +48,9 @@ def test_rolling_dice(pool: int, dice_type: DiceType) -> None:
     THEN assert that the correct number of dice are rolled with the correct dice type.
     """
     for _ in range(100):
-        roll = Roll(pool, dice_type=dice_type, difficulty=1)
+        roll = Roll(pool, dice_size=dice_size, difficulty=1)
         assert len(roll.roll) == pool
-        assert all(1 <= die <= dice_type.value for die in roll.roll)
+        assert all(1 <= die <= dice_size for die in roll.roll)
 
 
 @pytest.mark.parametrize(
