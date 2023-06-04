@@ -25,11 +25,11 @@ class Debug(commands.Cog):
             f"Status is {self.bot.status}\nLatency is {self.bot.latency}\nConnected to {len(self.bot.guilds)} guilds"
         )
 
-    @debug.command(description="Live reload all cogs.")
+    @debug.command(description="Live reload the bot.")
     @commands.is_owner()
-    async def reload_cogs(self, ctx: discord.ApplicationContext) -> None:
+    async def reload(self, ctx: discord.ApplicationContext) -> None:
         """Reloads all cogs."""
-        logger.debug("debug:reload: Reloading all cogs...")
+        logger.debug("debug:reload: Reloading the bot...")
         count = 0
         for cog in Path(self.bot.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
             if cog.stem[0] != "_":
@@ -38,7 +38,7 @@ class Debug(commands.Cog):
                 self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
 
         embed = discord.Embed(
-            title="Reload Cogs", description=f"{count} cogs successfully reloaded", color=0xFF00C8
+            title="Reload Bot", description=f"{count} cogs successfully reloaded", color=0xFF00C8
         )
         await ctx.respond(embed=embed)
 

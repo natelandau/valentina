@@ -31,7 +31,14 @@ class Gameplay(commands.Cog):
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
-        """Roll the dice."""
+        """Roll the dice.
+
+        Args:
+            comment (str, optional): A comment to display with the roll. Defaults to None.
+            ctx (discord.ApplicationContext): The context of the command
+            difficulty (int): The difficulty of the roll
+            pool (int): The number of dice to roll
+        """
         try:
             roll = Roll(pool=pool, difficulty=difficulty, dice_size=10)
             logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
@@ -47,7 +54,14 @@ class Gameplay(commands.Cog):
         dice_size: Option(int, "Number of sides on the dice.", required=True),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
-        """Roll any type of dice."""
+        """Roll any type of dice.
+
+        Args:
+            comment (str, optional): A comment to display with the roll. Defaults to None.
+            ctx (discord.ApplicationContext): The context of the command
+            dice_size (int): The number of sides on the dice
+            pool (int): The number of dice to roll
+        """
         try:
             roll = Roll(pool=pool, dice_size=dice_size, difficulty=0)
             logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
