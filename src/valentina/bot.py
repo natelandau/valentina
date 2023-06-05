@@ -1,5 +1,5 @@
 """The main file for the Valentina bot."""
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -7,19 +7,15 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
-from valentina.models import Database
-from valentina.utils.database import create_database
-
 
 class Valentina(commands.Bot):
     """Subclass discord.Bot."""
 
-    def __init__(self, parent_dir: Path, database: Database, *args: Any, **kwargs: Any):
+    def __init__(self, parent_dir: Path, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
         self.parent_dir = parent_dir
-        self.database = database
 
         logger.info("BOT: Running setup tasks")
         for cog in Path(self.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
@@ -49,26 +45,28 @@ class Valentina(commands.Bot):
         if not self.welcomed:
             logger.info("BOT: Internal cache built")
 
-            # Database setup
-            await create_database(self.database)
-            guild_ids = [x[0] for x in await self.database.fetch("SELECT guild_id FROM Guilds;")]
+            from valentina.utils.database import Guild, create_tables
 
+            create_tables()
             for _guild in self.guilds:
-                if _guild.id not in guild_ids:
-                    await self.database.insert(
-                        "INSERT OR IGNORE INTO Guilds (guild_id,name,last_connected) VALUES (?,?,?);",
-                        _guild.id,
-                        _guild.name,
-                        datetime.now().replace(microsecond=0),
+                db_id, created = Guild.get_or_create(
+                    guild_id=_guild.id,
+                    defaults={
+                        "guild_id": _guild.id,
+                        "name": _guild.name,
+                        "first_seen": datetime.now(timezone.utc).replace(microsecond=0),
+                        "last_connected": datetime.now(timezone.utc).replace(microsecond=0),
+                    },
+                )
+                if created:
+                    logger.info(f"DATABASE: Guild {db_id} created")
+                if not created:
+                    Guild.set_by_id(
+                        db_id, {"last_connected": datetime.now(timezone.utc).replace(microsecond=0)}
                     )
-                else:
-                    await self.database.insert(
-                        "UPDATE Guilds SET last_connected = ? WHERE guild_id = ?;",
-                        datetime.now().replace(microsecond=0),
-                        _guild.id,
-                    )
+                    logger.info(f"DATABASE: Guild '{db_id.name}' updated")
 
-            # TODO: Setup tasks here
+            # TODO: Setup tasks here  User.set_by_id(3, {'is_admin': True})
 
             self.welcomed = True
 

@@ -8,9 +8,9 @@ import discord
 import typer
 from dotenv import dotenv_values
 from loguru import logger
+from peewee import SqliteDatabase
 
-from valentina import __version__
-from valentina.models import Database, Valentina
+from valentina import Valentina, __version__
 from valentina.utils import InterceptHandler
 
 # Instantiate Typer
@@ -32,7 +32,7 @@ config = {
     **dotenv_values(DIR / ".env.secret"),  # load sensitive variables
     # **os.environ,  # override loaded values with environment variables
 }
-db_path = DIR / config["DB_PATH"]
+DB_PATH = DIR / config["DB_PATH"]
 
 # Instantiate Logging
 logger.remove()
@@ -46,7 +46,16 @@ logger.add(
 )
 
 # Instantiate Database
-database = Database(db_path)
+DATABASE = SqliteDatabase(
+    DB_PATH,
+    pragmas={
+        "journal_mode": "wal",
+        "cache_size": -1 * 64000,  # 64MB
+        "foreign_keys": 1,
+        "ignore_check_constraints": 0,
+        "synchronous": 1,
+    },
+)
 
 # Intercept standard discord.py logs and redirect to Loguru
 logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
@@ -65,7 +74,6 @@ def main(
         intents=intents,
         owner_ids=[int(o) for o in config["OWNER_IDS"].split(",")],
         parent_dir=DIR,
-        database=database,
     )
 
     bot.run(config["DISCORD_TOKEN"])  # run the bot

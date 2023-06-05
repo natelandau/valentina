@@ -10,3 +10,13 @@ class DiceType(Enum):
     D8 = 8
     D10 = 10
     D100 = 100
+
+
+class CharClass(Enum):
+    """Enum for types of characters."""
+
+    MORTAL = "Mortal"
+    VAMPIRE = "Vampire"
+    WEREWOLF = "Werewolf"
+    MAGE = "Mage"
+    HUNTER = "Hunter"

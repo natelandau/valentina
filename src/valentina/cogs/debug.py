@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
-from valentina.models import Valentina
+from valentina import Valentina
 
 
 class Debug(commands.Cog):

@@ -3,7 +3,7 @@ secrets.txt
 .env.secret
 
 # Databases
-*.sqlite
+*.sqlite*
 *.db
 
 # Scratch folder for temporary files
