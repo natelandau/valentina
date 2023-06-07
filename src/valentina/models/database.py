@@ -38,6 +38,11 @@ class CharacterClass(BaseModel):
 class Character(BaseModel):
     """Character model for the database."""
 
+    # TESTING ####################################
+    test1 = TextField(null=True)
+    test2 = TextField(null=True)
+    test3 = TextField(null=True)
+    # GENERAL ####################################
     first_name = TextField()
     last_name = TextField(null=True)
     nickname = TextField(null=True)
@@ -48,19 +53,110 @@ class Character(BaseModel):
     age = IntegerField(null=True)
     bio = TextField(null=True)
     concept = TextField(null=True)
-    courage = IntegerField(null=True)
     cool_points = IntegerField(null=True)
     cool_points_total = IntegerField(null=True)
-    demeanor = TextField(null=True)
-    desperation = IntegerField(null=True)
     experience = IntegerField(null=True)
     experience_total = IntegerField(null=True)
     gender = TextField(null=True)
-    humanity = IntegerField(null=True)
+    player_id = IntegerField(null=True)
     nature = TextField(null=True)
-    player = IntegerField(null=True)
+    demeanor = TextField(null=True)
+    # ATTRIBUTES #################################
+    strength = IntegerField(null=True)
+    dexterity = IntegerField(null=True)
+    stamina = IntegerField(null=True)
+    charisma = IntegerField(null=True)
+    manipulation = IntegerField(null=True)
+    appearance = IntegerField(null=True)
+    perception = IntegerField(null=True)
+    intelligence = IntegerField(null=True)
+    wits = IntegerField(null=True)
+    # ABILITIES ##################################
+    athletics = IntegerField(null=True)
+    brawl = IntegerField(null=True)
+    dodge = IntegerField(null=True)
+    drive = IntegerField(null=True)
+    empathy = IntegerField(null=True)
+    expression = IntegerField(null=True)
+    intimidation = IntegerField(null=True)
+    leadership = IntegerField(null=True)
+    streetwise = IntegerField(null=True)
+    subterfuge = IntegerField(null=True)
+    alertness = IntegerField(null=True)
+    animal_ken = IntegerField(null=True)
+    crafts = IntegerField(null=True)
+    drive = IntegerField(null=True)
+    etiquette = IntegerField(null=True)
+    firearms = IntegerField(null=True)
+    larceny = IntegerField(null=True)
+    melee = IntegerField(null=True)
+    performance = IntegerField(null=True)
+    stealth = IntegerField(null=True)
+    survival = IntegerField(null=True)
+    technology = IntegerField(null=True)
+    academics = IntegerField(null=True)
+    computer = IntegerField(null=True)
+    finance = IntegerField(null=True)
+    investigation = IntegerField(null=True)
+    law = IntegerField(null=True)
+    linguistics = IntegerField(null=True)
+    medicine = IntegerField(null=True)
+    occult = IntegerField(null=True)
+    politics = IntegerField(null=True)
+    science = IntegerField(null=True)
+    # VIRTUES #################################
+    conscience = IntegerField(null=True)
     self_control = IntegerField(null=True)
+    courage = IntegerField(null=True)
+    # UNIVERSAL ################################
+    humanity = IntegerField(null=True)
     willpower = IntegerField(null=True)
+    desperation = IntegerField(null=True)
+    reputation = IntegerField(null=True)
+    # MAGE #####################################
+    arete = IntegerField(null=True)
+    quintessence = IntegerField(null=True)
+    # WEREWOLF #################################
+    rage = IntegerField(null=True)
+    gnosis = IntegerField(null=True)
+    # VAMPIRE ##################################
+    blood_pool = IntegerField(null=True)
+    # HUNTER ###################################
+    conviction = IntegerField(null=True)
+    # MAGE_SPHERES #############################
+    correspondence = IntegerField(null=True)
+    entropy = IntegerField(null=True)
+    forces = IntegerField(null=True)
+    life = IntegerField(null=True)
+    matter = IntegerField(null=True)
+    mind = IntegerField(null=True)
+    prime = IntegerField(null=True)
+    spirit = IntegerField(null=True)
+    time = IntegerField(null=True)
+    # MAGE_RESONANCE ##########################
+    dynamic = IntegerField(null=True)
+    static = IntegerField(null=True)
+    entropic = IntegerField(null=True)
+    # DISCIPLINES #############################
+    animalism = IntegerField(null=True)
+    auspex = IntegerField(null=True)
+    blood_sorcery = IntegerField(null=True)
+    celerity = IntegerField(null=True)
+    dominate = IntegerField(null=True)
+    fortitude = IntegerField(null=True)
+    obeah = IntegerField(null=True)
+    obfuscate = IntegerField(null=True)
+    oblivion = IntegerField(null=True)
+    potence = IntegerField(null=True)
+    presence = IntegerField(null=True)
+    protean = IntegerField(null=True)
+    vicissitude = IntegerField(null=True)
+
+    ################################################3
+
+    def __str__(self) -> str:
+        """Return the string representation of the model."""
+        return f"#{self.id}: {self.first_name} {self.last_name}: exp: {self.experience} total_exp: {self.experience_total}"
 
     def update_modified(self) -> None:
         """Update the modified field."""
@@ -68,16 +164,32 @@ class Character(BaseModel):
         self.save()
         logger.info(f"DATABASE: Character {self.first_name} modified_date updated.")
 
-    def update_experience(self, experience: int) -> None:
+    def add_experience(self, experience: int) -> None:
         """Update the experience field."""
         self.experience += experience
         self.experience_total += experience
         self.save()
         logger.info(f"DATABASE: Character {self.first_name} experience updated.")
 
-    def update_cool_points(self, cool_points: int) -> None:
+    def spend_experience(self, experience: int) -> None:
+        """Update the experience field."""
+        if experience > self.experience:
+            raise ValueError("Not enough experience to use.")
+        self.experience -= experience
+        self.save()
+        logger.info(f"DATABASE: Character {self.first_name} experience updated.")
+
+    def add_cool_points(self, cool_points: int) -> None:
         """Update the cool_points field."""
         self.cool_points += cool_points
         self.cool_points_total += cool_points
+        self.save()
+        logger.info(f"DATABASE: Character {self.first_name} cool_points updated.")
+
+    def spend_cool_points(self, cool_points: int) -> None:
+        """Update the cool_points field."""
+        if cool_points > self.cool_points:
+            raise ValueError("Not enough cool_points to use.")
+        self.cool_points -= cool_points
         self.save()
         logger.info(f"DATABASE: Character {self.first_name} cool_points updated.")

@@ -3,7 +3,7 @@ from loguru import logger
 
 from valentina import DATABASE
 from valentina.models import Character, CharacterClass, Guild
-from valentina.models.enums import CharClass
+from valentina.models.constants import CharClass
 
 
 def create_tables() -> None:

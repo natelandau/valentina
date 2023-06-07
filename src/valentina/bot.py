@@ -59,7 +59,7 @@ class Valentina(commands.Bot):
                     },
                 )
                 if created:
-                    logger.info(f"DATABASE: Guild {db_id} created")
+                    logger.info(f"DATABASE: Guild {db_id.name} created")
                 if not created:
                     Guild.set_by_id(
                         db_id, {"last_connected": datetime.now(timezone.utc).replace(microsecond=0)}

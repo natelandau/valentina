@@ -510,6 +510,17 @@ docs = ["furo (>=2023.3.27)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1
 testing = ["covdefaults (>=2.3)", "coverage (>=7.2.3)", "diff-cover (>=7.5)", "pytest (>=7.3.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)", "pytest-timeout (>=2.1)"]
 
 [[package]]
+name = "flatdict"
+version = "4.0.1"
+description = "Python module for interacting with nested dicts as a single level dict with delimited keys."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "flatdict-4.0.1.tar.gz", hash = "sha256:cd32f08fd31ed21eb09ebc76f06b6bd12046a24f77beb1fd0281917e47f26742"},
+]
+
+[[package]]
 name = "frozenlist"
 version = "1.3.3"
 description = "A list-like structure which implements collections.abc.MutableSequence"
@@ -1782,4 +1793,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
         python-versions = "^3.11"
-content-hash = "033e9fcff162e70dc9062dbb67475a561f91263775761b787af1f47dfd794a80"
+content-hash = "009eb781c1d574d1b08080186ad6fc7dfb478ca44ab08f40eacb0d4e097f9076"
