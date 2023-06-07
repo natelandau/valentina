@@ -1,7 +1,7 @@
 """Models for the database."""
 
 from loguru import logger
-from peewee import DateTimeField, ForeignKeyField, IntegerField, Model, TextField
+from peewee import BooleanField, DateTimeField, ForeignKeyField, IntegerField, Model, TextField
 
 from valentina import DATABASE
 from valentina.utils.helpers import time_now
@@ -38,10 +38,6 @@ class CharacterClass(BaseModel):
 class Character(BaseModel):
     """Character model for the database."""
 
-    # TESTING ####################################
-    test1 = TextField(null=True)
-    test2 = TextField(null=True)
-    test3 = TextField(null=True)
     # GENERAL ####################################
     first_name = TextField()
     last_name = TextField(null=True)
@@ -61,6 +57,8 @@ class Character(BaseModel):
     player_id = IntegerField(null=True)
     nature = TextField(null=True)
     demeanor = TextField(null=True)
+    archived = BooleanField(default=False)
+    notes = TextField(null=True)
     # ATTRIBUTES #################################
     strength = IntegerField(null=True)
     dexterity = IntegerField(null=True)
@@ -156,7 +154,33 @@ class Character(BaseModel):
 
     def __str__(self) -> str:
         """Return the string representation of the model."""
-        return f"#{self.id}: {self.first_name} {self.last_name}: exp: {self.experience} total_exp: {self.experience_total}"
+        return f"""Character(
+    first_name={self.first_name},
+    last_name={self.last_name},
+    nickname={self.nickname},
+    char_class={self.char_class.name},
+    guild={self.guild.name},
+    created={self.created},
+    modified={self.modified},
+    age={self.age},
+    bio={self.bio},
+    concept={self.concept},
+    cool_points={self.cool_points},
+    cool_points_total={self.cool_points_total},
+    experience={self.experience},
+    experience_total={self.experience_total},
+    player_id={self.player_id},
+    strength={self.strength},
+    dexterity={self.dexterity},
+    stamina={self.stamina},
+    charisma={self.charisma},
+    manipulation={self.manipulation},
+    appearance={self.appearance},
+    perception={self.perception},
+    intelligence={self.intelligence},
+    wits={self.wits},
+        )
+        """
 
     def update_modified(self) -> None:
         """Update the modified field."""
