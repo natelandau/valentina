@@ -217,3 +217,14 @@ class Character(BaseModel):
         self.cool_points -= cool_points
         self.save()
         logger.info(f"DATABASE: Character {self.first_name} cool_points updated.")
+
+
+class CustomTrait(BaseModel):
+    """Custom Trait model for the database."""
+
+    name = TextField()
+    description = TextField(null=True)
+    trait_type = TextField(null=True)
+    character = ForeignKeyField(Character, backref="custom_traits")
+    value = IntegerField(null=True)
+    created = DateTimeField(default=time_now)

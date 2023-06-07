@@ -2,14 +2,14 @@
 from loguru import logger
 
 from valentina import DATABASE
-from valentina.models import Character, CharacterClass, Guild
+from valentina.models import Character, CharacterClass, CustomTrait, Guild
 from valentina.models.constants import CharClass
 
 
 def create_tables() -> None:
     """Create the database instance and tables."""
     with DATABASE:
-        DATABASE.create_tables([Guild, CharacterClass, Character])
+        DATABASE.create_tables([Guild, CharacterClass, Character, CustomTrait])
 
     logger.info("DATABASE: Tables created successfully.")
     populate_enum_tables()
