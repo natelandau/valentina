@@ -1,5 +1,5 @@
 """The main file for the Valentina bot."""
-from datetime import datetime, timezone
+
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +15,7 @@ class Valentina(commands.Bot):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
+        self.char_service: Any = None
         self.parent_dir = parent_dir
 
         logger.info("BOT: Running setup tasks")
@@ -43,31 +44,16 @@ class Valentina(commands.Bot):
         """Override on_ready."""
         await self.wait_until_ready()
         if not self.welcomed:
-            logger.info("BOT: Internal cache built")
+            from valentina.utils.database import create_tables, update_guild_last_connected
 
-            from valentina.utils.database import Guild, create_tables
-
+            # Database setup
             create_tables()
             for _guild in self.guilds:
-                db_id, created = Guild.get_or_create(
-                    guild_id=_guild.id,
-                    defaults={
-                        "guild_id": _guild.id,
-                        "name": _guild.name,
-                        "first_seen": datetime.now(timezone.utc).replace(microsecond=0),
-                        "last_connected": datetime.now(timezone.utc).replace(microsecond=0),
-                    },
-                )
-                if created:
-                    logger.info(f"DATABASE: Guild {db_id.name} created")
-                if not created:
-                    Guild.set_by_id(
-                        db_id, {"last_connected": datetime.now(timezone.utc).replace(microsecond=0)}
-                    )
-                    logger.info(f"DATABASE: Guild '{db_id.name}' updated")
+                update_guild_last_connected(_guild.id, _guild.name)
 
             # TODO: Setup tasks here  User.set_by_id(3, {'is_admin': True})
 
+            logger.info("BOT: Internal cache built")
             self.welcomed = True
 
         logger.info("BOT: Ready")

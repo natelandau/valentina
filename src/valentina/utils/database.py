@@ -1,4 +1,6 @@
 """Helper functions for managing the database."""
+from datetime import datetime, timezone
+
 from loguru import logger
 
 from valentina import DATABASE
@@ -20,3 +22,23 @@ def populate_enum_tables() -> None:
     for char_class in CharClass:
         CharacterClass.get_or_create(name=char_class.value)
     logger.info("DATABASE: Enums populated successfully.")
+
+
+def update_guild_last_connected(guild_id: int, guild_name: str) -> None:
+    """Update the last connected timestamp for a guild."""
+    db_id, is_created = Guild.get_or_create(
+        guild_id=guild_id,
+        defaults={
+            "guild_id": guild_id,
+            "name": guild_name,
+            "first_seen": datetime.now(timezone.utc).replace(microsecond=0),
+            "last_connected": datetime.now(timezone.utc).replace(microsecond=0),
+        },
+    )
+    if is_created:
+        logger.info(f"DATABASE: Guild {db_id.name} created")
+    if not is_created:
+        Guild.set_by_id(
+            db_id, {"last_connected": datetime.now(timezone.utc).replace(microsecond=0)}
+        )
+        logger.info(f"DATABASE: Guild '{db_id.name}' updated")
