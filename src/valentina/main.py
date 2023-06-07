@@ -10,8 +10,10 @@ from dotenv import dotenv_values
 from loguru import logger
 from peewee import SqliteDatabase
 
-from valentina import Valentina, __version__
+from valentina import Valentina
 from valentina.utils import InterceptHandler
+
+from .__version__ import __version__
 
 # Instantiate Typer
 app = typer.Typer(add_completion=False, no_args_is_help=True, rich_markup_mode="rich")
