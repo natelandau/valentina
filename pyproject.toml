@@ -17,6 +17,7 @@
         valentina = "valentina.main:app"
 
     [tool.poetry.dependencies]
+        arrow         = "^1.2.3"
         asyncio       = "^3.4.3"
         flatdict      = "^4.0.1"
         loguru        = "^0.7.0"

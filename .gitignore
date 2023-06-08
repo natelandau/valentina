@@ -1,6 +1,7 @@
 # Secrets
 secrets.txt
 .env.secret
+test_random.py
 
 # Databases
 *.sqlite*
