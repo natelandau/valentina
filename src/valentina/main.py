@@ -29,19 +29,19 @@ def version_callback(value: bool) -> None:
 
 # Import configuration from environment variables
 DIR = Path(__file__).parents[2].absolute()
-config = {
+CONFIG = {
     **dotenv_values(DIR / ".env.shared"),  # load shared variables
     **dotenv_values(DIR / ".env.secret"),  # load sensitive variables
     # **os.environ,  # override loaded values with environment variables
 }
-DB_PATH = DIR / config["DB_PATH"]
+DB_PATH = DIR / CONFIG["DB_PATH"]
 
 # Instantiate Logging
 logger.remove()
-logger.add(sys.stderr, level=config["LOG_LEVEL"])
+logger.add(sys.stderr, level=CONFIG["LOG_LEVEL"])
 logger.add(
-    config["LOG_FILE"],
-    level=config["LOG_LEVEL"],
+    CONFIG["LOG_FILE"],
+    level=CONFIG["LOG_LEVEL"],
     rotation="10 MB",
     compression="zip",
     enqueue=True,
@@ -72,10 +72,10 @@ def main(
     """Run Valentina."""
     intents = discord.Intents.all()
     bot = Valentina(
-        debug_guilds=[int(g) for g in config["GUILDS"].split(",")],
+        debug_guilds=[int(g) for g in CONFIG["GUILDS"].split(",")],
         intents=intents,
-        owner_ids=[int(o) for o in config["OWNER_IDS"].split(",")],
+        owner_ids=[int(o) for o in CONFIG["OWNER_IDS"].split(",")],
         parent_dir=DIR,
     )
 
-    bot.run(config["DISCORD_TOKEN"])  # run the bot
+    bot.run(CONFIG["DISCORD_TOKEN"])  # run the bot
