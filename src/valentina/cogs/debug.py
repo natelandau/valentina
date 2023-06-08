@@ -34,7 +34,7 @@ class Debug(commands.Cog):
         for cog in Path(self.bot.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
             if cog.stem[0] != "_":
                 count += 1
-                logger.debug(f"COGS: Loading - {cog.stem}")
+                logger.info(f"COGS: Reloading - {cog.stem}")
                 self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
 
         embed = discord.Embed(

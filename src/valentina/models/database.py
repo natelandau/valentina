@@ -153,13 +153,14 @@ class Character(BaseModel):
     @property
     def name(self) -> str:
         """Return the name of the character."""
-        if self.nickname:
-            return self.nickname
+        nick = f" ({self.nickname})" if self.nickname and self.nickname != self.first_name else ""
+        last = f" {self.last_name}" if self.last_name else ""
+        return f"{self.first_name}{nick}{last}"
 
-        if self.last_name:
-            return f"{self.first_name} {self.last_name}"
-
-        return self.first_name
+    @property
+    def class_name(self) -> str:
+        """Return the character's class from the char_class table."""
+        return self.char_class.name
 
     ################################################3
 
@@ -197,37 +198,37 @@ class Character(BaseModel):
         """Update the modified field."""
         self.modified = time_now()
         self.save()
-        logger.info(f"DATABASE: Character {self.first_name} modified_date updated.")
+        logger.info(f"DATABASE: Character {self.name} modified_date updated.")
 
-    def add_experience(self, experience: int) -> None:
+    def add_experience(self, exp: int) -> None:
         """Update the experience field."""
-        self.experience += experience
-        self.experience_total += experience
+        self.experience += exp
+        self.experience_total += exp
         self.save()
-        logger.info(f"DATABASE: Character {self.first_name} experience updated.")
+        logger.info(f"DATABASE: Character {self.name} experience updated.")
 
-    def spend_experience(self, experience: int) -> None:
+    def spend_experience(self, exp: int) -> None:
         """Update the experience field."""
-        if experience > self.experience:
+        if exp > self.experience:
             raise ValueError("Not enough experience to use.")
-        self.experience -= experience
+        self.experience -= exp
         self.save()
-        logger.info(f"DATABASE: Character {self.first_name} experience updated.")
+        logger.info(f"DATABASE: Character {self.name} experience updated.")
 
-    def add_cool_points(self, cool_points: int) -> None:
+    def add_cool_points(self, cps: int) -> None:
         """Update the cool_points field."""
-        self.cool_points += cool_points
-        self.cool_points_total += cool_points
+        self.cool_points += cps
+        self.cool_points_total += cps
         self.save()
-        logger.info(f"DATABASE: Character {self.first_name} cool_points updated.")
+        logger.info(f"DATABASE: Character {self.name} cool_points updated.")
 
-    def spend_cool_points(self, cool_points: int) -> None:
+    def spend_cool_points(self, cps: int) -> None:
         """Update the cool_points field."""
-        if cool_points > self.cool_points:
+        if cps > self.cool_points:
             raise ValueError("Not enough cool_points to use.")
-        self.cool_points -= cool_points
+        self.cool_points -= cps
         self.save()
-        logger.info(f"DATABASE: Character {self.first_name} cool_points updated.")
+        logger.info(f"DATABASE: Character {self.name} cool_points updated.")
 
 
 class CustomTrait(BaseModel):

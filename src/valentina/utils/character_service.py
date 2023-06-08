@@ -37,7 +37,34 @@ class CharacterService:
         """
         g = self.__guild_db_id_from_cache(guild_id)
 
-        characters = Character.select().where((Character.guild_id == g) & (Character.archived == 0))
-        logger.info(f"DATABASE: Fetched {len(characters)} characters for guild {guild_id}")
+        try:
+            characters = Character.select().where(
+                (Character.guild_id == g) & (Character.archived == 0)
+            )
+            logger.info(f"DATABASE: Fetched {len(characters)} characters for guild {guild_id}")
+        except Character.DoesNotExist as e:
+            logger.error(f"DATABASE: No characters found for guild {guild_id}")
+            raise ValueError(f"No active characters found for guild {guild_id}") from e
 
         return characters
+
+    def fetch_by_id(self, char_id: int) -> Character:
+        """Fetch a character by database id.
+
+        Args:
+            char_id (int): The database id of the character.
+
+        Returns:
+            Character: The character object.
+        """
+        # TODO: Cache characters by id on bot startup and query the cache first
+        try:
+            character = Character.get_by_id(char_id)
+            logger.info(
+                f"DATABASE: Fetched character {char_id}:{character.first_name} from database"
+            )
+        except Character.DoesNotExist as e:
+            logger.error(f"DATABASE: Character {char_id} does not exist in database.")
+            raise ValueError(f"Character {char_id} does not exist in database") from e
+
+        return character

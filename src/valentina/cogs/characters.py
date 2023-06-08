@@ -5,9 +5,11 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina import Valentina
+from valentina import Valentina, char_svc
 from valentina.character.create import create_character
+from valentina.character.view_sheet import show_sheet
 from valentina.models.constants import CharClass
+from valentina.utils.options import character_select
 
 possible_classes = [char_class.value for char_class in CharClass]
 
@@ -21,7 +23,7 @@ class Characters(commands.Cog, name="Character Management"):
     chars = discord.SlashCommandGroup("character", "Work with characters")
 
     @chars.command(name="create", description="Create a new character.")
-    async def create_character(  # noqa: PLR0913
+    async def create_character(
         self,
         ctx: discord.ApplicationContext,
         quick_char: Option(
@@ -61,6 +63,17 @@ class Characters(commands.Cog, name="Character Management"):
             last_name=last_name,
             nickname=nickname,
         )
+
+    @chars.command(name="sheet", description="View a character sheet.")
+    async def view_character_sheet(
+        self,
+        ctx: discord.ApplicationContext,
+        character: character_select(description="The character to view", required=True),
+    ) -> None:
+        """Displays a character sheet in the channel."""
+        char_db_id = int(character)
+        character = char_svc.fetch_by_id(char_db_id)
+        await show_sheet(ctx, character)
 
 
 def setup(bot: Valentina) -> None:
