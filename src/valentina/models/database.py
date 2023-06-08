@@ -150,6 +150,17 @@ class Character(BaseModel):
     protean = IntegerField(default=0)
     vicissitude = IntegerField(default=0)
 
+    @property
+    def name(self) -> str:
+        """Return the name of the character."""
+        if self.nickname:
+            return self.nickname
+
+        if self.last_name:
+            return f"{self.first_name} {self.last_name}"
+
+        return self.first_name
+
     ################################################3
 
     def __str__(self) -> str:
