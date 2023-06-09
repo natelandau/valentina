@@ -6,7 +6,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.models import Valentina
+from valentina import Valentina
 from valentina.models.dicerolls import Roll
 from valentina.views.roll_display import RollDisplay
 

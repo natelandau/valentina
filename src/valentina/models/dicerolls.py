@@ -2,7 +2,7 @@
 
 from numpy.random import default_rng
 
-from valentina.models.enums import DiceType
+from valentina.models.constants import DiceType
 
 _rng = default_rng()
 _max_pool_size = 100

@@ -125,22 +125,6 @@ files = [
 frozenlist = ">=1.1.0"
 
 [[package]]
-name = "aiosqlite"
-version = "0.19.0"
-description = "asyncio bridge to the standard sqlite3 module"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "aiosqlite-0.19.0-py3-none-any.whl", hash = "sha256:edba222e03453e094a3ce605db1b970c4b3376264e56f32e2a4959f948d66a96"},
-    {file = "aiosqlite-0.19.0.tar.gz", hash = "sha256:95ee77b91c8d2808bd08a59fbebf66270e9090c3d92ffbf260dc0db0b979577d"},
-]
-
-[package.extras]
-dev = ["aiounittest (==1.4.1)", "attribution (==1.6.2)", "black (==23.3.0)", "coverage[toml] (==7.2.3)", "flake8 (==5.0.4)", "flake8-bugbear (==23.3.12)", "flit (==3.7.1)", "mypy (==1.2.0)", "ufmt (==2.1.0)", "usort (==1.0.6)"]
-docs = ["sphinx (==6.1.3)", "sphinx-mdinclude (==0.5.3)"]
-
-[[package]]
 name = "argcomplete"
 version = "3.0.8"
 description = "Bash tab completion for argparse"
@@ -154,6 +138,21 @@ files = [
 
 [package.extras]
 test = ["coverage", "mypy", "pexpect", "ruff", "wheel"]
+
+[[package]]
+name = "arrow"
+version = "1.2.3"
+description = "Better dates & times for Python"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "arrow-1.2.3-py3-none-any.whl", hash = "sha256:5a49ab92e3b7b71d96cd6bfcc4df14efefc9dfa96ea19045815914a6ab6b1fe2"},
+    {file = "arrow-1.2.3.tar.gz", hash = "sha256:3934b30ca1b9f292376d9db15b19446088d12ec58629bc3f0da28fd55fb633a1"},
+]
+
+[package.dependencies]
+python-dateutil = ">=2.7.0"
 
 [[package]]
 name = "async-timeout"
@@ -524,6 +523,17 @@ files = [
 [package.extras]
 docs = ["furo (>=2023.3.27)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
 testing = ["covdefaults (>=2.3)", "coverage (>=7.2.3)", "diff-cover (>=7.5)", "pytest (>=7.3.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)", "pytest-timeout (>=2.1)"]
+
+[[package]]
+name = "flatdict"
+version = "4.0.1"
+description = "Python module for interacting with nested dicts as a single level dict with delimited keys."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "flatdict-4.0.1.tar.gz", hash = "sha256:cd32f08fd31ed21eb09ebc76f06b6bd12046a24f77beb1fd0281917e47f26742"},
+]
 
 [[package]]
 name = "frozenlist"
@@ -1080,6 +1090,17 @@ pygments = ">=2.12.0"
 dev = ["black", "hypothesis", "mypy", "pygments (>=2.14.0)", "pytest", "pytest-cov", "pytest-timeout", "ruff", "tox", "types-pygments"]
 
 [[package]]
+name = "peewee"
+version = "3.16.2"
+description = "a little orm"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "peewee-3.16.2.tar.gz", hash = "sha256:10769981198c7311f84a0ca8db892fa213303a8eb1305deb795a71e7bd606a91"},
+]
+
+[[package]]
 name = "platformdirs"
 version = "3.5.1"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
@@ -1318,6 +1339,21 @@ setproctitle = ["setproctitle"]
 testing = ["filelock"]
 
 [[package]]
+name = "python-dateutil"
+version = "2.8.2"
+description = "Extensions to the standard Python datetime module"
+category = "main"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+files = [
+    {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
+    {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
+]
+
+[package.dependencies]
+six = ">=1.5"
+
+[[package]]
 name = "python-dotenv"
 version = "1.0.0"
 description = "Read key-value pairs from a .env file and set them as environment variables"
@@ -1499,6 +1535,18 @@ python-versions = ">=3.7"
 files = [
     {file = "shellingham-1.5.0.post1-py2.py3-none-any.whl", hash = "sha256:368bf8c00754fd4f55afb7bbb86e272df77e4dc76ac29dbcbb81a59e9fc15744"},
     {file = "shellingham-1.5.0.post1.tar.gz", hash = "sha256:823bc5fb5c34d60f285b624e7264f4dda254bc803a3774a147bf99c0e3004a28"},
+]
+
+[[package]]
+name = "six"
+version = "1.16.0"
+description = "Python 2 and 3 compatibility utilities"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
+files = [
+    {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
+    {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
 
 [[package]]
@@ -1787,4 +1835,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
         python-versions = "^3.11"
-content-hash = "3d94500b47a5900c6d86b8767775cab8f7bba9d1bcc6ee5c7f397c94411081ce"
+content-hash = "d9dfe1e7f3dccbfd39373a8a3263a0c71559581c00290e450e2b39651fd6df5a"
