@@ -29,7 +29,7 @@ def update_guild_last_connected(guild_id: int, guild_name: str) -> None:
     db_id, is_created = Guild.get_or_create(
         guild_id=guild_id,
         defaults={
-            "guild_id": guild_id,
+            "id": guild_id,
             "name": guild_name,
             "first_seen": datetime.now(timezone.utc).replace(microsecond=0),
             "last_connected": datetime.now(timezone.utc).replace(microsecond=0),

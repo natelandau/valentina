@@ -79,7 +79,7 @@ class Wizard:
 
     async def __finalize_character(self) -> None:
         """Add the character to the database and inform the user they are done."""
-        db_guild = Guild.get(Guild.guild_id == self.ctx.guild.id)
+        db_guild = Guild.get(Guild.id == self.ctx.guild.id)
         db_char_class = CharacterClass.get(CharacterClass.name == self.char_class)
 
         Character.create(

@@ -89,7 +89,7 @@ def __unique_name(
     else:
         search = fn.LOWER(Character.first_name) == first_name
 
-    query = Character.select().where(search).join(Guild).where(Guild.guild_id == ctx.guild.id)
+    query = Character.select().where(search).join(Guild).where(Guild.id == ctx.guild.id)
     if len(query) > 0:
         if last_name is not None:
             errors.append(f"A character with the name `{first_name} {last_name}` already exists.")
@@ -101,7 +101,7 @@ def __unique_name(
             Character.select()
             .where(fn.LOWER(Character.nickname) == nickname)
             .join(Guild)
-            .where(Guild.guild_id == ctx.guild.id)
+            .where(Guild.id == ctx.guild.id)
         )
         if len(query) > 0:
             errors.append(f"A character with the nickname `{nickname}` already exists.")

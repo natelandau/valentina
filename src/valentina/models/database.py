@@ -28,7 +28,7 @@ class BaseModel(Model):
 class Guild(BaseModel):
     """Guild model for the database."""
 
-    guild_id = IntegerField(unique=True)
+    id = IntegerField(primary_key=True)  # noqa: A003
     name = TextField()
     first_seen = DateTimeField(default=time_now)
     last_connected = DateTimeField(default=time_now)
