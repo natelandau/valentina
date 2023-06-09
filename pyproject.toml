@@ -85,10 +85,18 @@
     skip_covered = true
 
 [tool.coverage.run]
-    branch       = true
+    branch = true
     command_line = "--module pytest"
-    data_file    = "reports/.coverage"
-    source       = ["src"]
+    data_file = "reports/.coverage"
+    omit = [
+        "src/valentina/__version__.py",
+        "src/valentina/bot.py",
+        "src/valentina/character/*",
+        "src/valentina/cogs/*",
+        "src/valentina/main.py",
+        "src/valentina/views/*",
+    ]
+    source = ["src"]
 
 [tool.coverage.xml]
     output = "reports/coverage.xml"

@@ -24,7 +24,7 @@ from valentina.views.rating_view import RatingView
 class Wizard:
     """A character creation wizard."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         ctx: discord.ApplicationContext,
         quick_char: bool,

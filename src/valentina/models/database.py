@@ -1,10 +1,15 @@
 """Models for the database."""
+from datetime import datetime, timezone
 
 from loguru import logger
 from peewee import BooleanField, DateTimeField, ForeignKeyField, IntegerField, Model, TextField
 
 from valentina import DATABASE
-from valentina.utils.helpers import time_now
+
+
+def time_now() -> datetime:
+    """Return the current time in UTC."""
+    return datetime.now(timezone.utc).replace(microsecond=0)
 
 
 class BaseModel(Model):
@@ -70,6 +75,7 @@ class Character(BaseModel):
     intelligence = IntegerField(default=0)
     wits = IntegerField(default=0)
     # ABILITIES ##################################
+    animal_ken = IntegerField(default=0)
     athletics = IntegerField(default=0)
     brawl = IntegerField(default=0)
     dodge = IntegerField(default=0)
