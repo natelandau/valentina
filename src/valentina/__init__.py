@@ -2,13 +2,8 @@
 
 from .bot import Valentina
 from .main import CONFIG, DATABASE
-from .utils.character_service import CharacterService
+from .models.database_services import CharacterService
 
 char_svc = CharacterService()
 
-__all__ = [
-    "DATABASE",
-    "Valentina",
-    "CONFIG",
-    "char_svc",
-]
+__all__ = ["DATABASE", "Valentina", "CONFIG", "char_svc"]

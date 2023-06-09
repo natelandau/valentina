@@ -1,4 +1,5 @@
-"""Character Manager cache/in-memory database."""
+"""Models for maintaining in-memory caches of database queries."""
+
 from loguru import logger
 from peewee import ModelSelect
 
