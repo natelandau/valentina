@@ -5,7 +5,7 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina import Valentina, char_svc
+from valentina import Valentina, char_svc, user_svc
 from valentina.character.create import create_character
 from valentina.character.view_sheet import show_sheet
 from valentina.models.constants import CharClass
@@ -54,6 +54,11 @@ class Characters(commands.Cog, name="Character Management"):
             nickname (str, optional): The character's nickname. Defaults to None.
             quick_char (bool, optional): Create a character with only essential traits? (Defaults to False).
         """
+        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
+            ctx.guild.id, ctx.user.id
+        ):
+            user_svc.create(ctx.guild.id, ctx.user)
+
         q_char = quick_char == "True"
         await create_character(
             ctx,
@@ -71,6 +76,11 @@ class Characters(commands.Cog, name="Character Management"):
         character: character_select(description="The character to view", required=True),
     ) -> None:
         """Displays a character sheet in the channel."""
+        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
+            ctx.guild.id, ctx.user.id
+        ):
+            user_svc.create(ctx.guild.id, ctx.user)
+
         char_db_id = int(character)
         character = char_svc.fetch_by_id(char_db_id)
         await show_sheet(ctx, character)

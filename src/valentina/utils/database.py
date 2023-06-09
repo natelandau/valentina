@@ -4,14 +4,24 @@ from datetime import datetime, timezone
 from loguru import logger
 
 from valentina import DATABASE
-from valentina.models import Character, CharacterClass, CustomTrait, Guild
+from valentina.models import (
+    Character,
+    CharacterClass,
+    CustomTrait,
+    Guild,
+    GuildUser,
+    User,
+    UserCharacter,
+)
 from valentina.models.constants import CharClass
 
 
 def create_tables() -> None:
     """Create the database instance and tables."""
     with DATABASE:
-        DATABASE.create_tables([Guild, CharacterClass, Character, CustomTrait])
+        DATABASE.create_tables(
+            [Guild, CharacterClass, Character, CustomTrait, User, GuildUser, UserCharacter]
+        )
 
     logger.info("DATABASE: Tables created successfully.")
     populate_enum_tables()
@@ -27,7 +37,7 @@ def populate_enum_tables() -> None:
 def update_guild_last_connected(guild_id: int, guild_name: str) -> None:
     """Update the last connected timestamp for a guild."""
     db_id, is_created = Guild.get_or_create(
-        guild_id=guild_id,
+        id=guild_id,
         defaults={
             "id": guild_id,
             "name": guild_name,

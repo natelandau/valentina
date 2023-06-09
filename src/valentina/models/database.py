@@ -246,3 +246,29 @@ class CustomTrait(BaseModel):
     character = ForeignKeyField(Character, backref="custom_traits")
     value = IntegerField(default=0)
     created = DateTimeField(default=time_now)
+
+
+class User(BaseModel):
+    """User model for the database."""
+
+    id = IntegerField(primary_key=True)  # noqa: A003
+    avatar_url = TextField(null=True)
+    first_seen = DateTimeField(default=time_now)
+    is_admin = BooleanField(default=False)
+    is_banned = BooleanField(default=False)
+    last_connected = DateTimeField(default=time_now)
+    username = TextField(null=True)
+
+
+class GuildUser(BaseModel):
+    """Join table for Guild and User."""
+
+    guild = ForeignKeyField(Guild, backref="users")
+    user = ForeignKeyField(User, backref="guilds")
+
+
+class UserCharacter(BaseModel):
+    """Join table for User and Character."""
+
+    user = ForeignKeyField(User, backref="characters")
+    character = ForeignKeyField(Character, backref="users")

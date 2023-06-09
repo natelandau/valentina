@@ -6,7 +6,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina
+from valentina import Valentina, user_svc
 from valentina.models.dicerolls import Roll
 from valentina.views.roll_display import RollDisplay
 
@@ -39,6 +39,11 @@ class Gameplay(commands.Cog):
             difficulty (int): The difficulty of the roll
             pool (int): The number of dice to roll
         """
+        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
+            ctx.guild.id, ctx.user.id
+        ):
+            user_svc.create(ctx.guild.id, ctx.user)
+
         try:
             roll = Roll(pool=pool, difficulty=difficulty, dice_size=10)
             logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
@@ -62,6 +67,11 @@ class Gameplay(commands.Cog):
             dice_size (int): The number of sides on the dice
             pool (int): The number of dice to roll
         """
+        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
+            ctx.guild.id, ctx.user.id
+        ):
+            user_svc.create(ctx.guild.id, ctx.user)
+
         try:
             roll = Roll(pool=pool, dice_size=dice_size, difficulty=0)
             logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
