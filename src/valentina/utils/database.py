@@ -23,7 +23,7 @@ def create_tables() -> None:
             [Guild, CharacterClass, Character, CustomTrait, User, GuildUser, UserCharacter]
         )
 
-    logger.info("DATABASE: Tables created successfully.")
+    logger.info("DATABASE: Create Tables")
     populate_enum_tables()
 
 
@@ -31,7 +31,7 @@ def populate_enum_tables() -> None:
     """Populate the database with enums."""
     for char_class in CharClass:
         CharacterClass.get_or_create(name=char_class.value)
-    logger.info("DATABASE: Enums populated successfully.")
+    logger.info("DATABASE: Populate Enums")
 
 
 def update_guild_last_connected(guild_id: int, guild_name: str) -> None:
@@ -46,9 +46,9 @@ def update_guild_last_connected(guild_id: int, guild_name: str) -> None:
         },
     )
     if is_created:
-        logger.info(f"DATABASE: Guild {db_id.name} created")
+        logger.info(f"DATABASE: Create guild {db_id.name}")
     if not is_created:
         Guild.set_by_id(
             db_id, {"last_connected": datetime.now(timezone.utc).replace(microsecond=0)}
         )
-        logger.info(f"DATABASE: Guild '{db_id.name}' updated")
+        logger.info(f"DATABASE: Update '{db_id.name}'")

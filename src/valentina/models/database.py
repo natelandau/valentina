@@ -159,7 +159,7 @@ class Character(BaseModel):
     @property
     def name(self) -> str:
         """Return the name of the character."""
-        nick = f" ({self.nickname})" if self.nickname and self.nickname != self.first_name else ""
+        nick = f" ({self.nickname})" if self.nickname else ""
         last = f" {self.last_name}" if self.last_name else ""
         return f"{self.first_name}{nick}{last}"
 

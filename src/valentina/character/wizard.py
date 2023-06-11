@@ -6,17 +6,7 @@ import discord
 from discord.ui import Button
 from loguru import logger
 
-from valentina.models.constants import (
-    ATTRIBUTES,
-    FLAT_TRAITS,
-    HUNTER_TRAITS,
-    MAGE_SPHERES,
-    MAGE_TRAITS,
-    UNIVERSAL_TRAITS,
-    VAMPIRE_DISCIPLINES,
-    VIRTUES,
-    WEREWOLF_TRAITS,
-)
+from valentina.models.constants import GROUPED_TRAITS
 from valentina.models.database import Character, CharacterClass, Guild
 from valentina.views.rating_view import RatingView
 
@@ -30,7 +20,15 @@ class Wizard:
         quick_char: bool,
         char_class: str,
         first_name: str,
-        last_name: str = None,
+        last_name: str,
+        humanity: int,
+        willpower: int,
+        arete: int = None,
+        quintessence: int = None,
+        blood_pool: int = None,
+        gnosis: int = None,
+        rage: int = None,
+        conviction: int = None,
         nickname: str = None,
     ) -> None:
         self.ctx = ctx
@@ -39,41 +37,56 @@ class Wizard:
         self.first_name = first_name
         self.last_name = last_name
         self.nickname = nickname
+        self.humanity = humanity
+        self.willpower = willpower
+        self.arete = arete
+        self.quintessence = quintessence
+        self.blood_pool = blood_pool
+        self.gnosis = gnosis
+        self.rage = rage
+        self.conviction = conviction
         self.using_dms = True
         self.msg = None  # We will be editing this message instead of sending new ones
         self.assigned_traits: dict[str, int] = {}
         self.traits_to_enter = self.__define_traits_to_enter()
-        logger.warning(f"DEBUG-A: {self.traits_to_enter}")
-        logger.info(
-            f"CHARGEN: Started by {ctx.user.name}#{ctx.user.discriminator} on {ctx.guild.name}"
-        )
+        logger.info(f"CHARGEN: Started by {ctx.user.name} on {ctx.guild.name}")
         self.view = RatingView(self._assign_next_trait, self._timeout)
 
     def __define_traits_to_enter(self) -> list[str]:
         """Builds the list of traits to enter during character generation."""
         traits_list: list[str] = []
-        traits_list.extend(UNIVERSAL_TRAITS)
-        traits_list.extend(ATTRIBUTES)
-        traits_list.extend(VIRTUES)
-        traits_list.extend(["Alertness", "Dodge", "Firearms", "Melee"])
+        traits_list.extend(GROUPED_TRAITS["ATTRIBUTES"]["Physical"])
+        traits_list.extend(GROUPED_TRAITS["ATTRIBUTES"]["Social"])
+        traits_list.extend(GROUPED_TRAITS["ATTRIBUTES"]["Mental"])
+        if self.quick_char:
+            traits_list.extend(["Alertness", "Dodge", "Firearms", "Melee"])
+        else:
+            traits_list.extend(GROUPED_TRAITS["ABILITIES"]["Talents"])
+            traits_list.extend(GROUPED_TRAITS["ABILITIES"]["Skills"])
+            traits_list.extend(GROUPED_TRAITS["ABILITIES"]["Knowledges"])
 
-        if self.char_class == "Mage":
-            traits_list.extend(MAGE_TRAITS)
-        if self.char_class == "Vampire":
-            traits_list.extend(VAMPIRE_DISCIPLINES)
-        if self.char_class == "Werewolf":
-            traits_list.extend(WEREWOLF_TRAITS)
-        if self.char_class == "Hunter":
-            traits_list.extend(HUNTER_TRAITS)
+        traits_list.extend(GROUPED_TRAITS["COMMON"]["Virtues"])
+        traits_list.extend(GROUPED_TRAITS["COMMON"]["Universal"])
 
         if not self.quick_char:
-            traits_list.extend(FLAT_TRAITS.copy())
-
             if self.char_class == "Mage":
-                traits_list.extend(MAGE_SPHERES)
+                traits_list.extend(GROUPED_TRAITS["MAGE"]["Spheres"])
+            if self.char_class == "Vampire":
+                traits_list.extend(GROUPED_TRAITS["VAMPIRE"]["Disciplines"])
 
+        entered_elsewhere = [  # Set in modal view
+            "willpower",
+            "humanity",
+            "arete",
+            "quintessence",
+            "blood_pool",
+            "blood pool",
+            "gnosis",
+            "rage",
+            "conviction",
+        ]
         no_dupes = []
-        [no_dupes.append(item) for item in traits_list if item not in no_dupes]  # type: ignore [func-returns-value]
+        [no_dupes.append(item) for item in traits_list if item not in no_dupes and item.lower() not in entered_elsewhere]  # type: ignore [func-returns-value]
 
         return no_dupes
 
@@ -85,14 +98,23 @@ class Wizard:
         Character.create(
             first_name=self.first_name,
             last_name=self.last_name,
+            nickname=self.nickname,
             char_class=db_char_class.id,
+            humanity=self.humanity,
+            willpower=self.willpower,
+            arete=self.arete,
+            quintessence=self.quintessence,
+            blood_pool=self.blood_pool,
+            gnosis=self.gnosis,
+            rage=self.rage,
+            conviction=self.conviction,
             guild=db_guild.id,
             **self.assigned_traits,
         )
-        logger.info(f"DATABASE: Add {self.char_class} character {self.first_name}.")
         logger.info(
-            f"CHARGEN: Completed by {self.ctx.user.name}#{self.ctx.user.discriminator} on {self.ctx.guild.name}"
+            f"DATABASE: Add {self.char_class} character {self.first_name} {self.last_name}."
         )
+        logger.info(f"CHARGEN: Completed by {self.ctx.user.name} on {self.ctx.guild.name}")
 
         self.view.stop()
         await self.__finalize_embed()
@@ -182,7 +204,6 @@ class Wizard:
             rating (int): The value for the next rating in the list.
             interaction (discord.Interaction): The interaction that triggered
         """
-        logger.warning(f"debug: {self.traits_to_enter}")
         trait = self.traits_to_enter.pop(0)
         self.assigned_traits[trait.lower()] = rating
 

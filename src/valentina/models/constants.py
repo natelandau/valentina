@@ -4,6 +4,17 @@ from enum import Enum
 from flatdict import FlatDict
 
 
+class EmbedColor(Enum):
+    """Enum for colors of embeds."""
+
+    SUCCESS = 0x00FF00
+    ERROR = 0xFF0000
+    WARNING = 0xFFFF00
+    INFO = 0x00FFFF
+    DEBUG = 0x0000FF
+    DEFAULT = 0x6082B6
+
+
 class DiceType(Enum):
     """Enum for types of dice."""
 
@@ -70,46 +81,55 @@ GROUPED_TRAITS = {
             "Science",
         ],
     },
+    "COMMON": {
+        "Virtues": ["Conscience", "Self-Control", "Courage"],
+        "Universal": ["Willpower", "Humanity", "Desperation", "Reputation"],
+    },
+    "MAGE": {
+        "Universal": ["Arete", "Quintessence"],
+        "Spheres": [
+            "Correspondence",
+            "Entropy",
+            "Forces",
+            "Life",
+            "Matter",
+            "Mind",
+            "Prime",
+            "Spirit",
+            "Time",
+        ],
+        "Resonance": ["Dynamic", "Entropic", "Static"],
+    },
+    "WEREWOLF": {
+        "Universal": ["Gnosis", "Rage"],
+    },
+    "HUNTER": {
+        "Universal": ["Conviction"],
+    },
+    "VAMPIRE": {
+        "Universal": ["Blood Pool"],
+        "Disciplines": [
+            "Animalism",
+            "Auspex",
+            "BloodSorcery",
+            "Celerity",
+            "Dominate",
+            "Fortitude",
+            "Obeah",
+            "Obfuscate",
+            "Oblivion",
+            "Potence",
+            "Presence",
+            "Protean",
+            "Vicissitude",
+        ],
+    },
 }
 ATTRIBUTES = set(sum(GROUPED_TRAITS["ATTRIBUTES"].values(), []))
 ABILITIES = set(sum(GROUPED_TRAITS["ABILITIES"].values(), []))
-ATTRIBUTES_AND_ABILITIES = ATTRIBUTES.union(ABILITIES)
+COMMON = set(sum(GROUPED_TRAITS["COMMON"].values(), []))
+MAGE = set(sum(GROUPED_TRAITS["MAGE"].values(), []))
+WEREWOLF = set(sum(GROUPED_TRAITS["WEREWOLF"].values(), []))
+HUNTER = set(sum(GROUPED_TRAITS["HUNTER"].values(), []))
+VAMPIRE = set(sum(GROUPED_TRAITS["VAMPIRE"].values(), []))
 FLAT_TRAITS: FlatDict = sum(FlatDict(GROUPED_TRAITS).values(), [])
-
-
-VIRTUES = ["Conscience", "Self-Control", "Courage"]
-UNIVERSAL_TRAITS = ["Willpower", "Humanity", "Desperation", "Reputation"]
-MAGE_TRAITS = ["Arete", "Quintessence"]
-WEREWOLF_TRAITS = ["Gnosis", "Rage"]
-HUNTER_TRAITS = ["Conviction"]
-VAMPIRE_TRAITS = ["Blood Pool"]
-
-MAGE_SPHERES = [
-    "Correspondence",
-    "Entropy",
-    "Forces",
-    "Life",
-    "Matter",
-    "Mind",
-    "Prime",
-    "Spirit",
-    "Time",
-]
-MAGE_RESONANCE = ["Dynamic", "Entropic", "Static"]
-
-
-VAMPIRE_DISCIPLINES = [
-    "Animalism",
-    "Auspex",
-    "BloodSorcery",
-    "Celerity",
-    "Dominate",
-    "Fortitude",
-    "Obeah",
-    "Obfuscate",
-    "Oblivion",
-    "Potence",
-    "Presence",
-    "Protean",
-    "Vicissitude",
-]

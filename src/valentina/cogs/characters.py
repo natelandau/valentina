@@ -4,12 +4,15 @@
 import discord
 from discord.commands import Option
 from discord.ext import commands
+from loguru import logger
 
 from valentina import Valentina, char_svc, user_svc
 from valentina.character.create import create_character
 from valentina.character.view_sheet import show_sheet
 from valentina.models.constants import CharClass
-from valentina.utils.options import character_select
+from valentina.utils.errors import CharacterClaimedError, UserHasClaimError
+from valentina.utils.options import select_character
+from valentina.views.embeds import present_embed
 
 possible_classes = [char_class.value for char_class in CharClass]
 
@@ -41,7 +44,7 @@ class Characters(commands.Cog, name="Character Management"):
             required=True,
         ),
         first_name: Option(str, "The character's name", required=True),
-        last_name: Option(str, "The character's last name", required=False, default=None),
+        last_name: Option(str, "The character's last name", required=True),
         nickname: Option(str, "The character's nickname", required=False, default=None),
     ) -> None:
         """Create a new character.
@@ -54,11 +57,6 @@ class Characters(commands.Cog, name="Character Management"):
             nickname (str, optional): The character's nickname. Defaults to None.
             quick_char (bool, optional): Create a character with only essential traits? (Defaults to False).
         """
-        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
-            ctx.guild.id, ctx.user.id
-        ):
-            user_svc.create(ctx.guild.id, ctx.user)
-
         q_char = quick_char == "True"
         await create_character(
             ctx,
@@ -73,17 +71,61 @@ class Characters(commands.Cog, name="Character Management"):
     async def view_character_sheet(
         self,
         ctx: discord.ApplicationContext,
-        character: character_select(description="The character to view", required=True),
+        character: Option(
+            int,
+            description="The character to view",
+            autocomplete=select_character,
+            required=True,
+        ),
     ) -> None:
         """Displays a character sheet in the channel."""
+        char_db_id = int(character)
+        character = char_svc.fetch_by_id(ctx.guild.id, char_db_id)
+        await show_sheet(ctx, character)
+
+    @chars.command(name="claim", description="Claim a character.")
+    @logger.catch
+    async def claim_character(
+        self,
+        ctx: discord.ApplicationContext,
+        char_id: Option(
+            int,
+            description="The character to claim",
+            autocomplete=select_character,
+            required=True,
+        ),
+    ) -> None:
+        """Claim a character to your user. This will allow you to roll without specifying traits, edit the character, and more."""
         if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
             ctx.guild.id, ctx.user.id
         ):
             user_svc.create(ctx.guild.id, ctx.user)
 
-        char_db_id = int(character)
-        character = char_svc.fetch_by_id(char_db_id)
-        await show_sheet(ctx, character)
+        character = char_svc.fetch_by_id(ctx.guild.id, char_id)
+
+        try:
+            char_svc.add_claim(ctx.guild.id, char_id, ctx.user.id)
+            logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}.")
+            await present_embed(
+                ctx=ctx,
+                title=f"{character.first_name} claimed.",
+                level="success",
+            )
+        except CharacterClaimedError:
+            await present_embed(
+                ctx=ctx,
+                title=f"Error: {character.name} already claimed.",
+                description=f"{character.name} is already claimed by another user.\nTo unclaim this character, use `/character unclaim`.",
+                level="error",
+            )
+        except UserHasClaimError:
+            claimed_char = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            await present_embed(
+                ctx=ctx,
+                title="ERROR: You already have a character claimed",
+                description=f"You have already claimed **{claimed_char.name}**.\nTo unclaim this character, use `/character unclaim`.",
+                level="error",
+            )
 
 
 def setup(bot: Valentina) -> None:

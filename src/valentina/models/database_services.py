@@ -5,6 +5,7 @@ from loguru import logger
 from peewee import ModelSelect
 
 from valentina.models.database import Character, GuildUser, User, time_now
+from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
 
 
 class CharacterService:
@@ -14,47 +15,152 @@ class CharacterService:
         """Initialize the CharacterService."""
         # Caches to avoid database queries
         ##################################
+        self.characters: dict[str, Character] = {}  # {char_key: Character, ...}
+        self.claims: dict[str, str] = {}  # {claim_key: char_key}
 
-        # Cache all guilds and their row numbers (foreign keys)
-        self.guild_db_ids: dict[int, int] = {}  # {guild_id: db_id, ...}
+    @staticmethod
+    def __get_char_key(guild_id: int, char_id: int) -> str:
+        """Generate a key for the character cache.
+
+        Args:
+            guild_id (int): The guild to get the ID for.
+            char_id (int): The character database ID
+
+        Returns:
+            str: The guild and character IDs joined by an underscore.
+        """
+        return f"{guild_id}_{char_id}"
+
+    @staticmethod
+    def __get_claim_key(guild_id: int, user_id: int) -> str:
+        """Generate a key for the claim cache.
+
+        Args:
+            guild_id (int): The guild ID
+            user_id (int): The user database ID
+
+        Returns:
+            str: The guild and user IDs joined by an underscore.
+        """
+        return f"{guild_id}_{user_id}"
+
+    def purge_all(self) -> None:
+        """Purge all caches."""
+        logger.debug("CACHE: Purging all character caches")
+        self.characters = {}
+        self.claims = {}
+
+    def purge_by_id(self, guild_id: int, char_id: int) -> None:
+        """Purge a specific character from the cache."""
+        key = self.__get_char_key(guild_id, char_id)
+        if key in self.characters:
+            logger.debug(f"CACHE: Purging character {key} from cache")
+            del self.characters[key]
+
+    def is_cached_char(self, guild_id: int = None, char_id: int = None, key: str = None) -> bool:
+        """Check if the user is in the cache."""
+        key = self.__get_char_key(guild_id, char_id) if key is None else key
+        return key in self.characters
 
     def fetch_all(self, guild_id: int) -> ModelSelect:
-        """Returns all characters for a specific guild in the database.
+        """Returns all characters for a specific guild in the database and adds them to the in-memory cache.
 
         Args:
             guild_id (int): The discord guild id to fetch characters for.
+
+        Returns:
+            ModelSelect: A peewee ModelSelect object representing all the characters for the guild.
         """
-        try:
-            characters = Character.select().where(
-                (Character.guild_id == guild_id) & (Character.archived == 0)
-            )
-            logger.info(f"DATABASE: Fetched {len(characters)} characters for guild {guild_id}")
-        except Character.DoesNotExist as e:
-            logger.error(f"DATABASE: No characters found for guild {guild_id}")
-            raise ValueError(f"No active characters found for guild {guild_id}") from e
+        cached_ids = []
+        chars_to_return = []
+        for key, character in self.characters.items():
+            if key.startswith(str(guild_id)):
+                cached_ids.append(character.id)
+                chars_to_return.append(character)
+        logger.debug(f"CACHE: Fetch {len(chars_to_return)} characters")
 
-        return characters
+        characters = Character.select().where(
+            (Character.guild_id == guild_id)  # grab only characters for the guild
+            & ~(Character.id.in_(cached_ids))  # grab only characters not in cache
+        )
+        if len(characters) > 0:
+            logger.info(f"DATABASE: Fetch {len(characters)} characters")
+        else:
+            logger.debug("DATABASE: No characters to fetch")
 
-    def fetch_by_id(self, char_id: int) -> Character:
+        for character in characters:
+            self.characters[self.__get_char_key(guild_id, character.id)] = character
+            chars_to_return.append(character)
+
+        return chars_to_return
+
+    def fetch_by_id(self, guild_id: int, char_id: int) -> Character:
         """Fetch a character by database id.
 
         Args:
             char_id (int): The database id of the character.
+            guild_id (int): The discord guild id to fetch characters for.
 
         Returns:
             Character: The character object.
         """
-        # TODO: Cache characters by id on bot startup and query the cache first
-        try:
-            character = Character.get_by_id(char_id)
-            logger.info(
-                f"DATABASE: Fetched character {char_id}:{character.first_name} from database"
-            )
-        except Character.DoesNotExist as e:
-            logger.error(f"DATABASE: Character {char_id} does not exist in database.")
-            raise ValueError(f"Character {char_id} does not exist in database") from e
+        key = self.__get_char_key(guild_id, char_id)
+        if self.is_cached_char(key=key):
+            logger.debug(f"CACHE: Fetched character {char_id}")
+            return self.characters[key]
+
+        character = Character.get_by_id(char_id)
+        self.characters[key] = character
+        logger.info(f"DATABASE: Fetched character: {character.first_name}")
 
         return character
+
+    def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
+        """Claim a character for a user."""
+        char_key = self.__get_char_key(guild_id, char_id)
+        claim_key = self.__get_claim_key(guild_id, user_id)
+
+        if claim_key in self.claims:
+            if self.claims[claim_key] == char_key:
+                return True
+
+            logger.debug(f"CLAIM: User {user_id} already has a claim")
+            raise UserHasClaimError(f"User {user_id} already has a claim")
+
+        if any(char_key == claim for claim in self.claims.values()):
+            logger.debug(f"CLAIM: Character {char_id} is already claimed")
+            raise CharacterClaimedError(f"Character {char_id} is already claimed")
+
+        self.claims[claim_key] = char_key
+        return True
+
+    def remove_claim(self, guild_id: int, user_id: int) -> bool:
+        """Remove a claim from a user."""
+        claim_key = self.__get_claim_key(guild_id, user_id)
+        if claim_key in self.claims:
+            logger.debug(f"CLAIM: Removing claim for user {user_id}")
+            del self.claims[claim_key]
+            return True
+        return False
+
+    def user_has_claim(self, guild_id: int, user_id: int) -> bool:
+        """Check if a user has a claim."""
+        claim_key = self.__get_claim_key(guild_id, user_id)
+        return claim_key in self.claims
+
+    def is_char_claimed(self, guild_id: int, char_id: int) -> bool:
+        """Check if a character is claimed by any user."""
+        char_key = self.__get_char_key(guild_id, char_id)
+        return any(char_key == claim for claim in self.claims.values())
+
+    def fetch_claim(self, guild_id: int, user_id: int) -> Character:
+        """Fetch the character claimed by a user."""
+        claim_key = self.__get_claim_key(guild_id, user_id)
+        if claim_key in self.claims:
+            char_key = self.claims[claim_key]
+            return self.characters[char_key]
+
+        raise NoClaimError(f"User {user_id} has no claim")
 
 
 class UserService:

@@ -44,12 +44,14 @@ class Valentina(commands.Bot):
         """Override on_ready."""
         await self.wait_until_ready()
         if not self.welcomed:
+            from valentina import char_svc
             from valentina.utils.database import create_tables, update_guild_last_connected
 
             # Database setup
             create_tables()
             for _guild in self.guilds:
                 update_guild_last_connected(_guild.id, _guild.name)
+                char_svc.fetch_all(_guild.id)
 
             # TODO: Setup tasks here  User.set_by_id(3, {'is_admin': True})
 
