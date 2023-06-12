@@ -178,6 +178,45 @@ class Characters(commands.Cog, name="Character Management"):
         char_svc.update_char(ctx.guild.id, character.id, bio=biography)
         logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
 
+    @update.command(name="exp", description="Add experience to a character.")
+    @logger.catch
+    async def add_xp(
+        self,
+        ctx: discord.ApplicationContext,
+        exp: Option(int, description="The amount of experience to add", required=True),
+    ) -> None:
+        """Update a character's bio."""
+        try:
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed.",
+                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                level="error",
+            )
+            return
+
+        exp = int(exp)
+        new_exp = character.experience + exp
+        new_total = character.experience_total + exp
+
+        char_svc.update_char(
+            ctx.guild.id,
+            character.id,
+            experience=new_exp,
+            experience_total=new_total,
+        )
+        logger.info(f"EXP: {character.name} exp updated by {ctx.author.name}.")
+        await present_embed(
+            ctx=ctx,
+            title=f"{character.name} experience updated.",
+            description=f"**{exp}** experience points added.",
+            fields=[("Current xp", new_exp)],
+            level="success",
+            footer=f"{new_total} all time xp",
+        )
+
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
