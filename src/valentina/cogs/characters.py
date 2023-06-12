@@ -26,6 +26,7 @@ class Characters(commands.Cog, name="Character Management"):
     chars = discord.SlashCommandGroup("character", "Work with characters")
 
     @chars.command(name="create", description="Create a new character.")
+    @logger.catch
     async def create_character(
         self,
         ctx: discord.ApplicationContext,
@@ -68,6 +69,7 @@ class Characters(commands.Cog, name="Character Management"):
         )
 
     @chars.command(name="sheet", description="View a character sheet.")
+    @logger.catch
     async def view_character_sheet(
         self,
         ctx: discord.ApplicationContext,
@@ -126,6 +128,26 @@ class Characters(commands.Cog, name="Character Management"):
                 description=f"You have already claimed **{claimed_char.name}**.\nTo unclaim this character, use `/character unclaim`.",
                 level="error",
             )
+
+    @chars.command(name="list", description="List all characters.")
+    @logger.catch
+    async def list_characters(
+        self,
+        ctx: discord.ApplicationContext,
+    ) -> None:
+        """List all characters."""
+        characters = char_svc.fetch_all(ctx.guild.id)
+        description = "```[ID ] NAME                                CLASS\n"
+        description += "--------------------------------------------------------\n"
+        description += "\n".join(
+            [
+                f"[{character.id:<3}] {character.name.title():35} {character.char_class.name:11}"
+                for character in characters
+            ]
+        )
+        description += "```"
+
+        await present_embed(ctx=ctx, title="Characters", description=description)
 
 
 def setup(bot: Valentina) -> None:
