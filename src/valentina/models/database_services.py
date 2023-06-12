@@ -191,7 +191,8 @@ class CharacterService:
             except DoesNotExist as e:
                 raise CharacterNotFoundError(f"Character {char_id} was not found") from e
 
-        Character.update(**kws).where(Character.id == character.id).execute()
+        Character.update(modified=time_now(), **kws).where(Character.id == character.id).execute()
+
         logger.debug(f"DATABASE: Update character: {char_id}")
         return character
 
