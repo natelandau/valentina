@@ -1,5 +1,7 @@
 """Models for maintaining in-memory caches of database queries."""
 
+import re
+
 import discord
 from loguru import logger
 from peewee import DoesNotExist, ModelSelect
@@ -162,7 +164,14 @@ class CharacterService:
         claim_key = self.__get_claim_key(guild_id, user_id)
         if claim_key in self.claims:
             char_key = self.claims[claim_key]
-            return self.characters[char_key]
+
+            if self.is_cached_char(key=char_key):
+                logger.debug(f"CACHE: Fetched character {char_key}")
+                return self.characters[char_key]
+
+            char_id = re.sub(r"\d\w+_", "", char_key)
+            character = self.fetch_by_id(guild_id, int(char_id))
+            return character
 
         raise NoClaimError(f"User {user_id} has no claim")
 
