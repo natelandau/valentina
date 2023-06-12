@@ -9,8 +9,9 @@ from loguru import logger
 from valentina import Valentina, char_svc, user_svc
 from valentina.character.create import create_character
 from valentina.character.view_sheet import show_sheet
+from valentina.character.views import BioModal
 from valentina.models.constants import CharClass
-from valentina.utils.errors import CharacterClaimedError, UserHasClaimError
+from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
 from valentina.utils.options import select_character
 from valentina.views.embeds import present_embed
 
@@ -24,6 +25,7 @@ class Characters(commands.Cog, name="Character Management"):
         self.bot = bot
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
+    update = chars.create_subgroup("update", "Update existing characters")
 
     @chars.command(name="create", description="Create a new character.")
     @logger.catch
@@ -95,6 +97,7 @@ class Characters(commands.Cog, name="Character Management"):
             description="The character to claim",
             autocomplete=select_character,
             required=True,
+            name="character",
         ),
     ) -> None:
         """Claim a character to your user. This will allow you to roll without specifying traits, edit the character, and more."""
@@ -148,6 +151,32 @@ class Characters(commands.Cog, name="Character Management"):
         description += "```"
 
         await present_embed(ctx=ctx, title="Characters", description=description)
+
+    ### UPDATE COMMANDS ####################################################################
+    @update.command(name="bio", description="Update a character's bio.")
+    @logger.catch
+    async def update_bio(self, ctx: discord.ApplicationContext) -> None:
+        """Update a character's bio."""
+        try:
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed.",
+                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                level="error",
+            )
+            return
+
+        modal = BioModal(
+            title=f"Enter the biography for {character.name}", current_bio=character.bio
+        )
+        await ctx.send_modal(modal)
+        await modal.wait()
+        biography = modal.bio
+
+        char_svc.update_char(ctx.guild.id, character.id, bio=biography)
+        logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
 
 
 def setup(bot: Valentina) -> None:

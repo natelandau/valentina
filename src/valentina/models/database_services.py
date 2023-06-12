@@ -2,10 +2,15 @@
 
 import discord
 from loguru import logger
-from peewee import ModelSelect
+from peewee import DoesNotExist, ModelSelect
 
 from valentina.models.database import Character, GuildUser, User, time_now
-from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
+from valentina.utils.errors import (
+    CharacterClaimedError,
+    CharacterNotFoundError,
+    NoClaimError,
+    UserHasClaimError,
+)
 
 
 class CharacterService:
@@ -50,12 +55,11 @@ class CharacterService:
         self.characters = {}
         self.claims = {}
 
-    def purge_by_id(self, guild_id: int, char_id: int) -> None:
-        """Purge a specific character from the cache."""
-        key = self.__get_char_key(guild_id, char_id)
-        if key in self.characters:
-            logger.debug(f"CACHE: Purging character {key} from cache")
-            del self.characters[key]
+    def purge_by_id(self, guild_id: int = None, char_id: int = None, key: str = None) -> None:
+        """Purge a single character from the cache by ID."""
+        key = self.__get_char_key(guild_id, char_id) if key is None else key
+        logger.debug(f"CACHE: Purge character {key} from cache")
+        self.characters.pop(key, None)
 
     def is_cached_char(self, guild_id: int = None, char_id: int = None, key: str = None) -> bool:
         """Check if the user is in the cache."""
@@ -63,7 +67,7 @@ class CharacterService:
         return key in self.characters
 
     def fetch_all(self, guild_id: int) -> ModelSelect:
-        """Returns all characters for a specific guild in the database and adds them to the in-memory cache.
+        """Returns all characters for a specific guild. Checks the cache first and then the database. If characters are found in the database, they are added to the cache.
 
         Args:
             guild_id (int): The discord guild id to fetch characters for.
@@ -110,9 +114,9 @@ class CharacterService:
             return self.characters[key]
 
         character = Character.get_by_id(char_id)
+
         self.characters[key] = character
         logger.info(f"DATABASE: Fetched character: {character.first_name}")
-
         return character
 
     def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
@@ -161,6 +165,26 @@ class CharacterService:
             return self.characters[char_key]
 
         raise NoClaimError(f"User {user_id} has no claim")
+
+    def update_char(self, guild_id: int, char_id: int, **kwargs: str | int) -> Character:
+        """Update a character in the cache and database."""
+        key = self.__get_char_key(guild_id, char_id)
+
+        # Normalize kwargs keys to database column names
+        kws = {k.replace(" ", "_").replace("-", "_").lower(): v for k, v in kwargs.items()}
+
+        if key in self.characters:
+            character = self.characters[key]
+            self.purge_by_id(key=key)
+        else:
+            try:
+                character = Character.get_by_id(char_id)
+            except DoesNotExist as e:
+                raise CharacterNotFoundError(f"Character {char_id} was not found") from e
+
+        Character.update(**kws).where(Character.id == character.id).execute()
+        logger.debug(f"DATABASE: Update character: {char_id}")
+        return character
 
 
 class UserService:

@@ -11,3 +11,7 @@ class UserHasClaimError(Exception):
 
 class NoClaimError(Exception):
     """Raised when a user has no claim on a character."""
+
+
+class CharacterNotFoundError(Exception):
+    """Raised when a character is not found."""

@@ -172,33 +172,7 @@ class Character(BaseModel):
 
     def __str__(self) -> str:
         """Return the string representation of the model."""
-        return f"""Character(
-    first_name={self.first_name},
-    last_name={self.last_name},
-    nickname={self.nickname},
-    char_class={self.char_class.name},
-    guild={self.guild.name},
-    created={self.created},
-    modified={self.modified},
-    age={self.age},
-    bio={self.bio},
-    concept={self.concept},
-    cool_points={self.cool_points},
-    cool_points_total={self.cool_points_total},
-    experience={self.experience},
-    experience_total={self.experience_total},
-    player_id={self.player_id},
-    strength={self.strength},
-    dexterity={self.dexterity},
-    stamina={self.stamina},
-    charisma={self.charisma},
-    manipulation={self.manipulation},
-    appearance={self.appearance},
-    perception={self.perception},
-    intelligence={self.intelligence},
-    wits={self.wits},
-        )
-        """
+        return f"""Character({self.id} {self.name})"""
 
     def update_modified(self) -> None:
         """Update the modified field."""
