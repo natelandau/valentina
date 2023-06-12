@@ -180,13 +180,6 @@ class Character(BaseModel):
         self.save()
         logger.info(f"DATABASE: Character {self.name} modified_date updated.")
 
-    def add_experience(self, exp: int) -> None:
-        """Update the experience field."""
-        self.experience += exp
-        self.experience_total += exp
-        self.save()
-        logger.info(f"DATABASE: Character {self.name} experience updated.")
-
     def spend_experience(self, exp: int) -> None:
         """Update the experience field."""
         if exp > self.experience:
@@ -194,13 +187,6 @@ class Character(BaseModel):
         self.experience -= exp
         self.save()
         logger.info(f"DATABASE: Character {self.name} experience updated.")
-
-    def add_cool_points(self, cps: int) -> None:
-        """Update the cool_points field."""
-        self.cool_points += cps
-        self.cool_points_total += cps
-        self.save()
-        logger.info(f"DATABASE: Character {self.name} cool_points updated.")
 
     def spend_cool_points(self, cps: int) -> None:
         """Update the cool_points field."""
