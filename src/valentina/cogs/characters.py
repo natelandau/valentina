@@ -132,6 +132,34 @@ class Characters(commands.Cog, name="Character Management"):
                 level="error",
             )
 
+    @chars.command(name="unclaim", description="Unclaim a character.")
+    @logger.catch
+    async def unclaim_character(
+        self,
+        ctx: discord.ApplicationContext,
+    ) -> None:
+        """Unclaim currently claimed character. This will allow you to claim a new character."""
+        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
+            ctx.guild.id, ctx.user.id
+        ):
+            user_svc.create(ctx.guild.id, ctx.user)
+
+        if char_svc.user_has_claim(ctx.guild.id, ctx.user.id):
+            char_svc.remove_claim(ctx.guild.id, ctx.user.id)
+            await present_embed(
+                ctx=ctx,
+                title="Removed claim",
+                description="To claim a new character, use `/character claim`.",
+                level="success",
+            )
+        else:
+            await present_embed(
+                ctx=ctx,
+                title="You have no character claimed",
+                description="To claim a character, use `/character claim`.",
+                level="info",
+            )
+
     @chars.command(name="list", description="List all characters.")
     @logger.catch
     async def list_characters(

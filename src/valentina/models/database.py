@@ -187,6 +187,7 @@ class Character(BaseModel):
         self.experience -= exp
         self.save()
         logger.info(f"DATABASE: Character {self.name} experience updated.")
+        self.update_modified()
 
     def spend_cool_points(self, cps: int) -> None:
         """Update the cool_points field."""
@@ -195,6 +196,7 @@ class Character(BaseModel):
         self.cool_points -= cps
         self.save()
         logger.info(f"DATABASE: Character {self.name} cool_points updated.")
+        self.update_modified()
 
 
 class CustomTrait(BaseModel):
