@@ -15,7 +15,7 @@ from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasC
 from valentina.utils.options import select_character
 from valentina.views.embeds import SubmitCancelView, present_embed
 
-possible_classes = [char_class.value for char_class in CharClass]
+possible_classes = sorted([char_class.value for char_class in CharClass])
 
 
 class Characters(commands.Cog, name="Character Management"):

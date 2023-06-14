@@ -30,7 +30,7 @@ async def select_character(ctx: discord.ApplicationContext) -> list[OptionChoice
 
     found_chars = [
         OptionChoice(name, ident)
-        for name, ident in chars
+        for name, ident in sorted(chars)
         if name.casefold().startswith(name_search or "")
     ]
 
