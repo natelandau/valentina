@@ -10,10 +10,10 @@ from valentina import Valentina, char_svc, user_svc
 from valentina.character.create import create_character
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
-from valentina.models.constants import CharClass
+from valentina.models.constants import FLAT_TRAITS, CharClass
 from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
 from valentina.utils.options import select_character
-from valentina.views.embeds import present_embed
+from valentina.views.embeds import SubmitCancelView, present_embed
 
 possible_classes = [char_class.value for char_class in CharClass]
 
@@ -23,6 +23,16 @@ class Characters(commands.Cog, name="Character Management"):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
+
+    async def _trait_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+        """Populates the autocomplete for the trait option."""
+        traits = []
+        for trait in FLAT_TRAITS:
+            if trait.lower().startswith(ctx.options["trait"].lower()):
+                traits.append(trait)
+            if len(traits) >= 25:  # noqa: PLR2004
+                break
+        return traits
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
     update = chars.create_subgroup("update", "Update existing characters")
@@ -213,7 +223,7 @@ class Characters(commands.Cog, name="Character Management"):
         ctx: discord.ApplicationContext,
         exp: Option(int, description="The amount of experience to add", required=True),
     ) -> None:
-        """Update a character's bio."""
+        """Add experience to a character."""
         try:
             character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
         except NoClaimError:
@@ -252,7 +262,7 @@ class Characters(commands.Cog, name="Character Management"):
         ctx: discord.ApplicationContext,
         cp: Option(int, description="The number of cool points to add", required=True),
     ) -> None:
-        """Update a character's bio."""
+        """Add cool points to a character."""
         try:
             character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
         except NoClaimError:
@@ -283,6 +293,58 @@ class Characters(commands.Cog, name="Character Management"):
             level="success",
             footer=f"{new_total} all time cool points",
         )
+
+    @update.command(name="trait", description="Update a trait for a character.")
+    @logger.catch
+    async def update_trait(
+        self,
+        ctx: discord.ApplicationContext,
+        trait: Option(
+            str, description="Trait to update", required=True, autocomplete=_trait_autocomplete
+        ),
+        new_value: Option(int, description="New value for the trait", required=True),
+    ) -> None:
+        """Update the value of a trait."""
+        try:
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed",
+                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                level="error",
+            )
+            return
+
+        normalized_trait = trait.replace(" ", "_").replace("-", "_").lower()
+
+        old_value = character.__getattribute__(normalized_trait)
+
+        view = SubmitCancelView(ctx.author)
+        await present_embed(
+            ctx,
+            title=f"Update {trait}",
+            description=f"Confirm updating {trait}",
+            fields=[("Old Value", old_value), ("New Value", new_value)],
+            inline_fields=True,
+            ephemeral=True,
+            level="info",
+            view=view,
+        )
+        await view.wait()
+        if view.submitted:
+            char_svc.update_char(ctx.guild.id, character.id, **{normalized_trait: new_value})
+            logger.info(f"TRAIT: {character.name} {trait} updated by {ctx.author.name}")
+            await present_embed(
+                ctx=ctx,
+                title=f"{character.name} {trait} updated",
+                description=f"**{trait}** updated to **{new_value}**.",
+                level="success",
+                fields=[("Old Value", old_value), ("New Value", new_value)],
+                inline_fields=True,
+                footer=f"Updated by {ctx.author.name}",
+                ephemeral=False,
+            )
 
 
 def setup(bot: Valentina) -> None:
