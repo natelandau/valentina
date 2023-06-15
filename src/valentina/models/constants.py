@@ -4,6 +4,35 @@ from enum import Enum
 from flatdict import FlatDict
 
 
+class XPNew(Enum):
+    """Experience cost for gaining a wholly new trait. Values are the cost."""
+
+    ABILITY = 3
+    DISCIPLINE = 10
+    SPHERE = 10
+    BACKGROUND = 3
+
+
+class XPRaise(Enum):
+    """Experience costs for raising character traits. Values are the multiplier against current rating."""
+
+    ATTRIBUTE = 4
+    ABILITY = 2
+    VIRTUE = 2
+    WILLPOWER = 1
+    BACKGROUND = 2
+    CLAN_DISCIPLINE = 5
+    OTHER_DISCIPLINE = 7
+    SPHERE = 7
+    ARETE = 10
+    MERIT = 2
+    FLAW = 2
+    RAGE = 1
+    GNOSIS = 2
+    GIFT = 3
+    HUMANITY = 2
+
+
 class EmbedColor(Enum):
     """Enum for colors of embeds."""
 
@@ -120,7 +149,7 @@ GROUPED_TRAITS = {
         "Disciplines": [
             "Animalism",
             "Auspex",
-            "BloodSorcery",
+            "Blood Sorcery",
             "Celerity",
             "Dominate",
             "Fortitude",

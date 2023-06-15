@@ -45,10 +45,15 @@ class Valentina(commands.Bot):
         await self.wait_until_ready()
         if not self.welcomed:
             from valentina import char_svc
-            from valentina.utils.database import create_tables, update_guild_last_connected
+            from valentina.utils.database import (
+                create_tables,
+                update_character_model,
+                update_guild_last_connected,
+            )
 
             # Database setup
             create_tables()
+            update_character_model()  # Alter the character model if needed
             for _guild in self.guilds:
                 update_guild_last_connected(_guild.id, _guild.name)
                 char_svc.fetch_all(_guild.id)
