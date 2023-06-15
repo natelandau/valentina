@@ -13,6 +13,7 @@ from valentina.utils.errors import (
     NoClaimError,
     UserHasClaimError,
 )
+from valentina.utils.helpers import normalize_row
 
 
 class CharacterService:
@@ -180,7 +181,7 @@ class CharacterService:
         key = self.__get_char_key(guild_id, char_id)
 
         # Normalize kwargs keys to database column names
-        kws = {k.replace(" ", "_").replace("-", "_").lower(): v for k, v in kwargs.items()}
+        kws = {normalize_row(k): v for k, v in kwargs.items()}
 
         if key in self.characters:
             character = self.characters[key]

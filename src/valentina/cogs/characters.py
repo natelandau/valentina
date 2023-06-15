@@ -12,6 +12,7 @@ from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
 from valentina.models.constants import FLAT_TRAITS, CharClass
 from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
+from valentina.utils.helpers import normalize_row
 from valentina.utils.options import select_character
 from valentina.views.embeds import SubmitCancelView, present_embed
 
@@ -316,9 +317,7 @@ class Characters(commands.Cog, name="Character Management"):
             )
             return
 
-        normalized_trait = trait.replace(" ", "_").replace("-", "_").lower()
-
-        old_value = character.__getattribute__(normalized_trait)
+        old_value = character.__getattribute__(normalize_row(trait))
 
         view = SubmitCancelView(ctx.author)
         await present_embed(
@@ -333,7 +332,7 @@ class Characters(commands.Cog, name="Character Management"):
         )
         await view.wait()
         if view.submitted:
-            char_svc.update_char(ctx.guild.id, character.id, **{normalized_trait: new_value})
+            char_svc.update_char(ctx.guild.id, character.id, **{normalize_row(trait): new_value})
             logger.info(f"TRAIT: {character.name} {trait} updated by {ctx.author.name}")
             await present_embed(
                 ctx=ctx,
