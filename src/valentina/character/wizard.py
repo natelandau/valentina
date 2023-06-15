@@ -73,6 +73,8 @@ class Wizard:
                 traits_list.extend(GROUPED_TRAITS["MAGE"]["Spheres"])
             if self.char_class == "Vampire":
                 traits_list.extend(GROUPED_TRAITS["VAMPIRE"]["Disciplines"])
+            if self.char_class == "Werewolf":
+                traits_list.extend(GROUPED_TRAITS["WEREWOLF"]["Renown"])
 
         entered_elsewhere = [  # Set in modal view
             "willpower",
