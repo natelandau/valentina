@@ -6,6 +6,10 @@ on:
         tags:
             - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
+env:
+    VALENTINA_LOG_FILE: "valentina.log"
+    VALENTINA_DB_PATH: "valentina.sqlite"
+
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true

@@ -5,6 +5,9 @@ on:
     release:
         types:
             - published
+env:
+    VALENTINA_LOG_FILE: "valentina.log"
+    VALENTINA_DB_PATH: "valentina.sqlite"
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
