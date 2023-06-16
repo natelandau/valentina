@@ -40,7 +40,10 @@ class Help(commands.Cog):
                     fields.append((f"{command.name}", command.description))
 
             # Add owner information
-            owners = [ctx.guild.get_member(int(x)).mention for x in CONFIG["OWNER_IDS"].split(",")]
+            owners = [
+                ctx.guild.get_member(int(x)).mention
+                for x in CONFIG["VALENTINA_OWNER_IDS"].split(",")
+            ]
 
             fields.append(
                 (

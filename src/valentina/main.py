@@ -1,5 +1,6 @@
 """Main file which instantiates the bot and runs it."""
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Optional
@@ -30,28 +31,37 @@ def version_callback(value: bool) -> None:
 # Import configuration from environment variables
 DIR = Path(__file__).parents[2].absolute()
 CONFIG = {
-    **dotenv_values(DIR / ".env.shared"),  # load shared variables
-    **dotenv_values(DIR / ".env.secret"),  # load sensitive variables
-    # **os.environ,  # override loaded values with environment variables
+    **dotenv_values(DIR / ".env"),  # load shared variables
+    **dotenv_values(DIR / ".env.secrets"),  # load sensitive variables
+    **os.environ,  # override loaded values with environment variables
 }
-DB_PATH = DIR / CONFIG["DB_PATH"]
+for k, v in CONFIG.items():
+    CONFIG[k] = v.replace('"', "").replace("'", "").replace(" ", "")
+
+DB_PATH = DIR / CONFIG["VALENTINA_DB_PATH"]
 
 # Instantiate Logging
-logging.getLogger("discord.http").setLevel(level=CONFIG["LOG_LEVEL_DISCORD_HTTP"].upper())
-logging.getLogger("discord.gateway").setLevel(level=CONFIG["LOG_LEVEL_DISCORD_HTTP"].upper())
-logging.getLogger("discord.webhook").setLevel(level=CONFIG["LOG_LEVEL_DISCORD_HTTP"].upper())
-logging.getLogger("discord.client").setLevel(level=CONFIG["LOG_LEVEL_DISCORD_HTTP"].upper())
-logging.getLogger("peewee").setLevel(level=CONFIG["LOG_LEVEL_DATABASE"].upper())
+logging.getLogger("discord.http").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_DISCORD_HTTP"].upper())
+logging.getLogger("discord.gateway").setLevel(
+    level=CONFIG["VALENTINA_LOG_LEVEL_DISCORD_HTTP"].upper()
+)
+logging.getLogger("discord.webhook").setLevel(
+    level=CONFIG["VALENTINA_LOG_LEVEL_DISCORD_HTTP"].upper()
+)
+logging.getLogger("discord.client").setLevel(
+    level=CONFIG["VALENTINA_LOG_LEVEL_DISCORD_HTTP"].upper()
+)
+logging.getLogger("peewee").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_DATABASE"].upper())
 logger.remove()
 logger.add(
     sys.stderr,
-    level=CONFIG["LOG_LEVEL"],
+    level=CONFIG["VALENTINA_LOG_LEVEL"],
     colorize=True,
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>: <level>{message}</level>",
 )
 logger.add(
-    CONFIG["LOG_FILE"],
-    level=CONFIG["LOG_LEVEL"],
+    CONFIG["VALENTINA_LOG_FILE"],
+    level=CONFIG["VALENTINA_LOG_LEVEL"],
     rotation="10 MB",
     compression="zip",
     enqueue=True,
@@ -82,10 +92,10 @@ def main(
     """Run Valentina."""
     intents = discord.Intents.all()
     bot = Valentina(
-        debug_guilds=[int(g) for g in CONFIG["GUILDS"].split(",")],
+        debug_guilds=[int(g) for g in CONFIG["VALENTINA_GUILDS"].split(",")],
         intents=intents,
-        owner_ids=[int(o) for o in CONFIG["OWNER_IDS"].split(",")],
+        owner_ids=[int(o) for o in CONFIG["VALENTINA_OWNER_IDS"].split(",")],
         parent_dir=DIR,
     )
 
-    bot.run(CONFIG["DISCORD_TOKEN"])  # run the bot
+    bot.run(CONFIG["VALENTINA_DISCORD_TOKEN"])  # run the bot

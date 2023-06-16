@@ -11,6 +11,11 @@
             "POETRY_VERSION": "1.2.2"
         }
     },
+    "containerEnv": {
+        "DISCORD_TOKEN": "${localEnv:VALENTINA_DISCORD_TOKEN}",
+        "GUILDS": "${localEnv:VALENTINA_GUILDS}",
+        "OWNER_IDS": "${localEnv:VALENTINA_OWNER_IDS}"
+    },
     // Set *default* container specific settings.json values on container create.
     "settings": {
         "autoDocstring.startOnNewLine": true,

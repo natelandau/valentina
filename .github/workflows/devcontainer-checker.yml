@@ -18,6 +18,10 @@ on:
             - ".devcontainer/**"
             - ".github/workflows/devcontainer-checker.yml"
 
+env:
+    VALENTINA_LOG_FILE: "valentina.log"
+    VALENTINA_DB_PATH: "valentina.sqlite"
+
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
@@ -60,3 +64,6 @@ jobs:
               with:
                   runCmd: |
                       poe test
+                  env: |
+                      VALENTINA_LOG_FILE="valentina.log"
+                      VALENTINA_DB_PATH="valentina.sqlite"

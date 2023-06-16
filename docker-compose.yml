@@ -1,0 +1,18 @@
+---
+version: '3.8'
+services:
+  valentina:
+    build: .
+    hostname: valentina
+    container_name: valentina
+    network_mode: "bridge"
+    volumes:
+      - path/to/dir:/valentina          # Edit this to your data path
+    env_file:
+      - .env
+    environment:
+      - VALENTINA_DISCORD_TOKEN=TOKEN   # Your discord bot token
+      - VALENTINA_GUILDS=ID1,ID2        # Guild IDs where you will run the bot, comma separated
+      - VALENTINA_OWNER_IDS=ID1,ID2     # Your discord ID
+      - VALENTINA_LOG_LEVEL="INFO"
+    restart: unless-stopped

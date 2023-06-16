@@ -24,6 +24,10 @@ on:
             - "pyproject.toml"
             - "poetry.lock"
 
+env:
+    VALENTINA_LOG_FILE: "valentina.log"
+    VALENTINA_DB_PATH: "valentina.sqlite"
+
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
