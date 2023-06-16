@@ -5,7 +5,8 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina
+from valentina import Valentina, __version__
+from valentina.views.embeds import present_embed
 
 
 class Debug(commands.Cog):
@@ -21,8 +22,18 @@ class Debug(commands.Cog):
     async def ping(self, ctx: discord.ApplicationContext) -> None:
         """Ping the bot to get debug information."""
         logger.info("debug:ping: Generating debug information")
-        await ctx.respond(
-            f"Status is {self.bot.status}\nLatency is {self.bot.latency}\nConnected to {len(self.bot.guilds)} guilds"
+        await present_embed(
+            ctx,
+            title="Connection Information",
+            description="",
+            fields=[
+                ("Status", str(self.bot.status)),
+                ("Latency", f"`{self.bot.latency!s}`"),
+                ("Connected Guilds", str(len(self.bot.guilds))),
+                ("Bot Version", f"`{__version__}`"),
+            ],
+            level="info",
+            ephemeral=True,
         )
 
     @debug.command(description="Live reload the bot.")
@@ -37,10 +48,9 @@ class Debug(commands.Cog):
                 logger.info(f"COGS: Reloading - {cog.stem}")
                 self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
 
-        embed = discord.Embed(
-            title="Reload Bot", description=f"{count} cogs successfully reloaded", color=0xFF00C8
+        await present_embed(
+            ctx, "Reload Bot", f"{count} cogs successfully reloaded", level="info", ephemeral=True
         )
-        await ctx.respond(embed=embed)
 
 
 def setup(bot: Valentina) -> None:

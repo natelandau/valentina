@@ -28,7 +28,7 @@ class BaseModel(Model):
 class Guild(BaseModel):
     """Guild model for the database."""
 
-    guild_id = IntegerField(unique=True)
+    id = IntegerField(primary_key=True)  # noqa: A003
     name = TextField()
     first_seen = DateTimeField(default=time_now)
     last_connected = DateTimeField(default=time_now)
@@ -52,18 +52,18 @@ class Character(BaseModel):
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     age = IntegerField(null=True)
+    archived = BooleanField(default=False)
     bio = TextField(null=True)
     concept = TextField(null=True)
     cool_points = IntegerField(default=0)
     cool_points_total = IntegerField(default=0)
+    demeanor = TextField(null=True)
     experience = IntegerField(default=0)
     experience_total = IntegerField(default=0)
     gender = TextField(null=True)
-    player_id = IntegerField(null=True)
     nature = TextField(null=True)
-    demeanor = TextField(null=True)
-    archived = BooleanField(default=False)
     notes = TextField(null=True)
+    player_id = IntegerField(null=True)
     # ATTRIBUTES #################################
     strength = IntegerField(default=0)
     dexterity = IntegerField(default=0)
@@ -75,39 +75,46 @@ class Character(BaseModel):
     intelligence = IntegerField(default=0)
     wits = IntegerField(default=0)
     # ABILITIES ##################################
+    academics = IntegerField(default=0)
+    alertness = IntegerField(default=0)
     animal_ken = IntegerField(default=0)
     athletics = IntegerField(default=0)
     brawl = IntegerField(default=0)
+    bureaucracy = IntegerField(default=0)
+    computer = IntegerField(default=0)
+    crafts = IntegerField(default=0)
     dodge = IntegerField(default=0)
     drive = IntegerField(default=0)
-    empathy = IntegerField(default=0)
-    expression = IntegerField(default=0)
-    intimidation = IntegerField(default=0)
-    leadership = IntegerField(default=0)
-    streetwise = IntegerField(default=0)
-    subterfuge = IntegerField(default=0)
-    alertness = IntegerField(default=0)
-    animal_ken = IntegerField(default=0)
-    crafts = IntegerField(default=0)
     drive = IntegerField(default=0)
+    empathy = IntegerField(default=0)
     etiquette = IntegerField(default=0)
-    firearms = IntegerField(default=0)
-    larceny = IntegerField(default=0)
-    melee = IntegerField(default=0)
-    performance = IntegerField(default=0)
-    stealth = IntegerField(default=0)
-    survival = IntegerField(default=0)
-    technology = IntegerField(default=0)
-    academics = IntegerField(default=0)
-    computer = IntegerField(default=0)
+    expression = IntegerField(default=0)
     finance = IntegerField(default=0)
+    firearms = IntegerField(default=0)
+    insight = IntegerField(default=0)
+    intimidation = IntegerField(default=0)
     investigation = IntegerField(default=0)
+    larceny = IntegerField(default=0)
     law = IntegerField(default=0)
+    leadership = IntegerField(default=0)
     linguistics = IntegerField(default=0)
     medicine = IntegerField(default=0)
+    meditation = IntegerField(default=0)
+    melee = IntegerField(default=0)
+    music = IntegerField(default=0)
     occult = IntegerField(default=0)
+    performance = IntegerField(default=0)
+    persuasion = IntegerField(default=0)
     politics = IntegerField(default=0)
+    primal_urge = IntegerField(default=0)
+    repair = IntegerField(default=0)
+    rituals = IntegerField(default=0)
     science = IntegerField(default=0)
+    stealth = IntegerField(default=0)
+    streetwise = IntegerField(default=0)
+    subterfuge = IntegerField(default=0)
+    survival = IntegerField(default=0)
+    technology = IntegerField(default=0)
     # VIRTUES #################################
     conscience = IntegerField(default=0)
     self_control = IntegerField(default=0)
@@ -121,8 +128,11 @@ class Character(BaseModel):
     arete = IntegerField(default=0)
     quintessence = IntegerField(default=0)
     # WEREWOLF #################################
-    rage = IntegerField(default=0)
+    glory = IntegerField(default=0)
     gnosis = IntegerField(default=0)
+    honor = IntegerField(default=0)
+    rage = IntegerField(default=0)
+    wisdom = IntegerField(default=0)
     # VAMPIRE ##################################
     blood_pool = IntegerField(default=0)
     # HUNTER ###################################
@@ -139,8 +149,8 @@ class Character(BaseModel):
     time = IntegerField(default=0)
     # MAGE_RESONANCE ##########################
     dynamic = IntegerField(default=0)
-    static = IntegerField(default=0)
     entropic = IntegerField(default=0)
+    static = IntegerField(default=0)
     # DISCIPLINES #############################
     animalism = IntegerField(default=0)
     auspex = IntegerField(default=0)
@@ -159,7 +169,7 @@ class Character(BaseModel):
     @property
     def name(self) -> str:
         """Return the name of the character."""
-        nick = f" ({self.nickname})" if self.nickname and self.nickname != self.first_name else ""
+        nick = f" ({self.nickname})" if self.nickname else ""
         last = f" {self.last_name}" if self.last_name else ""
         return f"{self.first_name}{nick}{last}"
 
@@ -172,46 +182,13 @@ class Character(BaseModel):
 
     def __str__(self) -> str:
         """Return the string representation of the model."""
-        return f"""Character(
-    first_name={self.first_name},
-    last_name={self.last_name},
-    nickname={self.nickname},
-    char_class={self.char_class.name},
-    guild={self.guild.name},
-    created={self.created},
-    modified={self.modified},
-    age={self.age},
-    bio={self.bio},
-    concept={self.concept},
-    cool_points={self.cool_points},
-    cool_points_total={self.cool_points_total},
-    experience={self.experience},
-    experience_total={self.experience_total},
-    player_id={self.player_id},
-    strength={self.strength},
-    dexterity={self.dexterity},
-    stamina={self.stamina},
-    charisma={self.charisma},
-    manipulation={self.manipulation},
-    appearance={self.appearance},
-    perception={self.perception},
-    intelligence={self.intelligence},
-    wits={self.wits},
-        )
-        """
+        return f"""Character({self.id} {self.name})"""
 
     def update_modified(self) -> None:
         """Update the modified field."""
         self.modified = time_now()
         self.save()
         logger.info(f"DATABASE: Character {self.name} modified_date updated.")
-
-    def add_experience(self, exp: int) -> None:
-        """Update the experience field."""
-        self.experience += exp
-        self.experience_total += exp
-        self.save()
-        logger.info(f"DATABASE: Character {self.name} experience updated.")
 
     def spend_experience(self, exp: int) -> None:
         """Update the experience field."""
@@ -220,13 +197,7 @@ class Character(BaseModel):
         self.experience -= exp
         self.save()
         logger.info(f"DATABASE: Character {self.name} experience updated.")
-
-    def add_cool_points(self, cps: int) -> None:
-        """Update the cool_points field."""
-        self.cool_points += cps
-        self.cool_points_total += cps
-        self.save()
-        logger.info(f"DATABASE: Character {self.name} cool_points updated.")
+        self.update_modified()
 
     def spend_cool_points(self, cps: int) -> None:
         """Update the cool_points field."""
@@ -235,6 +206,7 @@ class Character(BaseModel):
         self.cool_points -= cps
         self.save()
         logger.info(f"DATABASE: Character {self.name} cool_points updated.")
+        self.update_modified()
 
 
 class CustomTrait(BaseModel):
@@ -246,3 +218,29 @@ class CustomTrait(BaseModel):
     character = ForeignKeyField(Character, backref="custom_traits")
     value = IntegerField(default=0)
     created = DateTimeField(default=time_now)
+
+
+class User(BaseModel):
+    """User model for the database."""
+
+    id = IntegerField(primary_key=True)  # noqa: A003
+    avatar_url = TextField(null=True)
+    first_seen = DateTimeField(default=time_now)
+    is_admin = BooleanField(default=False)
+    is_banned = BooleanField(default=False)
+    last_connected = DateTimeField(default=time_now)
+    username = TextField(null=True)
+
+
+class GuildUser(BaseModel):
+    """Join table for Guild and User."""
+
+    guild = ForeignKeyField(Guild, backref="users")
+    user = ForeignKeyField(User, backref="guilds")
+
+
+class UserCharacter(BaseModel):
+    """Join table for User and Character."""
+
+    user = ForeignKeyField(User, backref="characters")
+    character = ForeignKeyField(Character, backref="users")

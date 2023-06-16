@@ -1,7 +1,16 @@
 """Models for Valentina."""
 
-from .database import BaseModel, Character, CharacterClass, CustomTrait, Guild
-from .dicerolls import Roll
+from .database import (
+    BaseModel,
+    Character,
+    CharacterClass,
+    CustomTrait,
+    Guild,
+    GuildUser,
+    User,
+    UserCharacter,
+)
+from .dicerolls import DiceRoll
 
 __all__ = [
     "BaseModel",
@@ -9,5 +18,8 @@ __all__ = [
     "CharacterClass",
     "CustomTrait",
     "Guild",
-    "Roll",
+    "DiceRoll",
+    "GuildUser",
+    "User",
+    "UserCharacter",
 ]

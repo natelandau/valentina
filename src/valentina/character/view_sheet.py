@@ -4,16 +4,7 @@ from typing import Any
 import arrow
 import discord
 
-from valentina.models.constants import (
-    GROUPED_TRAITS,
-    HUNTER_TRAITS,
-    MAGE_SPHERES,
-    MAGE_TRAITS,
-    UNIVERSAL_TRAITS,
-    VAMPIRE_DISCIPLINES,
-    VIRTUES,
-    WEREWOLF_TRAITS,
-)
+from valentina.models.constants import GROUPED_TRAITS
 from valentina.models.database import Character
 from valentina.utils.helpers import format_traits
 
@@ -37,34 +28,52 @@ async def show_sheet(
     embed.add_field(name="Experience", value=f"`{character.experience}`", inline=True)
     embed.add_field(name="Cool Points", value=f"`{character.cool_points}`", inline=True)
 
-    for group, subgroups in GROUPED_TRAITS.items():
-        embed.add_field(name="\u200b", value=f"**{group}**", inline=False)
-        for subgroup, traits in subgroups.items():
-            embed.add_field(name=subgroup, value=format_traits(character, traits), inline=True)
+    embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
+    embed.add_field(
+        name="Physical", value=format_traits(character, GROUPED_TRAITS["ATTRIBUTES"]["Physical"])
+    )
+    embed.add_field(
+        name="Social", value=format_traits(character, GROUPED_TRAITS["ATTRIBUTES"]["Social"])
+    )
+    embed.add_field(
+        name="Mental", value=format_traits(character, GROUPED_TRAITS["ATTRIBUTES"]["Mental"])
+    )
 
-    embed.add_field(name="Virtues", value=format_traits(character, VIRTUES), inline=True)
-    embed.add_field(name="Universal", value=format_traits(character, UNIVERSAL_TRAITS), inline=True)
+    embed.add_field(name="\u200b", value="**ABILITIES**", inline=False)
+    embed.add_field(
+        name="Talents", value=format_traits(character, GROUPED_TRAITS["ABILITIES"]["Talents"])
+    )
+    embed.add_field(
+        name="Skills", value=format_traits(character, GROUPED_TRAITS["ABILITIES"]["Skills"])
+    )
+    embed.add_field(
+        name="Knowledges", value=format_traits(character, GROUPED_TRAITS["ABILITIES"]["Knowledges"])
+    )
 
+    embed.add_field(
+        name="Virtues", value=format_traits(character, GROUPED_TRAITS["COMMON"]["Virtues"])
+    )
+    embed.add_field(
+        name="Universal", value=format_traits(character, GROUPED_TRAITS["COMMON"]["Universal"])
+    )
     match character.class_name.lower():
         case "mage":
-            embed.add_field(name="Mage", value=format_traits(character, MAGE_TRAITS), inline=True)
-            embed.add_field(
-                name="Spheres", value=format_traits(character, MAGE_SPHERES, False), inline=True
-            )
+            mage_traits = GROUPED_TRAITS["MAGE"]["Universal"] + GROUPED_TRAITS["MAGE"]["Spheres"]
+            embed.add_field(name="Mage", value=format_traits(character, mage_traits, False))
         case "vampire":
-            embed.add_field(
-                name="Disciplines",
-                value=format_traits(character, VAMPIRE_DISCIPLINES, False),
-                inline=True,
+            vampire_traits = (
+                GROUPED_TRAITS["VAMPIRE"]["Universal"] + GROUPED_TRAITS["VAMPIRE"]["Disciplines"]
             )
-
+            embed.add_field(name="Vampire", value=format_traits(character, vampire_traits, False))
         case "werewolf":
             embed.add_field(
-                name="Werewolf", value=format_traits(character, WEREWOLF_TRAITS), inline=True
+                name="Werewolf",
+                value=format_traits(character, GROUPED_TRAITS["WEREWOLF"]["Universal"], False),
             )
         case "hunter":
             embed.add_field(
-                name="Hunter", value=format_traits(character, HUNTER_TRAITS), inline=True
+                name="Hunter",
+                value=format_traits(character, GROUPED_TRAITS["HUNTER"]["Universal"], False),
             )
 
     msg_contents = {"embed": embed}

@@ -37,8 +37,18 @@ CONFIG = {
 DB_PATH = DIR / CONFIG["DB_PATH"]
 
 # Instantiate Logging
+logging.getLogger("discord.http").setLevel(level=CONFIG["LOG_LEVEL_DISCORD_HTTP"].upper())
+logging.getLogger("discord.gateway").setLevel(level=CONFIG["LOG_LEVEL_DISCORD_HTTP"].upper())
+logging.getLogger("discord.webhook").setLevel(level=CONFIG["LOG_LEVEL_DISCORD_HTTP"].upper())
+logging.getLogger("discord.client").setLevel(level=CONFIG["LOG_LEVEL_DISCORD_HTTP"].upper())
+logging.getLogger("peewee").setLevel(level=CONFIG["LOG_LEVEL_DATABASE"].upper())
 logger.remove()
-logger.add(sys.stderr, level=CONFIG["LOG_LEVEL"])
+logger.add(
+    sys.stderr,
+    level=CONFIG["LOG_LEVEL"],
+    colorize=True,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>: <level>{message}</level>",
+)
 logger.add(
     CONFIG["LOG_FILE"],
     level=CONFIG["LOG_LEVEL"],

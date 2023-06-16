@@ -8,7 +8,7 @@ _rng = default_rng()
 _max_pool_size = 100
 
 
-class Roll:
+class DiceRoll:
     """A container class that determines the result of a roll.
 
     Dice rolling mechanics are based on our unique system, which is loosely based on the Storyteller system. The following rules apply only to throws of 10 sided dice.

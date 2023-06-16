@@ -8,7 +8,7 @@ from valentina import Valentina
 
 
 class Info(commands.Cog):
-    """Commands for help."""
+    """Reference information for the game. Remind yourself of the rules."""
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
