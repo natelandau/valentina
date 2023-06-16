@@ -2,26 +2,54 @@
 
 # Valentina
 
-A Discord bot used to help manage TTRPGs.
+A Discord bot used to help manage playing Vampire the Masquerade with a highly customized ruleset. Major differences from the published game are:
 
-## Install CLI apps
+1. Rolled ones count as `-1` success
+2. Rolled tens count as `2` successes
+3. `Cool points` are additional rewards worth `10xp` each
 
-Use [PIPX](https://pypa.github.io/pipx/) to install this package from Github.
+If you want to play with traditional rules I strongly recommend you use [Inconnu](https://docs.inconnu.app/) which has significantly more features and provided inspiration for Valentina.
 
-```bash
-pipx install git+https://some.url/to/the/package.git
-```
+Valentina provides the following functionality:
 
-Running the above command will install all script entry points as standalone scripts in the users' PATH.
+-   Character management
+    -   Create and update characters
+    -   Manage and spend experience
+-   Dicerolling
+    -   Roll any number of arbitrary dice
+    -   Roll any number `d10s` with a set difficulty
 
-**Note: You must be authenticated on Github for this to work**
+## Install and run
 
-**_Alternative_**
-You can install from the local filesystem. This approach will create a link to the _editable version_ of the script which may cause problems if you plan on developing from that directory.
+### Prerequisites
 
-```bash
-pipx install ~/path/to/project
-```
+Before running Valentina, the following must be configured or installed.
+
+-   Docker and Docker Compose
+-   A valid Discord Bot token. Instructions for this can be found on [Discord's Developer Portal](https://discord.com/developers/docs/getting-started)
+
+### Run the bot
+
+1. Clone this repository
+2. Edit the `docker-compose.yml` file
+    - In the `volumes` section replace `/path/to/data` with the directory to hold persistent storage
+    - In the `environment` section add correct values to each environment variable. All available environment variables are below.
+3. Run `docker compose up`
+
+#### Environment Variables
+
+| Variable                         | Default Value              | Usage                                                                                                                    |
+| -------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| VALENTINA_DB_PATH                | `/valentina/valentina.db`  | Sets the path to the SQLite database file.<br />Note, this is the directory used withing the Docker container            |
+| VALENTINA_DISCORD_TOKEN          |                            | Sets the Discord bot token. This is required to run the bot.                                                             |
+| VALENTINA_GUILDS                 |                            | Sets the Discord guilds the bot is allowed to join. This is a comma separated list of guild IDs.                         |
+| VALENTINA_LOG_FILE               | `/valentina/valentina.log` | Sets the file to write logs to.<br />Note, this is the directory used withing the Docker container                       |
+| VALENTINA_LOG_LEVEL              | `INFO`                     | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`                                               |
+| VALENTINA_LOG_LEVEL_DATABASE     | `INFO`                     | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`                         |
+| VALENTINA_LOG_LEVEL_DISCORD_HTTP | `INFO`                     | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| VALENTINA_OWNER_IDS              |                            | Sets the Discord user IDs that are allowed to run admin commands. This is a comma separated list of Discord user IDs.    |
+
+---
 
 ## Contributing
 
@@ -36,6 +64,10 @@ There are two ways to contribute to this project.
 3. Install the Poetry environment with `poetry install`.
 4. Activate your Poetry environment with `poetry shell`.
 5. Install the pre-commit hooks with `pre-commit install --install-hooks`.
+6. Before running valentina locally, set the ENV variables with `export VAR=abc`
+    - `VALENTINA_DISCORD_TOKEN`
+    - `VALENTINA_GUILDS`
+    - `VALENTINA_OWNER_IDS`
 
 ### 2. Containerized development
 
