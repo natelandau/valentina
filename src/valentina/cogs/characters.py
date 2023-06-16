@@ -12,9 +12,14 @@ from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
 from valentina.models.constants import FLAT_TRAITS, CharClass
 from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
-from valentina.utils.helpers import normalize_row
+from valentina.utils.helpers import (
+    get_max_trait_value,
+    get_trait_multiplier,
+    get_trait_new_value,
+    normalize_row,
+)
 from valentina.utils.options import select_character
-from valentina.views.embeds import SubmitCancelView, present_embed
+from valentina.views.embeds import ConfirmCancelView, present_embed
 
 possible_classes = sorted([char_class.value for char_class in CharClass])
 
@@ -191,6 +196,91 @@ class Characters(commands.Cog, name="Character Management"):
 
         await present_embed(ctx=ctx, title="Characters", description=description)
 
+    @chars.command(name="spend_xp", description="Spend experience points.")
+    @logger.catch
+    async def spend_xp(
+        self,
+        ctx: discord.ApplicationContext,
+        trait: Option(
+            str, description="Trait to update", required=True, autocomplete=_trait_autocomplete
+        ),
+    ) -> None:
+        """Spend experience points."""
+        try:
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed",
+                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                level="error",
+                ephemeral=True,
+            )
+            return
+
+        old_value = character.__getattribute__(normalize_row(trait))
+
+        try:
+            if old_value > 0:
+                multiplier = get_trait_multiplier(trait)
+                upgrade_cost = (old_value + 1) * multiplier
+
+            if old_value == 0:
+                upgrade_cost = get_trait_new_value(trait)
+
+            if old_value >= get_max_trait_value(trait):
+                await present_embed(
+                    ctx,
+                    title=f"Error: {trait} at max value",
+                    description=f"**{trait}** is already at max value of {old_value}.",
+                    level="error",
+                )
+                return
+            view = ConfirmCancelView(ctx.author)
+            await present_embed(
+                ctx,
+                title=f"Upgrade {trait}",
+                description=f"Uprgrading **{trait}** by **1** dot will cost **{upgrade_cost} XP**",
+                fields=[
+                    (f"Current {trait} value", old_value),
+                    (f"New {trait} value", old_value + 1),
+                    ("Current XP", character.experience),
+                    ("XP Cost", upgrade_cost),
+                    ("Remaining XP", character.experience - upgrade_cost),
+                ],
+                inline_fields=False,
+                ephemeral=True,
+                level="info",
+                view=view,
+            )
+            await view.wait()
+            if view.confirmed:
+                new_value = old_value + 1
+                new_experience = character.experience - upgrade_cost
+                char_svc.update_char(
+                    ctx.guild.id,
+                    character.id,
+                    **{normalize_row(trait): new_value, "experience": new_experience},
+                )
+                logger.info(f"XP: {character.name} {trait} upgraded by {ctx.author.name}")
+                await present_embed(
+                    ctx=ctx,
+                    title=f"{character.name} {trait} upgraded",
+                    description=f"**{trait}** upgraded to **{new_value}**.",
+                    level="success",
+                    fields=[("Remaining XP", new_experience)],
+                    footer=f"Updated by {ctx.author.name}",
+                )
+        except ValueError:
+            await present_embed(
+                ctx,
+                title="Error: No XP cost",
+                description=f"**{trait}** does not have an XP cost in `XPRaise`",
+                level="error",
+                ephemeral=True,
+            )
+            return
+
     ### UPDATE COMMANDS ####################################################################
     @update.command(name="bio", description="Update a character's bio.")
     @logger.catch
@@ -319,7 +409,7 @@ class Characters(commands.Cog, name="Character Management"):
 
         old_value = character.__getattribute__(normalize_row(trait))
 
-        view = SubmitCancelView(ctx.author)
+        view = ConfirmCancelView(ctx.author)
         await present_embed(
             ctx,
             title=f"Update {trait}",
@@ -331,7 +421,7 @@ class Characters(commands.Cog, name="Character Management"):
             view=view,
         )
         await view.wait()
-        if view.submitted:
+        if view.confirmed:
             char_svc.update_char(ctx.guild.id, character.id, **{normalize_row(trait): new_value})
             logger.info(f"TRAIT: {character.name} {trait} updated by {ctx.author.name}")
             await present_embed(

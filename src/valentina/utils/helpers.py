@@ -1,4 +1,5 @@
 """Helper functions for Valentina."""
+from valentina.models.constants import GROUPED_TRAITS, MaxTraitValue, XPNew, XPRaise
 from valentina.models.database import Character
 
 
@@ -25,17 +26,6 @@ def num_to_circles(num: int = 0, maximum: int = 5) -> str:
         maximum = num
 
     return "●" * num + "○" * (maximum - num)
-
-
-def get_max_trait_value(trait: str) -> int:
-    """Return the maximum value for a trait."""
-    match normalize_row(trait):
-        case "willpower" | "humanity" | "rage" | "gnosis" | "arete":
-            return 10
-        case "blood_pool" | "quintessence":
-            return 20
-        case _:
-            return 5
 
 
 def format_traits(character: Character, traits: list[str], show_zeros: bool = True) -> str:
@@ -65,3 +55,84 @@ def format_traits(character: Character, traits: list[str], show_zeros: bool = Tr
             trait_list.append(f"`{trait:13}: {value}`")
 
     return "\n".join(trait_list)
+
+
+def find_parent_key(trait: str, grouped_traits: dict, lvl: int = 2) -> str:
+    """Find the parent key of a given trait in a nested dictionary of grouped traits.
+
+    Args:
+        trait (str): The trait to find the parent key for.
+        grouped_traits (dict): The nested dictionary of grouped traits.
+        lvl (int, optional): The level of the nested dictionary to search. Defaults to 2.
+
+    Returns:
+        str: The parent key of the trait if found, the trait itself.
+
+    Example:
+        >>> find_parent_key("Strength", GROUPED_TRAITS, 2)
+        'ATTRIBUTES'
+    """
+    for parent_key, categories in grouped_traits.items():
+        for category, traits in categories.items():
+            if trait in traits and lvl == 1:
+                return category.upper()
+            if trait in traits and lvl == 2:  # noqa: PLR2004
+                return parent_key.upper()
+
+    return trait.upper()
+
+
+def get_max_trait_value(trait: str) -> int:
+    """Get the maximum value for a trait."""
+    # Try to find the cost by looking up the parent key of the trait
+    for lvl in [2, 1]:
+        trait_parent = find_parent_key(trait, GROUPED_TRAITS, lvl)
+        if trait_parent in MaxTraitValue.__members__:
+            return MaxTraitValue[trait_parent].value
+
+    # If the parent key wasn't found, try to look up the trait itself
+    if trait.upper() in MaxTraitValue.__members__:
+        return MaxTraitValue[trait.upper()].value
+
+    return 5
+
+
+def get_trait_multiplier(trait: str) -> int:
+    """Gets the experience multiplier associated with a trait for use when upgrading.
+
+    Args:
+        trait (str): The trait to get the cost for.
+
+    Returns:
+        int: The multiplier associated with the trait.
+
+    Raises:
+        ValueError: If the trait or its parent key is not found in the XPRaise enum.
+    """
+    # Try to find the cost by looking up the parent key of the trait
+    for lvl in [2, 1]:
+        trait_parent = find_parent_key(trait, GROUPED_TRAITS, lvl)
+        if trait_parent in XPRaise.__members__:
+            return XPRaise[trait_parent].value
+
+    # If the parent key wasn't found, try to look up the trait itself
+    if trait.upper() in XPRaise.__members__:
+        return XPRaise[trait.upper()].value
+
+    # If the trait wasn't found, raise an error
+    raise ValueError(f"Trait {trait} not found in XPRaise enum.")
+
+
+def get_trait_new_value(trait: str) -> int:
+    """Gets the multiplier associated with a trait for use when upgrading using experience."""
+    # Try to find the cost by looking up the parent key of the trait
+    for lvl in [2, 1]:
+        trait_parent = find_parent_key(trait, GROUPED_TRAITS, lvl)
+        if trait_parent in XPNew.__members__:
+            return XPNew[trait_parent].value
+
+    # If the parent key wasn't found, try to look up the trait itself
+    if trait.upper() in XPNew.__members__:
+        return XPNew[trait.upper()].value
+
+    return 1

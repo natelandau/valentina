@@ -7,22 +7,22 @@ import discord
 from valentina.models.constants import EmbedColor
 
 
-class SubmitCancelView(discord.ui.View):
+class ConfirmCancelView(discord.ui.View):
     """Add a submit and cancel button to a view."""
 
     def __init__(self, author: discord.User):
         super().__init__()
         self.author = author
-        self.submitted: bool = None
+        self.confirmed: bool = None
 
-    @discord.ui.button(label="Submit", style=discord.ButtonStyle.success, emoji="😎")
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, emoji="😎")
     async def submit_callback(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ) -> None:
-        """Callback for the submit button."""
+        """Callback for the confirm button."""
         button.label += " ✅"
         await interaction.response.edit_message(view=self)
-        self.submitted = True
+        self.confirmed = True
         self.stop()
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, emoji="🤬")
@@ -32,7 +32,7 @@ class SubmitCancelView(discord.ui.View):
         """Callback for the cancel button."""
         button.label += " ✅"
         await interaction.response.edit_message(view=self)
-        self.submitted = False
+        self.confirmed = False
         self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:

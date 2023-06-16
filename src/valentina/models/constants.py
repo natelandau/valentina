@@ -4,33 +4,49 @@ from enum import Enum
 from flatdict import FlatDict
 
 
+class MaxTraitValue(Enum):
+    """Maximum value for a trait."""
+
+    WILLPOWER = 10
+    HUMANITY = 10
+    RAGE = 10
+    GNOSIS = 10
+    ARETE = 10
+    BLOOD_POOL = 20
+    QUINTESSENCE = 20
+
+
 class XPNew(Enum):
     """Experience cost for gaining a wholly new trait. Values are the cost."""
 
-    ABILITY = 3
-    DISCIPLINE = 10
-    SPHERE = 10
-    BACKGROUND = 3
+    ABILITIES = 3
+    DISCIPLINES = 10
+    SPHERES = 10
+    BACKGROUNDS = 3
 
 
 class XPRaise(Enum):
     """Experience costs for raising character traits. Values are the multiplier against current rating."""
 
-    ATTRIBUTE = 4
-    ABILITY = 2
-    VIRTUE = 2
+    ATTRIBUTES = 4
+    ABILITIES = 2
+    VIRTUES = 2
     WILLPOWER = 1
-    BACKGROUND = 2
+    BACKGROUNDS = 2
     CLAN_DISCIPLINE = 5
     OTHER_DISCIPLINE = 7
-    SPHERE = 7
+    DISCIPLINES = 5  # TODO: Remove this and replace with clan/other
+    SPHERES = 7
     ARETE = 10
-    MERIT = 2
-    FLAW = 2
+    QUINTESSENCE = 1  # TODO: Get the actual number for this
+    MERITS = 2
+    FLAWS = 2
     RAGE = 1
     GNOSIS = 2
-    GIFT = 3
+    GIFTS = 3
     HUMANITY = 2
+    RESONANCE = 2  # TODO: Get the actual number for this
+    CONVICTION = 2  # TODO: Get the actual number for this
 
 
 class EmbedColor(Enum):
