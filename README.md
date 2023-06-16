@@ -30,7 +30,7 @@ Before running Valentina, the following must be configured or installed.
 
 ### Run the bot
 
-1. Clone this repository
+1. Copy the `docker-compose.yml` file to a directory on your machine
 2. Edit the `docker-compose.yml` file
     - In the `volumes` section replace `/path/to/data` with the directory to hold persistent storage
     - In the `environment` section add correct values to each environment variable. All available environment variables are below.
