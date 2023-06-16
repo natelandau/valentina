@@ -7,11 +7,11 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina import Valentina, user_svc
-from valentina.models.dicerolls import Roll
+from valentina.models.dicerolls import DiceRoll
 from valentina.views.roll_display import RollDisplay
 
 
-class Gameplay(commands.Cog):
+class Roll(commands.Cog):
     """Commands for gameplay."""
 
     def __init__(self, bot: Valentina) -> None:
@@ -20,7 +20,7 @@ class Gameplay(commands.Cog):
     roll = discord.SlashCommandGroup("roll", "Roll dice")
 
     @roll.command(description="Throw a roll of d10s.")
-    async def gameplay(
+    async def throw(
         self,
         ctx: discord.ApplicationContext,
         pool: discord.Option(int, "The number of dice to roll", required=True),
@@ -45,7 +45,7 @@ class Gameplay(commands.Cog):
             user_svc.create(ctx.guild.id, ctx.user)
 
         try:
-            roll = Roll(pool=pool, difficulty=difficulty, dice_size=10)
+            roll = DiceRoll(pool=pool, difficulty=difficulty, dice_size=10)
             logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
             await RollDisplay(ctx, roll, comment).display()
         except ValueError as e:
@@ -73,7 +73,7 @@ class Gameplay(commands.Cog):
             user_svc.create(ctx.guild.id, ctx.user)
 
         try:
-            roll = Roll(pool=pool, dice_size=dice_size, difficulty=0)
+            roll = DiceRoll(pool=pool, dice_size=dice_size, difficulty=0)
             logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
             await RollDisplay(ctx, roll, comment).display()
         except ValueError as e:
@@ -82,4 +82,4 @@ class Gameplay(commands.Cog):
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
-    bot.add_cog(Gameplay(bot))
+    bot.add_cog(Roll(bot))

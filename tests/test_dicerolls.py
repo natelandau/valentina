@@ -2,7 +2,7 @@
 """Tests for the dicerolls module."""
 import pytest
 
-from valentina.models.dicerolls import Roll
+from valentina.models.dicerolls import DiceRoll
 
 
 def test_roll_exceptions():
@@ -13,19 +13,19 @@ def test_roll_exceptions():
     THEN raise the appropriate exception
     """
     with pytest.raises(ValueError, match="Pool cannot be less than 0."):
-        Roll(pool=-1)
+        DiceRoll(pool=-1)
 
     with pytest.raises(ValueError, match="Difficulty cannot exceed the size of the dice."):
-        Roll(difficulty=11, pool=1)
+        DiceRoll(difficulty=11, pool=1)
 
     with pytest.raises(ValueError, match="Pool cannot exceed 100."):
-        Roll(pool=101)
+        DiceRoll(pool=101)
 
     with pytest.raises(ValueError, match="Difficulty cannot be less than 0."):
-        Roll(difficulty=-1, pool=1)
+        DiceRoll(difficulty=-1, pool=1)
 
     with pytest.raises(ValueError, match="Invalid dice size"):
-        Roll(difficulty=6, pool=6, dice_size=3)
+        DiceRoll(difficulty=6, pool=6, dice_size=3)
 
 
 @pytest.mark.parametrize(
@@ -48,7 +48,7 @@ def test_rolling_dice(pool: int, dice_size: int) -> None:
     THEN assert that the correct number of dice are rolled with the correct dice type.
     """
     for _ in range(100):
-        roll = Roll(pool, dice_size=dice_size, difficulty=1)
+        roll = DiceRoll(pool, dice_size=dice_size, difficulty=1)
         assert len(roll.roll) == pool
         assert all(1 <= die <= dice_size for die in roll.roll)
 
@@ -101,9 +101,9 @@ def test_roll_successes(
     WHEN successes are calculated
     THEN assert that the correct number of successes are calculated.
     """
-    mocker.patch.object(Roll, "roll", roll)
+    mocker.patch.object(DiceRoll, "roll", roll)
 
-    roll = Roll(pool=3, difficulty=6)
+    roll = DiceRoll(pool=3, difficulty=6)
     assert roll.botches == botches
     assert roll.criticals == criticals
     assert roll.failures == failures

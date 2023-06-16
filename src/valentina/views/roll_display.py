@@ -1,13 +1,13 @@
 """Display and manipulate roll outcomes."""
 import discord
 
-from valentina.models.dicerolls import Roll
+from valentina.models.dicerolls import DiceRoll
 
 
 class RollDisplay:
     """Display and manipulate roll outcomes."""
 
-    def __init__(self, ctx: discord.ApplicationContext, roll: Roll, comment: str = None):
+    def __init__(self, ctx: discord.ApplicationContext, roll: DiceRoll, comment: str = None):
         self.ctx = ctx
         self.roll = roll
         self.comment = comment

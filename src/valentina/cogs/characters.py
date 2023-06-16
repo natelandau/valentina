@@ -24,8 +24,8 @@ from valentina.views.embeds import ConfirmCancelView, present_embed
 possible_classes = sorted([char_class.value for char_class in CharClass])
 
 
-class Characters(commands.Cog, name="Character Management"):
-    """Commands for characters."""
+class Characters(commands.Cog, name="Character"):
+    """Create, manage, update, and claim characters."""
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
@@ -42,6 +42,7 @@ class Characters(commands.Cog, name="Character Management"):
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
     update = chars.create_subgroup("update", "Update existing characters")
+    add = chars.create_subgroup("add", "Add xp or cp to existing characters")
 
     @chars.command(name="create", description="Create a new character.")
     @logger.catch
@@ -281,33 +282,9 @@ class Characters(commands.Cog, name="Character Management"):
             )
             return
 
-    ### UPDATE COMMANDS ####################################################################
-    @update.command(name="bio", description="Update a character's bio.")
-    @logger.catch
-    async def update_bio(self, ctx: discord.ApplicationContext) -> None:
-        """Update a character's bio."""
-        try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed.",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
-                level="error",
-            )
-            return
+    ### ADD COMMANDS ####################################################################
 
-        modal = BioModal(
-            title=f"Enter the biography for {character.name}", current_bio=character.bio
-        )
-        await ctx.send_modal(modal)
-        await modal.wait()
-        biography = modal.bio
-
-        char_svc.update_char(ctx.guild.id, character.id, bio=biography)
-        logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
-
-    @update.command(name="exp", description="Add experience to a character.")
+    @add.command(name="exp", description="Add experience to a character.")
     @logger.catch
     async def add_xp(
         self,
@@ -346,7 +323,7 @@ class Characters(commands.Cog, name="Character Management"):
             footer=f"{new_total} all time xp",
         )
 
-    @update.command(name="cool_points", description="Add cool points to a character.")
+    @add.command(name="cp", description="Add cool points to a character.")
     @logger.catch
     async def add_cool_points(
         self,
@@ -384,6 +361,32 @@ class Characters(commands.Cog, name="Character Management"):
             level="success",
             footer=f"{new_total} all time cool points",
         )
+
+    ### UPDATE COMMANDS ####################################################################
+    @update.command(name="bio", description="Update a character's bio.")
+    @logger.catch
+    async def update_bio(self, ctx: discord.ApplicationContext) -> None:
+        """Update a character's bio."""
+        try:
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed.",
+                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                level="error",
+            )
+            return
+
+        modal = BioModal(
+            title=f"Enter the biography for {character.name}", current_bio=character.bio
+        )
+        await ctx.send_modal(modal)
+        await modal.wait()
+        biography = modal.bio
+
+        char_svc.update_char(ctx.guild.id, character.id, bio=biography)
+        logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
 
     @update.command(name="trait", description="Update a trait for a character.")
     @logger.catch

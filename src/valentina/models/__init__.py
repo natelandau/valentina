@@ -10,7 +10,7 @@ from .database import (
     User,
     UserCharacter,
 )
-from .dicerolls import Roll
+from .dicerolls import DiceRoll
 
 __all__ = [
     "BaseModel",
@@ -18,7 +18,7 @@ __all__ = [
     "CharacterClass",
     "CustomTrait",
     "Guild",
-    "Roll",
+    "DiceRoll",
     "GuildUser",
     "User",
     "UserCharacter",
