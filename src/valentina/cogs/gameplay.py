@@ -12,7 +12,7 @@ from valentina.views.roll_display import RollDisplay
 
 
 class Roll(commands.Cog):
-    """Commands for gameplay."""
+    """Commands used during gameplay."""
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot

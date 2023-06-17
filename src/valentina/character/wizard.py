@@ -49,7 +49,7 @@ class Wizard:
         self.msg = None  # We will be editing this message instead of sending new ones
         self.assigned_traits: dict[str, int] = {}
         self.traits_to_enter = self.__define_traits_to_enter()
-        logger.info(f"CHARGEN: Started by {ctx.user.name} on {ctx.guild.name}")
+        logger.debug(f"CHARGEN: Started by {ctx.user.name} on {ctx.guild.name}")
         self.view = RatingView(self._assign_next_trait, self._timeout)
 
     def __define_traits_to_enter(self) -> list[str]:
@@ -116,7 +116,7 @@ class Wizard:
         logger.info(
             f"DATABASE: Add {self.char_class} character {self.first_name} {self.last_name}."
         )
-        logger.info(f"CHARGEN: Completed by {self.ctx.user.name} on {self.ctx.guild.name}")
+        logger.debug(f"CHARGEN: Completed by {self.ctx.user.name} on {self.ctx.guild.name}")
 
         self.view.stop()
         await self.__finalize_embed()

@@ -45,7 +45,7 @@ async def create_character(
 
         # Gather additional information from modal
         modal = CharGenModal(title="Additional character information", char_class=char_class)
-        await ctx.send_modal(modal, ephemeral=True)
+        await ctx.send_modal(modal)
         await modal.wait()
         willpower = int(modal.willpower) if modal.willpower else 0
         humanity = int(modal.humanity) if modal.humanity else 0

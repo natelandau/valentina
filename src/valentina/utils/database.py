@@ -89,7 +89,9 @@ def update_character_model() -> None:
         for _category, traits in categories.items():
             for trait in traits:
                 if not column_exists("character", normalize_row(trait)):
-                    logger.info(f"DATABASE: Add row '{normalize_row(trait)}' to 'character' table.")
+                    logger.warning(
+                        f"DATABASE: Add row '{normalize_row(trait)}' to 'character' table."
+                    )
                     migrate(
                         migrator.add_column(
                             "character", normalize_row(trait), IntegerField(default=0)
