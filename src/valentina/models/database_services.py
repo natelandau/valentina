@@ -4,9 +4,23 @@ import re
 
 import discord
 from loguru import logger
-from peewee import DoesNotExist, ModelSelect
+from peewee import DoesNotExist, ModelSelect, SqliteDatabase
+from semver import Version
 
-from valentina.models.database import Character, GuildUser, User, time_now
+from valentina import __version__
+from valentina.models.constants import CharClass
+from valentina.models.database import (
+    Character,
+    CharacterClass,
+    CustomTrait,
+    DatabaseVersion,
+    DiceBinding,
+    Guild,
+    GuildUser,
+    User,
+    UserCharacter,
+    time_now,
+)
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
@@ -289,3 +303,86 @@ class UserService:
         self.users[key] = new_user
 
         return new_user
+
+
+class GuildService:
+    """Manage guilds in the database. Guilds are created a bot_connect,."""
+
+    def __init__(self) -> None:
+        """Initialize the GuildService."""
+        self.guilds: dict[int, Guild] = {}
+
+    @staticmethod
+    def is_in_db(guild_id: int) -> bool:
+        """Check if the guild is in the database."""
+        return Guild.select().where(Guild.id == guild_id).exists()
+
+    @staticmethod
+    def update_or_add(guild_id: int, guild_name: str) -> None:
+        """Add a guild to the database or update it if it already exists."""
+        db_id, is_created = Guild.get_or_create(
+            id=guild_id,
+            defaults={
+                "id": guild_id,
+                "name": guild_name,
+                "first_seen": time_now(),
+                "last_connected": time_now(),
+            },
+        )
+        if is_created:
+            logger.info(f"DATABASE: Create guild {db_id.name}")
+        if not is_created:
+            Guild.set_by_id(db_id, {"last_connected": time_now()})
+            logger.info(f"DATABASE: Update '{db_id.name}'")
+
+
+class DatabaseService:
+    """Representation of the database."""
+
+    def __init__(self, database: SqliteDatabase) -> None:
+        """Initialize the DatabaseService."""
+        self.db = database
+
+    def create_new_db(self) -> None:
+        """Create all tables in the database."""
+        with self.db:
+            self.db.create_tables(
+                [
+                    Guild,
+                    CharacterClass,
+                    Character,
+                    CustomTrait,
+                    User,
+                    GuildUser,
+                    UserCharacter,
+                    DiceBinding,
+                    DatabaseVersion,
+                ]
+            )
+        logger.info("DATABASE: Create Tables")
+        logger.debug(f"DATABASE: {self.get_tables()}")
+
+        # Populate default values
+        for char_class in CharClass:
+            CharacterClass.get_or_create(name=char_class.value)
+        logger.info("DATABASE: Populate Enums")
+
+        # Log version number
+        DatabaseVersion.create(version=__version__)
+
+    def get_tables(self) -> list[str]:
+        """Get all tables in the Database."""
+        with self.db:
+            cursor = self.db.execute_sql("SELECT name FROM sqlite_master WHERE type='table';")
+            return [row[0] for row in cursor.fetchall()]
+
+    def requires_migration(self) -> bool:
+        """Determine if the database requires a migration."""
+        bot_version = Version.parse(__version__)
+        db_version = Version.parse(DatabaseVersion.get().version)
+        if bot_version > db_version:
+            logger.warning(f"DATABASE: Database version {db_version} is outdated.")
+            return True
+
+        logger.debug(f"DATABASE: Database version {db_version} is up to date.")
+        return True
