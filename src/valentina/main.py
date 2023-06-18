@@ -41,27 +41,21 @@ for k, v in CONFIG.items():
 DB_PATH = DIR / CONFIG["VALENTINA_DB_PATH"]
 
 # Instantiate Logging
-logging.getLogger("discord.http").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_DISCORD_HTTP"].upper())
-logging.getLogger("discord.gateway").setLevel(
-    level=CONFIG["VALENTINA_LOG_LEVEL_DISCORD_HTTP"].upper()
-)
-logging.getLogger("discord.webhook").setLevel(
-    level=CONFIG["VALENTINA_LOG_LEVEL_DISCORD_HTTP"].upper()
-)
-logging.getLogger("discord.client").setLevel(
-    level=CONFIG["VALENTINA_LOG_LEVEL_DISCORD_HTTP"].upper()
-)
-logging.getLogger("peewee").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_DATABASE"].upper())
+logging.getLogger("discord.http").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
+logging.getLogger("discord.gateway").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
+logging.getLogger("discord.webhook").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
+logging.getLogger("discord.client").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
+logging.getLogger("peewee").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_DB"].upper())
 logger.remove()
 logger.add(
     sys.stderr,
-    level=CONFIG["VALENTINA_LOG_LEVEL"],
+    level=CONFIG["VALENTINA_LOG_LEVEL"].upper(),
     colorize=True,
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>: <level>{message}</level>",
 )
 logger.add(
     CONFIG["VALENTINA_LOG_FILE"],
-    level=CONFIG["VALENTINA_LOG_LEVEL"],
+    level=CONFIG["VALENTINA_LOG_LEVEL"].upper(),
     rotation="10 MB",
     compression="zip",
     enqueue=True,

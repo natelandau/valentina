@@ -12,5 +12,5 @@ services:
       - VALENTINA_DISCORD_TOKEN=TOKEN   # Your discord bot token
       - VALENTINA_GUILDS=ID1,ID2        # Guild IDs where you will run the bot, comma separated
       - VALENTINA_OWNER_IDS=ID1,ID2     # Your discord ID
-      - VALENTINA_LOG_LEVEL="INFO"
+      - VALENTINA_LOG_LEVEL=INFO        # TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL
     restart: unless-stopped
