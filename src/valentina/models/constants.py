@@ -110,7 +110,6 @@ GROUPED_TRAITS = {
             "Larceny",
             "Meditation",
             "Melee",
-            "Music",
             "Performance",
             "Persuasion",
             "Repair",

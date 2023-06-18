@@ -107,7 +107,6 @@ class Character(BaseModel):
     medicine = IntegerField(default=0)
     meditation = IntegerField(default=0)
     melee = IntegerField(default=0)
-    music = IntegerField(default=0)
     occult = IntegerField(default=0)
     performance = IntegerField(default=0)
     persuasion = IntegerField(default=0)
