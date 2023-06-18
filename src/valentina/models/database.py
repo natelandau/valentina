@@ -232,7 +232,7 @@ class CustomTrait(BaseModel):
 
     name = TextField()
     description = TextField(null=True)
-    trait_type = TextField(null=True)
+    trait_area = TextField(null=True)
     character = ForeignKeyField(Character, backref="custom_traits")
     value = IntegerField(default=0)
     created = DateTimeField(default=time_now)

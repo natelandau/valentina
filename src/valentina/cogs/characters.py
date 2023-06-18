@@ -7,10 +7,11 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina import Valentina, char_svc, user_svc
+from valentina.character.add_trait import add_trait
 from valentina.character.create import create_character
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
-from valentina.models.constants import FLAT_TRAITS, CharClass
+from valentina.models.constants import FLAT_TRAITS, CharClass, TraitAreas
 from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
 from valentina.utils.helpers import (
     get_max_trait_value,
@@ -22,6 +23,7 @@ from valentina.utils.options import select_character
 from valentina.views.embeds import ConfirmCancelView, present_embed
 
 possible_classes = sorted([char_class.value for char_class in CharClass])
+MAX_OPTION_LIST_SIZE = 25
 
 
 class Characters(commands.Cog, name="Character"):
@@ -36,7 +38,7 @@ class Characters(commands.Cog, name="Character"):
         for trait in FLAT_TRAITS:
             if trait.lower().startswith(ctx.options["trait"].lower()):
                 traits.append(trait)
-            if len(traits) >= 25:  # noqa: PLR2004
+            if len(traits) >= MAX_OPTION_LIST_SIZE:
                 break
         return traits
 
@@ -362,6 +364,41 @@ class Characters(commands.Cog, name="Character"):
             footer=f"{new_total} all time cool points",
         )
 
+    @add.command(name="trait", description="Add a custom trait to a character.")
+    @logger.catch
+    async def add_trait(
+        self,
+        ctx: discord.ApplicationContext,
+        trait: Option(str, "The new trait to add.", required=True),
+        area: Option(
+            str,
+            "The area to add the trait to",
+            required=True,
+            choices=sorted([x.value for x in TraitAreas]),
+        ),
+        value: Option(int, "The value of the trait", required=True, min_value=1, max_value=20),
+        description: Option(str, "A description of the trait", required=False),
+    ) -> None:
+        """Add a custom trait to a character."""
+        try:
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed.",
+                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                level="error",
+            )
+            return
+        await add_trait(
+            ctx=ctx,
+            character=character,
+            trait_name=trait,
+            trait_area=area,
+            trait_value=value,
+            trait_description=description,
+        )
+
     ### UPDATE COMMANDS ####################################################################
     @update.command(name="bio", description="Update a character's bio.")
     @logger.catch
@@ -396,7 +433,9 @@ class Characters(commands.Cog, name="Character"):
         trait: Option(
             str, description="Trait to update", required=True, autocomplete=_trait_autocomplete
         ),
-        new_value: Option(int, description="New value for the trait", required=True),
+        new_value: Option(
+            int, description="New value for the trait", required=True, min_value=1, max_value=20
+        ),
     ) -> None:
         """Update the value of a trait."""
         try:

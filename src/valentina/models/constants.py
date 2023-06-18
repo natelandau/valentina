@@ -80,6 +80,25 @@ class CharClass(Enum):
     HUNTER = "Hunter"
 
 
+class TraitAreas(Enum):
+    """Enum for areas of traits."""
+
+    PHYSICAL = "Physical"
+    SOCIAL = "Social"
+    MENTAL = "Mental"
+    TALENTS = "Talents"
+    SKILLS = "Skills"
+    BACKGROUNDS = "Backgrounds"
+    KNOWLEDGES = "Knowledges"
+    DISCIPLINES = "Disciplines"
+    SPHERES = "Spheres"
+    MERITS = "Merits"
+    FLAWS = "Flaws"
+    GIFTS = "Gifts"
+    VIRTUES = "Virtues"
+    OTHER = "Other"
+
+
 GROUPED_TRAITS = {
     "ATTRIBUTES": {
         "Physical": ["Strength", "Dexterity", "Stamina"],
