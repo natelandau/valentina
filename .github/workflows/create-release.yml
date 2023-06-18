@@ -7,8 +7,8 @@ on:
             - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 env:
-    VALENTINA_LOG_FILE: "valentina.log"
-    VALENTINA_DB_PATH: "valentina.sqlite"
+    VALENTINA_LOG_FILE: "valentina.log" # pass tests
+    VALENTINA_DB_PATH: "valentina.sqlite" # pass tests
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
@@ -66,16 +66,6 @@ jobs:
                   echo "current_tag=refs/tags/${TAG}" >> $GITHUB_ENV
 
             # ----------------------------------------------
-            # Test and then build the package
-            # ----------------------------------------------
-
-            - name: run poetry build
-              run: |
-                  poetry run poetry check
-                  poetry run coverage run
-                  poetry build
-
-            # ----------------------------------------------
             # Generate release notes
             # ----------------------------------------------
 
@@ -103,8 +93,5 @@ jobs:
               with:
                   body: ${{join(fromJson(steps.generate_notes.outputs.notes).notes, '')}}
                   draft: true
-                  files: |
-                      dist/*-${{env.PROJECT_VERSION}}-py3-none-any.whl
-                      dist/*-${{env.PROJECT_VERSION}}.tar.gz
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

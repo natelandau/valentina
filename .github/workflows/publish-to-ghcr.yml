@@ -13,6 +13,8 @@ concurrency:
 env:
     REGISTRY: ghcr.io
     IMAGE_NAME: ${{ github.repository }}
+    VALENTINA_LOG_FILE: "valentina.log" # Pass tests
+    VALENTINA_DB_PATH: "valentina.sqlite" # Pass tests
 
 jobs:
     build-and-push-image:
@@ -20,6 +22,10 @@ jobs:
         permissions:
             contents: read
             packages: write
+        strategy:
+            fail-fast: true
+            matrix:
+                python-version: ["3.11"]
 
         steps:
             - name: Harden Security Runner
@@ -28,19 +34,37 @@ jobs:
                   egress-policy: block
                   disable-sudo: true
                   allowed-endpoints: >
+                      *.cloudflare.docker.com:443
+                      *.docker.io:443
+                      *.githubusercontent.com:443
                       api.github.com:443
                       deb.debian.org:80
                       files.pythonhosted.org:443
                       ghcr.io:443
                       github.com:443
-                      *.cloudflare.docker.com:443
-                      pypi.org:443
-                      *.docker.io:443
-                      *.githubusercontent.com:443
                       githubusercontent.com:443
+                      install.python-poetry.org:443
+                      pypi.org:443
+                      pypi.org:443
+                      python-poetry.org:443
 
             - name: Checkout repository
               uses: actions/checkout@v3
+
+            - name: Setup Python and Poetry
+              uses: ./.github/actions/setup-poetry
+
+            # ----------------------------------------------
+            # Test before building and uploading the container
+            # ----------------------------------------------
+            - name: run poetry checks
+              run: |
+                  poetry run poetry check
+                  poetry run coverage run
+
+            # ----------------------------------------------
+            # Publish the container
+            # ----------------------------------------------
 
             - name: Extract metadata (tags, labels) for Docker
               id: meta
