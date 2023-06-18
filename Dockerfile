@@ -17,7 +17,7 @@ WORKDIR /app
 COPY . /app
 
 # Install git
-RUN apt-get update && apt-get install -y git sqlite3
+RUN apt-get update && apt-get install -y git sqlite3 tzdata
 
 # Install Poetry
 RUN pip install poetry
