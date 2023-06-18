@@ -21,9 +21,7 @@ async def select_character(ctx: discord.ApplicationContext) -> list[OptionChoice
     chars = []
     for character in characters:
         char_id = character.id
-        name = f"{character.first_name}"
-        name += f" {character.last_name}" if character.last_name else ""
-        name += f" ({character.nickname})" if character.nickname else ""
+        name = f"{character.name}"
         chars.append((name, char_id))
 
     name_search = ctx.value.casefold()
