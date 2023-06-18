@@ -1,3 +1,13 @@
+## v0.3.1 (2023-06-17)
+
+### Fix
+
+- **character**: fix broken modal
+
+### Refactor
+
+- prepare for future database migrations (#7)
+
 ## v0.3.0 (2023-06-16)
 
 ## v0.2.0 (2023-06-16)
