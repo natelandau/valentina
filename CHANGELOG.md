@@ -1,3 +1,9 @@
+## v0.3.2 (2023-06-18)
+
+### Fix
+
+- **config**: loosen capitalization rules for log levels
+
 ## v0.3.1 (2023-06-17)
 
 ### Fix
