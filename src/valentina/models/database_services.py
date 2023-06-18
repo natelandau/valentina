@@ -7,7 +7,7 @@ from loguru import logger
 from peewee import DoesNotExist, ModelSelect, SqliteDatabase
 from semver import Version
 
-from valentina import __version__
+from valentina.__version__ import __version__
 from valentina.models.constants import CharClass
 from valentina.models.database import (
     Character,
