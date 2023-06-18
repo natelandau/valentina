@@ -44,18 +44,17 @@ class Valentina(commands.Bot):
         """Override on_ready."""
         await self.wait_until_ready()
         if not self.welcomed:
-            from valentina import char_svc
-            from valentina.utils.database import (
-                create_tables,
-                update_character_model,
-                update_guild_last_connected,
-            )
+            from valentina import DATABASE, char_svc
+            from valentina.models.database_services import DatabaseService, GuildService
 
             # Database setup
-            create_tables()
-            update_character_model()  # Alter the character model if needed
+            if not Path(DATABASE.database).exists():
+                DatabaseService(DATABASE).create_new_db()
+            else:
+                DatabaseService(DATABASE).requires_migration()
+
             for _guild in self.guilds:
-                update_guild_last_connected(_guild.id, _guild.name)
+                GuildService.update_or_add(guild_id=_guild.id, guild_name=_guild.name)
                 char_svc.fetch_all(_guild.id)
 
             # TODO: Setup tasks here  User.set_by_id(3, {'is_admin': True})

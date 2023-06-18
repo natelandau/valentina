@@ -34,6 +34,12 @@ class Guild(BaseModel):
     last_connected = DateTimeField(default=time_now)
 
 
+class DatabaseVersion(BaseModel):
+    """Database version model for the database."""
+
+    version = TextField()
+
+
 class CharacterClass(BaseModel):
     """Character Class model for the database."""
 
@@ -207,6 +213,18 @@ class Character(BaseModel):
         self.save()
         logger.info(f"DATABASE: Character {self.name} cool_points updated.")
         self.update_modified()
+
+
+class DiceBinding(BaseModel):
+    """Dice Binding model for the database."""
+
+    name = TextField()
+    description = TextField(null=True)
+    character = ForeignKeyField(Character, backref="dice_bindings")
+    created = DateTimeField(default=time_now)
+    bind_one = TextField(null=True)
+    bind_two = TextField(null=True)
+    bind_three = TextField(null=True)
 
 
 class CustomTrait(BaseModel):
