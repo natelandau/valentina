@@ -210,8 +210,8 @@ class DiceRoll:
         if self.is_critical:
             return f"{self.result} successes • CRITICAL SUCCESS!"
         if self.is_success:
-            return f"{self.result} successes • SUCCESS!"
+            return f"{self.result} successes"
         if self.is_failure:
-            return f"{self.result} successes • FAILURE!"
+            return f"{self.result} successes"
 
         return None

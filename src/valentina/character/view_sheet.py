@@ -13,7 +13,7 @@ async def show_sheet(
     ctx: discord.ApplicationContext, character: Character, ephemeral: Any = False
 ) -> Any:
     """Show a character sheet."""
-    player = ctx.user
+    player = ctx.user.mention
     title = character.name
     modified = arrow.get(character.modified).humanize()
     embed = discord.Embed(title=title, description="", color=0x7777FF)
@@ -22,7 +22,7 @@ async def show_sheet(
     embed.set_footer(text=f"Player {player}\nLast updated: {modified}")
 
     if character.bio:
-        embed.add_field(name="bio", value=character.bio, inline=False)
+        embed.add_field(name="Bio", value=character.bio, inline=False)
 
     embed.add_field(name="Class", value=character.class_name, inline=True)
     embed.add_field(name="Experience", value=f"`{character.experience}`", inline=True)

@@ -131,15 +131,8 @@ class Wizard:
         embed.set_author(
             name=f"Valentina on {self.ctx.guild.name}", icon_url=self.ctx.guild.icon or ""
         )
-        embed.add_field(name="Make a mistake?", value="Use `/traits` to fix.")
-        embed.add_field(
-            name="Want to add Discipline ratings or custom traits?",
-            value=(
-                f"Use `/traits add` on {self.ctx.guild.name}. "
-                "Add specialties with `/specialties add`."
-            ),
-            inline=False,
-        )
+        embed.add_field(name="Make a mistake?", value="Use `/character update trait` to fix.")
+        # TODO: Add notes on how to add custom traits
 
         embed.set_footer(text="See /help for further details.")
 

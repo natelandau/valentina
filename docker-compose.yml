@@ -7,10 +7,10 @@ services:
     container_name: valentina
     network_mode: "bridge"
     volumes:
-      - path/to/dir:/valentina          # Where you want to store the database
+      - path/to/dir:/valentina          # Persistent storage for the database
     environment:
       - VALENTINA_DISCORD_TOKEN=TOKEN   # Your discord bot token
       - VALENTINA_GUILDS=ID1,ID2        # Guild IDs where you will run the bot, comma separated
-      - VALENTINA_OWNER_IDS=ID1,ID2     # Your discord ID
+      - VALENTINA_OWNER_IDS=ID1,ID2     # Discord user IDs for bot owners
       - VALENTINA_LOG_LEVEL=INFO        # TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL
     restart: unless-stopped
