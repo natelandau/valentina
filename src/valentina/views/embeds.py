@@ -1,5 +1,6 @@
 """Prebuilt embeds for Valentina."""
 
+from datetime import datetime
 from typing import Any
 
 import discord
@@ -53,6 +54,7 @@ async def present_embed(
     author: str = None,
     author_avatar: str = None,
     show_author: bool = False,
+    timestamp: bool = False,
     view: Any = None,
 ) -> None:
     """Display a nice embed.
@@ -70,6 +72,7 @@ async def present_embed(
         show_author (bool): Whether to show the author of the embed.
         author (str): Name of the author to display.
         author_avatar (str): URL of the author's avatar to display.
+        timestamp (bool): Whether to show the timestamp.
         view (discord.ui.View): The view to add to the embed.
     """
     color = EmbedColor[level.upper()].value
@@ -95,7 +98,11 @@ async def present_embed(
     if footer:
         embed.set_footer(text=footer)
 
+    if timestamp:
+        embed.timestamp = datetime.now()
+
     if view:
         await ctx.respond(embed=embed, ephemeral=ephemeral, view=view)
+
     else:
         await ctx.respond(embed=embed, ephemeral=ephemeral)
