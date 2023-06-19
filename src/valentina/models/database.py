@@ -1,7 +1,6 @@
 """Models for the database."""
 from datetime import datetime, timezone
 
-from loguru import logger
 from peewee import BooleanField, DateTimeField, ForeignKeyField, IntegerField, Model, TextField
 
 from valentina import DATABASE
@@ -70,79 +69,80 @@ class Character(BaseModel):
     nature = TextField(null=True)
     notes = TextField(null=True)
     player_id = IntegerField(null=True)
-    # ATTRIBUTES #################################
+    ### Physical #############################
     strength = IntegerField(default=0)
     dexterity = IntegerField(default=0)
     stamina = IntegerField(default=0)
+    ### Social #############################
     charisma = IntegerField(default=0)
     manipulation = IntegerField(default=0)
     appearance = IntegerField(default=0)
+    ### Mental #############################
     perception = IntegerField(default=0)
     intelligence = IntegerField(default=0)
     wits = IntegerField(default=0)
-    # ABILITIES ##################################
-    academics = IntegerField(default=0)
+    ### Talents #############################
     alertness = IntegerField(default=0)
-    animal_ken = IntegerField(default=0)
     athletics = IntegerField(default=0)
     brawl = IntegerField(default=0)
-    bureaucracy = IntegerField(default=0)
-    computer = IntegerField(default=0)
-    crafts = IntegerField(default=0)
     dodge = IntegerField(default=0)
-    drive = IntegerField(default=0)
     empathy = IntegerField(default=0)
-    enigmas = IntegerField(default=0)
-    etiquette = IntegerField(default=0)
     expression = IntegerField(default=0)
-    finance = IntegerField(default=0)
-    firearms = IntegerField(default=0)
-    insight = IntegerField(default=0)
     intimidation = IntegerField(default=0)
-    investigation = IntegerField(default=0)
-    larceny = IntegerField(default=0)
-    law = IntegerField(default=0)
     leadership = IntegerField(default=0)
-    linguistics = IntegerField(default=0)
-    medicine = IntegerField(default=0)
-    meditation = IntegerField(default=0)
-    melee = IntegerField(default=0)
-    occult = IntegerField(default=0)
-    performance = IntegerField(default=0)
-    persuasion = IntegerField(default=0)
-    politics = IntegerField(default=0)
     primal_urge = IntegerField(default=0)
-    repair = IntegerField(default=0)
-    rituals = IntegerField(default=0)
-    science = IntegerField(default=0)
-    stealth = IntegerField(default=0)
     streetwise = IntegerField(default=0)
     subterfuge = IntegerField(default=0)
+    ### Skills #############################
+    animal_ken = IntegerField(default=0)
+    crafts = IntegerField(default=0)
+    drive = IntegerField(default=0)
+    etiquette = IntegerField(default=0)
+    firearms = IntegerField(default=0)
+    insight = IntegerField(default=0)
+    larceny = IntegerField(default=0)
+    meditation = IntegerField(default=0)
+    melee = IntegerField(default=0)
+    performance = IntegerField(default=0)
+    persuasion = IntegerField(default=0)
+    repair = IntegerField(default=0)
+    stealth = IntegerField(default=0)
     survival = IntegerField(default=0)
     technology = IntegerField(default=0)
-    # VIRTUES #################################
+    ### Knowledges #############################
+    academics = IntegerField(default=0)
+    bureaucracy = IntegerField(default=0)
+    computer = IntegerField(default=0)
+    enigmas = IntegerField(default=0)
+    finance = IntegerField(default=0)
+    investigation = IntegerField(default=0)
+    law = IntegerField(default=0)
+    linguistics = IntegerField(default=0)
+    medicine = IntegerField(default=0)
+    occult = IntegerField(default=0)
+    politics = IntegerField(default=0)
+    rituals = IntegerField(default=0)
+    science = IntegerField(default=0)
+    ### Virtues #############################
     conscience = IntegerField(default=0)
     self_control = IntegerField(default=0)
     courage = IntegerField(default=0)
-    # UNIVERSAL ################################
+    ### Universal #############################
     humanity = IntegerField(default=0)
     willpower = IntegerField(default=0)
     desperation = IntegerField(default=0)
     reputation = IntegerField(default=0)
-    # MAGE #####################################
+    ### Mage  Universal ######################
     arete = IntegerField(default=0)
     quintessence = IntegerField(default=0)
-    # WEREWOLF #################################
-    glory = IntegerField(default=0)
-    gnosis = IntegerField(default=0)
-    honor = IntegerField(default=0)
-    rage = IntegerField(default=0)
-    wisdom = IntegerField(default=0)
-    # VAMPIRE ##################################
+    ### Vampire Universal #####################
     blood_pool = IntegerField(default=0)
-    # HUNTER ###################################
+    ### Hunter Universal ######################
     conviction = IntegerField(default=0)
-    # MAGE_SPHERES #############################
+    ### Werewolf Universal ####################
+    gnosis = IntegerField(default=0)
+    rage = IntegerField(default=0)
+    ### Spheres #############################
     correspondence = IntegerField(default=0)
     entropy = IntegerField(default=0)
     forces = IntegerField(default=0)
@@ -152,11 +152,7 @@ class Character(BaseModel):
     prime = IntegerField(default=0)
     spirit = IntegerField(default=0)
     time = IntegerField(default=0)
-    # MAGE_RESONANCE ##########################
-    dynamic = IntegerField(default=0)
-    entropic = IntegerField(default=0)
-    static = IntegerField(default=0)
-    # DISCIPLINES #############################
+    ### Disciplines #############################
     animalism = IntegerField(default=0)
     auspex = IntegerField(default=0)
     blood_sorcery = IntegerField(default=0)
@@ -170,6 +166,10 @@ class Character(BaseModel):
     presence = IntegerField(default=0)
     protean = IntegerField(default=0)
     vicissitude = IntegerField(default=0)
+    ### Renown - werewolf #########################
+    glory = IntegerField(default=0)
+    honor = IntegerField(default=0)
+    wisdom = IntegerField(default=0)
 
     @property
     def name(self) -> str:
@@ -184,35 +184,9 @@ class Character(BaseModel):
         """Return the character's class from the char_class table."""
         return self.char_class.name
 
-    ################################################3
-
     def __str__(self) -> str:
         """Return the string representation of the model."""
         return f"""Character({self.id} {self.name})"""
-
-    def update_modified(self) -> None:
-        """Update the modified field."""
-        self.modified = time_now()
-        self.save()
-        logger.info(f"DATABASE: Character {self.name} modified_date updated.")
-
-    def spend_experience(self, exp: int) -> None:
-        """Update the experience field."""
-        if exp > self.experience:
-            raise ValueError("Not enough experience to use.")
-        self.experience -= exp
-        self.save()
-        logger.info(f"DATABASE: Character {self.name} experience updated.")
-        self.update_modified()
-
-    def spend_cool_points(self, cps: int) -> None:
-        """Update the cool_points field."""
-        if cps > self.cool_points:
-            raise ValueError("Not enough cool_points to use.")
-        self.cool_points -= cps
-        self.save()
-        logger.info(f"DATABASE: Character {self.name} cool_points updated.")
-        self.update_modified()
 
 
 class DiceBinding(BaseModel):

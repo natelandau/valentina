@@ -3,7 +3,14 @@
 
 import pytest
 
-from valentina.utils.helpers import format_traits, get_max_trait_value, num_to_circles
+from valentina.utils.helpers import (
+    format_traits,
+    get_max_trait_value,
+    get_trait_multiplier,
+    get_trait_new_value,
+    normalize_row,
+    num_to_circles,
+)
 
 
 class MockCharacter:
@@ -19,6 +26,17 @@ class MockCharacter:
         self.blood_pool = 10
         self.wits = 0
         self.dexterity = None
+
+
+@pytest.mark.parametrize(("row", "expected"), [("Test-Row", "test_row"), ("Test Row", "test_row")])
+def test_normalize_row(row, expected) -> None:
+    """Test normalize_row().
+
+    GIVEN a string
+    WHEN normalize_row() is called
+    THEN the correct string is returned
+    """
+    assert normalize_row(row) == expected
 
 
 @pytest.mark.parametrize(
@@ -43,9 +61,10 @@ def test_num_to_circles(num, maximum, expected) -> None:
         ("Rage", 10),
         ("Gnosis", 10),
         ("Arete", 10),
-        ("Blood_Pool", 20),
+        ("blood_pool", 20),
         ("Quintessence", 20),
         ("random", 5),
+        ("strength", 5),
     ],
 )
 def test_get_max_trait_value(trait, expected):
@@ -56,6 +75,53 @@ def test_get_max_trait_value(trait, expected):
     THEN the correct value is returned
     """
     assert get_max_trait_value(trait) == expected
+
+
+@pytest.mark.parametrize(
+    ("trait", "expected"),
+    [
+        ("Willpower", 1),
+        ("Humanity", 2),
+        ("Rage", 1),
+        ("Gnosis", 2),
+        ("Arete", 10),
+        ("Quintessence", 1),
+        ("random", 2),
+        ("strength", 4),
+        ("drive", 2),
+        ("Conscience", 2),
+    ],
+)
+def test_get_trait_multiplier(trait, expected):
+    """Test get_trait_multiplier().
+
+    GIVEN a trait name
+    WHEN get_trait_multiplier() is called
+    THEN the correct value is returned
+    """
+    assert get_trait_multiplier(trait) == expected
+
+
+@pytest.mark.parametrize(
+    ("trait", "expected"),
+    [
+        ("Willpower", 1),
+        ("Humanity", 1),
+        ("RANDOM", 1),
+        ("drive", 3),
+        ("Conscience", 1),
+        ("potence", 10),
+        ("Spirit", 10),
+    ],
+)
+def test_get_trait_new_value(trait, expected):
+    """Test get_trait_new_value().
+
+    GIVEN a trait name
+    WHEN get_trait_new_value() is called
+    THEN the correct value is returned
+    """
+    assert get_trait_new_value(trait) == expected
 
 
 def test_format_traits():

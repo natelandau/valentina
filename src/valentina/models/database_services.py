@@ -174,6 +174,17 @@ class CharacterService:
         char_key = self.__get_char_key(guild_id, char_id)
         return any(char_key == claim for claim in self.claims.values())
 
+    def get_user_of_character(self, guild_id: int, char_id: int) -> int:
+        """Returns the user id of the user who claimed a character."""
+        if self.is_char_claimed(guild_id, char_id):
+            char_key = self.__get_char_key(guild_id, char_id)
+            for claim_key, claim in self.claims.items():
+                if claim == char_key:
+                    user_id = re.sub(r"\d\w+_", "", claim_key)
+                    return int(user_id)
+            return None
+        return None
+
     def fetch_claim(self, guild_id: int, user_id: int) -> Character:
         """Fetch the character claimed by a user."""
         claim_key = self.__get_claim_key(guild_id, user_id)

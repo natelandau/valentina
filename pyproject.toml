@@ -19,7 +19,6 @@
     [tool.poetry.dependencies]
         arrow         = "^1.2.3"
         asyncio       = "^3.4.3"
-        flatdict      = "^4.0.1"
         loguru        = "^0.7.0"
         numpy         = "^1.24.3"
         peewee        = "^3.16.2"

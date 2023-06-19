@@ -7,8 +7,8 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina import Valentina, char_svc, user_svc
-from valentina.character.add_trait import add_trait
 from valentina.character.create import create_character
+from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
 from valentina.models.constants import FLAT_TRAITS, CharClass, TraitAreas
@@ -104,7 +104,13 @@ class Characters(commands.Cog, name="Character"):
         """Displays a character sheet in the channel."""
         char_db_id = int(character)
         character = char_svc.fetch_by_id(ctx.guild.id, char_db_id)
-        await show_sheet(ctx, character)
+
+        if char_svc.is_char_claimed(ctx.guild.id, char_db_id):
+            user_id_num = char_svc.get_user_of_character(ctx.guild.id, character.id)
+            claimed_by = self.bot.get_user(user_id_num)
+        else:
+            claimed_by = None
+        await show_sheet(ctx, character=character, claimed_by=claimed_by)
 
     @chars.command(name="claim", description="Claim a character.")
     @logger.catch
@@ -280,7 +286,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx,
                 title="Error: No XP cost",
-                description=f"**{trait}** does not have an XP cost in `XPRaise`",
+                description=f"**{trait}** does not have an XP cost in `XPMultiplier`",
                 level="error",
                 ephemeral=True,
             )
