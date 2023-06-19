@@ -11,13 +11,13 @@ from valentina.character.create import create_character
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
-from valentina.models.constants import FLAT_TRAITS, CharClass, TraitAreas
+from valentina.models.constants import CharClass, TraitAreas
 from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
 from valentina.utils.helpers import (
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
-    normalize_row,
+    normalize_to_db_row,
 )
 from valentina.utils.options import select_character
 from valentina.views.embeds import ConfirmCancelView, present_embed
@@ -34,8 +34,13 @@ class Characters(commands.Cog, name="Character"):
 
     async def _trait_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
+        try:
+            character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
+        except NoClaimError:
+            return ["No character claimed"]
+
         traits = []
-        for trait in FLAT_TRAITS:
+        for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
             if trait.lower().startswith(ctx.options["trait"].lower()):
                 traits.append(trait)
             if len(traits) >= MAX_OPTION_LIST_SIZE:
@@ -208,7 +213,7 @@ class Characters(commands.Cog, name="Character"):
 
         for character in sorted(characters, key=lambda x: x.name):
             user_id = char_svc.fetch_user_of_character(ctx.guild.id, character.id)
-            user = self.bot.get_user(user_id).mention if user_id else "-"
+            user = self.bot.get_user(user_id).mention if user_id else ""
             fields.append(
                 (character.name, f"Class: {character.char_class.name}\nClaimed by: {user}")
             )
@@ -244,7 +249,7 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        old_value = character.__getattribute__(normalize_row(trait))
+        old_value = character.__getattribute__(normalize_to_db_row(trait))
 
         try:
             if old_value > 0:
@@ -286,7 +291,7 @@ class Characters(commands.Cog, name="Character"):
                 char_svc.update_char(
                     ctx.guild.id,
                     character.id,
-                    **{normalize_row(trait): new_value, "experience": new_experience},
+                    **{normalize_to_db_row(trait): new_value, "experience": new_experience},
                 )
                 logger.info(f"XP: {character.name} {trait} upgraded by {ctx.author.name}")
                 await present_embed(
@@ -472,7 +477,23 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        old_value = character.__getattribute__(normalize_row(trait))
+        # Determine if the trait is a custom trait or a built-in trait
+        if hasattr(character, normalize_to_db_row(trait)):
+            custom_trait = None
+            old_value = character.__getattribute__(normalize_to_db_row(trait))
+        else:
+            custom_traits = char_svc.fetch_char_custom_traits(character)
+            custom_trait = [x for x in custom_traits if x.name == trait.title()][0]
+            if custom_trait:
+                old_value = custom_trait.value
+            else:
+                await present_embed(
+                    ctx=ctx,
+                    title="Error: Trait not found",
+                    description="The trait you specified was not found.",
+                    level="error",
+                )
+                return
 
         view = ConfirmCancelView(ctx.author)
         await present_embed(
@@ -487,8 +508,14 @@ class Characters(commands.Cog, name="Character"):
         )
         await view.wait()
         if view.confirmed:
-            char_svc.update_char(ctx.guild.id, character.id, **{normalize_row(trait): new_value})
-            logger.info(f"TRAIT: {character.name} {trait} updated by {ctx.author.name}")
+            if custom_trait:
+                custom_trait.value = new_value
+                custom_trait.save()
+            else:
+                char_svc.update_char(
+                    ctx.guild.id, character.id, **{normalize_to_db_row(trait): new_value}
+                )
+            logger.info(f"TRAIT: '{trait}' updated on {character.name} by {ctx.author.name}")
             await present_embed(
                 ctx=ctx,
                 title=f"{character.name} {trait} updated",

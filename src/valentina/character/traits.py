@@ -2,14 +2,14 @@
 import discord
 from loguru import logger
 
-from valentina.models.constants import FLAT_TRAITS
+from valentina.models.constants import FLAT_COMMON_TRAITS
 from valentina.models.database import Character, CustomTrait
 from valentina.views.embeds import ConfirmCancelView, present_embed
 
 
 def __validate_trait_name(trait_name: str, character: Character) -> None:
     """Ensure the trait name is unique."""
-    if trait_name.lower() in [x.lower() for x in FLAT_TRAITS]:
+    if trait_name.lower() in [x.lower() for x in FLAT_COMMON_TRAITS]:
         raise ValueError(f"Trait name **{trait_name}** already exists.")
 
     custom_traits = CustomTrait.select().where(CustomTrait.character == character.id)
@@ -46,7 +46,7 @@ async def add_trait(
         await view.wait()
         if view.confirmed:
             CustomTrait.create(
-                name=trait_name,
+                name=trait_name.title(),
                 description=trait_description,
                 trait_area=trait_area,
                 value=trait_value,
@@ -57,7 +57,7 @@ async def add_trait(
                 ctx=ctx,
                 title=f"Custom trait added to {character.name}",
                 fields=[
-                    ("Name", trait_name),
+                    ("Name", trait_name.title()),
                     ("Area", trait_area),
                     ("Value", f"`{trait_value!s}`"),
                     ("Description", trait_description),

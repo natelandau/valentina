@@ -5,7 +5,7 @@ from playhouse.migrate import SqliteMigrator, migrate
 
 from valentina import DATABASE
 from valentina.models.constants import COMMON_TRAITS
-from valentina.utils.helpers import normalize_row
+from valentina.utils.helpers import normalize_to_db_row
 
 
 def column_exists(table: str, column: str) -> bool:
@@ -38,8 +38,12 @@ def update_character_model() -> None:
 
     for _category, traits in COMMON_TRAITS.items():
         for trait in traits:
-            if not column_exists("character", normalize_row(trait)):
-                logger.warning(f"DATABASE: Add row '{normalize_row(trait)}' to 'character' table.")
+            if not column_exists("character", normalize_to_db_row(trait)):
+                logger.warning(
+                    f"DATABASE: Add row '{normalize_to_db_row(trait)}' to 'character' table."
+                )
                 migrate(
-                    migrator.add_column("character", normalize_row(trait), IntegerField(default=0))
+                    migrator.add_column(
+                        "character", normalize_to_db_row(trait), IntegerField(default=0)
+                    )
                 )

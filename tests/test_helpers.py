@@ -8,7 +8,7 @@ from valentina.utils.helpers import (
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
-    normalize_row,
+    normalize_to_db_row,
     num_to_circles,
 )
 
@@ -29,14 +29,14 @@ class MockCharacter:
 
 
 @pytest.mark.parametrize(("row", "expected"), [("Test-Row", "test_row"), ("Test Row", "test_row")])
-def test_normalize_row(row, expected) -> None:
-    """Test normalize_row().
+def test_normalize_to_db_row(row, expected) -> None:
+    """Test normalize_to_db_row().
 
     GIVEN a string
-    WHEN normalize_row() is called
+    WHEN normaliznormalize_to_db_rowe_row() is called
     THEN the correct string is returned
     """
-    assert normalize_row(row) == expected
+    assert normalize_to_db_row(row) == expected
 
 
 @pytest.mark.parametrize(

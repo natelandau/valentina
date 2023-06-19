@@ -6,7 +6,12 @@ import discord
 from discord.ui import Button
 from loguru import logger
 
-from valentina.models.constants import COMMON_TRAITS
+from valentina.models.constants import (
+    COMMON_TRAITS,
+    MAGE_TRAITS,
+    VAMPIRE_TRAITS,
+    WEREWOLF_TRAITS,
+)
 from valentina.models.database import Character, CharacterClass, Guild
 from valentina.views.rating_view import RatingView
 
@@ -72,11 +77,11 @@ class Wizard:
 
         if not self.quick_char:
             if self.char_class == "Mage":
-                traits_list.extend(COMMON_TRAITS["Spheres"])
+                traits_list.extend(MAGE_TRAITS["Spheres"])
             if self.char_class == "Vampire":
-                traits_list.extend(COMMON_TRAITS["Disciplines"])
+                traits_list.extend(VAMPIRE_TRAITS["Disciplines"])
             if self.char_class == "Werewolf":
-                traits_list.extend(COMMON_TRAITS["Renown"])
+                traits_list.extend(WEREWOLF_TRAITS["Renown"])
 
         return traits_list
 

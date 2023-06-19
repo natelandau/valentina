@@ -185,12 +185,9 @@ COMMON_TRAITS = {
     ],
     "Virtues": ["Conscience", "Self-Control", "Courage"],
     "Universal": ["Willpower", "Humanity", "Desperation", "Reputation"],
-    # class specific universal
-    "mage": ["Arete", "Quintessence"],
-    "Werewolf": ["Gnosis", "Rage"],
-    "Hunter": ["Conviction"],
-    "Vampire": ["Blood Pool"],
-    # Mage
+}
+MAGE_TRAITS = {
+    "Universal": ["Arete", "Quintessence"],
     "Spheres": [
         "Correspondence",
         "Entropy",
@@ -202,7 +199,9 @@ COMMON_TRAITS = {
         "Spirit",
         "Time",
     ],
-    # Vampire
+}
+VAMPIRE_TRAITS = {
+    "Universal": ["Blood Pool"],
     "Disciplines": [
         "Animalism",
         "Auspex",
@@ -218,8 +217,11 @@ COMMON_TRAITS = {
         "Protean",
         "Vicissitude",
     ],
-    # Werewolf
+}
+WEREWOLF_TRAITS = {
+    "Universal": ["Gnosis", "Rage"],
     "Renown": ["Glory", "Honor", "Wisdom"],
 }
+HUNTER_TRAITS = {"Universal": ["Conviction"]}
 
-FLAT_TRAITS = [trait for trait_list in COMMON_TRAITS.values() for trait in trait_list]
+FLAT_COMMON_TRAITS = [trait for trait_list in COMMON_TRAITS.values() for trait in trait_list]

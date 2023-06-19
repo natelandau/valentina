@@ -1,9 +1,59 @@
 """Helper functions for Valentina."""
-from valentina.models.constants import COMMON_TRAITS, MaxTraitValue, XPMultiplier, XPNew
+from copy import deepcopy
+
+from valentina.models.constants import (
+    COMMON_TRAITS,
+    HUNTER_TRAITS,
+    MAGE_TRAITS,
+    VAMPIRE_TRAITS,
+    WEREWOLF_TRAITS,
+    MaxTraitValue,
+    XPMultiplier,
+    XPNew,
+)
 from valentina.models.database import Character
 
 
-def normalize_row(row: str) -> str:
+def all_traits_from_constants() -> dict[str, list[str]]:
+    """Return all traits from the constants as a dictionary inclusive of all classes."""
+    trait_dicts = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+
+    all_traits: dict[str, list[str]] = {}
+    for dictionary in trait_dicts:
+        for category, traits in dictionary.items():
+            if category in all_traits:
+                all_traits[category].extend(traits)
+            else:
+                all_traits[category] = traits
+
+    return all_traits
+
+
+def extend_common_traits_with_class(char_class: str) -> dict[str, list[str]]:
+    """Extends the common traits with the traits for a class."""
+    complete_traits = deepcopy(COMMON_TRAITS)
+
+    class_traits = {}
+    match char_class.lower():
+        case "mage":
+            class_traits = deepcopy(MAGE_TRAITS)
+        case "vampire":
+            class_traits = deepcopy(VAMPIRE_TRAITS)
+        case "werewolf":
+            class_traits = deepcopy(WEREWOLF_TRAITS)
+        case "hunter":
+            class_traits = deepcopy(HUNTER_TRAITS)
+
+    for category, traits in class_traits.items():
+        if category in complete_traits:
+            complete_traits[category].extend(traits)
+        else:
+            complete_traits[category] = traits
+
+    return complete_traits
+
+
+def normalize_to_db_row(row: str) -> str:
     """Takes a string and returns a normalized version of it for use as a row in the database."""
     return row.replace("-", "_").replace(" ", "_").lower()
 
@@ -43,7 +93,7 @@ def format_traits(character: Character, traits: list[str], show_zeros: bool = Tr
     trait_list = []
 
     for t in traits:
-        trait = normalize_row(t)
+        trait = normalize_to_db_row(t)
         max_value = get_max_trait_value(trait)
 
         if hasattr(character, trait):
@@ -71,7 +121,7 @@ def get_max_trait_value(trait: str) -> int:
         return MaxTraitValue[trait.upper()].value
 
     # Try to find the cost by looking up the parent key of the trait
-    for category, traits in COMMON_TRAITS.items():
+    for category, traits in all_traits_from_constants().items():
         if (
             trait.lower() in [x.lower() for x in traits]
             and category.upper() in MaxTraitValue.__members__
@@ -96,7 +146,7 @@ def get_trait_multiplier(trait: str) -> int:
         return XPMultiplier[trait.upper()].value
 
     # Try to find the cost by looking up the parent key of the trait
-    for category, traits in COMMON_TRAITS.items():
+    for category, traits in all_traits_from_constants().items():
         if (
             trait.lower() in [x.lower() for x in traits]
             and category.upper() in XPMultiplier.__members__
@@ -121,7 +171,7 @@ def get_trait_new_value(trait: str) -> int:
         return XPNew[trait.upper()].value
 
     # Try to find the cost by looking up the parent key of the trait
-    for category, traits in COMMON_TRAITS.items():
+    for category, traits in all_traits_from_constants().items():
         if trait.lower() in [x.lower() for x in traits] and category.upper() in XPNew.__members__:
             return XPNew[category.upper()].value
 

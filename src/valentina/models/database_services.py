@@ -27,7 +27,12 @@ from valentina.utils.errors import (
     NoClaimError,
     UserHasClaimError,
 )
-from valentina.utils.helpers import normalize_row
+from valentina.utils.helpers import (
+    extend_common_traits_with_class,
+    get_max_trait_value,
+    normalize_to_db_row,
+    num_to_circles,
+)
 
 
 class CharacterService:
@@ -122,6 +127,68 @@ class CharacterService:
 
         return chars_to_return
 
+    @staticmethod
+    def fetch_char_custom_traits(character: Character) -> list[CustomTrait]:
+        """Fetch all custom traits for a character."""
+        return CustomTrait.select().where(CustomTrait.character_id == character.id)
+
+    @staticmethod
+    def fetch_all_character_traits(
+        character: Character, flat_list: bool = False
+    ) -> dict[str, list[str]] | list[str]:
+        """Fetch all traits for a character inclusive of common and custom."""
+        all_traits = extend_common_traits_with_class(character.class_name)
+
+        custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
+        if len(custom_traits) > 0:
+            for custom_trait in custom_traits:
+                if custom_trait.trait_area.title() not in all_traits:
+                    all_traits[custom_trait.trait_area.title()] = []
+                all_traits[custom_trait.trait_area.title()].append(custom_trait.name.title())
+
+        if flat_list:
+            return [y for x in all_traits.values() for y in x]
+
+        return all_traits
+
+    @staticmethod
+    def fetch_all_character_trait_values(
+        character: Character,
+    ) -> dict[str, list[tuple[str, int, str]]]:
+        """Fetch all trait values for a character inclusive of common and custom.
+
+        Example:
+            {
+                "Physical": [("Strength", 3, "●●●○○"), ("Agility", 2, "●●●○○")],
+                "Social": [("Persuasion", 1, "●○○○○")]
+            }
+        """
+        all_traits: dict[str, list[tuple[str, int, str]]] = {}
+
+        for category, traits in extend_common_traits_with_class(character.class_name).items():
+            if category.title() not in all_traits:
+                all_traits[category.title()] = []
+            for trait in traits:
+                value = getattr(character, normalize_to_db_row(trait))
+                max_value = get_max_trait_value(trait)
+                dots = num_to_circles(value, max_value)
+                all_traits[category.title()].append((trait.title(), value, dots))
+
+        custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
+        if len(custom_traits) > 0:
+            for custom_trait in custom_traits:
+                if custom_trait.trait_area.title() not in all_traits:
+                    all_traits[custom_trait.trait_area.title()] = []
+                custom_trait_name = custom_trait.name.title()
+                custom_trait_value = custom_trait.value
+                max_value = get_max_trait_value(custom_trait_name)
+                dots = num_to_circles(custom_trait_value, max_value)
+                all_traits[custom_trait.trait_area.title()].append(
+                    (custom_trait_name, custom_trait_value, dots)
+                )
+
+        return all_traits
+
     def fetch_by_id(self, guild_id: int, char_id: int) -> Character:
         """Fetch a character by database id.
 
@@ -206,7 +273,7 @@ class CharacterService:
         key = self.__get_char_key(guild_id, char_id)
 
         # Normalize kwargs keys to database column names
-        kws = {normalize_row(k): v for k, v in kwargs.items()}
+        kws = {normalize_to_db_row(k): v for k, v in kwargs.items()}
 
         if key in self.characters:
             character = self.characters[key]
