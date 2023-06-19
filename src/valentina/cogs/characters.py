@@ -106,7 +106,7 @@ class Characters(commands.Cog, name="Character"):
         character = char_svc.fetch_by_id(ctx.guild.id, char_db_id)
 
         if char_svc.is_char_claimed(ctx.guild.id, char_db_id):
-            user_id_num = char_svc.get_user_of_character(ctx.guild.id, character.id)
+            user_id_num = char_svc.fetch_user_of_character(ctx.guild.id, character.id)
             claimed_by = self.bot.get_user(user_id_num)
         else:
             claimed_by = None
@@ -194,18 +194,33 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
     ) -> None:
         """List all characters."""
-        characters = char_svc.fetch_all(ctx.guild.id)
-        description = "```[ID ] NAME                                CLASS\n"
-        description += "--------------------------------------------------------\n"
-        description += "\n".join(
-            [
-                f"[{character.id:<3}] {character.name.title():35} {character.char_class.name:11}"
-                for character in characters
-            ]
-        )
-        description += "```"
+        characters = char_svc.fetch_all_characters(ctx.guild.id)
+        if len(characters) == 0:
+            await present_embed(
+                ctx,
+                title="No Characters",
+                description="There are no characters.\nCreate one with `/character create`",
+                level="error",
+            )
+        fields = []
+        plural = "s" if len(characters) > 1 else ""
+        description = f"**{len(characters)}** character{plural} on this server\n\u200b"
 
-        await present_embed(ctx=ctx, title="Characters", description=description)
+        for character in sorted(characters, key=lambda x: x.name):
+            user_id = char_svc.fetch_user_of_character(ctx.guild.id, character.id)
+            user = self.bot.get_user(user_id).mention if user_id else "-"
+            fields.append(
+                (character.name, f"Class: {character.char_class.name}\nClaimed by: {user}")
+            )
+
+        await present_embed(
+            ctx=ctx,
+            title="List of characters",
+            description=description,
+            fields=fields,
+            inline_fields=False,
+            level="info",
+        )
 
     @chars.command(name="spend_xp", description="Spend experience points.")
     @logger.catch

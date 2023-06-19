@@ -109,7 +109,7 @@ class CharClass(Enum):
 
 
 class TraitAreas(Enum):
-    """Enum for areas of traits."""
+    """Enum for areas of traits to be used for categorizing custom traits."""
 
     # Abilities
     PHYSICAL = "Physical"
@@ -121,10 +121,11 @@ class TraitAreas(Enum):
     KNOWLEDGES = "Knowledges"
 
     # Other
+    VIRTUES = "Virtues"
     BACKGROUNDS = "Backgrounds"
     MERITS = "Merits"
     FLAWS = "Flaws"
-    VIRTUES = "Virtues"
+
     OTHER = "Other"
 
     # Class Specific

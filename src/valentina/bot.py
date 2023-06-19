@@ -55,7 +55,7 @@ class Valentina(commands.Bot):
 
             for _guild in self.guilds:
                 GuildService.update_or_add(guild_id=_guild.id, guild_name=_guild.name)
-                char_svc.fetch_all(_guild.id)
+                char_svc.fetch_all_characters(_guild.id)
 
             # TODO: Setup tasks here  User.set_by_id(3, {'is_admin': True})
 

@@ -216,12 +216,12 @@ class User(BaseModel):
     """User model for the database."""
 
     id = IntegerField(primary_key=True)  # noqa: A003
+    username = TextField(null=True)
     avatar_url = TextField(null=True)
     first_seen = DateTimeField(default=time_now)
     is_admin = BooleanField(default=False)
     is_banned = BooleanField(default=False)
     last_connected = DateTimeField(default=time_now)
-    username = TextField(null=True)
 
 
 class GuildUser(BaseModel):

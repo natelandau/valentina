@@ -66,24 +66,31 @@ class CharacterService:
         """
         return f"{guild_id}_{user_id}"
 
-    def purge_all(self) -> None:
-        """Purge all caches."""
-        logger.debug("CACHE: Purging all character caches")
-        self.characters = {}
-        self.claims = {}
+    def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
+        """Claim a character for a user."""
+        char_key = self.__get_char_key(guild_id, char_id)
+        claim_key = self.__get_claim_key(guild_id, user_id)
 
-    def purge_by_id(self, guild_id: int = None, char_id: int = None, key: str = None) -> None:
-        """Purge a single character from the cache by ID."""
-        key = self.__get_char_key(guild_id, char_id) if key is None else key
-        logger.debug(f"CACHE: Purge character {key} from cache")
-        self.characters.pop(key, None)
+        if claim_key in self.claims:
+            if self.claims[claim_key] == char_key:
+                return True
+
+            logger.debug(f"CLAIM: User {user_id} already has a claim")
+            raise UserHasClaimError(f"User {user_id} already has a claim")
+
+        if any(char_key == claim for claim in self.claims.values()):
+            logger.debug(f"CLAIM: Character {char_id} is already claimed")
+            raise CharacterClaimedError(f"Character {char_id} is already claimed")
+
+        self.claims[claim_key] = char_key
+        return True
 
     def is_cached_char(self, guild_id: int = None, char_id: int = None, key: str = None) -> bool:
         """Check if the user is in the cache."""
         key = self.__get_char_key(guild_id, char_id) if key is None else key
         return key in self.characters
 
-    def fetch_all(self, guild_id: int) -> ModelSelect:
+    def fetch_all_characters(self, guild_id: int) -> ModelSelect:
         """Returns all characters for a specific guild. Checks the cache first and then the database. If characters are found in the database, they are added to the cache.
 
         Args:
@@ -136,55 +143,6 @@ class CharacterService:
         logger.info(f"DATABASE: Fetched character: {character.first_name}")
         return character
 
-    def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
-        """Claim a character for a user."""
-        char_key = self.__get_char_key(guild_id, char_id)
-        claim_key = self.__get_claim_key(guild_id, user_id)
-
-        if claim_key in self.claims:
-            if self.claims[claim_key] == char_key:
-                return True
-
-            logger.debug(f"CLAIM: User {user_id} already has a claim")
-            raise UserHasClaimError(f"User {user_id} already has a claim")
-
-        if any(char_key == claim for claim in self.claims.values()):
-            logger.debug(f"CLAIM: Character {char_id} is already claimed")
-            raise CharacterClaimedError(f"Character {char_id} is already claimed")
-
-        self.claims[claim_key] = char_key
-        return True
-
-    def remove_claim(self, guild_id: int, user_id: int) -> bool:
-        """Remove a claim from a user."""
-        claim_key = self.__get_claim_key(guild_id, user_id)
-        if claim_key in self.claims:
-            logger.debug(f"CLAIM: Removing claim for user {user_id}")
-            del self.claims[claim_key]
-            return True
-        return False
-
-    def user_has_claim(self, guild_id: int, user_id: int) -> bool:
-        """Check if a user has a claim."""
-        claim_key = self.__get_claim_key(guild_id, user_id)
-        return claim_key in self.claims
-
-    def is_char_claimed(self, guild_id: int, char_id: int) -> bool:
-        """Check if a character is claimed by any user."""
-        char_key = self.__get_char_key(guild_id, char_id)
-        return any(char_key == claim for claim in self.claims.values())
-
-    def get_user_of_character(self, guild_id: int, char_id: int) -> int:
-        """Returns the user id of the user who claimed a character."""
-        if self.is_char_claimed(guild_id, char_id):
-            char_key = self.__get_char_key(guild_id, char_id)
-            for claim_key, claim in self.claims.items():
-                if claim == char_key:
-                    user_id = re.sub(r"\d\w+_", "", claim_key)
-                    return int(user_id)
-            return None
-        return None
-
     def fetch_claim(self, guild_id: int, user_id: int) -> Character:
         """Fetch the character claimed by a user."""
         claim_key = self.__get_claim_key(guild_id, user_id)
@@ -200,6 +158,48 @@ class CharacterService:
             return character
 
         raise NoClaimError(f"User {user_id} has no claim")
+
+    def fetch_user_of_character(self, guild_id: int, char_id: int) -> int:
+        """Returns the user id of the user who claimed a character."""
+        if self.is_char_claimed(guild_id, char_id):
+            char_key = self.__get_char_key(guild_id, char_id)
+            for claim_key, claim in self.claims.items():
+                if claim == char_key:
+                    user_id = re.sub(r"\d\w+_", "", claim_key)
+                    return int(user_id)
+            return None
+        return None
+
+    def is_char_claimed(self, guild_id: int, char_id: int) -> bool:
+        """Check if a character is claimed by any user."""
+        char_key = self.__get_char_key(guild_id, char_id)
+        return any(char_key == claim for claim in self.claims.values())
+
+    def purge_all(self) -> None:
+        """Purge all caches."""
+        logger.debug("CACHE: Purging all character caches")
+        self.characters = {}
+        self.claims = {}
+
+    def purge_by_id(self, guild_id: int = None, char_id: int = None, key: str = None) -> None:
+        """Purge a single character from the cache by ID."""
+        key = self.__get_char_key(guild_id, char_id) if key is None else key
+        logger.debug(f"CACHE: Purge character {key} from cache")
+        self.characters.pop(key, None)
+
+    def remove_claim(self, guild_id: int, user_id: int) -> bool:
+        """Remove a claim from a user."""
+        claim_key = self.__get_claim_key(guild_id, user_id)
+        if claim_key in self.claims:
+            logger.debug(f"CLAIM: Removing claim for user {user_id}")
+            del self.claims[claim_key]
+            return True
+        return False
+
+    def user_has_claim(self, guild_id: int, user_id: int) -> bool:
+        """Check if a user has a claim."""
+        claim_key = self.__get_claim_key(guild_id, user_id)
+        return claim_key in self.claims
 
     def update_char(self, guild_id: int, char_id: int, **kwargs: str | int) -> Character:
         """Update a character in the cache and database."""
@@ -355,7 +355,7 @@ class DatabaseService:
         self.db = database
 
     def create_new_db(self) -> None:
-        """Create all tables in the database."""
+        """Create all tables in the database and populate default values if they are constants."""
         with self.db:
             self.db.create_tables(
                 [
@@ -393,6 +393,7 @@ class DatabaseService:
         db_version = Version.parse(DatabaseVersion.get().version)
         if bot_version > db_version:
             logger.warning(f"DATABASE: Database version {db_version} is outdated.")
+            # TODO: Add db migration logic for specific versions
             return True
 
         logger.debug(f"DATABASE: Database version {db_version} is up to date.")
