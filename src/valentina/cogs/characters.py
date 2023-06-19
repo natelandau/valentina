@@ -129,10 +129,11 @@ class Characters(commands.Cog, name="Character"):
 
         try:
             char_svc.add_claim(ctx.guild.id, char_id, ctx.user.id)
-            logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}.")
+            logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}")
             await present_embed(
                 ctx=ctx,
-                title=f"{character.first_name} claimed.",
+                title="Character Claimed",
+                description=f"**{character.name}** has been claimed by {ctx.author.mention}\n\nTo unclaim this character, use `/character unclaim`",
                 level="success",
             )
         except CharacterClaimedError:
@@ -164,11 +165,12 @@ class Characters(commands.Cog, name="Character"):
             user_svc.create(ctx.guild.id, ctx.user)
 
         if char_svc.user_has_claim(ctx.guild.id, ctx.user.id):
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
             char_svc.remove_claim(ctx.guild.id, ctx.user.id)
             await present_embed(
                 ctx=ctx,
-                title="Removed claim",
-                description="To claim a new character, use `/character claim`.",
+                title="Character Unclaimed",
+                description=f"**{character.name}** unclaimed by {ctx.author.mention}\n\nTo claim a new character, use `/character claim`.",
                 level="success",
             )
         else:
@@ -176,7 +178,7 @@ class Characters(commands.Cog, name="Character"):
                 ctx=ctx,
                 title="You have no character claimed",
                 description="To claim a character, use `/character claim`.",
-                level="info",
+                level="error",
             )
 
     @chars.command(name="list", description="List all characters.")
