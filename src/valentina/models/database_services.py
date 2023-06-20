@@ -14,11 +14,10 @@ from valentina.models.database import (
     CharacterClass,
     CustomTrait,
     DatabaseVersion,
-    DiceBinding,
     Guild,
     GuildUser,
+    Macro,
     User,
-    UserCharacter,
     time_now,
 )
 from valentina.utils.errors import (
@@ -394,7 +393,7 @@ class UserService:
             user.last_seen = time_now()
             user.save()
             self.users[key] = user
-            logger.info(f"CACHE: Returning user {key} from the database and caching")
+            logger.info(f"CACHE: Return user {key} from db and cache")
             return user
 
         logger.error(f"DATABASE: User {key} does not exist in database or the cache.")
@@ -470,8 +469,7 @@ class DatabaseService:
                     CustomTrait,
                     User,
                     GuildUser,
-                    UserCharacter,
-                    DiceBinding,
+                    Macro,
                     DatabaseVersion,
                 ]
             )

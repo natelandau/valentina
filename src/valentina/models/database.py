@@ -189,27 +189,28 @@ class Character(BaseModel):
         return f"""Character({self.id} {self.name})"""
 
 
-class DiceBinding(BaseModel):
-    """Dice Binding model for the database."""
+class Macro(BaseModel):
+    """Macros for quick dice rolls."""
 
     name = TextField()
+    abbreviation = TextField()
     description = TextField(null=True)
-    character = ForeignKeyField(Character, backref="dice_bindings")
+    character = ForeignKeyField(Character, backref="macros")
     created = DateTimeField(default=time_now)
     bind_one = TextField(null=True)
     bind_two = TextField(null=True)
-    bind_three = TextField(null=True)
 
 
 class CustomTrait(BaseModel):
     """Custom Trait model for the database."""
 
-    name = TextField()
-    description = TextField(null=True)
-    trait_area = TextField(null=True)
     character = ForeignKeyField(Character, backref="custom_traits")
-    value = IntegerField(default=0)
     created = DateTimeField(default=time_now)
+    description = TextField(null=True)
+    guild = ForeignKeyField(Guild, backref="custom_traits")
+    name = TextField()
+    trait_area = TextField(null=True)
+    value = IntegerField(default=0)
 
 
 class User(BaseModel):
@@ -229,10 +230,3 @@ class GuildUser(BaseModel):
 
     guild = ForeignKeyField(Guild, backref="users")
     user = ForeignKeyField(User, backref="guilds")
-
-
-class UserCharacter(BaseModel):
-    """Join table for User and Character."""
-
-    user = ForeignKeyField(User, backref="characters")
-    character = ForeignKeyField(Character, backref="users")
