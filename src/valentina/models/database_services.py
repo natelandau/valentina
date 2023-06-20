@@ -483,9 +483,6 @@ class DatabaseService:
             CharacterClass.get_or_create(name=char_class.value)
         logger.info("DATABASE: Populate Enums")
 
-        # Log version number
-        DatabaseVersion.create(version=__version__)
-
     def get_tables(self) -> list[str]:
         """Get all tables in the Database."""
         with self.db:
@@ -495,11 +492,24 @@ class DatabaseService:
     def requires_migration(self) -> bool:
         """Determine if the database requires a migration."""
         bot_version = Version.parse(__version__)
-        db_version = Version.parse(DatabaseVersion.get().version)
+
+        current_db_version, created = DatabaseVersion.get_or_create(
+            id=1,
+            defaults={"version": __version__},
+        )
+        if created:
+            logger.info(f"DATABASE: Create version v{__version__}")
+            return False
+
+        db_version = Version.parse(current_db_version.version)
         if bot_version > db_version:
-            logger.warning(f"DATABASE: Database version {db_version} is outdated.")
-            # TODO: Add db migration logic for specific versions
+            logger.warning(f"DATABASE: Database version {db_version} is outdated")
             return True
 
-        logger.debug(f"DATABASE: Database version {db_version} is up to date.")
-        return True
+        logger.debug(f"DATABASE: Database version {db_version} is up to date")
+        return False
+
+    def migrate_old_database(self) -> None:
+        """Migrate from old database versions to the current one."""
+        # TODO: Write db migration scripts
+        pass

@@ -50,8 +50,9 @@ class Valentina(commands.Bot):
             # Database setup
             if not Path(DATABASE.database).exists():
                 DatabaseService(DATABASE).create_new_db()
-            else:
-                DatabaseService(DATABASE).requires_migration()
+
+            if DatabaseService(DATABASE).requires_migration():
+                DatabaseService(DATABASE).migrate_old_database()
 
             for _guild in self.guilds:
                 GuildService.update_or_add(guild_id=_guild.id, guild_name=_guild.name)
