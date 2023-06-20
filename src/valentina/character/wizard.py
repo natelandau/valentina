@@ -6,7 +6,12 @@ import discord
 from discord.ui import Button
 from loguru import logger
 
-from valentina.models.constants import GROUPED_TRAITS
+from valentina.models.constants import (
+    COMMON_TRAITS,
+    MAGE_TRAITS,
+    VAMPIRE_TRAITS,
+    WEREWOLF_TRAITS,
+)
 from valentina.models.database import Character, CharacterClass, Guild
 from valentina.views.rating_view import RatingView
 
@@ -55,42 +60,30 @@ class Wizard:
     def __define_traits_to_enter(self) -> list[str]:
         """Builds the list of traits to enter during character generation."""
         traits_list: list[str] = []
-        traits_list.extend(GROUPED_TRAITS["ATTRIBUTES"]["Physical"])
-        traits_list.extend(GROUPED_TRAITS["ATTRIBUTES"]["Social"])
-        traits_list.extend(GROUPED_TRAITS["ATTRIBUTES"]["Mental"])
+        traits_list.extend(COMMON_TRAITS["Physical"])
+        traits_list.extend(COMMON_TRAITS["Social"])
+        traits_list.extend(COMMON_TRAITS["Mental"])
         if self.quick_char:
             traits_list.extend(["Alertness", "Dodge", "Firearms", "Melee"])
         else:
-            traits_list.extend(GROUPED_TRAITS["ABILITIES"]["Talents"])
-            traits_list.extend(GROUPED_TRAITS["ABILITIES"]["Skills"])
-            traits_list.extend(GROUPED_TRAITS["ABILITIES"]["Knowledges"])
+            traits_list.extend(COMMON_TRAITS["Talents"])
+            traits_list.extend(COMMON_TRAITS["Skills"])
+            traits_list.extend(COMMON_TRAITS["Knowledges"])
 
-        traits_list.extend(GROUPED_TRAITS["COMMON"]["Virtues"])
-        traits_list.extend(GROUPED_TRAITS["COMMON"]["Universal"])
+        traits_list.extend(COMMON_TRAITS["Virtues"])
+        # Remove values set in modal view
+        _universal = [x for x in COMMON_TRAITS["Universal"] if x not in ["Willpower", "Humanity"]]
+        traits_list.extend(_universal)
 
         if not self.quick_char:
             if self.char_class == "Mage":
-                traits_list.extend(GROUPED_TRAITS["MAGE"]["Spheres"])
+                traits_list.extend(MAGE_TRAITS["Spheres"])
             if self.char_class == "Vampire":
-                traits_list.extend(GROUPED_TRAITS["VAMPIRE"]["Disciplines"])
+                traits_list.extend(VAMPIRE_TRAITS["Disciplines"])
             if self.char_class == "Werewolf":
-                traits_list.extend(GROUPED_TRAITS["WEREWOLF"]["Renown"])
+                traits_list.extend(WEREWOLF_TRAITS["Renown"])
 
-        entered_elsewhere = [  # Set in modal view
-            "willpower",
-            "humanity",
-            "arete",
-            "quintessence",
-            "blood_pool",
-            "blood pool",
-            "gnosis",
-            "rage",
-            "conviction",
-        ]
-        no_dupes = []
-        [no_dupes.append(item) for item in traits_list if item not in no_dupes and item.lower() not in entered_elsewhere]  # type: ignore [func-returns-value]
-
-        return no_dupes
+        return traits_list
 
     async def __finalize_character(self) -> None:
         """Add the character to the database and inform the user they are done."""

@@ -4,8 +4,8 @@ from peewee import IntegerField
 from playhouse.migrate import SqliteMigrator, migrate
 
 from valentina import DATABASE
-from valentina.models.constants import GROUPED_TRAITS
-from valentina.utils.helpers import normalize_row
+from valentina.models.constants import COMMON_TRAITS
+from valentina.utils.helpers import normalize_to_db_row
 
 
 def column_exists(table: str, column: str) -> bool:
@@ -36,15 +36,14 @@ def update_character_model() -> None:
     db = DATABASE
     migrator = SqliteMigrator(db)
 
-    for _group, categories in GROUPED_TRAITS.items():
-        for _category, traits in categories.items():
-            for trait in traits:
-                if not column_exists("character", normalize_row(trait)):
-                    logger.warning(
-                        f"DATABASE: Add row '{normalize_row(trait)}' to 'character' table."
+    for _category, traits in COMMON_TRAITS.items():
+        for trait in traits:
+            if not column_exists("character", normalize_to_db_row(trait)):
+                logger.warning(
+                    f"DATABASE: Add row '{normalize_to_db_row(trait)}' to 'character' table."
+                )
+                migrate(
+                    migrator.add_column(
+                        "character", normalize_to_db_row(trait), IntegerField(default=0)
                     )
-                    migrate(
-                        migrator.add_column(
-                            "character", normalize_row(trait), IntegerField(default=0)
-                        )
-                    )
+                )

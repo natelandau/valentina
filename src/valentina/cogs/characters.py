@@ -8,20 +8,27 @@ from loguru import logger
 
 from valentina import Valentina, char_svc, user_svc
 from valentina.character.create import create_character
+from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
-from valentina.models.constants import FLAT_TRAITS, CharClass
-from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
+from valentina.models.constants import CharClass, TraitAreas
+from valentina.utils.errors import (
+    CharacterClaimedError,
+    NoClaimError,
+    TraitNotFoundError,
+    UserHasClaimError,
+)
 from valentina.utils.helpers import (
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
-    normalize_row,
+    normalize_to_db_row,
 )
 from valentina.utils.options import select_character
 from valentina.views.embeds import ConfirmCancelView, present_embed
 
 possible_classes = sorted([char_class.value for char_class in CharClass])
+MAX_OPTION_LIST_SIZE = 25
 
 
 class Characters(commands.Cog, name="Character"):
@@ -32,11 +39,16 @@ class Characters(commands.Cog, name="Character"):
 
     async def _trait_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
+        try:
+            character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
+        except NoClaimError:
+            return ["No character claimed"]
+
         traits = []
-        for trait in FLAT_TRAITS:
+        for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
             if trait.lower().startswith(ctx.options["trait"].lower()):
                 traits.append(trait)
-            if len(traits) >= 25:  # noqa: PLR2004
+            if len(traits) >= MAX_OPTION_LIST_SIZE:
                 break
         return traits
 
@@ -102,7 +114,14 @@ class Characters(commands.Cog, name="Character"):
         """Displays a character sheet in the channel."""
         char_db_id = int(character)
         character = char_svc.fetch_by_id(ctx.guild.id, char_db_id)
-        await show_sheet(ctx, character)
+
+        if char_svc.is_char_claimed(ctx.guild.id, char_db_id):
+            user_id_num = char_svc.fetch_user_of_character(ctx.guild.id, character.id)
+            claimed_by = self.bot.get_user(user_id_num)
+        else:
+            claimed_by = None
+
+        await show_sheet(ctx, character=character, claimed_by=claimed_by)
 
     @chars.command(name="claim", description="Claim a character.")
     @logger.catch
@@ -127,10 +146,11 @@ class Characters(commands.Cog, name="Character"):
 
         try:
             char_svc.add_claim(ctx.guild.id, char_id, ctx.user.id)
-            logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}.")
+            logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}")
             await present_embed(
                 ctx=ctx,
-                title=f"{character.first_name} claimed.",
+                title="Character Claimed",
+                description=f"**{character.name}** has been claimed by {ctx.author.mention}\n\nTo unclaim this character, use `/character unclaim`",
                 level="success",
             )
         except CharacterClaimedError:
@@ -162,11 +182,12 @@ class Characters(commands.Cog, name="Character"):
             user_svc.create(ctx.guild.id, ctx.user)
 
         if char_svc.user_has_claim(ctx.guild.id, ctx.user.id):
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
             char_svc.remove_claim(ctx.guild.id, ctx.user.id)
             await present_embed(
                 ctx=ctx,
-                title="Removed claim",
-                description="To claim a new character, use `/character claim`.",
+                title="Character Unclaimed",
+                description=f"**{character.name}** unclaimed by {ctx.author.mention}\n\nTo claim a new character, use `/character claim`.",
                 level="success",
             )
         else:
@@ -174,7 +195,7 @@ class Characters(commands.Cog, name="Character"):
                 ctx=ctx,
                 title="You have no character claimed",
                 description="To claim a character, use `/character claim`.",
-                level="info",
+                level="error",
             )
 
     @chars.command(name="list", description="List all characters.")
@@ -184,18 +205,33 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
     ) -> None:
         """List all characters."""
-        characters = char_svc.fetch_all(ctx.guild.id)
-        description = "```[ID ] NAME                                CLASS\n"
-        description += "--------------------------------------------------------\n"
-        description += "\n".join(
-            [
-                f"[{character.id:<3}] {character.name.title():35} {character.char_class.name:11}"
-                for character in characters
-            ]
-        )
-        description += "```"
+        characters = char_svc.fetch_all_characters(ctx.guild.id)
+        if len(characters) == 0:
+            await present_embed(
+                ctx,
+                title="No Characters",
+                description="There are no characters.\nCreate one with `/character create`",
+                level="error",
+            )
+        fields = []
+        plural = "s" if len(characters) > 1 else ""
+        description = f"**{len(characters)}** character{plural} on this server\n\u200b"
 
-        await present_embed(ctx=ctx, title="Characters", description=description)
+        for character in sorted(characters, key=lambda x: x.name):
+            user_id = char_svc.fetch_user_of_character(ctx.guild.id, character.id)
+            user = self.bot.get_user(user_id).mention if user_id else ""
+            fields.append(
+                (character.name, f"Class: {character.char_class.name}\nClaimed by: {user}")
+            )
+
+        await present_embed(
+            ctx=ctx,
+            title="List of characters",
+            description=description,
+            fields=fields,
+            inline_fields=False,
+            level="info",
+        )
 
     @chars.command(name="spend_xp", description="Spend experience points.")
     @logger.catch
@@ -219,7 +255,7 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        old_value = character.__getattribute__(normalize_row(trait))
+        old_value = character.__getattribute__(normalize_to_db_row(trait))
 
         try:
             if old_value > 0:
@@ -261,7 +297,7 @@ class Characters(commands.Cog, name="Character"):
                 char_svc.update_char(
                     ctx.guild.id,
                     character.id,
-                    **{normalize_row(trait): new_value, "experience": new_experience},
+                    **{normalize_to_db_row(trait): new_value, "experience": new_experience},
                 )
                 logger.info(f"XP: {character.name} {trait} upgraded by {ctx.author.name}")
                 await present_embed(
@@ -276,7 +312,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx,
                 title="Error: No XP cost",
-                description=f"**{trait}** does not have an XP cost in `XPRaise`",
+                description=f"**{trait}** does not have an XP cost in `XPMultiplier`",
                 level="error",
                 ephemeral=True,
             )
@@ -362,6 +398,41 @@ class Characters(commands.Cog, name="Character"):
             footer=f"{new_total} all time cool points",
         )
 
+    @add.command(name="trait", description="Add a custom trait to a character.")
+    @logger.catch
+    async def add_trait(
+        self,
+        ctx: discord.ApplicationContext,
+        trait: Option(str, "The new trait to add.", required=True),
+        area: Option(
+            str,
+            "The area to add the trait to",
+            required=True,
+            choices=sorted([x.value for x in TraitAreas]),
+        ),
+        value: Option(int, "The value of the trait", required=True, min_value=1, max_value=20),
+        description: Option(str, "A description of the trait", required=False),
+    ) -> None:
+        """Add a custom trait to a character."""
+        try:
+            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed.",
+                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                level="error",
+            )
+            return
+        await add_trait(
+            ctx=ctx,
+            character=character,
+            trait_name=trait,
+            trait_area=area,
+            trait_value=value,
+            trait_description=description,
+        )
+
     ### UPDATE COMMANDS ####################################################################
     @update.command(name="bio", description="Update a character's bio.")
     @logger.catch
@@ -396,11 +467,44 @@ class Characters(commands.Cog, name="Character"):
         trait: Option(
             str, description="Trait to update", required=True, autocomplete=_trait_autocomplete
         ),
-        new_value: Option(int, description="New value for the trait", required=True),
+        new_value: Option(
+            int, description="New value for the trait", required=True, min_value=1, max_value=20
+        ),
     ) -> None:
         """Update the value of a trait."""
         try:
             character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+
+            old_value = char_svc.fetch_trait_value(character=character, trait=trait)
+
+            view = ConfirmCancelView(ctx.author)
+            await present_embed(
+                ctx,
+                title=f"Update {trait}",
+                description=f"Confirm updating {trait}",
+                fields=[
+                    ("Old Value", str(old_value)),
+                    ("New Value", new_value),
+                ],
+                inline_fields=True,
+                ephemeral=True,
+                level="info",
+                view=view,
+            )
+            await view.wait()
+            if view.confirmed and char_svc.update_trait_value(
+                guild_id=ctx.guild.id, character=character, trait_name=trait, new_value=new_value
+            ):
+                await present_embed(
+                    ctx=ctx,
+                    title=f"{character.name} {trait} updated",
+                    description=f"**{trait}** updated to **{new_value}**.",
+                    level="success",
+                    fields=[("Old Value", str(old_value)), ("New Value", new_value)],
+                    inline_fields=True,
+                    footer=f"Updated by {ctx.author.name}",
+                    ephemeral=False,
+                )
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -409,34 +513,14 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
             return
-
-        old_value = character.__getattribute__(normalize_row(trait))
-
-        view = ConfirmCancelView(ctx.author)
-        await present_embed(
-            ctx,
-            title=f"Update {trait}",
-            description=f"Confirm updating {trait}",
-            fields=[("Old Value", old_value), ("New Value", new_value)],
-            inline_fields=True,
-            ephemeral=True,
-            level="info",
-            view=view,
-        )
-        await view.wait()
-        if view.confirmed:
-            char_svc.update_char(ctx.guild.id, character.id, **{normalize_row(trait): new_value})
-            logger.info(f"TRAIT: {character.name} {trait} updated by {ctx.author.name}")
+        except TraitNotFoundError:
             await present_embed(
                 ctx=ctx,
-                title=f"{character.name} {trait} updated",
-                description=f"**{trait}** updated to **{new_value}**.",
-                level="success",
-                fields=[("Old Value", old_value), ("New Value", new_value)],
-                inline_fields=True,
-                footer=f"Updated by {ctx.author.name}",
-                ephemeral=False,
+                title="Error: Trait not found",
+                description=f"{character.name} does not have trait: **{trait}**",
+                level="error",
             )
+            return
 
 
 def setup(bot: Valentina) -> None:

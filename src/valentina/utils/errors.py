@@ -15,3 +15,7 @@ class NoClaimError(Exception):
 
 class CharacterNotFoundError(Exception):
     """Raised when a character is not found."""
+
+
+class TraitNotFoundError(Exception):
+    """Raised when a trait is not found on a character."""

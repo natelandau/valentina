@@ -25,9 +25,15 @@ from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
     NoClaimError,
+    TraitNotFoundError,
     UserHasClaimError,
 )
-from valentina.utils.helpers import normalize_row
+from valentina.utils.helpers import (
+    extend_common_traits_with_class,
+    get_max_trait_value,
+    normalize_to_db_row,
+    num_to_circles,
+)
 
 
 class CharacterService:
@@ -66,24 +72,31 @@ class CharacterService:
         """
         return f"{guild_id}_{user_id}"
 
-    def purge_all(self) -> None:
-        """Purge all caches."""
-        logger.debug("CACHE: Purging all character caches")
-        self.characters = {}
-        self.claims = {}
+    def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
+        """Claim a character for a user."""
+        char_key = self.__get_char_key(guild_id, char_id)
+        claim_key = self.__get_claim_key(guild_id, user_id)
 
-    def purge_by_id(self, guild_id: int = None, char_id: int = None, key: str = None) -> None:
-        """Purge a single character from the cache by ID."""
-        key = self.__get_char_key(guild_id, char_id) if key is None else key
-        logger.debug(f"CACHE: Purge character {key} from cache")
-        self.characters.pop(key, None)
+        if claim_key in self.claims:
+            if self.claims[claim_key] == char_key:
+                return True
+
+            logger.debug(f"CLAIM: User {user_id} already has a claim")
+            raise UserHasClaimError(f"User {user_id} already has a claim")
+
+        if any(char_key == claim for claim in self.claims.values()):
+            logger.debug(f"CLAIM: Character {char_id} is already claimed")
+            raise CharacterClaimedError(f"Character {char_id} is already claimed")
+
+        self.claims[claim_key] = char_key
+        return True
 
     def is_cached_char(self, guild_id: int = None, char_id: int = None, key: str = None) -> bool:
         """Check if the user is in the cache."""
         key = self.__get_char_key(guild_id, char_id) if key is None else key
         return key in self.characters
 
-    def fetch_all(self, guild_id: int) -> ModelSelect:
+    def fetch_all_characters(self, guild_id: int) -> ModelSelect:
         """Returns all characters for a specific guild. Checks the cache first and then the database. If characters are found in the database, they are added to the cache.
 
         Args:
@@ -115,6 +128,66 @@ class CharacterService:
 
         return chars_to_return
 
+    def fetch_all_character_traits(
+        self, character: Character, flat_list: bool = False
+    ) -> dict[str, list[str]] | list[str]:
+        """Fetch all traits for a character inclusive of common and custom."""
+        all_traits = extend_common_traits_with_class(character.class_name)
+
+        custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
+        if len(custom_traits) > 0:
+            for custom_trait in custom_traits:
+                if custom_trait.trait_area.title() not in all_traits:
+                    all_traits[custom_trait.trait_area.title()] = []
+                all_traits[custom_trait.trait_area.title()].append(custom_trait.name.title())
+
+        if flat_list:
+            return [y for x in all_traits.values() for y in x]
+
+        return all_traits
+
+    def fetch_all_character_trait_values(
+        self,
+        character: Character,
+    ) -> dict[str, list[tuple[str, int, str]]]:
+        """Fetch all trait values for a character inclusive of common and custom.
+
+        Example:
+            {
+                "Physical": [("Strength", 3, "●●●○○"), ("Agility", 2, "●●●○○")],
+                "Social": [("Persuasion", 1, "●○○○○")]
+            }
+        """
+        all_traits: dict[str, list[tuple[str, int, str]]] = {}
+
+        for category, traits in extend_common_traits_with_class(character.class_name).items():
+            if category.title() not in all_traits:
+                all_traits[category.title()] = []
+            for trait in traits:
+                value = getattr(character, normalize_to_db_row(trait))
+                max_value = get_max_trait_value(trait)
+                dots = num_to_circles(value, max_value)
+                all_traits[category.title()].append((trait.title(), value, dots))
+
+        custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
+        if len(custom_traits) > 0:
+            for custom_trait in custom_traits:
+                if custom_trait.trait_area.title() not in all_traits:
+                    all_traits[custom_trait.trait_area.title()] = []
+                custom_trait_name = custom_trait.name.title()
+                custom_trait_value = custom_trait.value
+                max_value = get_max_trait_value(custom_trait_name)
+                dots = num_to_circles(custom_trait_value, max_value)
+                all_traits[custom_trait.trait_area.title()].append(
+                    (custom_trait_name, custom_trait_value, dots)
+                )
+
+        return all_traits
+
+    def fetch_char_custom_traits(self, character: Character) -> list[CustomTrait]:
+        """Fetch all custom traits for a character."""
+        return CustomTrait.select().where(CustomTrait.character_id == character.id)
+
     def fetch_by_id(self, guild_id: int, char_id: int) -> Character:
         """Fetch a character by database id.
 
@@ -127,33 +200,71 @@ class CharacterService:
         """
         key = self.__get_char_key(guild_id, char_id)
         if self.is_cached_char(key=key):
-            logger.debug(f"CACHE: Fetched character {char_id}")
+            logger.debug(f"CACHE: Fetch character {char_id}")
             return self.characters[key]
 
         character = Character.get_by_id(char_id)
 
         self.characters[key] = character
-        logger.info(f"DATABASE: Fetched character: {character.first_name}")
+        logger.info(f"DATABASE: Fetch character: {character.name}")
         return character
 
-    def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
-        """Claim a character for a user."""
-        char_key = self.__get_char_key(guild_id, char_id)
+    def fetch_claim(self, guild_id: int, user_id: int) -> Character:
+        """Fetch the character claimed by a user."""
         claim_key = self.__get_claim_key(guild_id, user_id)
-
         if claim_key in self.claims:
-            if self.claims[claim_key] == char_key:
-                return True
+            char_key = self.claims[claim_key]
 
-            logger.debug(f"CLAIM: User {user_id} already has a claim")
-            raise UserHasClaimError(f"User {user_id} already has a claim")
+            if self.is_cached_char(key=char_key):
+                logger.debug(f"CACHE: Fetch character {char_key}")
+                return self.characters[char_key]
 
-        if any(char_key == claim for claim in self.claims.values()):
-            logger.debug(f"CLAIM: Character {char_id} is already claimed")
-            raise CharacterClaimedError(f"Character {char_id} is already claimed")
+            char_id = re.sub(r"\d\w+_", "", char_key)
+            character = self.fetch_by_id(guild_id, int(char_id))
+            return character
 
-        self.claims[claim_key] = char_key
-        return True
+        raise NoClaimError(f"User {user_id} has no claim")
+
+    def fetch_trait_value(self, character: Character, trait: str) -> int:
+        """Fetch the value of a trait for a character."""
+        if hasattr(character, normalize_to_db_row(trait)):
+            return getattr(character, normalize_to_db_row(trait))
+
+        custom_trait = [
+            x for x in self.fetch_char_custom_traits(character) if x.name.lower() == trait.lower()
+        ][0]
+        if custom_trait:
+            return custom_trait.value
+
+        raise TraitNotFoundError(f"Trait {trait} not found for character {character.id}")
+
+    def fetch_user_of_character(self, guild_id: int, char_id: int) -> int:
+        """Returns the user id of the user who claimed a character."""
+        if self.is_char_claimed(guild_id, char_id):
+            char_key = self.__get_char_key(guild_id, char_id)
+            for claim_key, claim in self.claims.items():
+                if claim == char_key:
+                    user_id = re.sub(r"\d\w+_", "", claim_key)
+                    return int(user_id)
+            return None
+        return None
+
+    def is_char_claimed(self, guild_id: int, char_id: int) -> bool:
+        """Check if a character is claimed by any user."""
+        char_key = self.__get_char_key(guild_id, char_id)
+        return any(char_key == claim for claim in self.claims.values())
+
+    def purge_all(self) -> None:
+        """Purge all caches."""
+        logger.debug("CACHE: Purging all character caches")
+        self.characters = {}
+        self.claims = {}
+
+    def purge_by_id(self, guild_id: int = None, char_id: int = None, key: str = None) -> None:
+        """Purge a single character from the cache by ID."""
+        key = self.__get_char_key(guild_id, char_id) if key is None else key
+        logger.debug(f"CACHE: Purge character {key}")
+        self.characters.pop(key, None)
 
     def remove_claim(self, guild_id: int, user_id: int) -> bool:
         """Remove a claim from a user."""
@@ -169,33 +280,12 @@ class CharacterService:
         claim_key = self.__get_claim_key(guild_id, user_id)
         return claim_key in self.claims
 
-    def is_char_claimed(self, guild_id: int, char_id: int) -> bool:
-        """Check if a character is claimed by any user."""
-        char_key = self.__get_char_key(guild_id, char_id)
-        return any(char_key == claim for claim in self.claims.values())
-
-    def fetch_claim(self, guild_id: int, user_id: int) -> Character:
-        """Fetch the character claimed by a user."""
-        claim_key = self.__get_claim_key(guild_id, user_id)
-        if claim_key in self.claims:
-            char_key = self.claims[claim_key]
-
-            if self.is_cached_char(key=char_key):
-                logger.debug(f"CACHE: Fetched character {char_key}")
-                return self.characters[char_key]
-
-            char_id = re.sub(r"\d\w+_", "", char_key)
-            character = self.fetch_by_id(guild_id, int(char_id))
-            return character
-
-        raise NoClaimError(f"User {user_id} has no claim")
-
     def update_char(self, guild_id: int, char_id: int, **kwargs: str | int) -> Character:
         """Update a character in the cache and database."""
         key = self.__get_char_key(guild_id, char_id)
 
         # Normalize kwargs keys to database column names
-        kws = {normalize_row(k): v for k, v in kwargs.items()}
+        kws = {normalize_to_db_row(k): v for k, v in kwargs.items()}
 
         if key in self.characters:
             character = self.characters[key]
@@ -210,6 +300,32 @@ class CharacterService:
 
         logger.debug(f"DATABASE: Update character: {char_id}")
         return character
+
+    def update_trait_value(
+        self, guild_id: int, character: Character, trait_name: str, new_value: int
+    ) -> bool:
+        """Update a trait value for a character."""
+        if hasattr(character, normalize_to_db_row(trait_name)):
+            setattr(character, normalize_to_db_row(trait_name), new_value)
+            character.save()
+            logger.debug(
+                f"DATABASE: Update '{trait_name}' for character {character.name} to {new_value}"
+            )
+            return True
+
+        custom_trait = CustomTrait.get(
+            CustomTrait.character_id == character.id and CustomTrait.name == trait_name.title()
+        )
+        if custom_trait:
+            custom_trait.value = new_value
+            custom_trait.save()
+            self.update_char(guild_id, character.id)
+            logger.debug(
+                f"DATABASE: Update '{trait_name}' for character {character.name} to {new_value}"
+            )
+            return True
+
+        raise TraitNotFoundError(f"Trait '{trait_name}' was not found for character {character.id}")
 
 
 class UserService:
@@ -344,7 +460,7 @@ class DatabaseService:
         self.db = database
 
     def create_new_db(self) -> None:
-        """Create all tables in the database."""
+        """Create all tables in the database and populate default values if they are constants."""
         with self.db:
             self.db.create_tables(
                 [
@@ -382,6 +498,7 @@ class DatabaseService:
         db_version = Version.parse(DatabaseVersion.get().version)
         if bot_version > db_version:
             logger.warning(f"DATABASE: Database version {db_version} is outdated.")
+            # TODO: Add db migration logic for specific versions
             return True
 
         logger.debug(f"DATABASE: Database version {db_version} is up to date.")

@@ -1,9 +1,59 @@
 """Helper functions for Valentina."""
-from valentina.models.constants import GROUPED_TRAITS, MaxTraitValue, XPNew, XPRaise
+from copy import deepcopy
+
+from valentina.models.constants import (
+    COMMON_TRAITS,
+    HUNTER_TRAITS,
+    MAGE_TRAITS,
+    VAMPIRE_TRAITS,
+    WEREWOLF_TRAITS,
+    MaxTraitValue,
+    XPMultiplier,
+    XPNew,
+)
 from valentina.models.database import Character
 
 
-def normalize_row(row: str) -> str:
+def all_traits_from_constants() -> dict[str, list[str]]:
+    """Return all traits from the constants as a dictionary inclusive of all classes."""
+    trait_dicts = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+
+    all_traits: dict[str, list[str]] = {}
+    for dictionary in trait_dicts:
+        for category, traits in dictionary.items():
+            if category in all_traits:
+                all_traits[category].extend(traits)
+            else:
+                all_traits[category] = traits
+
+    return all_traits
+
+
+def extend_common_traits_with_class(char_class: str) -> dict[str, list[str]]:
+    """Extends the common traits with the traits for a class."""
+    complete_traits = deepcopy(COMMON_TRAITS)
+
+    class_traits = {}
+    match char_class.lower():
+        case "mage":
+            class_traits = deepcopy(MAGE_TRAITS)
+        case "vampire":
+            class_traits = deepcopy(VAMPIRE_TRAITS)
+        case "werewolf":
+            class_traits = deepcopy(WEREWOLF_TRAITS)
+        case "hunter":
+            class_traits = deepcopy(HUNTER_TRAITS)
+
+    for category, traits in class_traits.items():
+        if category in complete_traits:
+            complete_traits[category].extend(traits)
+        else:
+            complete_traits[category] = traits
+
+    return complete_traits
+
+
+def normalize_to_db_row(row: str) -> str:
     """Takes a string and returns a normalized version of it for use as a row in the database."""
     return row.replace("-", "_").replace(" ", "_").lower()
 
@@ -43,7 +93,7 @@ def format_traits(character: Character, traits: list[str], show_zeros: bool = Tr
     trait_list = []
 
     for t in traits:
-        trait = normalize_row(t)
+        trait = normalize_to_db_row(t)
         max_value = get_max_trait_value(trait)
 
         if hasattr(character, trait):
@@ -57,82 +107,73 @@ def format_traits(character: Character, traits: list[str], show_zeros: bool = Tr
     return "\n".join(trait_list)
 
 
-def find_parent_key(trait: str, grouped_traits: dict, lvl: int = 2) -> str:
-    """Find the parent key of a given trait in a nested dictionary of grouped traits.
+def get_max_trait_value(trait: str) -> int:
+    """Get the maximum value for a trait by looking up the trait in the XPMultiplier enum.
 
     Args:
-        trait (str): The trait to find the parent key for.
-        grouped_traits (dict): The nested dictionary of grouped traits.
-        lvl (int, optional): The level of the nested dictionary to search. Defaults to 2.
+        trait (str): The trait to get the max value for.
 
     Returns:
-        str: The parent key of the trait if found, the trait itself.
-
-    Example:
-        >>> find_parent_key("Strength", GROUPED_TRAITS, 2)
-        'ATTRIBUTES'
+        int: The maximum value for the trait.
     """
-    for parent_key, categories in grouped_traits.items():
-        for category, traits in categories.items():
-            if trait in traits and lvl == 1:
-                return category.upper()
-            if trait in traits and lvl == 2:  # noqa: PLR2004
-                return parent_key.upper()
-
-    return trait.upper()
-
-
-def get_max_trait_value(trait: str) -> int:
-    """Get the maximum value for a trait."""
-    # Try to find the cost by looking up the parent key of the trait
-    for lvl in [2, 1]:
-        trait_parent = find_parent_key(trait, GROUPED_TRAITS, lvl)
-        if trait_parent in MaxTraitValue.__members__:
-            return MaxTraitValue[trait_parent].value
-
-    # If the parent key wasn't found, try to look up the trait itself
+    # Some traits have their own max value. Check for those first.
     if trait.upper() in MaxTraitValue.__members__:
         return MaxTraitValue[trait.upper()].value
 
-    return 5
+    # Try to find the cost by looking up the parent key of the trait
+    for category, traits in all_traits_from_constants().items():
+        if (
+            trait.lower() in [x.lower() for x in traits]
+            and category.upper() in MaxTraitValue.__members__
+        ):
+            return MaxTraitValue[category.upper()].value
+
+    # Return the default value
+    return MaxTraitValue.DEFAULT.value
 
 
 def get_trait_multiplier(trait: str) -> int:
-    """Gets the experience multiplier associated with a trait for use when upgrading.
+    """Get the experience multiplier associated with a trait for use when upgrading.
 
     Args:
         trait (str): The trait to get the cost for.
 
     Returns:
         int: The multiplier associated with the trait.
-
-    Raises:
-        ValueError: If the trait or its parent key is not found in the XPRaise enum.
     """
+    # Some traits have their own max value. Check for those first.
+    if trait.upper() in XPMultiplier.__members__:
+        return XPMultiplier[trait.upper()].value
+
     # Try to find the cost by looking up the parent key of the trait
-    for lvl in [2, 1]:
-        trait_parent = find_parent_key(trait, GROUPED_TRAITS, lvl)
-        if trait_parent in XPRaise.__members__:
-            return XPRaise[trait_parent].value
+    for category, traits in all_traits_from_constants().items():
+        if (
+            trait.lower() in [x.lower() for x in traits]
+            and category.upper() in XPMultiplier.__members__
+        ):
+            return XPMultiplier[category.upper()].value
 
-    # If the parent key wasn't found, try to look up the trait itself
-    if trait.upper() in XPRaise.__members__:
-        return XPRaise[trait.upper()].value
-
-    # If the trait wasn't found, raise an error
-    raise ValueError(f"Trait {trait} not found in XPRaise enum.")
+    # Return the default value
+    return XPMultiplier.DEFAULT.value
 
 
 def get_trait_new_value(trait: str) -> int:
-    """Gets the multiplier associated with a trait for use when upgrading using experience."""
-    # Try to find the cost by looking up the parent key of the trait
-    for lvl in [2, 1]:
-        trait_parent = find_parent_key(trait, GROUPED_TRAITS, lvl)
-        if trait_parent in XPNew.__members__:
-            return XPNew[trait_parent].value
+    """Get the experience cost of the first dot for a wholly new trait from the XPNew enum.
 
-    # If the parent key wasn't found, try to look up the trait itself
+    Args:
+        trait (str): The trait to get the cost for.
+
+    Returns:
+        int: The cost of the first dot of the trait.
+    """
+    # Some traits have their own value. Check for those first.
     if trait.upper() in XPNew.__members__:
         return XPNew[trait.upper()].value
 
-    return 1
+    # Try to find the cost by looking up the parent key of the trait
+    for category, traits in all_traits_from_constants().items():
+        if trait.lower() in [x.lower() for x in traits] and category.upper() in XPNew.__members__:
+            return XPNew[category.upper()].value
+
+    # Return the default value
+    return XPNew.DEFAULT.value
