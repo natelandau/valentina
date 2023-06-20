@@ -11,7 +11,7 @@ from valentina.character.create import create_character
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
-from valentina.models.constants import CharClass, TraitAreas
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitAreas
 from valentina.utils.errors import (
     CharacterClaimedError,
     NoClaimError,
@@ -28,7 +28,6 @@ from valentina.utils.options import select_character
 from valentina.views.embeds import ConfirmCancelView, present_embed
 
 possible_classes = sorted([char_class.value for char_class in CharClass])
-MAX_OPTION_LIST_SIZE = 25
 
 
 class Characters(commands.Cog, name="Character"):
