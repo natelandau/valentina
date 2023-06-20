@@ -111,8 +111,8 @@ class CharClass(Enum):
     HUNTER = "Hunter"
 
 
-class TraitAreas(Enum):
-    """Enum for areas of traits to be used for categorizing custom traits."""
+class TraitCategory(Enum):
+    """Enum for categories of traits to be used for categorizing custom traits."""
 
     # Abilities
     PHYSICAL = "Physical"

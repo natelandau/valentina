@@ -136,9 +136,9 @@ class CharacterService:
         custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                if custom_trait.trait_area.title() not in all_traits:
-                    all_traits[custom_trait.trait_area.title()] = []
-                all_traits[custom_trait.trait_area.title()].append(custom_trait.name.title())
+                if custom_trait.category.title() not in all_traits:
+                    all_traits[custom_trait.category.title()] = []
+                all_traits[custom_trait.category.title()].append(custom_trait.name.title())
 
         if flat_list:
             return [y for x in all_traits.values() for y in x]
@@ -171,13 +171,13 @@ class CharacterService:
         custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                if custom_trait.trait_area.title() not in all_traits:
-                    all_traits[custom_trait.trait_area.title()] = []
+                if custom_trait.category.title() not in all_traits:
+                    all_traits[custom_trait.category.title()] = []
                 custom_trait_name = custom_trait.name.title()
                 custom_trait_value = custom_trait.value
                 max_value = get_max_trait_value(custom_trait_name)
                 dots = num_to_circles(custom_trait_value, max_value)
-                all_traits[custom_trait.trait_area.title()].append(
+                all_traits[custom_trait.category.title()].append(
                     (custom_trait_name, custom_trait_value, dots)
                 )
 

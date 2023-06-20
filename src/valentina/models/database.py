@@ -209,7 +209,7 @@ class CustomTrait(BaseModel):
     description = TextField(null=True)
     guild = ForeignKeyField(Guild, backref="custom_traits")
     name = TextField()
-    trait_area = TextField(null=True)
+    category = TextField(null=True)
     value = IntegerField(default=0)
 
 

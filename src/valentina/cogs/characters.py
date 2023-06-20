@@ -11,7 +11,7 @@ from valentina.character.create import create_character
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitAreas
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitCategory
 from valentina.utils.errors import (
     CharacterClaimedError,
     NoClaimError,
@@ -403,11 +403,11 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         trait: Option(str, "The new trait to add.", required=True),
-        area: Option(
+        category: Option(
             str,
-            "The area to add the trait to",
+            "The category to add the trait to",
             required=True,
-            choices=sorted([x.value for x in TraitAreas]),
+            choices=sorted([x.value for x in TraitCategory]),
         ),
         value: Option(int, "The value of the trait", required=True, min_value=1, max_value=20),
         description: Option(str, "A description of the trait", required=False),
@@ -427,7 +427,7 @@ class Characters(commands.Cog, name="Character"):
             ctx=ctx,
             character=character,
             trait_name=trait,
-            trait_area=area,
+            category=category,
             trait_value=value,
             trait_description=description,
         )
