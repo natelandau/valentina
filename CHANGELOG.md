@@ -1,3 +1,15 @@
+## v0.4.0 (2023-06-20)
+
+### Feat
+
+- **diceroll**: roll traits by name (#9)
+- custom traits (#8)
+
+### Fix
+
+- **character**: remove `music` ability
+- minor text changes
+
 ## v0.3.2 (2023-06-18)
 
 ### Fix
