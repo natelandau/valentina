@@ -10,7 +10,7 @@ from valentina import Valentina, char_svc
 from valentina.models.constants import MAX_OPTION_LIST_SIZE
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.errors import NoClaimError, TraitNotFoundError
-from valentina.views.embeds import present_embed
+from valentina.views import present_embed
 from valentina.views.roll_display import RollDisplay
 
 

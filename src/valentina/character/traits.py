@@ -4,7 +4,7 @@ from loguru import logger
 
 from valentina.models.constants import FLAT_COMMON_TRAITS
 from valentina.models.database import Character, CustomTrait
-from valentina.views.embeds import ConfirmCancelView, present_embed
+from valentina.views import ConfirmCancelButtons, present_embed
 
 
 def __validate_trait_name(trait_name: str, character: Character) -> None:
@@ -28,7 +28,7 @@ async def add_trait(
     """Add a trait to a character."""
     try:
         __validate_trait_name(trait_name, character)
-        view = ConfirmCancelView(ctx.author)
+        view = ConfirmCancelButtons(ctx.author)
         await present_embed(
             ctx,
             title=f"Create {trait_name}",

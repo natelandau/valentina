@@ -9,7 +9,7 @@ from peewee import fn
 from valentina.character.views import CharGenModal
 from valentina.character.wizard import Wizard
 from valentina.models.database import Character, Guild
-from valentina.views.embeds import present_embed
+from valentina.views import present_embed
 
 
 async def create_character(

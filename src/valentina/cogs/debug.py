@@ -6,7 +6,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina import Valentina, __version__
-from valentina.views.embeds import present_embed
+from valentina.views import present_embed
 
 
 class Debug(commands.Cog):

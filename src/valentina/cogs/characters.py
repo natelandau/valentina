@@ -25,7 +25,7 @@ from valentina.utils.helpers import (
     normalize_to_db_row,
 )
 from valentina.utils.options import select_character
-from valentina.views.embeds import ConfirmCancelView, present_embed
+from valentina.views import ConfirmCancelButtons, present_embed
 
 possible_classes = sorted([char_class.value for char_class in CharClass])
 
@@ -238,7 +238,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Error: No character claimed",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                description="You must claim a character before you can spend experience.\nTo claim a character, use `/character claim`.",
                 level="error",
                 ephemeral=True,
             )
@@ -262,7 +262,7 @@ class Characters(commands.Cog, name="Character"):
                     level="error",
                 )
                 return
-            view = ConfirmCancelView(ctx.author)
+            view = ConfirmCancelButtons(ctx.author)
             await present_embed(
                 ctx,
                 title=f"Upgrade {trait}",
@@ -323,7 +323,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Error: No character claimed",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                description="You must claim a character before you can add experience.\nTo claim a character, use `/character claim`.",
                 level="error",
             )
             return
@@ -362,7 +362,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Error: No character claimed",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                description="You must claim a character before you can add cool points.\nTo claim a character, use `/character claim`.",
                 level="error",
             )
             return
@@ -409,7 +409,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Error: No character claimed.",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                description="You must claim a character before you can add a trait.\nTo claim a character, use `/character claim`.",
                 level="error",
             )
             return
@@ -466,7 +466,7 @@ class Characters(commands.Cog, name="Character"):
 
             old_value = char_svc.fetch_trait_value(character=character, trait=trait)
 
-            view = ConfirmCancelView(ctx.author)
+            view = ConfirmCancelButtons(ctx.author)
             await present_embed(
                 ctx,
                 title=f"Update {trait}",

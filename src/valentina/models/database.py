@@ -189,19 +189,6 @@ class Character(BaseModel):
         return f"""Character({self.id} {self.name})"""
 
 
-class Macro(BaseModel):
-    """Macros for quick dice rolls."""
-
-    name = TextField()
-    abbreviation = TextField()
-    description = TextField(null=True)
-    character = ForeignKeyField(Character, backref="macros")
-    created = DateTimeField(default=time_now)
-    bind_one = TextField(null=True)
-    bind_two = TextField(null=True)
-    guild = ForeignKeyField(Guild, backref="macros")
-
-
 class CustomTrait(BaseModel):
     """Custom Trait model for the database."""
 
@@ -231,3 +218,16 @@ class GuildUser(BaseModel):
 
     guild = ForeignKeyField(Guild, backref="users")
     user = ForeignKeyField(User, backref="guilds")
+
+
+class Macro(BaseModel):
+    """Macros for quick dice rolls."""
+
+    name = TextField()
+    abbreviation = TextField()
+    description = TextField(null=True)
+    created = DateTimeField(default=time_now)
+    trait_one = TextField(null=True)
+    trait_two = TextField(null=True)
+    guild = ForeignKeyField(Guild, backref="macros")
+    user = ForeignKeyField(User, backref="macros")

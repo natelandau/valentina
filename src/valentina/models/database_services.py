@@ -393,6 +393,40 @@ class UserService:
         self.users[key] = user
         return user
 
+    def add_macro(
+        self,
+        ctx: discord.ApplicationContext,
+        trait_one: str,
+        trait_two: str,
+        name: str,
+        abbreviation: str = None,
+        description: str = None,
+    ) -> None:
+        """Add a new macro for a user."""
+
+    def create_macro(
+        self,
+        ctx: discord.ApplicationContext,
+        name: str,
+        abbreviation: str,
+        description: str,
+        trait_one: str,
+        trait_two: str,
+    ) -> None:
+        """Create a new macro for a user."""
+        user = self.fetch(ctx)
+        macro = Macro.create(
+            name=name,
+            abbreviation=abbreviation,
+            description=description,
+            guild_id=ctx.guild.id,
+            user_id=user.id,
+            trait_one=trait_one,
+            trait_two=trait_two,
+        )
+        macro.save()
+        logger.info(f"DATABASE: Create macro '{name}' for user '{user.name}'")
+
 
 class GuildService:
     """Manage guilds in the database. Guilds are created a bot_connect,."""
