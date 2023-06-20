@@ -1,6 +1,7 @@
 """Models for maintaining in-memory caches of database queries."""
 
 import re
+from typing import cast
 
 import discord
 from loguru import logger
@@ -28,6 +29,7 @@ from valentina.utils.errors import (
     UserHasClaimError,
 )
 from valentina.utils.helpers import (
+    all_traits_from_constants,
     extend_common_traits_with_class,
     get_max_trait_value,
     normalize_to_db_row,
@@ -141,7 +143,7 @@ class CharacterService:
                 all_traits[custom_trait.category.title()].append(custom_trait.name.title())
 
         if flat_list:
-            return [y for x in all_traits.values() for y in x]
+            return list({y for x in all_traits.values() for y in x})
 
         return all_traits
 
@@ -351,73 +353,45 @@ class UserService:
         """Purge cache of all users."""
         self.users = {}
 
-    def is_cached(self, guild_id: int, user_id: int) -> bool:
-        """Check if the user is in the cache."""
-        key = self.__get_key(guild_id, user_id)
+    def fetch(self, ctx: discord.ApplicationContext) -> User:
+        """Fetch a user object from the cache or database."""
+        key = self.__get_key(ctx.guild.id, ctx.author.id)
 
         if key in self.users:
-            return True
-
-        return False
-
-    def is_in_db(self, guild_id: int, user_id: int) -> bool:
-        """Check if the user is in the database."""
-        in_user_table = False
-        in_guild_user_table = False
-
-        if User.select().where(User.id == user_id).exists():
-            in_user_table = True
-
-        if (
-            GuildUser.select()
-            .where((GuildUser.guild_id == guild_id) & (GuildUser.user_id == user_id))
-            .exists()
-        ):
-            in_guild_user_table = True
-
-        if in_user_table and in_guild_user_table:
-            return True
-
-        return False
-
-    def fetch(self, guild_id: int, user_id: int) -> User:
-        """Fetch a user object from the cache or database."""
-        key = self.__get_key(guild_id, user_id)
-
-        if self.is_cached(guild_id, user_id):
             logger.info(f"CACHE: Returning user {key} from cache")
             return self.users[key]
 
-        if self.is_in_db(guild_id, user_id):
-            user = User.get_by_id(user_id)
+        user, created = User.get_or_create(
+            id=ctx.author.id,
+            defaults={
+                "id": ctx.author.id,
+                "name": ctx.author.display_name,
+                "username": ctx.author.name,
+                "mention": ctx.author.mention,
+                "first_seen": time_now(),
+                "last_seen": time_now(),
+            },
+        )
+        if created:
+            existing_guild_user, lookup_created = GuildUser.get_or_create(
+                user=ctx.author.id,
+                guild=ctx.guild.id,
+                defaults={"guild_id": ctx.guild.id, "user_id": ctx.author.id},
+            )
+            if lookup_created:
+                logger.info(
+                    f"DATABASE: Create guild_user lookup for user:{ctx.author.name} guild:{ctx.guild.name}"
+                )
+
+            logger.info(f"DATABASE: Create user '{ctx.author.display_name}'")
+
+        else:
             user.last_seen = time_now()
             user.save()
-            self.users[key] = user
-            logger.info(f"CACHE: Return user {key} from db and cache")
-            return user
 
-        logger.error(f"DATABASE: User {key} does not exist in database or the cache.")
-        raise ValueError(f"User {key} does not exist in database or the cache.")
-
-    def create(self, guild_id: int, user: discord.User | discord.Member) -> User:
-        """Create a new user in the database and cache."""
-        print(f"Creating user {user.id}-{user.name}")
-        existing_user = User.get_or_none(id=user.id)
-        if existing_user is None:
-            logger.info(f"DATABASE: Created user {user.id} in database")
-            new_user = User.create(id=user.id, username=user.name)
-        else:
-            new_user = User.get_by_id(user.id)
-
-        existing_guild_user = GuildUser.get_or_none(guild_id=guild_id, user_id=user.id)
-        if existing_guild_user is None:
-            logger.info(f"DATABASE: Create guild_user lookup for user:{user.id} guild:{guild_id}")
-            GuildUser.create(guild_id=guild_id, user_id=user.id)
-
-        key = self.__get_key(guild_id, user.id)
-        self.users[key] = new_user
-
-        return new_user
+        logger.info(f"CACHE: Add user {user.name}")
+        self.users[key] = user
+        return user
 
 
 class GuildService:
@@ -433,6 +407,7 @@ class GuildService:
         return Guild.select().where(Guild.id == guild_id).exists()
 
     @staticmethod
+    @logger.catch
     def update_or_add(guild_id: int, guild_name: str) -> None:
         """Add a guild to the database or update it if it already exists."""
         db_id, is_created = Guild.get_or_create(
@@ -449,6 +424,24 @@ class GuildService:
         if not is_created:
             Guild.set_by_id(db_id, {"last_connected": time_now()})
             logger.info(f"DATABASE: Update '{db_id.name}'")
+
+    def fetch_all_traits(
+        self, guild_id: int, flat_list: bool = False
+    ) -> dict[str, list[str]] | list[str]:
+        """Fetch all traits for a guild inclusive of common and custom."""
+        all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
+
+        custom_traits = CustomTrait.select().where(CustomTrait.guild == guild_id)
+        if len(custom_traits) > 0:
+            for custom_trait in custom_traits:
+                if custom_trait.category.title() not in all_traits:
+                    all_traits[custom_trait.category.title()] = []
+                all_traits[custom_trait.category.title()].append(custom_trait.name.title())
+
+        if flat_list:
+            return list({y for x in all_traits.values() for y in x})
+
+        return all_traits
 
 
 class DatabaseService:

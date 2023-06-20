@@ -199,6 +199,7 @@ class Macro(BaseModel):
     created = DateTimeField(default=time_now)
     bind_one = TextField(null=True)
     bind_two = TextField(null=True)
+    guild = ForeignKeyField(Guild, backref="macros")
 
 
 class CustomTrait(BaseModel):
@@ -218,11 +219,11 @@ class User(BaseModel):
 
     id = IntegerField(primary_key=True)  # noqa: A003
     username = TextField(null=True)
+    name = TextField(null=True)
     avatar_url = TextField(null=True)
     first_seen = DateTimeField(default=time_now)
-    is_admin = BooleanField(default=False)
-    is_banned = BooleanField(default=False)
-    last_connected = DateTimeField(default=time_now)
+    mention = TextField(null=True)
+    last_seen = DateTimeField(default=time_now)
 
 
 class GuildUser(BaseModel):

@@ -1,5 +1,6 @@
 """Helper functions for Valentina."""
 from copy import deepcopy
+from typing import cast
 
 from valentina.models.constants import (
     COMMON_TRAITS,
@@ -14,7 +15,7 @@ from valentina.models.constants import (
 from valentina.models.database import Character
 
 
-def all_traits_from_constants() -> dict[str, list[str]]:
+def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] | list[str]:
     """Return all traits from the constants as a dictionary inclusive of all classes."""
     trait_dicts = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
 
@@ -25,6 +26,9 @@ def all_traits_from_constants() -> dict[str, list[str]]:
                 all_traits[category].extend(traits)
             else:
                 all_traits[category] = traits
+
+    if flat_list:
+        return list({y for x in all_traits.values() for y in x})
 
     return all_traits
 
@@ -121,7 +125,8 @@ def get_max_trait_value(trait: str) -> int:
         return MaxTraitValue[trait.upper()].value
 
     # Try to find the cost by looking up the parent key of the trait
-    for category, traits in all_traits_from_constants().items():
+    all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
+    for category, traits in all_traits.items():
         if (
             trait.lower() in [x.lower() for x in traits]
             and category.upper() in MaxTraitValue.__members__
@@ -146,7 +151,8 @@ def get_trait_multiplier(trait: str) -> int:
         return XPMultiplier[trait.upper()].value
 
     # Try to find the cost by looking up the parent key of the trait
-    for category, traits in all_traits_from_constants().items():
+    all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
+    for category, traits in all_traits.items():
         if (
             trait.lower() in [x.lower() for x in traits]
             and category.upper() in XPMultiplier.__members__
@@ -171,7 +177,8 @@ def get_trait_new_value(trait: str) -> int:
         return XPNew[trait.upper()].value
 
     # Try to find the cost by looking up the parent key of the trait
-    for category, traits in all_traits_from_constants().items():
+    all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
+    for category, traits in all_traits.items():
         if trait.lower() in [x.lower() for x in traits] and category.upper() in XPNew.__members__:
             return XPNew[category.upper()].value
 

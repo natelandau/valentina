@@ -6,7 +6,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina, char_svc, user_svc
+from valentina import Valentina, char_svc
 from valentina.character.create import create_character
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
@@ -136,11 +136,6 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Claim a character to your user. This will allow you to roll without specifying traits, edit the character, and more."""
-        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
-            ctx.guild.id, ctx.user.id
-        ):
-            user_svc.create(ctx.guild.id, ctx.user)
-
         character = char_svc.fetch_by_id(ctx.guild.id, char_id)
 
         try:
@@ -175,11 +170,6 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
     ) -> None:
         """Unclaim currently claimed character. This will allow you to claim a new character."""
-        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
-            ctx.guild.id, ctx.user.id
-        ):
-            user_svc.create(ctx.guild.id, ctx.user)
-
         if char_svc.user_has_claim(ctx.guild.id, ctx.user.id):
             character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
             char_svc.remove_claim(ctx.guild.id, ctx.user.id)
