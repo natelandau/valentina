@@ -12,7 +12,12 @@ from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
 from valentina.models.constants import CharClass, TraitAreas
-from valentina.utils.errors import CharacterClaimedError, NoClaimError, UserHasClaimError
+from valentina.utils.errors import (
+    CharacterClaimedError,
+    NoClaimError,
+    TraitNotFoundError,
+    UserHasClaimError,
+)
 from valentina.utils.helpers import (
     get_max_trait_value,
     get_trait_multiplier,
@@ -115,6 +120,7 @@ class Characters(commands.Cog, name="Character"):
             claimed_by = self.bot.get_user(user_id_num)
         else:
             claimed_by = None
+
         await show_sheet(ctx, character=character, claimed_by=claimed_by)
 
     @chars.command(name="claim", description="Claim a character.")
@@ -468,6 +474,37 @@ class Characters(commands.Cog, name="Character"):
         """Update the value of a trait."""
         try:
             character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+
+            old_value = char_svc.fetch_trait_value(character=character, trait=trait)
+
+            view = ConfirmCancelView(ctx.author)
+            await present_embed(
+                ctx,
+                title=f"Update {trait}",
+                description=f"Confirm updating {trait}",
+                fields=[
+                    ("Old Value", str(old_value)),
+                    ("New Value", new_value),
+                ],
+                inline_fields=True,
+                ephemeral=True,
+                level="info",
+                view=view,
+            )
+            await view.wait()
+            if view.confirmed and char_svc.update_trait_value(
+                guild_id=ctx.guild.id, character=character, trait_name=trait, new_value=new_value
+            ):
+                await present_embed(
+                    ctx=ctx,
+                    title=f"{character.name} {trait} updated",
+                    description=f"**{trait}** updated to **{new_value}**.",
+                    level="success",
+                    fields=[("Old Value", str(old_value)), ("New Value", new_value)],
+                    inline_fields=True,
+                    footer=f"Updated by {ctx.author.name}",
+                    ephemeral=False,
+                )
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -476,56 +513,14 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
             return
-
-        # Determine if the trait is a custom trait or a built-in trait
-        if hasattr(character, normalize_to_db_row(trait)):
-            custom_trait = None
-            old_value = character.__getattribute__(normalize_to_db_row(trait))
-        else:
-            custom_traits = char_svc.fetch_char_custom_traits(character)
-            custom_trait = [x for x in custom_traits if x.name == trait.title()][0]
-            if custom_trait:
-                old_value = custom_trait.value
-            else:
-                await present_embed(
-                    ctx=ctx,
-                    title="Error: Trait not found",
-                    description="The trait you specified was not found.",
-                    level="error",
-                )
-                return
-
-        view = ConfirmCancelView(ctx.author)
-        await present_embed(
-            ctx,
-            title=f"Update {trait}",
-            description=f"Confirm updating {trait}",
-            fields=[("Old Value", old_value), ("New Value", new_value)],
-            inline_fields=True,
-            ephemeral=True,
-            level="info",
-            view=view,
-        )
-        await view.wait()
-        if view.confirmed:
-            if custom_trait:
-                custom_trait.value = new_value
-                custom_trait.save()
-            else:
-                char_svc.update_char(
-                    ctx.guild.id, character.id, **{normalize_to_db_row(trait): new_value}
-                )
-            logger.info(f"TRAIT: '{trait}' updated on {character.name} by {ctx.author.name}")
+        except TraitNotFoundError:
             await present_embed(
                 ctx=ctx,
-                title=f"{character.name} {trait} updated",
-                description=f"**{trait}** updated to **{new_value}**.",
-                level="success",
-                fields=[("Old Value", old_value), ("New Value", new_value)],
-                inline_fields=True,
-                footer=f"Updated by {ctx.author.name}",
-                ephemeral=False,
+                title="Error: Trait not found",
+                description=f"{character.name} does not have trait: **{trait}**",
+                level="error",
             )
+            return
 
 
 def setup(bot: Valentina) -> None:

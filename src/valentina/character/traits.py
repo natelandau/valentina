@@ -57,7 +57,7 @@ async def add_trait(
                 ctx=ctx,
                 title=f"Custom trait added to {character.name}",
                 fields=[
-                    ("Name", trait_name.title()),
+                    ("Trait", trait_name.title()),
                     ("Area", trait_area),
                     ("Value", f"`{trait_value!s}`"),
                     ("Description", trait_description),

@@ -25,6 +25,7 @@ from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
     NoClaimError,
+    TraitNotFoundError,
     UserHasClaimError,
 )
 from valentina.utils.helpers import (
@@ -127,14 +128,8 @@ class CharacterService:
 
         return chars_to_return
 
-    @staticmethod
-    def fetch_char_custom_traits(character: Character) -> list[CustomTrait]:
-        """Fetch all custom traits for a character."""
-        return CustomTrait.select().where(CustomTrait.character_id == character.id)
-
-    @staticmethod
     def fetch_all_character_traits(
-        character: Character, flat_list: bool = False
+        self, character: Character, flat_list: bool = False
     ) -> dict[str, list[str]] | list[str]:
         """Fetch all traits for a character inclusive of common and custom."""
         all_traits = extend_common_traits_with_class(character.class_name)
@@ -151,8 +146,8 @@ class CharacterService:
 
         return all_traits
 
-    @staticmethod
     def fetch_all_character_trait_values(
+        self,
         character: Character,
     ) -> dict[str, list[tuple[str, int, str]]]:
         """Fetch all trait values for a character inclusive of common and custom.
@@ -189,6 +184,10 @@ class CharacterService:
 
         return all_traits
 
+    def fetch_char_custom_traits(self, character: Character) -> list[CustomTrait]:
+        """Fetch all custom traits for a character."""
+        return CustomTrait.select().where(CustomTrait.character_id == character.id)
+
     def fetch_by_id(self, guild_id: int, char_id: int) -> Character:
         """Fetch a character by database id.
 
@@ -201,13 +200,13 @@ class CharacterService:
         """
         key = self.__get_char_key(guild_id, char_id)
         if self.is_cached_char(key=key):
-            logger.debug(f"CACHE: Fetched character {char_id}")
+            logger.debug(f"CACHE: Fetch character {char_id}")
             return self.characters[key]
 
         character = Character.get_by_id(char_id)
 
         self.characters[key] = character
-        logger.info(f"DATABASE: Fetched character: {character.first_name}")
+        logger.info(f"DATABASE: Fetch character: {character.name}")
         return character
 
     def fetch_claim(self, guild_id: int, user_id: int) -> Character:
@@ -217,7 +216,7 @@ class CharacterService:
             char_key = self.claims[claim_key]
 
             if self.is_cached_char(key=char_key):
-                logger.debug(f"CACHE: Fetched character {char_key}")
+                logger.debug(f"CACHE: Fetch character {char_key}")
                 return self.characters[char_key]
 
             char_id = re.sub(r"\d\w+_", "", char_key)
@@ -225,6 +224,19 @@ class CharacterService:
             return character
 
         raise NoClaimError(f"User {user_id} has no claim")
+
+    def fetch_trait_value(self, character: Character, trait: str) -> int:
+        """Fetch the value of a trait for a character."""
+        if hasattr(character, normalize_to_db_row(trait)):
+            return getattr(character, normalize_to_db_row(trait))
+
+        custom_trait = [
+            x for x in self.fetch_char_custom_traits(character) if x.name.lower() == trait.lower()
+        ][0]
+        if custom_trait:
+            return custom_trait.value
+
+        raise TraitNotFoundError(f"Trait {trait} not found for character {character.id}")
 
     def fetch_user_of_character(self, guild_id: int, char_id: int) -> int:
         """Returns the user id of the user who claimed a character."""
@@ -251,7 +263,7 @@ class CharacterService:
     def purge_by_id(self, guild_id: int = None, char_id: int = None, key: str = None) -> None:
         """Purge a single character from the cache by ID."""
         key = self.__get_char_key(guild_id, char_id) if key is None else key
-        logger.debug(f"CACHE: Purge character {key} from cache")
+        logger.debug(f"CACHE: Purge character {key}")
         self.characters.pop(key, None)
 
     def remove_claim(self, guild_id: int, user_id: int) -> bool:
@@ -288,6 +300,32 @@ class CharacterService:
 
         logger.debug(f"DATABASE: Update character: {char_id}")
         return character
+
+    def update_trait_value(
+        self, guild_id: int, character: Character, trait_name: str, new_value: int
+    ) -> bool:
+        """Update a trait value for a character."""
+        if hasattr(character, normalize_to_db_row(trait_name)):
+            setattr(character, normalize_to_db_row(trait_name), new_value)
+            character.save()
+            logger.debug(
+                f"DATABASE: Update '{trait_name}' for character {character.name} to {new_value}"
+            )
+            return True
+
+        custom_trait = CustomTrait.get(
+            CustomTrait.character_id == character.id and CustomTrait.name == trait_name.title()
+        )
+        if custom_trait:
+            custom_trait.value = new_value
+            custom_trait.save()
+            self.update_char(guild_id, character.id)
+            logger.debug(
+                f"DATABASE: Update '{trait_name}' for character {character.name} to {new_value}"
+            )
+            return True
+
+        raise TraitNotFoundError(f"Trait '{trait_name}' was not found for character {character.id}")
 
 
 class UserService:
