@@ -29,11 +29,11 @@ class Help(commands.Cog):
             fields.append(("\u200b", "**COMMANDS**"))
 
             # iterate trough cogs, gathering descriptions
-            for cog in self.bot.cogs:
+            for cog in sorted(self.bot.cogs):
                 fields.append((f"{cog}", self.bot.cogs[cog].__doc__ or "No description"))
 
             # iterate through uncategorized commands
-            for command in self.bot.walk_commands():
+            for command in sorted(self.bot.walk_commands(), key=lambda x: x.name):
                 # if command not in a cog
                 # listing command if cog name is None and command isn't hidden
                 if not command.cog_name and not command.hidden and command.name != "help":
@@ -62,7 +62,9 @@ class Help(commands.Cog):
                     )
                     fields.append(("\u200b", "**SUBCOMMANDS**"))
                     # getting commands from cog
-                    for command in self.bot.get_cog(cog).walk_commands():
+                    for command in sorted(
+                        self.bot.get_cog(cog).walk_commands(), key=lambda x: (x.parent.name, x.name)
+                    ):
                         if (
                             isinstance(command, discord.commands.core.SlashCommand)
                             and command.parent.name.lower() != c
