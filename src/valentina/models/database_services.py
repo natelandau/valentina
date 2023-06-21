@@ -383,6 +383,16 @@ class UserService:
         logger.debug(f"DATABASE: Fetch macros for {key}")
         return macros
 
+    def fetch_macro(self, ctx: discord.ApplicationContext, macro_name: str) -> Macro:
+        """Fetch a macro by name."""
+        macros = self.fetch_macros(ctx)
+
+        for macro in macros:
+            if macro.name.lower() == macro_name.lower():
+                return macro
+
+        return None
+
     def fetch_user(self, ctx: discord.ApplicationContext) -> User:
         """Fetch a user object from the cache or database."""
         key = self.__get_user_key(ctx.guild.id, ctx.author.id)

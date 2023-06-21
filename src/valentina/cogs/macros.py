@@ -141,7 +141,7 @@ class Macros(commands.Cog):
         ctx: discord.ApplicationContext,
         macro: Option(
             str,
-            description="First trait to roll",
+            description="Macro to delete",
             required=True,
             autocomplete=__macro_autocomplete,
         ),
