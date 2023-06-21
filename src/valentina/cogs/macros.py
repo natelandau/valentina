@@ -69,13 +69,25 @@ class Macros(commands.Cog):
         abbreviation = modal.abbreviation
         description = modal.description
 
+        macros = user_svc.fetch_macros(ctx)
+        if any(macro.name.lower() == name.lower() for macro in macros) or any(
+            macro.abbreviation.lower() == abbreviation.lower() for macro in macros
+        ):
+            await present_embed(
+                ctx,
+                title="Macro already exists",
+                description=f"A macro already exists with the name **{name}** or abbreviation **{abbreviation}**\nPlease choose a different name or abbreviation or delete the existing macro with `/macros delete`",
+                level="error",
+            )
+            return
+
         user_svc.create_macro(
             ctx,
-            name=name,
-            abbreviation=abbreviation,
-            description=description,
+            name=name.strip(),
+            abbreviation=abbreviation.strip(),
+            description=description.strip(),
             trait_one=trait_one,
-            trait_two=trait_one,
+            trait_two=trait_two,
         )
 
         await present_embed(
@@ -90,14 +102,27 @@ class Macros(commands.Cog):
             level="success",
         )
 
-    @macros.command(name="delete", description="Delete a macro")
+    @macros.command(name="list", description="List macros associated with your account")
     @logger.catch
-    async def delete_macro(
+    async def list_macros(
         self,
         ctx: discord.ApplicationContext,
     ) -> None:
-        """Create a new macro."""
-        ...
+        """List all macros associated with a user account."""
+        macros = sorted(user_svc.fetch_macros(ctx), key=lambda macro: macro.name)
+        await present_embed(
+            ctx,
+            title=f"Macros for {ctx.author.display_name}",
+            description=f"{ctx.author.mention} has the following macros associated with their account.",
+            fields=[
+                (
+                    f"{macro.name} ({macro.abbreviation}) - `{macro.trait_one} + {macro.trait_two}`",
+                    f"{macro.description}",
+                )
+                for macro in macros
+            ],
+            level="info",
+        )
 
 
 def setup(bot: Valentina) -> None:

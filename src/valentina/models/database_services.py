@@ -334,10 +334,11 @@ class UserService:
 
     def __init__(self) -> None:
         """Initialize the UserService."""
-        self.users: dict[str, User] = {}  # {user_key: User, ...}
+        self.user_cache: dict[str, User] = {}  # {user_key: User, ...}
+        self.macro_cache: dict[str, list[Macro]] = {}  # {user_key: [Macro, ...]}
 
     @staticmethod
-    def __get_key(guild_id: int, user_id: int) -> str:
+    def __get_user_key(guild_id: int, user_id: int) -> str:
         """Get the guild and user IDs.
 
         Args:
@@ -349,17 +350,37 @@ class UserService:
         """
         return f"{guild_id}_{user_id}"
 
-    def purge(self) -> None:
-        """Purge cache of all users."""
-        self.users = {}
+    def purge_all(self) -> None:
+        """Purge all caches."""
+        self.user_cache = {}
+        self.macro_cache = {}
 
-    def fetch(self, ctx: discord.ApplicationContext) -> User:
+    def purge_by_id(self, ctx: discord.ApplicationContext) -> None:
+        """Purge a single user from the caches by ID."""
+        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
+        self.user_cache.pop(key, None)
+        self.macro_cache.pop(key, None)
+
+    def fetch_macros(self, ctx: discord.ApplicationContext) -> list[Macro]:
+        """Fetch a list of macros for a user."""
+        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
+
+        if key in self.macro_cache:
+            logger.debug(f"CACHE: Return macros for {key}")
+            return self.macro_cache[key]
+
+        macros = Macro.select().where((Macro.user == ctx.author.id) & (Macro.guild == ctx.guild.id))
+        self.macro_cache[key] = macros
+        logger.debug(f"DATABASE: Fetch macros for {key}")
+        return macros
+
+    def fetch_user(self, ctx: discord.ApplicationContext) -> User:
         """Fetch a user object from the cache or database."""
-        key = self.__get_key(ctx.guild.id, ctx.author.id)
+        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
 
-        if key in self.users:
+        if key in self.user_cache:
             logger.info(f"CACHE: Returning user {key} from cache")
-            return self.users[key]
+            return self.user_cache[key]
 
         user, created = User.get_or_create(
             id=ctx.author.id,
@@ -390,19 +411,8 @@ class UserService:
             user.save()
 
         logger.info(f"CACHE: Add user {user.name}")
-        self.users[key] = user
+        self.user_cache[key] = user
         return user
-
-    def add_macro(
-        self,
-        ctx: discord.ApplicationContext,
-        trait_one: str,
-        trait_two: str,
-        name: str,
-        abbreviation: str = None,
-        description: str = None,
-    ) -> None:
-        """Add a new macro for a user."""
 
     def create_macro(
         self,
@@ -414,7 +424,7 @@ class UserService:
         trait_two: str,
     ) -> None:
         """Create a new macro for a user."""
-        user = self.fetch(ctx)
+        user = self.fetch_user(ctx)
         macro = Macro.create(
             name=name,
             abbreviation=abbreviation,
@@ -425,6 +435,8 @@ class UserService:
             trait_two=trait_two,
         )
         macro.save()
+
+        self.purge_by_id(ctx)
         logger.info(f"DATABASE: Create macro '{name}' for user '{user.name}'")
 
 

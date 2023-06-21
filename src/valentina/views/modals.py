@@ -11,7 +11,7 @@ class MacroCreateModal(discord.ui.Modal):
         super().__init__(*args, **kwargs)
         self.name: str = None
         self.abbreviation: str = None
-        self.description: str = None
+        self.description: str = ""
         self.confirmed: bool = False
         self.trait_one = trait_one
         self.trait_two = trait_two
@@ -30,13 +30,14 @@ class MacroCreateModal(discord.ui.Modal):
                 placeholder="Up to 4 character abbreviation",
                 required=True,
                 style=discord.InputTextStyle.short,
+                max_length=4,
             )
         )
         self.add_item(
             discord.ui.InputText(
                 label="description",
                 placeholder="A brief description of what this macro does",
-                required=True,
+                required=False,
                 style=discord.InputTextStyle.long,
             )
         )
