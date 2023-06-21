@@ -36,7 +36,7 @@ class Characters(commands.Cog, name="Character"):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    async def _trait_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+    async def __trait_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:
             character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
@@ -228,7 +228,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         trait: Option(
-            str, description="Trait to update", required=True, autocomplete=_trait_autocomplete
+            str, description="Trait to update", required=True, autocomplete=__trait_autocomplete
         ),
     ) -> None:
         """Spend experience points."""
@@ -454,7 +454,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         trait: Option(
-            str, description="Trait to update", required=True, autocomplete=_trait_autocomplete
+            str, description="Trait to update", required=True, autocomplete=__trait_autocomplete
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=1, max_value=20

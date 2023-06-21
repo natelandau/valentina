@@ -14,43 +14,41 @@ from valentina.views import present_embed
 from valentina.views.roll_display import RollDisplay
 
 
-async def trait_one_autocomplete(ctx: discord.ApplicationContext) -> list[str]:
-    """Populates the autocomplete for the trait option."""
-    try:
-        character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
-    except NoClaimError:
-        return ["No character claimed"]
-
-    traits = []
-    for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
-        if trait.lower().startswith(ctx.options["trait_one"].lower()):
-            traits.append(trait)
-        if len(traits) >= MAX_OPTION_LIST_SIZE:
-            break
-    return traits
-
-
-async def trait_two_autocomplete(ctx: discord.ApplicationContext) -> list[str]:
-    """Populates the autocomplete for the trait option."""
-    try:
-        character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
-    except NoClaimError:
-        return ["No character claimed"]
-
-    traits = []
-    for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
-        if trait.lower().startswith(ctx.options["trait_two"].lower()):
-            traits.append(trait)
-        if len(traits) >= MAX_OPTION_LIST_SIZE:
-            break
-    return traits
-
-
 class Roll(commands.Cog):
     """Commands used during gameplay."""
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
+
+    async def __trait_one_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+        """Populates the autocomplete for the trait option."""
+        try:
+            character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
+        except NoClaimError:
+            return ["No character claimed"]
+
+        traits = []
+        for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
+            if trait.lower().startswith(ctx.options["trait_one"].lower()):
+                traits.append(trait)
+            if len(traits) >= MAX_OPTION_LIST_SIZE:
+                break
+        return traits
+
+    async def __trait_two_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+        """Populates the autocomplete for the trait option."""
+        try:
+            character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
+        except NoClaimError:
+            return ["No character claimed"]
+
+        traits = []
+        for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
+            if trait.lower().startswith(ctx.options["trait_two"].lower()):
+                traits.append(trait)
+            if len(traits) >= MAX_OPTION_LIST_SIZE:
+                break
+        return traits
 
     roll = discord.SlashCommandGroup("roll", "Roll dice")
 
@@ -90,13 +88,13 @@ class Roll(commands.Cog):
             str,
             description="First trait to roll",
             required=True,
-            autocomplete=trait_one_autocomplete,
+            autocomplete=__trait_one_autocomplete,
         ),
         trait_two: Option(
             str,
             description="Second trait to roll",
             required=False,
-            autocomplete=trait_two_autocomplete,
+            autocomplete=__trait_two_autocomplete,
             default=None,
         ),
         difficulty: Option(

@@ -11,33 +11,31 @@ from valentina.models.constants import MAX_OPTION_LIST_SIZE
 from valentina.views import MacroCreateModal, present_embed
 
 
-async def trait_one_autocomplete(ctx: discord.ApplicationContext) -> list[str]:
-    """Populates the autocomplete for the trait option."""
-    traits = []
-    for trait in guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):
-        if trait.lower().startswith(ctx.options["trait_one"].lower()):
-            traits.append(trait)
-        if len(traits) >= MAX_OPTION_LIST_SIZE:
-            break
-    return traits
-
-
-async def trait_two_autocomplete(ctx: discord.ApplicationContext) -> list[str]:
-    """Populates the autocomplete for the trait option."""
-    traits = []
-    for trait in guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):
-        if trait.lower().startswith(ctx.options["trait_two"].lower()):
-            traits.append(trait)
-        if len(traits) >= MAX_OPTION_LIST_SIZE:
-            break
-    return traits
-
-
 class Macros(commands.Cog):
     """Manage macros for quick rolls."""
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
+
+    async def __trait_one_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+        """Populates the autocomplete for the trait option."""
+        traits = []
+        for trait in guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):
+            if trait.lower().startswith(ctx.options["trait_one"].lower()):
+                traits.append(trait)
+            if len(traits) >= MAX_OPTION_LIST_SIZE:
+                break
+        return traits
+
+    async def __trait_two_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+        """Populates the autocomplete for the trait option."""
+        traits = []
+        for trait in guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):
+            if trait.lower().startswith(ctx.options["trait_two"].lower()):
+                traits.append(trait)
+            if len(traits) >= MAX_OPTION_LIST_SIZE:
+                break
+        return traits
 
     macros = discord.SlashCommandGroup("macros", "Manage macros for quick rolls")
 
@@ -50,13 +48,13 @@ class Macros(commands.Cog):
             str,
             description="First trait to roll",
             required=True,
-            autocomplete=trait_one_autocomplete,
+            autocomplete=__trait_one_autocomplete,
         ),
         trait_two: Option(
             str,
             description="Second trait to roll",
             required=True,
-            autocomplete=trait_two_autocomplete,
+            autocomplete=__trait_two_autocomplete,
         ),
     ) -> None:
         """Create a new macro."""
@@ -91,6 +89,15 @@ class Macros(commands.Cog):
             ],
             level="success",
         )
+
+    @macros.command(name="delete", description="Delete a macro")
+    @logger.catch
+    async def delete_macro(
+        self,
+        ctx: discord.ApplicationContext,
+    ) -> None:
+        """Create a new macro."""
+        ...
 
 
 def setup(bot: Valentina) -> None:
