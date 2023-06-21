@@ -202,6 +202,7 @@ class Characters(commands.Cog, name="Character"):
                 description="There are no characters.\nCreate one with `/character create`",
                 level="error",
             )
+            return
         fields = []
         plural = "s" if len(characters) > 1 else ""
         description = f"**{len(characters)}** character{plural} on this server\n\u200b"

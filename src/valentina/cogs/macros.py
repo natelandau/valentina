@@ -120,19 +120,28 @@ class Macros(commands.Cog):
     ) -> None:
         """List all macros associated with a user account."""
         macros = sorted(user_svc.fetch_macros(ctx), key=lambda macro: macro.name)
-        await present_embed(
-            ctx,
-            title=f"Macros for {ctx.author.display_name}",
-            description=f"{ctx.author.mention} has the following macros associated with their account.",
-            fields=[
-                (
-                    f"{macro.name} ({macro.abbreviation}) - `{macro.trait_one} + {macro.trait_two}`",
-                    f"{macro.description}",
-                )
-                for macro in macros
-            ],
-            level="info",
-        )
+        if len(macros) > 0:
+            await present_embed(
+                ctx,
+                title=f"Macros for {ctx.author.display_name}",
+                description=f"{ctx.author.mention} has the following macros associated with their account.",
+                fields=[
+                    (
+                        f"{macro.name} ({macro.abbreviation}) - `{macro.trait_one} + {macro.trait_two}`",
+                        f"{macro.description}",
+                    )
+                    for macro in macros
+                ],
+                level="info",
+            )
+        else:
+            await present_embed(
+                ctx,
+                title="No Macros",
+                description=f"{ctx.author.mention} does not have any macros associated with their account.",
+                level="info",
+                ephemeral=True,
+            )
 
     @macros.command(name="delete", description="Delete a macro")
     @logger.catch
