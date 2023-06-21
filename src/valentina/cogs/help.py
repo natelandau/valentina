@@ -5,7 +5,7 @@ from discord.ext import commands
 
 from valentina import CONFIG, Valentina
 from valentina.__version__ import __version__
-from valentina.views.embeds import present_embed
+from valentina.views import present_embed
 
 
 class Help(commands.Cog):

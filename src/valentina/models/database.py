@@ -189,27 +189,16 @@ class Character(BaseModel):
         return f"""Character({self.id} {self.name})"""
 
 
-class DiceBinding(BaseModel):
-    """Dice Binding model for the database."""
-
-    name = TextField()
-    description = TextField(null=True)
-    character = ForeignKeyField(Character, backref="dice_bindings")
-    created = DateTimeField(default=time_now)
-    bind_one = TextField(null=True)
-    bind_two = TextField(null=True)
-    bind_three = TextField(null=True)
-
-
 class CustomTrait(BaseModel):
     """Custom Trait model for the database."""
 
-    name = TextField()
-    description = TextField(null=True)
-    trait_area = TextField(null=True)
     character = ForeignKeyField(Character, backref="custom_traits")
-    value = IntegerField(default=0)
     created = DateTimeField(default=time_now)
+    description = TextField(null=True)
+    guild = ForeignKeyField(Guild, backref="custom_traits")
+    name = TextField()
+    category = TextField(null=True)
+    value = IntegerField(default=0)
 
 
 class User(BaseModel):
@@ -217,11 +206,11 @@ class User(BaseModel):
 
     id = IntegerField(primary_key=True)  # noqa: A003
     username = TextField(null=True)
+    name = TextField(null=True)
     avatar_url = TextField(null=True)
     first_seen = DateTimeField(default=time_now)
-    is_admin = BooleanField(default=False)
-    is_banned = BooleanField(default=False)
-    last_connected = DateTimeField(default=time_now)
+    mention = TextField(null=True)
+    last_seen = DateTimeField(default=time_now)
 
 
 class GuildUser(BaseModel):
@@ -231,8 +220,14 @@ class GuildUser(BaseModel):
     user = ForeignKeyField(User, backref="guilds")
 
 
-class UserCharacter(BaseModel):
-    """Join table for User and Character."""
+class Macro(BaseModel):
+    """Macros for quick dice rolls."""
 
-    user = ForeignKeyField(User, backref="characters")
-    character = ForeignKeyField(Character, backref="users")
+    name = TextField()
+    abbreviation = TextField()
+    description = TextField(null=True)
+    created = DateTimeField(default=time_now)
+    trait_one = TextField(null=True)
+    trait_two = TextField(null=True)
+    guild = ForeignKeyField(Guild, backref="macros")
+    user = ForeignKeyField(User, backref="macros")

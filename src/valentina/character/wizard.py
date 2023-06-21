@@ -13,7 +13,7 @@ from valentina.models.constants import (
     WEREWOLF_TRAITS,
 )
 from valentina.models.database import Character, CharacterClass, Guild
-from valentina.views.rating_view import RatingView
+from valentina.views import RatingView
 
 
 class Wizard:

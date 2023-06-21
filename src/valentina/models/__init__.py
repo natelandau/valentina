@@ -6,11 +6,10 @@ from .database import (
     CharacterClass,
     CustomTrait,
     DatabaseVersion,
-    DiceBinding,
     Guild,
     GuildUser,
+    Macro,
     User,
-    UserCharacter,
 )
 from .dicerolls import DiceRoll
 
@@ -20,10 +19,9 @@ __all__ = [
     "CharacterClass",
     "CustomTrait",
     "DatabaseVersion",
-    "DiceBinding",
+    "Macro",
     "DiceRoll",
     "Guild",
     "GuildUser",
     "User",
-    "UserCharacter",
 ]

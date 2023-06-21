@@ -7,11 +7,10 @@ from valentina.models.database import (
     Character,
     CharacterClass,
     CustomTrait,
-    DiceBinding,
     Guild,
     GuildUser,
+    Macro,
     User,
-    UserCharacter,
 )
 from valentina.models.database_services import DatabaseService
 
@@ -22,8 +21,7 @@ MODELS = [
     CustomTrait,
     User,
     GuildUser,
-    UserCharacter,
-    DiceBinding,
+    Macro,
 ]
 
 

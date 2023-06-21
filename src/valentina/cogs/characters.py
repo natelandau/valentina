@@ -6,12 +6,12 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina, char_svc, user_svc
+from valentina import Valentina, char_svc
 from valentina.character.create import create_character
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitAreas
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitCategory
 from valentina.utils.errors import (
     CharacterClaimedError,
     NoClaimError,
@@ -25,7 +25,7 @@ from valentina.utils.helpers import (
     normalize_to_db_row,
 )
 from valentina.utils.options import select_character
-from valentina.views.embeds import ConfirmCancelView, present_embed
+from valentina.views import ConfirmCancelButtons, present_embed
 
 possible_classes = sorted([char_class.value for char_class in CharClass])
 
@@ -36,7 +36,7 @@ class Characters(commands.Cog, name="Character"):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    async def _trait_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+    async def __trait_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:
             character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
@@ -136,11 +136,6 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Claim a character to your user. This will allow you to roll without specifying traits, edit the character, and more."""
-        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
-            ctx.guild.id, ctx.user.id
-        ):
-            user_svc.create(ctx.guild.id, ctx.user)
-
         character = char_svc.fetch_by_id(ctx.guild.id, char_id)
 
         try:
@@ -175,11 +170,6 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
     ) -> None:
         """Unclaim currently claimed character. This will allow you to claim a new character."""
-        if not user_svc.is_cached(ctx.guild.id, ctx.user.id) and not user_svc.is_in_db(
-            ctx.guild.id, ctx.user.id
-        ):
-            user_svc.create(ctx.guild.id, ctx.user)
-
         if char_svc.user_has_claim(ctx.guild.id, ctx.user.id):
             character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
             char_svc.remove_claim(ctx.guild.id, ctx.user.id)
@@ -238,7 +228,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         trait: Option(
-            str, description="Trait to update", required=True, autocomplete=_trait_autocomplete
+            str, description="Trait to update", required=True, autocomplete=__trait_autocomplete
         ),
     ) -> None:
         """Spend experience points."""
@@ -248,7 +238,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Error: No character claimed",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                description="You must claim a character before you can spend experience.\nTo claim a character, use `/character claim`.",
                 level="error",
                 ephemeral=True,
             )
@@ -272,7 +262,7 @@ class Characters(commands.Cog, name="Character"):
                     level="error",
                 )
                 return
-            view = ConfirmCancelView(ctx.author)
+            view = ConfirmCancelButtons(ctx.author)
             await present_embed(
                 ctx,
                 title=f"Upgrade {trait}",
@@ -333,7 +323,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Error: No character claimed",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                description="You must claim a character before you can add experience.\nTo claim a character, use `/character claim`.",
                 level="error",
             )
             return
@@ -372,7 +362,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Error: No character claimed",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                description="You must claim a character before you can add cool points.\nTo claim a character, use `/character claim`.",
                 level="error",
             )
             return
@@ -403,11 +393,11 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         trait: Option(str, "The new trait to add.", required=True),
-        area: Option(
+        category: Option(
             str,
-            "The area to add the trait to",
+            "The category to add the trait to",
             required=True,
-            choices=sorted([x.value for x in TraitAreas]),
+            choices=sorted([x.value for x in TraitCategory]),
         ),
         value: Option(int, "The value of the trait", required=True, min_value=1, max_value=20),
         description: Option(str, "A description of the trait", required=False),
@@ -419,7 +409,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Error: No character claimed.",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                description="You must claim a character before you can add a trait.\nTo claim a character, use `/character claim`.",
                 level="error",
             )
             return
@@ -427,7 +417,7 @@ class Characters(commands.Cog, name="Character"):
             ctx=ctx,
             character=character,
             trait_name=trait,
-            trait_area=area,
+            category=category,
             trait_value=value,
             trait_description=description,
         )
@@ -464,7 +454,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         trait: Option(
-            str, description="Trait to update", required=True, autocomplete=_trait_autocomplete
+            str, description="Trait to update", required=True, autocomplete=__trait_autocomplete
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=1, max_value=20
@@ -476,7 +466,7 @@ class Characters(commands.Cog, name="Character"):
 
             old_value = char_svc.fetch_trait_value(character=character, trait=trait)
 
-            view = ConfirmCancelView(ctx.author)
+            view = ConfirmCancelButtons(ctx.author)
             await present_embed(
                 ctx,
                 title=f"Update {trait}",

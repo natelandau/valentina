@@ -1,10 +1,11 @@
 """Models for maintaining in-memory caches of database queries."""
 
 import re
+from typing import cast
 
 import discord
 from loguru import logger
-from peewee import DoesNotExist, ModelSelect, SqliteDatabase
+from peewee import DoesNotExist, ModelSelect, SqliteDatabase, fn
 from semver import Version
 
 from valentina.__version__ import __version__
@@ -14,11 +15,10 @@ from valentina.models.database import (
     CharacterClass,
     CustomTrait,
     DatabaseVersion,
-    DiceBinding,
     Guild,
     GuildUser,
+    Macro,
     User,
-    UserCharacter,
     time_now,
 )
 from valentina.utils.errors import (
@@ -29,6 +29,7 @@ from valentina.utils.errors import (
     UserHasClaimError,
 )
 from valentina.utils.helpers import (
+    all_traits_from_constants,
     extend_common_traits_with_class,
     get_max_trait_value,
     normalize_to_db_row,
@@ -137,12 +138,12 @@ class CharacterService:
         custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                if custom_trait.trait_area.title() not in all_traits:
-                    all_traits[custom_trait.trait_area.title()] = []
-                all_traits[custom_trait.trait_area.title()].append(custom_trait.name.title())
+                if custom_trait.category.title() not in all_traits:
+                    all_traits[custom_trait.category.title()] = []
+                all_traits[custom_trait.category.title()].append(custom_trait.name.title())
 
         if flat_list:
-            return [y for x in all_traits.values() for y in x]
+            return list({y for x in all_traits.values() for y in x})
 
         return all_traits
 
@@ -172,13 +173,13 @@ class CharacterService:
         custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                if custom_trait.trait_area.title() not in all_traits:
-                    all_traits[custom_trait.trait_area.title()] = []
+                if custom_trait.category.title() not in all_traits:
+                    all_traits[custom_trait.category.title()] = []
                 custom_trait_name = custom_trait.name.title()
                 custom_trait_value = custom_trait.value
                 max_value = get_max_trait_value(custom_trait_name)
                 dots = num_to_circles(custom_trait_value, max_value)
-                all_traits[custom_trait.trait_area.title()].append(
+                all_traits[custom_trait.category.title()].append(
                     (custom_trait_name, custom_trait_value, dots)
                 )
 
@@ -333,10 +334,11 @@ class UserService:
 
     def __init__(self) -> None:
         """Initialize the UserService."""
-        self.users: dict[str, User] = {}  # {user_key: User, ...}
+        self.user_cache: dict[str, User] = {}  # {user_key: User, ...}
+        self.macro_cache: dict[str, list[Macro]] = {}  # {user_key: [Macro, ...]}
 
     @staticmethod
-    def __get_key(guild_id: int, user_id: int) -> str:
+    def __get_user_key(guild_id: int, user_id: int) -> str:
         """Get the guild and user IDs.
 
         Args:
@@ -348,77 +350,124 @@ class UserService:
         """
         return f"{guild_id}_{user_id}"
 
-    def purge(self) -> None:
-        """Purge cache of all users."""
-        self.users = {}
+    def purge_all(self) -> None:
+        """Purge all caches."""
+        self.user_cache = {}
+        self.macro_cache = {}
 
-    def is_cached(self, guild_id: int, user_id: int) -> bool:
-        """Check if the user is in the cache."""
-        key = self.__get_key(guild_id, user_id)
+    def purge_by_id(self, ctx: discord.ApplicationContext) -> None:
+        """Purge a single user from the caches by ID."""
+        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
+        self.user_cache.pop(key, None)
+        self.macro_cache.pop(key, None)
 
-        if key in self.users:
-            return True
+    def fetch_macros(
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+    ) -> list[Macro]:
+        """Fetch a list of macros for a user."""
+        if isinstance(ctx, discord.ApplicationContext):
+            author_id = ctx.author.id
+            guild_id = ctx.guild.id
+        if isinstance(ctx, discord.AutocompleteContext):
+            author_id = ctx.interaction.user.id
+            guild_id = ctx.interaction.guild.id
 
-        return False
+        key = self.__get_user_key(guild_id, author_id)
 
-    def is_in_db(self, guild_id: int, user_id: int) -> bool:
-        """Check if the user is in the database."""
-        in_user_table = False
-        in_guild_user_table = False
+        if key in self.macro_cache:
+            logger.debug(f"CACHE: Return macros for {key}")
+            return self.macro_cache[key]
 
-        if User.select().where(User.id == user_id).exists():
-            in_user_table = True
+        macros = Macro.select().where((Macro.user == author_id) & (Macro.guild == guild_id))
+        self.macro_cache[key] = macros
+        logger.debug(f"DATABASE: Fetch macros for {key}")
+        return macros
 
-        if (
-            GuildUser.select()
-            .where((GuildUser.guild_id == guild_id) & (GuildUser.user_id == user_id))
-            .exists()
-        ):
-            in_guild_user_table = True
+    def fetch_macro(self, ctx: discord.ApplicationContext, macro_name: str) -> Macro:
+        """Fetch a macro by name."""
+        macros = self.fetch_macros(ctx)
 
-        if in_user_table and in_guild_user_table:
-            return True
+        for macro in macros:
+            if macro.name.lower() == macro_name.lower():
+                return macro
 
-        return False
+        return None
 
-    def fetch(self, guild_id: int, user_id: int) -> User:
+    def fetch_user(self, ctx: discord.ApplicationContext) -> User:
         """Fetch a user object from the cache or database."""
-        key = self.__get_key(guild_id, user_id)
+        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
 
-        if self.is_cached(guild_id, user_id):
+        if key in self.user_cache:
             logger.info(f"CACHE: Returning user {key} from cache")
-            return self.users[key]
+            return self.user_cache[key]
 
-        if self.is_in_db(guild_id, user_id):
-            user = User.get_by_id(user_id)
+        user, created = User.get_or_create(
+            id=ctx.author.id,
+            defaults={
+                "id": ctx.author.id,
+                "name": ctx.author.display_name,
+                "username": ctx.author.name,
+                "mention": ctx.author.mention,
+                "first_seen": time_now(),
+                "last_seen": time_now(),
+            },
+        )
+        if created:
+            existing_guild_user, lookup_created = GuildUser.get_or_create(
+                user=ctx.author.id,
+                guild=ctx.guild.id,
+                defaults={"guild_id": ctx.guild.id, "user_id": ctx.author.id},
+            )
+            if lookup_created:
+                logger.info(
+                    f"DATABASE: Create guild_user lookup for user:{ctx.author.name} guild:{ctx.guild.name}"
+                )
+
+            logger.info(f"DATABASE: Create user '{ctx.author.display_name}'")
+
+        else:
             user.last_seen = time_now()
             user.save()
-            self.users[key] = user
-            logger.info(f"CACHE: Returning user {key} from the database and caching")
-            return user
 
-        logger.error(f"DATABASE: User {key} does not exist in database or the cache.")
-        raise ValueError(f"User {key} does not exist in database or the cache.")
+        logger.info(f"CACHE: Add user {user.name}")
+        self.user_cache[key] = user
+        return user
 
-    def create(self, guild_id: int, user: discord.User | discord.Member) -> User:
-        """Create a new user in the database and cache."""
-        print(f"Creating user {user.id}-{user.name}")
-        existing_user = User.get_or_none(id=user.id)
-        if existing_user is None:
-            logger.info(f"DATABASE: Created user {user.id} in database")
-            new_user = User.create(id=user.id, username=user.name)
-        else:
-            new_user = User.get_by_id(user.id)
+    def create_macro(
+        self,
+        ctx: discord.ApplicationContext,
+        name: str,
+        abbreviation: str,
+        description: str,
+        trait_one: str,
+        trait_two: str,
+    ) -> None:
+        """Create a new macro for a user."""
+        user = self.fetch_user(ctx)
+        macro = Macro.create(
+            name=name,
+            abbreviation=abbreviation,
+            description=description,
+            guild_id=ctx.guild.id,
+            user_id=user.id,
+            trait_one=trait_one,
+            trait_two=trait_two,
+        )
+        macro.save()
 
-        existing_guild_user = GuildUser.get_or_none(guild_id=guild_id, user_id=user.id)
-        if existing_guild_user is None:
-            logger.info(f"DATABASE: Create guild_user lookup for user:{user.id} guild:{guild_id}")
-            GuildUser.create(guild_id=guild_id, user_id=user.id)
+        self.purge_by_id(ctx)
+        logger.info(f"DATABASE: Create macro '{name}' for user '{user.name}'")
 
-        key = self.__get_key(guild_id, user.id)
-        self.users[key] = new_user
+    def delete_macro(self, ctx: discord.ApplicationContext, macro_name: str) -> None:
+        """Delete a macro from the database and purge the user cache."""
+        Macro.delete().where(
+            (fn.Lower(Macro.name) == macro_name.lower())
+            & (Macro.user == ctx.author.id)
+            & (Macro.guild == ctx.guild.id)
+        ).execute()
 
-        return new_user
+        self.purge_by_id(ctx)
+        logger.info(f"DATABASE: Delete macro '{macro_name}' for user '{ctx.author.name}'")
 
 
 class GuildService:
@@ -434,6 +483,7 @@ class GuildService:
         return Guild.select().where(Guild.id == guild_id).exists()
 
     @staticmethod
+    @logger.catch
     def update_or_add(guild_id: int, guild_name: str) -> None:
         """Add a guild to the database or update it if it already exists."""
         db_id, is_created = Guild.get_or_create(
@@ -450,6 +500,24 @@ class GuildService:
         if not is_created:
             Guild.set_by_id(db_id, {"last_connected": time_now()})
             logger.info(f"DATABASE: Update '{db_id.name}'")
+
+    def fetch_all_traits(
+        self, guild_id: int, flat_list: bool = False
+    ) -> dict[str, list[str]] | list[str]:
+        """Fetch all traits for a guild inclusive of common and custom."""
+        all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
+
+        custom_traits = CustomTrait.select().where(CustomTrait.guild == guild_id)
+        if len(custom_traits) > 0:
+            for custom_trait in custom_traits:
+                if custom_trait.category.title() not in all_traits:
+                    all_traits[custom_trait.category.title()] = []
+                all_traits[custom_trait.category.title()].append(custom_trait.name.title())
+
+        if flat_list:
+            return list({y for x in all_traits.values() for y in x})
+
+        return all_traits
 
 
 class DatabaseService:
@@ -470,8 +538,7 @@ class DatabaseService:
                     CustomTrait,
                     User,
                     GuildUser,
-                    UserCharacter,
-                    DiceBinding,
+                    Macro,
                     DatabaseVersion,
                 ]
             )
