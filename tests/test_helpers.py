@@ -4,7 +4,6 @@
 import pytest
 
 from valentina.utils.helpers import (
-    format_traits,
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
@@ -122,22 +121,3 @@ def test_get_trait_new_value(trait, expected):
     THEN the correct value is returned
     """
     assert get_trait_new_value(trait) == expected
-
-
-def test_format_traits():
-    """Test format_traits().
-
-    GIVEN a character and a list of traits
-    WHEN format_traits() is called
-    THEN the correct string is returned
-    """
-    assert (
-        format_traits(MockCharacter(), ["Blood Pool", "Strength", "wits", "Dexterity", "Nothing"])
-        == "`blood_pool   : ●●●●●●●●●●○○○○○○○○○○`\n`strength     : ●●○○○`\n`wits         : ○○○○○`\n`dexterity    : ○○○○○`"
-    )
-    assert (
-        format_traits(
-            MockCharacter(), ["Blood Pool", "Strength", "wits", "Dexterity", "Nothing"], False
-        )
-        == "`blood_pool   : ●●●●●●●●●●○○○○○○○○○○`\n`strength     : ●●○○○`"
-    )
