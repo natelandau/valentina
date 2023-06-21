@@ -23,7 +23,7 @@ class BioModal(discord.ui.Modal):
 
     async def callback(self, interaction: discord.Interaction) -> None:
         """Callback for the modal."""
-        embed = discord.Embed(title="Modal Results")
+        embed = discord.Embed(title="Biography")
         self.bio = self.children[0].value
         embed.add_field(name="Bio", value=self.children[0].value)
 
@@ -126,9 +126,10 @@ class CharGenModal(discord.ui.Modal):
 
     async def callback(self, interaction: discord.Interaction) -> None:
         """Callback for the modal."""
-        embed = discord.Embed(title="Modal Results")
         self.willpower = self.children[0].value
         self.humanity = self.children[1].value
+
+        embed = discord.Embed(title="Character Generation Review")
         embed.add_field(name="Willpower", value=self.children[0].value)
         embed.add_field(name="Humanity", value=self.children[1].value)
         if self.char_class.lower() == "mage":
