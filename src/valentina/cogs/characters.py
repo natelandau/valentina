@@ -203,6 +203,7 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
             return
+
         fields = []
         plural = "s" if len(characters) > 1 else ""
         description = f"**{len(characters)}** character{plural} on this server\n\u200b"
