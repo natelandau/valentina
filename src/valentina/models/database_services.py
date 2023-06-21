@@ -210,9 +210,18 @@ class CharacterService:
         logger.info(f"DATABASE: Fetch character: {character.name}")
         return character
 
-    def fetch_claim(self, guild_id: int, user_id: int) -> Character:
+    def fetch_claim(
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+    ) -> Character:
         """Fetch the character claimed by a user."""
-        claim_key = self.__get_claim_key(guild_id, user_id)
+        if isinstance(ctx, discord.ApplicationContext):
+            author_id = ctx.author.id
+            guild_id = ctx.guild.id
+        if isinstance(ctx, discord.AutocompleteContext):
+            author_id = ctx.interaction.user.id
+            guild_id = ctx.interaction.guild.id
+
+        claim_key = self.__get_claim_key(guild_id, author_id)
         if claim_key in self.claims:
             char_key = self.claims[claim_key]
 
@@ -224,7 +233,7 @@ class CharacterService:
             character = self.fetch_by_id(guild_id, int(char_id))
             return character
 
-        raise NoClaimError(f"User {user_id} has no claim")
+        raise NoClaimError(f"User {author_id.name} has no claim")
 
     def fetch_trait_value(self, character: Character, trait: str) -> int:
         """Fetch the value of a trait for a character."""
@@ -267,18 +276,18 @@ class CharacterService:
         logger.debug(f"CACHE: Purge character {key}")
         self.characters.pop(key, None)
 
-    def remove_claim(self, guild_id: int, user_id: int) -> bool:
+    def remove_claim(self, ctx: discord.ApplicationContext) -> bool:
         """Remove a claim from a user."""
-        claim_key = self.__get_claim_key(guild_id, user_id)
+        claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
         if claim_key in self.claims:
-            logger.debug(f"CLAIM: Removing claim for user {user_id}")
+            logger.debug(f"CLAIM: Removing claim for user {ctx.author}")
             del self.claims[claim_key]
             return True
         return False
 
-    def user_has_claim(self, guild_id: int, user_id: int) -> bool:
+    def user_has_claim(self, ctx: discord.ApplicationContext) -> bool:
         """Check if a user has a claim."""
-        claim_key = self.__get_claim_key(guild_id, user_id)
+        claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
         return claim_key in self.claims
 
     def update_char(self, guild_id: int, char_id: int, **kwargs: str | int) -> Character:

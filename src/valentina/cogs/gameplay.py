@@ -23,7 +23,7 @@ class Roll(commands.Cog):
     async def __trait_one_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:
-            character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
+            character = char_svc.fetch_claim(ctx)
         except NoClaimError:
             return ["No character claimed"]
 
@@ -38,7 +38,7 @@ class Roll(commands.Cog):
     async def __trait_two_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:
-            character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
+            character = char_svc.fetch_claim(ctx)
         except NoClaimError:
             return ["No character claimed"]
 
@@ -117,7 +117,7 @@ class Roll(commands.Cog):
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
         try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            character = char_svc.fetch_claim(ctx)
             trait_one_value = char_svc.fetch_trait_value(character, trait_one)
             trait_two_value = char_svc.fetch_trait_value(character, trait_two) if trait_two else 0
             pool = trait_one_value + trait_two_value
@@ -201,7 +201,7 @@ class Roll(commands.Cog):
             await ctx.respond(f"Macro {macro} not found", ephemeral=True)
             return
         try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            character = char_svc.fetch_claim(ctx)
             trait_one_value = char_svc.fetch_trait_value(character, m.trait_one)
             trait_two_value = (
                 char_svc.fetch_trait_value(character, m.trait_two) if m.trait_two else 0

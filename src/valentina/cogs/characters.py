@@ -36,10 +36,10 @@ class Characters(commands.Cog, name="Character"):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    async def __trait_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+    async def __trait_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:
-            character = char_svc.fetch_claim(ctx.interaction.guild.id, ctx.interaction.user.id)
+            character = char_svc.fetch_claim(ctx)
         except NoClaimError:
             return ["No character claimed"]
 
@@ -155,7 +155,7 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
         except UserHasClaimError:
-            claimed_char = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            claimed_char = char_svc.fetch_claim(ctx)
             await present_embed(
                 ctx=ctx,
                 title="ERROR: You already have a character claimed",
@@ -170,9 +170,9 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
     ) -> None:
         """Unclaim currently claimed character. This will allow you to claim a new character."""
-        if char_svc.user_has_claim(ctx.guild.id, ctx.user.id):
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
-            char_svc.remove_claim(ctx.guild.id, ctx.user.id)
+        if char_svc.user_has_claim(ctx):
+            character = char_svc.fetch_claim(ctx)
+            char_svc.remove_claim(ctx)
             await present_embed(
                 ctx=ctx,
                 title="Character Unclaimed",
@@ -233,7 +233,7 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Spend experience points."""
         try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            character = char_svc.fetch_claim(ctx)
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -266,7 +266,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx,
                 title=f"Upgrade {trait}",
-                description=f"Uprgrading **{trait}** by **1** dot will cost **{upgrade_cost} XP**",
+                description=f"Upgrading **{trait}** by **1** dot will cost **{upgrade_cost} XP**",
                 fields=[
                     (f"Current {trait} value", old_value),
                     (f"New {trait} value", old_value + 1),
@@ -318,7 +318,7 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Add experience to a character."""
         try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            character = char_svc.fetch_claim(ctx)
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -357,7 +357,7 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Add cool points to a character."""
         try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            character = char_svc.fetch_claim(ctx)
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -404,7 +404,7 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Add a custom trait to a character."""
         try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            character = char_svc.fetch_claim(ctx)
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -428,7 +428,7 @@ class Characters(commands.Cog, name="Character"):
     async def update_bio(self, ctx: discord.ApplicationContext) -> None:
         """Update a character's bio."""
         try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            character = char_svc.fetch_claim(ctx)
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -462,7 +462,7 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Update the value of a trait."""
         try:
-            character = char_svc.fetch_claim(ctx.guild.id, ctx.user.id)
+            character = char_svc.fetch_claim(ctx)
 
             old_value = char_svc.fetch_trait_value(character=character, trait=trait)
 
