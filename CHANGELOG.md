@@ -1,3 +1,13 @@
+## v0.5.0 (2023-06-21)
+
+### Feat
+
+- add macros for quick dice rolling (#10)
+
+### Fix
+
+- **database**: cleanup version management
+
 ## v0.4.0 (2023-06-20)
 
 ### Feat
