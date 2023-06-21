@@ -5,7 +5,7 @@ from typing import cast
 
 import discord
 from loguru import logger
-from peewee import DoesNotExist, ModelSelect, SqliteDatabase
+from peewee import DoesNotExist, ModelSelect, SqliteDatabase, fn
 from semver import Version
 
 from valentina.__version__ import __version__
@@ -361,15 +361,24 @@ class UserService:
         self.user_cache.pop(key, None)
         self.macro_cache.pop(key, None)
 
-    def fetch_macros(self, ctx: discord.ApplicationContext) -> list[Macro]:
+    def fetch_macros(
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+    ) -> list[Macro]:
         """Fetch a list of macros for a user."""
-        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
+        if isinstance(ctx, discord.ApplicationContext):
+            author_id = ctx.author.id
+            guild_id = ctx.guild.id
+        if isinstance(ctx, discord.AutocompleteContext):
+            author_id = ctx.interaction.user.id
+            guild_id = ctx.interaction.guild.id
+
+        key = self.__get_user_key(guild_id, author_id)
 
         if key in self.macro_cache:
             logger.debug(f"CACHE: Return macros for {key}")
             return self.macro_cache[key]
 
-        macros = Macro.select().where((Macro.user == ctx.author.id) & (Macro.guild == ctx.guild.id))
+        macros = Macro.select().where((Macro.user == author_id) & (Macro.guild == guild_id))
         self.macro_cache[key] = macros
         logger.debug(f"DATABASE: Fetch macros for {key}")
         return macros
@@ -438,6 +447,17 @@ class UserService:
 
         self.purge_by_id(ctx)
         logger.info(f"DATABASE: Create macro '{name}' for user '{user.name}'")
+
+    def delete_macro(self, ctx: discord.ApplicationContext, macro_name: str) -> None:
+        """Delete a macro from the database and purge the user cache."""
+        Macro.delete().where(
+            (fn.Lower(Macro.name) == macro_name.lower())
+            & (Macro.user == ctx.author.id)
+            & (Macro.guild == ctx.guild.id)
+        ).execute()
+
+        self.purge_by_id(ctx)
+        logger.info(f"DATABASE: Delete macro '{macro_name}' for user '{ctx.author.name}'")
 
 
 class GuildService:

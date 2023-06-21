@@ -8,7 +8,7 @@ from loguru import logger
 
 from valentina import Valentina, guild_svc, user_svc
 from valentina.models.constants import MAX_OPTION_LIST_SIZE
-from valentina.views import MacroCreateModal, present_embed
+from valentina.views import ConfirmCancelButtons, MacroCreateModal, present_embed
 
 
 class Macros(commands.Cog):
@@ -36,6 +36,16 @@ class Macros(commands.Cog):
             if len(traits) >= MAX_OPTION_LIST_SIZE:
                 break
         return traits
+
+    async def __macro_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
+        """Populate a select list with a users' macros."""
+        macros = []
+        for macro in user_svc.fetch_macros(ctx):
+            if macro.name.lower().startswith(ctx.options["macro"].lower()):
+                macros.append(f"{macro.name} ({macro.abbreviation})")
+            if len(macros) >= MAX_OPTION_LIST_SIZE:
+                break
+        return macros
 
     macros = discord.SlashCommandGroup("macros", "Manage macros for quick rolls")
 
@@ -123,6 +133,43 @@ class Macros(commands.Cog):
             ],
             level="info",
         )
+
+    @macros.command(name="delete", description="Delete a macro")
+    @logger.catch
+    async def delete_macro(
+        self,
+        ctx: discord.ApplicationContext,
+        macro: Option(
+            str,
+            description="First trait to roll",
+            required=True,
+            autocomplete=__macro_autocomplete,
+        ),
+    ) -> None:
+        """Delete a macro from a user."""
+        name = macro.split("(")[0].strip()
+        view = ConfirmCancelButtons(ctx.author)
+        await present_embed(
+            ctx,
+            title=f"Confirm deletion of macro: {name}",
+            description=f"Are you sure you want to delete the macro **{name}**?",
+            inline_fields=False,
+            ephemeral=True,
+            level="info",
+            view=view,
+        )
+        await view.wait()
+        if view.confirmed:
+            user_svc.delete_macro(ctx, macro_name=name)
+
+            await present_embed(
+                ctx,
+                title=f"Deleted Macro: {name}",
+                description=f"{ctx.author.mention} deleted the macro **{name}**.",
+                level="success",
+            )
+        else:
+            await present_embed(ctx, title="Macro deletion cancelled", level="info", ephemeral=True)
 
 
 def setup(bot: Valentina) -> None:
