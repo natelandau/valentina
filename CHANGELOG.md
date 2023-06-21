@@ -1,3 +1,14 @@
+## v0.5.1 (2023-06-21)
+
+### Fix
+
+- **help**: sort commands in help views
+
+### Refactor
+
+- remove unused code
+- favor `ctx` in database services
+
 ## v0.5.0 (2023-06-21)
 
 ### Feat
