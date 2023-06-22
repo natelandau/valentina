@@ -10,11 +10,12 @@ from valentina import Valentina, char_svc
 from valentina.character.create import create_character
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
-from valentina.character.views import BioModal
+from valentina.character.views import BioModal, CustomSectionModal
 from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitCategory
 from valentina.utils.errors import (
     CharacterClaimedError,
     NoClaimError,
+    SectionExistsError,
     TraitNotFoundError,
     UserHasClaimError,
 )
@@ -51,11 +52,28 @@ class Characters(commands.Cog, name="Character"):
                 break
         return traits
 
+    async def __custom_section_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
+        """Populates the autocomplete for the trait option."""
+        try:
+            character = char_svc.fetch_claim(ctx)
+        except NoClaimError:
+            return ["No character claimed"]
+
+        sections = []
+        for section in char_svc.fetch_char_custom_sections(ctx, character):
+            if section.title.lower().startswith(ctx.options["custom_section"].lower()):
+                sections.append(section.title)
+            if len(sections) >= MAX_OPTION_LIST_SIZE:
+                break
+
+        return sections
+
     chars = discord.SlashCommandGroup("character", "Work with characters")
     update = chars.create_subgroup("update", "Update existing characters")
     add = chars.create_subgroup("add", "Add xp or cp to existing characters")
+    delete = chars.create_subgroup("delete", "Delete information from existing characters")
 
-    @chars.command(name="create", description="Create a new character.")
+    @chars.command(name="create", description="Create a new character")
     @logger.catch
     async def create_character(
         self,
@@ -98,7 +116,7 @@ class Characters(commands.Cog, name="Character"):
             nickname=nickname,
         )
 
-    @chars.command(name="sheet", description="View a character sheet.")
+    @chars.command(name="sheet", description="View a character sheet")
     @logger.catch
     async def view_character_sheet(
         self,
@@ -122,7 +140,7 @@ class Characters(commands.Cog, name="Character"):
 
         await show_sheet(ctx, character=character, claimed_by=claimed_by)
 
-    @chars.command(name="claim", description="Claim a character.")
+    @chars.command(name="claim", description="Claim a character")
     @logger.catch
     async def claim_character(
         self,
@@ -163,7 +181,7 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
 
-    @chars.command(name="unclaim", description="Unclaim a character.")
+    @chars.command(name="unclaim", description="Unclaim a character")
     @logger.catch
     async def unclaim_character(
         self,
@@ -187,7 +205,7 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
 
-    @chars.command(name="list", description="List all characters.")
+    @chars.command(name="list", description="List all characters")
     @logger.catch
     async def list_characters(
         self,
@@ -224,7 +242,7 @@ class Characters(commands.Cog, name="Character"):
             level="info",
         )
 
-    @chars.command(name="spend_xp", description="Spend experience points.")
+    @chars.command(name="spend_xp", description="Spend experience points")
     @logger.catch
     async def spend_xp(
         self,
@@ -311,7 +329,7 @@ class Characters(commands.Cog, name="Character"):
 
     ### ADD COMMANDS ####################################################################
 
-    @add.command(name="exp", description="Add experience to a character.")
+    @add.command(name="exp", description="Add experience to a character")
     @logger.catch
     async def add_xp(
         self,
@@ -350,7 +368,7 @@ class Characters(commands.Cog, name="Character"):
             footer=f"{new_total} all time xp",
         )
 
-    @add.command(name="cp", description="Add cool points to a character.")
+    @add.command(name="cp", description="Add cool points to a character")
     @logger.catch
     async def add_cool_points(
         self,
@@ -389,7 +407,7 @@ class Characters(commands.Cog, name="Character"):
             footer=f"{new_total} all time cool points",
         )
 
-    @add.command(name="trait", description="Add a custom trait to a character.")
+    @add.command(name="trait", description="Add a custom trait to a character")
     @logger.catch
     async def add_trait(
         self,
@@ -424,8 +442,46 @@ class Characters(commands.Cog, name="Character"):
             trait_description=description,
         )
 
+    @add.command(name="custom_section", description="Add a custom section to the character sheet")
+    @logger.catch
+    async def add_custom_section(self, ctx: discord.ApplicationContext) -> None:
+        """Add a custom section to the character sheet."""
+        try:
+            character = char_svc.fetch_claim(ctx)
+            modal = CustomSectionModal(title=f"Custom section for {character.name}")
+            await ctx.send_modal(modal)
+            await modal.wait()
+            section_title = modal.section_title
+            section_description = modal.section_description
+
+            existing_sections = char_svc.fetch_char_custom_sections(ctx, character)
+            if normalize_to_db_row(section_title) in [
+                normalize_to_db_row(x.title) for x in existing_sections
+            ]:
+                raise SectionExistsError
+            char_svc.update_char_custom_section(ctx, character, section_title, section_description)
+
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed.",
+                description="You must claim a character before you can add a custom section.\nTo claim a character, use `/character claim`.",
+                level="error",
+                ephemeral=True,
+            )
+            return
+        except SectionExistsError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: Section already exists",
+                description="A section with that name already exists.",
+                level="error",
+                ephemeral=True,
+            )
+            return
+
     ### UPDATE COMMANDS ####################################################################
-    @update.command(name="bio", description="Update a character's bio.")
+    @update.command(name="bio", description="Update a character's bio")
     @logger.catch
     async def update_bio(self, ctx: discord.ApplicationContext) -> None:
         """Update a character's bio."""
@@ -450,7 +506,7 @@ class Characters(commands.Cog, name="Character"):
         char_svc.update_char(ctx.guild.id, character.id, bio=biography)
         logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
 
-    @update.command(name="trait", description="Update a trait for a character.")
+    @update.command(name="trait", description="Update a trait for a character")
     @logger.catch
     async def update_trait(
         self,
@@ -512,6 +568,62 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
             return
+
+    ### DELETE COMMANDS ####################################################################
+    @delete.command(name="trait", description="Delete a custom trait from a character")
+    @logger.catch
+    async def delete_trait(
+        self,
+        ctx: discord.ApplicationContext,
+        trait: Option(
+            str, description="Trait to delete", required=True, autocomplete=__trait_autocomplete
+        ),
+    ) -> None:
+        """Delete a custom trait from a character."""
+        # TODO: Add ability to delete a custom trait from a character
+        pass
+
+    @delete.command(name="custom_section", description="Delete a custom section from a character")
+    @logger.catch
+    async def delete_custom_section(
+        self,
+        ctx: discord.ApplicationContext,
+        custom_section: Option(
+            str,
+            description="Custom section to delete",
+            required=True,
+            autocomplete=__custom_section_autocomplete,
+        ),
+    ) -> None:
+        """Delete a custom trait from a character."""
+        try:
+            character = char_svc.fetch_claim(ctx)
+            char_svc.delete_custom_section(ctx, character, custom_section)
+            await present_embed(
+                ctx=ctx,
+                title=f"Deleted {custom_section}",
+                description=f"**{custom_section}** has been deleted.",
+                level="success",
+                ephemeral=False,
+            )
+
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed.",
+                description="You must claim a character before you can add a custom section.\nTo claim a character, use `/character claim`.",
+                level="error",
+                ephemeral=True,
+            )
+            return
+        except SectionExistsError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: Section already exists",
+                description="A section with that name already exists.",
+                level="error",
+                ephemeral=True,
+            )
 
 
 def setup(bot: Valentina) -> None:

@@ -2,6 +2,47 @@
 import discord
 
 
+class CustomSectionModal(discord.ui.Modal):
+    """A modal for adding or editing a custom section."""
+
+    def __init__(self, section_title: str = None, section_description: str = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+        super().__init__(*args, **kwargs)
+        self.section_title = section_title
+        self.section_description = section_description
+
+        placeholder_name = self.section_title if self.section_title else "Name of the section"
+        placeholder_description = (
+            self.section_description if self.section_description else "Description of the section"
+        )
+
+        self.add_item(
+            discord.ui.InputText(
+                label="name",
+                placeholder=placeholder_name,
+                required=True,
+                style=discord.InputTextStyle.short,
+            )
+        )
+        self.add_item(
+            discord.ui.InputText(
+                label="description",
+                placeholder=placeholder_description,
+                required=True,
+                style=discord.InputTextStyle.long,
+            )
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        """Callback for the modal."""
+        self.section_title = self.children[0].value
+        self.section_description = self.children[1].value
+        embed = discord.Embed(title="Custom Section Added")
+        embed.add_field(name="Name", value=self.section_title)
+        embed.add_field(name="Description", value=self.section_description)
+        await interaction.response.send_message(embeds=[embed], ephemeral=True)
+        self.stop()
+
+
 class BioModal(discord.ui.Modal):
     """A modal for entering a biography."""
 

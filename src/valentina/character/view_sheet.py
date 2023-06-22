@@ -40,6 +40,12 @@ async def show_sheet(
 
         embed.add_field(name=category, value="\n".join(formatted_traits), inline=True)
 
+    custom_sections = char_svc.fetch_char_custom_sections(ctx, character)
+    if len(custom_sections) > 0:
+        embed.add_field(name="\u200b", value="**CUSTOM SECTIONS**", inline=False)
+        for section in custom_sections:
+            embed.add_field(name=section.title, value=section.description, inline=True)
+
     msg_contents = {"embed": embed}
     msg_contents["ephemeral"] = ephemeral
     return await ctx.respond(**msg_contents)
