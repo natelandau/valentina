@@ -13,6 +13,7 @@ from valentina.models.constants import CharClass
 from valentina.models.database import (
     Character,
     CharacterClass,
+    CustomCharSection,
     CustomTrait,
     DatabaseVersion,
     Guild,
@@ -25,6 +26,7 @@ from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
     NoClaimError,
+    SectionExistsError,
     TraitNotFoundError,
     UserHasClaimError,
 )
@@ -46,6 +48,9 @@ class CharacterService:
         ##################################
         self.characters: dict[str, Character] = {}  # {char_key: Character, ...}
         self.claims: dict[str, str] = {}  # {claim_key: char_key}
+        self.custom_sections: dict[
+            str, list[CustomCharSection]
+        ] = {}  # {char_key: [CustomCharSection, ...]}
 
     @staticmethod
     def __get_char_key(guild_id: int, char_id: int) -> str:
@@ -96,6 +101,26 @@ class CharacterService:
         """Check if the user is in the cache."""
         key = self.__get_char_key(guild_id, char_id) if key is None else key
         return key in self.characters
+
+    def delete_custom_section(
+        self, ctx: discord.ApplicationContext, character: Character, section_title: str
+    ) -> bool:
+        """Delete a custom section from a character."""
+        section_title = section_title.lower()
+        key = self.__get_char_key(ctx.guild.id, character.id)
+        try:
+            custom_section = CustomCharSection.get(
+                CustomCharSection.character == character,
+                CustomCharSection.guild_id == ctx.guild.id,
+                fn.Lower(CustomCharSection.title) == section_title.lower(),
+            )
+            custom_section.delete_instance()
+            if key in self.custom_sections:
+                self.custom_sections.pop(key)
+
+            return True
+        except SectionExistsError:
+            return False
 
     def fetch_all_characters(self, guild_id: int) -> ModelSelect:
         """Returns all characters for a specific guild. Checks the cache first and then the database. If characters are found in the database, they are added to the cache.
@@ -215,13 +240,13 @@ class CharacterService:
     ) -> Character:
         """Fetch the character claimed by a user."""
         if isinstance(ctx, discord.ApplicationContext):
-            author_id = ctx.author.id
-            guild_id = ctx.guild.id
+            author = ctx.author
+            guild = ctx.guild
         if isinstance(ctx, discord.AutocompleteContext):
-            author_id = ctx.interaction.user.id
-            guild_id = ctx.interaction.guild.id
+            author = ctx.interaction.user
+            guild = ctx.interaction.guild
 
-        claim_key = self.__get_claim_key(guild_id, author_id)
+        claim_key = self.__get_claim_key(guild.id, author.id)
         if claim_key in self.claims:
             char_key = self.claims[claim_key]
 
@@ -230,10 +255,27 @@ class CharacterService:
                 return self.characters[char_key]
 
             char_id = re.sub(r"\d\w+_", "", char_key)
-            character = self.fetch_by_id(guild_id, int(char_id))
+            character = self.fetch_by_id(guild.id, int(char_id))
             return character
 
-        raise NoClaimError(f"User {author_id.name} has no claim")
+        raise NoClaimError("No claim for user")
+
+    def fetch_char_custom_sections(
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext, character: Character
+    ) -> list[CustomCharSection]:
+        """Fetch a list of custom sections for a character."""
+        if isinstance(ctx, discord.ApplicationContext):
+            guild_id = ctx.guild.id
+        if isinstance(ctx, discord.AutocompleteContext):
+            guild_id = ctx.interaction.guild.id
+
+        key = self.__get_char_key(guild_id, character.id)
+        if key in self.custom_sections:
+            return self.custom_sections[key]
+
+        return CustomCharSection.select().where(
+            (CustomCharSection.character == character.id) & (CustomCharSection.guild_id == guild_id)
+        )
 
     def fetch_trait_value(self, character: Character, trait: str) -> int:
         """Fetch the value of a trait for a character."""
@@ -310,6 +352,31 @@ class CharacterService:
 
         logger.debug(f"DATABASE: Update character: {char_id}")
         return character
+
+    def update_char_custom_section(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Character,
+        section_title: str = None,
+        section_description: str = None,
+    ) -> bool:
+        """Add or update a custom section to a character."""
+        key = self.__get_char_key(ctx.guild.id, character.id)
+
+        new_section = CustomCharSection.create(
+            title=section_title,
+            description=section_description,
+            guild=ctx.guild.id,
+            character=character.id,
+        )
+
+        if key in self.custom_sections:
+            self.custom_sections[key].append(new_section)
+        else:
+            self.custom_sections[key] = [new_section]
+
+        logger.debug(f"DATABASE: Add custom section to character {character.id}")
+        return True
 
     def update_trait_value(
         self, guild_id: int, character: Character, trait_name: str, new_value: int
@@ -541,14 +608,15 @@ class DatabaseService:
         with self.db:
             self.db.create_tables(
                 [
-                    Guild,
-                    CharacterClass,
                     Character,
+                    CharacterClass,
+                    CustomCharSection,
                     CustomTrait,
-                    User,
+                    DatabaseVersion,
+                    Guild,
                     GuildUser,
                     Macro,
-                    DatabaseVersion,
+                    User,
                 ]
             )
         logger.info("DATABASE: Create Tables")

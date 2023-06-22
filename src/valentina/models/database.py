@@ -201,6 +201,16 @@ class CustomTrait(BaseModel):
     value = IntegerField(default=0)
 
 
+class CustomCharSection(BaseModel):
+    """Custom sections added to a character sheet."""
+
+    character = ForeignKeyField(Character, backref="custom_traits")
+    created = DateTimeField(default=time_now)
+    description = TextField(null=True)
+    guild = ForeignKeyField(Guild, backref="custom_traits")
+    title = TextField()
+
+
 class User(BaseModel):
     """User model for the database."""
 

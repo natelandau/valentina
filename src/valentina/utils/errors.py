@@ -19,3 +19,7 @@ class CharacterNotFoundError(Exception):
 
 class TraitNotFoundError(Exception):
     """Raised when a trait is not found on a character."""
+
+
+class SectionExistsError(Exception):
+    """Raised when a section already exists on a character."""
