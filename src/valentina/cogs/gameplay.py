@@ -118,8 +118,10 @@ class Roll(commands.Cog):
         """Roll the total number of d10s for two given traits against a difficulty."""
         try:
             character = char_svc.fetch_claim(ctx)
-            trait_one_value = char_svc.fetch_trait_value(character, trait_one)
-            trait_two_value = char_svc.fetch_trait_value(character, trait_two) if trait_two else 0
+            trait_one_value = char_svc.fetch_trait_value(ctx, character, trait_one)
+            trait_two_value = (
+                char_svc.fetch_trait_value(ctx, character, trait_two) if trait_two else 0
+            )
             pool = trait_one_value + trait_two_value
 
             roll = DiceRoll(pool=pool, difficulty=difficulty, dice_size=10)
@@ -202,9 +204,9 @@ class Roll(commands.Cog):
             return
         try:
             character = char_svc.fetch_claim(ctx)
-            trait_one_value = char_svc.fetch_trait_value(character, m.trait_one)
+            trait_one_value = char_svc.fetch_trait_value(ctx, character, m.trait_one)
             trait_two_value = (
-                char_svc.fetch_trait_value(character, m.trait_two) if m.trait_two else 0
+                char_svc.fetch_trait_value(ctx, character, m.trait_two) if m.trait_two else 0
             )
             pool = trait_one_value + trait_two_value
 

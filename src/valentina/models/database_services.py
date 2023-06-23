@@ -48,9 +48,10 @@ class CharacterService:
         ##################################
         self.characters: dict[str, Character] = {}  # {char_key: Character, ...}
         self.claims: dict[str, str] = {}  # {claim_key: char_key}
+        self.custom_traits: dict[str, list[CustomTrait]] = {}  # {char_key: [CustomTrait]}
         self.custom_sections: dict[
             str, list[CustomCharSection]
-        ] = {}  # {char_key: [CustomCharSection, ...]}
+        ] = {}  # {char_key: [CustomCharSection]}
 
     @staticmethod
     def __get_char_key(guild_id: int, char_id: int) -> str:
@@ -97,6 +98,34 @@ class CharacterService:
         self.claims[claim_key] = char_key
         return True
 
+    def add_trait(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Character,
+        name: str,
+        description: str,
+        category: str,
+        value: int,
+    ) -> None:
+        """Create a custom trait for a character."""
+        key = self.__get_char_key(ctx.guild.id, character.id)
+
+        new_trait = CustomTrait.create(
+            name=name.title(),
+            description=description,
+            category=category,
+            value=value,
+            character=character.id,
+            guild_id=ctx.guild.id,
+        )
+
+        if key in self.custom_traits:
+            self.custom_traits[key].append(new_trait)
+        else:
+            self.custom_traits[key] = [new_trait]
+
+        logger.info(f"CHARACTER: Added custom trait {name} to {character.id}")
+
     def is_cached_char(self, guild_id: int = None, char_id: int = None, key: str = None) -> bool:
         """Check if the user is in the cache."""
         key = self.__get_char_key(guild_id, char_id) if key is None else key
@@ -116,7 +145,7 @@ class CharacterService:
             )
             custom_section.delete_instance()
             if key in self.custom_sections:
-                self.custom_sections.pop(key)
+                self.custom_sections.pop(key, None)
 
             return True
         except SectionExistsError:
@@ -174,6 +203,7 @@ class CharacterService:
 
     def fetch_all_character_trait_values(
         self,
+        ctx: discord.ApplicationContext,
         character: Character,
     ) -> dict[str, list[tuple[str, int, str]]]:
         """Fetch all trait values for a character inclusive of common and custom.
@@ -184,6 +214,7 @@ class CharacterService:
                 "Social": [("Persuasion", 1, "●○○○○")]
             }
         """
+        key = self.__get_char_key(ctx.guild.id, character.id)
         all_traits: dict[str, list[tuple[str, int, str]]] = {}
 
         for category, traits in extend_common_traits_with_class(character.class_name).items():
@@ -195,7 +226,15 @@ class CharacterService:
                 dots = num_to_circles(value, max_value)
                 all_traits[category.title()].append((trait.title(), value, dots))
 
-        custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
+        if key in self.custom_traits:
+            custom_traits = self.custom_traits[key]
+        else:
+            custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
+            # Build cache
+            self.custom_traits[key] = []
+            for custom_trait in custom_traits:
+                self.custom_traits[key].append(custom_trait)
+
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
                 if custom_trait.category.title() not in all_traits:
@@ -210,9 +249,37 @@ class CharacterService:
 
         return all_traits
 
-    def fetch_char_custom_traits(self, character: Character) -> list[CustomTrait]:
+    def fetch_char_custom_sections(
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext, character: Character
+    ) -> list[CustomCharSection]:
+        """Fetch a list of custom sections for a character."""
+        if isinstance(ctx, discord.ApplicationContext):
+            guild_id = ctx.guild.id
+        if isinstance(ctx, discord.AutocompleteContext):
+            guild_id = ctx.interaction.guild.id
+
+        key = self.__get_char_key(guild_id, character.id)
+        if key in self.custom_sections:
+            return self.custom_sections[key]
+
+        return CustomCharSection.select().where(
+            (CustomCharSection.character == character.id) & (CustomCharSection.guild_id == guild_id)
+        )
+
+    def fetch_char_custom_traits(
+        self, ctx: discord.ApplicationContext, character: Character
+    ) -> list[CustomTrait]:
         """Fetch all custom traits for a character."""
-        return CustomTrait.select().where(CustomTrait.character_id == character.id)
+        key = self.__get_char_key(ctx.guild.id, character.id)
+
+        if key in self.custom_traits:
+            logger.debug(f"CACHE: Fetch custom traits for {character.name}")
+            return self.custom_traits[key]
+
+        custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
+        self.custom_traits[key] = custom_traits
+        logger.info(f"DATABASE: Fetch custom traits for {character.name}")
+        return custom_traits
 
     def fetch_by_id(self, guild_id: int, char_id: int) -> Character:
         """Fetch a character by database id.
@@ -260,31 +327,19 @@ class CharacterService:
 
         raise NoClaimError("No claim for user")
 
-    def fetch_char_custom_sections(
-        self, ctx: discord.ApplicationContext | discord.AutocompleteContext, character: Character
-    ) -> list[CustomCharSection]:
-        """Fetch a list of custom sections for a character."""
-        if isinstance(ctx, discord.ApplicationContext):
-            guild_id = ctx.guild.id
-        if isinstance(ctx, discord.AutocompleteContext):
-            guild_id = ctx.interaction.guild.id
-
-        key = self.__get_char_key(guild_id, character.id)
-        if key in self.custom_sections:
-            return self.custom_sections[key]
-
-        return CustomCharSection.select().where(
-            (CustomCharSection.character == character.id) & (CustomCharSection.guild_id == guild_id)
-        )
-
-    def fetch_trait_value(self, character: Character, trait: str) -> int:
+    def fetch_trait_value(
+        self, ctx: discord.ApplicationContext, character: Character, trait: str
+    ) -> int:
         """Fetch the value of a trait for a character."""
         if hasattr(character, normalize_to_db_row(trait)):
             return getattr(character, normalize_to_db_row(trait))
 
         custom_trait = [
-            x for x in self.fetch_char_custom_traits(character) if x.name.lower() == trait.lower()
+            x
+            for x in self.fetch_char_custom_traits(ctx, character)
+            if x.name.lower() == trait.lower()
         ][0]
+
         if custom_trait:
             return custom_trait.value
 
@@ -382,6 +437,7 @@ class CharacterService:
         self, guild_id: int, character: Character, trait_name: str, new_value: int
     ) -> bool:
         """Update a trait value for a character."""
+        # Update traits on the character model
         if hasattr(character, normalize_to_db_row(trait_name)):
             setattr(character, normalize_to_db_row(trait_name), new_value)
             character.save()
@@ -390,9 +446,14 @@ class CharacterService:
             )
             return True
 
-        custom_trait = CustomTrait.get(
-            CustomTrait.character_id == character.id and CustomTrait.name == trait_name.title()
-        )
+        key = self.__get_char_key(guild_id, character.id)
+        if key in self.custom_traits:
+            custom_trait = [x for x in self.custom_traits[key] if x.name == trait_name.title()][0]
+        else:  # Grab from DB if not in cache
+            custom_trait = CustomTrait.get(
+                CustomTrait.character_id == character.id and CustomTrait.name == trait_name.title()
+            )
+
         if custom_trait:
             custom_trait.value = new_value
             custom_trait.save()
@@ -400,6 +461,10 @@ class CharacterService:
             logger.debug(
                 f"DATABASE: Update '{trait_name}' for character {character.name} to {new_value}"
             )
+
+            # Reset custom traits cache for character
+            if key in self.custom_traits:
+                self.custom_traits.pop(key, None)
             return True
 
         raise TraitNotFoundError(f"Trait '{trait_name}' was not found for character {character.id}")

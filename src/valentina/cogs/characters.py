@@ -522,7 +522,7 @@ class Characters(commands.Cog, name="Character"):
         try:
             character = char_svc.fetch_claim(ctx)
 
-            old_value = char_svc.fetch_trait_value(character=character, trait=trait)
+            old_value = char_svc.fetch_trait_value(ctx, character=character, trait=trait)
 
             view = ConfirmCancelButtons(ctx.author)
             await present_embed(

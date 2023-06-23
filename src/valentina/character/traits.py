@@ -1,7 +1,7 @@
 """Add a trait to a character."""
 import discord
-from loguru import logger
 
+from valentina import char_svc
 from valentina.models.constants import FLAT_COMMON_TRAITS
 from valentina.models.database import Character, CustomTrait
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -45,15 +45,14 @@ async def add_trait(
         )
         await view.wait()
         if view.confirmed:
-            CustomTrait.create(
-                name=trait_name.title(),
+            char_svc.add_trait(
+                ctx,
+                character,
+                name=trait_name,
                 description=trait_description,
                 category=category,
                 value=trait_value,
-                guild=ctx.guild.id,
-                character=character.id,
             )
-            logger.info(f"Created custom trait {trait_name} for {character.name}")
             await present_embed(
                 ctx=ctx,
                 title=f"Custom trait added to {character.name}",
