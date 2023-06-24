@@ -420,6 +420,14 @@ class Characters(commands.Cog, name="Character"):
             choices=sorted([x.value for x in TraitCategory]),
         ),
         value: Option(int, "The value of the trait", required=True, min_value=1, max_value=20),
+        max_value: Option(
+            int,
+            "The maximum value of the trait (Defaults to 5)",
+            required=False,
+            min_value=1,
+            max_value=20,
+            default=5,
+        ),
         description: Option(str, "A description of the trait", required=False),
     ) -> None:
         """Add a custom trait to a character."""
@@ -439,6 +447,7 @@ class Characters(commands.Cog, name="Character"):
             trait_name=trait,
             category=category,
             trait_value=value,
+            max_value=max_value,
             trait_description=description,
         )
 

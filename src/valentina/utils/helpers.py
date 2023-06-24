@@ -102,14 +102,16 @@ def num_to_circles(num: int = 0, maximum: int = 5) -> str:
     return "●" * num + "○" * (maximum - num)
 
 
-def get_max_trait_value(trait: str) -> int:
+def get_max_trait_value(trait: str, is_custom_trait: bool = False) -> int | None:
     """Get the maximum value for a trait by looking up the trait in the XPMultiplier enum.
 
     Args:
         trait (str): The trait to get the max value for.
+        is_custom_trait (bool, optional): Whether the trait is a custom trait. Defaults to False.
 
     Returns:
-        int: The maximum value for the trait.
+        int | None: The maximum value for the trait or None if the trait is a custom trait and no default for it's parent category exists.
+
     """
     # Some traits have their own max value. Check for those first.
     if trait.upper() in MaxTraitValue.__members__:
@@ -127,7 +129,9 @@ def get_max_trait_value(trait: str) -> int:
             ):
                 return MaxTraitValue[category.upper()].value
 
-    # Return the default value
+    if is_custom_trait:
+        return None
+
     return MaxTraitValue.DEFAULT.value
 
 

@@ -199,6 +199,7 @@ class CustomTrait(BaseModel):
     name = TextField()
     category = TextField(null=True)
     value = IntegerField(default=0)
+    max_value = IntegerField(default=0)
 
 
 class CustomCharSection(BaseModel):

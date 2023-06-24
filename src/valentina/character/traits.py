@@ -22,6 +22,7 @@ async def add_trait(
     trait_name: str,
     category: str,
     trait_value: int,
+    max_value: int,
     trait_description: str,
     character: Character,
 ) -> None:
@@ -36,6 +37,7 @@ async def add_trait(
             fields=[
                 ("Category", category),
                 ("Value", f"`{trait_value!s}`"),
+                ("Max Value", f"`{max_value!s}`"),
                 ("Description", trait_description),
             ],
             inline_fields=False,
@@ -52,6 +54,7 @@ async def add_trait(
                 description=trait_description,
                 category=category,
                 value=trait_value,
+                max_value=max_value,
             )
             await present_embed(
                 ctx=ctx,
@@ -60,6 +63,7 @@ async def add_trait(
                     ("Trait", trait_name.title()),
                     ("Category", category),
                     ("Value", f"`{trait_value!s}`"),
+                    ("Max Value", f"`{max_value!s}`"),
                     ("Description", trait_description),
                 ],
                 inline_fields=False,

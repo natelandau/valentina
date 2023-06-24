@@ -112,6 +112,7 @@ class CharacterService:
         description: str,
         category: str,
         value: int,
+        max_value: int = 5,
     ) -> None:
         """Create a custom trait for a character."""
         key = self.__get_char_key(ctx.guild.id, character.id)
@@ -123,6 +124,7 @@ class CharacterService:
             value=value,
             character=character.id,
             guild_id=ctx.guild.id,
+            max_value=max_value,
         )
 
         if key in self.custom_traits:
@@ -247,7 +249,11 @@ class CharacterService:
                     all_traits[custom_trait.category.title()] = []
                 custom_trait_name = custom_trait.name.title()
                 custom_trait_value = custom_trait.value
+
                 max_value = get_max_trait_value(custom_trait_name)
+                if not max_value:
+                    max_value = custom_trait.max_value
+
                 dots = num_to_circles(custom_trait_value, max_value)
                 all_traits[custom_trait.category.title()].append(
                     (custom_trait_name, custom_trait_value, max_value, dots)
