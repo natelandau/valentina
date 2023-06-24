@@ -1,6 +1,6 @@
 """Helper functions for Valentina."""
+from collections import defaultdict
 from copy import deepcopy
-from typing import cast
 
 from valentina.models.constants import (
     COMMON_TRAITS,
@@ -12,6 +12,27 @@ from valentina.models.constants import (
     XPMultiplier,
     XPNew,
 )
+
+
+def merge_dictionaries(
+    dict_list: list[dict[str, list[str]]], flat_list: bool = False
+) -> dict[str, list[str]] | list[str]:
+    """Merges a list of dictionaries into a single dictionary."""
+    result: defaultdict[str, list[str]] = defaultdict(list)
+
+    for d in dict_list:
+        for key, value in d.items():
+            if key in result:
+                result[key].extend([item for item in value if item not in result[key]])
+            else:
+                result[key].extend(value)
+
+    if flat_list:
+        # Flattens the dictionary to a single list, while removing duplicates
+        flat_result = list({item for sublist in result.values() for item in sublist})
+        return flat_result
+
+    return dict(result)
 
 
 def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] | list[str]:
@@ -94,14 +115,17 @@ def get_max_trait_value(trait: str) -> int:
     if trait.upper() in MaxTraitValue.__members__:
         return MaxTraitValue[trait.upper()].value
 
-    # Try to find the cost by looking up the parent key of the trait
-    all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
-    for category, traits in all_traits.items():
-        if (
-            trait.lower() in [x.lower() for x in traits]
-            and category.upper() in MaxTraitValue.__members__
-        ):
-            return MaxTraitValue[category.upper()].value
+    # Try to find the max value by looking up the parent key of the trait
+    all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+    all_traits = merge_dictionaries(all_constants, flat_list=False)
+
+    if isinstance(all_traits, dict):
+        for category, traits in all_traits.items():
+            if (
+                trait.lower() in [x.lower() for x in traits]
+                and category.upper() in MaxTraitValue.__members__
+            ):
+                return MaxTraitValue[category.upper()].value
 
     # Return the default value
     return MaxTraitValue.DEFAULT.value
@@ -120,14 +144,17 @@ def get_trait_multiplier(trait: str) -> int:
     if trait.upper() in XPMultiplier.__members__:
         return XPMultiplier[trait.upper()].value
 
-    # Try to find the cost by looking up the parent key of the trait
-    all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
-    for category, traits in all_traits.items():
-        if (
-            trait.lower() in [x.lower() for x in traits]
-            and category.upper() in XPMultiplier.__members__
-        ):
-            return XPMultiplier[category.upper()].value
+    # Try to find the multiplier by looking up the parent key of the trait
+    all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+    all_traits = merge_dictionaries(all_constants, flat_list=False)
+
+    if isinstance(all_traits, dict):
+        for category, traits in all_traits.items():
+            if (
+                trait.lower() in [x.lower() for x in traits]
+                and category.upper() in XPMultiplier.__members__
+            ):
+                return XPMultiplier[category.upper()].value
 
     # Return the default value
     return XPMultiplier.DEFAULT.value
@@ -147,10 +174,16 @@ def get_trait_new_value(trait: str) -> int:
         return XPNew[trait.upper()].value
 
     # Try to find the cost by looking up the parent key of the trait
-    all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
-    for category, traits in all_traits.items():
-        if trait.lower() in [x.lower() for x in traits] and category.upper() in XPNew.__members__:
-            return XPNew[category.upper()].value
+    all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+    all_traits = merge_dictionaries(all_constants, flat_list=False)
+
+    if isinstance(all_traits, dict):
+        for category, traits in all_traits.items():
+            if (
+                trait.lower() in [x.lower() for x in traits]
+                and category.upper() in XPNew.__members__
+            ):
+                return XPNew[category.upper()].value
 
     # Return the default value
     return XPNew.DEFAULT.value

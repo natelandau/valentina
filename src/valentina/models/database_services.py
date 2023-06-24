@@ -1,7 +1,6 @@
 """Models for maintaining in-memory caches of database queries."""
 
 import re
-from typing import cast
 
 import discord
 from loguru import logger
@@ -9,7 +8,14 @@ from peewee import DoesNotExist, ModelSelect, SqliteDatabase, fn
 from semver import Version
 
 from valentina.__version__ import __version__
-from valentina.models.constants import CharClass
+from valentina.models.constants import (
+    COMMON_TRAITS,
+    HUNTER_TRAITS,
+    MAGE_TRAITS,
+    VAMPIRE_TRAITS,
+    WEREWOLF_TRAITS,
+    CharClass,
+)
 from valentina.models.database import (
     Character,
     CharacterClass,
@@ -31,9 +37,9 @@ from valentina.utils.errors import (
     UserHasClaimError,
 )
 from valentina.utils.helpers import (
-    all_traits_from_constants,
     extend_common_traits_with_class,
     get_max_trait_value,
+    merge_dictionaries,
     normalize_to_db_row,
     num_to_circles,
 )
@@ -205,17 +211,17 @@ class CharacterService:
         self,
         ctx: discord.ApplicationContext,
         character: Character,
-    ) -> dict[str, list[tuple[str, int, str]]]:
-        """Fetch all trait values for a character inclusive of common and custom.
+    ) -> dict[str, list[tuple[str, int, int, str]]]:
+        """Fetch all trait values for a character inclusive of common and custom for display on a character sheet. Returns a tuple of (trait name, trait value, trait max value, trait dots).
 
         Example:
             {
-                "Physical": [("Strength", 3, "●●●○○"), ("Agility", 2, "●●●○○")],
-                "Social": [("Persuasion", 1, "●○○○○")]
+                "Physical": [("Strength", 3, 5, "●●●○○"), ("Agility", 2, 5, "●●●○○")],
+                "Social": [("Persuasion", 1, 5, "●○○○○")]
             }
         """
         key = self.__get_char_key(ctx.guild.id, character.id)
-        all_traits: dict[str, list[tuple[str, int, str]]] = {}
+        all_traits: dict[str, list[tuple[str, int, int, str]]] = {}
 
         for category, traits in extend_common_traits_with_class(character.class_name).items():
             if category.title() not in all_traits:
@@ -224,7 +230,7 @@ class CharacterService:
                 value = getattr(character, normalize_to_db_row(trait))
                 max_value = get_max_trait_value(trait)
                 dots = num_to_circles(value, max_value)
-                all_traits[category.title()].append((trait.title(), value, dots))
+                all_traits[category.title()].append((trait.title(), value, max_value, dots))
 
         if key in self.custom_traits:
             custom_traits = self.custom_traits[key]
@@ -244,7 +250,7 @@ class CharacterService:
                 max_value = get_max_trait_value(custom_trait_name)
                 dots = num_to_circles(custom_trait_value, max_value)
                 all_traits[custom_trait.category.title()].append(
-                    (custom_trait_name, custom_trait_value, dots)
+                    (custom_trait_name, custom_trait_value, max_value, dots)
                 )
 
         return all_traits
@@ -646,19 +652,23 @@ class GuildService:
         self, guild_id: int, flat_list: bool = False
     ) -> dict[str, list[str]] | list[str]:
         """Fetch all traits for a guild inclusive of common and custom."""
-        all_traits = cast(dict[str, list[str]], all_traits_from_constants(flat_list=False))
+        all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+        all_traits = merge_dictionaries(all_constants, flat_list=False)
 
-        custom_traits = CustomTrait.select().where(CustomTrait.guild == guild_id)
-        if len(custom_traits) > 0:
-            for custom_trait in custom_traits:
-                if custom_trait.category.title() not in all_traits:
-                    all_traits[custom_trait.category.title()] = []
-                all_traits[custom_trait.category.title()].append(custom_trait.name.title())
+        if isinstance(all_traits, dict):
+            custom_traits = CustomTrait.select().where(CustomTrait.guild == guild_id)
+            if len(custom_traits) > 0:
+                for custom_trait in custom_traits:
+                    if custom_trait.category.title() not in all_traits:
+                        all_traits[custom_trait.category.title()] = []
+                    all_traits[custom_trait.category.title()].append(custom_trait.name.title())
 
-        if flat_list:
-            return list({y for x in all_traits.values() for y in x})
+            if flat_list:
+                # Flattens the dictionary to a single list, while removing duplicates
+                return list({item for sublist in all_traits.values() for item in sublist})
 
-        return all_traits
+            return all_traits
+        return None
 
 
 class DatabaseService:
