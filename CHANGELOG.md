@@ -1,3 +1,9 @@
+## v0.6.1 (2023-06-24)
+
+### Fix
+
+- **character**: add optional max value for custom traits
+
 ## v0.6.0 (2023-06-24)
 
 ### Feat

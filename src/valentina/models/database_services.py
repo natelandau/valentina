@@ -115,6 +115,8 @@ class CharacterService:
         max_value: int = 5,
     ) -> None:
         """Create a custom trait for a character."""
+        # TODO: max_value default should pull from MaxTraitValue enum
+
         key = self.__get_char_key(ctx.guild.id, character.id)
 
         new_trait = CustomTrait.create(
