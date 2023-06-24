@@ -1,3 +1,16 @@
+## v0.6.0 (2023-06-24)
+
+### Feat
+
+- **character**: add and manage custom sections (#11)
+
+### Fix
+
+- **character**: improve character sheet displays
+- add cache for custom traits
+- **macros**: add embed when no macros to list
+- **characters**: remove duplicated message when no characters to list
+
 ## v0.5.1 (2023-06-21)
 
 ### Fix
