@@ -29,13 +29,13 @@ class Wizard:
         last_name: str,
         humanity: int,
         willpower: int,
-        arete: int = None,
-        quintessence: int = None,
-        blood_pool: int = None,
-        gnosis: int = None,
-        rage: int = None,
-        conviction: int = None,
-        nickname: str = None,
+        arete: int | None = None,
+        quintessence: int | None = None,
+        blood_pool: int | None = None,
+        gnosis: int | None = None,
+        rage: int | None = None,
+        conviction: int | None = None,
+        nickname: str | None = None,
     ) -> None:
         self.ctx = ctx
         self.quick_char = quick_char
@@ -138,7 +138,7 @@ class Wizard:
 
         await self.edit_message(embed=embed, view=discord.ui.View(button))
 
-    def __query_embed(self, message: str = None) -> discord.Embed:
+    def __query_embed(self, message: str | None = None) -> discord.Embed:
         """Present the query in an embed."""
         description = "This wizard will guide you through the character creation process.\n\n"
         if message is not None:
@@ -158,7 +158,7 @@ class Wizard:
         return embed
 
     async def __query_trait(
-        self, *, interaction: discord.Interaction = None, message: str = None
+        self, *, interaction: discord.Interaction | None = None, message: str | None = None
     ) -> None:
         """Query for the next trait."""
         embed = self.__query_embed(message)

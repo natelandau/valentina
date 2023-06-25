@@ -136,7 +136,9 @@ class CharacterService:
 
         logger.info(f"CHARACTER: Added custom trait {name} to {character.id}")
 
-    def is_cached_char(self, guild_id: int = None, char_id: int = None, key: str = None) -> bool:
+    def is_cached_char(
+        self, guild_id: int | None = None, char_id: int | None = None, key: str | None = None
+    ) -> bool:
         """Check if the user is in the cache."""
         key = self.__get_char_key(guild_id, char_id) if key is None else key
         return key in self.characters
@@ -336,8 +338,7 @@ class CharacterService:
                 return self.characters[char_key]
 
             char_id = re.sub(r"\d\w+_", "", char_key)
-            character = self.fetch_by_id(guild.id, int(char_id))
-            return character
+            return self.fetch_by_id(guild.id, int(char_id))
 
         raise NoClaimError("No claim for user")
 
@@ -381,7 +382,9 @@ class CharacterService:
         self.characters = {}
         self.claims = {}
 
-    def purge_by_id(self, guild_id: int = None, char_id: int = None, key: str = None) -> None:
+    def purge_by_id(
+        self, guild_id: int | None = None, char_id: int | None = None, key: str | None = None
+    ) -> None:
         """Purge a single character from the cache by ID."""
         key = self.__get_char_key(guild_id, char_id) if key is None else key
         logger.debug(f"CACHE: Purge character {key}")
@@ -426,8 +429,8 @@ class CharacterService:
         self,
         ctx: discord.ApplicationContext,
         character: Character,
-        section_title: str = None,
-        section_description: str = None,
+        section_title: str | None = None,
+        section_description: str | None = None,
     ) -> bool:
         """Add or update a custom section to a character."""
         key = self.__get_char_key(ctx.guild.id, character.id)

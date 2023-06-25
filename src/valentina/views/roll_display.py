@@ -13,10 +13,10 @@ class RollDisplay:
         self,
         ctx: discord.ApplicationContext,
         roll: DiceRoll,
-        comment: str = None,
-        trait_one_name: str = None,
+        comment: str | None = None,
+        trait_one_name: str | None = None,
         trait_one_value: int = 0,
-        trait_two_name: str = None,
+        trait_two_name: str | None = None,
         trait_two_value: int = 0,
     ):
         self.ctx = ctx

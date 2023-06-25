@@ -18,7 +18,7 @@ async def create_character(
     char_class: str,
     first_name: str,
     last_name: str,
-    nickname: str = None,
+    nickname: str | None = None,
 ) -> None:
     """Create a character.
 

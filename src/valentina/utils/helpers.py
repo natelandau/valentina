@@ -29,8 +29,7 @@ def merge_dictionaries(
 
     if flat_list:
         # Flattens the dictionary to a single list, while removing duplicates
-        flat_result = list({item for sublist in result.values() for item in sublist})
-        return flat_result
+        return list({item for sublist in result.values() for item in sublist})
 
     return dict(result)
 

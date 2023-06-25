@@ -5,7 +5,7 @@ import discord
 class CustomSectionModal(discord.ui.Modal):
     """A modal for adding or editing a custom section."""
 
-    def __init__(self, section_title: str = None, section_description: str = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, section_title: str | None = None, section_description: str | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.section_title = section_title
         self.section_description = section_description
