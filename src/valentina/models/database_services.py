@@ -252,7 +252,7 @@ class CharacterService:
                 custom_trait_name = custom_trait.name.title()
                 custom_trait_value = custom_trait.value
 
-                max_value = get_max_trait_value(custom_trait_name)
+                max_value = get_max_trait_value(trait=custom_trait_name, is_custom_trait=True)
                 if not max_value:
                     max_value = custom_trait.max_value
 
