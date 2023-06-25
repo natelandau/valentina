@@ -26,9 +26,9 @@
         python        = "^3.11"
         python-dotenv = "^1.0.0"
         semver        = "^3.0.1"
+        sh            = "^2.0.4"
         shellingham   = "^1.4.0"
         typer         = { extras = ["all"], version = "^0.9.0" }
-    sh = "^2.0.4"
 
     [tool.poetry.group.test.dependencies]
         coverage               = "^7.2.2"
@@ -103,7 +103,7 @@
     output = "reports/coverage.xml"
 
 [tool.interrogate]
-    exclude            = ["build", "docs", "tests"]
+    exclude            = ["build", "docs", "src/valentina/cogs/test_cog.py"]
     fail-under         = 90
     ignore-init-method = true
     verbose            = 2
@@ -114,7 +114,8 @@
     disallow_untyped_decorators = false
     disallow_untyped_defs = true
     exclude = [
-        'tests/', # TOML literal string (single-quotes, regex okay, no escaping necessary)
+        'cogs/test_cog.py',
+        'tests/',           # TOML literal string (single-quotes, regex okay, no escaping necessary)
     ]
     follow_imports = "normal"
     ignore_missing_imports = true
@@ -130,7 +131,7 @@
     warn_unused_ignores = true
 
 [tool.pytest.ini_options]
-    addopts        = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --verbosity=2 --junitxml=reports/pytest.xml"
+    addopts        = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --verbosity=2 --junitxml=reports/pytest.xml --ignore=src/valentina/cogs/test_cog.py"
     filterwarnings = ["error", "ignore::DeprecationWarning"]
     testpaths      = ["src", "tests"]
     xfail_strict   = true
@@ -156,6 +157,7 @@
         "build",
         "dist",
         "node_modules",
+        "src/valentina/cogs/test_cog.py",
         "venv",
     ]
     # Avoiding flagging (and removing) `V101` from any `# noqa`
@@ -275,7 +277,7 @@
             shell = "mypy --config-file pyproject.toml src/"
 
         [[tool.poe.tasks.lint.sequence]]
-            shell = "vulture src/ tests/"
+            shell = "vulture src/ tests/ --exclude src/valentina/cogs/test_cog.py"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "yamllint ."

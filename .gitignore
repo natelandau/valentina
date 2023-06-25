@@ -3,6 +3,9 @@ secrets.txt
 .env.secret
 test_random.py
 
+# Testing during development
+test_cog.py
+
 # Databases
 *.sqlite*
 *.db
