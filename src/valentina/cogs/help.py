@@ -147,7 +147,7 @@ class Help(commands.Cog):
             _Note: Macros are tied to users, not characters. You can use the same macro for all of your characters._
 
             **__After Gameplay__**
-            Add or spend experience points using `/character xp`. This will allow you to level up your character and increase their stats. You can also use `/character unclaim` to unclaim your character and allow another user to claim it.
+            Add or spend experience points using `/xp`. This will allow you to level up your character and increase their stats. You can also use `/character unclaim` to unclaim your character and allow another user to claim it.
 
             """
         )

@@ -19,12 +19,7 @@ from valentina.utils.errors import (
     TraitNotFoundError,
     UserHasClaimError,
 )
-from valentina.utils.helpers import (
-    get_max_trait_value,
-    get_trait_multiplier,
-    get_trait_new_value,
-    normalize_to_db_row,
-)
+from valentina.utils.helpers import normalize_to_db_row
 from valentina.utils.options import select_character
 from valentina.views import ConfirmCancelButtons, present_embed
 
@@ -242,131 +237,7 @@ class Characters(commands.Cog, name="Character"):
             level="info",
         )
 
-    @chars.command(name="spend_xp", description="Spend experience points")
-    @logger.catch
-    async def spend_xp(
-        self,
-        ctx: discord.ApplicationContext,
-        trait: Option(
-            str, description="Trait to update", required=True, autocomplete=__trait_autocomplete
-        ),
-    ) -> None:
-        """Spend experience points."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed",
-                description="You must claim a character before you can spend experience.\nTo claim a character, use `/character claim`.",
-                level="error",
-                ephemeral=True,
-            )
-            return
-
-        old_value = character.__getattribute__(normalize_to_db_row(trait))
-
-        try:
-            if old_value > 0:
-                multiplier = get_trait_multiplier(trait)
-                upgrade_cost = (old_value + 1) * multiplier
-
-            if old_value == 0:
-                upgrade_cost = get_trait_new_value(trait)
-
-            if old_value >= get_max_trait_value(trait):
-                await present_embed(
-                    ctx,
-                    title=f"Error: {trait} at max value",
-                    description=f"**{trait}** is already at max value of {old_value}.",
-                    level="error",
-                )
-                return
-            view = ConfirmCancelButtons(ctx.author)
-            await present_embed(
-                ctx,
-                title=f"Upgrade {trait}",
-                description=f"Upgrading **{trait}** by **1** dot will cost **{upgrade_cost} XP**",
-                fields=[
-                    (f"Current {trait} value", old_value),
-                    (f"New {trait} value", old_value + 1),
-                    ("Current XP", character.experience),
-                    ("XP Cost", upgrade_cost),
-                    ("Remaining XP", character.experience - upgrade_cost),
-                ],
-                inline_fields=False,
-                ephemeral=True,
-                level="info",
-                view=view,
-            )
-            await view.wait()
-            if view.confirmed:
-                new_value = old_value + 1
-                new_experience = character.experience - upgrade_cost
-                char_svc.update_char(
-                    ctx.guild.id,
-                    character.id,
-                    **{normalize_to_db_row(trait): new_value, "experience": new_experience},
-                )
-                logger.info(f"XP: {character.name} {trait} upgraded by {ctx.author.name}")
-                await present_embed(
-                    ctx=ctx,
-                    title=f"{character.name} {trait} upgraded",
-                    description=f"**{trait}** upgraded to **{new_value}**.",
-                    level="success",
-                    fields=[("Remaining XP", new_experience)],
-                    footer=f"Updated by {ctx.author.name}",
-                )
-        except ValueError:
-            await present_embed(
-                ctx,
-                title="Error: No XP cost",
-                description=f"**{trait}** does not have an XP cost in `XPMultiplier`",
-                level="error",
-                ephemeral=True,
-            )
-            return
-
     ### ADD COMMANDS ####################################################################
-
-    @add.command(name="exp", description="Add experience to a character")
-    @logger.catch
-    async def add_xp(
-        self,
-        ctx: discord.ApplicationContext,
-        exp: Option(int, description="The amount of experience to add", required=True),
-    ) -> None:
-        """Add experience to a character."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed",
-                description="You must claim a character before you can add experience.\nTo claim a character, use `/character claim`.",
-                level="error",
-            )
-            return
-
-        exp = int(exp)
-        new_exp = character.experience + exp
-        new_total = character.experience_total + exp
-
-        char_svc.update_char(
-            ctx.guild.id,
-            character.id,
-            experience=new_exp,
-            experience_total=new_total,
-        )
-        logger.info(f"EXP: {character.name} exp updated by {ctx.author.name}")
-        await present_embed(
-            ctx=ctx,
-            title=f"{character.name} experience update.",
-            description=f"**{exp}** experience points added.",
-            fields=[("Current xp", new_exp)],
-            level="success",
-            footer=f"{new_total} all time xp",
-        )
 
     @add.command(name="cp", description="Add cool points to a character")
     @logger.catch
