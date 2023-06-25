@@ -168,6 +168,45 @@ class Xp(commands.Cog, name="XP"):
             footer=f"{new_total} all time xp",
         )
 
+    @xp.command(name="cp", description="Add cool points to a character")
+    @logger.catch
+    async def add_cool_points(
+        self,
+        ctx: discord.ApplicationContext,
+        cp: Option(int, description="The number of cool points to add", required=True),
+    ) -> None:
+        """Add cool points to a character."""
+        try:
+            character = char_svc.fetch_claim(ctx)
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed",
+                description="You must claim a character before you can add cool points.\nTo claim a character, use `/character claim`.",
+                level="error",
+            )
+            return
+
+        cp = int(cp)
+        new_cp = character.cool_points + cp
+        new_total = character.cool_points_total + cp
+
+        char_svc.update_char(
+            ctx.guild.id,
+            character.id,
+            cool_points=new_cp,
+            cool_points_total=new_total,
+        )
+        logger.info(f"CP: {character.name} cool points updated by {ctx.author.name}")
+        await present_embed(
+            ctx=ctx,
+            title=f"{character.name} cool points updated",
+            description=f"**{cp}** cool points added.",
+            fields=[("Current Cool Points", new_cp)],
+            level="success",
+            footer=f"{new_total} all time cool points",
+        )
+
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
