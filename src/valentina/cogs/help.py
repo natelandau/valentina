@@ -26,7 +26,7 @@ class Help(commands.Cog):
         ephemeral = True
         level = "info"
         fields = []
-        if not command or command.lower() == "help":
+        if not command:
             # Start to build the description
             title = "Valentina Noir Help"
             description = "Use Valentina's commands by typing `/<command> <subcommand>`\n\nUse `/help <command>` for detailed help information on each command below.\n\n"
