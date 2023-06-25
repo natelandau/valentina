@@ -1504,7 +1504,7 @@ testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (
 name = "sh"
 version = "2.0.4"
 description = "Python subprocess replacement"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8.1,<4.0"
 files = [
@@ -1839,4 +1839,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
         python-versions = "^3.11"
-content-hash = "5b58f221fa39bac210fa2a9715ccb115b12a70b1ce9a88a42d12e68431cba651"
+content-hash = "bb41f7e9495776d46f2b9213db727d6edb2c08d259d5d0777a7f72df2b3a53e2"

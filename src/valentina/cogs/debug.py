@@ -1,11 +1,13 @@
+# mypy: disable-error-code="valid-type"
 """Sample cog used for testing purposes."""
 from pathlib import Path
 
 import discord
 from discord.ext import commands
 from loguru import logger
+from sh import tail
 
-from valentina import Valentina, __version__
+from valentina import CONFIG, Valentina, __version__
 from valentina.views import present_embed
 
 
@@ -51,6 +53,14 @@ class Debug(commands.Cog):
         await present_embed(
             ctx, "Reload Bot", f"{count} cogs successfully reloaded", level="info", ephemeral=True
         )
+
+    @debug.command(description="Tail last 15 lines of the bot's logs")
+    @commands.is_owner()
+    async def logs(self, ctx: discord.ApplicationContext) -> None:
+        """Tail the bot's logs."""
+        logger.debug("debug:logs: Tailing the logs")
+        logs = tail("-n15", CONFIG["VALENTINA_LOG_FILE"], _bg=True)
+        await ctx.send("```" + str(logs) + "```")
 
 
 def setup(bot: Valentina) -> None:

@@ -28,6 +28,7 @@
         semver        = "^3.0.1"
         shellingham   = "^1.4.0"
         typer         = { extras = ["all"], version = "^0.9.0" }
+    sh = "^2.0.4"
 
     [tool.poetry.group.test.dependencies]
         coverage               = "^7.2.2"
