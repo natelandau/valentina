@@ -57,6 +57,12 @@ class CharacterClass(BaseModel):
     name = TextField(unique=True)
 
 
+class VampireClan(BaseModel):
+    """Vampire clans."""
+
+    name = TextField()
+
+
 class Character(BaseModel):
     """Character model for the database."""
 
@@ -64,13 +70,16 @@ class Character(BaseModel):
     first_name = TextField()
     last_name = TextField(null=True)
     nickname = TextField(null=True)
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    # Foreign Keys ###############################
     char_class = ForeignKeyField(CharacterClass, backref="characters")
     guild = ForeignKeyField(Guild, backref="characters")
     claimed_by = ForeignKeyField(User, backref="claimed_character", null=True)
     created_by = ForeignKeyField(User, backref="created_characters")
     owned_by = ForeignKeyField(User, backref="owned_characters", null=True)
-    created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
+    clan = ForeignKeyField(VampireClan, backref="characters", null=True)
+    # CHARACTER SHEET ############################
     alive = BooleanField(default=True)
     age = IntegerField(null=True)
     archived = BooleanField(default=False)
@@ -200,7 +209,7 @@ class Character(BaseModel):
 
     def __str__(self) -> str:
         """Return the string representation of the model."""
-        return f"""Character({self.id} {self.name})"""
+        return f"""Character({self.id} - {self.name})"""
 
 
 class CustomTrait(BaseModel):

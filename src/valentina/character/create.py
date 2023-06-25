@@ -6,7 +6,7 @@ import discord
 from loguru import logger
 from peewee import fn
 
-from valentina.character.views import CharGenModal
+from valentina.character.views import CharGenModal, SelectClan
 from valentina.character.wizard import Wizard
 from valentina.models.database import Character, Guild
 from valentina.views import present_embed
@@ -56,6 +56,15 @@ async def create_character(
         blood_pool = int(modal.blood_pool) if modal.blood_pool else 0
         conviction = int(modal.conviction) if modal.conviction else 0
 
+        # If the character is a vampire, get the clan
+        vampire_clan: str | None = None
+        if char_class.lower() == "vampire":
+            view = SelectClan(ctx.author)
+
+            await ctx.send("Select a clan", view=view)
+            await view.wait()
+            vampire_clan = view.value
+
         # Create the character
         character_wizard = Wizard(
             ctx,
@@ -72,6 +81,7 @@ async def create_character(
             gnosis=gnosis,
             blood_pool=blood_pool,
             conviction=conviction,
+            vampire_clan=vampire_clan,
         )
         await character_wizard.begin_chargen()
 

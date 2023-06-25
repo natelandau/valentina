@@ -19,18 +19,20 @@ def __build_trait_display(trait: str, value: int, max_value: int, dots: str) -> 
     return f"`{trait:13}: {dots}`"
 
 
-def __embed1(
+def __embed1(  # noqa: C901
     ctx: discord.ApplicationContext,
     character: Character,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
     modified = arrow.get(character.modified).humanize()
-
     char_traits = char_svc.fetch_all_character_trait_values(ctx, character)
 
-    ## Embed 1 ########################
     embed = discord.Embed(title=f"{character.name}", description="", color=0x7777FF)
     embed.add_field(name="Class", value=character.class_name, inline=True)
+
+    if character.class_name.lower() == "vampire" and character.clan:
+        embed.add_field(name="Clan", value=character.clan.name, inline=True)
+
     embed.add_field(name="Experience", value=f"`{character.experience}`", inline=True)
     embed.add_field(name="Cool Points", value=f"`{character.cool_points}`", inline=True)
     embed.set_footer(text=f"{character.name} last updated {modified}")

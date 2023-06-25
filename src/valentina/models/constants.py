@@ -139,6 +139,25 @@ class TraitCategory(Enum):
     GIFTS = "Gifts"  # Werewolf
 
 
+class VampClan(Enum):
+    """Vampire clans."""
+
+    # NOTE: Anything added here must be added to the VampireClan class in models/database.py
+    ASSAMITE = "Assamite"
+    BRUJAH = "Brujah"
+    FOLLOWERS_OF_SET = "Followers of Set"
+    GANGREL = "Gangrel"
+    GIOVANNI = "Giovanni"
+    LASOMBRA = "Lasombra"
+    MALKAVIAN = "Malkavian"
+    NOSFERATU = "Nosferatu"
+    RAVNOS = "Ravnos"
+    TOREADOR = "Toreador"
+    TREMERE = "Tremere"
+    TZIMISCE = "Tzimisce"
+    VENTRUE = "Ventrue"
+
+
 # NOTE: Anything added here must be added to the Character class in models/database.py
 COMMON_TRAITS = {
     "Physical": ["Strength", "Dexterity", "Stamina"],

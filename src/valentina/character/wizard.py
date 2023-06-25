@@ -13,7 +13,7 @@ from valentina.models.constants import (
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
 )
-from valentina.models.database import Character, CharacterClass
+from valentina.models.database import Character, CharacterClass, VampireClan
 from valentina.views import RatingView
 
 
@@ -36,6 +36,7 @@ class Wizard:
         rage: int | None = None,
         conviction: int | None = None,
         nickname: str | None = None,
+        vampire_clan: str | None = None,
     ) -> None:
         self.ctx = ctx
         self.quick_char = quick_char
@@ -51,6 +52,8 @@ class Wizard:
         self.gnosis = gnosis
         self.rage = rage
         self.conviction = conviction
+        self.vampire_clan = vampire_clan
+
         self.using_dms = True
         self.msg = None  # We will be editing this message instead of sending new ones
         self.assigned_traits: dict[str, int] = {}
@@ -91,6 +94,10 @@ class Wizard:
         """Add the character to the database and inform the user they are done."""
         db_char_class = CharacterClass.get(CharacterClass.name == self.char_class)
 
+        vampire_clan_id = (
+            VampireClan.get(VampireClan.name == self.vampire_clan) if self.vampire_clan else None
+        )
+
         Character.create(
             first_name=self.first_name,
             last_name=self.last_name,
@@ -106,6 +113,7 @@ class Wizard:
             conviction=self.conviction,
             guild=self.ctx.guild.id,
             created_by=user_svc.fetch_user(self.ctx).id,
+            clan_id=vampire_clan_id.id,
             **self.assigned_traits,
         )
         display_name = f"{self.first_name.title()}"

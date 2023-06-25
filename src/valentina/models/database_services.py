@@ -15,6 +15,7 @@ from valentina.models.constants import (
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
     CharClass,
+    VampClan,
 )
 from valentina.models.database import (
     Character,
@@ -26,6 +27,7 @@ from valentina.models.database import (
     GuildUser,
     Macro,
     User,
+    VampireClan,
     time_now,
 )
 from valentina.utils.errors import (
@@ -704,6 +706,7 @@ class DatabaseService:
                     GuildUser,
                     Macro,
                     User,
+                    VampireClan,
                 ]
             )
         logger.info("DATABASE: Create Tables")
@@ -712,6 +715,10 @@ class DatabaseService:
         # Populate default values
         for char_class in CharClass:
             CharacterClass.get_or_create(name=char_class.value)
+
+        for clan in VampClan:
+            VampireClan.get_or_create(name=clan.value)
+
         logger.info("DATABASE: Populate Enums")
 
     def get_tables(self) -> list[str]:
