@@ -6,13 +6,14 @@ import discord
 from discord.ui import Button
 from loguru import logger
 
+from valentina import user_svc
 from valentina.models.constants import (
     COMMON_TRAITS,
     MAGE_TRAITS,
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
 )
-from valentina.models.database import Character, CharacterClass, Guild
+from valentina.models.database import Character, CharacterClass
 from valentina.views import RatingView
 
 
@@ -39,8 +40,8 @@ class Wizard:
         self.ctx = ctx
         self.quick_char = quick_char
         self.char_class = char_class
-        self.first_name = first_name
-        self.last_name = last_name
+        self.first_name = first_name.title()
+        self.last_name = last_name.title()
         self.nickname = nickname
         self.humanity = humanity
         self.willpower = willpower
@@ -85,9 +86,9 @@ class Wizard:
 
         return traits_list
 
+    @logger.catch
     async def __finalize_character(self) -> None:
         """Add the character to the database and inform the user they are done."""
-        db_guild = Guild.get(Guild.id == self.ctx.guild.id)
         db_char_class = CharacterClass.get(CharacterClass.name == self.char_class)
 
         Character.create(
@@ -103,12 +104,14 @@ class Wizard:
             gnosis=self.gnosis,
             rage=self.rage,
             conviction=self.conviction,
-            guild=db_guild.id,
+            guild=self.ctx.guild.id,
+            created_by=user_svc.fetch_user(self.ctx).id,
             **self.assigned_traits,
         )
-        logger.info(
-            f"DATABASE: Add {self.char_class} character {self.first_name} {self.last_name}."
-        )
+        display_name = f"{self.first_name.title()}"
+        display_name += f" ({self.nickname.title()})" if self.nickname else ""
+        display_name += f" {self.last_name.title() }" if self.last_name else ""
+        logger.info(f"DATABASE: Add {self.char_class} character {display_name}")
         logger.debug(f"CHARGEN: Completed by {self.ctx.user.name} on {self.ctx.guild.name}")
 
         self.view.stop()

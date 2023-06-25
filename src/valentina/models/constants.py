@@ -104,6 +104,8 @@ class DiceType(Enum):
 class CharClass(Enum):
     """Enum for types of characters."""
 
+    # NOTE: Anything here must be added to the database CharacterClass table
+
     MORTAL = "Mortal"
     VAMPIRE = "Vampire"
     WEREWOLF = "Werewolf"
@@ -137,6 +139,7 @@ class TraitCategory(Enum):
     GIFTS = "Gifts"  # Werewolf
 
 
+# NOTE: Anything added here must be added to the Character class in models/database.py
 COMMON_TRAITS = {
     "Physical": ["Strength", "Dexterity", "Stamina"],
     "Social": ["Charisma", "Manipulation", "Appearance"],

@@ -25,6 +25,8 @@ from valentina.views import ConfirmCancelButtons, present_embed
 
 possible_classes = sorted([char_class.value for char_class in CharClass])
 
+# TODO: Add a way to mark a character as dead
+
 
 class Characters(commands.Cog, name="Character"):
     """Create, manage, update, and claim characters."""
@@ -292,8 +294,8 @@ class Characters(commands.Cog, name="Character"):
             modal = CustomSectionModal(title=f"Custom section for {character.name}")
             await ctx.send_modal(modal)
             await modal.wait()
-            section_title = modal.section_title
-            section_description = modal.section_description
+            section_title = modal.section_title.strip().title()
+            section_description = modal.section_description.strip()
 
             existing_sections = char_svc.fetch_char_custom_sections(ctx, character)
             if normalize_to_db_row(section_title) in [
@@ -342,7 +344,7 @@ class Characters(commands.Cog, name="Character"):
         )
         await ctx.send_modal(modal)
         await modal.wait()
-        biography = modal.bio
+        biography = modal.bio.strip()
 
         char_svc.update_char(ctx.guild.id, character.id, bio=biography)
         logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")

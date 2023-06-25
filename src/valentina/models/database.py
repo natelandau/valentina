@@ -24,6 +24,12 @@ class BaseModel(Model):
         return str(self.__dict__)
 
 
+class DatabaseVersion(BaseModel):
+    """Database version model for the database."""
+
+    version = TextField()
+
+
 class Guild(BaseModel):
     """Guild model for the database."""
 
@@ -33,10 +39,16 @@ class Guild(BaseModel):
     last_connected = DateTimeField(default=time_now)
 
 
-class DatabaseVersion(BaseModel):
-    """Database version model for the database."""
+class User(BaseModel):
+    """User model for the database."""
 
-    version = TextField()
+    id = IntegerField(primary_key=True)  # noqa: A003
+    username = TextField(null=True)
+    name = TextField(null=True)
+    avatar_url = TextField(null=True)
+    first_seen = DateTimeField(default=time_now)
+    mention = TextField(null=True)
+    last_seen = DateTimeField(default=time_now)
 
 
 class CharacterClass(BaseModel):
@@ -54,8 +66,12 @@ class Character(BaseModel):
     nickname = TextField(null=True)
     char_class = ForeignKeyField(CharacterClass, backref="characters")
     guild = ForeignKeyField(Guild, backref="characters")
+    claimed_by = ForeignKeyField(User, backref="claimed_character", null=True)
+    created_by = ForeignKeyField(User, backref="created_characters")
+    owned_by = ForeignKeyField(User, backref="owned_characters", null=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
+    alive = BooleanField(default=True)
     age = IntegerField(null=True)
     archived = BooleanField(default=False)
     bio = TextField(null=True)
@@ -67,8 +83,6 @@ class Character(BaseModel):
     experience_total = IntegerField(default=0)
     gender = TextField(null=True)
     nature = TextField(null=True)
-    notes = TextField(null=True)
-    player_id = IntegerField(null=True)
     ### Physical #############################
     strength = IntegerField(default=0)
     dexterity = IntegerField(default=0)
@@ -210,18 +224,6 @@ class CustomCharSection(BaseModel):
     description = TextField(null=True)
     guild = ForeignKeyField(Guild, backref="custom_traits")
     title = TextField()
-
-
-class User(BaseModel):
-    """User model for the database."""
-
-    id = IntegerField(primary_key=True)  # noqa: A003
-    username = TextField(null=True)
-    name = TextField(null=True)
-    avatar_url = TextField(null=True)
-    first_seen = DateTimeField(default=time_now)
-    mention = TextField(null=True)
-    last_seen = DateTimeField(default=time_now)
 
 
 class GuildUser(BaseModel):

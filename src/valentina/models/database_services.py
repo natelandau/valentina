@@ -120,8 +120,8 @@ class CharacterService:
         key = self.__get_char_key(ctx.guild.id, character.id)
 
         new_trait = CustomTrait.create(
-            name=name.title(),
-            description=description,
+            name=name.strip().title(),
+            description=description.strip(),
             category=category,
             value=value,
             character=character.id,
@@ -568,6 +568,7 @@ class UserService:
             },
         )
         if created:
+            # Add user to guild_user lookup table
             existing_guild_user, lookup_created = GuildUser.get_or_create(
                 user=ctx.author.id,
                 guild=ctx.guild.id,

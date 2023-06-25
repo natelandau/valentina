@@ -75,9 +75,9 @@ class Macros(commands.Cog):
         )
         await ctx.send_modal(modal)
         await modal.wait()
-        name = modal.name
-        abbreviation = modal.abbreviation
-        description = modal.description
+        name = modal.name.strip()
+        abbreviation = modal.abbreviation.strip()
+        description = modal.description.strip()
 
         macros = user_svc.fetch_macros(ctx)
         if any(macro.name.lower() == name.lower() for macro in macros) or any(
