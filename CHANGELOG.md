@@ -1,3 +1,24 @@
+## v0.7.0 (2023-06-25)
+
+### Feat
+
+- **character**: add clan to vampires
+- **debug**: add `/debug tail` to allow viewing last lines of log
+- **xp**: break xp management into seperate command
+- **help**: add a guide for understanding the bot
+
+### Fix
+
+- **character**: improve character sheet display
+- **character**: add additional base traits
+- **database**: add user who created character
+- **xp**: add cool points to`/xp` command
+- **help**: allow getting help for `help` command
+
+### Refactor
+
+- **character**: simplify properties during chargen
+
 ## v0.6.1 (2023-06-24)
 
 ### Fix
