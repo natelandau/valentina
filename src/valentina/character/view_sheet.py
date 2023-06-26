@@ -11,15 +11,42 @@ from valentina.models.database import Character
 MAX_DOT_DISPLAY = 6
 
 
-def __build_trait_display(trait: str, value: int, max_value: int, dots: str) -> str:
-    """Builds a display string for a trait."""
-    if max_value > MAX_DOT_DISPLAY:
-        return f"`{trait:13}: {value}/{max_value}`"
+def __build_trait_display(
+    char_traits: dict[str, Any],
+    categories_list: list[str],
+    exclude_from_list: bool = False,
+    show_zeros: bool = True,
+) -> list[tuple[str, str]]:
+    """Builds the name and value for an embed field representing a category of traits.
 
-    return f"`{trait:13}: {dots}`"
+    Args:
+        char_traits (dict[str, Any]): A dictionary of character traits.
+        categories_list (list[str]): A list of categories to include in the embed field.
+        exclude_from_list (bool, optional): If True, the categories list is treated as a list of categories to exclude. Defaults to False.
+        show_zeros (bool, optional): If True, traits with a value of 0 are included in the embed field. Defaults to True.
+    """
+    embed_values = []
+    for category, traits in char_traits.items():
+        if exclude_from_list and category.lower() in [x.lower() for x in categories_list]:
+            continue
+        if not exclude_from_list and category.lower() not in [x.lower() for x in categories_list]:
+            continue
+
+        formatted = []
+        for trait, value, max_value, dots in traits:
+            if not show_zeros and value == 0:
+                continue
+            if max_value > MAX_DOT_DISPLAY:
+                formatted.append(f"`{trait:13}: {value}/{max_value}`")
+            else:
+                formatted.append(f"`{trait:13}: {dots}`")
+
+        embed_values.append((category, "\n".join(formatted)))
+
+    return embed_values
 
 
-def __embed1(  # noqa: C901
+def __embed1(
     ctx: discord.ApplicationContext,
     character: Character,
 ) -> discord.Embed:
@@ -36,39 +63,41 @@ def __embed1(  # noqa: C901
     embed.add_field(name="Experience", value=f"`{character.experience}`", inline=True)
     embed.add_field(name="Cool Points", value=f"`{character.cool_points}`", inline=True)
     embed.set_footer(text=f"{character.name} last updated {modified}")
+
     embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
-
-    for category, traits in char_traits.items():
-        if category.lower() in ["physical", "social", "mental"]:
-            formatted_traits = []
-            for trait, value, max_value, dots in traits:
-                formatted_traits.append(__build_trait_display(trait, value, max_value, dots))
-
-            embed.add_field(name=category, value="\n".join(formatted_traits), inline=True)
+    for category, traits in __build_trait_display(char_traits, ["physical", "social", "mental"]):
+        embed.add_field(name=category, value=traits, inline=True)
 
     embed.add_field(name="\u200b", value="**ABILITIES**", inline=False)
-    for category, traits in char_traits.items():
-        if category.lower() in ["talents", "skills", "knowledges"]:
-            formatted_traits = []
-            for trait, value, max_value, dots in traits:
-                formatted_traits.append(__build_trait_display(trait, value, max_value, dots))
+    for category, traits in __build_trait_display(char_traits, ["talents", "skills", "knowledges"]):
+        embed.add_field(name=category, value=traits, inline=True)
 
-            embed.add_field(name=category, value="\n".join(formatted_traits), inline=True)
-
-    for category, traits in char_traits.items():
-        if category.lower() not in [
+    for category, traits in __build_trait_display(
+        char_traits,
+        [
             "physical",
             "social",
             "mental",
             "talents",
             "skills",
             "knowledges",
-        ]:
-            formatted_traits = []
-            for trait, value, max_value, dots in traits:
-                formatted_traits.append(__build_trait_display(trait, value, max_value, dots))
+            "disciplines",
+            "spheres",
+        ],
+        exclude_from_list=True,
+    ):
+        embed.add_field(name=category, value=traits, inline=True)
 
-            embed.add_field(name=category, value="\n".join(formatted_traits), inline=True)
+    # Show class specific traits.
+    # Werewolf/hunter traits aren't here b/c they are not a large list and should be shown with the rest of the traits with zeros included.
+    match character.class_name.lower():
+        case "vampire":
+            class_list = ["disciplines"]
+        case "mage":
+            class_list = ["spheres"]
+
+    for category, traits in __build_trait_display(char_traits, class_list, show_zeros=False):
+        embed.add_field(name=category, value=traits, inline=True)
 
     return embed
 
