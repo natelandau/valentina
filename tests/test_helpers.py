@@ -4,6 +4,8 @@
 import pytest
 
 from valentina.utils.helpers import (
+    all_traits_from_constants,
+    extend_common_traits_with_class,
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
@@ -12,44 +14,73 @@ from valentina.utils.helpers import (
 )
 
 
-class MockCharacter:
-    """Mock character class."""
+def test_all_traits_from_constants_one():
+    """Test all_traits_from_constants().
 
-    def __init__(self) -> None:
-        self.first_name = "Test"
-        self.last_name = "Character"
-        self.nickname = "Testy"
-        self.char_class = "Vampire"
-        self.willpower = 5
-        self.strength = 2
-        self.blood_pool = 10
-        self.wits = 0
-        self.dexterity = None
-
-
-@pytest.mark.parametrize(("row", "expected"), [("Test-Row", "test_row"), ("Test Row", "test_row")])
-def test_normalize_to_db_row(row, expected) -> None:
-    """Test normalize_to_db_row().
-
-    GIVEN a string
-    WHEN normaliznormalize_to_db_rowe_row() is called
-    THEN the correct string is returned
+    GIVEN a list of constants
+    WHEN all_traits_from_constants() is called
+    THEN a dictionary of all traits is returned
     """
-    assert normalize_to_db_row(row) == expected
+    returned = all_traits_from_constants()
+    assert "Disciplines" in returned
+    assert "Knowledges" in returned
+    assert "Skills" in returned
+    assert returned["Spheres"] == [
+        "Correspondence",
+        "Entropy",
+        "Forces",
+        "Life",
+        "Matter",
+        "Mind",
+        "Prime",
+        "Spirit",
+        "Time",
+    ]
 
 
-@pytest.mark.parametrize(
-    ("num", "maximum", "expected"),
-    [(0, 5, "○○○○○"), (3, 5, "●●●○○"), (5, None, "●●●●●"), (6, 5, "●●●●●●"), (0, 10, "○○○○○○○○○○")],
-)
-def test_num_to_circles(num, maximum, expected) -> None:
-    """Test num_to_circles().
+def test_all_traits_from_constants_two():
+    """Test all_traits_from_constants().
 
-    GIVEN a number and a max
-    WHEN num_to_circles() is called
-    THEN the correct number of circles is returned
+    GIVEN a list of constants
+    WHEN all_traits_from_constants() is called with flat_list=True
+    THEN a list of all traits is returned
     """
-    assert num_to_circles(num, maximum) == expected
+    returned = all_traits_from_constants(flat_list=True)
+    assert "Primal-Urge" in returned
+    assert "Entropy" in returned
+    assert "Strength" in returned
+    assert "Drive" in returned
+    assert "Willpower" in returned
+    assert "Thaumaturgy" in returned
+
+
+def test_extend_common_traits_with_class():
+    """Test extend_common_traits_with_class().
+
+    GIVEN a character class
+    WHEN extend_common_traits_with_class() is called
+    THEN a dictionary common traits plus the traits for the class is returned
+    """
+    returned = extend_common_traits_with_class("mage")
+    assert "Knowledges" in returned
+    assert "Skills" in returned
+    assert "Spheres" in returned
+    assert "Disciplines" not in returned
+    assert "Renown" not in returned
+
+    returned = extend_common_traits_with_class("vampire")
+    assert "Knowledges" in returned
+    assert "Skills" in returned
+    assert "Spheres" not in returned
+    assert "Disciplines" in returned
+    assert "Renown" not in returned
+
+    returned = extend_common_traits_with_class("werewolf")
+    assert "Knowledges" in returned
+    assert "Skills" in returned
+    assert "Spheres" not in returned
+    assert "Disciplines" not in returned
+    assert "Renown" in returned
 
 
 @pytest.mark.parametrize(
@@ -121,3 +152,28 @@ def test_get_trait_new_value(trait, expected):
     THEN the correct value is returned
     """
     assert get_trait_new_value(trait) == expected
+
+
+@pytest.mark.parametrize(("row", "expected"), [("Test-Row", "test_row"), ("Test Row", "test_row")])
+def test_normalize_to_db_row(row, expected) -> None:
+    """Test normalize_to_db_row().
+
+    GIVEN a string
+    WHEN normaliznormalize_to_db_rowe_row() is called
+    THEN the correct string is returned
+    """
+    assert normalize_to_db_row(row) == expected
+
+
+@pytest.mark.parametrize(
+    ("num", "maximum", "expected"),
+    [(0, 5, "○○○○○"), (3, 5, "●●●○○"), (5, None, "●●●●●"), (6, 5, "●●●●●●"), (0, 10, "○○○○○○○○○○")],
+)
+def test_num_to_circles(num, maximum, expected) -> None:
+    """Test num_to_circles().
+
+    GIVEN a number and a max
+    WHEN num_to_circles() is called
+    THEN the correct number of circles is returned
+    """
+    assert num_to_circles(num, maximum) == expected
