@@ -1,3 +1,4 @@
+# type: ignore
 """Shared fixtures for database tests.
 
 This file contains fixtures that are used by multiple database tests.
@@ -7,7 +8,7 @@ mock_db: A mock database with test data for use in tests. Any changes made to th
 empty_db: A database with tables but no data for use in tests. Any changes made to this database will not persist between tests.
 
 """
-
+import discord
 import peewee as pw
 import pytest
 
@@ -79,7 +80,7 @@ macro = {
 }
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def mock_db() -> pw.SqliteDatabase:
     """Create a mock database with test data for use in tests."""
     full_db = pw.SqliteDatabase(":memory:")
@@ -124,3 +125,54 @@ def empty_db() -> pw.SqliteDatabase:
     empty_db.create_tables(MODELS)
     yield empty_db
     empty_db.close()
+
+
+### Mock Objects ################################
+class MockGuild(discord.Guild):
+    """Mock guild object."""
+
+    def __init__(self, id, name: str | None = None):
+        self.id = id
+        self.name = name
+
+
+class MockUser:
+    """Mock user object."""
+
+    def __init__(self, id, display_name, name, mention):
+        self.id = id
+        self.display_name = display_name
+        self.name = name
+        self.mention = mention
+
+
+class MockCTX(discord.ApplicationContext):
+    """Mock context object."""
+
+    def __init__(self, guild, author):
+        self.guild = guild
+        self.author = author
+
+
+@pytest.fixture()
+def ctx_existing():
+    """Create a mock context object containing object in the mock database."""
+    mock_guild = MockGuild(1, "Test Guild")
+    mock_user = MockUser(1, "Test User", "testuser", "<@1>")
+    return MockCTX(mock_guild, mock_user)
+
+
+@pytest.fixture()
+def ctx_new_user():
+    """Create a mock context object that has a user not in the mock database."""
+    mock_guild = MockGuild(1, "Test Guild")
+    mock_user = MockUser(2, "Test User 2", "testuser 2", "<@2>")
+    return MockCTX(mock_guild, mock_user)
+
+
+@pytest.fixture()
+def ctx_new_user_guild():
+    """Create a mock context object that has a user and a guild not in the mock database."""
+    mock_guild = MockGuild(2, "Test Guild 2")
+    mock_user = MockUser(2, "Test User 2", "testuser 2", "<@2>")
+    return MockCTX(mock_guild, mock_user)

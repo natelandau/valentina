@@ -539,6 +539,7 @@ class UserService:
 
         macros = Macro.select().where((Macro.user == author_id) & (Macro.guild == guild_id))
         self.macro_cache[key] = macros
+
         logger.debug(f"DATABASE: Fetch macros for {key}")
         return macros
 
@@ -553,11 +554,11 @@ class UserService:
         return None
 
     def fetch_user(self, ctx: discord.ApplicationContext) -> User:
-        """Fetch a user object from the cache or database."""
+        """Fetch a user object from the cache or database. If user doesn't exist, create in the database and the cache."""
         key = self.__get_user_key(ctx.guild.id, ctx.author.id)
 
         if key in self.user_cache:
-            logger.info(f"CACHE: Returning user {key} from cache")
+            logger.info(f"CACHE: Return user {key} from cache")
             return self.user_cache[key]
 
         user, created = User.get_or_create(
