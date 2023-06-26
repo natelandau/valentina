@@ -7,7 +7,6 @@ from loguru import logger
 from peewee import DoesNotExist, ModelSelect, SqliteDatabase, fn
 from semver import Version
 
-from valentina.__version__ import __version__
 from valentina.models.constants import (
     COMMON_TRAITS,
     HUNTER_TRAITS,
@@ -106,6 +105,28 @@ class CharacterService:
         self.claims[claim_key] = char_key
         return True
 
+    def add_custom_section(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Character,
+        section_title: str | None = None,
+        section_description: str | None = None,
+    ) -> bool:
+        """Add or update a custom section to a character."""
+        key = self.__get_char_key(ctx.guild.id, character.id)
+
+        CustomCharSection.create(
+            title=section_title,
+            description=section_description,
+            guild=ctx.guild.id,
+            character=character.id,
+        )
+
+        self.custom_sections.pop(key, None)
+
+        logger.debug(f"DATABASE: Add custom section to character {character.id}")
+        return True
+
     def add_trait(
         self,
         ctx: discord.ApplicationContext,
@@ -121,7 +142,7 @@ class CharacterService:
 
         key = self.__get_char_key(ctx.guild.id, character.id)
 
-        new_trait = CustomTrait.create(
+        CustomTrait.create(
             name=name.strip().title(),
             description=description.strip(),
             category=category,
@@ -132,9 +153,7 @@ class CharacterService:
         )
 
         if key in self.custom_traits:
-            self.custom_traits[key].append(new_trait)
-        else:
-            self.custom_traits[key] = [new_trait]
+            self.custom_traits.pop(key, None)
 
         logger.info(f"CHARACTER: Added custom trait {name} to {character.id}")
 
@@ -220,7 +239,9 @@ class CharacterService:
         ctx: discord.ApplicationContext,
         character: Character,
     ) -> dict[str, list[tuple[str, int, int, str]]]:
-        """Fetch all trait values for a character inclusive of common and custom for display on a character sheet. Returns a tuple of (trait name, trait value, trait max value, trait dots).
+        """Fetch all trait values for a character inclusive of common and custom for display on a character sheet.
+
+        Returns a tuple of (trait name, trait value, trait max value, trait dots).
 
         Example:
             {
@@ -269,7 +290,7 @@ class CharacterService:
 
     def fetch_char_custom_sections(
         self, ctx: discord.ApplicationContext | discord.AutocompleteContext, character: Character
-    ) -> list[CustomCharSection]:
+    ) -> ModelSelect:
         """Fetch a list of custom sections for a character."""
         if isinstance(ctx, discord.ApplicationContext):
             guild_id = ctx.guild.id
@@ -280,9 +301,11 @@ class CharacterService:
         if key in self.custom_sections:
             return self.custom_sections[key]
 
-        return CustomCharSection.select().where(
+        sections = CustomCharSection.select().where(
             (CustomCharSection.character == character.id) & (CustomCharSection.guild_id == guild_id)
         )
+        self.custom_sections[key] = sections
+        return sections
 
     def fetch_char_custom_traits(
         self, ctx: discord.ApplicationContext, character: Character
@@ -327,7 +350,7 @@ class CharacterService:
         if isinstance(ctx, discord.ApplicationContext):
             author = ctx.author
             guild = ctx.guild
-        if isinstance(ctx, discord.AutocompleteContext):
+        if isinstance(ctx, discord.AutocompleteContext):  # pragma: no cover
             author = ctx.interaction.user
             guild = ctx.interaction.guild
 
@@ -339,7 +362,7 @@ class CharacterService:
                 logger.debug(f"CACHE: Fetch character {char_key}")
                 return self.characters[char_key]
 
-            char_id = re.sub(r"\d\w+_", "", char_key)
+            char_id = re.sub(r"[a-zA-Z0-9]+_", "", char_key)
             return self.fetch_by_id(guild.id, int(char_id))
 
         raise NoClaimError("No claim for user")
@@ -355,10 +378,10 @@ class CharacterService:
             x
             for x in self.fetch_char_custom_traits(ctx, character)
             if x.name.lower() == trait.lower()
-        ][0]
+        ]
 
-        if custom_trait:
-            return custom_trait.value
+        if len(custom_trait) > 0:
+            return custom_trait[0].value
 
         raise TraitNotFoundError(f"Trait {trait} not found for character {character.id}")
 
@@ -368,9 +391,9 @@ class CharacterService:
             char_key = self.__get_char_key(guild_id, char_id)
             for claim_key, claim in self.claims.items():
                 if claim == char_key:
-                    user_id = re.sub(r"\d\w+_", "", claim_key)
+                    user_id = re.sub(r"[a-zA-Z0-9]+_", "", claim_key)
                     return int(user_id)
-            return None
+
         return None
 
     def is_char_claimed(self, guild_id: int, char_id: int) -> bool:
@@ -391,6 +414,8 @@ class CharacterService:
         key = self.__get_char_key(guild_id, char_id) if key is None else key
         logger.debug(f"CACHE: Purge character {key}")
         self.characters.pop(key, None)
+        self.custom_traits.pop(key, None)
+        self.custom_sections.pop(key, None)
 
     def remove_claim(self, ctx: discord.ApplicationContext) -> bool:
         """Remove a claim from a user."""
@@ -414,43 +439,17 @@ class CharacterService:
         kws = {normalize_to_db_row(k): v for k, v in kwargs.items()}
 
         if key in self.characters:
-            character = self.characters[key]
-            self.purge_by_id(key=key)
-        else:
-            try:
-                character = Character.get_by_id(char_id)
-            except DoesNotExist as e:
-                raise CharacterNotFoundError(f"Character {char_id} was not found") from e
+            self.purge_by_id(guild_id, char_id)
+
+        try:
+            character = Character.get_by_id(char_id)
+        except DoesNotExist as e:
+            raise CharacterNotFoundError(f"Character {char_id} was not found") from e
 
         Character.update(modified=time_now(), **kws).where(Character.id == character.id).execute()
 
         logger.debug(f"DATABASE: Update character: {char_id}")
         return character
-
-    def update_char_custom_section(
-        self,
-        ctx: discord.ApplicationContext,
-        character: Character,
-        section_title: str | None = None,
-        section_description: str | None = None,
-    ) -> bool:
-        """Add or update a custom section to a character."""
-        key = self.__get_char_key(ctx.guild.id, character.id)
-
-        new_section = CustomCharSection.create(
-            title=section_title,
-            description=section_description,
-            guild=ctx.guild.id,
-            character=character.id,
-        )
-
-        if key in self.custom_sections:
-            self.custom_sections[key].append(new_section)
-        else:
-            self.custom_sections[key] = [new_section]
-
-        logger.debug(f"DATABASE: Add custom section to character {character.id}")
-        return True
 
     def update_trait_value(
         self, guild_id: int, character: Character, trait_name: str, new_value: int
@@ -458,20 +457,17 @@ class CharacterService:
         """Update a trait value for a character."""
         # Update traits on the character model
         if hasattr(character, normalize_to_db_row(trait_name)):
-            setattr(character, normalize_to_db_row(trait_name), new_value)
-            character.save()
+            self.update_char(guild_id, character.id, **{trait_name: new_value})
             logger.debug(
                 f"DATABASE: Update '{trait_name}' for character {character.name} to {new_value}"
             )
             return True
 
-        key = self.__get_char_key(guild_id, character.id)
-        if key in self.custom_traits:
-            custom_trait = [x for x in self.custom_traits[key] if x.name == trait_name.title()][0]
-        else:  # Grab from DB if not in cache
-            custom_trait = CustomTrait.get(
-                CustomTrait.character_id == character.id and CustomTrait.name == trait_name.title()
-            )
+        # Update custom traits
+
+        custom_trait = CustomTrait.get_or_none(
+            CustomTrait.character_id == character.id and CustomTrait.name == trait_name.title()
+        )
 
         if custom_trait:
             custom_trait.value = new_value
@@ -482,8 +478,7 @@ class CharacterService:
             )
 
             # Reset custom traits cache for character
-            if key in self.custom_traits:
-                self.custom_traits.pop(key, None)
+            self.purge_by_id(guild_id, character.id)
             return True
 
         raise TraitNotFoundError(f"Trait '{trait_name}' was not found for character {character.id}")
@@ -540,6 +535,7 @@ class UserService:
 
         macros = Macro.select().where((Macro.user == author_id) & (Macro.guild == guild_id))
         self.macro_cache[key] = macros
+
         logger.debug(f"DATABASE: Fetch macros for {key}")
         return macros
 
@@ -554,11 +550,11 @@ class UserService:
         return None
 
     def fetch_user(self, ctx: discord.ApplicationContext) -> User:
-        """Fetch a user object from the cache or database."""
+        """Fetch a user object from the cache or database. If user doesn't exist, create in the database and the cache."""
         key = self.__get_user_key(ctx.guild.id, ctx.author.id)
 
         if key in self.user_cache:
-            logger.info(f"CACHE: Returning user {key} from cache")
+            logger.info(f"CACHE: Return user {key} from cache")
             return self.user_cache[key]
 
         user, created = User.get_or_create(
@@ -634,10 +630,6 @@ class UserService:
 class GuildService:
     """Manage guilds in the database. Guilds are created a bot_connect,."""
 
-    def __init__(self) -> None:
-        """Initialize the GuildService."""
-        self.guilds: dict[int, Guild] = {}
-
     @staticmethod
     def is_in_db(guild_id: int) -> bool:
         """Check if the guild is in the database."""
@@ -662,10 +654,16 @@ class GuildService:
             Guild.set_by_id(db_id, {"last_connected": time_now()})
             logger.info(f"DATABASE: Update '{db_id.name}'")
 
+    @staticmethod
     def fetch_all_traits(
-        self, guild_id: int, flat_list: bool = False
+        guild_id: int, flat_list: bool = False
     ) -> dict[str, list[str]] | list[str]:
-        """Fetch all traits for a guild inclusive of common and custom."""
+        """Fetch all traits for a guild inclusive of common and custom.
+
+        Args:
+            guild_id (int): The guild to fetch traits for.
+            flat_list (bool, optional): Return a flat list of traits. Defaults to False.
+        """
         all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
         all_traits = merge_dictionaries(all_constants, flat_list=False)
 
@@ -682,6 +680,7 @@ class GuildService:
                 return list({item for sublist in all_traits.values() for item in sublist})
 
             return all_traits
+
         return None
 
 
@@ -712,6 +711,8 @@ class DatabaseService:
         logger.info("DATABASE: Create Tables")
         logger.debug(f"DATABASE: {self.get_tables()}")
 
+    def sync_enums(self) -> None:
+        """Ensure that the CharacterClass and VampireCan tables are up to date with their enums."""
         # Populate default values
         for char_class in CharClass:
             CharacterClass.get_or_create(name=char_class.value)
@@ -727,16 +728,21 @@ class DatabaseService:
             cursor = self.db.execute_sql("SELECT name FROM sqlite_master WHERE type='table';")
             return [row[0] for row in cursor.fetchall()]
 
-    def requires_migration(self) -> bool:
-        """Determine if the database requires a migration."""
-        bot_version = Version.parse(__version__)
+    def requires_migration(self, bot_version: str) -> bool:
+        """Determine if the database requires a migration.
 
+        Args:
+            bot_version (str): The version of the bot to compare against the database version.
+
+        Returns:
+            bool: True if the database requires a migration, False otherwise.
+        """
         current_db_version, created = DatabaseVersion.get_or_create(
             id=1,
-            defaults={"version": __version__},
+            defaults={"version": bot_version},
         )
         if created:
-            logger.info(f"DATABASE: Create version v{__version__}")
+            logger.info(f"DATABASE: Create version v{bot_version}")
             return False
 
         db_version = Version.parse(current_db_version.version)

@@ -194,6 +194,12 @@
         "PLR0913",
         "PLR2004",
         "S101",
+    ], "tests/database/*.py" = [
+        "A002",
+        "A003",
+        "PLR0913",
+        "PLR2004",
+        "S101",
     ] }
     select = [
         "A",   # flake8-builtins

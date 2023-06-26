@@ -302,7 +302,7 @@ class Characters(commands.Cog, name="Character"):
                 normalize_to_db_row(x.title) for x in existing_sections
             ]:
                 raise SectionExistsError
-            char_svc.update_char_custom_section(ctx, character, section_title, section_description)
+            char_svc.add_custom_section(ctx, character, section_title, section_description)
 
         except NoClaimError:
             await present_embed(
