@@ -7,7 +7,6 @@ from loguru import logger
 from peewee import DoesNotExist, ModelSelect, SqliteDatabase, fn
 from semver import Version
 
-from valentina.__version__ import __version__
 from valentina.models.constants import (
     COMMON_TRAITS,
     HUNTER_TRAITS,
@@ -634,10 +633,6 @@ class UserService:
 class GuildService:
     """Manage guilds in the database. Guilds are created a bot_connect,."""
 
-    def __init__(self) -> None:
-        """Initialize the GuildService."""
-        self.guilds: dict[int, Guild] = {}
-
     @staticmethod
     def is_in_db(guild_id: int) -> bool:
         """Check if the guild is in the database."""
@@ -662,10 +657,16 @@ class GuildService:
             Guild.set_by_id(db_id, {"last_connected": time_now()})
             logger.info(f"DATABASE: Update '{db_id.name}'")
 
+    @staticmethod
     def fetch_all_traits(
-        self, guild_id: int, flat_list: bool = False
+        guild_id: int, flat_list: bool = False
     ) -> dict[str, list[str]] | list[str]:
-        """Fetch all traits for a guild inclusive of common and custom."""
+        """Fetch all traits for a guild inclusive of common and custom.
+
+        Args:
+            guild_id (int): The guild to fetch traits for.
+            flat_list (bool, optional): Return a flat list of traits. Defaults to False.
+        """
         all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
         all_traits = merge_dictionaries(all_constants, flat_list=False)
 
@@ -682,6 +683,7 @@ class GuildService:
                 return list({item for sublist in all_traits.values() for item in sublist})
 
             return all_traits
+
         return None
 
 
@@ -712,6 +714,8 @@ class DatabaseService:
         logger.info("DATABASE: Create Tables")
         logger.debug(f"DATABASE: {self.get_tables()}")
 
+    def sync_enums(self) -> None:
+        """Ensure that the CharacterClass and VampireCan tables are up to date with their enums."""
         # Populate default values
         for char_class in CharClass:
             CharacterClass.get_or_create(name=char_class.value)
@@ -727,16 +731,21 @@ class DatabaseService:
             cursor = self.db.execute_sql("SELECT name FROM sqlite_master WHERE type='table';")
             return [row[0] for row in cursor.fetchall()]
 
-    def requires_migration(self) -> bool:
-        """Determine if the database requires a migration."""
-        bot_version = Version.parse(__version__)
+    def requires_migration(self, bot_version: str) -> bool:
+        """Determine if the database requires a migration.
 
+        Args:
+            bot_version (str): The version of the bot to compare against the database version.
+
+        Returns:
+            bool: True if the database requires a migration, False otherwise.
+        """
         current_db_version, created = DatabaseVersion.get_or_create(
             id=1,
-            defaults={"version": __version__},
+            defaults={"version": bot_version},
         )
         if created:
-            logger.info(f"DATABASE: Create version v{__version__}")
+            logger.info(f"DATABASE: Create version v{bot_version}")
             return False
 
         db_version = Version.parse(current_db_version.version)

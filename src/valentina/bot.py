@@ -7,6 +7,8 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
+from valentina.__version__ import __version__
+
 
 class Valentina(commands.Bot):
     """Subclass discord.Bot."""
@@ -51,8 +53,10 @@ class Valentina(commands.Bot):
             if not Path(DATABASE.database).exists():
                 DatabaseService(DATABASE).create_new_db()
 
-            if DatabaseService(DATABASE).requires_migration():
+            if DatabaseService(DATABASE).requires_migration(__version__):
                 DatabaseService(DATABASE).migrate_old_database()
+
+            DatabaseService(DATABASE).sync_enums()
 
             for _guild in self.guilds:
                 GuildService.update_or_add(guild_id=_guild.id, guild_name=_guild.name)

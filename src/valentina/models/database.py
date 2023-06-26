@@ -240,13 +240,6 @@ class CustomCharSection(BaseModel):
     title = TextField()
 
 
-class GuildUser(BaseModel):
-    """Join table for Guild and User."""
-
-    guild = ForeignKeyField(Guild, backref="users")
-    user = ForeignKeyField(User, backref="guilds")
-
-
 class Macro(BaseModel):
     """Macros for quick dice rolls."""
 
@@ -258,3 +251,13 @@ class Macro(BaseModel):
     trait_two = TextField(null=True)
     guild = ForeignKeyField(Guild, backref="macros")
     user = ForeignKeyField(User, backref="macros")
+
+
+# Lookup tables
+
+
+class GuildUser(BaseModel):
+    """Join table for Guild and User."""
+
+    guild = ForeignKeyField(Guild, backref="users")
+    user = ForeignKeyField(User, backref="guilds")
