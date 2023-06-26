@@ -12,7 +12,7 @@ from valentina.models.database_services import UserService
 class TestUserService:
     """Test the user service."""
 
-    char_svc = UserService()
+    user_svc = UserService()
 
     def test_fetch_user(self, ctx_existing):
         """Test fetching a user.
@@ -22,11 +22,11 @@ class TestUserService:
         Then the user object is returned and added to the cache
         """
         # Confirm user object is returned
-        assert self.char_svc.fetch_user(ctx_existing) == User(id=1, name="Test User")
+        assert self.user_svc.fetch_user(ctx_existing) == User(id=1, name="Test User")
 
         # Confirm user object is in the cache
         user_one = User(id=1)
-        assert self.char_svc.user_cache["1_1"] == user_one
+        assert self.user_svc.user_cache["1_1"] == user_one
 
     def test_purge_all(self):
         """Test purging all users from the cache.
@@ -35,9 +35,9 @@ class TestUserService:
         When the cache is purged
         Then the cache is empty
         """
-        assert "1_1" in self.char_svc.user_cache
-        self.char_svc.purge_all()
-        assert self.char_svc.user_cache == {}
+        assert "1_1" in self.user_svc.user_cache
+        self.user_svc.purge_all()
+        assert self.user_svc.user_cache == {}
 
     def test_fetch_user_two(self, ctx_new_user):
         """Test creating a user that is not in the cache or db.
@@ -46,10 +46,10 @@ class TestUserService:
         When that user is fetched
         Then the user is added to the cache and database
         """
-        assert self.char_svc.fetch_user(ctx_new_user) == User(id=2, name="Test User 2")
+        assert self.user_svc.fetch_user(ctx_new_user) == User(id=2, name="Test User 2")
 
         # Confirm added to cache
-        assert "1_2" in self.char_svc.user_cache
+        assert "1_2" in self.user_svc.user_cache
 
         # Confirm added to database
         assert User.get_by_id(2).name == "Test User 2"
@@ -63,17 +63,17 @@ class TestUserService:
         Then the cache contains only the other user
         """
         # Confirm two users in cache
-        assert self.char_svc.fetch_user(ctx_existing) == User(id=1, name="Test User")
-        assert self.char_svc.fetch_user(ctx_new_user) == User(id=2, name="Test User 2")
-        assert len(self.char_svc.user_cache) == 2
+        assert self.user_svc.fetch_user(ctx_existing) == User(id=1, name="Test User")
+        assert self.user_svc.fetch_user(ctx_new_user) == User(id=2, name="Test User 2")
+        assert len(self.user_svc.user_cache) == 2
 
         # Purge one user
-        self.char_svc.purge_by_id(ctx_existing)
+        self.user_svc.purge_by_id(ctx_existing)
 
         # Confirm one user in cache
-        assert len(self.char_svc.user_cache) == 1
-        assert "1_1" not in self.char_svc.user_cache
-        assert "1_2" in self.char_svc.user_cache
+        assert len(self.user_svc.user_cache) == 1
+        assert "1_1" not in self.user_svc.user_cache
+        assert "1_2" in self.user_svc.user_cache
 
     def test_fetch_macros(self, ctx_existing):
         """Test fetching macros.
@@ -82,11 +82,11 @@ class TestUserService:
         When macros are fetched for that user
         Then the macros are returned and added to the cache
         """
-        assert self.char_svc.macro_cache == {}
-        macros = self.char_svc.fetch_macros(ctx_existing)
+        assert self.user_svc.macro_cache == {}
+        macros = self.user_svc.fetch_macros(ctx_existing)
         assert len(macros) == 1
         assert macros[0] == Macro(id=1, name="test_macro", content="test content")
-        assert "1_1" in self.char_svc.macro_cache
+        assert "1_1" in self.user_svc.macro_cache
 
     def test_fetch_macro(self, ctx_existing):
         """Test fetching macros.
@@ -95,7 +95,7 @@ class TestUserService:
         When a macro is fetched for that user
         Then the macro is returned and added to the cache
         """
-        assert self.char_svc.fetch_macro(ctx_existing, "test_macro") == Macro(
+        assert self.user_svc.fetch_macro(ctx_existing, "test_macro") == Macro(
             id=1, name="test_macro", content="test content"
         )
 
@@ -106,7 +106,7 @@ class TestUserService:
         When a macro is created
         Then the macro is added to the cache and database
         """
-        self.char_svc.create_macro(
+        self.user_svc.create_macro(
             ctx_existing,
             name="testmacro3",
             description="test content",
@@ -125,7 +125,7 @@ class TestUserService:
         When a macro is deleted
         Then the macro is removed from the cache and database
         """
-        self.char_svc.delete_macro(ctx_existing, "test_macro")
+        self.user_svc.delete_macro(ctx_existing, "test_macro")
 
         # Confirm deleted from database
         with pytest.raises(Macro.DoesNotExist):

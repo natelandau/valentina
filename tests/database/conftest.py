@@ -41,10 +41,11 @@ MODELS = [
 
 databaseversion = {"version": "1.0.0"}
 guild = {"id": 1, "name": "test_guild"}
-user = {"id": 1, "username": "test_user", "name": "Test User"}
+user1 = {"id": 1, "username": "test_user", "name": "Test User"}
+user22 = {"id": 22, "username": "test_user22", "name": "Test User22"}
 characterclass = {"name": "test_class"}
 vampireclan = {"name": "test_clan"}
-character = {
+character1 = {
     "first_name": "test",
     "last_name": "character",
     "nickname": "testy",
@@ -52,11 +53,24 @@ character = {
     "guild": 1,
     "created_by": 1,
     "clan": 1,
+    "strength": 5,
+    "willpower": 5,
+}
+character2 = {
+    "first_name": "test2",
+    "last_name": "character2",
+    "nickname": "testy2",
+    "char_class": 1,
+    "guild": 1,
+    "created_by": 1,
+    "clan": 1,
+    "strength": 5,
+    "willpower": 5,
 }
 customtrait = {
     "character": 1,
     "guild": 1,
-    "name": "test_trait",
+    "name": "Test_Trait",
     "category": "test_category",
     "value": 2,
     "max_value": 5,
@@ -91,10 +105,12 @@ def mock_db() -> pw.SqliteDatabase:
     # Create test data
     DatabaseVersion.create(**databaseversion)
     Guild.create(**guild)
-    User.create(**user)
+    User.create(**user1)
+    User.create(**user22)
     CharacterClass.create(**characterclass)
     VampireClan.create(**vampireclan)
-    Character.create(**character)
+    Character.create(**character1)
+    Character.create(**character2)
     CustomTrait.create(**customtrait)
     CustomCharSection.create(**customcharsection)
     GuildUser.create(**guilduser)
@@ -106,7 +122,7 @@ def mock_db() -> pw.SqliteDatabase:
     assert CharacterClass.get_by_id(1).name == "test_class"
     assert VampireClan.get_by_id(1).name == "test_clan"
     assert Character.get_by_id(1).first_name == "test"
-    assert CustomTrait.get_by_id(1).name == "test_trait"
+    assert CustomTrait.get_by_id(1).name == "Test_Trait"
     assert CustomCharSection.get_by_id(1).title == "test_section"
     assert GuildUser.get_by_id(1).guild.name == "test_guild"
     assert Macro.get_by_id(1).name == "test_macro"
@@ -154,6 +170,19 @@ class MockCTX(discord.ApplicationContext):
         self.author = author
 
 
+class MockCharacter:
+    """Mock character object."""
+
+    def __init__(self, id, first_name, last_name):
+        self.id = id
+        self.first_name = first_name
+        self.last_name = last_name
+        self.name = f"{first_name} {last_name}"
+        self.guild = 1
+        self.created_by = 1
+        self.class_name = "test_class"
+
+
 @pytest.fixture()
 def ctx_existing():
     """Create a mock context object containing object in the mock database."""
@@ -176,3 +205,9 @@ def ctx_new_user_guild():
     mock_guild = MockGuild(2, "Test Guild 2")
     mock_user = MockUser(2, "Test User 2", "testuser 2", "<@2>")
     return MockCTX(mock_guild, mock_user)
+
+
+@pytest.fixture()
+def existing_character():
+    """Create a mock character object that is in the mock database."""
+    return MockCharacter(1, "first", "last")
