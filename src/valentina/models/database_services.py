@@ -15,7 +15,7 @@ from valentina.models.constants import (
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
     CharClass,
-    VampClan,
+    VampClanList,
 )
 from valentina.models.database import (
     Character,
@@ -716,7 +716,7 @@ class DatabaseService:
         for char_class in CharClass:
             CharacterClass.get_or_create(name=char_class.value)
 
-        for clan in VampClan:
+        for clan in VampClanList:
             VampireClan.get_or_create(name=clan.value)
 
         logger.info("DATABASE: Populate Enums")

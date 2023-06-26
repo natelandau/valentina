@@ -55,6 +55,7 @@ async def create_character(
         gnosis = int(modal.gnosis) if modal.gnosis else 0
         blood_pool = int(modal.blood_pool) if modal.blood_pool else 0
         conviction = int(modal.conviction) if modal.conviction else 0
+        faith = int(modal.faith) if modal.faith else 0
 
         # If the character is a vampire, get the clan
         vampire_clan: str | None = None
@@ -81,6 +82,7 @@ async def create_character(
             gnosis=gnosis,
             blood_pool=blood_pool,
             conviction=conviction,
+            faith=faith,
             vampire_clan=vampire_clan,
         )
         await character_wizard.begin_chargen()

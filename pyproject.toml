@@ -241,7 +241,7 @@
         max-args = 6
 
 [tool.vulture] # https://pypi.org/project/vulture/
-    # exclude = ["file*.py", "dir/"]
+    exclude = ["test_cog.py"]
     # ignore_decorators = ["@app.route", "@require_*"]
     ignore_names = ["args", "kwargs", "request", "version"]
     # make_whitelist = true

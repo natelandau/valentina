@@ -139,7 +139,7 @@ class TraitCategory(Enum):
     GIFTS = "Gifts"  # Werewolf
 
 
-class VampClan(Enum):
+class VampClanList(Enum):
     """Vampire clans."""
 
     # NOTE: Anything added here must be added to the VampireClan class in models/database.py
@@ -232,14 +232,18 @@ VAMPIRE_TRAITS = {
         "Auspex",
         "Blood Sorcery",
         "Celerity",
+        "Chimerstry",
         "Dominate",
         "Fortitude",
+        "Necromancy",
         "Obeah",
         "Obfuscate",
         "Oblivion",
         "Potence",
         "Presence",
         "Protean",
+        "Serpentis",
+        "Thaumaturgy",
         "Vicissitude",
     ],
 }
@@ -247,6 +251,22 @@ WEREWOLF_TRAITS = {
     "Universal": ["Gnosis", "Rage"],
     "Renown": ["Glory", "Honor", "Wisdom"],
 }
-HUNTER_TRAITS = {"Universal": ["Conviction"]}
+HUNTER_TRAITS = {"Universal": ["Conviction", "Faith"]}
+CLAN_DISCIPLINES = {
+    "Assamite": ["Celerity", "Obfuscate", "Quietus"],
+    "Brujah": ["Celerity", "Potence", "Presence"],
+    "Followers of Set": ["Obfuscate", "Presence", "Serpentis"],
+    "Gangrel": ["Animalism", "Fortitude", "Protean"],
+    "Giovanni": ["Dominate", "Necromancy", "Potence"],
+    "Lasombra": ["Dominate", "Obfuscate", "Potence"],
+    "Malkavian": ["Auspex", "Dominate", "Obfuscate"],
+    "Nosferatu": ["Animalism", "Obfuscate", "Potence"],
+    "Ravnos": ["Animalism", "Chimerstry", "Fortitude"],
+    "Toreador": ["Auspex", "Celerity", "Presence"],
+    "Tremere": ["Auspex", "Dominate", "Thaumaturgy"],
+    "Tzimisce": ["Animalism", "Auspex", "Vicissitude"],
+    "Ventrue": ["Dominate", "Fortitude", "Presence"],
+}
+
 
 FLAT_COMMON_TRAITS = [trait for trait_list in COMMON_TRAITS.values() for trait in trait_list]

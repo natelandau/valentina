@@ -35,6 +35,7 @@ class Wizard:
         gnosis: int | None = None,
         rage: int | None = None,
         conviction: int | None = None,
+        faith: int | None = None,
         nickname: str | None = None,
         vampire_clan: str | None = None,
     ) -> None:
@@ -52,6 +53,7 @@ class Wizard:
         self.gnosis = gnosis
         self.rage = rage
         self.conviction = conviction
+        self.faith = faith
         self.vampire_clan = vampire_clan
 
         self.using_dms = True
@@ -111,6 +113,7 @@ class Wizard:
             gnosis=self.gnosis,
             rage=self.rage,
             conviction=self.conviction,
+            faith=self.faith,
             guild=self.ctx.guild.id,
             created_by=user_svc.fetch_user(self.ctx).id,
             clan_id=vampire_clan_id.id,

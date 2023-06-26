@@ -2,7 +2,7 @@
 import discord
 from discord.ui import InputText, Modal, Select, View
 
-from valentina.models.constants import VampClan
+from valentina.models.constants import VampClanList
 
 
 class CustomSectionModal(Modal):
@@ -89,6 +89,7 @@ class CharGenModal(Modal):
         self.gnosis: str = None
         self.rage: str = None
         self.conviction: str = None
+        self.faith: str = None
 
         self.add_item(
             InputText(
@@ -167,6 +168,15 @@ class CharGenModal(Modal):
                         max_length=2,
                     )
                 )
+                self.add_item(
+                    InputText(
+                        label="Faith",
+                        style=discord.InputTextStyle.short,
+                        required=True,
+                        placeholder="Enter a number",
+                        max_length=2,
+                    )
+                )
 
     async def callback(self, interaction: discord.Interaction) -> None:
         """Callback for the modal."""
@@ -176,22 +186,28 @@ class CharGenModal(Modal):
         embed = discord.Embed(title="Character Generation Review")
         embed.add_field(name="Willpower", value=self.children[0].value)
         embed.add_field(name="Humanity", value=self.children[1].value)
+
         if self.char_class.lower() == "mage":
             embed.add_field(name="Arete", value=self.children[2].value)
             embed.add_field(name="Quintessence", value=self.children[3].value)
             self.arete = self.children[2].value
             self.quintessence = self.children[3].value
+
         elif self.char_class.lower() == "werewolf":
             embed.add_field(name="Rage", value=self.children[2].value)
             embed.add_field(name="Gnosis", value=self.children[3].value)
             self.rage = self.children[2].value
             self.gnosis = self.children[3].value
+
         elif self.char_class.lower() == "vampire":
             embed.add_field(name="Blood Pool", value=self.children[2].value)
             self.blood_pool = self.children[2].value
+
         elif self.char_class.lower() == "hunter":
             embed.add_field(name="Conviction", value=self.children[2].value)
             self.conviction = self.children[2].value
+            embed.add_field(name="Faith", value=self.children[3].value)
+            self.faith = self.children[3].value
 
         await interaction.response.send_message(embeds=[embed], ephemeral=True)
         self.stop()
@@ -206,7 +222,7 @@ class SelectClan(View):
         self.value = ""
 
     @discord.ui.select(
-        options=[discord.SelectOption(label=clan.value, value=clan.value) for clan in VampClan],
+        options=[discord.SelectOption(label=clan.value, value=clan.value) for clan in VampClanList],
         placeholder="Select a clan",
     )
     async def select_callback(self, select: Select, interaction: discord.Interaction) -> None:

@@ -162,6 +162,7 @@ class Character(BaseModel):
     blood_pool = IntegerField(default=0)
     ### Hunter Universal ######################
     conviction = IntegerField(default=0)
+    faith = IntegerField(default=0)
     ### Werewolf Universal ####################
     gnosis = IntegerField(default=0)
     rage = IntegerField(default=0)
@@ -180,14 +181,18 @@ class Character(BaseModel):
     auspex = IntegerField(default=0)
     blood_sorcery = IntegerField(default=0)
     celerity = IntegerField(default=0)
+    chimerstry = IntegerField(default=0)
     dominate = IntegerField(default=0)
     fortitude = IntegerField(default=0)
+    necromancy = IntegerField(default=0)
     obeah = IntegerField(default=0)
     obfuscate = IntegerField(default=0)
     oblivion = IntegerField(default=0)
     potence = IntegerField(default=0)
     presence = IntegerField(default=0)
     protean = IntegerField(default=0)
+    serpentis = IntegerField(default=0)
+    thaumaturgy = IntegerField(default=0)
     vicissitude = IntegerField(default=0)
     ### Renown - werewolf #########################
     glory = IntegerField(default=0)
