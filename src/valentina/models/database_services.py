@@ -669,21 +669,22 @@ class GuildService:
 
     @staticmethod
     @logger.catch
-    def update_or_add(guild_id: int, guild_name: str) -> None:
+    def update_or_add(guild: discord.Guild, log_channel_id: int | None = None) -> None:
         """Add a guild to the database or update it if it already exists."""
         db_id, is_created = Guild.get_or_create(
-            id=guild_id,
+            id=guild.id,
             defaults={
-                "id": guild_id,
-                "name": guild_name,
+                "id": guild.id,
+                "name": guild.name,
                 "first_seen": time_now(),
                 "last_connected": time_now(),
+                "log_channel": log_channel_id,
             },
         )
         if is_created:
             logger.info(f"DATABASE: Create guild {db_id.name}")
         if not is_created:
-            Guild.set_by_id(db_id, {"last_connected": time_now()})
+            Guild.set_by_id(db_id, {"last_connected": time_now(), "log_channel": log_channel_id})
             logger.info(f"DATABASE: Update '{db_id.name}'")
 
     @staticmethod
@@ -714,6 +715,31 @@ class GuildService:
             return all_traits
 
         return None
+
+    @staticmethod
+    async def create_bot_log_channel(
+        guild: discord.Guild, log_channel_name: str
+    ) -> discord.TextChannel:
+        """Fetch the bot log channel for a guild and create it if it doesn't exist."""
+        log_channel = None
+
+        for channel in await guild.fetch_channels():
+            if (
+                isinstance(channel, discord.TextChannel)
+                and channel.name.lower() == log_channel_name.lower()
+            ):
+                log_channel = channel
+                logger.info(f"BOT: Using '{log_channel_name}' for bot logs")
+
+        if not log_channel:
+            log_channel = await guild.create_text_channel(
+                log_channel_name,
+                topic="A channel for Valentina to log to.",
+                position=100,
+            )
+            logger.info(f"BOT: Created '{log_channel_name}' channel for bot logs")
+
+        return log_channel
 
 
 class DatabaseService:

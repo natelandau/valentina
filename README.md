@@ -38,15 +38,17 @@ Before running Valentina, the following must be configured or installed.
 
 #### Environment Variables
 
-| Variable                 | Default Value              | Usage                                                                                                                                |
-| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| VALENTINA_DISCORD_TOKEN  |                            | Sets the Discord bot token. This is required to run the bot.                                                                         |
-| VALENTINA_GUILDS         |                            | Sets the Discord guilds the bot is allowed to join. This is a comma separated list of guild IDs.                                     |
-| VALENTINA_LOG_FILE       | `/valentina/valentina.log` | Sets the file to write logs to.<br />Note, this is the directory used withing the Docker container                                   |
-| VALENTINA_LOG_LEVEL      | `INFO`                     | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
-| VALENTINA_LOG_LEVEL_DB   | `INFO`                     | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                         |
-| VALENTINA_LOG_LEVEL_HTTP | `INFO`                     | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
-| VALENTINA_OWNER_IDS      |                            | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated list of Discord user IDs.            |
+| Variable                  | Default Value              | Usage                                                                                                                                |
+| ------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| VALENTINA_DISCORD_TOKEN   |                            | Sets the Discord bot token. This is required to run the bot.                                                                         |
+| VALENTINA_GUILDS          |                            | Sets the Discord guilds the bot is allowed to join. This is a comma separated list of guild IDs.                                     |
+| VALENTINA_LOG_FILE        | `/valentina/valentina.log` | Sets the file to write logs to.<br />Note, this is the directory used withing the Docker container                                   |
+| VALENTINA_LOG_LEVEL       | `INFO`                     | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
+| VALENTINA_LOG_LEVEL_DB    | `INFO`                     | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                         |
+| VALENTINA_LOG_LEVEL_HTTP  | `INFO`                     | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_OWNER_IDS       |                            | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated list of Discord user IDs.            |
+| VALENTINA_LOG_CHANNEL     | `valentina-logs`           | Sets the Discord channel to send logs to. This is the channel name, not the channel ID.                                              |
+| VALENTINA_USE_LOG_CHANNEL | `true`                     | If `true` the bot will send logs to the channel specified in `VALENTINA_LOG_CHANNEL`. If `false` the bot will log to the console.    |
 
 ---
 

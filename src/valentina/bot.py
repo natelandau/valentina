@@ -13,12 +13,19 @@ from valentina.__version__ import __version__
 class Valentina(commands.Bot):
     """Subclass discord.Bot."""
 
-    def __init__(self, parent_dir: Path, *args: Any, **kwargs: Any):
+    def __init__(
+        self, parent_dir: Path, log_channel: str, use_log_channel: str, *args: Any, **kwargs: Any
+    ):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
         self.char_service: Any = None
         self.parent_dir = parent_dir
+        self.log_channel = log_channel
+        if use_log_channel.lower() == "true":
+            self.log_to_channel = True
+        else:
+            self.log_to_channel = False
 
         logger.info("BOT: Running setup tasks")
         for cog in Path(self.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
@@ -58,9 +65,15 @@ class Valentina(commands.Bot):
 
             DatabaseService(DATABASE).sync_enums()
 
-            for _guild in self.guilds:
-                GuildService.update_or_add(guild_id=_guild.id, guild_name=_guild.name)
-                char_svc.fetch_all_characters(_guild.id)
+            for guild in self.guilds:
+                if self.log_to_channel:
+                    log_channel = await GuildService.create_bot_log_channel(guild, self.log_channel)
+
+                GuildService.update_or_add(
+                    guild,
+                    log_channel_id=log_channel.id if self.log_to_channel else None,
+                )
+                char_svc.fetch_all_characters(guild.id)
 
             # TODO: Setup tasks here  User.set_by_id(3, {'is_admin': True})
 

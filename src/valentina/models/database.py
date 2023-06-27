@@ -37,6 +37,7 @@ class Guild(BaseModel):
     name = TextField()
     first_seen = DateTimeField(default=time_now)
     last_connected = DateTimeField(default=time_now)
+    log_channel = IntegerField(null=True)
 
     class Meta:
         """Meta class for the model."""
