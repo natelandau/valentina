@@ -16,6 +16,7 @@ from valentina.utils.errors import (
     CharacterClaimedError,
     NoClaimError,
     SectionExistsError,
+    SectionNotFoundError,
     TraitNotFoundError,
     UserHasClaimError,
 )
@@ -348,6 +349,55 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
             return
+
+    @update.command(name="custom_section", description="Update a custom section")
+    @logger.catch
+    async def update_custom_section(
+        self,
+        ctx: discord.ApplicationContext,
+        custom_section: Option(
+            str,
+            description="Custom section to update",
+            required=True,
+            autocomplete=__custom_section_autocomplete,
+        ),
+    ) -> None:
+        """Update a custom section."""
+        try:
+            character = char_svc.fetch_claim(ctx)
+            section = char_svc.fetch_custom_section(ctx, character, title=custom_section)
+
+            modal = CustomSectionModal(
+                section_title=section.title,
+                section_description=section.description,
+                title=f"Custom section for {character.name}",
+            )
+            await ctx.send_modal(modal)
+            await modal.wait()
+            section_title = modal.section_title.strip().title()
+            section_description = modal.section_description.strip()
+
+            char_svc.update_custom_section(
+                ctx,
+                character,
+                section.id,
+                **{"title": section_title, "description": section_description},
+            )
+
+        except NoClaimError:
+            await present_embed(
+                ctx=ctx,
+                title="Error: No character claimed",
+                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
+                level="error",
+            )
+        except SectionNotFoundError as e:
+            await present_embed(
+                ctx=ctx,
+                title="Error: Section not found",
+                description=str(e),
+                level="error",
+            )
 
     @update.command(name="trait", description="Update a trait for a character")
     @logger.catch

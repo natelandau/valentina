@@ -2,7 +2,7 @@
 import discord
 from discord.ui import InputText, Modal, Select, View
 
-from valentina.models.constants import VampClanList
+from valentina.models.constants import EmbedColor, VampClanList
 
 
 class CustomSectionModal(Modal):
@@ -12,34 +12,55 @@ class CustomSectionModal(Modal):
         super().__init__(*args, **kwargs)
         self.section_title = section_title
         self.section_description = section_description
+        self.update_existing = bool(self.section_title)
 
         placeholder_name = self.section_title if self.section_title else "Name of the section"
         placeholder_description = (
             self.section_description if self.section_description else "Description of the section"
         )
 
-        self.add_item(
-            InputText(
-                label="name",
-                placeholder=placeholder_name,
-                required=True,
-                style=discord.InputTextStyle.short,
+        if self.update_existing:
+            self.add_item(
+                InputText(
+                    label="name",
+                    value=placeholder_name,
+                    required=True,
+                    style=discord.InputTextStyle.short,
+                )
             )
-        )
-        self.add_item(
-            InputText(
-                label="description",
-                placeholder=placeholder_description,
-                required=True,
-                style=discord.InputTextStyle.long,
+            self.add_item(
+                InputText(
+                    label="description",
+                    value=placeholder_description,
+                    required=True,
+                    style=discord.InputTextStyle.long,
+                )
             )
-        )
+        else:
+            self.add_item(
+                InputText(
+                    label="name",
+                    placeholder=placeholder_name,
+                    required=True,
+                    style=discord.InputTextStyle.short,
+                )
+            )
+            self.add_item(
+                InputText(
+                    label="description",
+                    placeholder=placeholder_description,
+                    required=True,
+                    style=discord.InputTextStyle.long,
+                )
+            )
 
     async def callback(self, interaction: discord.Interaction) -> None:
         """Callback for the modal."""
         self.section_title = self.children[0].value
         self.section_description = self.children[1].value
-        embed = discord.Embed(title="Custom Section Added")
+
+        embed_title = "Custom Section Updated" if self.update_existing else "Custom Section Added"
+        embed = discord.Embed(title=embed_title, color=EmbedColor.SUCCESS.value)
         embed.add_field(name="Name", value=self.section_title)
         embed.add_field(name="Description", value=self.section_description)
         await interaction.response.send_message(embeds=[embed], ephemeral=True)
@@ -67,7 +88,7 @@ class BioModal(Modal):
 
     async def callback(self, interaction: discord.Interaction) -> None:
         """Callback for the modal."""
-        embed = discord.Embed(title="Biography")
+        embed = discord.Embed(title="Biography Updated", color=EmbedColor.SUCCESS.value)
         self.bio = self.children[0].value
         embed.add_field(name="Bio", value=self.children[0].value)
 
@@ -183,7 +204,7 @@ class CharGenModal(Modal):
         self.willpower = self.children[0].value
         self.humanity = self.children[1].value
 
-        embed = discord.Embed(title="Character Generation Review")
+        embed = discord.Embed(title="Character Generation Review", color=EmbedColor.INFO.value)
         embed.add_field(name="Willpower", value=self.children[0].value)
         embed.add_field(name="Humanity", value=self.children[1].value)
 

@@ -344,6 +344,28 @@ class TestCharacterService:
         with pytest.raises(CharacterNotFoundError):
             self.char_svc.update_char(1, 12345678, **{"dexterity": 5})
 
+    def test_update_custom_section(self, ctx_existing):
+        """Test update_custom_section().
+
+        Given a character id, section name, and new value
+        When update_custom_section is called
+        Then the section value is updated in the database and purged from the cache
+        """
+        character = Character.get_by_id(1)
+        self.char_svc.fetch_char_custom_sections(ctx_existing, character)
+        assert "1_1" in self.char_svc.custom_sections
+
+        properties = {"title": "a new title", "description": "a new description"}
+        self.char_svc.update_custom_section(ctx_existing, character, 1, **properties)
+
+        assert "1_1" not in self.char_svc.custom_sections
+        section = CustomSection.get_by_id(1)
+        assert section.title == "a new title"
+        assert section.description == "a new description"
+
+        with pytest.raises(SectionNotFoundError):
+            self.char_svc.update_custom_section(ctx_existing, character, 12345678, **properties)
+
     def test_update_trait_value(self):
         """Test update_trait_value().
 

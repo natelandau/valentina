@@ -293,7 +293,7 @@ class CharacterService:
         """Fetch a list of custom sections for a character."""
         if isinstance(ctx, discord.ApplicationContext):
             guild_id = ctx.guild.id
-        if isinstance(ctx, discord.AutocompleteContext):
+        if isinstance(ctx, discord.AutocompleteContext):  # pragma: no cover
             guild_id = ctx.interaction.guild.id
 
         key = self.__get_char_key(guild_id, character.id)
@@ -460,6 +460,28 @@ class CharacterService:
 
         logger.debug(f"DATABASE: Update character: {char_id}")
         return character
+
+    def update_custom_section(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Character,
+        custom_section_id: int,
+        **kwargs: str | int,
+    ) -> CustomSection:
+        """Update a custom character section in the cache and database."""
+        try:
+            custom_section = CustomSection.get_by_id(custom_section_id)
+        except DoesNotExist as e:
+            raise SectionNotFoundError(f"Custom section {custom_section_id} was not found") from e
+
+        CustomSection.update(modified=time_now(), **kwargs).where(
+            CustomSection.id == custom_section.id
+        ).execute()
+
+        self.purge_by_id(ctx.guild.id, character.id)
+
+        logger.debug(f"DATABASE: Update custom section: {custom_section_id}")
+        return custom_section
 
     def update_trait_value(
         self, guild_id: int, character: Character, trait_name: str, new_value: int
