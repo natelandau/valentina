@@ -3,6 +3,7 @@
 from numpy.random import default_rng
 
 from valentina.models.constants import DiceType
+from valentina.utils.helpers import diceroll_thumbnail
 
 _rng = default_rng()
 _max_pool_size = 100
@@ -171,17 +172,16 @@ class DiceRoll:
     def thumbnail_url(self) -> str:
         """Determine the thumbnail to use for the Discord embed."""
         if self.dice_type != DiceType.D10:
-            return "https://em-content.zobj.net/thumbs/240/google/350/game-die_1f3b2.png"
+            return diceroll_thumbnail("diceroll")
         if self.is_botch:
-            return "https://em-content.zobj.net/source/animated-noto-color-emoji/356/face-vomiting_1f92e.gif"
+            return diceroll_thumbnail("botch")
         if self.is_critical:
-            return (
-                "https://em-content.zobj.net/source/animated-noto-color-emoji/356/rocket_1f680.gif"
-            )
+            return diceroll_thumbnail("critical")
         if self.is_success:
-            return "https://em-content.zobj.net/thumbs/240/apple/354/thumbs-up_1f44d.png"
+            return diceroll_thumbnail("success")
         if self.is_failure:
-            return "https://em-content.zobj.net/source/animated-noto-color-emoji/356/crying-face_1f622.gif"
+            return diceroll_thumbnail("failure")
+
         return None
 
     @property

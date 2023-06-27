@@ -2,8 +2,11 @@
 from collections import defaultdict
 from copy import deepcopy
 
+from numpy.random import default_rng
+
 from valentina.models.constants import (
     COMMON_TRAITS,
+    DICEROLL_THUBMS,
     HUNTER_TRAITS,
     MAGE_TRAITS,
     VAMPIRE_TRAITS,
@@ -12,6 +15,8 @@ from valentina.models.constants import (
     XPMultiplier,
     XPNew,
 )
+
+_rng = default_rng()
 
 
 def merge_dictionaries(
@@ -50,6 +55,15 @@ def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] |
         return list({y for x in all_traits.values() for y in x})
 
     return all_traits
+
+
+def diceroll_thumbnail(outcome: str) -> str:
+    """Take a string and return a random gif url."""
+    for category, thumbnails in DICEROLL_THUBMS.items():
+        if category.lower() == outcome.lower():
+            return thumbnails[_rng.integers(0, len(thumbnails))]
+
+    return None
 
 
 def extend_common_traits_with_class(char_class: str) -> dict[str, list[str]]:
