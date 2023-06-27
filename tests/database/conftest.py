@@ -15,7 +15,7 @@ import pytest
 from valentina.models.database import (
     Character,
     CharacterClass,
-    CustomCharSection,
+    CustomSection,
     CustomTrait,
     DatabaseVersion,
     Guild,
@@ -29,7 +29,7 @@ from valentina.models.database import (
 MODELS = [
     Character,
     CharacterClass,
-    CustomCharSection,
+    CustomSection,
     CustomTrait,
     DatabaseVersion,
     Guild,
@@ -75,7 +75,7 @@ customtrait = {
     "value": 2,
     "max_value": 5,
 }
-customcharsection = {
+custom_section = {
     "character": 1,
     "guild": 1,
     "title": "test_section",
@@ -112,7 +112,7 @@ def mock_db() -> pw.SqliteDatabase:
     Character.create(**character1)
     Character.create(**character2)
     CustomTrait.create(**customtrait)
-    CustomCharSection.create(**customcharsection)
+    CustomSection.create(**custom_section)
     GuildUser.create(**guilduser)
     Macro.create(**macro)
 
@@ -123,7 +123,7 @@ def mock_db() -> pw.SqliteDatabase:
     assert VampireClan.get_by_id(1).name == "test_clan"
     assert Character.get_by_id(1).first_name == "test"
     assert CustomTrait.get_by_id(1).name == "Test_Trait"
-    assert CustomCharSection.get_by_id(1).title == "test_section"
+    assert CustomSection.get_by_id(1).title == "test_section"
     assert GuildUser.get_by_id(1).guild.name == "test_guild"
     assert Macro.get_by_id(1).name == "test_macro"
 

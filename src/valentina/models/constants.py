@@ -130,6 +130,7 @@ class TraitCategory(Enum):
     BACKGROUNDS = "Backgrounds"
     MERITS = "Merits"
     FLAWS = "Flaws"
+    PATHS = "Paths"
 
     OTHER = "Other"
 

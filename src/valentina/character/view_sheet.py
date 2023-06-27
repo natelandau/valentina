@@ -49,20 +49,27 @@ def __build_trait_display(
 def __embed1(
     ctx: discord.ApplicationContext,
     character: Character,
+    claimed_by: discord.User | None = None,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
     modified = arrow.get(character.modified).humanize()
     char_traits = char_svc.fetch_all_character_trait_values(ctx, character)
 
     embed = discord.Embed(title=f"{character.name}", description="", color=0x7777FF)
+    embed.set_footer(text=f"{character.name} last updated {modified}")
+
     embed.add_field(name="Class", value=character.class_name, inline=True)
 
     if character.class_name.lower() == "vampire" and character.clan:
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
 
+    embed.add_field(
+        name="Claimed By", value=f"{claimed_by.mention}" if claimed_by else "-", inline=True
+    )
+
+    embed.add_field(name="\u200b", value="**EXPERIENCE**", inline=False)
     embed.add_field(name="Experience", value=f"`{character.experience}`", inline=True)
     embed.add_field(name="Cool Points", value=f"`{character.cool_points}`", inline=True)
-    embed.set_footer(text=f"{character.name} last updated {modified}")
 
     embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
     for category, traits in __build_trait_display(char_traits, ["physical", "social", "mental"]):
@@ -106,7 +113,7 @@ def __embed1(
 def __embed2(
     ctx: discord.ApplicationContext,
     character: Character,
-    claimed_by: discord.User,
+    claimed_by: discord.User | None = None,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     custom_sections = char_svc.fetch_char_custom_sections(ctx, character)
@@ -118,16 +125,24 @@ def __embed2(
     embed = discord.Embed(title=f"{character.name} - Page 2", description="", color=0x7777FF)
     embed.set_footer(text=f"{character.name} last updated {modified}")
 
-    if claimed_by:
-        embed.description = f"Claimed by {claimed_by.mention}"
+    embed.add_field(name="Class", value=character.class_name, inline=True)
+
+    if character.class_name.lower() == "vampire" and character.clan:
+        embed.add_field(name="Clan", value=character.clan.name, inline=True)
+
+    embed.add_field(
+        name="Claimed By", value=f"{claimed_by.mention}" if claimed_by else "-", inline=True
+    )
 
     if character.bio:
-        embed.add_field(name="Bio", value=character.bio, inline=False)
+        embed.add_field(name=f"**About {character.name}**", value=character.bio, inline=False)
 
     if len(custom_sections) > 0:
         embed.add_field(name="\u200b", value="**CUSTOM SECTIONS**", inline=False)
         for section in custom_sections:
-            embed.add_field(name=section.title, value=section.description, inline=True)
+            embed.add_field(
+                name=f"__**{section.title.upper()}**__", value=section.description, inline=True
+            )
 
     return embed
 
@@ -139,7 +154,7 @@ async def show_sheet(
     ephemeral: Any = False,
 ) -> Any:
     """Show a character sheet."""
-    embed1 = __embed1(ctx, character)
+    embed1 = __embed1(ctx, character, claimed_by)
     embed2 = __embed2(ctx, character, claimed_by)
 
     if embed2 is None:

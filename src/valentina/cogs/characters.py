@@ -50,7 +50,7 @@ class Characters(commands.Cog, name="Character"):
         return traits
 
     async def __custom_section_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
-        """Populates the autocomplete for the trait option."""
+        """Populates the autocomplete for the custom section option."""
         try:
             character = char_svc.fetch_claim(ctx)
         except NoClaimError:
@@ -326,7 +326,7 @@ class Characters(commands.Cog, name="Character"):
     ### UPDATE COMMANDS ####################################################################
     @update.command(name="bio", description="Add or update a character's bio")
     @logger.catch
-    async def add_bio(self, ctx: discord.ApplicationContext) -> None:
+    async def update_bio(self, ctx: discord.ApplicationContext) -> None:
         """Update a character's bio."""
         try:
             character = char_svc.fetch_claim(ctx)

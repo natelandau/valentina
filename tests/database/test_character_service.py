@@ -7,7 +7,7 @@ import pytest
 from valentina.models.database import (
     Character,
     CharacterClass,
-    CustomCharSection,
+    CustomSection,
     CustomTrait,
     GuildUser,
     Macro,
@@ -18,6 +18,7 @@ from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
     NoClaimError,
+    SectionNotFoundError,
     TraitNotFoundError,
     UserHasClaimError,
 )
@@ -75,7 +76,7 @@ class TestCharacterService:
 
         self.char_svc.add_custom_section(ctx_existing, character, "new", "new description")
         assert "1_1" not in self.char_svc.custom_sections
-        section = CustomCharSection.get(CustomCharSection.id == 2)
+        section = CustomSection.get(CustomSection.id == 2)
         assert section.title == "new"
         section.delete_instance()
 
@@ -185,6 +186,20 @@ class TestCharacterService:
         returned = self.char_svc.fetch_char_custom_sections(ctx_existing, existing_character)
         assert len(returned) == 1
         assert returned[0].title == "test_section"
+
+    def test_fetch_custom_section(self, ctx_existing):
+        """Test fetch_custom_section().
+
+        Given a section title and a character
+        When fetch_custom_section is called
+        Then the section is returned or SectionNotFoundError is raised
+        """
+        character = Character.get(Character.id == 1)
+        returned = self.char_svc.fetch_custom_section(ctx_existing, character, "test_section")
+        assert returned.title == "test_section"
+
+        with pytest.raises(SectionNotFoundError):
+            self.char_svc.fetch_custom_section(ctx_existing, character, "exception")
 
     def test_fetch_char_custom_traits(self, ctx_existing, existing_character):
         """Test fetch_char_custom_traits().

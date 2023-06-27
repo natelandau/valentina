@@ -23,3 +23,7 @@ class TraitNotFoundError(Exception):
 
 class SectionExistsError(Exception):
     """Raised when a section already exists on a character."""
+
+
+class SectionNotFoundError(Exception):
+    """Raised when a requested section is not found on a character."""

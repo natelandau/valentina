@@ -59,7 +59,7 @@ class BioModal(Modal):
         self.add_item(
             InputText(
                 label="bio",
-                placeholder=placeholder,
+                value=placeholder,
                 required=True,
                 style=discord.InputTextStyle.long,
             )

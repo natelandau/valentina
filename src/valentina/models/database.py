@@ -38,6 +38,11 @@ class Guild(BaseModel):
     first_seen = DateTimeField(default=time_now)
     last_connected = DateTimeField(default=time_now)
 
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "guilds"
+
 
 class User(BaseModel):
     """User model for the database."""
@@ -50,17 +55,32 @@ class User(BaseModel):
     mention = TextField(null=True)
     last_seen = DateTimeField(default=time_now)
 
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "users"
+
 
 class CharacterClass(BaseModel):
     """Character Class model for the database."""
 
     name = TextField(unique=True)
 
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "character_classes"
+
 
 class VampireClan(BaseModel):
     """Vampire clans."""
 
     name = TextField()
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "vampire_clans"
 
 
 class Character(BaseModel):
@@ -216,12 +236,18 @@ class Character(BaseModel):
         """Return the string representation of the model."""
         return f"""Character({self.id} - {self.name})"""
 
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "characters"
+
 
 class CustomTrait(BaseModel):
     """Custom Trait model for the database."""
 
     character = ForeignKeyField(Character, backref="custom_traits")
     created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
     description = TextField(null=True)
     guild = ForeignKeyField(Guild, backref="custom_traits")
     name = TextField()
@@ -229,15 +255,26 @@ class CustomTrait(BaseModel):
     value = IntegerField(default=0)
     max_value = IntegerField(default=0)
 
+    class Meta:
+        """Meta class for the model."""
 
-class CustomCharSection(BaseModel):
+        table_name = "custom_traits"
+
+
+class CustomSection(BaseModel):
     """Custom sections added to a character sheet."""
 
     character = ForeignKeyField(Character, backref="custom_traits")
     created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
     description = TextField(null=True)
     guild = ForeignKeyField(Guild, backref="custom_traits")
     title = TextField()
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "custom_sections"
 
 
 class Macro(BaseModel):
@@ -247,10 +284,16 @@ class Macro(BaseModel):
     abbreviation = TextField()
     description = TextField(null=True)
     created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
     trait_one = TextField(null=True)
     trait_two = TextField(null=True)
     guild = ForeignKeyField(Guild, backref="macros")
     user = ForeignKeyField(User, backref="macros")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "macros"
 
 
 # Lookup tables

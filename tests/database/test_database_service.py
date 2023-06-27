@@ -22,8 +22,8 @@ def test_create_tables(tmp_path):
     test_db.connect()
 
     DatabaseService(test_db).create_new_db()
-    assert test_db.table_exists("guild")
-    assert test_db.table_exists("character")
+    assert test_db.table_exists("guilds")
+    assert test_db.table_exists("characters")
     test_db.close()
 
 
@@ -36,7 +36,7 @@ def test_get_tables(mock_db):
     """
     tables = DatabaseService(mock_db).get_tables()
     assert len(tables) == 10
-    assert "character" in tables
+    assert "characters" in tables
 
 
 def test_sync_enums(empty_db):

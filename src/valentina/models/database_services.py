@@ -19,7 +19,7 @@ from valentina.models.constants import (
 from valentina.models.database import (
     Character,
     CharacterClass,
-    CustomCharSection,
+    CustomSection,
     CustomTrait,
     DatabaseVersion,
     Guild,
@@ -34,6 +34,7 @@ from valentina.utils.errors import (
     CharacterNotFoundError,
     NoClaimError,
     SectionExistsError,
+    SectionNotFoundError,
     TraitNotFoundError,
     UserHasClaimError,
 )
@@ -56,9 +57,7 @@ class CharacterService:
         self.characters: dict[str, Character] = {}  # {char_key: Character, ...}
         self.claims: dict[str, str] = {}  # {claim_key: char_key}
         self.custom_traits: dict[str, list[CustomTrait]] = {}  # {char_key: [CustomTrait]}
-        self.custom_sections: dict[
-            str, list[CustomCharSection]
-        ] = {}  # {char_key: [CustomCharSection]}
+        self.custom_sections: dict[str, list[CustomSection]] = {}  # {char_key: [CustomSection]}
 
     @staticmethod
     def __get_char_key(guild_id: int, char_id: int) -> str:
@@ -115,7 +114,7 @@ class CharacterService:
         """Add or update a custom section to a character."""
         key = self.__get_char_key(ctx.guild.id, character.id)
 
-        CustomCharSection.create(
+        CustomSection.create(
             title=section_title,
             description=section_description,
             guild=ctx.guild.id,
@@ -171,10 +170,10 @@ class CharacterService:
         section_title = section_title.lower()
         key = self.__get_char_key(ctx.guild.id, character.id)
         try:
-            custom_section = CustomCharSection.get(
-                CustomCharSection.character == character,
-                CustomCharSection.guild_id == ctx.guild.id,
-                fn.Lower(CustomCharSection.title) == section_title.lower(),
+            custom_section = CustomSection.get(
+                CustomSection.character == character,
+                CustomSection.guild_id == ctx.guild.id,
+                fn.Lower(CustomSection.title) == section_title.lower(),
             )
             custom_section.delete_instance()
             if key in self.custom_sections:
@@ -301,11 +300,22 @@ class CharacterService:
         if key in self.custom_sections:
             return self.custom_sections[key]
 
-        sections = CustomCharSection.select().where(
-            (CustomCharSection.character == character.id) & (CustomCharSection.guild_id == guild_id)
+        sections = CustomSection.select().where(
+            (CustomSection.character == character.id) & (CustomSection.guild_id == guild_id)
         )
         self.custom_sections[key] = sections
         return sections
+
+    def fetch_custom_section(
+        self, ctx: discord.ApplicationContext, character: Character, title: str
+    ) -> CustomSection:
+        """Fetch a custom section by title."""
+        sections = self.fetch_char_custom_sections(ctx, character)
+        for section in sections:
+            if section.title.lower() == title.lower():
+                return section
+
+        raise SectionNotFoundError(f"{character.first_name} has no section {title}")
 
     def fetch_char_custom_traits(
         self, ctx: discord.ApplicationContext, character: Character
@@ -698,7 +708,7 @@ class DatabaseService:
                 [
                     Character,
                     CharacterClass,
-                    CustomCharSection,
+                    CustomSection,
                     CustomTrait,
                     DatabaseVersion,
                     Guild,
