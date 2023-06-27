@@ -144,7 +144,7 @@ class CharacterService:
 
         CustomTrait.create(
             name=name.strip().title(),
-            description=description.strip(),
+            description=description.strip() if description else None,
             category=category,
             value=value,
             character=character.id,

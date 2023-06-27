@@ -76,8 +76,8 @@ class Macros(commands.Cog):
         await ctx.send_modal(modal)
         await modal.wait()
         name = modal.name.strip()
-        abbreviation = modal.abbreviation.strip()
-        description = modal.description.strip()
+        abbreviation = modal.abbreviation.strip() if modal.abbreviation else None
+        description = modal.description.strip() if modal.description else None
 
         macros = user_svc.fetch_macros(ctx)
         if any(macro.name.lower() == name.lower() for macro in macros) or any(
@@ -94,8 +94,8 @@ class Macros(commands.Cog):
         user_svc.create_macro(
             ctx,
             name=name.strip(),
-            abbreviation=abbreviation.strip(),
-            description=description.strip(),
+            abbreviation=abbreviation.strip() if abbreviation else None,
+            description=description.strip() if description else None,
             trait_one=trait_one,
             trait_two=trait_two,
         )

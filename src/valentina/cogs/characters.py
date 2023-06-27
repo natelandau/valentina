@@ -324,12 +324,22 @@ class Characters(commands.Cog, name="Character"):
             return
 
     ### UPDATE COMMANDS ####################################################################
-    @update.command(name="bio", description="Update a character's bio")
+    @update.command(name="bio", description="Add or update a character's bio")
     @logger.catch
-    async def update_bio(self, ctx: discord.ApplicationContext) -> None:
+    async def add_bio(self, ctx: discord.ApplicationContext) -> None:
         """Update a character's bio."""
         try:
             character = char_svc.fetch_claim(ctx)
+
+            modal = BioModal(
+                title=f"Enter the biography for {character.name}", current_bio=character.bio
+            )
+            await ctx.send_modal(modal)
+            await modal.wait()
+            biography = modal.bio.strip()
+
+            char_svc.update_char(ctx.guild.id, character.id, bio=biography)
+            logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -338,16 +348,6 @@ class Characters(commands.Cog, name="Character"):
                 level="error",
             )
             return
-
-        modal = BioModal(
-            title=f"Enter the biography for {character.name}", current_bio=character.bio
-        )
-        await ctx.send_modal(modal)
-        await modal.wait()
-        biography = modal.bio.strip()
-
-        char_svc.update_char(ctx.guild.id, character.id, bio=biography)
-        logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
 
     @update.command(name="trait", description="Update a trait for a character")
     @logger.catch
