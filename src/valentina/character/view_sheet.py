@@ -90,6 +90,7 @@ def __embed1(
 
     # Show class specific traits.
     # Werewolf/hunter traits aren't here b/c they are not a large list and should be shown with the rest of the traits with zeros included.
+    class_list = []
     match character.class_name.lower():
         case "vampire":
             class_list = ["disciplines"]
