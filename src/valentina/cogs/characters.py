@@ -35,6 +35,17 @@ class Characters(commands.Cog, name="Character"):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
+    async def cog_command_error(self, ctx: discord.ApplicationContext, error: Exception) -> None:
+        """Handle exceptions and errors from the cog."""
+        await present_embed(
+            ctx,
+            title="Error running command",
+            description=str(error),
+            level="error",
+            ephemeral=True,
+            delete_after=15,
+        )
+
     async def __trait_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:

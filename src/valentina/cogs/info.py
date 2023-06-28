@@ -5,6 +5,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina import Valentina
+from valentina.views import present_embed
 
 
 class Info(commands.Cog):
@@ -14,6 +15,17 @@ class Info(commands.Cog):
         self.bot = bot
 
     info = discord.SlashCommandGroup("info", "Get information about the game")
+
+    async def cog_command_error(self, ctx: discord.ApplicationContext, error: Exception) -> None:
+        """Handle exceptions and errors from the cog."""
+        await present_embed(
+            ctx,
+            title="Error running command",
+            description=str(error),
+            level="error",
+            ephemeral=True,
+            delete_after=15,
+        )
 
     @info.command(description="See health levels.")
     async def health(self, ctx: discord.ApplicationContext) -> None:

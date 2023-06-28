@@ -19,8 +19,18 @@ class Debug(commands.Cog):
 
     debug = discord.SlashCommandGroup("debug", "Debug related commands")
 
+    async def cog_command_error(self, ctx: discord.ApplicationContext, error: Exception) -> None:
+        """Handle exceptions and errors from the cog."""
+        await present_embed(
+            ctx,
+            title="Error running command",
+            description=str(error),
+            level="error",
+            ephemeral=True,
+            delete_after=15,
+        )
+
     @debug.command(description="Receive debug information about the bot.")
-    @commands.is_owner()
     async def ping(self, ctx: discord.ApplicationContext) -> None:
         """Ping the bot to get debug information."""
         logger.info("debug:ping: Generating debug information")
@@ -39,7 +49,7 @@ class Debug(commands.Cog):
         )
 
     @debug.command(description="Live reload the bot.")
-    @commands.is_owner()
+    @commands.has_permissions(administrator=True)
     async def reload(self, ctx: discord.ApplicationContext) -> None:
         """Reloads all cogs."""
         logger.debug("debug:reload: Reloading the bot...")
@@ -55,7 +65,7 @@ class Debug(commands.Cog):
         )
 
     @debug.command(description="Tail last 15 lines of the bot's logs")
-    @commands.is_owner()
+    @commands.has_permissions(administrator=True)
     async def logs(self, ctx: discord.ApplicationContext) -> None:
         """Tail the bot's logs."""
         logger.debug("debug:logs: Tailing the logs")
