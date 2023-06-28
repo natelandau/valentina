@@ -95,11 +95,11 @@ class CharacterService:
                 return True
 
             logger.debug(f"CLAIM: User {user_id} already has a claim")
-            raise UserHasClaimError(f"User {user_id} already has a claim")
+            raise UserHasClaimError
 
         if any(char_key == claim for claim in self.claims.values()):
             logger.debug(f"CLAIM: Character {char_id} is already claimed")
-            raise CharacterClaimedError(f"Character {char_id} is already claimed")
+            raise CharacterClaimedError
 
         self.claims[claim_key] = char_key
         return True
@@ -375,7 +375,7 @@ class CharacterService:
             char_id = re.sub(r"[a-zA-Z0-9]+_", "", char_key)
             return self.fetch_by_id(guild.id, int(char_id))
 
-        raise NoClaimError("No claim for user")
+        raise NoClaimError
 
     def fetch_trait_value(
         self, ctx: discord.ApplicationContext, character: Character, trait: str
@@ -393,7 +393,7 @@ class CharacterService:
         if len(custom_trait) > 0:
             return custom_trait[0].value
 
-        raise TraitNotFoundError(f"Trait {trait} not found for character {character.id}")
+        raise TraitNotFoundError
 
     def fetch_user_of_character(self, guild_id: int, char_id: int) -> int:
         """Returns the user id of the user who claimed a character."""
@@ -454,7 +454,7 @@ class CharacterService:
         try:
             character = Character.get_by_id(char_id)
         except DoesNotExist as e:
-            raise CharacterNotFoundError(f"Character {char_id} was not found") from e
+            raise CharacterNotFoundError(e=e) from e
 
         Character.update(modified=time_now(), **kws).where(Character.id == character.id).execute()
 
@@ -513,7 +513,7 @@ class CharacterService:
             self.purge_by_id(guild_id, character.id)
             return True
 
-        raise TraitNotFoundError(f"Trait '{trait_name}' was not found for character {character.id}")
+        raise TraitNotFoundError
 
 
 class UserService:

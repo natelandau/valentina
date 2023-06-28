@@ -19,11 +19,21 @@ class Debug(commands.Cog):
 
     debug = discord.SlashCommandGroup("debug", "Debug related commands")
 
-    async def cog_command_error(self, ctx: discord.ApplicationContext, error: Exception) -> None:
+    async def cog_command_error(
+        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
+    ) -> None:
         """Handle exceptions and errors from the cog."""
+        if hasattr(error, "original"):
+            error = error.original
+
+        command_name = ""
+        if ctx.command.parent.name:
+            command_name = f"{ctx.command.parent.name} "
+        command_name += ctx.command.name
+
         await present_embed(
             ctx,
-            title="Error running command",
+            title=f"Error running `{command_name}` command",
             description=str(error),
             level="error",
             ephemeral=True,
@@ -33,7 +43,7 @@ class Debug(commands.Cog):
     @debug.command(description="Receive debug information about the bot.")
     async def ping(self, ctx: discord.ApplicationContext) -> None:
         """Ping the bot to get debug information."""
-        logger.info("debug:ping: Generating debug information")
+        logger.debug("debug:ping: Generating debug information")
         await present_embed(
             ctx,
             title="Connection Information",
