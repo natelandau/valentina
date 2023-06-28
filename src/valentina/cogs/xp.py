@@ -113,11 +113,16 @@ class Xp(commands.Cog, name="XP"):
                 logger.info(f"XP: {character.name} {trait} upgraded by {ctx.author.name}")
                 await present_embed(
                     ctx=ctx,
-                    title=f"{character.name} {trait} upgraded",
-                    description=f"**{trait}** upgraded to **{new_value}**.",
+                    title=f"{character.name} upgraded",
                     level="success",
-                    fields=[("Remaining XP", new_experience)],
-                    footer=f"Updated by {ctx.author.name}",
+                    fields=[
+                        ("Trait", trait),
+                        ("Original Value", str(old_value)),
+                        ("New Value", str(new_value)),
+                        ("XP Cost", str(upgrade_cost)),
+                        ("Remaining XP", str(new_experience)),
+                    ],
+                    log=True,
                 )
         except ValueError:
             await present_embed(
@@ -161,11 +166,14 @@ class Xp(commands.Cog, name="XP"):
         logger.info(f"EXP: {character.name} exp updated by {ctx.author.name}")
         await present_embed(
             ctx=ctx,
-            title=f"{character.name} experience update.",
-            description=f"**{exp}** experience points added.",
-            fields=[("Current xp", new_exp)],
+            title=f"{character.name} gained experience",
+            fields=[
+                ("Points Added", str(exp)),
+                ("Current XP", new_exp),
+                ("All time XP", f"{new_total}"),
+            ],
             level="success",
-            footer=f"{new_total} all time xp",
+            log=True,
         )
 
     @xp.command(name="cp", description="Add cool points to a character")
@@ -200,11 +208,14 @@ class Xp(commands.Cog, name="XP"):
         logger.info(f"CP: {character.name} cool points updated by {ctx.author.name}")
         await present_embed(
             ctx=ctx,
-            title=f"{character.name} cool points updated",
-            description=f"**{cp}** cool points added.",
-            fields=[("Current Cool Points", new_cp)],
+            title=f"{character.name} gained cool points",
+            fields=[
+                ("Cool Points Added", str(cp)),
+                ("Current Cool Points", new_cp),
+                ("All time Cool Points", f"{new_total}"),
+            ],
             level="success",
-            footer=f"{new_total} all time cool points",
+            log=True,
         )
 
 

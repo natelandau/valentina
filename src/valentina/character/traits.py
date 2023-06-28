@@ -68,6 +68,7 @@ async def add_trait(
                 ],
                 inline_fields=False,
                 level="success",
+                log=True,
             )
     except ValueError as e:
         await present_embed(ctx=ctx, title="Error adding trait", description=str(e), level="ERROR")

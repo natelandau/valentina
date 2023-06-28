@@ -662,6 +662,9 @@ class UserService:
 class GuildService:
     """Manage guilds in the database. Guilds are created a bot_connect,."""
 
+    def __init__(self) -> None:
+        self.log_channel_cache: dict[int, int | None] = {}
+
     @staticmethod
     def is_in_db(guild_id: int) -> bool:
         """Check if the guild is in the database."""
@@ -740,6 +743,35 @@ class GuildService:
             logger.info(f"BOT: Created '{log_channel_name}' channel for bot logs")
 
         return log_channel
+
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+        """Purge the cache for a guild or all guilds.
+
+        Args:
+            ctx (discord.ApplicationContext, optional): The context to purge. Defaults to None.
+        """
+        if ctx and ctx.guild.id in self.log_channel_cache:
+            del self.log_channel_cache[ctx.guild.id]
+        else:
+            self.log_channel_cache = {}
+
+    def fetch_log_channel(self, ctx: discord.ApplicationContext) -> int | None:
+        """Fetch the log channel for a guild."""
+        if ctx.guild.id not in self.log_channel_cache:
+            self.log_channel_cache[ctx.guild.id] = Guild.get_by_id(ctx.guild.id).log_channel
+
+        return self.log_channel_cache[ctx.guild.id]
+
+    async def send_log(self, ctx: discord.ApplicationContext, message: str | discord.Embed) -> None:
+        """Send a message to the log channel for a guild."""
+        log_channel_id = self.fetch_log_channel(ctx)
+        if log_channel_id:
+            log_channel = ctx.guild.get_channel(log_channel_id)
+            if log_channel:
+                if isinstance(message, discord.Embed):
+                    await log_channel.send(embed=message)
+                else:
+                    await log_channel.send(message)
 
 
 class DatabaseService:

@@ -17,27 +17,27 @@ class TestGuildService:
         assert GuildService.is_in_db(1)
         assert not GuildService.is_in_db(2)
 
-    def test_update_or_add_one(self):
+    def test_update_or_add_one(self, ctx_existing):
         """Test GuildService.update_or_add().
 
         GIVEN a database with a guild
         WHEN GuildService.update_or_add() is called with an existing guild
         THEN the guild is updated
         """
-        GuildService.update_or_add(guild_id=1, guild_name="test_guild")
+        GuildService.update_or_add(ctx_existing.guild)
         assert Guild.get_by_id(1).name == "test_guild"
         assert Guild.get_by_id(1).id == 1
 
-    def test_update_or_add_two(self):
+    def test_update_or_add_two(self, ctx_new_user_guild):
         """Test GuildService.update_or_add().
 
         GIVEN a database with a guild
         WHEN GuildService.update_or_add() is called with a new guild
         THEN the guild is created in the db
         """
-        GuildService.update_or_add(guild_id=7, guild_name="test_guild_2")
-        assert Guild.get_by_id(7).name == "test_guild_2"
-        assert Guild.get_by_id(7).id == 7
+        GuildService.update_or_add(ctx_new_user_guild.guild)
+        assert Guild.get_by_id(2).name == "Test Guild 2"
+        assert Guild.get_by_id(2).id == 2
 
     def test_fetch_all_traits_one(self):
         """Test GuildService.fetch_all_traits().

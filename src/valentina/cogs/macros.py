@@ -110,6 +110,8 @@ class Macros(commands.Cog):
                 ("Description", description),
             ],
             level="success",
+            ephemeral=True,
+            log=True,
         )
 
     @macros.command(name="list", description="List macros associated with your account")
@@ -176,6 +178,8 @@ class Macros(commands.Cog):
                 title=f"Deleted Macro: {name}",
                 description=f"{ctx.author.mention} deleted the macro **{name}**.",
                 level="success",
+                log=True,
+                ephemeral=True,
             )
         else:
             await present_embed(ctx, title="Macro deletion cancelled", level="info", ephemeral=True)

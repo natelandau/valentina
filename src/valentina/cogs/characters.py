@@ -160,8 +160,9 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Character Claimed",
-                description=f"**{character.name}** has been claimed by {ctx.author.mention}\n\nTo unclaim this character, use `/character unclaim`",
+                description=f"**{character.name}** has been claimed by {ctx.author.mention}",
                 level="success",
+                log=True,
             )
         except CharacterClaimedError:
             await present_embed(
@@ -192,7 +193,8 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Character Unclaimed",
-                description=f"**{character.name}** unclaimed by {ctx.author.mention}\n\nTo claim a new character, use `/character claim`.",
+                description=f"**{character.name}** unclaimed by {ctx.author.mention}",
+                log=True,
                 level="success",
             )
         else:
@@ -304,6 +306,19 @@ class Characters(commands.Cog, name="Character"):
             ]:
                 raise SectionExistsError
             char_svc.add_custom_section(ctx, character, section_title, section_description)
+            await present_embed(
+                ctx,
+                title="Custom Section Added",
+                fields=[
+                    ("Character", character.name),
+                    ("Section", section_title),
+                    ("Content", section_description),
+                ],
+                ephemeral=True,
+                inline_fields=True,
+                level="success",
+                log=True,
+            )
 
         except NoClaimError:
             await present_embed(
@@ -341,6 +356,16 @@ class Characters(commands.Cog, name="Character"):
 
             char_svc.update_char(ctx.guild.id, character.id, bio=biography)
             logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
+
+            await present_embed(
+                ctx,
+                title="Biography Updated",
+                level="success",
+                ephemeral=True,
+                log=True,
+                inline_fields=False,
+                fields=[("Character", character.name), ("Biography", biography)],
+            )
         except NoClaimError:
             await present_embed(
                 ctx=ctx,
@@ -382,6 +407,19 @@ class Characters(commands.Cog, name="Character"):
                 character,
                 section.id,
                 **{"title": section_title, "description": section_description},
+            )
+            await present_embed(
+                ctx,
+                title="Custom Section Updated",
+                fields=[
+                    ("Character", character.name),
+                    ("Section", section_title),
+                    ("Content", section_description),
+                ],
+                ephemeral=True,
+                inline_fields=True,
+                level="success",
+                log=True,
             )
 
         except NoClaimError:
@@ -440,10 +478,10 @@ class Characters(commands.Cog, name="Character"):
                     title=f"{character.name} {trait} updated",
                     description=f"**{trait}** updated to **{new_value}**.",
                     level="success",
-                    fields=[("Old Value", str(old_value)), ("New Value", new_value)],
+                    fields=[("Old Value", str(old_value)), ("New Value", str(new_value))],
                     inline_fields=True,
-                    footer=f"Updated by {ctx.author.name}",
                     ephemeral=False,
+                    log=True,
                 )
         except NoClaimError:
             await present_embed(
@@ -494,9 +532,10 @@ class Characters(commands.Cog, name="Character"):
             char_svc.delete_custom_section(ctx, character, custom_section)
             await present_embed(
                 ctx=ctx,
-                title=f"Deleted {custom_section}",
-                description=f"**{custom_section}** has been deleted.",
+                title="Deleted Custom Section",
+                fields=[("Character", character.name), ("Section", custom_section)],
                 level="success",
+                log=True,
                 ephemeral=False,
             )
 
