@@ -720,14 +720,26 @@ class GuildService:
         return None
 
     @staticmethod
+    @logger.catch
     async def create_bot_log_channel(
         guild: discord.Guild, log_channel_name: str
     ) -> discord.TextChannel:
         """Fetch the bot log channel for a guild and create it if it doesn't exist."""
         log_channel = None
 
+        # Use the log channel from the database if it exists
+        existing_guild = Guild.get_or_none(id=guild.id)
+
         for channel in await guild.fetch_channels():
-            if (
+            if existing_guild:
+                if (
+                    isinstance(channel, discord.TextChannel)
+                    and channel.id == existing_guild.log_channel
+                ):
+                    log_channel = channel
+                    logger.info(f"DATABASE: Fetch bot log channel: '{channel.name}'")
+                    return channel
+            elif (
                 isinstance(channel, discord.TextChannel)
                 and channel.name.lower() == log_channel_name.lower()
             ):
@@ -741,6 +753,9 @@ class GuildService:
                 position=100,
             )
             logger.info(f"BOT: Created '{log_channel_name}' channel for bot logs")
+
+            if existing_guild:
+                GuildService.update_or_add(guild, log_channel.id)
 
         return log_channel
 
