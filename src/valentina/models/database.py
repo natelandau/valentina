@@ -297,6 +297,21 @@ class Macro(BaseModel):
         table_name = "macros"
 
 
+class RollThumbnail(BaseModel):
+    """Thumbnail for a roll."""
+
+    url = TextField()
+    roll_type = TextField()
+    created = DateTimeField(default=time_now)
+    guild = ForeignKeyField(Guild, backref="roll_thumbnails")
+    user = ForeignKeyField(User, backref="roll_thumbnails")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "roll_thumbnails"
+
+
 # Lookup tables
 
 

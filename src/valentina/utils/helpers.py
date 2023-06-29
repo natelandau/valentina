@@ -12,6 +12,7 @@ from valentina.models.constants import (
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
     MaxTraitValue,
+    RollResultType,
     XPMultiplier,
     XPNew,
 )
@@ -57,10 +58,10 @@ def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] |
     return all_traits
 
 
-def diceroll_thumbnail(outcome: str) -> str:
+def diceroll_thumbnail(result: RollResultType) -> str:
     """Take a string and return a random gif url."""
     for category, thumbnails in DICEROLL_THUBMS.items():
-        if category.lower() == outcome.lower():
+        if category == result.name:
             return thumbnails[_rng.integers(0, len(thumbnails))]
 
     return None

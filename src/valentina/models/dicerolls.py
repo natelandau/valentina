@@ -2,7 +2,7 @@
 
 from numpy.random import default_rng
 
-from valentina.models.constants import DiceType
+from valentina.models.constants import DiceType, RollResultType
 from valentina.utils.helpers import diceroll_thumbnail
 
 _rng = default_rng()
@@ -149,9 +149,10 @@ class DiceRoll:
 
     @property
     def is_failure(self) -> bool:
-        """Determine if the roll is a botch."""
-        if self.result <= 0:
+        """Determine if the roll is a failure (i.e. no successes, not a botch)."""
+        if self.result == 0:
             return True
+
         return False
 
     @property
@@ -172,15 +173,15 @@ class DiceRoll:
     def thumbnail_url(self) -> str:
         """Determine the thumbnail to use for the Discord embed."""
         if self.dice_type != DiceType.D10:
-            return diceroll_thumbnail("diceroll")
+            return diceroll_thumbnail(RollResultType.OTHER)
         if self.is_botch:
-            return diceroll_thumbnail("botch")
+            return diceroll_thumbnail(RollResultType.BOTCH)
         if self.is_critical:
-            return diceroll_thumbnail("critical")
+            return diceroll_thumbnail(RollResultType.CRITICAL)
         if self.is_success:
-            return diceroll_thumbnail("success")
+            return diceroll_thumbnail(RollResultType.SUCCESS)
         if self.is_failure:
-            return diceroll_thumbnail("failure")
+            return diceroll_thumbnail(RollResultType.FAILURE)
 
         return None
 
