@@ -179,6 +179,7 @@ class Xp(commands.Cog, name="XP"):
                 ("Current XP", new_exp),
                 ("All time XP", f"{new_total}"),
             ],
+            inline_fields=True,
             level="success",
             log=True,
         )

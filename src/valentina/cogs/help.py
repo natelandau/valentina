@@ -66,7 +66,7 @@ class Help(commands.Cog):
 
             # Add owner information
             owners = [
-                ctx.guild.get_member(int(x)).mention
+                ctx.guild.get_member(int(x)).display_name
                 for x in CONFIG["VALENTINA_OWNER_IDS"].split(",")
             ]
 
@@ -130,7 +130,8 @@ class Help(commands.Cog):
     async def readme(self, ctx: discord.ApplicationContext) -> None:
         """A walkthrough of Valentina Noir."""
         owners = [
-            ctx.guild.get_member(int(x)).mention for x in CONFIG["VALENTINA_OWNER_IDS"].split(",")
+            ctx.guild.get_member(int(x)).display_name
+            for x in CONFIG["VALENTINA_OWNER_IDS"].split(",")
         ]
 
         page1 = dedent(

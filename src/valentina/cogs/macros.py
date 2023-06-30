@@ -148,7 +148,7 @@ class Macros(commands.Cog):
             await present_embed(
                 ctx,
                 title=f"Macros for {ctx.author.display_name}",
-                description=f"{ctx.author.mention} has the following macros associated with their account.",
+                description=f"**{ctx.author.display_name}** has the following macros associated with their account.",
                 fields=[
                     (
                         f"{macro.name} ({macro.abbreviation}) - `{macro.trait_one} + {macro.trait_two}`",
@@ -162,7 +162,7 @@ class Macros(commands.Cog):
             await present_embed(
                 ctx,
                 title="No Macros",
-                description=f"{ctx.author.mention} does not have any macros associated with their account.",
+                description=f"**{ctx.author.mention}** does not have any macros associated with their account.",
                 level="info",
                 ephemeral=True,
             )

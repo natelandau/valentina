@@ -16,6 +16,7 @@ def __build_trait_display(
     categories_list: list[str],
     exclude_from_list: bool = False,
     show_zeros: bool = True,
+    sort_items: bool = False,
 ) -> list[tuple[str, str]]:
     """Builds the name and value for an embed field representing a category of traits.
 
@@ -24,8 +25,12 @@ def __build_trait_display(
         categories_list (list[str]): A list of categories to include in the embed field.
         exclude_from_list (bool, optional): If True, the categories list is treated as a list of categories to exclude. Defaults to False.
         show_zeros (bool, optional): If True, traits with a value of 0 are included in the embed field. Defaults to True.
+        sort_items (bool, optional): If True, the items in the embed field are sorted alphabetically. Defaults to False.
     """
     embed_values = []
+    if sort_items:
+        char_traits = {k: sorted(v, key=lambda x: x[0]) for k, v in char_traits.items()}
+
     for category, traits in char_traits.items():
         if exclude_from_list and category.lower() in [x.lower() for x in categories_list]:
             continue
@@ -64,7 +69,7 @@ def __embed1(
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
 
     embed.add_field(
-        name="Claimed By", value=f"{claimed_by.mention}" if claimed_by else "-", inline=True
+        name="Claimed By", value=f"{claimed_by.display_name}" if claimed_by else "-", inline=True
     )
 
     embed.add_field(name="\u200b", value="**EXPERIENCE**", inline=False)
@@ -76,7 +81,9 @@ def __embed1(
         embed.add_field(name=category, value=traits, inline=True)
 
     embed.add_field(name="\u200b", value="**ABILITIES**", inline=False)
-    for category, traits in __build_trait_display(char_traits, ["talents", "skills", "knowledges"]):
+    for category, traits in __build_trait_display(
+        char_traits, ["talents", "skills", "knowledges"], sort_items=True
+    ):
         embed.add_field(name=category, value=traits, inline=True)
 
     for category, traits in __build_trait_display(
@@ -92,6 +99,7 @@ def __embed1(
             "spheres",
         ],
         exclude_from_list=True,
+        sort_items=True,
     ):
         embed.add_field(name=category, value=traits, inline=True)
 
@@ -104,7 +112,9 @@ def __embed1(
         case "mage":
             class_list = ["spheres"]
 
-    for category, traits in __build_trait_display(char_traits, class_list, show_zeros=False):
+    for category, traits in __build_trait_display(
+        char_traits, class_list, show_zeros=False, sort_items=True
+    ):
         embed.add_field(name=category, value=traits, inline=True)
 
     return embed
@@ -131,7 +141,7 @@ def __embed2(
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
 
     embed.add_field(
-        name="Claimed By", value=f"{claimed_by.mention}" if claimed_by else "-", inline=True
+        name="Claimed By", value=f"{claimed_by.display_name}" if claimed_by else "-", inline=True
     )
 
     if character.bio:

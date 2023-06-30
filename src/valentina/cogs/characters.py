@@ -190,7 +190,7 @@ class Characters(commands.Cog, name="Character"):
         await present_embed(
             ctx=ctx,
             title="Character Claimed",
-            description=f"**{character.name}** has been claimed by {ctx.author.mention}",
+            description=f"**{character.name}** has been claimed by **{ctx.author.display_name}**",
             level="success",
             log=True,
         )
@@ -208,7 +208,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Character Unclaimed",
-                description=f"**{character.name}** unclaimed by {ctx.author.mention}",
+                description=f"**{character.name}** unclaimed by **{ctx.author.display_name}**",
                 log=True,
                 level="success",
             )
@@ -243,7 +243,7 @@ class Characters(commands.Cog, name="Character"):
 
         for character in sorted(characters, key=lambda x: x.name):
             user_id = char_svc.fetch_user_of_character(ctx.guild.id, character.id)
-            user = self.bot.get_user(user_id).mention if user_id else ""
+            user = self.bot.get_user(user_id).display_name if user_id else ""
             fields.append(
                 (character.name, f"Class: {character.char_class.name}\nClaimed by: {user}")
             )
@@ -270,7 +270,7 @@ class Characters(commands.Cog, name="Character"):
             required=True,
             choices=sorted([x.value for x in TraitCategory]),
         ),
-        value: Option(int, "The value of the trait", required=True, min_value=1, max_value=20),
+        value: Option(int, "The value of the trait", required=True, min_value=0, max_value=20),
         max_value: Option(
             int,
             "The maximum value of the trait (Defaults to 5)",
@@ -401,7 +401,7 @@ class Characters(commands.Cog, name="Character"):
             str, description="Trait to update", required=True, autocomplete=__trait_autocomplete
         ),
         new_value: Option(
-            int, description="New value for the trait", required=True, min_value=1, max_value=20
+            int, description="New value for the trait", required=True, min_value=0, max_value=20
         ),
     ) -> None:
         """Update the value of a trait."""
