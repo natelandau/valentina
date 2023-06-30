@@ -1,3 +1,28 @@
+## v0.8.0 (2023-06-30)
+
+### Feat
+
+- **admin**: purge caches
+- **character**: delete custom traits
+- **admin**: add audit logging and settings management (#13)
+- **character**: update existing custom sections
+
+### Fix
+
+- enqueue logs
+- **character**: disallow negative experience
+- **macros**: cancel macro creation now cancels creation
+- **diceroll**: improve add thumbnail
+- **diceroll**: improve roll displays
+- **dicerolls**: remove animated gifs
+- no longer crash with empty trait or macro descriptions
+- **character**: fix bug preventing certain character sheets from displaying
+- **diceroll**: randomize gifs
+
+### Refactor
+
+- **database**: rename database tables
+
 ## v0.7.0 (2023-06-25)
 
 ### Feat
