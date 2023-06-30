@@ -9,7 +9,7 @@ from valentina import guild_svc
 from valentina.models.constants import EmbedColor
 
 
-async def present_embed(  # noqa: C901
+async def present_embed(  # noqa: C901, PLR0912
     ctx: discord.ApplicationContext,
     title: str = "",
     description: str = "",
@@ -18,6 +18,7 @@ async def present_embed(  # noqa: C901
     level: str = "INFO",
     ephemeral: bool = False,
     fields: list[tuple[str, str]] = [],
+    image: str | None = None,
     inline_fields: bool = False,
     thumbnail: str | None = None,
     author: str | None = None,
@@ -39,6 +40,7 @@ async def present_embed(  # noqa: C901
         fields: list(tuple(str,  str)): Fields to add to the embed. (fields.0 is name; fields.1 is value)
         delete_after (optional, float): Number of seconds to wait before deleting the message.
         footer (str): Footer text to display.
+        image (str): URL of the image to display.
         inline_fields (bool): Whether the fields should be inline (Default: False).
         thumbnail (str): URL of the thumbnail to display.
         show_author (bool): Whether to show the author of the embed.
@@ -65,6 +67,9 @@ async def present_embed(  # noqa: C901
     for field in fields:
         name, value = field
         embed.add_field(name=name, value=value, inline=inline_fields)
+
+    if image:
+        embed.set_image(url=image)
 
     if footer:
         embed.set_footer(text=footer)

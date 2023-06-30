@@ -8,6 +8,21 @@ from discord.ext.commands import BadArgument, Context, Converter
 from valentina.models.constants import CharClass
 
 
+class ValidThumbnailURL(Converter):
+    """Converter that ensures a requested thumbnail URL is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
+        """Validate and normalize thumbnail URLs."""
+        if not re.match(r"^https?://", argument):
+            raise BadArgument("Thumbnail URLs must start with `http://` or `https://`")
+
+        if not re.match(r".+\.(png|jpg|jpeg|gif)$", argument):
+            raise BadArgument("Thumbnail URLs must end with a valid image extension")
+
+        # Replace media.giphy.com URLs with i.giphy.com URLs
+        return re.sub(r"//media\.giphy\.com", "//i.giphy.com", argument)
+
+
 class ValidCharacterClass(Converter):
     """A converter that ensures a requested character class is valid."""
 
@@ -77,4 +92,4 @@ class ValidChannelName(Converter):
             )
 
         # Replace invalid characters with unicode alternatives.
-        return self.translate_name(argument)
+        return argument

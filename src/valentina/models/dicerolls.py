@@ -1,5 +1,6 @@
 """Models for dice rolls."""
 
+import discord
 from numpy.random import default_rng
 
 from valentina.models.constants import DiceType, RollResultType
@@ -45,14 +46,18 @@ class DiceRoll:
 
     """
 
-    def __init__(self, pool: int, difficulty: int = 6, dice_size: int = 10) -> None:
+    def __init__(
+        self, ctx: discord.ApplicationContext, pool: int, difficulty: int = 6, dice_size: int = 10
+    ) -> None:
         """A container class that determines the result of a roll.
 
         Args:
+            ctx (discord.ApplicationContext): The context of the command.
             dice_size (int, optional): The size of the dice. Defaults to 10.
             difficulty (int, optional): The difficulty of the roll. Defaults to 6.
             pool (int): The pool's total size, including hunger
         """
+        self.ctx = ctx
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
             raise ValueError(f"Invalid dice size `{dice_size}`.")
@@ -173,15 +178,15 @@ class DiceRoll:
     def thumbnail_url(self) -> str:
         """Determine the thumbnail to use for the Discord embed."""
         if self.dice_type != DiceType.D10:
-            return diceroll_thumbnail(RollResultType.OTHER)
+            return diceroll_thumbnail(self.ctx, RollResultType.OTHER)
         if self.is_botch:
-            return diceroll_thumbnail(RollResultType.BOTCH)
+            return diceroll_thumbnail(self.ctx, RollResultType.BOTCH)
         if self.is_critical:
-            return diceroll_thumbnail(RollResultType.CRITICAL)
+            return diceroll_thumbnail(self.ctx, RollResultType.CRITICAL)
         if self.is_success:
-            return diceroll_thumbnail(RollResultType.SUCCESS)
+            return diceroll_thumbnail(self.ctx, RollResultType.SUCCESS)
         if self.is_failure:
-            return diceroll_thumbnail(RollResultType.FAILURE)
+            return diceroll_thumbnail(self.ctx, RollResultType.FAILURE)
 
         return None
 

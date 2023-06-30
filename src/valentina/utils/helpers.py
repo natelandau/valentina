@@ -2,6 +2,7 @@
 from collections import defaultdict
 from copy import deepcopy
 
+import discord
 from numpy.random import default_rng
 
 from valentina.models.constants import (
@@ -58,13 +59,17 @@ def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] |
     return all_traits
 
 
-def diceroll_thumbnail(result: RollResultType) -> str:
+def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
     """Take a string and return a random gif url."""
-    for category, thumbnails in DICEROLL_THUBMS.items():
-        if category == result.name:
-            return thumbnails[_rng.integers(0, len(thumbnails))]
+    from valentina import guild_svc
 
-    return None
+    thumb_list = DICEROLL_THUBMS[result.name]
+    database_thumbs = guild_svc.fetch_roll_result_thumbs(ctx)
+    for category, thumbnails in database_thumbs.items():
+        if category.lower() == result.name.lower():
+            thumb_list.extend(thumbnails)
+
+    return thumb_list[_rng.integers(0, len(thumb_list))]
 
 
 def extend_common_traits_with_class(char_class: str) -> dict[str, list[str]]:

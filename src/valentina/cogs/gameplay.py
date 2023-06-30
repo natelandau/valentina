@@ -103,7 +103,7 @@ class Roll(commands.Cog):
             difficulty (int): The difficulty of the roll
             pool (int): The number of dice to roll
         """
-        roll = DiceRoll(pool=pool, difficulty=difficulty, dice_size=10)
+        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
         logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
         await RollDisplay(ctx, roll, comment).display()
 
@@ -138,7 +138,7 @@ class Roll(commands.Cog):
         trait_two_value = char_svc.fetch_trait_value(ctx, character, trait_two) if trait_two else 0
         pool = trait_one_value + trait_two_value
 
-        roll = DiceRoll(pool=pool, difficulty=difficulty, dice_size=10)
+        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
         logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
         await RollDisplay(
             ctx,
@@ -167,7 +167,7 @@ class Roll(commands.Cog):
             pool (int): The number of dice to roll
         """
         try:
-            roll = DiceRoll(pool=pool, dice_size=dice_size, difficulty=0)
+            roll = DiceRoll(ctx, pool=pool, dice_size=dice_size, difficulty=0)
             logger.debug(f"ROLL: {ctx.author.display_name} rolled {roll.roll}")
             await RollDisplay(ctx, roll, comment).display()
         except ValueError as e:
@@ -203,7 +203,7 @@ class Roll(commands.Cog):
         )
         pool = trait_one_value + trait_two_value
 
-        roll = DiceRoll(pool=pool, difficulty=difficulty, dice_size=10)
+        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
         logger.debug(f"ROLL: {ctx.author.display_name} macro {m.name} rolled {roll.roll}")
         await RollDisplay(
             ctx,

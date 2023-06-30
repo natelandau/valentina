@@ -19,6 +19,24 @@ class CharacterClaimedError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class DuplicateRollResultThumbError(Exception):
+    """Raised when a thumbnail is already in use."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "This thumbnail is already in use"
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class UserHasClaimError(Exception):
     """Raised when a user already has a claim on a character."""
 

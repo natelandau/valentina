@@ -27,6 +27,7 @@ from valentina.models.database import (
     Guild,
     GuildUser,
     Macro,
+    RollThumbnail,
     User,
     VampireClan,
     time_now,
@@ -34,6 +35,7 @@ from valentina.models.database import (
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
+    DuplicateRollResultThumbError,
     NoClaimError,
     SectionExistsError,
     SectionNotFoundError,
@@ -667,6 +669,7 @@ class GuildService:
     def __init__(self) -> None:
         self.log_channel_cache: dict[int, int | None] = {}
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
+        self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
 
     @staticmethod
     def is_in_db(guild_id: int) -> bool:
@@ -723,7 +726,6 @@ class GuildService:
 
         return None
 
-    @logger.catch
     async def create_bot_log_channel(
         self, guild: discord.Guild, log_channel_name: str
     ) -> discord.TextChannel:
@@ -735,19 +737,15 @@ class GuildService:
 
         for channel in await guild.fetch_channels():
             if existing_guild:
-                if (
-                    isinstance(channel, discord.TextChannel)
-                    and channel.id == existing_guild.log_channel_id
-                ):
+                if channel.id == existing_guild.log_channel_id:
                     log_channel = channel
-                    logger.info(f"DATABASE: Fetch bot log channel: '{channel.name}'")
-                    return channel
-            elif (
-                isinstance(channel, discord.TextChannel)
-                and channel.name.lower() == log_channel_name.lower()
-            ):
+                    logger.info(f"DATABASE: Fetch bot audit log channel: '{channel.name}'")
+                    return channel  # type: ignore [return-value]
+            elif channel.name.lower().strip() == log_channel_name.lower().strip():
+                print(f"SUCCESS: {channel.name.lower()} == {log_channel_name.lower()}")
                 log_channel = channel
-                logger.info(f"BOT: Using '{log_channel_name}' for bot logs")
+                logger.debug(f"BOT: Using '{log_channel_name}' for bot audit logging")
+                break
 
         if not log_channel:
             log_channel = await guild.create_text_channel(
@@ -755,13 +753,13 @@ class GuildService:
                 topic="A channel for Valentina audit logs.",
                 position=100,
             )
-            logger.info(f"BOT: Created '{log_channel_name}' channel for bot logs")
+            logger.info(f"BOT: Created '{log_channel_name}' channel for bot audit logging")
 
             if existing_guild:
                 GuildService.update_or_add(guild, log_channel_id=log_channel.id)
 
         self.log_channel_cache.pop(guild.id, None)
-        return log_channel
+        return log_channel  # type: ignore [return-value]
 
     def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
         """Purge the cache for a guild or all guilds.
@@ -815,6 +813,34 @@ class GuildService:
                     )
                     await log_channel.send(embed=embed)
 
+    def add_roll_result_thumb(
+        self, ctx: discord.ApplicationContext, roll_type: str, url: str
+    ) -> None:
+        """Add a roll result thumbnail to the database."""
+        UserService().fetch_user(ctx)
+
+        self.roll_result_thumbs.pop(ctx.guild.id, None)
+
+        already_exists = RollThumbnail.get_or_none(guild=ctx.guild.id, url=url)
+        if already_exists:
+            raise DuplicateRollResultThumbError
+
+        RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
+        logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
+
+    def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
+        """Get all roll result thumbnails for a guild."""
+        if ctx.guild.id not in self.roll_result_thumbs:
+            self.roll_result_thumbs[ctx.guild.id] = {}
+            logger.debug(f"DATABASE: Fetch roll result thumbnails for '{ctx.guild.name}'")
+            for thumb in RollThumbnail.select().where(RollThumbnail.guild == ctx.guild.id):
+                if thumb.roll_type not in self.roll_result_thumbs[ctx.guild.id]:
+                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type] = [thumb.url]
+                else:
+                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type].append(thumb.url)
+
+        return self.roll_result_thumbs[ctx.guild.id]
+
 
 class DatabaseService:
     """Representation of the database."""
@@ -836,6 +862,7 @@ class DatabaseService:
                     Guild,
                     GuildUser,
                     Macro,
+                    RollThumbnail,
                     User,
                     VampireClan,
                 ]

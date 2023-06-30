@@ -9,7 +9,8 @@ from loguru import logger
 from sh import tail
 
 from valentina import CONFIG, Valentina, __version__, guild_svc
-from valentina.utils.converters import ValidChannelName
+from valentina.models.constants import RollResultType
+from valentina.utils.converters import ValidChannelName, ValidThumbnailURL
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
@@ -42,6 +43,32 @@ class Admin(commands.Cog):
             level="error",
             ephemeral=True,
             delete_after=15,
+        )
+
+    ### THUMBNAIL COMMANDS ############################################################
+    @admin.command(description="Add images to roll results")
+    async def add_thumbnail(
+        self,
+        ctx: discord.ApplicationContext,
+        roll_type: Option(
+            str,
+            description="Type of roll to add the thumbnail to",
+            required=True,
+            choices=[roll_type.value for roll_type in RollResultType],
+        ),
+        url: Option(ValidThumbnailURL, description="URL of the thumbnail", required=True),
+    ) -> None:
+        """Add a roll result thumbnail to the bot."""
+        guild_svc.add_roll_result_thumb(ctx, roll_type, url)
+
+        await present_embed(
+            ctx,
+            title="Roll Result Thumbnail Added",
+            description=f"Added thumbnail for `{roll_type}` roll results",
+            image=url,
+            level="success",
+            ephemeral=True,
+            log=True,
         )
 
     ### SETTINGS COMMANDS #############################################################

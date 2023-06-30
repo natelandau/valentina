@@ -5,6 +5,13 @@ import pytest
 from valentina.models.dicerolls import DiceRoll
 
 
+class MockContext:
+    """A mock context for testing."""
+
+    def __init__(self):
+        """Initialize the mock context."""
+
+
 def test_roll_exceptions():
     """Ensure that Roll raises exceptions when appropriate.
 
@@ -13,19 +20,19 @@ def test_roll_exceptions():
     THEN raise the appropriate exception
     """
     with pytest.raises(ValueError, match="Pool cannot be less than 0."):
-        DiceRoll(pool=-1)
+        DiceRoll(MockContext, pool=-1)
 
     with pytest.raises(ValueError, match="Difficulty cannot exceed the size of the dice."):
-        DiceRoll(difficulty=11, pool=1)
+        DiceRoll(MockContext, difficulty=11, pool=1)
 
     with pytest.raises(ValueError, match="Pool cannot exceed 100."):
-        DiceRoll(pool=101)
+        DiceRoll(MockContext, pool=101)
 
     with pytest.raises(ValueError, match="Difficulty cannot be less than 0."):
-        DiceRoll(difficulty=-1, pool=1)
+        DiceRoll(MockContext, difficulty=-1, pool=1)
 
     with pytest.raises(ValueError, match="Invalid dice size"):
-        DiceRoll(difficulty=6, pool=6, dice_size=3)
+        DiceRoll(MockContext, difficulty=6, pool=6, dice_size=3)
 
 
 @pytest.mark.parametrize(
@@ -48,7 +55,7 @@ def test_rolling_dice(pool: int, dice_size: int) -> None:
     THEN assert that the correct number of dice are rolled with the correct dice type.
     """
     for _ in range(100):
-        roll = DiceRoll(pool, dice_size=dice_size, difficulty=1)
+        roll = DiceRoll(MockContext, pool, dice_size=dice_size, difficulty=1)
         assert len(roll.roll) == pool
         assert all(1 <= die <= dice_size for die in roll.roll)
 
@@ -103,7 +110,7 @@ def test_roll_successes(
     """
     mocker.patch.object(DiceRoll, "roll", roll)
 
-    roll = DiceRoll(pool=3, difficulty=6)
+    roll = DiceRoll(MockContext, pool=3, difficulty=6)
     assert roll.botches == botches
     assert roll.criticals == criticals
     assert roll.failures == failures
