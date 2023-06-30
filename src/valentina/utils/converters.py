@@ -26,10 +26,10 @@ class ValidThumbnailURL(Converter):
 class ValidCharacterClass(Converter):
     """A converter that ensures a requested character class is valid."""
 
-    async def convert(self, ctx: Context, argument: str) -> CharClass:  # noqa: ARG002
+    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
         """Validate and normalize character classes."""
         try:
-            return CharClass(argument)
+            return CharClass(argument).value
         except ValueError as e:
             raise BadArgument(f"`{argument}` is not a valid character class") from e
 

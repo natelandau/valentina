@@ -60,15 +60,16 @@ async def add_trait(
                 ctx=ctx,
                 title=f"Custom trait added to {character.name}",
                 fields=[
-                    ("Trait", trait_name.title()),
+                    ("Trait", f"**{trait_name.title()}**"),
                     ("Category", category),
+                    ("Description", trait_description),
                     ("Value", f"`{trait_value!s}`"),
                     ("Max Value", f"`{max_value!s}`"),
-                    ("Description", trait_description),
                 ],
                 inline_fields=False,
                 level="success",
                 log=True,
+                ephemeral=True,
             )
     except ValueError as e:
         await present_embed(ctx=ctx, title="Error adding trait", description=str(e), level="ERROR")

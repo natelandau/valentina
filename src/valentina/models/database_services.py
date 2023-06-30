@@ -187,6 +187,26 @@ class CharacterService:
         except SectionExistsError:
             return False
 
+    def delete_custom_trait(
+        self, ctx: discord.ApplicationContext, character: Character, name: str
+    ) -> bool:
+        """Delete a custom trait from a character."""
+        name = name.lower()
+        key = self.__get_char_key(ctx.guild.id, character.id)
+        try:
+            custom_trait = CustomTrait.get(
+                CustomTrait.character == character,
+                CustomTrait.guild_id == ctx.guild.id,
+                fn.Lower(CustomTrait.name) == name,
+            )
+            custom_trait.delete_instance()
+            if key in self.custom_traits:
+                self.custom_traits.pop(key, None)
+
+            return True
+        except TraitNotFoundError:
+            return False
+
     def fetch_all_characters(self, guild_id: int) -> ModelSelect:
         """Returns all characters for a specific guild. Checks the cache first and then the database. If characters are found in the database, they are added to the cache.
 
@@ -322,10 +342,15 @@ class CharacterService:
         raise SectionNotFoundError(f"{character.first_name} has no section {title}")
 
     def fetch_char_custom_traits(
-        self, ctx: discord.ApplicationContext, character: Character
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext, character: Character
     ) -> list[CustomTrait]:
         """Fetch all custom traits for a character."""
-        key = self.__get_char_key(ctx.guild.id, character.id)
+        if isinstance(ctx, discord.ApplicationContext):
+            guild = ctx.guild
+        if isinstance(ctx, discord.AutocompleteContext):  # pragma: no cover
+            guild = ctx.interaction.guild
+
+        key = self.__get_char_key(guild.id, character.id)
 
         if key in self.custom_traits:
             logger.debug(f"CACHE: Fetch custom traits for {character.name}")

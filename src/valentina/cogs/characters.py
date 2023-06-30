@@ -50,6 +50,22 @@ class Characters(commands.Cog, name="Character"):
             delete_after=15,
         )
 
+    async def __custom_trait_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
+        """Populates the autocomplete with custom traits."""
+        try:
+            character = char_svc.fetch_claim(ctx)
+        except NoClaimError:
+            return ["No character claimed"]
+
+        traits = []
+        for trait in char_svc.fetch_char_custom_traits(ctx, character):
+            if trait.name.lower().startswith(ctx.options["trait"].lower()):
+                traits.append(trait.name)
+            if len(traits) >= MAX_OPTION_LIST_SIZE:
+                break
+
+        return traits
+
     async def __trait_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:
@@ -419,22 +435,44 @@ class Characters(commands.Cog, name="Character"):
                 level="success",
                 fields=[("Old Value", str(old_value)), ("New Value", str(new_value))],
                 inline_fields=True,
-                ephemeral=False,
+                ephemeral=True,
                 log=True,
             )
 
     ### DELETE COMMANDS ####################################################################
     @delete.command(name="trait", description="Delete a custom trait from a character")
-    async def delete_trait(
+    async def delete_custom_trait(
         self,
         ctx: discord.ApplicationContext,
         trait: Option(
-            str, description="Trait to delete", required=True, autocomplete=__trait_autocomplete
+            str,
+            description="Trait to delete",
+            required=True,
+            autocomplete=__custom_trait_autocomplete,
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        # TODO: Add ability to delete a custom trait from a character
-        pass
+        character = char_svc.fetch_claim(ctx)
+        view = ConfirmCancelButtons(ctx.author)
+        await present_embed(
+            ctx,
+            title="Delete Trait",
+            description=f"Confirm deleting {trait}",
+            ephemeral=True,
+            view=view,
+            level="info",
+        )
+        await view.wait()
+        if view.confirmed:
+            char_svc.delete_custom_trait(ctx, character, trait)
+            await present_embed(
+                ctx=ctx,
+                title="Deleted Trait",
+                fields=[("Character", character.name), ("Trait", trait)],
+                level="success",
+                log=True,
+                ephemeral=True,
+            )
 
     @delete.command(name="custom_section", description="Delete a custom section from a character")
     async def delete_custom_section(
@@ -456,7 +494,7 @@ class Characters(commands.Cog, name="Character"):
             fields=[("Character", character.name), ("Section", custom_section)],
             level="success",
             log=True,
-            ephemeral=False,
+            ephemeral=True,
         )
 
 
