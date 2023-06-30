@@ -7,7 +7,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina import Valentina, char_svc
-from valentina.models.constants import MAX_OPTION_LIST_SIZE
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor
 from valentina.utils.errors import NoClaimError
 from valentina.utils.helpers import (
     get_max_trait_value,
@@ -85,6 +85,17 @@ class Xp(commands.Cog, name="XP"):
         if old_value == 0:
             upgrade_cost = get_trait_new_value(trait)
 
+        remaining_xp = character.experience - upgrade_cost
+        if remaining_xp < 0:
+            await present_embed(
+                ctx,
+                title="Error: Not enough XP",
+                description=f"**{trait}** upgrade cost is **{upgrade_cost} XP**. You only have **{character.experience} XP**.",
+                level="error",
+                ephemeral=True,
+            )
+            return
+
         if old_value >= get_max_trait_value(trait):
             await present_embed(
                 ctx,
@@ -94,7 +105,7 @@ class Xp(commands.Cog, name="XP"):
             )
             return
         view = ConfirmCancelButtons(ctx.author)
-        await present_embed(
+        msg = await present_embed(
             ctx,
             title=f"Upgrade {trait}",
             description=f"Upgrading **{trait}** by **1** dot will cost **{upgrade_cost} XP**",
@@ -111,6 +122,11 @@ class Xp(commands.Cog, name="XP"):
             view=view,
         )
         await view.wait()
+        if not view.confirmed:
+            embed = discord.Embed(title="Upgrade cancelled", color=EmbedColor.INFO.value)
+            await msg.edit_original_response(embed=embed, view=None)
+            return
+
         if view.confirmed:
             new_value = old_value + 1
             new_experience = character.experience - upgrade_cost
@@ -120,6 +136,7 @@ class Xp(commands.Cog, name="XP"):
                 **{normalize_to_db_row(trait): new_value, "experience": new_experience},
             )
             logger.info(f"XP: {character.name} {trait} upgraded by {ctx.author.name}")
+            await msg.delete_original_response()
             await present_embed(
                 ctx=ctx,
                 title=f"{character.name} upgraded",

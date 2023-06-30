@@ -253,7 +253,7 @@ class CharacterService:
                 all_traits[custom_trait.category.title()].append(custom_trait.name.title())
 
         if flat_list:
-            return list({y for x in all_traits.values() for y in x})
+            return sorted(list({y for x in all_traits.values() for y in x}))
 
         return all_traits
 
@@ -486,8 +486,10 @@ class CharacterService:
         # Normalize kwargs keys to database column names
         kws = {normalize_to_db_row(k): v for k, v in kwargs.items()}
 
-        if key in self.characters:
-            self.purge_cache(ctx)
+        # Clear character from cache but keep claims cache
+        self.characters.pop(key, None)
+        self.custom_traits.pop(key, None)
+        self.custom_sections.pop(key, None)
 
         try:
             character = Character.get_by_id(char_id)
