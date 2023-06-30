@@ -60,5 +60,11 @@ class MacroCreateModal(discord.ui.Modal):
         await view.wait()
         if view.confirmed:
             self.confirmed = True
+            await interaction.delete_original_response()
+        if not view.confirmed:
+            self.confirmed = False
+            await interaction.edit_original_response(
+                embeds=[discord.Embed(title="Macro creation cancelled")]
+            )
 
         self.stop()

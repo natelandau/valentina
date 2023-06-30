@@ -7,7 +7,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina import Valentina, char_svc, guild_svc, user_svc
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, RollResultType
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor, RollResultType
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import ValidThumbnailURL
 from valentina.utils.errors import MacroNotFoundError, NoClaimError
@@ -242,8 +242,9 @@ class Roll(commands.Cog):
         await view.wait()
 
         if not view.confirmed:
-            embed = discord.Embed(title="Upload cancelled", color=discord.Color.red())
+            embed = discord.Embed(title="Upload cancelled", color=EmbedColor.INFO.value)
             await msg.edit_original_response(embed=embed, view=None)
+            return
         if view.confirmed:
             guild_svc.add_roll_result_thumb(ctx, roll_type, url)
             await msg.delete_original_response()

@@ -6,7 +6,7 @@ from discord.commands import Option
 from discord.ext import commands
 
 from valentina import Valentina, guild_svc, user_svc
-from valentina.models.constants import MAX_OPTION_LIST_SIZE
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor
 from valentina.views import ConfirmCancelButtons, MacroCreateModal, present_embed
 
 
@@ -94,6 +94,9 @@ class Macros(commands.Cog):
         )
         await ctx.send_modal(modal)
         await modal.wait()
+        if not modal.confirmed:
+            return
+
         name = modal.name.strip()
         abbreviation = modal.abbreviation.strip() if modal.abbreviation else None
         description = modal.description.strip() if modal.description else None
@@ -122,12 +125,13 @@ class Macros(commands.Cog):
         await present_embed(
             ctx,
             title=f"Created Macro: {name}",
-            description=f"{ctx.author.mention} created a new macro that combines **{trait_one}** and **{trait_two}**.",
+            description=f"**{ctx.author.display_name}** created a new macro that combines **{trait_one}** and **{trait_two}**.",
             fields=[
                 ("Macro Name", name),
                 ("Abbreviation", abbreviation),
                 ("Description", description),
             ],
+            inline_fields=True,
             level="success",
             ephemeral=True,
             log=True,
@@ -177,7 +181,7 @@ class Macros(commands.Cog):
         """Delete a macro from a user."""
         name = macro.split("(")[0].strip()
         view = ConfirmCancelButtons(ctx.author)
-        await present_embed(
+        msg = await present_embed(
             ctx,
             title=f"Confirm deletion of macro: {name}",
             description=f"Are you sure you want to delete the macro **{name}**?",
@@ -187,13 +191,18 @@ class Macros(commands.Cog):
             view=view,
         )
         await view.wait()
+        if not view.confirmed:
+            embed = discord.Embed(title="Macro deletion cancelled", color=EmbedColor.INFO.value)
+            await msg.edit_original_response(embed=embed, view=None)
+            return
+
         if view.confirmed:
             user_svc.delete_macro(ctx, macro_name=name)
-
+            await msg.delete_original_response()
             await present_embed(
                 ctx,
                 title=f"Deleted Macro: {name}",
-                description=f"{ctx.author.mention} deleted the macro **{name}**.",
+                description=f"**{ctx.author.display_name}** deleted the macro **{name}**.",
                 level="success",
                 log=True,
                 ephemeral=True,

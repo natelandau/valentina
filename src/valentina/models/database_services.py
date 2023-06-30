@@ -604,10 +604,10 @@ class UserService:
             return self.macro_cache[key]
 
         macros = Macro.select().where((Macro.user == author_id) & (Macro.guild == guild_id))
-        self.macro_cache[key] = macros
+        self.macro_cache[key] = sorted(macros, key=lambda m: m.name)
 
         logger.debug(f"DATABASE: Fetch macros for {key}")
-        return macros
+        return self.macro_cache[key]
 
     def fetch_macro(self, ctx: discord.ApplicationContext, macro_name: str) -> Macro:
         """Fetch a macro by name."""
@@ -754,7 +754,7 @@ class GuildService:
 
             if flat_list:
                 # Flattens the dictionary to a single list, while removing duplicates
-                return list({item for sublist in all_traits.values() for item in sublist})
+                return sorted(list({item for sublist in all_traits.values() for item in sublist}))
 
             return all_traits
 
