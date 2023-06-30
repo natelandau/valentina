@@ -1,3 +1,13 @@
+## v0.8.1 (2023-06-30)
+
+### Fix
+
+- **admin**: improve clearing the cache
+
+### Refactor
+
+- remove stray debugging print statements
+
 ## v0.8.0 (2023-06-30)
 
 ### Feat
