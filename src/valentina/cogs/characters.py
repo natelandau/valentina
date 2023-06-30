@@ -12,6 +12,7 @@ from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal, CustomSectionModal
 from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitCategory
+from valentina.utils.converters import ValidCharacterClass, ValidCharacterName
 from valentina.utils.errors import NoClaimError, SectionExistsError
 from valentina.utils.helpers import normalize_to_db_row
 from valentina.utils.options import select_character
@@ -98,15 +99,15 @@ class Characters(commands.Cog, name="Character"):
             required=True,
         ),
         char_class: Option(
-            str,
+            ValidCharacterClass,
             name="class",
             description="The character's class",
             choices=[char_class.value for char_class in CharClass],
             required=True,
         ),
-        first_name: Option(str, "The character's name", required=True),
-        last_name: Option(str, "The character's last name", required=True),
-        nickname: Option(str, "The character's nickname", required=False, default=None),
+        first_name: Option(ValidCharacterName, "Character's name", required=True),
+        last_name: Option(ValidCharacterName, "Character's last name", required=True),
+        nickname: Option(ValidCharacterName, "Character's nickname", required=False, default=None),
     ) -> None:
         """Create a new character.
 

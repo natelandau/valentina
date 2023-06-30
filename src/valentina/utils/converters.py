@@ -1,8 +1,44 @@
 """Converters, validators, and normalizers for Valentina."""
 
 
-import discord
+import re
+
 from discord.ext.commands import BadArgument, Context, Converter
+
+from valentina.models.constants import CharClass
+
+
+class ValidCharacterClass(Converter):
+    """A converter that ensures a requested character class is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> CharClass:  # noqa: ARG002
+        """Validate and normalize character classes."""
+        try:
+            return CharClass(argument)
+        except ValueError as e:
+            raise BadArgument(f"`{argument}` is not a valid character class") from e
+
+
+class ValidCharacterName(Converter):
+    """A converter that ensures character names are valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
+        """Validate and normalize character names."""
+        errors = []
+        max_len = 30
+
+        if (name_len := len(argument)) > max_len:
+            errors.append(f"`{argument}` is too long by {name_len - max_len} characters.")
+
+        if not re.match(r"^[a-zA-Z0-9àèìòñùçëïüÁÉÖÜÑ_ -]+$", argument):
+            errors.append(
+                "`Character names may only contain letters, numbers, spaces, hyphens, and underscores."
+            )
+
+        if len(errors) > 0:
+            raise BadArgument("\n".join(errors))
+
+        return re.sub(r"\s+", " ", argument).strip().title()
 
 
 class ValidChannelName(Converter):
@@ -24,9 +60,7 @@ class ValidChannelName(Converter):
 
         return name.translate(table)
 
-    async def convert(
-        self, ctx: Context | discord.ApplicationContext, argument: str  # noqa: ARG002
-    ) -> str:
+    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
         """Attempt to replace any invalid characters with their approximate Unicode equivalent."""
         # Chain multiple words to a single one
         argument = argument.replace("_", "-").replace(" ", "-")
