@@ -195,13 +195,13 @@ class Admin(commands.Cog):
         if not all_guilds:
             guild_svc.purge_cache(ctx)
             user_svc.purge_cache(ctx)
-            char_svc.purge_cache(ctx)
+            char_svc.purge_cache(ctx, with_claims=True)
             logger.info(f"debug:cache: Purged cache for {ctx.guild.name}")
 
         if all_guilds:
             guild_svc.purge_cache()
             user_svc.purge_cache()
-            char_svc.purge_cache()
+            char_svc.purge_cache(with_claims=True)
             logger.info("debug:cache: Purged cache for all guilds")
 
         await msg.delete_original_response()

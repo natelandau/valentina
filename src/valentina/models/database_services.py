@@ -440,27 +440,27 @@ class CharacterService:
         char_key = self.__get_char_key(guild_id, char_id)
         return any(char_key == claim for claim in self.claims.values())
 
-    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+    def purge_cache(
+        self, ctx: discord.ApplicationContext | None = None, with_claims: bool = False
+    ) -> None:
         """Purge all character caches. If ctx is provided, only purge the caches for that guild."""
+        caches: dict[str, dict] = {
+            "characters": self.characters,
+            "custom_traits": self.custom_traits,
+            "custom_sections": self.custom_sections,
+        }
+        if with_claims:
+            caches["claims"] = self.claims
+
         if ctx:
-            for key in self.characters.copy():
-                if key.startswith(str(ctx.guild.id)):
-                    self.characters.pop(key, None)
-            for key in self.custom_traits.copy():
-                if key.startswith(str(ctx.guild.id)):
-                    self.custom_traits.pop(key, None)
-            for key in self.custom_sections.copy():
-                if key.startswith(str(ctx.guild.id)):
-                    self.custom_sections.pop(key, None)
-            for key in self.claims.copy():
-                if key.startswith(str(ctx.guild.id)):
-                    self.claims.pop(key, None)
+            for _cache_name, cache in caches.items():
+                for key in cache.copy():
+                    if key.startswith(str(ctx.guild.id)):
+                        cache.pop(key, None)
             logger.debug(f"CACHE: Purged character caches for guild {ctx.guild}")
         else:
-            self.characters = {}
-            self.claims = {}
-            self.custom_sections = {}
-            self.custom_traits = {}
+            for cache in caches.values():
+                cache.clear()
             logger.debug("CACHE: Purged all character caches")
 
     def remove_claim(self, ctx: discord.ApplicationContext) -> bool:
@@ -517,8 +517,14 @@ class CharacterService:
             CustomSection.id == custom_section.id
         ).execute()
 
-        self.purge_cache(ctx)
+        from rich import print
 
+        print("\n\n------------------")
+        print(self.custom_sections)
+
+        self.purge_cache(ctx)
+        print("------------------")
+        print(self.custom_sections)
         logger.debug(f"DATABASE: Update custom section: {custom_section_id}")
         return custom_section
 
