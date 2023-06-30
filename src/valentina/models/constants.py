@@ -309,7 +309,6 @@ DICEROLL_THUBMS = {
         "https://i.giphy.com/media/QWAhwIMqpsukPZVf17/giphy.gif",
         "https://em-content.zobj.net/source/animated-noto-color-emoji/356/crying-face_1f622.gif",
         "https://i.giphy.com/media/xRyIsRCVTN70tBZPP1/giphy.gif",
-        "https://i.giphy.com/media/2xJYuG1OEOdB60dfLo/giphy.gif",
         "https://i.giphy.com/media/li0dswKqIZNpm/giphy.gif",
         "https://i.giphy.com/media/5xJHqF42tgHUwipfq8/giphy.gif",
     ],

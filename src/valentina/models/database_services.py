@@ -1,6 +1,7 @@
 """Models for maintaining in-memory caches of database queries."""
 
 import re
+from datetime import datetime
 
 import discord
 from loguru import logger
@@ -14,6 +15,7 @@ from valentina.models.constants import (
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
     CharClass,
+    EmbedColor,
     VampClanList,
 )
 from valentina.models.database import (
@@ -660,10 +662,11 @@ class UserService:
 
 
 class GuildService:
-    """Manage guilds in the database. Guilds are created a bot_connect,."""
+    """Manage guilds in the database. Guilds are created on bot connect."""
 
     def __init__(self) -> None:
         self.log_channel_cache: dict[int, int | None] = {}
+        self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
 
     @staticmethod
     def is_in_db(guild_id: int) -> bool:
@@ -672,22 +675,23 @@ class GuildService:
 
     @staticmethod
     @logger.catch
-    def update_or_add(guild: discord.Guild, log_channel_id: int | None = None) -> None:
+    def update_or_add(guild: discord.Guild, **kwargs: str | int | datetime) -> None:
         """Add a guild to the database or update it if it already exists."""
         db_id, is_created = Guild.get_or_create(
             id=guild.id,
             defaults={
                 "id": guild.id,
                 "name": guild.name,
-                "first_seen": time_now(),
-                "last_connected": time_now(),
-                "log_channel": log_channel_id,
+                "created": time_now(),
+                "modified": time_now(),
             },
         )
         if is_created:
             logger.info(f"DATABASE: Create guild {db_id.name}")
+
         if not is_created:
-            Guild.set_by_id(db_id, {"last_connected": time_now(), "log_channel": log_channel_id})
+            kwargs["modified"] = time_now()
+            Guild.set_by_id(guild.id, kwargs)
             logger.info(f"DATABASE: Update '{db_id.name}'")
 
     @staticmethod
@@ -719,10 +723,9 @@ class GuildService:
 
         return None
 
-    @staticmethod
     @logger.catch
     async def create_bot_log_channel(
-        guild: discord.Guild, log_channel_name: str
+        self, guild: discord.Guild, log_channel_name: str
     ) -> discord.TextChannel:
         """Fetch the bot log channel for a guild and create it if it doesn't exist."""
         log_channel = None
@@ -734,7 +737,7 @@ class GuildService:
             if existing_guild:
                 if (
                     isinstance(channel, discord.TextChannel)
-                    and channel.id == existing_guild.log_channel
+                    and channel.id == existing_guild.log_channel_id
                 ):
                     log_channel = channel
                     logger.info(f"DATABASE: Fetch bot log channel: '{channel.name}'")
@@ -749,14 +752,15 @@ class GuildService:
         if not log_channel:
             log_channel = await guild.create_text_channel(
                 log_channel_name,
-                topic="A channel for Valentina to log to.",
+                topic="A channel for Valentina audit logs.",
                 position=100,
             )
             logger.info(f"BOT: Created '{log_channel_name}' channel for bot logs")
 
             if existing_guild:
-                GuildService.update_or_add(guild, log_channel.id)
+                GuildService.update_or_add(guild, log_channel_id=log_channel.id)
 
+        self.log_channel_cache.pop(guild.id, None)
         return log_channel
 
     def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
@@ -770,10 +774,28 @@ class GuildService:
         else:
             self.log_channel_cache = {}
 
+    def is_audit_logging(self, ctx: discord.ApplicationContext) -> bool:
+        """Settings check: audit_log."""
+        if ctx.guild.id not in self.settings_cache:
+            self.settings_cache[ctx.guild.id] = {}
+
+        if "use_audit_log" not in self.settings_cache[ctx.guild.id]:
+            self.settings_cache[ctx.guild.id]["use_audit_log"] = Guild.get_by_id(
+                ctx.guild.id
+            ).use_audit_log
+            logger.debug(f"DATABASE: Fetch audit log setting for '{ctx.guild.name}'")
+
+        return bool(self.settings_cache[ctx.guild.id]["use_audit_log"])
+
+    def set_audit_log(self, ctx: discord.ApplicationContext, value: bool) -> None:
+        """Set the value of the audit log setting for a guild."""
+        self.settings_cache.pop(ctx.guild.id, None)
+        Guild.set_by_id(ctx.guild.id, {"use_audit_log": value})
+
     def fetch_log_channel(self, ctx: discord.ApplicationContext) -> int | None:
         """Fetch the log channel for a guild."""
         if ctx.guild.id not in self.log_channel_cache:
-            self.log_channel_cache[ctx.guild.id] = Guild.get_by_id(ctx.guild.id).log_channel
+            self.log_channel_cache[ctx.guild.id] = Guild.get_by_id(ctx.guild.id).log_channel_id
 
         return self.log_channel_cache[ctx.guild.id]
 
@@ -786,7 +808,12 @@ class GuildService:
                 if isinstance(message, discord.Embed):
                     await log_channel.send(embed=message)
                 else:
-                    await log_channel.send(message)
+                    embed = discord.Embed(title=message, color=EmbedColor.INFO.value)
+                    embed.timestamp = datetime.now()
+                    embed.set_footer(
+                        text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
+                    )
+                    await log_channel.send(embed=embed)
 
 
 class DatabaseService:

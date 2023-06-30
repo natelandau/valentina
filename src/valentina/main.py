@@ -90,8 +90,6 @@ def main(
         intents=intents,
         owner_ids=[int(o) for o in CONFIG["VALENTINA_OWNER_IDS"].split(",")],
         parent_dir=DIR,
-        log_channel=CONFIG["VALENTINA_LOG_CHANNEL"],
-        use_log_channel=CONFIG["VALENTINA_USE_LOG_CHANNEL"],
     )
 
     bot.run(CONFIG["VALENTINA_DISCORD_TOKEN"])  # run the bot

@@ -35,9 +35,10 @@ class Guild(BaseModel):
 
     id = IntegerField(primary_key=True)  # noqa: A003
     name = TextField()
-    first_seen = DateTimeField(default=time_now)
-    last_connected = DateTimeField(default=time_now)
-    log_channel = IntegerField(null=True)
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    log_channel_id = IntegerField(null=True)
+    use_audit_log = BooleanField(default=False)
 
     class Meta:
         """Meta class for the model."""
