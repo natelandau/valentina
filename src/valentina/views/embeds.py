@@ -9,7 +9,7 @@ from valentina import guild_svc
 from valentina.models.constants import EmbedColor
 
 
-async def present_embed(  # noqa: C901, PLR0912
+async def present_embed(  # noqa: C901
     ctx: discord.ApplicationContext,
     title: str = "",
     description: str = "",
@@ -27,7 +27,7 @@ async def present_embed(  # noqa: C901, PLR0912
     timestamp: bool = False,
     view: Any = None,
     delete_after: float | None = None,
-) -> None:
+) -> discord.Interaction:
     """Display a nice embed.
 
     Args:
@@ -81,13 +81,17 @@ async def present_embed(  # noqa: C901, PLR0912
         await log_to_channel(ctx, log, embed)
 
     if view and delete_after:
-        await ctx.respond(embed=embed, ephemeral=ephemeral, view=view, delete_after=delete_after)
-    elif view:
-        await ctx.respond(embed=embed, ephemeral=ephemeral, view=view)
-    elif delete_after:
-        await ctx.respond(embed=embed, ephemeral=ephemeral, delete_after=delete_after)
-    else:
-        await ctx.respond(embed=embed, ephemeral=ephemeral)
+        return await ctx.respond(  # type: ignore [return-value]
+            embed=embed, ephemeral=ephemeral, view=view, delete_after=delete_after
+        )
+
+    if view:
+        return await ctx.respond(embed=embed, ephemeral=ephemeral, view=view)  # type: ignore [return-value]
+
+    if delete_after:
+        return await ctx.respond(embed=embed, ephemeral=ephemeral, delete_after=delete_after)  # type: ignore [return-value]
+
+    return await ctx.respond(embed=embed, ephemeral=ephemeral)  # type: ignore [return-value]
 
 
 async def log_to_channel(

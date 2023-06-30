@@ -6,11 +6,12 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina, char_svc, user_svc
-from valentina.models.constants import MAX_OPTION_LIST_SIZE
+from valentina import Valentina, char_svc, guild_svc, user_svc
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, RollResultType
 from valentina.models.dicerolls import DiceRoll
+from valentina.utils.converters import ValidThumbnailURL
 from valentina.utils.errors import MacroNotFoundError, NoClaimError
-from valentina.views import present_embed
+from valentina.views import ConfirmCancelButtons, present_embed
 from valentina.views.roll_display import RollDisplay
 
 
@@ -214,6 +215,48 @@ class Roll(commands.Cog):
             trait_two_name=m.trait_two,
             trait_two_value=trait_two_value,
         ).display()
+
+    @roll.command(description="Add images to roll result embeds")
+    async def add_thumbnail(
+        self,
+        ctx: discord.ApplicationContext,
+        roll_type: Option(
+            str,
+            description="Type of roll to add the thumbnail to",
+            required=True,
+            choices=[roll_type.value for roll_type in RollResultType],
+        ),
+        url: Option(ValidThumbnailURL, description="URL of the thumbnail", required=True),
+    ) -> None:
+        """Add a roll result thumbnail to the bot."""
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title="Upload image?",
+            description=f"Your image may be seen when for **{roll_type}** rolls. Are you sure you want to upload it?",
+            image=url,
+            level="info",
+            ephemeral=True,
+            view=view,
+        )
+        await view.wait()
+
+        if not view.confirmed:
+            embed = discord.Embed(title="Upload cancelled", color=discord.Color.red())
+            await msg.edit_original_response(embed=embed, view=None)
+        if view.confirmed:
+            guild_svc.add_roll_result_thumb(ctx, roll_type, url)
+            await msg.delete_original_response()
+
+            await present_embed(
+                ctx,
+                title="Roll Result Thumbnail Added",
+                description=f"Added thumbnail for `{roll_type}` roll results",
+                image=url,
+                level="success",
+                ephemeral=True,
+                log=True,
+            )
 
 
 def setup(bot: Valentina) -> None:
