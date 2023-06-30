@@ -4,7 +4,7 @@ import discord
 from numpy.random import default_rng
 
 from valentina.models.constants import DiceType, RollResultType
-from valentina.utils.helpers import diceroll_thumbnail
+from valentina.utils.helpers import diceroll_thumbnail, pluralize
 
 _rng = default_rng()
 _max_pool_size = 100
@@ -212,12 +212,12 @@ class DiceRoll:
         if self.dice_type != DiceType.D10:
             return "Dice roll"
         if self.is_botch:
-            return f"{self.result} SUCCESSES • BOTCH!"
+            return f"__**BOTCH!**__\n{self.result} {pluralize(self.result, 'SUCCESS')}"
         if self.is_critical:
-            return f"{self.result} SUCCESSES • CRITICAL SUCCESS!"
+            return f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'SUCCESS')}"
         if self.is_success:
-            return f"{self.result} SUCCESSES"
+            return f"{self.result} {pluralize(self.result, 'SUCCESS')}"
         if self.is_failure:
-            return f"{self.result} SUCCESSES"
+            return f"{self.result} {pluralize(self.result, 'SUCCESS')}"
 
         return None

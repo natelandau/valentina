@@ -1,4 +1,5 @@
 """Helper functions for Valentina."""
+import re
 from collections import defaultdict
 from copy import deepcopy
 
@@ -96,31 +97,6 @@ def extend_common_traits_with_class(char_class: str) -> dict[str, list[str]]:
     return complete_traits
 
 
-def normalize_to_db_row(row: str) -> str:
-    """Takes a string and returns a normalized version of it for use as a row in the database."""
-    return row.replace("-", "_").replace(" ", "_").lower()
-
-
-def num_to_circles(num: int = 0, maximum: int = 5) -> str:
-    """Return the emoji corresponding to the number. When `num` is greater than `maximum`, the `maximum` is increased to `num`.
-
-    Args:
-        num (int, optional): The number to convert. Defaults to 0.
-        maximum (int, optional): The maximum number of circles. Defaults to 5.
-
-    Returns:
-        str: A string of circles and empty circles. i.e. `●●●○○`
-    """
-    if num is None:
-        num = 0
-    if maximum is None:
-        maximum = 5
-    if num > maximum:
-        maximum = num
-
-    return "●" * num + "○" * (maximum - num)
-
-
 def get_max_trait_value(trait: str, is_custom_trait: bool = False) -> int | None:
     """Get the maximum value for a trait by looking up the trait in the XPMultiplier enum.
 
@@ -210,3 +186,98 @@ def get_trait_new_value(trait: str) -> int:
 
     # Return the default value
     return XPNew.DEFAULT.value
+
+
+def normalize_to_db_row(row: str) -> str:
+    """Takes a string and returns a normalized version of it for use as a row in the database."""
+    return row.replace("-", "_").replace(" ", "_").lower()
+
+
+def num_to_circles(num: int = 0, maximum: int = 5) -> str:
+    """Return the emoji corresponding to the number. When `num` is greater than `maximum`, the `maximum` is increased to `num`.
+
+    Args:
+        num (int, optional): The number to convert. Defaults to 0.
+        maximum (int, optional): The maximum number of circles. Defaults to 5.
+
+    Returns:
+        str: A string of circles and empty circles. i.e. `●●●○○`
+    """
+    if num is None:
+        num = 0
+    if maximum is None:
+        maximum = 5
+    if num > maximum:
+        maximum = num
+
+    return "●" * num + "○" * (maximum - num)
+
+
+def pluralize(value: int, noun: str) -> str:
+    """Pluralize a noun.
+
+    Args:
+        value (int): The number of the noun.
+        noun (str): The noun to pluralize.
+
+    >>> pluralize(1, "die")
+    'die'
+
+    >>> pluralize(2, "die")
+    'dice'
+
+    >>> pluralize(2, "Die")
+    'Dice'
+
+    >>> pluralize(3, "DIE")
+    'DICE'
+
+    >>> pluralize(1, "mess")
+    'mess'
+
+    >>> pluralize(2, "specialty")
+    'specialties'
+
+    >>> pluralize(2, "fry")
+    'fries'
+
+    >>> pluralize(2, "botch")
+    'botches'
+
+    >>> pluralize(2, "critical")
+    'criticals'
+    """
+    nouns = {
+        "success": "successes",
+        "die": "dice",
+        "failure": "failures",
+    }
+
+    if value != 1:
+        is_title_case = False
+        is_all_caps = False
+        if re.search("^[A-Z][a-z]+$", noun):
+            is_title_case = True
+
+        if re.search("^[A-Z]+$", noun):
+            is_all_caps = True
+
+        if noun.lower() in nouns:
+            plural = nouns[noun.lower()]
+
+        elif re.search("[sxz]$", noun) or re.search("[^aeioudgkprt]h$", noun):
+            plural = re.sub("$", "es", noun)
+
+        elif re.search("[^aeiou]y$", noun):
+            plural = re.sub("y$", "ies", noun)
+        else:
+            plural = noun + "s"
+
+        if is_title_case:
+            return plural.title()
+        if is_all_caps:
+            return plural.upper()
+
+        return plural
+
+    return noun

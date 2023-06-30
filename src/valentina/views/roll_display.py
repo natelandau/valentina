@@ -1,5 +1,4 @@
 """Display and manipulate roll outcomes."""
-from datetime import datetime
 
 import discord
 
@@ -37,7 +36,7 @@ class RollDisplay:
         embed.set_thumbnail(
             url=self.roll.thumbnail_url,
         )
-        embed.description = f"\u200b\n{self.ctx.author.mention} rolled {self.roll.pool}{self.roll.dice_type.name.lower()}"
+        embed.description = f"\u200b\n**{self.ctx.author.display_name} rolled {self.roll.pool}{self.roll.dice_type.name.lower()}**"
 
         roll_string = ""
         for die in self.roll.roll:
@@ -60,7 +59,6 @@ class RollDisplay:
         if self.comment:
             embed.add_field(name="\u200b", value=f"**Comment**\n {self.comment}", inline=False)
 
-        embed.timestamp = datetime.now()
         return embed
 
     async def display(self) -> None:
