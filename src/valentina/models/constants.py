@@ -3,6 +3,7 @@ from enum import Enum
 
 # maximum number of options in a discord select menu
 MAX_OPTION_LIST_SIZE = 25
+MAX_CHARACTER_COUNT = 1990
 
 
 class MaxTraitValue(Enum):

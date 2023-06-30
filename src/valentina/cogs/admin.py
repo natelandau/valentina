@@ -9,7 +9,7 @@ from loguru import logger
 from sh import tail
 
 from valentina import CONFIG, Valentina, __version__, guild_svc
-from valentina.models.constants import RollResultType
+from valentina.models.constants import MAX_CHARACTER_COUNT, RollResultType
 from valentina.utils.converters import ValidChannelName, ValidThumbnailURL
 from valentina.views import ConfirmCancelButtons, present_embed
 
@@ -21,7 +21,7 @@ class Admin(commands.Cog):
         self.bot = bot
 
     admin = discord.SlashCommandGroup("admin", "Administer Valentina")
-    debug = admin.create_subgroup(name="debug", description="Debug the Valentina")
+    server = admin.create_subgroup(name="server", description="Run server administration commands")
     settings = admin.create_subgroup(name="settings", description="Toggle Valentina settings")
 
     async def cog_command_error(
@@ -134,7 +134,7 @@ class Admin(commands.Cog):
         await present_embed(ctx, title=message, level="success", ephemeral=True, log=True)
 
     ### DEBUG COMMANDS ################################################################
-    @debug.command(description="View server latency")
+    @server.command(description="View server latency")
     async def ping(self, ctx: discord.ApplicationContext) -> None:
         """Ping the bot to get debug information."""
         logger.debug("debug:ping: Generating debug information")
@@ -152,7 +152,7 @@ class Admin(commands.Cog):
             ephemeral=True,
         )
 
-    @debug.command(description="Live reload Valentina")
+    @server.command(description="Live reload Valentina")
     @commands.has_permissions(administrator=True)
     async def reload(self, ctx: discord.ApplicationContext) -> None:
         """Reloads all cogs."""
@@ -168,13 +168,17 @@ class Admin(commands.Cog):
             ctx, "Reload Bot", f"{count} cogs successfully reloaded", level="info", ephemeral=True
         )
 
-    @debug.command(description="View last 15 lines of the Valentina's logs")
+    @server.command(description="View last lines of the Valentina's logs")
     @commands.has_permissions(administrator=True)
-    async def logs(self, ctx: discord.ApplicationContext) -> None:
+    async def tail_logs(self, ctx: discord.ApplicationContext) -> None:
         """Tail the bot's logs."""
         logger.debug("debug:logs: Tailing the logs")
-        logs = tail("-n15", CONFIG["VALENTINA_LOG_FILE"], _bg=True)
-        await ctx.send("```" + str(logs) + "```")
+        log_lines = ""
+        for line in tail("-n25", CONFIG["VALENTINA_LOG_FILE"], _bg=True, _iter=True):
+            if "has connected to Gateway" not in line:
+                log_lines += f"{line}"
+
+        await ctx.respond("```" + log_lines[-MAX_CHARACTER_COUNT:] + "```", ephemeral=True)
 
 
 def setup(bot: Valentina) -> None:

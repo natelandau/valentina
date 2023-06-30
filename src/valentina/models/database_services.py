@@ -726,6 +726,21 @@ class GuildService:
 
         return None
 
+    def add_roll_result_thumb(
+        self, ctx: discord.ApplicationContext, roll_type: str, url: str
+    ) -> None:
+        """Add a roll result thumbnail to the database."""
+        UserService().fetch_user(ctx)
+
+        self.roll_result_thumbs.pop(ctx.guild.id, None)
+
+        already_exists = RollThumbnail.get_or_none(guild=ctx.guild.id, url=url)
+        if already_exists:
+            raise DuplicateRollResultThumbError
+
+        RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
+        logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
+
     async def create_bot_log_channel(
         self, guild: discord.Guild, log_channel_name: str
     ) -> discord.TextChannel:
@@ -761,16 +776,25 @@ class GuildService:
         self.log_channel_cache.pop(guild.id, None)
         return log_channel  # type: ignore [return-value]
 
-    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
-        """Purge the cache for a guild or all guilds.
+    def fetch_log_channel(self, ctx: discord.ApplicationContext) -> int | None:
+        """Fetch the log channel for a guild."""
+        if ctx.guild.id not in self.log_channel_cache:
+            self.log_channel_cache[ctx.guild.id] = Guild.get_by_id(ctx.guild.id).log_channel_id
 
-        Args:
-            ctx (discord.ApplicationContext, optional): The context to purge. Defaults to None.
-        """
-        if ctx and ctx.guild.id in self.log_channel_cache:
-            del self.log_channel_cache[ctx.guild.id]
-        else:
-            self.log_channel_cache = {}
+        return self.log_channel_cache[ctx.guild.id]
+
+    def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
+        """Get all roll result thumbnails for a guild."""
+        if ctx.guild.id not in self.roll_result_thumbs:
+            self.roll_result_thumbs[ctx.guild.id] = {}
+            logger.debug(f"DATABASE: Fetch roll result thumbnails for '{ctx.guild.name}'")
+            for thumb in RollThumbnail.select().where(RollThumbnail.guild == ctx.guild.id):
+                if thumb.roll_type not in self.roll_result_thumbs[ctx.guild.id]:
+                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type] = [thumb.url]
+                else:
+                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type].append(thumb.url)
+
+        return self.roll_result_thumbs[ctx.guild.id]
 
     def is_audit_logging(self, ctx: discord.ApplicationContext) -> bool:
         """Settings check: audit_log."""
@@ -785,17 +809,21 @@ class GuildService:
 
         return bool(self.settings_cache[ctx.guild.id]["use_audit_log"])
 
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+        """Purge the cache for a guild or all guilds.
+
+        Args:
+            ctx (discord.ApplicationContext, optional): The context to purge. Defaults to None.
+        """
+        if ctx and ctx.guild.id in self.log_channel_cache:
+            del self.log_channel_cache[ctx.guild.id]
+        else:
+            self.log_channel_cache = {}
+
     def set_audit_log(self, ctx: discord.ApplicationContext, value: bool) -> None:
         """Set the value of the audit log setting for a guild."""
         self.settings_cache.pop(ctx.guild.id, None)
         Guild.set_by_id(ctx.guild.id, {"use_audit_log": value})
-
-    def fetch_log_channel(self, ctx: discord.ApplicationContext) -> int | None:
-        """Fetch the log channel for a guild."""
-        if ctx.guild.id not in self.log_channel_cache:
-            self.log_channel_cache[ctx.guild.id] = Guild.get_by_id(ctx.guild.id).log_channel_id
-
-        return self.log_channel_cache[ctx.guild.id]
 
     async def send_log(self, ctx: discord.ApplicationContext, message: str | discord.Embed) -> None:
         """Send a message to the log channel for a guild."""
@@ -812,34 +840,6 @@ class GuildService:
                         text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
                     )
                     await log_channel.send(embed=embed)
-
-    def add_roll_result_thumb(
-        self, ctx: discord.ApplicationContext, roll_type: str, url: str
-    ) -> None:
-        """Add a roll result thumbnail to the database."""
-        UserService().fetch_user(ctx)
-
-        self.roll_result_thumbs.pop(ctx.guild.id, None)
-
-        already_exists = RollThumbnail.get_or_none(guild=ctx.guild.id, url=url)
-        if already_exists:
-            raise DuplicateRollResultThumbError
-
-        RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
-        logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
-
-    def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
-        """Get all roll result thumbnails for a guild."""
-        if ctx.guild.id not in self.roll_result_thumbs:
-            self.roll_result_thumbs[ctx.guild.id] = {}
-            logger.debug(f"DATABASE: Fetch roll result thumbnails for '{ctx.guild.name}'")
-            for thumb in RollThumbnail.select().where(RollThumbnail.guild == ctx.guild.id):
-                if thumb.roll_type not in self.roll_result_thumbs[ctx.guild.id]:
-                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type] = [thumb.url]
-                else:
-                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type].append(thumb.url)
-
-        return self.roll_result_thumbs[ctx.guild.id]
 
 
 class DatabaseService:
