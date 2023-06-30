@@ -517,14 +517,8 @@ class CharacterService:
             CustomSection.id == custom_section.id
         ).execute()
 
-        from rich import print
-
-        print("\n\n------------------")
-        print(self.custom_sections)
-
         self.purge_cache(ctx)
-        print("------------------")
-        print(self.custom_sections)
+
         logger.debug(f"DATABASE: Update custom section: {custom_section_id}")
         return custom_section
 
