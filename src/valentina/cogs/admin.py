@@ -73,7 +73,7 @@ class Admin(commands.Cog):
             ]
 
         view = ConfirmCancelButtons(ctx.author)
-        await present_embed(
+        msg = await present_embed(
             ctx,
             title="Manage Audit Log Settings",
             level="info",
@@ -84,6 +84,9 @@ class Admin(commands.Cog):
         await view.wait()
 
         if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(title="Setting change cancelled", color=discord.Color.red())
+            )
             return
 
         if setting:
@@ -168,7 +171,7 @@ class Admin(commands.Cog):
     ) -> None:
         """Purge the bot's cache and reload all data from DB."""
         view = ConfirmCancelButtons(ctx.author)
-        await present_embed(
+        msg = await present_embed(
             ctx,
             title="Purge all caches?" if all_guilds else "Purge this guild's cache?",
             description="This will purge all caches and reload all data from the database"
@@ -181,6 +184,12 @@ class Admin(commands.Cog):
         await view.wait()
 
         if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(
+                    title="Cache Purge Cancelled",
+                    color=discord.Color.red(),
+                )
+            )
             return
 
         if not all_guilds:
@@ -195,6 +204,7 @@ class Admin(commands.Cog):
             char_svc.purge_cache()
             logger.info("debug:cache: Purged cache for all guilds")
 
+        await msg.delete_original_response()
         await present_embed(
             ctx,
             title="All caches purged" if all_guilds else "Guild caches purged",

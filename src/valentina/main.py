@@ -52,6 +52,7 @@ logger.add(
     level=CONFIG["VALENTINA_LOG_LEVEL"].upper(),
     colorize=True,
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>: <level>{message}</level>",
+    enqueue=True,
 )
 logger.add(
     CONFIG["VALENTINA_LOG_FILE"],

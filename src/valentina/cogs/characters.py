@@ -410,7 +410,7 @@ class Characters(commands.Cog, name="Character"):
         old_value = char_svc.fetch_trait_value(ctx, character=character, trait=trait)
 
         view = ConfirmCancelButtons(ctx.author)
-        await present_embed(
+        msg = await present_embed(
             ctx,
             title=f"Update {trait}",
             description=f"Confirm updating {trait}",
@@ -424,9 +424,21 @@ class Characters(commands.Cog, name="Character"):
             view=view,
         )
         await view.wait()
+
+        if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(
+                    title="Update Cancelled",
+                    description=f"**{trait}** will not be updated.",
+                    color=discord.Color.red(),
+                )
+            )
+            return
+
         if view.confirmed and char_svc.update_trait_value(
             ctx, character=character, trait_name=trait, new_value=new_value
         ):
+            await msg.delete_original_response()
             await present_embed(
                 ctx=ctx,
                 title=f"{character.name} {trait} updated",
@@ -453,7 +465,7 @@ class Characters(commands.Cog, name="Character"):
         """Delete a custom trait from a character."""
         character = char_svc.fetch_claim(ctx)
         view = ConfirmCancelButtons(ctx.author)
-        await present_embed(
+        msg = await present_embed(
             ctx,
             title="Delete Trait",
             description=f"Confirm deleting {trait}",
@@ -462,8 +474,19 @@ class Characters(commands.Cog, name="Character"):
             level="info",
         )
         await view.wait()
+        if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(
+                    title="Delete Cancelled",
+                    description=f"**{trait}** will not be deleted.",
+                    color=discord.Color.red(),
+                )
+            )
+            return
+
         if view.confirmed:
             char_svc.delete_custom_trait(ctx, character, trait)
+            await msg.delete_original_response()
             await present_embed(
                 ctx=ctx,
                 title="Deleted Trait",
