@@ -115,7 +115,7 @@ class Xp(commands.Cog, name="XP"):
             new_value = old_value + 1
             new_experience = character.experience - upgrade_cost
             char_svc.update_char(
-                ctx.guild.id,
+                ctx,
                 character.id,
                 **{normalize_to_db_row(trait): new_value, "experience": new_experience},
             )
@@ -148,7 +148,7 @@ class Xp(commands.Cog, name="XP"):
         new_total = character.experience_total + exp
 
         char_svc.update_char(
-            ctx.guild.id,
+            ctx,
             character.id,
             experience=new_exp,
             experience_total=new_total,
@@ -180,7 +180,7 @@ class Xp(commands.Cog, name="XP"):
         new_total = character.cool_points_total + cp
 
         char_svc.update_char(
-            ctx.guild.id,
+            ctx,
             character.id,
             cool_points=new_cp,
             cool_points_total=new_total,

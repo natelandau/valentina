@@ -336,7 +336,7 @@ class Characters(commands.Cog, name="Character"):
         await modal.wait()
         biography = modal.bio.strip()
 
-        char_svc.update_char(ctx.guild.id, character.id, bio=biography)
+        char_svc.update_char(ctx, character.id, bio=biography)
         logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
 
         await present_embed(
@@ -376,7 +376,6 @@ class Characters(commands.Cog, name="Character"):
 
         char_svc.update_custom_section(
             ctx,
-            character,
             section.id,
             **{"title": section_title, "description": section_description},
         )
@@ -426,7 +425,7 @@ class Characters(commands.Cog, name="Character"):
         )
         await view.wait()
         if view.confirmed and char_svc.update_trait_value(
-            guild_id=ctx.guild.id, character=character, trait_name=trait, new_value=new_value
+            ctx, character=character, trait_name=trait, new_value=new_value
         ):
             await present_embed(
                 ctx=ctx,

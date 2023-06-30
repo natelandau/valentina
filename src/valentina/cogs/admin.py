@@ -8,9 +8,9 @@ from discord.ext import commands
 from loguru import logger
 from sh import tail
 
-from valentina import CONFIG, Valentina, __version__, guild_svc
-from valentina.models.constants import MAX_CHARACTER_COUNT, RollResultType
-from valentina.utils.converters import ValidChannelName, ValidThumbnailURL
+from valentina import CONFIG, Valentina, __version__, char_svc, guild_svc, user_svc
+from valentina.models.constants import MAX_CHARACTER_COUNT
+from valentina.utils.converters import ValidChannelName
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
@@ -20,9 +20,13 @@ class Admin(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    admin = discord.SlashCommandGroup("admin", "Administer Valentina")
-    server = admin.create_subgroup(name="server", description="Run server administration commands")
-    settings = admin.create_subgroup(name="settings", description="Toggle Valentina settings")
+    administration = discord.SlashCommandGroup("admin", "Administer Valentina")
+    server = administration.create_subgroup(
+        name="server", description="Run server administration commands"
+    )
+    settings = administration.create_subgroup(
+        name="settings", description="Toggle Valentina settings"
+    )
 
     async def cog_command_error(
         self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
@@ -43,32 +47,6 @@ class Admin(commands.Cog):
             level="error",
             ephemeral=True,
             delete_after=15,
-        )
-
-    ### THUMBNAIL COMMANDS ############################################################
-    @admin.command(description="Add images to roll results")
-    async def add_thumbnail(
-        self,
-        ctx: discord.ApplicationContext,
-        roll_type: Option(
-            str,
-            description="Type of roll to add the thumbnail to",
-            required=True,
-            choices=[roll_type.value for roll_type in RollResultType],
-        ),
-        url: Option(ValidThumbnailURL, description="URL of the thumbnail", required=True),
-    ) -> None:
-        """Add a roll result thumbnail to the bot."""
-        guild_svc.add_roll_result_thumb(ctx, roll_type, url)
-
-        await present_embed(
-            ctx,
-            title="Roll Result Thumbnail Added",
-            description=f"Added thumbnail for `{roll_type}` roll results",
-            image=url,
-            level="success",
-            ephemeral=True,
-            log=True,
         )
 
     ### SETTINGS COMMANDS #############################################################
@@ -133,7 +111,7 @@ class Admin(commands.Cog):
 
         await present_embed(ctx, title=message, level="success", ephemeral=True, log=True)
 
-    ### DEBUG COMMANDS ################################################################
+    ### SERVER COMMANDS ################################################################
     @server.command(description="View server latency")
     async def ping(self, ctx: discord.ApplicationContext) -> None:
         """Ping the bot to get debug information."""
@@ -175,10 +153,55 @@ class Admin(commands.Cog):
         logger.debug("debug:logs: Tailing the logs")
         log_lines = ""
         for line in tail("-n25", CONFIG["VALENTINA_LOG_FILE"], _bg=True, _iter=True):
-            if "has connected to Gateway" not in line:
+            if "has connected to Gateway" not in line and "gnubin/tail" not in line:
                 log_lines += f"{line}"
 
         await ctx.respond("```" + log_lines[-MAX_CHARACTER_COUNT:] + "```", ephemeral=True)
+
+    @server.command(description="Purge the bot's cache and reload data from DB")
+    @commands.has_permissions(administrator=True)
+    @logger.catch
+    async def puge_cache(
+        self,
+        ctx: discord.ApplicationContext,
+        all_guilds: Option(bool, choices=[True, False], default=False, required=False),
+    ) -> None:
+        """Purge the bot's cache and reload all data from DB."""
+        view = ConfirmCancelButtons(ctx.author)
+        await present_embed(
+            ctx,
+            title="Purge all caches?" if all_guilds else "Purge this guild's cache?",
+            description="This will purge all caches and reload all data from the database"
+            if all_guilds
+            else "This will purge this guild's cache and reload all data from the database",
+            level="info",
+            ephemeral=True,
+            view=view,
+        )
+        await view.wait()
+
+        if not view.confirmed:
+            return
+
+        if not all_guilds:
+            guild_svc.purge_cache(ctx)
+            user_svc.purge_cache(ctx)
+            char_svc.purge_cache(ctx)
+            logger.info(f"debug:cache: Purged cache for {ctx.guild.name}")
+
+        if all_guilds:
+            guild_svc.purge_cache()
+            user_svc.purge_cache()
+            char_svc.purge_cache()
+            logger.info("debug:cache: Purged cache for all guilds")
+
+        await present_embed(
+            ctx,
+            title="All caches purged" if all_guilds else "Guild caches purged",
+            level="success",
+            ephemeral=True,
+            log=True,
+        )
 
 
 def setup(bot: Valentina) -> None:

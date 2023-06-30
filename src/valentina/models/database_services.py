@@ -440,21 +440,28 @@ class CharacterService:
         char_key = self.__get_char_key(guild_id, char_id)
         return any(char_key == claim for claim in self.claims.values())
 
-    def purge_all(self) -> None:
-        """Purge all caches."""
-        logger.debug("CACHE: Purging all character caches")
-        self.characters = {}
-        self.claims = {}
-
-    def purge_by_id(
-        self, guild_id: int | None = None, char_id: int | None = None, key: str | None = None
-    ) -> None:
-        """Purge a single character from the cache by ID."""
-        key = self.__get_char_key(guild_id, char_id) if key is None else key
-        logger.debug(f"CACHE: Purge character {key}")
-        self.characters.pop(key, None)
-        self.custom_traits.pop(key, None)
-        self.custom_sections.pop(key, None)
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+        """Purge all character caches. If ctx is provided, only purge the caches for that guild."""
+        if ctx:
+            for key in self.characters.copy():
+                if key.startswith(str(ctx.guild.id)):
+                    self.characters.pop(key, None)
+            for key in self.custom_traits.copy():
+                if key.startswith(str(ctx.guild.id)):
+                    self.custom_traits.pop(key, None)
+            for key in self.custom_sections.copy():
+                if key.startswith(str(ctx.guild.id)):
+                    self.custom_sections.pop(key, None)
+            for key in self.claims.copy():
+                if key.startswith(str(ctx.guild.id)):
+                    self.claims.pop(key, None)
+            logger.debug(f"CACHE: Purged character caches for guild {ctx.guild}")
+        else:
+            self.characters = {}
+            self.claims = {}
+            self.custom_sections = {}
+            self.custom_traits = {}
+            logger.debug("CACHE: Purged all character caches")
 
     def remove_claim(self, ctx: discord.ApplicationContext) -> bool:
         """Remove a claim from a user."""
@@ -470,15 +477,17 @@ class CharacterService:
         claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
         return claim_key in self.claims
 
-    def update_char(self, guild_id: int, char_id: int, **kwargs: str | int) -> Character:
+    def update_char(
+        self, ctx: discord.ApplicationContext, char_id: int, **kwargs: str | int
+    ) -> Character:
         """Update a character in the cache and database."""
-        key = self.__get_char_key(guild_id, char_id)
+        key = self.__get_char_key(ctx.guild.id, char_id)
 
         # Normalize kwargs keys to database column names
         kws = {normalize_to_db_row(k): v for k, v in kwargs.items()}
 
         if key in self.characters:
-            self.purge_by_id(guild_id, char_id)
+            self.purge_cache(ctx)
 
         try:
             character = Character.get_by_id(char_id)
@@ -493,7 +502,6 @@ class CharacterService:
     def update_custom_section(
         self,
         ctx: discord.ApplicationContext,
-        character: Character,
         custom_section_id: int,
         **kwargs: str | int,
     ) -> CustomSection:
@@ -507,18 +515,18 @@ class CharacterService:
             CustomSection.id == custom_section.id
         ).execute()
 
-        self.purge_by_id(ctx.guild.id, character.id)
+        self.purge_cache(ctx)
 
         logger.debug(f"DATABASE: Update custom section: {custom_section_id}")
         return custom_section
 
     def update_trait_value(
-        self, guild_id: int, character: Character, trait_name: str, new_value: int
+        self, ctx: discord.ApplicationContext, character: Character, trait_name: str, new_value: int
     ) -> bool:
         """Update a trait value for a character."""
         # Update traits on the character model
         if hasattr(character, normalize_to_db_row(trait_name)):
-            self.update_char(guild_id, character.id, **{trait_name: new_value})
+            self.update_char(ctx, character.id, **{trait_name: new_value})
             logger.debug(
                 f"DATABASE: Update '{trait_name}' for character {character.name} to {new_value}"
             )
@@ -533,13 +541,13 @@ class CharacterService:
         if custom_trait:
             custom_trait.value = new_value
             custom_trait.save()
-            self.update_char(guild_id, character.id)
+            self.update_char(ctx, character.id)
             logger.debug(
                 f"DATABASE: Update '{trait_name}' for character {character.name} to {new_value}"
             )
 
             # Reset custom traits cache for character
-            self.purge_by_id(guild_id, character.id)
+            self.purge_cache(ctx)
             return True
 
         raise TraitNotFoundError
@@ -566,16 +574,17 @@ class UserService:
         """
         return f"{guild_id}_{user_id}"
 
-    def purge_all(self) -> None:
-        """Purge all caches."""
-        self.user_cache = {}
-        self.macro_cache = {}
-
-    def purge_by_id(self, ctx: discord.ApplicationContext) -> None:
-        """Purge a single user from the caches by ID."""
-        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
-        self.user_cache.pop(key, None)
-        self.macro_cache.pop(key, None)
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+        """Purge user service cache. If ctx is None, purge all caches."""
+        if ctx:
+            key = self.__get_user_key(ctx.guild.id, ctx.author.id)
+            self.user_cache.pop(key, None)
+            self.macro_cache.pop(key, None)
+            logger.debug(f"CACHE: Purge user cache: {key}")
+        else:
+            self.user_cache = {}
+            self.macro_cache = {}
+            logger.debug("CACHE: Purge all user caches")
 
     def fetch_macros(
         self, ctx: discord.ApplicationContext | discord.AutocompleteContext
@@ -673,7 +682,7 @@ class UserService:
         )
         macro.save()
 
-        self.purge_by_id(ctx)
+        self.purge_cache(ctx)
         logger.info(f"DATABASE: Create macro '{name}' for user '{user.name}'")
 
     def delete_macro(self, ctx: discord.ApplicationContext, macro_name: str) -> None:
@@ -684,7 +693,7 @@ class UserService:
             & (Macro.guild == ctx.guild.id)
         ).execute()
 
-        self.purge_by_id(ctx)
+        self.purge_cache(ctx)
         logger.info(f"DATABASE: Delete macro '{macro_name}' for user '{ctx.author.name}'")
 
 
@@ -840,10 +849,16 @@ class GuildService:
         Args:
             ctx (discord.ApplicationContext, optional): The context to purge. Defaults to None.
         """
-        if ctx and ctx.guild.id in self.log_channel_cache:
-            del self.log_channel_cache[ctx.guild.id]
+        if ctx:
+            self.log_channel_cache.pop(ctx.guild.id, None)
+            self.settings_cache.pop(ctx.guild.id, None)
+            self.roll_result_thumbs.pop(ctx.guild.id, None)
+            logger.debug(f"DATABASE: Purge guild cache for '{ctx.guild.name}'")
         else:
             self.log_channel_cache = {}
+            self.settings_cache = {}
+            self.roll_result_thumbs = {}
+            logger.debug("DATABASE: Purge all guild caches")
 
     def set_audit_log(self, ctx: discord.ApplicationContext, value: bool) -> None:
         """Set the value of the audit log setting for a guild."""

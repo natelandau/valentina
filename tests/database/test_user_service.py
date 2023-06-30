@@ -36,7 +36,7 @@ class TestUserService:
         Then the cache is empty
         """
         assert "1_1" in self.user_svc.user_cache
-        self.user_svc.purge_all()
+        self.user_svc.purge_cache()
         assert self.user_svc.user_cache == {}
 
     def test_fetch_user_two(self, ctx_new_user):
@@ -68,7 +68,7 @@ class TestUserService:
         assert len(self.user_svc.user_cache) == 2
 
         # Purge one user
-        self.user_svc.purge_by_id(ctx_existing)
+        self.user_svc.purge_cache(ctx_existing)
 
         # Confirm one user in cache
         assert len(self.user_svc.user_cache) == 1
