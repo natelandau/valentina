@@ -3,6 +3,7 @@ from enum import Enum
 
 # maximum number of options in a discord select menu
 MAX_OPTION_LIST_SIZE = 25
+MAX_CHARACTER_COUNT = 1990
 
 
 class MaxTraitValue(Enum):
@@ -99,6 +100,16 @@ class DiceType(Enum):
     D8 = 8
     D10 = 10
     D100 = 100
+
+
+class RollResultType(Enum):
+    """Enum for results of a roll."""
+
+    SUCCESS = "Success"
+    FAILURE = "Failure"
+    BOTCH = "Botch"
+    CRITICAL = "Critical Success"
+    OTHER = "Other"
 
 
 class CharClass(Enum):
@@ -272,7 +283,7 @@ CLAN_DISCIPLINES = {
 
 FLAT_COMMON_TRAITS = [trait for trait_list in COMMON_TRAITS.values() for trait in trait_list]
 DICEROLL_THUBMS = {
-    "botch": [
+    "BOTCH": [
         "https://i.giphy.com/media/AX3IlkNO64nTi/giphy.gif",
         "https://em-content.zobj.net/source/animated-noto-color-emoji/356/face-vomiting_1f92e.gif",
         "https://i.giphy.com/media/hQKiGV6MG8WmsHg2yx/giphy.gif",
@@ -283,27 +294,26 @@ DICEROLL_THUBMS = {
         "https://i.giphy.com/media/EXHHMS9caoxAA/giphy.gif",
         "https://i.giphy.com/media/uxz3gGzQXkApeT5jWj/giphy.gif",
     ],
-    "critical": [
+    "CRITICAL": [
         "https://em-content.zobj.net/source/animated-noto-color-emoji/356/rocket_1f680.gif",
         "https://i.giphy.com/media/3ohzdGmM14QTUne9tm/giphy.gif",
         "https://i.giphy.com/media/nEh8DU5ElpcdEMT4T9/giphy.gif",
         "https://i.giphy.com/media/Vu5N8Sj4a4d141uRJm/giphy.gif",
     ],
-    "diceroll": [
+    "OTHER": [
         "https://i.giphy.com/media/ygzkZPxmh6HgUzbYFz/giphy.gif",
         "https://em-content.zobj.net/thumbs/240/google/350/game-die_1f3b2.png",
         "https://i.giphy.com/media/ugNDcwUAydqjCPEMR1/giphy.gif",
     ],
-    "failure": [
+    "FAILURE": [
         "https://i.giphy.com/media/aCwWc9CyTisF2/giphy.gif",
         "https://i.giphy.com/media/QWAhwIMqpsukPZVf17/giphy.gif",
         "https://em-content.zobj.net/source/animated-noto-color-emoji/356/crying-face_1f622.gif",
         "https://i.giphy.com/media/xRyIsRCVTN70tBZPP1/giphy.gif",
-        "https://i.giphy.com/media/2xJYuG1OEOdB60dfLo/giphy.gif",
         "https://i.giphy.com/media/li0dswKqIZNpm/giphy.gif",
         "https://i.giphy.com/media/5xJHqF42tgHUwipfq8/giphy.gif",
     ],
-    "success": [
+    "SUCCESS": [
         "https://em-content.zobj.net/thumbs/240/apple/354/thumbs-up_1f44d.png",
         "https://i.giphy.com/media/11sBLVxNs7v6WA/giphy.gif",
         "https://i.giphy.com/media/l9Tllo1thElT5gvVOU/giphy.gif",

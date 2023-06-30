@@ -35,8 +35,10 @@ class Guild(BaseModel):
 
     id = IntegerField(primary_key=True)  # noqa: A003
     name = TextField()
-    first_seen = DateTimeField(default=time_now)
-    last_connected = DateTimeField(default=time_now)
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    log_channel_id = IntegerField(null=True)
+    use_audit_log = BooleanField(default=False)
 
     class Meta:
         """Meta class for the model."""
@@ -294,6 +296,21 @@ class Macro(BaseModel):
         """Meta class for the model."""
 
         table_name = "macros"
+
+
+class RollThumbnail(BaseModel):
+    """Thumbnail for a roll."""
+
+    url = TextField()
+    roll_type = TextField()
+    created = DateTimeField(default=time_now)
+    guild = ForeignKeyField(Guild, backref="roll_thumbnails")
+    user = ForeignKeyField(User, backref="roll_thumbnails")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "roll_thumbnails"
 
 
 # Lookup tables

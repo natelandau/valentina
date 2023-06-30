@@ -63,7 +63,7 @@ class CustomSectionModal(Modal):
         embed = discord.Embed(title=embed_title, color=EmbedColor.SUCCESS.value)
         embed.add_field(name="Name", value=self.section_title)
         embed.add_field(name="Description", value=self.section_description)
-        await interaction.response.send_message(embeds=[embed], ephemeral=True)
+        await interaction.response.send_message(embeds=[embed], ephemeral=True, delete_after=0)
         self.stop()
 
 
@@ -92,7 +92,7 @@ class BioModal(Modal):
         self.bio = self.children[0].value
         embed.add_field(name="Bio", value=self.children[0].value)
 
-        await interaction.response.send_message(embeds=[embed], ephemeral=True)
+        await interaction.response.send_message(embeds=[embed], ephemeral=True, delete_after=0)
         self.stop()
 
 

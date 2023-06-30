@@ -4,7 +4,6 @@
 import discord
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 
 from valentina import Valentina, guild_svc, user_svc
 from valentina.models.constants import MAX_OPTION_LIST_SIZE
@@ -16,6 +15,27 @@ class Macros(commands.Cog):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
+
+    async def cog_command_error(
+        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
+    ) -> None:
+        """Handle exceptions and errors from the cog."""
+        if hasattr(error, "original"):
+            error = error.original
+
+        command_name = ""
+        if ctx.command.parent.name:
+            command_name = f"{ctx.command.parent.name} "
+        command_name += ctx.command.name
+
+        await present_embed(
+            ctx,
+            title=f"Error running `{command_name}` command",
+            description=str(error),
+            level="error",
+            ephemeral=True,
+            delete_after=15,
+        )
 
     async def __trait_one_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
@@ -50,7 +70,6 @@ class Macros(commands.Cog):
     macros = discord.SlashCommandGroup("macros", "Manage macros for quick rolls")
 
     @macros.command(name="create", description="Create a new macro")
-    @logger.catch
     async def create(
         self,
         ctx: discord.ApplicationContext,
@@ -110,10 +129,11 @@ class Macros(commands.Cog):
                 ("Description", description),
             ],
             level="success",
+            ephemeral=True,
+            log=True,
         )
 
     @macros.command(name="list", description="List macros associated with your account")
-    @logger.catch
     async def list_macros(
         self,
         ctx: discord.ApplicationContext,
@@ -144,7 +164,6 @@ class Macros(commands.Cog):
             )
 
     @macros.command(name="delete", description="Delete a macro")
-    @logger.catch
     async def delete_macro(
         self,
         ctx: discord.ApplicationContext,
@@ -176,6 +195,8 @@ class Macros(commands.Cog):
                 title=f"Deleted Macro: {name}",
                 description=f"{ctx.author.mention} deleted the macro **{name}**.",
                 level="success",
+                log=True,
+                ephemeral=True,
             )
         else:
             await present_embed(ctx, title="Macro deletion cancelled", level="info", ephemeral=True)

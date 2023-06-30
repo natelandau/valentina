@@ -12,14 +12,8 @@ from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal, CustomSectionModal
 from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitCategory
-from valentina.utils.errors import (
-    CharacterClaimedError,
-    NoClaimError,
-    SectionExistsError,
-    SectionNotFoundError,
-    TraitNotFoundError,
-    UserHasClaimError,
-)
+from valentina.utils.converters import ValidCharacterClass, ValidCharacterName
+from valentina.utils.errors import NoClaimError, SectionExistsError
 from valentina.utils.helpers import normalize_to_db_row
 from valentina.utils.options import select_character
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -34,6 +28,27 @@ class Characters(commands.Cog, name="Character"):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
+
+    async def cog_command_error(
+        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
+    ) -> None:
+        """Handle exceptions and errors from the cog."""
+        if hasattr(error, "original"):
+            error = error.original
+
+        command_name = ""
+        if ctx.command.parent.name:
+            command_name = f"{ctx.command.parent.name} "
+        command_name += ctx.command.name
+
+        await present_embed(
+            ctx,
+            title=f"Error running `{command_name}` command",
+            description=str(error),
+            level="error",
+            ephemeral=True,
+            delete_after=15,
+        )
 
     async def __trait_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
@@ -84,15 +99,15 @@ class Characters(commands.Cog, name="Character"):
             required=True,
         ),
         char_class: Option(
-            str,
+            ValidCharacterClass,
             name="class",
             description="The character's class",
             choices=[char_class.value for char_class in CharClass],
             required=True,
         ),
-        first_name: Option(str, "The character's name", required=True),
-        last_name: Option(str, "The character's last name", required=True),
-        nickname: Option(str, "The character's nickname", required=False, default=None),
+        first_name: Option(ValidCharacterName, "Character's name", required=True),
+        last_name: Option(ValidCharacterName, "Character's last name", required=True),
+        nickname: Option(ValidCharacterName, "Character's nickname", required=False, default=None),
     ) -> None:
         """Create a new character.
 
@@ -153,31 +168,16 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Claim a character to your user. This will allow you to roll without specifying traits, edit the character, and more."""
         character = char_svc.fetch_by_id(ctx.guild.id, char_id)
+        char_svc.add_claim(ctx.guild.id, char_id, ctx.user.id)
 
-        try:
-            char_svc.add_claim(ctx.guild.id, char_id, ctx.user.id)
-            logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}")
-            await present_embed(
-                ctx=ctx,
-                title="Character Claimed",
-                description=f"**{character.name}** has been claimed by {ctx.author.mention}\n\nTo unclaim this character, use `/character unclaim`",
-                level="success",
-            )
-        except CharacterClaimedError:
-            await present_embed(
-                ctx=ctx,
-                title=f"Error: {character.name} already claimed.",
-                description=f"{character.name} is already claimed by another user.\nTo unclaim this character, use `/character unclaim`.",
-                level="error",
-            )
-        except UserHasClaimError:
-            claimed_char = char_svc.fetch_claim(ctx)
-            await present_embed(
-                ctx=ctx,
-                title="ERROR: You already have a character claimed",
-                description=f"You have already claimed **{claimed_char.name}**.\nTo unclaim this character, use `/character unclaim`.",
-                level="error",
-            )
+        logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}")
+        await present_embed(
+            ctx=ctx,
+            title="Character Claimed",
+            description=f"**{character.name}** has been claimed by {ctx.author.mention}",
+            level="success",
+            log=True,
+        )
 
     @chars.command(name="unclaim", description="Unclaim a character")
     @logger.catch
@@ -192,7 +192,8 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Character Unclaimed",
-                description=f"**{character.name}** unclaimed by {ctx.author.mention}\n\nTo claim a new character, use `/character claim`.",
+                description=f"**{character.name}** unclaimed by {ctx.author.mention}",
+                log=True,
                 level="success",
             )
         else:
@@ -243,7 +244,6 @@ class Characters(commands.Cog, name="Character"):
     ### ADD COMMANDS ####################################################################
 
     @add.command(name="trait", description="Add a custom trait to a character")
-    @logger.catch
     async def add_trait(
         self,
         ctx: discord.ApplicationContext,
@@ -266,16 +266,7 @@ class Characters(commands.Cog, name="Character"):
         description: Option(str, "A description of the trait", required=False),
     ) -> None:
         """Add a custom trait to a character."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed.",
-                description="You must claim a character before you can add a trait.\nTo claim a character, use `/character claim`.",
-                level="error",
-            )
-            return
+        character = char_svc.fetch_claim(ctx)
         await add_trait(
             ctx=ctx,
             character=character,
@@ -287,71 +278,62 @@ class Characters(commands.Cog, name="Character"):
         )
 
     @add.command(name="custom_section", description="Add a custom section to the character sheet")
-    @logger.catch
     async def add_custom_section(self, ctx: discord.ApplicationContext) -> None:
         """Add a custom section to the character sheet."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-            modal = CustomSectionModal(title=f"Custom section for {character.name}")
-            await ctx.send_modal(modal)
-            await modal.wait()
-            section_title = modal.section_title.strip().title()
-            section_description = modal.section_description.strip()
+        character = char_svc.fetch_claim(ctx)
+        modal = CustomSectionModal(title=f"Custom section for {character.name}")
+        await ctx.send_modal(modal)
+        await modal.wait()
+        section_title = modal.section_title.strip().title()
+        section_description = modal.section_description.strip()
 
-            existing_sections = char_svc.fetch_char_custom_sections(ctx, character)
-            if normalize_to_db_row(section_title) in [
-                normalize_to_db_row(x.title) for x in existing_sections
-            ]:
-                raise SectionExistsError
-            char_svc.add_custom_section(ctx, character, section_title, section_description)
-
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed.",
-                description="You must claim a character before you can add a custom section.\nTo claim a character, use `/character claim`.",
-                level="error",
-                ephemeral=True,
-            )
-            return
-        except SectionExistsError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: Section already exists",
-                description="A section with that name already exists.",
-                level="error",
-                ephemeral=True,
-            )
-            return
+        existing_sections = char_svc.fetch_char_custom_sections(ctx, character)
+        if normalize_to_db_row(section_title) in [
+            normalize_to_db_row(x.title) for x in existing_sections
+        ]:
+            raise SectionExistsError
+        char_svc.add_custom_section(ctx, character, section_title, section_description)
+        await present_embed(
+            ctx,
+            title="Custom Section Added",
+            fields=[
+                ("Character", character.name),
+                ("Section", section_title),
+                ("Content", section_description),
+            ],
+            ephemeral=True,
+            inline_fields=True,
+            level="success",
+            log=True,
+        )
 
     ### UPDATE COMMANDS ####################################################################
     @update.command(name="bio", description="Add or update a character's bio")
-    @logger.catch
     async def update_bio(self, ctx: discord.ApplicationContext) -> None:
         """Update a character's bio."""
-        try:
-            character = char_svc.fetch_claim(ctx)
+        character = char_svc.fetch_claim(ctx)
 
-            modal = BioModal(
-                title=f"Enter the biography for {character.name}", current_bio=character.bio
-            )
-            await ctx.send_modal(modal)
-            await modal.wait()
-            biography = modal.bio.strip()
+        modal = BioModal(
+            title=f"Enter the biography for {character.name}", current_bio=character.bio
+        )
+        await ctx.send_modal(modal)
+        await modal.wait()
+        biography = modal.bio.strip()
 
-            char_svc.update_char(ctx.guild.id, character.id, bio=biography)
-            logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed.",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
-                level="error",
-            )
-            return
+        char_svc.update_char(ctx.guild.id, character.id, bio=biography)
+        logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
+
+        await present_embed(
+            ctx,
+            title="Biography Updated",
+            level="success",
+            ephemeral=True,
+            log=True,
+            inline_fields=False,
+            fields=[("Character", character.name), ("Biography", biography)],
+        )
 
     @update.command(name="custom_section", description="Update a custom section")
-    @logger.catch
     async def update_custom_section(
         self,
         ctx: discord.ApplicationContext,
@@ -363,44 +345,40 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a custom section."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-            section = char_svc.fetch_custom_section(ctx, character, title=custom_section)
+        character = char_svc.fetch_claim(ctx)
+        section = char_svc.fetch_custom_section(ctx, character, title=custom_section)
 
-            modal = CustomSectionModal(
-                section_title=section.title,
-                section_description=section.description,
-                title=f"Custom section for {character.name}",
-            )
-            await ctx.send_modal(modal)
-            await modal.wait()
-            section_title = modal.section_title.strip().title()
-            section_description = modal.section_description.strip()
+        modal = CustomSectionModal(
+            section_title=section.title,
+            section_description=section.description,
+            title=f"Custom section for {character.name}",
+        )
+        await ctx.send_modal(modal)
+        await modal.wait()
+        section_title = modal.section_title.strip().title()
+        section_description = modal.section_description.strip()
 
-            char_svc.update_custom_section(
-                ctx,
-                character,
-                section.id,
-                **{"title": section_title, "description": section_description},
-            )
-
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
-                level="error",
-            )
-        except SectionNotFoundError as e:
-            await present_embed(
-                ctx=ctx,
-                title="Error: Section not found",
-                description=str(e),
-                level="error",
-            )
+        char_svc.update_custom_section(
+            ctx,
+            character,
+            section.id,
+            **{"title": section_title, "description": section_description},
+        )
+        await present_embed(
+            ctx,
+            title="Custom Section Updated",
+            fields=[
+                ("Character", character.name),
+                ("Section", section_title),
+                ("Content", section_description),
+            ],
+            ephemeral=True,
+            inline_fields=True,
+            level="success",
+            log=True,
+        )
 
     @update.command(name="trait", description="Update a trait for a character")
-    @logger.catch
     async def update_trait(
         self,
         ctx: discord.ApplicationContext,
@@ -412,59 +390,41 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update the value of a trait."""
-        try:
-            character = char_svc.fetch_claim(ctx)
+        character = char_svc.fetch_claim(ctx)
 
-            old_value = char_svc.fetch_trait_value(ctx, character=character, trait=trait)
+        old_value = char_svc.fetch_trait_value(ctx, character=character, trait=trait)
 
-            view = ConfirmCancelButtons(ctx.author)
+        view = ConfirmCancelButtons(ctx.author)
+        await present_embed(
+            ctx,
+            title=f"Update {trait}",
+            description=f"Confirm updating {trait}",
+            fields=[
+                ("Old Value", str(old_value)),
+                ("New Value", new_value),
+            ],
+            inline_fields=True,
+            ephemeral=True,
+            level="info",
+            view=view,
+        )
+        await view.wait()
+        if view.confirmed and char_svc.update_trait_value(
+            guild_id=ctx.guild.id, character=character, trait_name=trait, new_value=new_value
+        ):
             await present_embed(
-                ctx,
-                title=f"Update {trait}",
-                description=f"Confirm updating {trait}",
-                fields=[
-                    ("Old Value", str(old_value)),
-                    ("New Value", new_value),
-                ],
+                ctx=ctx,
+                title=f"{character.name} {trait} updated",
+                description=f"**{trait}** updated to **{new_value}**.",
+                level="success",
+                fields=[("Old Value", str(old_value)), ("New Value", str(new_value))],
                 inline_fields=True,
-                ephemeral=True,
-                level="info",
-                view=view,
+                ephemeral=False,
+                log=True,
             )
-            await view.wait()
-            if view.confirmed and char_svc.update_trait_value(
-                guild_id=ctx.guild.id, character=character, trait_name=trait, new_value=new_value
-            ):
-                await present_embed(
-                    ctx=ctx,
-                    title=f"{character.name} {trait} updated",
-                    description=f"**{trait}** updated to **{new_value}**.",
-                    level="success",
-                    fields=[("Old Value", str(old_value)), ("New Value", new_value)],
-                    inline_fields=True,
-                    footer=f"Updated by {ctx.author.name}",
-                    ephemeral=False,
-                )
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed",
-                description="You must claim a character before you can update its bio.\nTo claim a character, use `/character claim`.",
-                level="error",
-            )
-            return
-        except TraitNotFoundError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: Trait not found",
-                description=f"{character.name} does not have trait: **{trait}**",
-                level="error",
-            )
-            return
 
     ### DELETE COMMANDS ####################################################################
     @delete.command(name="trait", description="Delete a custom trait from a character")
-    @logger.catch
     async def delete_trait(
         self,
         ctx: discord.ApplicationContext,
@@ -477,7 +437,6 @@ class Characters(commands.Cog, name="Character"):
         pass
 
     @delete.command(name="custom_section", description="Delete a custom section from a character")
-    @logger.catch
     async def delete_custom_section(
         self,
         ctx: discord.ApplicationContext,
@@ -489,34 +448,16 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-            char_svc.delete_custom_section(ctx, character, custom_section)
-            await present_embed(
-                ctx=ctx,
-                title=f"Deleted {custom_section}",
-                description=f"**{custom_section}** has been deleted.",
-                level="success",
-                ephemeral=False,
-            )
-
-        except NoClaimError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: No character claimed.",
-                description="You must claim a character before you can add a custom section.\nTo claim a character, use `/character claim`.",
-                level="error",
-                ephemeral=True,
-            )
-            return
-        except SectionExistsError:
-            await present_embed(
-                ctx=ctx,
-                title="Error: Section already exists",
-                description="A section with that name already exists.",
-                level="error",
-                ephemeral=True,
-            )
+        character = char_svc.fetch_claim(ctx)
+        char_svc.delete_custom_section(ctx, character, custom_section)
+        await present_embed(
+            ctx=ctx,
+            title="Deleted Custom Section",
+            fields=[("Character", character.name), ("Section", custom_section)],
+            level="success",
+            log=True,
+            ephemeral=False,
+        )
 
 
 def setup(bot: Valentina) -> None:

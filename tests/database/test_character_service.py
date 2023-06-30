@@ -6,12 +6,8 @@ import pytest
 
 from valentina.models.database import (
     Character,
-    CharacterClass,
     CustomSection,
     CustomTrait,
-    GuildUser,
-    Macro,
-    User,
 )
 from valentina.models.database_services import CharacterService
 from valentina.utils.errors import (

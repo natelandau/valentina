@@ -1,6 +1,7 @@
 """Models for maintaining in-memory caches of database queries."""
 
 import re
+from datetime import datetime
 
 import discord
 from loguru import logger
@@ -14,6 +15,7 @@ from valentina.models.constants import (
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
     CharClass,
+    EmbedColor,
     VampClanList,
 )
 from valentina.models.database import (
@@ -25,6 +27,7 @@ from valentina.models.database import (
     Guild,
     GuildUser,
     Macro,
+    RollThumbnail,
     User,
     VampireClan,
     time_now,
@@ -32,6 +35,7 @@ from valentina.models.database import (
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
+    DuplicateRollResultThumbError,
     NoClaimError,
     SectionExistsError,
     SectionNotFoundError,
@@ -95,11 +99,11 @@ class CharacterService:
                 return True
 
             logger.debug(f"CLAIM: User {user_id} already has a claim")
-            raise UserHasClaimError(f"User {user_id} already has a claim")
+            raise UserHasClaimError
 
         if any(char_key == claim for claim in self.claims.values()):
             logger.debug(f"CLAIM: Character {char_id} is already claimed")
-            raise CharacterClaimedError(f"Character {char_id} is already claimed")
+            raise CharacterClaimedError
 
         self.claims[claim_key] = char_key
         return True
@@ -375,7 +379,7 @@ class CharacterService:
             char_id = re.sub(r"[a-zA-Z0-9]+_", "", char_key)
             return self.fetch_by_id(guild.id, int(char_id))
 
-        raise NoClaimError("No claim for user")
+        raise NoClaimError
 
     def fetch_trait_value(
         self, ctx: discord.ApplicationContext, character: Character, trait: str
@@ -393,7 +397,7 @@ class CharacterService:
         if len(custom_trait) > 0:
             return custom_trait[0].value
 
-        raise TraitNotFoundError(f"Trait {trait} not found for character {character.id}")
+        raise TraitNotFoundError
 
     def fetch_user_of_character(self, guild_id: int, char_id: int) -> int:
         """Returns the user id of the user who claimed a character."""
@@ -454,7 +458,7 @@ class CharacterService:
         try:
             character = Character.get_by_id(char_id)
         except DoesNotExist as e:
-            raise CharacterNotFoundError(f"Character {char_id} was not found") from e
+            raise CharacterNotFoundError(e=e) from e
 
         Character.update(modified=time_now(), **kws).where(Character.id == character.id).execute()
 
@@ -513,7 +517,7 @@ class CharacterService:
             self.purge_by_id(guild_id, character.id)
             return True
 
-        raise TraitNotFoundError(f"Trait '{trait_name}' was not found for character {character.id}")
+        raise TraitNotFoundError
 
 
 class UserService:
@@ -660,7 +664,12 @@ class UserService:
 
 
 class GuildService:
-    """Manage guilds in the database. Guilds are created a bot_connect,."""
+    """Manage guilds in the database. Guilds are created on bot connect."""
+
+    def __init__(self) -> None:
+        self.log_channel_cache: dict[int, int | None] = {}
+        self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
+        self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
 
     @staticmethod
     def is_in_db(guild_id: int) -> bool:
@@ -669,21 +678,23 @@ class GuildService:
 
     @staticmethod
     @logger.catch
-    def update_or_add(guild_id: int, guild_name: str) -> None:
+    def update_or_add(guild: discord.Guild, **kwargs: str | int | datetime) -> None:
         """Add a guild to the database or update it if it already exists."""
         db_id, is_created = Guild.get_or_create(
-            id=guild_id,
+            id=guild.id,
             defaults={
-                "id": guild_id,
-                "name": guild_name,
-                "first_seen": time_now(),
-                "last_connected": time_now(),
+                "id": guild.id,
+                "name": guild.name,
+                "created": time_now(),
+                "modified": time_now(),
             },
         )
         if is_created:
             logger.info(f"DATABASE: Create guild {db_id.name}")
+
         if not is_created:
-            Guild.set_by_id(db_id, {"last_connected": time_now()})
+            kwargs["modified"] = time_now()
+            Guild.set_by_id(guild.id, kwargs)
             logger.info(f"DATABASE: Update '{db_id.name}'")
 
     @staticmethod
@@ -715,6 +726,121 @@ class GuildService:
 
         return None
 
+    def add_roll_result_thumb(
+        self, ctx: discord.ApplicationContext, roll_type: str, url: str
+    ) -> None:
+        """Add a roll result thumbnail to the database."""
+        UserService().fetch_user(ctx)
+
+        self.roll_result_thumbs.pop(ctx.guild.id, None)
+
+        already_exists = RollThumbnail.get_or_none(guild=ctx.guild.id, url=url)
+        if already_exists:
+            raise DuplicateRollResultThumbError
+
+        RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
+        logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
+
+    async def create_bot_log_channel(
+        self, guild: discord.Guild, log_channel_name: str
+    ) -> discord.TextChannel:
+        """Fetch the bot log channel for a guild and create it if it doesn't exist."""
+        log_channel = None
+
+        # Use the log channel from the database if it exists
+        existing_guild = Guild.get_or_none(id=guild.id)
+
+        for channel in await guild.fetch_channels():
+            if existing_guild:
+                if channel.id == existing_guild.log_channel_id:
+                    log_channel = channel
+                    logger.info(f"DATABASE: Fetch bot audit log channel: '{channel.name}'")
+                    return channel  # type: ignore [return-value]
+            elif channel.name.lower().strip() == log_channel_name.lower().strip():
+                print(f"SUCCESS: {channel.name.lower()} == {log_channel_name.lower()}")
+                log_channel = channel
+                logger.debug(f"BOT: Using '{log_channel_name}' for bot audit logging")
+                break
+
+        if not log_channel:
+            log_channel = await guild.create_text_channel(
+                log_channel_name,
+                topic="A channel for Valentina audit logs.",
+                position=100,
+            )
+            logger.info(f"BOT: Created '{log_channel_name}' channel for bot audit logging")
+
+            if existing_guild:
+                GuildService.update_or_add(guild, log_channel_id=log_channel.id)
+
+        self.log_channel_cache.pop(guild.id, None)
+        return log_channel  # type: ignore [return-value]
+
+    def fetch_log_channel(self, ctx: discord.ApplicationContext) -> int | None:
+        """Fetch the log channel for a guild."""
+        if ctx.guild.id not in self.log_channel_cache:
+            self.log_channel_cache[ctx.guild.id] = Guild.get_by_id(ctx.guild.id).log_channel_id
+
+        return self.log_channel_cache[ctx.guild.id]
+
+    def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
+        """Get all roll result thumbnails for a guild."""
+        if ctx.guild.id not in self.roll_result_thumbs:
+            self.roll_result_thumbs[ctx.guild.id] = {}
+            logger.debug(f"DATABASE: Fetch roll result thumbnails for '{ctx.guild.name}'")
+            for thumb in RollThumbnail.select().where(RollThumbnail.guild == ctx.guild.id):
+                if thumb.roll_type not in self.roll_result_thumbs[ctx.guild.id]:
+                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type] = [thumb.url]
+                else:
+                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type].append(thumb.url)
+
+        return self.roll_result_thumbs[ctx.guild.id]
+
+    def is_audit_logging(self, ctx: discord.ApplicationContext) -> bool:
+        """Settings check: audit_log."""
+        if ctx.guild.id not in self.settings_cache:
+            self.settings_cache[ctx.guild.id] = {}
+
+        if "use_audit_log" not in self.settings_cache[ctx.guild.id]:
+            self.settings_cache[ctx.guild.id]["use_audit_log"] = Guild.get_by_id(
+                ctx.guild.id
+            ).use_audit_log
+            logger.debug(f"DATABASE: Fetch audit log setting for '{ctx.guild.name}'")
+
+        return bool(self.settings_cache[ctx.guild.id]["use_audit_log"])
+
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+        """Purge the cache for a guild or all guilds.
+
+        Args:
+            ctx (discord.ApplicationContext, optional): The context to purge. Defaults to None.
+        """
+        if ctx and ctx.guild.id in self.log_channel_cache:
+            del self.log_channel_cache[ctx.guild.id]
+        else:
+            self.log_channel_cache = {}
+
+    def set_audit_log(self, ctx: discord.ApplicationContext, value: bool) -> None:
+        """Set the value of the audit log setting for a guild."""
+        self.settings_cache.pop(ctx.guild.id, None)
+        Guild.set_by_id(ctx.guild.id, {"use_audit_log": value})
+
+    async def send_log(self, ctx: discord.ApplicationContext, message: str | discord.Embed) -> None:
+        """Send a message to the log channel for a guild."""
+        log_channel_id = self.fetch_log_channel(ctx)
+        if log_channel_id:
+            log_channel = ctx.guild.get_channel(log_channel_id)
+            if log_channel:
+                if isinstance(message, discord.Embed):
+                    await log_channel.send(embed=message)
+                else:
+                    embed = discord.Embed(title=message, color=EmbedColor.INFO.value)
+                    embed.timestamp = datetime.now()
+                    embed.set_footer(
+                        text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
+                    )
+                    await log_channel.send(embed=embed)
+
 
 class DatabaseService:
     """Representation of the database."""
@@ -736,6 +862,7 @@ class DatabaseService:
                     Guild,
                     GuildUser,
                     Macro,
+                    RollThumbnail,
                     User,
                     VampireClan,
                 ]

@@ -1,17 +1,19 @@
 """A wizard that walks the user through the character creation process."""
 
+from datetime import datetime
 from typing import Any
 
 import discord
 from discord.ui import Button
 from loguru import logger
 
-from valentina import user_svc
+from valentina import guild_svc, user_svc
 from valentina.models.constants import (
     CLAN_DISCIPLINES,
     COMMON_TRAITS,
     MAGE_TRAITS,
     WEREWOLF_TRAITS,
+    EmbedColor,
 )
 from valentina.models.database import Character, CharacterClass, VampireClan
 from valentina.views import RatingView
@@ -90,6 +92,15 @@ class Wizard:
             **self.properties,
             **self.assigned_traits,
         )
+
+        log_embed = discord.Embed(title="Character Created", color=EmbedColor.INFO.value)
+        log_embed.add_field(name="Character", value=character.name)
+        log_embed.add_field(name="Class", value=character.char_class.name)
+        log_embed.timestamp = datetime.now()
+        log_embed.set_footer(
+            text=f"Command invoked by {self.ctx.author.display_name} in #{self.ctx.channel.name}"
+        )
+        await guild_svc.send_log(self.ctx, log_embed)
 
         logger.info(f"DATABASE: Add {character.char_class.name} character {character.name}")
         logger.debug(f"CHARGEN: Completed by {self.ctx.user.name} on {self.ctx.guild.name}")

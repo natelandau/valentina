@@ -58,9 +58,9 @@ class Valentina(commands.Bot):
 
             DatabaseService(DATABASE).sync_enums()
 
-            for _guild in self.guilds:
-                GuildService.update_or_add(guild_id=_guild.id, guild_name=_guild.name)
-                char_svc.fetch_all_characters(_guild.id)
+            for guild in self.guilds:
+                GuildService.update_or_add(guild)
+                char_svc.fetch_all_characters(guild.id)
 
             # TODO: Setup tasks here  User.set_by_id(3, {'is_admin': True})
 

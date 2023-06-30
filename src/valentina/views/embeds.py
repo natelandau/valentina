@@ -5,17 +5,20 @@ from typing import Any
 
 import discord
 
+from valentina import guild_svc
 from valentina.models.constants import EmbedColor
 
 
-async def present_embed(
+async def present_embed(  # noqa: C901, PLR0912
     ctx: discord.ApplicationContext,
     title: str = "",
     description: str = "",
+    log: str | bool = False,
     footer: str | None = None,
     level: str = "INFO",
     ephemeral: bool = False,
     fields: list[tuple[str, str]] = [],
+    image: str | None = None,
     inline_fields: bool = False,
     thumbnail: str | None = None,
     author: str | None = None,
@@ -23,6 +26,7 @@ async def present_embed(
     show_author: bool = False,
     timestamp: bool = False,
     view: Any = None,
+    delete_after: float | None = None,
 ) -> None:
     """Display a nice embed.
 
@@ -32,8 +36,11 @@ async def present_embed(
         description: The description of the embed.
         ephemeral: Whether the embed should be ephemeral.
         level: The level of the embed. Effects the color.(INFO, ERROR, WARNING, SUCCESS)
+        log(str | bool): Whether to log the embed to the guild log channel. If a string is sent, it will be used as the log message.
         fields: list(tuple(str,  str)): Fields to add to the embed. (fields.0 is name; fields.1 is value)
+        delete_after (optional, float): Number of seconds to wait before deleting the message.
         footer (str): Footer text to display.
+        image (str): URL of the image to display.
         inline_fields (bool): Whether the fields should be inline (Default: False).
         thumbnail (str): URL of the thumbnail to display.
         show_author (bool): Whether to show the author of the embed.
@@ -54,13 +61,15 @@ async def present_embed(
         embed.set_author(name=author, icon_url=author_avatar)
     elif author:
         embed.set_author(name=author)
-
-    if thumbnail:
+    elif thumbnail:
         embed.set_thumbnail(url=thumbnail)
 
     for field in fields:
         name, value = field
         embed.add_field(name=name, value=value, inline=inline_fields)
+
+    if image:
+        embed.set_image(url=image)
 
     if footer:
         embed.set_footer(text=footer)
@@ -68,8 +77,31 @@ async def present_embed(
     if timestamp:
         embed.timestamp = datetime.now()
 
-    if view:
-        await ctx.respond(embed=embed, ephemeral=ephemeral, view=view)
+    if log:
+        await log_to_channel(ctx, log, embed)
 
+    if view and delete_after:
+        await ctx.respond(embed=embed, ephemeral=ephemeral, view=view, delete_after=delete_after)
+    elif view:
+        await ctx.respond(embed=embed, ephemeral=ephemeral, view=view)
+    elif delete_after:
+        await ctx.respond(embed=embed, ephemeral=ephemeral, delete_after=delete_after)
     else:
         await ctx.respond(embed=embed, ephemeral=ephemeral)
+
+
+async def log_to_channel(
+    ctx: discord.ApplicationContext,
+    log: str | bool,
+    embed: discord.Embed | None = None,
+) -> None:
+    """Log an event to the guild log channel."""
+    if isinstance(log, str):
+        await guild_svc.send_log(ctx, log)
+    else:
+        log_embed = embed.copy()
+        log_embed.timestamp = datetime.now()
+        log_embed.set_footer(
+            text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
+        )
+        await guild_svc.send_log(ctx, log_embed)
