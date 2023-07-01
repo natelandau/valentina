@@ -66,7 +66,7 @@ async def add_trait(
                     ("Value", f"`{trait_value!s}`"),
                     ("Max Value", f"`{max_value!s}`"),
                 ],
-                inline_fields=False,
+                inline_fields=True,
                 level="success",
                 log=True,
                 ephemeral=True,

@@ -345,7 +345,7 @@ class Characters(commands.Cog, name="Character"):
             level="success",
             ephemeral=True,
             log=True,
-            inline_fields=False,
+            inline_fields=True,
             fields=[("Character", character.name), ("Biography", biography)],
         )
 
@@ -441,11 +441,9 @@ class Characters(commands.Cog, name="Character"):
             await msg.delete_original_response()
             await present_embed(
                 ctx=ctx,
-                title=f"{character.name} {trait} updated",
-                description=f"**{trait}** updated to **{new_value}**.",
+                title="Trait value updated",
+                description=f"**{trait}** updated from **{old_value}** to **{new_value}** on **{character.name}",
                 level="success",
-                fields=[("Old Value", str(old_value)), ("New Value", str(new_value))],
-                inline_fields=True,
                 ephemeral=True,
                 log=True,
             )
@@ -491,6 +489,7 @@ class Characters(commands.Cog, name="Character"):
                 ctx=ctx,
                 title="Deleted Trait",
                 fields=[("Character", character.name), ("Trait", trait)],
+                inline_fields=True,
                 level="success",
                 log=True,
                 ephemeral=True,
