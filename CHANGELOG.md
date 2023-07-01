@@ -1,3 +1,12 @@
+## v0.8.2 (2023-07-01)
+
+### Fix
+
+- **admin**: use async routines to read log file
+- **database**: automatic database backups
+- **character**: add `security` trait
+- minor text changes
+
 ## v0.8.1 (2023-06-30)
 
 ### Fix
