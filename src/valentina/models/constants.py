@@ -201,6 +201,7 @@ COMMON_TRAITS = {
         "Performance",
         "Persuasion",
         "Repair",
+        "Security",
         "Stealth",
         "Survival",
         "Technology",

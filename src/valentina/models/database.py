@@ -151,6 +151,7 @@ class Character(BaseModel):
     performance = IntegerField(default=0)
     persuasion = IntegerField(default=0)
     repair = IntegerField(default=0)
+    security = IntegerField(default=0)
     stealth = IntegerField(default=0)
     survival = IntegerField(default=0)
     technology = IntegerField(default=0)

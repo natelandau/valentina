@@ -54,7 +54,7 @@ class Valentina(commands.Bot):
                 DatabaseService(DATABASE).create_new_db()
 
             if DatabaseService(DATABASE).requires_migration(__version__):
-                DatabaseService(DATABASE).migrate_old_database()
+                DatabaseService(DATABASE).migrate_old_database(__version__)
 
             DatabaseService(DATABASE).sync_enums()
 
