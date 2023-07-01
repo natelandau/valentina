@@ -38,15 +38,21 @@ Before running Valentina, the following must be configured or installed.
 
 #### Environment Variables
 
-| Variable                 | Default Value              | Usage                                                                                                                                |
-| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| VALENTINA_DISCORD_TOKEN  |                            | Sets the Discord bot token. This is required to run the bot.                                                                         |
-| VALENTINA_GUILDS         |                            | Sets the Discord guilds the bot is allowed to join. This is a comma separated list of guild IDs.                                     |
-| VALENTINA_LOG_FILE       | `/valentina/valentina.log` | Sets the file to write logs to.<br />Note, this is the directory used withing the Docker container                                   |
-| VALENTINA_LOG_LEVEL      | `INFO`                     | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
-| VALENTINA_LOG_LEVEL_DB   | `INFO`                     | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                         |
-| VALENTINA_LOG_LEVEL_HTTP | `INFO`                     | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
-| VALENTINA_OWNER_IDS      |                            | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated list of Discord user IDs.            |
+| Variable                    | Default Value              | Usage                                                                                                                                |
+| --------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| VALENTINA_BACKUP_PATH       | `/valentina/backup`        | Sets the directory to store database backups.<br />Note, this is the directory used withing the Docker container                     |
+| VALENTINA_DAILY_RETENTION   | `7`                        | Sets the number of days to retain database backups.                                                                                  |
+| VALENTINA_DB_PATH           | `/valentina/db`            | Sets the directory to store the database.<br />Note, this is the directory used withing the Docker container                         |
+| VALENTINA_DISCORD_TOKEN     |                            | Sets the Discord bot token. This is required to run the bot.                                                                         |
+| VALENTINA_GUILDS            |                            | Sets the Discord guilds the bot is allowed to join. This is a comma separated list of guild IDs.                                     |
+| VALENTINA_LOG_FILE          | `/valentina/valentina.log` | Sets the file to write logs to.<br />Note, this is the directory used withing the Docker container                                   |
+| VALENTINA_LOG_LEVEL         | `INFO`                     | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
+| VALENTINA_LOG_LEVEL_DB      | `INFO`                     | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                         |
+| VALENTINA_LOG_LEVEL_HTTP    | `INFO`                     | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_MONTHLY_RETENTION | `12`                       | Sets the number of months to retain database backups.                                                                                |
+| VALENTINA_OWNER_IDS         |                            | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated list of Discord user IDs.            |
+| VALENTINA_WEEKLY_RETENTION  | `4`                        | Sets the number of weeks to retain database backups.                                                                                 |
+| VALENTINA_YEARLY_RETENTION  | `2`                        | Sets the number of years to retain database backups.                                                                                 |
 
 ---
 
