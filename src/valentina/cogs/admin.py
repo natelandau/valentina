@@ -1,12 +1,13 @@
 # mypy: disable-error-code="valid-type"
 """Administration commands for Valentina."""
+
 from pathlib import Path
 
+import aiofiles
 import discord
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
-from sh import tail
 
 from valentina import CONFIG, Valentina, __version__, char_svc, guild_svc, user_svc
 from valentina.models.constants import MAX_CHARACTER_COUNT
@@ -154,12 +155,18 @@ class Admin(commands.Cog):
     async def tail_logs(self, ctx: discord.ApplicationContext) -> None:
         """Tail the bot's logs."""
         logger.debug("debug:logs: Tailing the logs")
-        log_lines = ""
-        for line in tail("-n25", CONFIG["VALENTINA_LOG_FILE"], _bg=True, _iter=True):
-            if "has connected to Gateway" not in line and "gnubin/tail" not in line:
-                log_lines += f"{line}"
+        max_lines_from_bottom = 20
+        log_lines = []
 
-        await ctx.respond("```" + log_lines[-MAX_CHARACTER_COUNT:] + "```", ephemeral=True)
+        async with aiofiles.open(CONFIG["VALENTINA_LOG_FILE"], mode="r") as f:
+            async for line in f:
+                if "has connected to Gateway" not in line:
+                    log_lines.append(line)
+                    if len(log_lines) > max_lines_from_bottom:
+                        log_lines.pop(0)
+
+        response = "".join(log_lines)
+        await ctx.respond("```" + response[-MAX_CHARACTER_COUNT:] + "```", ephemeral=True)
 
     @server.command(description="Purge the bot's cache and reload data from DB")
     @commands.has_permissions(administrator=True)
