@@ -66,3 +66,7 @@ runs:
           if: steps.setup-python.outputs.cache-hit != 'true'
           shell: bash
           run: poetry install --all-extras
+
+        - name: Install mypy types
+          shell: bash
+          run: poetry run mypy --install-types --non-interactive
