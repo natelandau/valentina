@@ -944,6 +944,10 @@ class DatabaseService:
             cursor = self.db.execute_sql("SELECT name FROM sqlite_master WHERE type='table';")
             return [row[0] for row in cursor.fetchall()]
 
+    def database_version(self) -> str:
+        """Get the version of the database."""
+        return DatabaseVersion.get_by_id(1).version
+
     @logger.catch
     def requires_migration(self, bot_version: str) -> bool:
         """Determine if the database requires a migration.
@@ -954,7 +958,7 @@ class DatabaseService:
         Returns:
             bool: True if the database requires a migration, False otherwise.
         """
-        current_db_version, created = DatabaseVersion.get_or_create(
+        current_db, created = DatabaseVersion.get_or_create(
             id=1,
             defaults={"version": bot_version},
         )
@@ -962,12 +966,11 @@ class DatabaseService:
             logger.info(f"DATABASE: Create version v{bot_version}")
             return False
 
-        db_version = Version.parse(current_db_version.version)
-        if bot_version > db_version:
-            logger.info(f"DATABASE: Database version `{db_version}` is outdated")
+        if Version.parse(bot_version) > Version.parse(current_db.version):
+            logger.info(f"DATABASE: Database v{current_db.version} < bot v{bot_version}")
             return True
 
-        logger.debug(f"DATABASE: Database version {db_version} is up to date")
+        logger.debug(f"DATABASE: Database v{current_db.version} is up to date")
         return False
 
     @logger.catch
@@ -975,9 +978,9 @@ class DatabaseService:
         """Migrate from old database versions to the current one."""
         db_version = DatabaseVersion.get_by_id(1).version
 
-        if db_version <= Version.parse("8.0.1"):
+        if Version.parse(db_version) < Version.parse("0.8.2"):
+            logger.debug(f"DATABASE: Migrate database v{db_version} to v0.8.2")
             self.db.execute_sql("ALTER TABLE characters ADD COLUMN security INTEGER DEFAULT 0;")
-            logger.debug("DATABASE: Migrate from < v8.0.1")
 
-        logger.info(f"DATABASE: Migrate to v{bot_version}")
+        logger.info(f"DATABASE: Migrate database to v{bot_version}")
         DatabaseVersion.set_by_id(1, {"version": bot_version})
