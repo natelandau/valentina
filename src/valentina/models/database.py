@@ -323,7 +323,7 @@ class Chronicle(BaseModel):
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     guild = ForeignKeyField(Guild, backref="chronicles")
-    is_active = BooleanField(default=True)
+    is_active = BooleanField(default=False)
 
     class Meta:
         """Meta class for the model."""
@@ -347,6 +347,14 @@ class ChronicleNPC(BaseModel):
 
         table_name = "chronicle_npcs"
 
+    def chronicle_display(self) -> str:
+        """Return the display for chronicle overview."""
+        display = f"**{self.name}**"
+        display += f" ({self.npc_class})" if self.npc_class else ""
+        display += f"\n{self.description}" if self.description else ""
+
+        return display
+
 
 class ChronicleChapter(BaseModel):
     """Chronicle Chapter model for the database."""
@@ -365,6 +373,13 @@ class ChronicleChapter(BaseModel):
 
         table_name = "chronicle_chapters"
 
+    def chronicle_display(self) -> str:
+        """Return the display for chronicle overview."""
+        display = f"**{self.chapter}: __{self.name}__**"
+        display += f"\n{self.description}" if self.description else ""
+
+        return display
+
 
 class ChronicleNote(BaseModel):
     """Notes for a chronicle."""
@@ -382,6 +397,13 @@ class ChronicleNote(BaseModel):
         """Meta class for the model."""
 
         table_name = "chronicle_notes"
+
+    def chronicle_display(self) -> str:
+        """Return the display for chronicle overview."""
+        display = f"**{self.name}**"
+        display += f"\n{self.description}" if self.description else ""
+
+        return display
 
 
 # Lookup tables

@@ -82,6 +82,7 @@ class ChronicleService:
                 guild=ctx.guild.id,
                 created=time_now(),
                 modified=time_now(),
+                is_active=False,
             )
             logger.info(f"CHRONICLE: Create {name} for guild {ctx.guild.id}")
             return chronicle

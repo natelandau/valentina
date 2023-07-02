@@ -270,6 +270,8 @@ class Help(commands.Cog):
 
             List all chronicles using `/chronicle list`.
 
+            View a chronicle using `/chronicle view`. This will show you all of the chapters, NPCs, and notes associated with the chronicle.
+
             **__Creating a chronicle__**
             Create a chronicle using `/chronicle create`. This will create a new chronicle.
 

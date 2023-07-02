@@ -31,7 +31,7 @@ class NoteModal(discord.ui.Modal):
                 value=note.description if note else None,
                 required=True,
                 style=discord.InputTextStyle.long,
-                max_length=3000,
+                max_length=1900,
             )
         )
 
@@ -98,7 +98,7 @@ class ChapterModal(discord.ui.Modal):
                 value=chapter.description if chapter else None,
                 required=True,
                 style=discord.InputTextStyle.long,
-                max_length=3000,
+                max_length=1900,
             )
         )
 
@@ -158,7 +158,6 @@ class NPCModal(discord.ui.Modal):
                 value=npc.npc_class if npc else None,
                 required=True,
                 style=discord.InputTextStyle.short,
-                max_length=3000,
             )
         )
         self.add_item(
@@ -168,6 +167,7 @@ class NPCModal(discord.ui.Modal):
                 value=npc.description if npc else None,
                 required=True,
                 style=discord.InputTextStyle.long,
+                max_length=1900,
             )
         )
 

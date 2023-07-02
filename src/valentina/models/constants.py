@@ -5,6 +5,7 @@ from enum import Enum
 MAX_OPTION_LIST_SIZE = 25
 MAX_CHARACTER_COUNT = 1990
 MAX_FIELD_COUNT = 1010
+MAX_PAGE_CHARACTER_COUNT = 1950
 
 
 class MaxTraitValue(Enum):

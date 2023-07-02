@@ -3,11 +3,16 @@
 
 import discord
 from discord.commands import Option
-from discord.ext import commands
+from discord.ext import commands, pages
 from loguru import logger
 
 from valentina import Valentina, chron_svc
-from valentina.models.constants import MAX_FIELD_COUNT, MAX_OPTION_LIST_SIZE, EmbedColor
+from valentina.models.constants import (
+    MAX_FIELD_COUNT,
+    MAX_OPTION_LIST_SIZE,
+    MAX_PAGE_CHARACTER_COUNT,
+    EmbedColor,
+)
 from valentina.views import ChapterModal, ConfirmCancelButtons, NoteModal, NPCModal, present_embed
 
 
@@ -15,7 +20,6 @@ class Chronicle(commands.Cog):
     """Commands used for updating chronicles."""
 
     # TODO: Add paginator to long embeds (e.g. chronicle list, chronicle chapters, etc.)
-    # TODO: Add paginator to view entire chronicle
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
@@ -115,6 +119,7 @@ class Chronicle(commands.Cog):
         name: Option(str, description="Name of the chronicle", required=True),
     ) -> None:
         """Create a new chronicle."""
+        # TODO: Migrate to modal to allow setting chronicle description
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
@@ -143,6 +148,78 @@ class Chronicle(commands.Cog):
                 log=True,
                 level="success",
             )
+
+    @chronicle.command(name="view", description="View a chronicle")
+    async def view_chronicle(self, ctx: discord.ApplicationContext) -> None:
+        """View a chronicle."""
+        chronicle = chron_svc.fetch_active(ctx)
+        npcs = chron_svc.fetch_all_npcs(ctx, chronicle)
+        chapters = chron_svc.fetch_all_chapters(ctx, chronicle)
+        notes = chron_svc.fetch_all_notes(ctx, chronicle)
+
+        chapter_list = sorted([c for c in chapters], key=lambda c: c.chapter)
+        npc_list = sorted([n for n in npcs], key=lambda n: n.name)
+        note_list = sorted([n for n in notes], key=lambda n: n.name)
+
+        chapter_listing = "\n".join([f"{c.chapter}. {c.name}" for c in chapter_list])
+
+        intro = f"""
+\u200b\n**__{chronicle.name.upper()}__**
+An overview of {chronicle.name}.
+
+**{len(chapters)} Chapters**
+{chapter_listing}
+
+**{len(npcs)} NPCs**
+{', '.join([f"{n.name}" for n in npc_list])}
+
+**{len(notes)} Notes**
+{', '.join([f"{n.name}" for n in note_list])}
+            """
+
+        ### CHAPTERS ###
+        chapter_pages = []
+        current_string = ""
+        for chapter in chapter_list:
+            if len(current_string) + len(chapter.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
+                chapter_pages.append(f"\u200b\nChapters in **{chronicle.name}**" + current_string)
+                current_string = ""
+            current_string += f"\n \n{chapter.chronicle_display()}"
+
+        if current_string:
+            chapter_pages.append(f"\u200b\nChapters in **{chronicle.name}**" + current_string)
+
+        ## NPCS ##
+        npc_pages = []
+        current_string = ""
+        for npc in npc_list:
+            if len(current_string) + len(npc.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
+                npc_pages.append(f"\u200b\nNPCs in **{chronicle.name}**" + current_string)
+                current_string = ""
+            current_string += f"\n \n{npc.chronicle_display()}"
+
+        if current_string:
+            npc_pages.append(f"\u200b\nNPCs in **{chronicle.name}**" + current_string)
+
+        ## NOTES ##
+        note_pages = []
+        current_string = ""
+        for note in note_list:
+            if len(current_string) + len(note.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
+                note_pages.append(f"\u200b\nNotes in **{chronicle.name}**" + current_string)
+                current_string = ""
+            current_string += f"\n \n{note.chronicle_display()}"
+
+        if current_string:
+            note_pages.append(f"\u200b\nNotes in **{chronicle.name}**" + current_string)
+
+        # Create a paginator with the intro page
+        paginator = pages.Paginator(pages=[intro, *chapter_pages, *npc_pages, *note_pages])
+        paginator.remove_button("first")
+        paginator.remove_button("last")
+
+        # Send the paginator as a dm to the user
+        await paginator.respond(ctx.interaction)
 
     @chronicle.command(name="set_active", description="Set a chronicle as active")
     @commands.has_permissions(administrator=True)

@@ -30,6 +30,7 @@ class CustomSectionModal(Modal):
                 value=self.section_description if self.section_description else None,
                 required=True,
                 style=discord.InputTextStyle.long,
+                max_length=1900,
             )
         )
 
@@ -61,6 +62,7 @@ class BioModal(Modal):
                 value=self.current_bio if self.current_bio else None,
                 required=True,
                 style=discord.InputTextStyle.long,
+                max_length=1900,
             )
         )
 
