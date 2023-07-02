@@ -1,3 +1,11 @@
+## v0.8.3 (2023-07-01)
+
+### Fix
+
+- **reference**: add links to discipline reference
+- **reference**: add reference info for magic and exp costs
+- minor updates to confirmation embeds
+
 ## v0.8.2 (2023-07-01)
 
 ### Fix
