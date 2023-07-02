@@ -103,22 +103,70 @@ class Reference(commands.Cog):
             ctx,
             title="Disciplines",
             fields=[
-                ("ANIMALISM", " Supernatural affinity with and control of animals"),
-                ("AUSPEX", "Extrasensory perception, awareness, and premonitions"),
-                ("BLOOD SORCERY", "The ability to cast blood magic"),
-                ("CELERITY", "Supernatural speed and reflexes"),
-                ("CHIMERSTRY", "Illusions made real or at least tangible"),
-                ("DOMINATE", "Supernatural control over the minds of others"),
-                ("FORTITUDE", "Supernatural toughness and resistance to damage"),
-                ("NECROMANCY", "Control of the dead, both spirit and corpse"),
-                ("OBFUSCATE", " Remain obscure and unseen, even in crowds"),
-                ("POTENCE", " The Discipline of physical vigor and strength"),
-                ("PRESENCE", "Attract, sway, and control emotions"),
-                ("PROTEAN", "Shape-changing, from growing claws to melding with the earth"),
-                ("QUIETUS", "Art of the silent death"),
-                ("SERPENTIS", "Acquire the physicality of serpents"),
-                ("THAUMATURGY", "The ability to cast rituals and blood magic"),
-                ("VICISSITUDE", "The sculpting of flesh into unnatural forms "),
+                (
+                    "ANIMALISM",
+                    " Supernatural affinity with and control of animals.\n[more](https://whitewolf.fandom.com/wiki/Animalism_(VTM))",
+                ),
+                (
+                    "AUSPEX",
+                    "Extrasensory perception, awareness, and premonitions.\n[more](https://whitewolf.fandom.com/wiki/Auspex_(VTM))",
+                ),
+                (
+                    "BLOOD SORCERY",
+                    "The ability to cast blood magic.\n[more](https://whitewolf.fandom.com/wiki/Blood_Sorcery_(VTM))",
+                ),
+                (
+                    "CELERITY",
+                    "Supernatural speed and reflexes.\n[more](https://whitewolf.fandom.com/wiki/Celerity_(VTM))",
+                ),
+                (
+                    "CHIMERSTRY",
+                    "Illusions made real or at least tangible.\n[more](https://whitewolf.fandom.com/wiki/Chimerstry)",
+                ),
+                (
+                    "DOMINATE",
+                    "Supernatural control over the minds of others.\n[more](https://whitewolf.fandom.com/wiki/Dominate_(VTM))",
+                ),
+                (
+                    "FORTITUDE",
+                    "Supernatural toughness and resistance to damage.\n[more](https://whitewolf.fandom.com/wiki/Fortitude)",
+                ),
+                (
+                    "NECROMANCY",
+                    "Control of the dead, both spirit and corpse.\n[more](https://whitewolf.fandom.com/wiki/Necromancy_(VTM))",
+                ),
+                (
+                    "OBFUSCATE",
+                    " Remain obscure and unseen, even in crowds.\n[more](https://whitewolf.fandom.com/wiki/Obfuscate_(VTM))",
+                ),
+                (
+                    "POTENCE",
+                    " The Discipline of physical vigor and strength.\n[more](https://whitewolf.fandom.com/wiki/Potence)",
+                ),
+                (
+                    "PRESENCE",
+                    "Attract, sway, and control emotions.\n[more](https://whitewolf.fandom.com/wiki/Presence_(VTM))",
+                ),
+                (
+                    "PROTEAN",
+                    "Shape-changing, from growing claws to melding with the earth.\n[more](https://whitewolf.fandom.com/wiki/Protean_(VTM))",
+                ),
+                (
+                    "QUIETUS",
+                    "Art of the silent death.\n[more](https://whitewolf.fandom.com/wiki/Quietus)",
+                ),
+                (
+                    "SERPENTIS",
+                    "Acquire the physicality of serpents.\n[more](https://whitewolf.fandom.com/wiki/Serpentis)",
+                ),
+                (
+                    "THAUMATURGY",
+                    "The ability to cast rituals and blood magic.\n[more](https://whitewolf.fandom.com/wiki/Thaumaturgy_(VTM))",
+                ),
+                (
+                    "VICISSITUDE",
+                    "The sculpting of flesh into unnatural forms.\n[more](https://whitewolf.fandom.com/wiki/Vicissitude)",
+                ),
             ],
             level="info",
             inline_fields=True,
