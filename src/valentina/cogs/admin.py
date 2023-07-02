@@ -9,7 +9,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import CONFIG, Valentina, __version__, char_svc, guild_svc, user_svc
+from valentina import CONFIG, Valentina, __version__, char_svc, chron_svc, guild_svc, user_svc
 from valentina.models.constants import MAX_CHARACTER_COUNT
 from valentina.utils.converters import ValidChannelName
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -203,12 +203,14 @@ class Admin(commands.Cog):
             guild_svc.purge_cache(ctx)
             user_svc.purge_cache(ctx)
             char_svc.purge_cache(ctx, with_claims=True)
+            chron_svc.purge_cache(ctx)
             logger.info(f"debug:cache: Purged cache for {ctx.guild.name}")
 
         if all_guilds:
             guild_svc.purge_cache()
             user_svc.purge_cache()
             char_svc.purge_cache(with_claims=True)
+            chron_svc.purge_cache()
             logger.info("debug:cache: Purged cache for all guilds")
 
         await msg.delete_original_response()

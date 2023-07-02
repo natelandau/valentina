@@ -12,47 +12,26 @@ class CustomSectionModal(Modal):
         super().__init__(*args, **kwargs)
         self.section_title = section_title
         self.section_description = section_description
-        self.update_existing = bool(self.section_title)
+        self.update_existing = bool(section_title)
 
-        placeholder_name = self.section_title if self.section_title else "Name of the section"
-        placeholder_description = (
-            self.section_description if self.section_description else "Description of the section"
+        self.add_item(
+            InputText(
+                label="name",
+                placeholder="Name of the section",
+                value=self.section_title if self.section_title else None,
+                required=True,
+                style=discord.InputTextStyle.short,
+            )
         )
-
-        if self.update_existing:
-            self.add_item(
-                InputText(
-                    label="name",
-                    value=placeholder_name,
-                    required=True,
-                    style=discord.InputTextStyle.short,
-                )
+        self.add_item(
+            InputText(
+                label="description",
+                placeholder="Description of the section",
+                value=self.section_description if self.section_description else None,
+                required=True,
+                style=discord.InputTextStyle.long,
             )
-            self.add_item(
-                InputText(
-                    label="description",
-                    value=placeholder_description,
-                    required=True,
-                    style=discord.InputTextStyle.long,
-                )
-            )
-        else:
-            self.add_item(
-                InputText(
-                    label="name",
-                    placeholder=placeholder_name,
-                    required=True,
-                    style=discord.InputTextStyle.short,
-                )
-            )
-            self.add_item(
-                InputText(
-                    label="description",
-                    placeholder=placeholder_description,
-                    required=True,
-                    style=discord.InputTextStyle.long,
-                )
-            )
+        )
 
     async def callback(self, interaction: discord.Interaction) -> None:
         """Callback for the modal."""
@@ -75,12 +54,11 @@ class BioModal(Modal):
         self.bio: str = None
         self.current_bio = current_bio
 
-        placeholder = self.current_bio if self.current_bio else "Enter a biography"
-
         self.add_item(
             InputText(
                 label="bio",
-                value=placeholder,
+                placeholder="Enter a biography",
+                value=self.current_bio if self.current_bio else None,
                 required=True,
                 style=discord.InputTextStyle.long,
             )

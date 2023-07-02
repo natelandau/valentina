@@ -318,11 +318,12 @@ class RollThumbnail(BaseModel):
 class Chronicle(BaseModel):
     """Chronicle model for the database."""
 
-    name = TextField()
+    name = TextField(unique=True)
     description = TextField(null=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     guild = ForeignKeyField(Guild, backref="chronicles")
+    is_active = BooleanField(default=True)
 
     class Meta:
         """Meta class for the model."""
@@ -334,12 +335,11 @@ class ChronicleNPC(BaseModel):
     """NPC model for the database."""
 
     name = TextField()
-
     description = TextField(null=True)
-    npc_type = TextField(null=True)
+    npc_class = TextField(null=True)
+    alive = BooleanField(default=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
-    guild = ForeignKeyField(Guild, backref="chronicle_npcs")
     chronicle = ForeignKeyField(Chronicle, backref="chronicle_npcs")
 
     class Meta:
@@ -357,7 +357,6 @@ class ChronicleChapter(BaseModel):
     description = TextField(null=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
-    guild = ForeignKeyField(Guild, backref="chronicle_chapters")
     chronicle = ForeignKeyField(Chronicle, backref="chronicle_chapters")
 
     class Meta:
@@ -373,7 +372,6 @@ class ChronicleNotes(BaseModel):
     description = TextField(null=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
-    guild = ForeignKeyField(Guild, backref="chronicle_notes")
     chronicle = ForeignKeyField(Chronicle, backref="chronicle_notes")
 
     class Meta:
