@@ -122,7 +122,6 @@ class Chronicle(commands.Cog):
             description=f"Create new chronicle named: **{name}**",
             view=view,
             ephemeral=True,
-            log=True,
         )
         await view.wait()
         if not view.confirmed:
@@ -165,7 +164,6 @@ class Chronicle(commands.Cog):
             description=f"Set chronicle **{chronicle}** as active",
             view=view,
             ephemeral=True,
-            log=True,
         )
         await view.wait()
         if not view.confirmed:
@@ -200,7 +198,6 @@ class Chronicle(commands.Cog):
             description=f"Set chronicle **{chronicle.name}** as inactive",
             view=view,
             ephemeral=True,
-            log=True,
         )
         await view.wait()
         if not view.confirmed:
