@@ -263,7 +263,13 @@ An overview of {chronicle.name}.
         paginator.remove_button("last")
 
         # Send the paginator as a dm to the user
-        await paginator.respond(ctx.interaction)
+        await paginator.respond(ctx.interaction, target=ctx.author)
+
+        # If successful, we post this message in the originating channel
+        await ctx.respond(
+            f"Please check your DMs! The chronicle **{chronicle.name}** has been sent to you.",
+            ephemeral=True,
+        )
 
     @chronicle.command(name="set_active", description="Set a chronicle as active")
     @commands.has_permissions(administrator=True)
