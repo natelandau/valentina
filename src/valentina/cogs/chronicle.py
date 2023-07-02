@@ -149,9 +149,53 @@ class Chronicle(commands.Cog):
                 level="success",
             )
 
+    @chronicle.command(name="delete", description="Delete a chronicle")
+    @commands.has_permissions(administrator=True)
+    async def delete_chronicle(
+        self,
+        ctx: discord.ApplicationContext,
+        chronicle: Option(
+            str,
+            description="Name of the chronicle",
+            required=True,
+            autocomplete=__chronicle_autocomplete,
+        ),
+    ) -> None:
+        """Delete a chronicle."""
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title="Delete chronicle?",
+            description=f"Delete chronicle: **{chronicle}** and all associated data (NPCs, notes, chapters)?",
+            view=view,
+            ephemeral=True,
+        )
+        await view.wait()
+        if not view.confirmed:
+            embed = discord.Embed(
+                title="Cancelled",
+                description="Cancelled deleting chronicle",
+                color=EmbedColor.INFO.value,
+            )
+            await msg.edit_original_response(embed=embed, view=None)
+            return
+
+        if view.confirmed:
+            chron_svc.delete_chronicle(ctx, chronicle)
+            await msg.delete_original_response()
+            await present_embed(
+                ctx,
+                title=f"Deleted chronicle: {chronicle}",
+                ephemeral=True,
+                log=True,
+                level="success",
+            )
+
     @chronicle.command(name="view", description="View a chronicle")
     async def view_chronicle(self, ctx: discord.ApplicationContext) -> None:
         """View a chronicle."""
+        # TODO: Allow viewing any chronicle
+
         chronicle = chron_svc.fetch_active(ctx)
         npcs = chron_svc.fetch_all_npcs(ctx, chronicle)
         chapters = chron_svc.fetch_all_chapters(ctx, chronicle)
