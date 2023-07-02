@@ -365,7 +365,7 @@ class ChronicleChapter(BaseModel):
         table_name = "chronicle_chapters"
 
 
-class ChronicleNotes(BaseModel):
+class ChronicleNote(BaseModel):
     """Notes for a chronicle."""
 
     name = TextField()
@@ -373,6 +373,8 @@ class ChronicleNotes(BaseModel):
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     chronicle = ForeignKeyField(Chronicle, backref="chronicle_notes")
+    user = ForeignKeyField(User, backref="chronicle_notes")
+    chapter = ForeignKeyField(ChronicleChapter, backref="chronicle_notes", null=True)
 
     class Meta:
         """Meta class for the model."""

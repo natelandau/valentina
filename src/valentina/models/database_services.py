@@ -24,7 +24,7 @@ from valentina.models.database import (
     CharacterClass,
     Chronicle,
     ChronicleChapter,
-    ChronicleNotes,
+    ChronicleNote,
     ChronicleNPC,
     CustomSection,
     CustomTrait,
@@ -64,8 +64,9 @@ class ChronicleService:
         # Caches to avoid database queries
         ##################################
         self.actives: dict[int, Chronicle] = {}
-        self.npcs: dict[int, list[ChronicleNPC]] = {}
         self.chapters: dict[int, list[ChronicleChapter]] = {}
+        self.notes: dict[int, list[ChronicleNote]] = {}
+        self.npcs: dict[int, list[ChronicleNPC]] = {}
 
     def create_chronicle(
         self, ctx: ApplicationContext, name: str, description: str | None = None
@@ -85,6 +86,56 @@ class ChronicleService:
 
         except IntegrityError as e:
             raise ValueError(f"Chronicle {name} already exists.") from e
+
+    def create_chapter(
+        self,
+        ctx: ApplicationContext,
+        chronicle: Chronicle,
+        name: str,
+        description: str,
+    ) -> ChronicleChapter:
+        """Create a new chapter."""
+        try:
+            last_chapter = max([x.chapter for x in self.fetch_all_chapters(ctx, chronicle)])
+            chapter = last_chapter + 1
+        except ValueError:
+            chapter = 1
+
+        chapter = ChronicleChapter.create(
+            chronicle=chronicle.id,
+            chapter=chapter,
+            name=name,
+            description=description,
+            created=time_now(),
+            modified=time_now(),
+        )
+        logger.info(f"CHRONICLE: Create Chapter {name} for guild {ctx.guild.id}")
+        self.chapters.pop(ctx.guild.id, None)
+        return chapter
+
+    def create_note(
+        self,
+        ctx: ApplicationContext,
+        chronicle: Chronicle,
+        name: str,
+        description: str,
+        chapter: ChronicleChapter | None = None,
+    ) -> ChronicleNote:
+        """Create a new note."""
+        UserService().fetch_user(ctx)
+
+        note = ChronicleNote.create(
+            chronicle=chronicle.id,
+            name=name,
+            description=description,
+            user=ctx.author.id,
+            created=time_now(),
+            modified=time_now(),
+            chapter=chapter.id if chapter else None,
+        )
+        self.notes.pop(ctx.guild.id, None)
+        logger.info(f"CHRONICLE: Create Note {name} for guild {ctx.guild.id}")
+        return note
 
     def create_npc(
         self,
@@ -107,34 +158,17 @@ class ChronicleService:
         logger.info(f"CHRONICLE: Create NPC {name} for guild {ctx.guild.id}")
         return npc
 
-    def create_chapter(
-        self,
-        ctx: ApplicationContext,
-        chronicle: Chronicle,
-        chapter: int,
-        name: str,
-        description: str,
-        date: datetime,
-    ) -> bool:
-        """Create a new chapter."""
-        chapter = ChronicleChapter.create(
-            chronicle=chronicle.id,
-            chapter=chapter,
-            name=name,
-            description=description,
-            date=date,
-            created=time_now(),
-            modified=time_now(),
-        )
-        logger.info(f"CHRONICLE: Create Chapter {name} for guild {ctx.guild.id}")
-        self.chapters.pop(ctx.guild.id, None)
-        return True
-
     def delete_chapter(self, ctx: ApplicationContext, chapter: ChronicleChapter) -> None:
         """Delete a chapter."""
         chapter.delete_instance()
         self.chapters.pop(ctx.guild.id, None)
         logger.info(f"CHRONICLE: Delete Chapter {chapter.name} for guild {ctx.guild.id}")
+
+    def delete_note(self, ctx: ApplicationContext, note: ChronicleNote) -> None:
+        """Delete a note."""
+        note.delete_instance()
+        self.notes.pop(ctx.guild.id, None)
+        logger.info(f"CHRONICLE: Delete Note {note.name} for guild {ctx.guild.id}")
 
     def delete_npc(self, ctx: ApplicationContext, npc: ChronicleNPC) -> None:
         """Delete an NPC."""
@@ -171,6 +205,18 @@ class ChronicleService:
         except DoesNotExist as e:
             raise ValueError("No chronicles found") from e
 
+    def fetch_chapter_by_id(self, ctx: ApplicationContext, chapter_id: int) -> ChronicleChapter:
+        """Fetch a chapter by ID."""
+        if ctx.guild.id in self.chapters:
+            for chapter in self.chapters[ctx.guild.id]:
+                if chapter.id == chapter_id:
+                    return chapter
+
+        try:
+            return ChronicleChapter.get(id=chapter_id)
+        except DoesNotExist as e:
+            raise ValueError(f"No chapter found with ID {chapter_id}") from e
+
     def fetch_chronicle_by_name(self, ctx: ApplicationContext, name: str) -> Chronicle:
         """Fetch a chronicle by name."""
         try:
@@ -192,10 +238,31 @@ class ChronicleService:
 
         try:
             chapters = ChronicleChapter.select().where(ChronicleChapter.chronicle == chronicle.id)
+            logger.debug(f"DATABASE: Fetching all chapters for guild {guild_id}")
             self.chapters[guild_id] = chapters
             return chapters
         except DoesNotExist as e:
             raise ValueError("No chapters found") from e
+
+    def fetch_all_notes(
+        self, ctx: ApplicationContext | AutocompleteContext, chronicle: Chronicle
+    ) -> ModelSelect:
+        """Fetch all notes for a chronicle."""
+        if isinstance(ctx, ApplicationContext):
+            guild_id = ctx.guild.id
+        if isinstance(ctx, AutocompleteContext):
+            guild_id = ctx.interaction.guild.id
+
+        if guild_id in self.notes:
+            return self.notes[guild_id]
+
+        try:
+            notes = ChronicleNote.select().where(ChronicleNote.chronicle == chronicle.id)
+            logger.debug(f"DATABASE: Fetching all notes for guild {guild_id}")
+            self.notes[guild_id] = notes
+            return notes
+        except DoesNotExist as e:
+            raise ValueError("No notes found") from e
 
     def fetch_all_npcs(
         self, ctx: ApplicationContext | AutocompleteContext, chronicle: Chronicle
@@ -211,10 +278,23 @@ class ChronicleService:
 
         try:
             npcs = ChronicleNPC.select().where(ChronicleNPC.chronicle == chronicle.id)
+            logger.debug(f"DATABASE: Fetching all npcs for guild {guild_id}")
             self.npcs[guild_id] = npcs
             return npcs
         except DoesNotExist as e:
             raise ValueError("No NPCs found") from e
+
+    def fetch_note_by_id(self, ctx: ApplicationContext, note_id: int) -> ChronicleNote:
+        """Fetch a note by ID."""
+        if ctx.guild.id in self.notes:
+            for note in self.notes[ctx.guild.id]:
+                if note.id == note_id:
+                    return note
+
+        try:
+            return ChronicleNote.get(id=note_id)
+        except DoesNotExist as e:
+            raise ValueError(f"No note found with ID {note_id}") from e
 
     def fetch_npc_by_name(self, chronicle: Chronicle, name: str) -> ChronicleNPC:
         """Fetch an NPC by name."""
@@ -260,22 +340,14 @@ class ChronicleService:
             self.actives.pop(ctx.guild.id, None)
             self.chapters.pop(ctx.guild.id, None)
             self.npcs.pop(ctx.guild.id, None)
+            self.notes.pop(ctx.guild.id, None)
             logger.info(f"CHRONICLE: Purge cache for guild {ctx.guild.id}")
         else:
             self.actives = {}
             self.chapters = {}
+            self.notes = {}
             self.npcs = {}
             logger.info("CHRONICLE: Purge cache")
-
-    def update_npc(self, ctx: ApplicationContext, npc: ChronicleNPC, **kwargs: str) -> None:
-        """Update an NPC."""
-        ChronicleNPC.update(modified=time_now(), **kwargs).where(
-            ChronicleNPC.id == npc.id
-        ).execute()
-
-        self.npcs.pop(ctx.guild.id, None)
-
-        logger.info(f"CHRONICLE: Update NPC {npc.name} for guild {ctx.guild.id}")
 
     def update_chapter(
         self, ctx: ApplicationContext, chapter: ChronicleChapter, **kwargs: str
@@ -288,6 +360,26 @@ class ChronicleService:
         self.chapters.pop(ctx.guild.id, None)
 
         logger.info(f"CHRONICLE: Update chapter {chapter.name} for guild {ctx.guild.id}")
+
+    def update_note(self, ctx: ApplicationContext, note: ChronicleNote, **kwargs: str) -> None:
+        """Update a note."""
+        ChronicleNote.update(modified=time_now(), **kwargs).where(
+            ChronicleNote.id == note.id
+        ).execute()
+
+        self.notes.pop(ctx.guild.id, None)
+
+        logger.info(f"CHRONICLE: Update note {note.name} for guild {ctx.guild.id}")
+
+    def update_npc(self, ctx: ApplicationContext, npc: ChronicleNPC, **kwargs: str) -> None:
+        """Update an NPC."""
+        ChronicleNPC.update(modified=time_now(), **kwargs).where(
+            ChronicleNPC.id == npc.id
+        ).execute()
+
+        self.npcs.pop(ctx.guild.id, None)
+
+        logger.info(f"CHRONICLE: Update NPC {npc.name} for guild {ctx.guild.id}")
 
 
 class CharacterService:
@@ -1148,7 +1240,7 @@ class DatabaseService:
                     User,
                     VampireClan,
                     Chronicle,
-                    ChronicleNotes,
+                    ChronicleNote,
                     ChronicleChapter,
                     ChronicleNPC,
                 ]
