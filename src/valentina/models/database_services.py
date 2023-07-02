@@ -1054,7 +1054,7 @@ class GuildService:
         if not is_created:
             kwargs["modified"] = time_now()
             Guild.set_by_id(guild.id, kwargs)
-            logger.info(f"DATABASE: Update '{db_id.name}'")
+            logger.info(f"DATABASE: Update guild '{db_id.name}'")
 
     @staticmethod
     def fetch_all_traits(

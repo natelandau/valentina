@@ -48,8 +48,8 @@ class Valentina(commands.Bot):
         """Override on_ready."""
         await self.wait_until_ready()
         if not self.welcomed:
-            from valentina import DATABASE, char_svc
-            from valentina.models.database_services import DatabaseService, GuildService
+            from valentina import DATABASE, char_svc, guild_svc
+            from valentina.models.database_services import DatabaseService
 
             # Database setup
             DatabaseService(DATABASE).create_tables()
@@ -60,7 +60,7 @@ class Valentina(commands.Bot):
             DatabaseService(DATABASE).sync_enums()
 
             for guild in self.guilds:
-                GuildService.update_or_add(guild)
+                guild_svc.update_or_add(guild)
                 char_svc.fetch_all_characters(guild.id)
 
             # Start tasks
