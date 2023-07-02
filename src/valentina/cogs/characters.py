@@ -442,7 +442,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx=ctx,
                 title="Trait value updated",
-                description=f"**{trait}** updated from **{old_value}** to **{new_value}** on **{character.name}",
+                description=f"**{trait}** updated from **{old_value}** to **{new_value}** on **{character.name}**",
                 level="success",
                 ephemeral=True,
                 log=True,
