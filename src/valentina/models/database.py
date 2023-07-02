@@ -314,6 +314,76 @@ class RollThumbnail(BaseModel):
         table_name = "roll_thumbnails"
 
 
+###### Chronicle Models ######
+class Chronicle(BaseModel):
+    """Chronicle model for the database."""
+
+    name = TextField(unique=True)
+    description = TextField(null=True)
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    guild = ForeignKeyField(Guild, backref="chronicles")
+    is_active = BooleanField(default=True)
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "chronicles"
+
+
+class ChronicleNPC(BaseModel):
+    """NPC model for the database."""
+
+    name = TextField()
+    description = TextField(null=True)
+    npc_class = TextField(null=True)
+    alive = BooleanField(default=True)
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    chronicle = ForeignKeyField(Chronicle, backref="npcs")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "chronicle_npcs"
+
+
+class ChronicleChapter(BaseModel):
+    """Chronicle Chapter model for the database."""
+
+    chapter = IntegerField()
+    name = TextField(null=True)
+    date = DateTimeField(null=True)
+    short_description = TextField(null=True)
+    description = TextField(null=True)
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    chronicle = ForeignKeyField(Chronicle, backref="chapters")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "chronicle_chapters"
+
+
+class ChronicleNote(BaseModel):
+    """Notes for a chronicle."""
+
+    name = TextField()
+    description = TextField(null=True)
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    chronicle = ForeignKeyField(Chronicle, backref="notes")
+    user = ForeignKeyField(User, backref="chronicle_notes")
+    chapter = ForeignKeyField(ChronicleChapter, backref="notes", null=True)
+    private = BooleanField(default=False)
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "chronicle_notes"
+
+
 # Lookup tables
 
 

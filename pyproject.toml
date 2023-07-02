@@ -19,7 +19,6 @@
     [tool.poetry.dependencies]
         aiofiles      = "^23.1.0"
         arrow         = "^1.2.3"
-        asyncio       = "^3.4.3"
         loguru        = "^0.7.0"
         numpy         = "^1.25.0"
         peewee        = "^3.16.2"

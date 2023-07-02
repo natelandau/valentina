@@ -4,8 +4,9 @@ import re
 from datetime import datetime
 
 import discord
+from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
-from peewee import DoesNotExist, ModelSelect, SqliteDatabase, fn
+from peewee import DoesNotExist, IntegrityError, ModelSelect, SqliteDatabase, fn
 from semver import Version
 
 from valentina.models.constants import (
@@ -21,6 +22,10 @@ from valentina.models.constants import (
 from valentina.models.database import (
     Character,
     CharacterClass,
+    Chronicle,
+    ChronicleChapter,
+    ChronicleNote,
+    ChronicleNPC,
     CustomSection,
     CustomTrait,
     DatabaseVersion,
@@ -49,6 +54,336 @@ from valentina.utils.helpers import (
     normalize_to_db_row,
     num_to_circles,
 )
+
+
+class ChronicleService:
+    """Chronicle Manager cache/in-memory database."""
+
+    # TODO: Ability renumber chapters
+
+    def __init__(self) -> None:
+        """Initialize the ChronicleService."""
+        # Caches to avoid database queries
+        ##################################
+        self.actives: dict[int, Chronicle] = {}
+        self.chapters: dict[int, list[ChronicleChapter]] = {}
+        self.notes: dict[int, list[ChronicleNote]] = {}
+        self.npcs: dict[int, list[ChronicleNPC]] = {}
+
+    def create_chronicle(
+        self, ctx: ApplicationContext, name: str, description: str | None = None
+    ) -> Chronicle:
+        """Create a new chronicle."""
+        try:
+            chronicle = Chronicle.create(
+                guild_id=ctx.guild.id,
+                name=name,
+                description=description,
+                guild=ctx.guild.id,
+                created=time_now(),
+                modified=time_now(),
+            )
+            logger.info(f"CHRONICLE: Create {name} for guild {ctx.guild.id}")
+            return chronicle
+
+        except IntegrityError as e:
+            raise ValueError(f"Chronicle {name} already exists.") from e
+
+    def create_chapter(
+        self,
+        ctx: ApplicationContext,
+        chronicle: Chronicle,
+        name: str,
+        short_description: str,
+        description: str,
+    ) -> ChronicleChapter:
+        """Create a new chapter."""
+        try:
+            last_chapter = max([x.chapter for x in self.fetch_all_chapters(ctx, chronicle)])
+            chapter = last_chapter + 1
+        except ValueError:
+            chapter = 1
+
+        chapter = ChronicleChapter.create(
+            chronicle=chronicle.id,
+            chapter=chapter,
+            name=name,
+            short_description=short_description,
+            description=description,
+            created=time_now(),
+            modified=time_now(),
+        )
+        logger.info(f"CHRONICLE: Create Chapter {name} for guild {ctx.guild.id}")
+        self.chapters.pop(ctx.guild.id, None)
+        return chapter
+
+    def create_note(
+        self,
+        ctx: ApplicationContext,
+        chronicle: Chronicle,
+        name: str,
+        description: str,
+        chapter: ChronicleChapter | None = None,
+    ) -> ChronicleNote:
+        """Create a new note."""
+        UserService().fetch_user(ctx)
+
+        note = ChronicleNote.create(
+            chronicle=chronicle.id,
+            name=name,
+            description=description,
+            user=ctx.author.id,
+            created=time_now(),
+            modified=time_now(),
+            chapter=chapter.id if chapter else None,
+        )
+        self.notes.pop(ctx.guild.id, None)
+        logger.info(f"CHRONICLE: Create Note {name} for guild {ctx.guild.id}")
+        return note
+
+    def create_npc(
+        self,
+        ctx: ApplicationContext,
+        chronicle: Chronicle,
+        name: str,
+        npc_class: str,
+        description: str,
+    ) -> ChronicleNPC:
+        """Create a new NPC."""
+        npc = ChronicleNPC.create(
+            chronicle=chronicle.id,
+            name=name,
+            npc_class=npc_class,
+            description=description,
+            created=time_now(),
+            modified=time_now(),
+        )
+        self.npcs.pop(ctx.guild.id, None)
+        logger.info(f"CHRONICLE: Create NPC {name} for guild {ctx.guild.id}")
+        return npc
+
+    def delete_chapter(self, ctx: ApplicationContext, chapter: ChronicleChapter) -> None:
+        """Delete a chapter."""
+        chapter.delete_instance()
+        self.chapters.pop(ctx.guild.id, None)
+        logger.info(f"CHRONICLE: Delete Chapter {chapter.name} for guild {ctx.guild.id}")
+
+    def delete_note(self, ctx: ApplicationContext, note: ChronicleNote) -> None:
+        """Delete a note."""
+        note.delete_instance()
+        self.notes.pop(ctx.guild.id, None)
+        logger.info(f"CHRONICLE: Delete Note {note.name} for guild {ctx.guild.id}")
+
+    def delete_npc(self, ctx: ApplicationContext, npc: ChronicleNPC) -> None:
+        """Delete an NPC."""
+        npc.delete_instance()
+        self.npcs.pop(ctx.guild.id, None)
+        logger.info(f"CHRONICLE: Delete NPC {npc.name} for guild {ctx.guild.id}")
+
+    def fetch_active(self, ctx: ApplicationContext | AutocompleteContext) -> Chronicle:
+        """Fetch the active chronicle for the guild."""
+        if isinstance(ctx, ApplicationContext):
+            guild_id = ctx.guild.id
+        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
+            guild_id = ctx.interaction.guild.id
+
+        if guild_id in self.actives:
+            return self.actives[guild_id]
+
+        try:
+            chronicle = Chronicle.get(guild=guild_id, is_active=True)
+            self.actives[guild_id] = chronicle
+            return chronicle
+        except DoesNotExist as e:
+            raise ValueError("No active chronicle found\nUse `/chronicle set_active`") from e
+
+    def fetch_all(self, ctx: ApplicationContext | AutocompleteContext) -> ModelSelect:
+        """Fetch all chronicles for a guild."""
+        if isinstance(ctx, ApplicationContext):
+            guild_id = ctx.guild.id
+        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
+            guild_id = ctx.interaction.guild.id
+
+        try:
+            return Chronicle.select().where(Chronicle.guild == guild_id)
+        except DoesNotExist as e:
+            raise ValueError("No chronicles found") from e
+
+    def fetch_chapter_by_id(self, ctx: ApplicationContext, chapter_id: int) -> ChronicleChapter:
+        """Fetch a chapter by ID."""
+        if ctx.guild.id in self.chapters:
+            for chapter in self.chapters[ctx.guild.id]:
+                if chapter.id == chapter_id:
+                    return chapter
+
+        try:
+            return ChronicleChapter.get(id=chapter_id)
+        except DoesNotExist as e:
+            raise ValueError(f"No chapter found with ID {chapter_id}") from e
+
+    def fetch_chronicle_by_name(self, ctx: ApplicationContext, name: str) -> Chronicle:
+        """Fetch a chronicle by name."""
+        try:
+            return Chronicle.get(guild=ctx.guild.id, name=name)
+        except DoesNotExist as e:
+            raise ValueError(f"No chronicle found with name {name}") from e
+
+    def fetch_all_chapters(
+        self, ctx: ApplicationContext | AutocompleteContext, chronicle: Chronicle
+    ) -> ModelSelect:
+        """Fetch all chapters for a chronicle."""
+        if isinstance(ctx, ApplicationContext):
+            guild_id = ctx.guild.id
+        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
+            guild_id = ctx.interaction.guild.id
+
+        if guild_id in self.chapters:
+            return self.chapters[guild_id]
+
+        try:
+            chapters = ChronicleChapter.select().where(ChronicleChapter.chronicle == chronicle.id)
+            logger.debug(f"DATABASE: Fetching all chapters for guild {guild_id}")
+            self.chapters[guild_id] = chapters
+            return chapters
+        except DoesNotExist as e:
+            raise ValueError("No chapters found") from e
+
+    def fetch_all_notes(
+        self, ctx: ApplicationContext | AutocompleteContext, chronicle: Chronicle
+    ) -> ModelSelect:
+        """Fetch all notes for a chronicle."""
+        if isinstance(ctx, ApplicationContext):
+            guild_id = ctx.guild.id
+        if isinstance(ctx, AutocompleteContext):
+            guild_id = ctx.interaction.guild.id
+
+        if guild_id in self.notes:
+            return self.notes[guild_id]
+
+        try:
+            notes = ChronicleNote.select().where(ChronicleNote.chronicle == chronicle.id)
+            logger.debug(f"DATABASE: Fetching all notes for guild {guild_id}")
+            self.notes[guild_id] = notes
+            return notes
+        except DoesNotExist as e:
+            raise ValueError("No notes found") from e
+
+    def fetch_all_npcs(
+        self, ctx: ApplicationContext | AutocompleteContext, chronicle: Chronicle
+    ) -> ModelSelect:
+        """Fetch all NPCs for a chronicle."""
+        if isinstance(ctx, ApplicationContext):
+            guild_id = ctx.guild.id
+        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
+            guild_id = ctx.interaction.guild.id
+
+        if guild_id in self.npcs:
+            return self.npcs[guild_id]
+
+        try:
+            npcs = ChronicleNPC.select().where(ChronicleNPC.chronicle == chronicle.id)
+            logger.debug(f"DATABASE: Fetching all npcs for guild {guild_id}")
+            self.npcs[guild_id] = npcs
+            return npcs
+        except DoesNotExist as e:
+            raise ValueError("No NPCs found") from e
+
+    def fetch_note_by_id(self, ctx: ApplicationContext, note_id: int) -> ChronicleNote:
+        """Fetch a note by ID."""
+        if ctx.guild.id in self.notes:
+            for note in self.notes[ctx.guild.id]:
+                if note.id == note_id:
+                    return note
+
+        try:
+            return ChronicleNote.get(id=note_id)
+        except DoesNotExist as e:
+            raise ValueError(f"No note found with ID {note_id}") from e
+
+    def fetch_npc_by_name(self, chronicle: Chronicle, name: str) -> ChronicleNPC:
+        """Fetch an NPC by name."""
+        try:
+            return ChronicleNPC.get(name=name, chronicle=chronicle.id)
+        except DoesNotExist as e:
+            raise ValueError(f"No NPC found with name {name}") from e
+
+    def set_active(self, ctx: ApplicationContext, name: str) -> None:
+        """Set the chronicle as active."""
+        chronicle = self.fetch_chronicle_by_name(ctx, name)
+
+        for c in self.fetch_all(ctx):
+            if c.id == chronicle.id:
+                chronicle.is_active = True
+                chronicle.modified = time_now()
+                chronicle.save()
+            elif c.is_active:
+                c.is_active = False
+                c.modified = time_now()
+                c.save()
+
+        self.purge_cache(ctx)
+        self.actives[ctx.guild.id] = chronicle
+        logger.info(f"CHRONICLE: Set {chronicle.name} as active")
+
+    def set_inactive(self, ctx: ApplicationContext) -> None:
+        """Set the active chronicle to inactive."""
+        try:
+            chronicle = self.fetch_active(ctx)
+        except ValueError as e:
+            raise ValueError("No active chronicle found") from e
+
+        chronicle.is_active = False
+        chronicle.modified = time_now()
+        chronicle.save()
+        self.purge_cache(ctx)
+        logger.info(f"CHRONICLE: Set {chronicle.name} as inactive")
+
+    def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
+        """Purge the cache."""
+        if ctx:
+            self.actives.pop(ctx.guild.id, None)
+            self.chapters.pop(ctx.guild.id, None)
+            self.npcs.pop(ctx.guild.id, None)
+            self.notes.pop(ctx.guild.id, None)
+            logger.info(f"CHRONICLE: Purge cache for guild {ctx.guild.id}")
+        else:
+            self.actives = {}
+            self.chapters = {}
+            self.notes = {}
+            self.npcs = {}
+            logger.info("CHRONICLE: Purge cache")
+
+    def update_chapter(
+        self, ctx: ApplicationContext, chapter: ChronicleChapter, **kwargs: str
+    ) -> None:
+        """Update a chapter."""
+        ChronicleChapter.update(modified=time_now(), **kwargs).where(
+            ChronicleChapter.id == chapter.id
+        ).execute()
+
+        self.chapters.pop(ctx.guild.id, None)
+
+        logger.info(f"CHRONICLE: Update chapter {chapter.name} for guild {ctx.guild.id}")
+
+    def update_note(self, ctx: ApplicationContext, note: ChronicleNote, **kwargs: str) -> None:
+        """Update a note."""
+        ChronicleNote.update(modified=time_now(), **kwargs).where(
+            ChronicleNote.id == note.id
+        ).execute()
+
+        self.notes.pop(ctx.guild.id, None)
+
+        logger.info(f"CHRONICLE: Update note {note.name} for guild {ctx.guild.id}")
+
+    def update_npc(self, ctx: ApplicationContext, npc: ChronicleNPC, **kwargs: str) -> None:
+        """Update an NPC."""
+        ChronicleNPC.update(modified=time_now(), **kwargs).where(
+            ChronicleNPC.id == npc.id
+        ).execute()
+
+        self.npcs.pop(ctx.guild.id, None)
+
+        logger.info(f"CHRONICLE: Update NPC {npc.name} for guild {ctx.guild.id}")
 
 
 class CharacterService:
@@ -110,7 +445,7 @@ class CharacterService:
 
     def add_custom_section(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ApplicationContext,
         character: Character,
         section_title: str | None = None,
         section_description: str | None = None,
@@ -132,7 +467,7 @@ class CharacterService:
 
     def add_trait(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ApplicationContext,
         character: Character,
         name: str,
         description: str,
@@ -168,7 +503,7 @@ class CharacterService:
         return key in self.characters
 
     def delete_custom_section(
-        self, ctx: discord.ApplicationContext, character: Character, section_title: str
+        self, ctx: ApplicationContext, character: Character, section_title: str
     ) -> bool:
         """Delete a custom section from a character."""
         section_title = section_title.lower()
@@ -187,9 +522,7 @@ class CharacterService:
         except SectionExistsError:
             return False
 
-    def delete_custom_trait(
-        self, ctx: discord.ApplicationContext, character: Character, name: str
-    ) -> bool:
+    def delete_custom_trait(self, ctx: ApplicationContext, character: Character, name: str) -> bool:
         """Delete a custom trait from a character."""
         name = name.lower()
         key = self.__get_char_key(ctx.guild.id, character.id)
@@ -259,7 +592,7 @@ class CharacterService:
 
     def fetch_all_character_trait_values(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ApplicationContext,
         character: Character,
     ) -> dict[str, list[tuple[str, int, int, str]]]:
         """Fetch all trait values for a character inclusive of common and custom for display on a character sheet.
@@ -312,12 +645,12 @@ class CharacterService:
         return all_traits
 
     def fetch_char_custom_sections(
-        self, ctx: discord.ApplicationContext | discord.AutocompleteContext, character: Character
+        self, ctx: ApplicationContext | AutocompleteContext, character: Character
     ) -> ModelSelect:
         """Fetch a list of custom sections for a character."""
-        if isinstance(ctx, discord.ApplicationContext):
+        if isinstance(ctx, ApplicationContext):
             guild_id = ctx.guild.id
-        if isinstance(ctx, discord.AutocompleteContext):  # pragma: no cover
+        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
             guild_id = ctx.interaction.guild.id
 
         key = self.__get_char_key(guild_id, character.id)
@@ -331,7 +664,7 @@ class CharacterService:
         return sections
 
     def fetch_custom_section(
-        self, ctx: discord.ApplicationContext, character: Character, title: str
+        self, ctx: ApplicationContext, character: Character, title: str
     ) -> CustomSection:
         """Fetch a custom section by title."""
         sections = self.fetch_char_custom_sections(ctx, character)
@@ -342,12 +675,12 @@ class CharacterService:
         raise SectionNotFoundError(f"{character.first_name} has no section {title}")
 
     def fetch_char_custom_traits(
-        self, ctx: discord.ApplicationContext | discord.AutocompleteContext, character: Character
+        self, ctx: ApplicationContext | AutocompleteContext, character: Character
     ) -> list[CustomTrait]:
         """Fetch all custom traits for a character."""
-        if isinstance(ctx, discord.ApplicationContext):
+        if isinstance(ctx, ApplicationContext):
             guild = ctx.guild
-        if isinstance(ctx, discord.AutocompleteContext):  # pragma: no cover
+        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
             guild = ctx.interaction.guild
 
         key = self.__get_char_key(guild.id, character.id)
@@ -382,14 +715,12 @@ class CharacterService:
         logger.info(f"DATABASE: Fetch character: {character.name}")
         return character
 
-    def fetch_claim(
-        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
-    ) -> Character:
+    def fetch_claim(self, ctx: ApplicationContext | AutocompleteContext) -> Character:
         """Fetch the character claimed by a user."""
-        if isinstance(ctx, discord.ApplicationContext):
+        if isinstance(ctx, ApplicationContext):
             author = ctx.author
             guild = ctx.guild
-        if isinstance(ctx, discord.AutocompleteContext):  # pragma: no cover
+        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
             author = ctx.interaction.user
             guild = ctx.interaction.guild
 
@@ -406,9 +737,7 @@ class CharacterService:
 
         raise NoClaimError
 
-    def fetch_trait_value(
-        self, ctx: discord.ApplicationContext, character: Character, trait: str
-    ) -> int:
+    def fetch_trait_value(self, ctx: ApplicationContext, character: Character, trait: str) -> int:
         """Fetch the value of a trait for a character."""
         if hasattr(character, normalize_to_db_row(trait)):
             return getattr(character, normalize_to_db_row(trait))
@@ -440,9 +769,7 @@ class CharacterService:
         char_key = self.__get_char_key(guild_id, char_id)
         return any(char_key == claim for claim in self.claims.values())
 
-    def purge_cache(
-        self, ctx: discord.ApplicationContext | None = None, with_claims: bool = False
-    ) -> None:
+    def purge_cache(self, ctx: ApplicationContext | None = None, with_claims: bool = False) -> None:
         """Purge all character caches. If ctx is provided, only purge the caches for that guild."""
         caches: dict[str, dict] = {
             "characters": self.characters,
@@ -463,7 +790,7 @@ class CharacterService:
                 cache.clear()
             logger.debug("CACHE: Purged all character caches")
 
-    def remove_claim(self, ctx: discord.ApplicationContext) -> bool:
+    def remove_claim(self, ctx: ApplicationContext) -> bool:
         """Remove a claim from a user."""
         claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
         if claim_key in self.claims:
@@ -472,14 +799,12 @@ class CharacterService:
             return True
         return False
 
-    def user_has_claim(self, ctx: discord.ApplicationContext) -> bool:
+    def user_has_claim(self, ctx: ApplicationContext) -> bool:
         """Check if a user has a claim."""
         claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
         return claim_key in self.claims
 
-    def update_char(
-        self, ctx: discord.ApplicationContext, char_id: int, **kwargs: str | int
-    ) -> Character:
+    def update_char(self, ctx: ApplicationContext, char_id: int, **kwargs: str | int) -> Character:
         """Update a character in the cache and database."""
         key = self.__get_char_key(ctx.guild.id, char_id)
 
@@ -503,7 +828,7 @@ class CharacterService:
 
     def update_custom_section(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ApplicationContext,
         custom_section_id: int,
         **kwargs: str | int,
     ) -> CustomSection:
@@ -523,7 +848,7 @@ class CharacterService:
         return custom_section
 
     def update_trait_value(
-        self, ctx: discord.ApplicationContext, character: Character, trait_name: str, new_value: int
+        self, ctx: ApplicationContext, character: Character, trait_name: str, new_value: int
     ) -> bool:
         """Update a trait value for a character."""
         # Update traits on the character model
@@ -576,7 +901,7 @@ class UserService:
         """
         return f"{guild_id}_{user_id}"
 
-    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+    def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
         """Purge user service cache. If ctx is None, purge all caches."""
         if ctx:
             key = self.__get_user_key(ctx.guild.id, ctx.author.id)
@@ -588,14 +913,12 @@ class UserService:
             self.macro_cache = {}
             logger.debug("CACHE: Purge all user caches")
 
-    def fetch_macros(
-        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
-    ) -> list[Macro]:
+    def fetch_macros(self, ctx: ApplicationContext | AutocompleteContext) -> list[Macro]:
         """Fetch a list of macros for a user."""
-        if isinstance(ctx, discord.ApplicationContext):
+        if isinstance(ctx, ApplicationContext):
             author_id = ctx.author.id
             guild_id = ctx.guild.id
-        if isinstance(ctx, discord.AutocompleteContext):
+        if isinstance(ctx, AutocompleteContext):
             author_id = ctx.interaction.user.id
             guild_id = ctx.interaction.guild.id
 
@@ -611,7 +934,7 @@ class UserService:
         logger.debug(f"DATABASE: Fetch macros for {key}")
         return self.macro_cache[key]
 
-    def fetch_macro(self, ctx: discord.ApplicationContext, macro_name: str) -> Macro:
+    def fetch_macro(self, ctx: ApplicationContext, macro_name: str) -> Macro:
         """Fetch a macro by name."""
         macros = self.fetch_macros(ctx)
 
@@ -621,7 +944,7 @@ class UserService:
 
         return None
 
-    def fetch_user(self, ctx: discord.ApplicationContext) -> User:
+    def fetch_user(self, ctx: ApplicationContext) -> User:
         """Fetch a user object from the cache or database. If user doesn't exist, create in the database and the cache."""
         key = self.__get_user_key(ctx.guild.id, ctx.author.id)
 
@@ -664,7 +987,7 @@ class UserService:
 
     def create_macro(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ApplicationContext,
         name: str,
         abbreviation: str,
         description: str,
@@ -687,7 +1010,7 @@ class UserService:
         self.purge_cache(ctx)
         logger.info(f"DATABASE: Create macro '{name}' for user '{user.name}'")
 
-    def delete_macro(self, ctx: discord.ApplicationContext, macro_name: str) -> None:
+    def delete_macro(self, ctx: ApplicationContext, macro_name: str) -> None:
         """Delete a macro from the database and purge the user cache."""
         Macro.delete().where(
             (fn.Lower(Macro.name) == macro_name.lower())
@@ -762,9 +1085,7 @@ class GuildService:
 
         return None
 
-    def add_roll_result_thumb(
-        self, ctx: discord.ApplicationContext, roll_type: str, url: str
-    ) -> None:
+    def add_roll_result_thumb(self, ctx: ApplicationContext, roll_type: str, url: str) -> None:
         """Add a roll result thumbnail to the database."""
         UserService().fetch_user(ctx)
 
@@ -812,14 +1133,14 @@ class GuildService:
         self.log_channel_cache.pop(guild.id, None)
         return log_channel  # type: ignore [return-value]
 
-    def fetch_log_channel(self, ctx: discord.ApplicationContext) -> int | None:
+    def fetch_log_channel(self, ctx: ApplicationContext) -> int | None:
         """Fetch the log channel for a guild."""
         if ctx.guild.id not in self.log_channel_cache:
             self.log_channel_cache[ctx.guild.id] = Guild.get_by_id(ctx.guild.id).log_channel_id
 
         return self.log_channel_cache[ctx.guild.id]
 
-    def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
+    def fetch_roll_result_thumbs(self, ctx: ApplicationContext) -> dict[str, list[str]]:
         """Get all roll result thumbnails for a guild."""
         if ctx.guild.id not in self.roll_result_thumbs:
             self.roll_result_thumbs[ctx.guild.id] = {}
@@ -832,7 +1153,7 @@ class GuildService:
 
         return self.roll_result_thumbs[ctx.guild.id]
 
-    def is_audit_logging(self, ctx: discord.ApplicationContext) -> bool:
+    def is_audit_logging(self, ctx: ApplicationContext) -> bool:
         """Settings check: audit_log."""
         if ctx.guild.id not in self.settings_cache:
             self.settings_cache[ctx.guild.id] = {}
@@ -845,11 +1166,11 @@ class GuildService:
 
         return bool(self.settings_cache[ctx.guild.id]["use_audit_log"])
 
-    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+    def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
         """Purge the cache for a guild or all guilds.
 
         Args:
-            ctx (discord.ApplicationContext, optional): The context to purge. Defaults to None.
+            ctx (ApplicationContext, optional): The context to purge. Defaults to None.
         """
         if ctx:
             self.log_channel_cache.pop(ctx.guild.id, None)
@@ -862,12 +1183,12 @@ class GuildService:
             self.roll_result_thumbs = {}
             logger.debug("DATABASE: Purge all guild caches")
 
-    def set_audit_log(self, ctx: discord.ApplicationContext, value: bool) -> None:
+    def set_audit_log(self, ctx: ApplicationContext, value: bool) -> None:
         """Set the value of the audit log setting for a guild."""
         self.settings_cache.pop(ctx.guild.id, None)
         Guild.set_by_id(ctx.guild.id, {"use_audit_log": value})
 
-    async def send_log(self, ctx: discord.ApplicationContext, message: str | discord.Embed) -> None:
+    async def send_log(self, ctx: ApplicationContext, message: str | discord.Embed) -> None:
         """Send a message to the log channel for a guild."""
         log_channel_id = self.fetch_log_channel(ctx)
         if log_channel_id:
@@ -906,7 +1227,7 @@ class DatabaseService:
         columns = [row[1] for row in cursor.fetchall()]
         return column in columns
 
-    def create_new_db(self) -> None:
+    def create_tables(self) -> None:
         """Create all tables in the database and populate default values if they are constants."""
         with self.db:
             self.db.create_tables(
@@ -922,6 +1243,10 @@ class DatabaseService:
                     RollThumbnail,
                     User,
                     VampireClan,
+                    Chronicle,
+                    ChronicleNote,
+                    ChronicleChapter,
+                    ChronicleNPC,
                 ]
             )
         logger.info("DATABASE: Create Tables")
