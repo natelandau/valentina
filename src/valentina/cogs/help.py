@@ -145,7 +145,8 @@ class Help(commands.Cog):
             2. Character creation
             3. Character management
             4. Gameplay
-            5. Additional information
+            5. Chronicles
+            6. Additional information
 
             For a quick command reference, use `/help commands` to see a list of commands, and `/help commands <command>` to see more information about a specific command.
         """
@@ -262,17 +263,46 @@ class Help(commands.Cog):
         )
 
         page6 = dedent(
+            """
+
+            **CHRONICLES**
+            Chronicles are storylines that have multiple chapters and span multiple gaming sessions.  You can think of a chronicle as a campaign.  Chronicles have chapters, NPCs, and notes associated with them to help you keep track of the story.
+
+            List all chronicles using `/chronicle list`.
+
+            **__Creating a chronicle__**
+            Create a chronicle using `/chronicle create`. This will create a new chronicle.
+
+            **__Set a chronicle as active__**
+            Set a chronicle as active using `/chronicle set_active`. This will set the chronicle as active and allow you to add chapters, NPCs, and notes to it.
+
+            **__Chapters__**
+            Chapters are created using `/chronicle chapter create`.  Chapters are used to keep track of the story.  You can add notes to chapters using `/chronicle note create [chapter]`.
+
+            List all chapters using `/chronicle chapter list`.
+
+            **__NPCs__**
+            NPCs are created using `/chronicle npc create`.  NPCs are used to keep track of non-player characters in the story.  View all NPCs for a chronicle with `/chronicle npc list`.
+
+            **__Notes__**
+            Notes are created using `/chronicle note create`.  Notes are used to keep track of important information in the story.  View all notes for a chronicle with `/chronicle note list`.
+
+            You can attach a note to a specific chapter using `/chronicle note create [chapter]`.
+            """
+        )
+
+        page7 = dedent(
             f"""
 
         **ADDITIONAL INFORMATION**
         For bug reports, feature requests, or general questions, please add an issue to the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina).  Or reach out to the developer {' ,'.join(owners)}.
 
-        You are running Valentina Noir version {__version__}.
+        You are running Valentina Noir version `{__version__}`.
 
         """
         )
 
-        paginator = pages.Paginator(pages=[page1, page2, page3, page4, page5, page6])
+        paginator = pages.Paginator(pages=[page1, page2, page3, page4, page5, page6, page7])
         paginator.remove_button("first")
         paginator.remove_button("last")
 
@@ -281,7 +311,7 @@ class Help(commands.Cog):
 
         # If successful, we post this message in the originating channel
         await ctx.respond(
-            "Please check your DMs! I hope you have your character sheet ready.",
+            "Please check your DMs! The Guide to Valentina Noir has been sent to you.",
             ephemeral=True,
         )
 
