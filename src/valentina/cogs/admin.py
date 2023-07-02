@@ -233,6 +233,16 @@ class Admin(commands.Cog):
             log=True,
         )
 
+    @server.command(description="Shutdown Valentina")
+    @commands.is_owner()
+    async def shutdown(self, ctx: discord.ApplicationContext) -> None:
+        """Shutdown the bot."""
+        logger.warning(f"ADMIN: {ctx.author.display_name} has shut down the bot")
+        await present_embed(
+            ctx, title="Shutting down Valentina...", level="warning", ephemeral=True, log=True
+        )
+        await self.bot.close()
+
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
