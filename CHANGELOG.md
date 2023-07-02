@@ -1,3 +1,13 @@
+## v0.10.2 (2023-07-02)
+
+### Fix
+
+- **admin**: add uptime
+- **chronicle**: add chronical overviews
+- **help**: add chronicles to walkthrough
+- **chronicle**: don't log confirmation embeds
+- **database**: use ISO8601 for backup timestampes
+
 ## v0.10.1 (2023-07-02)
 
 ## v0.10.0 (2023-07-02)
