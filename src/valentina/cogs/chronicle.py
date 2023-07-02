@@ -14,6 +14,9 @@ from valentina.views import ChapterModal, ConfirmCancelButtons, NoteModal, NPCMo
 class Chronicle(commands.Cog):
     """Commands used for updating chronicles."""
 
+    # TODO: Add paginator to long embeds (e.g. chronicle list, chronicle chapters, etc.)
+    # TODO: Add paginator to view entire chronicle
+
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
@@ -396,10 +399,15 @@ class Chronicle(commands.Cog):
             return
 
         name = modal.name.strip().title()
+        short_description = modal.short_description.strip()
         description = modal.description.strip()
 
         chapter = chron_svc.create_chapter(
-            ctx, chronicle=chronicle, name=name, description=description
+            ctx,
+            chronicle=chronicle,
+            name=name,
+            short_description=short_description,
+            description=description,
         )
 
         await present_embed(
@@ -410,12 +418,7 @@ class Chronicle(commands.Cog):
             fields=[
                 ("Name", name),
                 ("Chapter Number", chapter.chapter),
-                (
-                    "Description",
-                    (description[:MAX_FIELD_COUNT] + " ...")
-                    if len(description) > MAX_FIELD_COUNT
-                    else description,
-                ),
+                ("Short Description", short_description),
             ],
             ephemeral=True,
             inline_fields=True,
@@ -440,13 +443,14 @@ class Chronicle(commands.Cog):
             fields.append(
                 (
                     f"**{chapter.chapter}.** **__{chapter.name}__**",
-                    f"**Description:** {chapter.description}",
+                    f"{chapter.short_description}",
                 )
             )
 
         await present_embed(ctx, title="Chapters", fields=fields, level="info")
 
     @chapter.command(name="edit", description="Edit a chapter")
+    @logger.catch
     async def edit_chapter(
         self,
         ctx: discord.ApplicationContext,
@@ -470,6 +474,7 @@ class Chronicle(commands.Cog):
 
         updates = {
             "name": modal.name.strip().title(),
+            "short_description": modal.short_description.strip(),
             "description": modal.description.strip(),
         }
         chron_svc.update_chapter(ctx, chapter, **updates)
@@ -481,12 +486,7 @@ class Chronicle(commands.Cog):
             fields=[
                 ("Name", updates["name"]),
                 ("Chapter Number", chapter.chapter),
-                (
-                    "Description",
-                    (modal.description.strip()[:MAX_FIELD_COUNT] + " ...")
-                    if len(modal.description.strip()) > MAX_FIELD_COUNT
-                    else modal.description.strip(),
-                ),
+                ("Short Description", updates["short_description"]),
             ],
             ephemeral=True,
             inline_fields=True,

@@ -354,6 +354,7 @@ class ChronicleChapter(BaseModel):
     chapter = IntegerField()
     name = TextField(null=True)
     date = DateTimeField(null=True)
+    short_description = TextField(null=True)
     description = TextField(null=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)

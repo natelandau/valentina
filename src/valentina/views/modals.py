@@ -69,6 +69,7 @@ class ChapterModal(discord.ui.Modal):
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
         self.name: str = ""
+        self.short_description: str = ""
         self.description: str = ""
 
         self.add_item(
@@ -82,8 +83,18 @@ class ChapterModal(discord.ui.Modal):
         )
         self.add_item(
             discord.ui.InputText(
-                label="description",
-                placeholder="Write a description for the chapter",
+                label="short_description",
+                placeholder="A short description for the chapter",
+                value=chapter.name if chapter else None,
+                required=True,
+                style=discord.InputTextStyle.long,
+                max_length=500,
+            )
+        )
+        self.add_item(
+            discord.ui.InputText(
+                label="chapter",
+                placeholder="Write the chapter",
                 value=chapter.description if chapter else None,
                 required=True,
                 style=discord.InputTextStyle.long,
@@ -95,15 +106,18 @@ class ChapterModal(discord.ui.Modal):
         """Callback for the modal."""
         view = ConfirmCancelButtons(interaction.user)
         self.name = self.children[0].value
-        self.description = self.children[1].value
+        self.short_description = self.children[1].value
+        self.description = self.children[2].value
 
         embed = discord.Embed(title="Confirm Chapter")
         embed.add_field(name="Chapter Name", value=self.name, inline=True)
+        embed.add_field(name="Short Description", value=self.short_description, inline=True)
         embed.add_field(
-            name="Description",
+            name="Chapter",
             value=(self.description[:MAX_FIELD_COUNT] + " ...")
             if len(self.description) > MAX_FIELD_COUNT
             else self.description,
+            inline=False,
         )
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)

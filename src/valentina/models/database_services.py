@@ -92,6 +92,7 @@ class ChronicleService:
         ctx: ApplicationContext,
         chronicle: Chronicle,
         name: str,
+        short_description: str,
         description: str,
     ) -> ChronicleChapter:
         """Create a new chapter."""
@@ -105,6 +106,7 @@ class ChronicleService:
             chronicle=chronicle.id,
             chapter=chapter,
             name=name,
+            short_description=short_description,
             description=description,
             created=time_now(),
             modified=time_now(),
