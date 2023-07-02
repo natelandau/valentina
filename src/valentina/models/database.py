@@ -340,7 +340,7 @@ class ChronicleNPC(BaseModel):
     alive = BooleanField(default=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
-    chronicle = ForeignKeyField(Chronicle, backref="chronicle_npcs")
+    chronicle = ForeignKeyField(Chronicle, backref="npcs")
 
     class Meta:
         """Meta class for the model."""
@@ -358,7 +358,7 @@ class ChronicleChapter(BaseModel):
     description = TextField(null=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
-    chronicle = ForeignKeyField(Chronicle, backref="chronicle_chapters")
+    chronicle = ForeignKeyField(Chronicle, backref="chapters")
 
     class Meta:
         """Meta class for the model."""
@@ -373,9 +373,10 @@ class ChronicleNote(BaseModel):
     description = TextField(null=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
-    chronicle = ForeignKeyField(Chronicle, backref="chronicle_notes")
+    chronicle = ForeignKeyField(Chronicle, backref="notes")
     user = ForeignKeyField(User, backref="chronicle_notes")
-    chapter = ForeignKeyField(ChronicleChapter, backref="chronicle_notes", null=True)
+    chapter = ForeignKeyField(ChronicleChapter, backref="notes", null=True)
+    private = BooleanField(default=False)
 
     class Meta:
         """Meta class for the model."""
