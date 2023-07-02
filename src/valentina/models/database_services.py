@@ -21,6 +21,10 @@ from valentina.models.constants import (
 from valentina.models.database import (
     Character,
     CharacterClass,
+    Chronicle,
+    ChronicleChapter,
+    ChronicleNotes,
+    ChronicleNPC,
     CustomSection,
     CustomTrait,
     DatabaseVersion,
@@ -906,7 +910,7 @@ class DatabaseService:
         columns = [row[1] for row in cursor.fetchall()]
         return column in columns
 
-    def create_new_db(self) -> None:
+    def create_tables(self) -> None:
         """Create all tables in the database and populate default values if they are constants."""
         with self.db:
             self.db.create_tables(
@@ -922,6 +926,10 @@ class DatabaseService:
                     RollThumbnail,
                     User,
                     VampireClan,
+                    Chronicle,
+                    ChronicleNotes,
+                    ChronicleChapter,
+                    ChronicleNPC,
                 ]
             )
         logger.info("DATABASE: Create Tables")

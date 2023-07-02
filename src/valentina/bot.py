@@ -52,8 +52,7 @@ class Valentina(commands.Bot):
             from valentina.models.database_services import DatabaseService, GuildService
 
             # Database setup
-            if not Path(DATABASE.database).exists():
-                DatabaseService(DATABASE).create_new_db()
+            DatabaseService(DATABASE).create_tables()
 
             if DatabaseService(DATABASE).requires_migration(__version__):
                 DatabaseService(DATABASE).migrate_old_database(__version__)

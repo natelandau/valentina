@@ -21,7 +21,7 @@ def test_create_tables(tmp_path):
     test_db.bind(MODELS, bind_refs=False, bind_backrefs=False)
     test_db.connect()
 
-    DatabaseService(test_db).create_new_db()
+    DatabaseService(test_db).create_tables()
     assert test_db.table_exists("guilds")
     assert test_db.table_exists("characters")
     test_db.close()
