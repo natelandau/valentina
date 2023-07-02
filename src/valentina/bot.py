@@ -1,6 +1,6 @@
 """The main file for the Valentina bot."""
 
-from datetime import time, timezone
+from datetime import datetime, time, timezone
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +47,10 @@ class Valentina(commands.Bot):
     async def on_ready(self) -> None:
         """Override on_ready."""
         await self.wait_until_ready()
+
+        # Allow computing uptime
+        self.start_time = datetime.utcnow()
+
         if not self.welcomed:
             from valentina import DATABASE, char_svc, guild_svc
             from valentina.models.database_services import DatabaseService

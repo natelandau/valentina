@@ -1,6 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Administration commands for Valentina."""
-
+from datetime import datetime
 from pathlib import Path
 
 import aiofiles
@@ -125,19 +125,27 @@ class Admin(commands.Cog):
         await present_embed(ctx, title=message, level="success", ephemeral=True, log=True)
 
     ### SERVER COMMANDS ################################################################
-    @server.command(description="View server latency")
-    async def ping(self, ctx: discord.ApplicationContext) -> None:
-        """Ping the bot to get debug information."""
+    @server.command(description="View bot status")
+    async def status(self, ctx: discord.ApplicationContext) -> None:
+        """Show server status information."""
         logger.debug("debug:ping: Generating debug information")
+
+        delta_uptime = datetime.utcnow() - self.bot.start_time
+        hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
+
         await present_embed(
             ctx,
             title="Connection Information",
             description="",
             fields=[
                 ("Status", str(self.bot.status)),
+                ("Uptime", f"`{days}d, {hours}h, {minutes}m, {seconds}s`"),
                 ("Latency", f"`{self.bot.latency!s}`"),
                 ("Connected Guilds", str(len(self.bot.guilds))),
                 ("Bot Version", f"`{__version__}`"),
+                ("Pycord Version", f"`{discord.__version__}`"),
                 ("Database Version", f"`{db_svc.database_version()}`"),
             ],
             inline_fields=True,
