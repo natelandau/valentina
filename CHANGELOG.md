@@ -1,3 +1,14 @@
+## v0.9.0 (2023-07-02)
+
+### Feat
+
+- **chronicle**: add chronicle management (#17)
+
+### Fix
+
+- use `guild_svc` during bot connection
+- **admin**: add database version to `ping`
+
 ## v0.8.3 (2023-07-01)
 
 ### Fix
