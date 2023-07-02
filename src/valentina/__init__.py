@@ -3,18 +3,26 @@
 from .__version__ import __version__
 from .bot import Valentina
 from .main import CONFIG, DATABASE
-from .models.database_services import CharacterService, ChronicleService, GuildService, UserService
+from .models.database_services import (
+    CharacterService,
+    ChronicleService,
+    DatabaseService,
+    GuildService,
+    UserService,
+)
 
 char_svc = CharacterService()
 user_svc = UserService()
 guild_svc = GuildService()
 chron_svc = ChronicleService()
+db_svc = DatabaseService(DATABASE)
 
 __all__ = [
     "DATABASE",
     "Valentina",
     "CONFIG",
     "chron_svc",
+    "db_svc",
     "guild_svc",
     "char_svc",
     "user_svc",

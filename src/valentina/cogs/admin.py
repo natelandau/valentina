@@ -9,7 +9,16 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import CONFIG, Valentina, __version__, char_svc, chron_svc, guild_svc, user_svc
+from valentina import (
+    CONFIG,
+    Valentina,
+    __version__,
+    char_svc,
+    chron_svc,
+    db_svc,
+    guild_svc,
+    user_svc,
+)
 from valentina.models.constants import MAX_CHARACTER_COUNT
 from valentina.utils.converters import ValidChannelName
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -129,7 +138,9 @@ class Admin(commands.Cog):
                 ("Latency", f"`{self.bot.latency!s}`"),
                 ("Connected Guilds", str(len(self.bot.guilds))),
                 ("Bot Version", f"`{__version__}`"),
+                ("Database Version", f"`{db_svc.database_version()}`"),
             ],
+            inline_fields=True,
             level="info",
             ephemeral=True,
         )
