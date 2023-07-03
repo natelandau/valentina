@@ -589,7 +589,7 @@ An overview of {chronicle.name}.
     ) -> None:
         """Edit a chapter."""
         chronicle = chron_svc.fetch_active(ctx)
-        chapter = chron_svc.fetch_chapter_by_id(ctx, chapter_select.split(":")[0])
+        chapter = chron_svc.fetch_chapter_by_name(ctx, chronicle, chapter_select.split(":")[1])
 
         modal = ChapterModal(title="Edit chapter", chapter=chapter)
         await ctx.send_modal(modal)
@@ -632,7 +632,7 @@ An overview of {chronicle.name}.
     ) -> None:
         """Delete a chapter."""
         chronicle = chron_svc.fetch_active(ctx)
-        chapter = chron_svc.fetch_chapter_by_id(ctx, chapter_select.split(":")[0])
+        chapter = chron_svc.fetch_chapter_by_name(ctx, chronicle, chapter_select.split(":")[1])
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
@@ -678,7 +678,7 @@ An overview of {chronicle.name}.
         """Create a new note."""
         chronicle = chron_svc.fetch_active(ctx)
         chapter = (
-            chron_svc.fetch_chapter_by_id(ctx, chapter_select.split(":")[0])
+            chron_svc.fetch_chapter_by_name(ctx, chronicle, chapter_select.split(":")[1])
             if chapter_select
             else None
         )

@@ -244,6 +244,20 @@ class ChronicleService:
         except DoesNotExist as e:
             raise ValueError(f"No chapter found with ID {chapter_id}") from e
 
+    def fetch_chapter_by_name(
+        self, ctx: ApplicationContext, chronicle: Chronicle, name: str
+    ) -> ChronicleChapter:
+        """Fetch a chapter by name."""
+        if ctx.guild.id in self.chapters:
+            for chapter in self.chapters[ctx.guild.id]:
+                if chapter.name == name.strip() and chapter.chronicle == chronicle.id:
+                    return chapter
+
+        try:
+            return ChronicleChapter.get(chronicle=chronicle.id, name=name.strip())
+        except DoesNotExist as e:
+            raise ValueError(f"No chapter found with name {name}") from e
+
     def fetch_chronicle_by_name(self, ctx: ApplicationContext, name: str) -> Chronicle:
         """Fetch a chronicle by name."""
         try:
