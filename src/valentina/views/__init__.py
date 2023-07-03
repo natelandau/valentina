@@ -1,12 +1,13 @@
 """Views for Valentina."""
 
-from .buttons import ConfirmCancelButtons  # isort:skip
+from .buttons import ConfirmCancelButtons, ReRollButton  # isort:skip
 from .embeds import present_embed
 from .modals import ChapterModal, MacroCreateModal, NoteModal, NPCModal
 from .rating_view import RatingView
 
 __all__ = [
     "ChapterModal",
+    "ReRollButton",
     "ConfirmCancelButtons",
     "MacroCreateModal",
     "NoteModal",

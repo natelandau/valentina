@@ -60,7 +60,7 @@ class RollDisplay:
         if self.trait_one_name:
             embed.add_field(
                 name="**Rolled Traits**",
-                value=f"{self.trait_one_name}: `{self.trait_one_value} {pluralize(self.trait_one_value, 'die')}`\n{self.trait_two_name}: `{self.trait_two_value} {pluralize(self.trait_two_value, 'die')}",
+                value=f"{self.trait_one_name}: `{self.trait_one_value} {pluralize(self.trait_one_value, 'die')}`\n{self.trait_two_name}: `{self.trait_two_value} {pluralize(self.trait_two_value, 'die')}`",
                 inline=False,
             )
 
