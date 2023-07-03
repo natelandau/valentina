@@ -181,7 +181,8 @@ class Chronicle(commands.Cog):
             return
 
         if view.confirmed:
-            chron_svc.delete_chronicle(ctx, chronicle)
+            chronicle_object = chron_svc.fetch_chronicle_by_name(ctx, chronicle)
+            chron_svc.delete_chronicle(ctx, chronicle_object)
             await msg.delete_original_response()
             await present_embed(
                 ctx,
