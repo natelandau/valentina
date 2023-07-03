@@ -212,12 +212,12 @@ class DiceRoll:
         if self.dice_type != DiceType.D10:
             return "Dice roll"
         if self.is_botch:
-            return f"__**BOTCH!**__\n{self.result} {pluralize(self.result, 'SUCCESS')}"
+            return f"__**BOTCH!**__\n{self.result} {pluralize(self.result, 'Success')}"
         if self.is_critical:
-            return f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'SUCCESS')}"
+            return f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'Success')}"
         if self.is_success:
-            return f"{self.result} {pluralize(self.result, 'SUCCESS')}"
+            return f"{self.result} {pluralize(self.result, 'Success')}"
         if self.is_failure:
-            return f"{self.result} {pluralize(self.result, 'SUCCESS')}"
+            return f"{self.result} {pluralize(self.result, 'Success')}"
 
         return None
