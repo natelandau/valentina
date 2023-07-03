@@ -16,7 +16,6 @@ from valentina.utils.errors import (
     NoClaimError,
     SectionNotFoundError,
     TraitNotFoundError,
-    UserHasClaimError,
 )
 
 
@@ -41,12 +40,12 @@ class TestCharacterService:
         """Test add_claim().
 
         Given a guild, character, and user
-        When a claim is added
-        Then CharacterClaimedError is raised
+        When a user has a claim and claims another character
+        Then the new claim replaces the old claim
         """
         self.char_svc.add_claim(guild_id=1, char_id=1, user_id=1)
-        with pytest.raises(UserHasClaimError):
-            self.char_svc.add_claim(guild_id=1, char_id=2, user_id=1)
+        self.char_svc.add_claim(guild_id=1, char_id=2, user_id=1)
+        assert self.char_svc.claims == {"1_1": "1_2"}
 
     def test_add_claim_three(self):
         """Test add_claim().

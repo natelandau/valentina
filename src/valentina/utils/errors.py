@@ -37,24 +37,6 @@ class DuplicateRollResultThumbError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
-class UserHasClaimError(Exception):
-    """Raised when a user already has a claim on a character."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "You already have a character claimed.\nUse `/unclaim` to unclaim your character."
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
 class MacroNotFoundError(Exception):
     """Raised when a macro is not found for the user."""
 

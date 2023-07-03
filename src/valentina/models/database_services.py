@@ -45,7 +45,6 @@ from valentina.utils.errors import (
     SectionExistsError,
     SectionNotFoundError,
     TraitNotFoundError,
-    UserHasClaimError,
 )
 from valentina.utils.helpers import (
     extend_common_traits_with_class,
@@ -453,12 +452,8 @@ class CharacterService:
         char_key = self.__get_char_key(guild_id, char_id)
         claim_key = self.__get_claim_key(guild_id, user_id)
 
-        if claim_key in self.claims:
-            if self.claims[claim_key] == char_key:
-                return True
-
-            logger.debug(f"CLAIM: User {user_id} already has a claim")
-            raise UserHasClaimError
+        if claim_key in self.claims and self.claims[claim_key] == char_key:
+            return True
 
         if any(char_key == claim for claim in self.claims.values()):
             logger.debug(f"CLAIM: Character {char_id} is already claimed")
