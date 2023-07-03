@@ -9,12 +9,7 @@ from loguru import logger
 from valentina import Valentina, char_svc
 from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor
 from valentina.utils.errors import NoClaimError
-from valentina.utils.helpers import (
-    get_max_trait_value,
-    get_trait_multiplier,
-    get_trait_new_value,
-    normalize_to_db_row,
-)
+from valentina.utils.helpers import get_max_trait_value, get_trait_multiplier, get_trait_new_value
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
@@ -76,21 +71,23 @@ class Xp(commands.Cog, name="XP"):
         """Spend experience points."""
         character = char_svc.fetch_claim(ctx)
 
-        old_value = character.__getattribute__(normalize_to_db_row(trait))
+        old_value = char_svc.fetch_trait_value(ctx, character, trait)
+        category = char_svc.fetch_trait_category(ctx, character, trait)
+
+        multiplier = get_trait_multiplier(trait, category)
 
         if old_value > 0:
-            multiplier = get_trait_multiplier(trait)
             upgrade_cost = (old_value + 1) * multiplier
 
         if old_value == 0:
-            upgrade_cost = get_trait_new_value(trait)
+            upgrade_cost = get_trait_new_value(trait, category)
 
         remaining_xp = character.experience - upgrade_cost
         if remaining_xp < 0:
             await present_embed(
                 ctx,
                 title="Error: Not enough XP",
-                description=f"**{trait}** upgrade cost is **{upgrade_cost} XP**. You only have **{character.experience} XP**.",
+                description=f"**{trait}** upgrade cost is **{upgrade_cost} XP**. You have **{character.experience} XP**.",
                 level="error",
                 ephemeral=True,
             )
@@ -104,19 +101,18 @@ class Xp(commands.Cog, name="XP"):
                 level="error",
             )
             return
+
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Upgrade {trait}",
-            description=f"Upgrading **{trait}** by **1** dot will cost **{upgrade_cost} XP**",
+            title=f"Upgrade {trait}?",
+            description=f"Upgrading **{trait}** by **1** dot will cost **{upgrade_cost} XP**\n Raise from **{old_value}** dots to **{old_value + 1}** dots",
             fields=[
-                (f"Current {trait} value", old_value),
-                (f"New {trait} value", old_value + 1),
                 ("Current XP", character.experience),
-                ("XP Cost", upgrade_cost),
+                ("XP Cost", str(upgrade_cost)),
                 ("Remaining XP", character.experience - upgrade_cost),
             ],
-            inline_fields=False,
+            inline_fields=True,
             ephemeral=True,
             level="info",
             view=view,
@@ -130,11 +126,13 @@ class Xp(commands.Cog, name="XP"):
         if view.confirmed:
             new_value = old_value + 1
             new_experience = character.experience - upgrade_cost
+            char_svc.update_trait_value(ctx, character, trait, new_value)
             char_svc.update_char(
                 ctx,
                 character.id,
-                **{normalize_to_db_row(trait): new_value, "experience": new_experience},
+                **{"experience": new_experience},
             )
+
             logger.info(f"XP: {character.name} {trait} upgraded by {ctx.author.name}")
             await msg.delete_original_response()
             await present_embed(
@@ -148,6 +146,7 @@ class Xp(commands.Cog, name="XP"):
                     ("XP Cost", str(upgrade_cost)),
                     ("Remaining XP", str(new_experience)),
                 ],
+                inline_fields=True,
                 log=True,
             )
 

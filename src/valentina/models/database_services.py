@@ -777,6 +777,28 @@ class CharacterService:
 
         raise TraitNotFoundError
 
+    def fetch_trait_category(
+        self, ctx: ApplicationContext, character: Character, trait: str
+    ) -> str:
+        """Fetch the category of a trait for a character."""
+        all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+        all_traits = merge_dictionaries(all_constants, flat_list=False)
+        if isinstance(all_traits, dict):
+            for category, traits in all_traits.items():
+                if trait.lower() in [x.lower() for x in traits]:
+                    return category
+
+        custom_trait = [
+            x
+            for x in self.fetch_char_custom_traits(ctx, character)
+            if x.name.lower() == trait.lower()
+        ]
+
+        if len(custom_trait) > 0:
+            return custom_trait[0].category
+
+        raise TraitNotFoundError
+
     def fetch_user_of_character(self, guild_id: int, char_id: int) -> int:
         """Returns the user id of the user who claimed a character."""
         if self.is_char_claimed(guild_id, char_id):

@@ -130,61 +130,59 @@ def get_max_trait_value(trait: str, is_custom_trait: bool = False) -> int | None
     return MaxTraitValue.DEFAULT.value
 
 
-def get_trait_multiplier(trait: str) -> int:
+def get_trait_multiplier(trait: str, category: str) -> int:
     """Get the experience multiplier associated with a trait for use when upgrading.
 
     Args:
         trait (str): The trait to get the cost for.
+        category (str): The category of the trait.
 
     Returns:
         int: The multiplier associated with the trait.
+
+    >>> get_trait_multiplier("Dominate", "Disciplines")
+    5
+
+    >>> get_trait_multiplier("Humanity", "Universal")
+    2
+
+    >>> get_trait_multiplier("xxx", "xxx")
+    2
     """
-    # Some traits have their own max value. Check for those first.
     if trait.upper() in XPMultiplier.__members__:
         return XPMultiplier[trait.upper()].value
 
-    # Try to find the multiplier by looking up the parent key of the trait
-    all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
-    all_traits = merge_dictionaries(all_constants, flat_list=False)
+    if category.upper() in XPMultiplier.__members__:
+        return XPMultiplier[category.upper()].value
 
-    if isinstance(all_traits, dict):
-        for category, traits in all_traits.items():
-            if (
-                trait.lower() in [x.lower() for x in traits]
-                and category.upper() in XPMultiplier.__members__
-            ):
-                return XPMultiplier[category.upper()].value
-
-    # Return the default value
     return XPMultiplier.DEFAULT.value
 
 
-def get_trait_new_value(trait: str) -> int:
+def get_trait_new_value(trait: str, category: str) -> int:
     """Get the experience cost of the first dot for a wholly new trait from the XPNew enum.
 
     Args:
         trait (str): The trait to get the cost for.
+        category (str): The category of the trait.
 
     Returns:
         int: The cost of the first dot of the trait.
+
+    >>> get_trait_new_value("Dominate", "Disciplines")
+    10
+
+    >>> get_trait_new_value("Talents", "")
+    3
+
+    >>> get_trait_new_value("XXX", "XXX")
+    1
     """
-    # Some traits have their own value. Check for those first.
     if trait.upper() in XPNew.__members__:
         return XPNew[trait.upper()].value
 
-    # Try to find the cost by looking up the parent key of the trait
-    all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
-    all_traits = merge_dictionaries(all_constants, flat_list=False)
+    if category.upper() in XPNew.__members__:
+        return XPNew[category.upper()].value
 
-    if isinstance(all_traits, dict):
-        for category, traits in all_traits.items():
-            if (
-                trait.lower() in [x.lower() for x in traits]
-                and category.upper() in XPNew.__members__
-            ):
-                return XPNew[category.upper()].value
-
-    # Return the default value
     return XPNew.DEFAULT.value
 
 

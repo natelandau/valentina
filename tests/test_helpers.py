@@ -7,8 +7,6 @@ from valentina.utils.helpers import (
     all_traits_from_constants,
     extend_common_traits_with_class,
     get_max_trait_value,
-    get_trait_multiplier,
-    get_trait_new_value,
     normalize_to_db_row,
     num_to_circles,
 )
@@ -105,53 +103,6 @@ def test_get_max_trait_value(trait, expected):
     THEN the correct value is returned
     """
     assert get_max_trait_value(trait) == expected
-
-
-@pytest.mark.parametrize(
-    ("trait", "expected"),
-    [
-        ("Willpower", 1),
-        ("Humanity", 2),
-        ("Rage", 1),
-        ("Gnosis", 2),
-        ("Arete", 10),
-        ("Quintessence", 1),
-        ("random", 2),
-        ("strength", 4),
-        ("drive", 2),
-        ("Conscience", 2),
-    ],
-)
-def test_get_trait_multiplier(trait, expected):
-    """Test get_trait_multiplier().
-
-    GIVEN a trait name
-    WHEN get_trait_multiplier() is called
-    THEN the correct value is returned
-    """
-    assert get_trait_multiplier(trait) == expected
-
-
-@pytest.mark.parametrize(
-    ("trait", "expected"),
-    [
-        ("Willpower", 1),
-        ("Humanity", 1),
-        ("RANDOM", 1),
-        ("drive", 3),
-        ("Conscience", 1),
-        ("potence", 10),
-        ("Spirit", 10),
-    ],
-)
-def test_get_trait_new_value(trait, expected):
-    """Test get_trait_new_value().
-
-    GIVEN a trait name
-    WHEN get_trait_new_value() is called
-    THEN the correct value is returned
-    """
-    assert get_trait_new_value(trait) == expected
 
 
 @pytest.mark.parametrize(("row", "expected"), [("Test-Row", "test_row"), ("Test Row", "test_row")])
