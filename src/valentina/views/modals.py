@@ -85,7 +85,7 @@ class ChapterModal(discord.ui.Modal):
             discord.ui.InputText(
                 label="short_description",
                 placeholder="A short description for the chapter",
-                value=chapter.name if chapter else None,
+                value=chapter.short_description if chapter else None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=500,
