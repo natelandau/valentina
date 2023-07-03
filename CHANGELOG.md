@@ -1,3 +1,12 @@
+## v0.10.3 (2023-07-02)
+
+### Fix
+
+- **diceroll**: cleanup dice roll embeds
+- **chronicle**: send chronicle recaps via DM
+- fix markdown error in trait update embed
+- **chronicle**: delete chronicles
+
 ## v0.10.2 (2023-07-02)
 
 ### Fix
