@@ -1,3 +1,10 @@
+## v0.11.1 (2023-07-03)
+
+### Fix
+
+- **chronicle**: find chapters by name
+- **chronicle**: fix chronicle delete
+
 ## v0.11.0 (2023-07-02)
 
 ### Feat
