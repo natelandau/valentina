@@ -121,9 +121,8 @@ class Roll(commands.Cog):
         trait_two: Option(
             str,
             description="Second trait to roll",
-            required=False,
+            required=True,
             autocomplete=__trait_two_autocomplete,
-            default=None,
         ),
         difficulty: Option(
             int,
