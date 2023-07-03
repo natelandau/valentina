@@ -1,3 +1,16 @@
+## v0.11.0 (2023-07-02)
+
+### Feat
+
+- **diceroll**: reroll dice as needed
+
+### Fix
+
+- **chronicle**: fix update chapter
+- **character**: allow claiming character with another claiemd
+- **xp**: spend xp on custom traits
+- **diceroll**: second trait required
+
 ## v0.10.3 (2023-07-02)
 
 ### Fix
