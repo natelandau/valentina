@@ -1,3 +1,9 @@
+## v0.11.2 (2023-07-05)
+
+### Fix
+
+- **admin**: create on-demand database backups
+
 ## v0.11.1 (2023-07-03)
 
 ### Fix
