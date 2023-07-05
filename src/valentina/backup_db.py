@@ -47,7 +47,7 @@ class DBBackup:
         await aiofiles.os.makedirs(self.backup_dir, exist_ok=True)
 
         backup_file = (
-            self.backup_dir / f"{arrow.now().format('YYYY-MM-DDTHH:MM:SS')}-{backup_type}.sqlite"
+            self.backup_dir / f"{arrow.now().format('YYYY-MM-DDTHH:mm:ss')}-{backup_type}.sqlite"
         )
 
         async with aiofiles.open(self.db_path, mode="rb") as source_file, aiofiles.open(

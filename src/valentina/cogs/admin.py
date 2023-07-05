@@ -128,7 +128,7 @@ class Admin(commands.Cog):
     @server.command(description="View bot status")
     async def status(self, ctx: discord.ApplicationContext) -> None:
         """Show server status information."""
-        logger.debug("debug:ping: Generating debug information")
+        logger.debug("ADMIN: Show server status information")
 
         delta_uptime = datetime.utcnow() - self.bot.start_time
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
@@ -157,7 +157,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def reload(self, ctx: discord.ApplicationContext) -> None:
         """Reloads all cogs."""
-        logger.debug("debug:reload: Reloading the bot...")
+        logger.debug("Admin: Reload the bot")
         count = 0
         for cog in Path(self.bot.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
             if cog.stem[0] != "_":
@@ -173,7 +173,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def tail_logs(self, ctx: discord.ApplicationContext) -> None:
         """Tail the bot's logs."""
-        logger.debug("debug:logs: Tailing the logs")
+        logger.debug("ADMIN: Tail bot logs")
         max_lines_from_bottom = 20
         log_lines = []
 
@@ -223,14 +223,14 @@ class Admin(commands.Cog):
             user_svc.purge_cache(ctx)
             char_svc.purge_cache(ctx, with_claims=True)
             chron_svc.purge_cache(ctx)
-            logger.info(f"debug:cache: Purged cache for {ctx.guild.name}")
+            logger.info(f"ADMIN: Purge cache for {ctx.guild.name}")
 
         if all_guilds:
             guild_svc.purge_cache()
             user_svc.purge_cache()
             char_svc.purge_cache(with_claims=True)
             chron_svc.purge_cache()
-            logger.info("debug:cache: Purged cache for all guilds")
+            logger.info("ADMIN: Purge cache for all guilds")
 
         await msg.delete_original_response()
         await present_embed(
@@ -250,6 +250,16 @@ class Admin(commands.Cog):
             ctx, title="Shutting down Valentina...", level="warning", ephemeral=True, log=True
         )
         await self.bot.close()
+
+    @server.command(description="Create DB Backup")
+    @commands.is_owner()
+    async def db_backup(self, ctx: discord.ApplicationContext) -> None:
+        """Create a backup of the database."""
+        logger.info("ADMIN: Manually create database backup")
+        await db_svc.backup_database(CONFIG)
+        await present_embed(
+            ctx, title="Database backup created", level="success", ephemeral=True, log=True
+        )
 
 
 def setup(bot: Valentina) -> None:

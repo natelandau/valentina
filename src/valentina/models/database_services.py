@@ -1267,6 +1267,13 @@ class DatabaseService:
         """Initialize the DatabaseService."""
         self.db = database
 
+    async def backup_database(self, config: dict) -> None:
+        """Create a backup of the database."""
+        from valentina.backup_db import DBBackup
+
+        await DBBackup(config).create_backup()
+        await DBBackup(config).clean_old_backups()
+
     def column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.
 
