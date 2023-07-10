@@ -13,6 +13,7 @@ from valentina.models.constants import (
     COMMON_TRAITS,
     HUNTER_TRAITS,
     MAGE_TRAITS,
+    MORTAL_TRAITS,
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
     CharClass,
@@ -1239,7 +1240,14 @@ class GuildService:
             guild_id (int): The guild to fetch traits for.
             flat_list (bool, optional): Return a flat list of traits. Defaults to False.
         """
-        all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+        all_constants = [
+            COMMON_TRAITS,
+            MAGE_TRAITS,
+            VAMPIRE_TRAITS,
+            WEREWOLF_TRAITS,
+            HUNTER_TRAITS,
+            MORTAL_TRAITS,
+        ]
         all_traits = merge_dictionaries(all_constants, flat_list=False)
 
         if isinstance(all_traits, dict):
@@ -1451,6 +1459,7 @@ class DatabaseService:
             {"category": "Vampire", "dict": VAMPIRE_TRAITS, "class": CharClass.VAMPIRE.value},
             {"category": "Werewolf", "dict": WEREWOLF_TRAITS, "class": CharClass.WEREWOLF.value},
             {"category": "Hunter", "dict": HUNTER_TRAITS, "class": CharClass.HUNTER.value},
+            {"category": "Mortal", "dict": MORTAL_TRAITS, "class": CharClass.MORTAL.value},
         ]
 
         for category in categories:

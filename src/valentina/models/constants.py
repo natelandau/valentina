@@ -225,11 +225,11 @@ COMMON_TRAITS = {
         "Rituals",
         "Science",
     ],
-    "Virtues": ["Conscience", "Self-Control", "Courage"],
-    "Universal": ["Willpower", "Humanity", "Desperation", "Reputation"],
+    "Universal": ["Willpower", "Desperation", "Reputation"],
 }
 MAGE_TRAITS = {
-    "Universal": ["Arete", "Quintessence"],
+    "Universal": ["Humanity", "Arete", "Quintessence"],
+    "Virtues": ["Conscience", "Self-Control", "Courage"],
     "Spheres": [
         "Correspondence",
         "Entropy",
@@ -243,7 +243,8 @@ MAGE_TRAITS = {
     ],
 }
 VAMPIRE_TRAITS = {
-    "Universal": ["Blood Pool"],
+    "Universal": ["Blood Pool", "Humanity"],
+    "Virtues": ["Conscience", "Self-Control", "Courage"],
     "Disciplines": [
         "Animalism",
         "Auspex",
@@ -268,7 +269,11 @@ WEREWOLF_TRAITS = {
     "Universal": ["Gnosis", "Rage"],
     "Renown": ["Glory", "Honor", "Wisdom"],
 }
-HUNTER_TRAITS = {"Universal": ["Conviction", "Faith"]}
+HUNTER_TRAITS = {
+    "Universal": ["Conviction", "Faith", "Humanity"],
+    "Virtues": ["Conscience", "Self-Control", "Courage"],
+}
+MORTAL_TRAITS = {"Universal": ["Humanity"], "Virtues": ["Conscience", "Self-Control", "Courage"]}
 CLAN_DISCIPLINES = {
     "Assamite": ["Celerity", "Obfuscate", "Quietus"],
     "Brujah": ["Celerity", "Potence", "Presence"],

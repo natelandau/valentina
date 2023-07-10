@@ -10,6 +10,7 @@ from valentina.models.constants import (
     DICEROLL_THUBMS,
     HUNTER_TRAITS,
     MAGE_TRAITS,
+    MORTAL_TRAITS,
     VAMPIRE_TRAITS,
     WEREWOLF_TRAITS,
     MaxTraitValue,
@@ -43,7 +44,14 @@ def merge_dictionaries(
 
 def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] | list[str]:
     """Return all traits from the constants as a dictionary inclusive of all classes."""
-    trait_dicts = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+    trait_dicts = [
+        COMMON_TRAITS,
+        MAGE_TRAITS,
+        VAMPIRE_TRAITS,
+        WEREWOLF_TRAITS,
+        HUNTER_TRAITS,
+        MORTAL_TRAITS,
+    ]
 
     all_traits: dict[str, list[str]] = {}
     for dictionary in trait_dicts:
@@ -88,7 +96,14 @@ def get_max_trait_value(trait: str, is_custom_trait: bool = False) -> int | None
         return MaxTraitValue[trait.upper()].value
 
     # Try to find the max value by looking up the parent key of the trait
-    all_constants = [COMMON_TRAITS, MAGE_TRAITS, VAMPIRE_TRAITS, WEREWOLF_TRAITS, HUNTER_TRAITS]
+    all_constants = [
+        COMMON_TRAITS,
+        MAGE_TRAITS,
+        VAMPIRE_TRAITS,
+        WEREWOLF_TRAITS,
+        HUNTER_TRAITS,
+        MORTAL_TRAITS,
+    ]
     all_traits = merge_dictionaries(all_constants, flat_list=False)
 
     if isinstance(all_traits, dict):

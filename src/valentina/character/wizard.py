@@ -113,7 +113,7 @@ class CharGenWizard:
             await self.__finalize_character()
         else:
             await self.__send_messages(
-                message=f"`{previously_rated_trait.name}` set to `{rating}`",
+                message=f"`{previously_rated_trait.name} set to {rating}`",
                 interaction=interaction,
             )
 
