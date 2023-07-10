@@ -6,13 +6,14 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina, char_svc
-from valentina.character.create import create_character
+from valentina import Valentina, char_svc, trait_svc, user_svc
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal, CustomSectionModal
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitCategory
-from valentina.utils.converters import ValidCharacterClass, ValidCharacterName
+from valentina.character.wizard import CharGenWizard
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitCategory, VampClanList
+from valentina.models.database import CharacterClass, VampireClan
+from valentina.utils.converters import ValidCharacterClass, ValidCharacterName, ValidClan
 from valentina.utils.errors import NoClaimError, SectionExistsError
 from valentina.utils.helpers import normalize_to_db_row
 from valentina.utils.options import select_character
@@ -107,13 +108,6 @@ class Characters(commands.Cog, name="Character"):
     async def create_character(
         self,
         ctx: discord.ApplicationContext,
-        quick_char: Option(
-            str,
-            name="quick",
-            description="Create a character with only essential traits? (Defaults to False)",
-            choices=["True", "False"],
-            required=True,
-        ),
         char_class: Option(
             ValidCharacterClass,
             name="class",
@@ -124,6 +118,14 @@ class Characters(commands.Cog, name="Character"):
         first_name: Option(ValidCharacterName, "Character's name", required=True),
         last_name: Option(ValidCharacterName, "Character's last name", required=True),
         nickname: Option(ValidCharacterName, "Character's nickname", required=False, default=None),
+        vampire_clan: Option(
+            ValidClan,
+            name="vampire_clan",
+            description="The character's clan (only for vampires)",
+            choices=[clan.value for clan in VampClanList],
+            required=False,
+            default=None,
+        ),
     ) -> None:
         """Create a new character.
 
@@ -133,17 +135,50 @@ class Characters(commands.Cog, name="Character"):
             first_name (str): The character's first name
             last_name (str, optional): The character's last name. Defaults to None.
             nickname (str, optional): The character's nickname. Defaults to None.
-            quick_char (bool, optional): Create a character with only essential traits? (Defaults to False).
+            vampire_clan (str, optional): The character's vampire clan. Defaults to None.
         """
-        q_char = quick_char == "True"
-        await create_character(
+        # Ensure the user is in the database
+        user_svc.fetch_user(ctx)
+
+        if char_class.lower() == "vampire" and not vampire_clan:
+            await present_embed(
+                ctx,
+                title="Vampire clan required",
+                description="Please select a vampire clan",
+                level="error",
+            )
+            return
+
+        char_class_instance = CharacterClass.get(CharacterClass.name == char_class)
+        if char_class.lower() == "vampire":
+            vampire_clan_instance = VampireClan.get(VampireClan.name == vampire_clan)
+        else:
+            vampire_clan_instance = None
+
+        # Fetch all traits and set them
+        fetched_traits = trait_svc.fetch_all_class_traits(char_class)
+
+        wizard = CharGenWizard(
             ctx,
-            quick_char=q_char,
-            char_class=char_class,
+            fetched_traits,
             first_name=first_name,
             last_name=last_name,
             nickname=nickname,
         )
+        await wizard.begin_chargen()
+        trait_values_from_chargen = await wizard.wait_until_done()
+
+        # Create the character and traits in the db
+        character = char_svc.create_character(
+            ctx,
+            first_name=first_name,
+            last_name=last_name,
+            nickname=nickname,
+            char_class=char_class_instance,
+            clan=vampire_clan_instance,
+        )
+        char_svc.update_traits_by_id(ctx, character, trait_values_from_chargen)
+        logger.info(f"CHARACTER: Create character [{character.id}] {character.name}")
 
     @chars.command(name="sheet", description="View a character sheet")
     @logger.catch
@@ -336,7 +371,7 @@ class Characters(commands.Cog, name="Character"):
         await modal.wait()
         biography = modal.bio.strip()
 
-        char_svc.update_char(ctx, character.id, bio=biography)
+        char_svc.update_character(ctx, character.id, bio=biography)
         logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
 
         await present_embed(
@@ -393,7 +428,7 @@ class Characters(commands.Cog, name="Character"):
             log=True,
         )
 
-    @update.command(name="trait", description="Update a trait for a character")
+    @update.command(name="trait", description="Update the value of a trait for a character")
     async def update_trait(
         self,
         ctx: discord.ApplicationContext,
@@ -435,7 +470,7 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        if view.confirmed and char_svc.update_trait_value(
+        if view.confirmed and char_svc.update_trait_value_by_name(
             ctx, character=character, trait_name=trait, new_value=new_value
         ):
             await msg.delete_original_response()

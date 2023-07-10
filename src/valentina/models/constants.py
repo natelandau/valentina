@@ -6,6 +6,7 @@ MAX_OPTION_LIST_SIZE = 25
 MAX_CHARACTER_COUNT = 1990
 MAX_FIELD_COUNT = 1010
 MAX_PAGE_CHARACTER_COUNT = 1950
+MAX_BUTTONS_PER_ROW = 5
 
 
 class MaxTraitValue(Enum):
@@ -124,6 +125,7 @@ class CharClass(Enum):
     WEREWOLF = "Werewolf"
     MAGE = "Mage"
     HUNTER = "Hunter"
+    Other = "Other"
 
 
 class TraitCategory(Enum):

@@ -5,7 +5,6 @@ import pytest
 
 from valentina.utils.helpers import (
     all_traits_from_constants,
-    extend_common_traits_with_class,
     get_max_trait_value,
     normalize_to_db_row,
     num_to_circles,
@@ -50,35 +49,6 @@ def test_all_traits_from_constants_two():
     assert "Drive" in returned
     assert "Willpower" in returned
     assert "Thaumaturgy" in returned
-
-
-def test_extend_common_traits_with_class():
-    """Test extend_common_traits_with_class().
-
-    GIVEN a character class
-    WHEN extend_common_traits_with_class() is called
-    THEN a dictionary common traits plus the traits for the class is returned
-    """
-    returned = extend_common_traits_with_class("mage")
-    assert "Knowledges" in returned
-    assert "Skills" in returned
-    assert "Spheres" in returned
-    assert "Disciplines" not in returned
-    assert "Renown" not in returned
-
-    returned = extend_common_traits_with_class("vampire")
-    assert "Knowledges" in returned
-    assert "Skills" in returned
-    assert "Spheres" not in returned
-    assert "Disciplines" in returned
-    assert "Renown" not in returned
-
-    returned = extend_common_traits_with_class("werewolf")
-    assert "Knowledges" in returned
-    assert "Skills" in returned
-    assert "Spheres" not in returned
-    assert "Disciplines" not in returned
-    assert "Renown" in returned
 
 
 @pytest.mark.parametrize(

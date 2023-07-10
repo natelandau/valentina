@@ -35,7 +35,7 @@ def test_get_tables(mock_db):
     THEN the list of tables is returned
     """
     tables = DatabaseService(mock_db).get_tables()
-    assert len(tables) == 10
+    assert len(tables) == 17
     assert "characters" in tables
 
 
@@ -86,4 +86,5 @@ def test_requires_migration_two(mock_db, version, expected):
     WHEN DatabaseService.requires_migration() is called
     THEN the correct value is passed
     """
+    print(DatabaseVersion.get_by_id(1).version)
     assert DatabaseService(mock_db).requires_migration(version) is expected

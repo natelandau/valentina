@@ -5,7 +5,7 @@ import re
 
 from discord.ext.commands import BadArgument, Context, Converter
 
-from valentina.models.constants import CharClass
+from valentina.models.constants import CharClass, VampClanList
 
 
 class ValidThumbnailURL(Converter):
@@ -32,6 +32,17 @@ class ValidCharacterClass(Converter):
             return CharClass(argument).value
         except ValueError as e:
             raise BadArgument(f"`{argument}` is not a valid character class") from e
+
+
+class ValidClan(Converter):
+    """A converter that ensures a requested vampire clan is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
+        """Validate and normalize character's clan."""
+        try:
+            return VampClanList(argument).value
+        except ValueError as e:
+            raise BadArgument(f"`{argument}` is not a valid vampire clan") from e
 
 
 class ValidCharacterName(Converter):

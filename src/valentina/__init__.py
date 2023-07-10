@@ -8,6 +8,7 @@ from .models.database_services import (
     ChronicleService,
     DatabaseService,
     GuildService,
+    TraitService,
     UserService,
 )
 
@@ -16,6 +17,7 @@ user_svc = UserService()
 guild_svc = GuildService()
 chron_svc = ChronicleService()
 db_svc = DatabaseService(DATABASE)
+trait_svc = TraitService()
 
 __all__ = [
     "DATABASE",
@@ -25,6 +27,7 @@ __all__ = [
     "db_svc",
     "guild_svc",
     "char_svc",
+    "trait_svc",
     "user_svc",
     "__version__",
 ]

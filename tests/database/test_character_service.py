@@ -136,8 +136,11 @@ class TestCharacterService:
         Then all traits associated with that character are returned as a dictionary
         """
         returned = self.char_svc.fetch_all_character_traits(existing_character)
-        assert "Test_Category" in returned
-        assert "Physical" in returned
+
+        assert returned == {
+            "Common": ["Strength", "Dexterity", "Stamina"],
+            "Test_Category": ["Test_Trait", "Test_Trait2"],
+        }
 
     def test_fetch_all_character_traits_two(self, existing_character):
         """Test fetch_all_character_traits().
@@ -147,9 +150,7 @@ class TestCharacterService:
         Then all traits associated with that character are returned as a list
         """
         returned = self.char_svc.fetch_all_character_traits(existing_character, flat_list=True)
-        assert len(returned) > 55
-        assert "Test_Trait" in returned
-        assert "Strength" in returned
+        assert returned == ["Dexterity", "Stamina", "Strength", "Test_Trait", "Test_Trait2"]
 
     def test_fetch_all_character_trait_values(self, ctx_existing):
         """Test fetch_all_character_trait_values().
@@ -162,9 +163,9 @@ class TestCharacterService:
         returned = self.char_svc.fetch_all_character_trait_values(ctx_existing, character)
 
         assert returned["Physical"] == [
-            ("Strength", 5, 5, "●●●●●"),
-            ("Dexterity", 0, 5, "○○○○○"),
-            ("Stamina", 0, 5, "○○○○○"),
+            ("Strength", 1, 5, "●○○○○"),
+            ("Dexterity", 2, 5, "●●○○○"),
+            ("Stamina", 3, 5, "●●●○○"),
         ]
         assert returned["Test_Category"] == [
             ("Test_Trait", 2, 5, "●●○○○"),
@@ -238,8 +239,8 @@ class TestCharacterService:
         ("trait", "expected"),
         [
             ("Test_Trait", 2),
-            ("strength", 5),
-            ("humanity", 0),
+            ("strength", 1),
+            ("DEXTERITY", 2),
             ("exception", 2),
         ],
     )
@@ -300,25 +301,25 @@ class TestCharacterService:
         self.char_svc.add_claim(guild_id=1, char_id=1, user_id=1)
         assert self.char_svc.user_has_claim(ctx_existing) is True
 
-    def test_update_char(self, ctx_existing):
-        """Test update_char().
+    def test_update_character(self, ctx_existing):
+        """Test update_character().
 
         Given a character id and a dict of updates
-        When update_char is called
+        When update_character is called
         Then the character is updatedin the database and purged from the cache
         """
         character = Character.get_by_id(1)
-        assert character.dexterity == 0
+        assert character.experience == 0
         self.char_svc.fetch_by_id(1, 1)
         assert "1_1" in self.char_svc.characters
 
-        self.char_svc.update_char(ctx_existing, 1, **{"dexterity": 5})
+        self.char_svc.update_character(ctx_existing, 1, **{"experience": 5})
         character = Character.get_by_id(1)
-        assert character.dexterity == 5
+        assert character.experience == 5
         assert "1_1" not in self.char_svc.characters
 
         with pytest.raises(CharacterNotFoundError):
-            self.char_svc.update_char(ctx_existing, 12345678, **{"dexterity": 5})
+            self.char_svc.update_character(ctx_existing, 12345678, **{"experience": 5})
 
     def test_update_custom_section(self, ctx_existing):
         """Test update_custom_section().
@@ -342,29 +343,22 @@ class TestCharacterService:
         with pytest.raises(SectionNotFoundError):
             self.char_svc.update_custom_section(ctx_existing, 12345678, **properties)
 
-    def test_update_trait_value(self, ctx_existing):
-        """Test update_trait_value().
+    def test_update_trait_value_by_name(self, ctx_existing):
+        """Test update_trait_value_by_name().
 
         Given a character id, trait name, and new value
-        When update_trait_value is called
+        When update_trait_value_by_name is called
         Then the trait value is updated in the database and purged from the cache
         """
-        character = Character.get_by_id(1)
-        assert character.wits == 0
-        self.char_svc.fetch_by_id(1, 1)
-        assert "1_1" in self.char_svc.characters
+        # TODO: Test for updating a non-custom trait
 
-        self.char_svc.update_trait_value(ctx_existing, character, "wits", 5)
         character = Character.get_by_id(1)
-        assert character.wits == 5
-        assert "1_1" not in self.char_svc.characters
-
         custom = CustomTrait.get_by_id(1)
         assert custom.value == 2
         name = custom.name
-        self.char_svc.update_trait_value(ctx_existing, character, name, 5)
+        self.char_svc.update_trait_value_by_name(ctx_existing, character, name, 5)
         custom = CustomTrait.get_by_id(1)
         assert custom.value == 5
 
         with pytest.raises(TraitNotFoundError):
-            self.char_svc.update_trait_value(ctx_existing, character, "exception", 5)
+            self.char_svc.update_trait_value_by_name(ctx_existing, character, "exception", 5)
