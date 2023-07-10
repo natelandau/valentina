@@ -114,113 +114,6 @@ class Character(BaseModel):
     experience_total = IntegerField(default=0)
     gender = TextField(null=True)
     nature = TextField(null=True)
-    ### Physical #############################
-    strength = IntegerField(default=0)
-    dexterity = IntegerField(default=0)
-    stamina = IntegerField(default=0)
-    ### Social #############################
-    charisma = IntegerField(default=0)
-    manipulation = IntegerField(default=0)
-    appearance = IntegerField(default=0)
-    ### Mental #############################
-    perception = IntegerField(default=0)
-    intelligence = IntegerField(default=0)
-    wits = IntegerField(default=0)
-    ### Talents #############################
-    alertness = IntegerField(default=0)
-    athletics = IntegerField(default=0)
-    brawl = IntegerField(default=0)
-    dodge = IntegerField(default=0)
-    empathy = IntegerField(default=0)
-    expression = IntegerField(default=0)
-    intimidation = IntegerField(default=0)
-    leadership = IntegerField(default=0)
-    primal_urge = IntegerField(default=0)
-    streetwise = IntegerField(default=0)
-    subterfuge = IntegerField(default=0)
-    ### Skills #############################
-    animal_ken = IntegerField(default=0)
-    crafts = IntegerField(default=0)
-    drive = IntegerField(default=0)
-    etiquette = IntegerField(default=0)
-    firearms = IntegerField(default=0)
-    insight = IntegerField(default=0)
-    larceny = IntegerField(default=0)
-    meditation = IntegerField(default=0)
-    melee = IntegerField(default=0)
-    performance = IntegerField(default=0)
-    persuasion = IntegerField(default=0)
-    repair = IntegerField(default=0)
-    security = IntegerField(default=0)
-    stealth = IntegerField(default=0)
-    survival = IntegerField(default=0)
-    technology = IntegerField(default=0)
-    ### Knowledges #############################
-    academics = IntegerField(default=0)
-    bureaucracy = IntegerField(default=0)
-    computer = IntegerField(default=0)
-    enigmas = IntegerField(default=0)
-    finance = IntegerField(default=0)
-    investigation = IntegerField(default=0)
-    law = IntegerField(default=0)
-    linguistics = IntegerField(default=0)
-    medicine = IntegerField(default=0)
-    occult = IntegerField(default=0)
-    politics = IntegerField(default=0)
-    rituals = IntegerField(default=0)
-    science = IntegerField(default=0)
-    ### Virtues #############################
-    conscience = IntegerField(default=0)
-    self_control = IntegerField(default=0)
-    courage = IntegerField(default=0)
-    ### Universal #############################
-    humanity = IntegerField(default=0)
-    willpower = IntegerField(default=0)
-    desperation = IntegerField(default=0)
-    reputation = IntegerField(default=0)
-    ### Mage  Universal ######################
-    arete = IntegerField(default=0)
-    quintessence = IntegerField(default=0)
-    ### Vampire Universal #####################
-    blood_pool = IntegerField(default=0)
-    ### Hunter Universal ######################
-    conviction = IntegerField(default=0)
-    faith = IntegerField(default=0)
-    ### Werewolf Universal ####################
-    gnosis = IntegerField(default=0)
-    rage = IntegerField(default=0)
-    ### Spheres #############################
-    correspondence = IntegerField(default=0)
-    entropy = IntegerField(default=0)
-    forces = IntegerField(default=0)
-    life = IntegerField(default=0)
-    matter = IntegerField(default=0)
-    mind = IntegerField(default=0)
-    prime = IntegerField(default=0)
-    spirit = IntegerField(default=0)
-    time = IntegerField(default=0)
-    ### Disciplines #############################
-    animalism = IntegerField(default=0)
-    auspex = IntegerField(default=0)
-    blood_sorcery = IntegerField(default=0)
-    celerity = IntegerField(default=0)
-    chimerstry = IntegerField(default=0)
-    dominate = IntegerField(default=0)
-    fortitude = IntegerField(default=0)
-    necromancy = IntegerField(default=0)
-    obeah = IntegerField(default=0)
-    obfuscate = IntegerField(default=0)
-    oblivion = IntegerField(default=0)
-    potence = IntegerField(default=0)
-    presence = IntegerField(default=0)
-    protean = IntegerField(default=0)
-    serpentis = IntegerField(default=0)
-    thaumaturgy = IntegerField(default=0)
-    vicissitude = IntegerField(default=0)
-    ### Renown - werewolf #########################
-    glory = IntegerField(default=0)
-    honor = IntegerField(default=0)
-    wisdom = IntegerField(default=0)
 
     @property
     def name(self) -> str:
@@ -243,6 +136,21 @@ class Character(BaseModel):
         """Meta class for the model."""
 
         table_name = "characters"
+
+
+class CharacterTrait(BaseModel):
+    """Character Trait model for the database."""
+
+    name = TextField()
+    category = TextField(null=True)
+    subcategory = TextField(null=True)
+    max_value = IntegerField(default=0)
+    character_class = ForeignKeyField(CharacterClass, backref="traits", null=True)
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "character_traits"
 
 
 class CustomTrait(BaseModel):
@@ -414,3 +322,18 @@ class GuildUser(BaseModel):
 
     guild = ForeignKeyField(Guild, backref="users")
     user = ForeignKeyField(User, backref="guilds")
+
+
+class TraitValue(BaseModel):
+    """Join table for Character and CharacterTrait."""
+
+    character = ForeignKeyField(Character, backref="trait_values")
+    trait = ForeignKeyField(CharacterTrait, backref="trait_values", null=True)
+    value = IntegerField(default=0)
+    modified = DateTimeField(default=time_now)
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "trait_values"
+        indexes = ((("character", "trait", "value"), False),)

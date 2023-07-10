@@ -1,7 +1,6 @@
 """Helper functions for Valentina."""
 import re
 from collections import defaultdict
-from copy import deepcopy
 
 import discord
 from numpy.random import default_rng
@@ -71,30 +70,6 @@ def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) 
             thumb_list.extend(thumbnails)
 
     return thumb_list[_rng.integers(0, len(thumb_list))]
-
-
-def extend_common_traits_with_class(char_class: str) -> dict[str, list[str]]:
-    """Extends the common traits with the traits for a class."""
-    complete_traits = deepcopy(COMMON_TRAITS)
-
-    class_traits = {}
-    match char_class.lower():
-        case "mage":
-            class_traits = deepcopy(MAGE_TRAITS)
-        case "vampire":
-            class_traits = deepcopy(VAMPIRE_TRAITS)
-        case "werewolf":
-            class_traits = deepcopy(WEREWOLF_TRAITS)
-        case "hunter":
-            class_traits = deepcopy(HUNTER_TRAITS)
-
-    for category, traits in class_traits.items():
-        if category in complete_traits:
-            complete_traits[category].extend(traits)
-        else:
-            complete_traits[category] = traits
-
-    return complete_traits
 
 
 def get_max_trait_value(trait: str, is_custom_trait: bool = False) -> int | None:

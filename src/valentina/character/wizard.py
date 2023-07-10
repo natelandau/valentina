@@ -1,182 +1,100 @@
 """A wizard that walks the user through the character creation process."""
-
-from datetime import datetime
+import asyncio
+import uuid
 from typing import Any
 
 import discord
 from discord.ui import Button
 from loguru import logger
 
-from valentina import guild_svc, user_svc
-from valentina.models.constants import (
-    CLAN_DISCIPLINES,
-    COMMON_TRAITS,
-    MAGE_TRAITS,
-    WEREWOLF_TRAITS,
-    EmbedColor,
-)
-from valentina.models.database import Character, CharacterClass, VampireClan
-from valentina.views import RatingView
+from valentina.models.constants import MAX_BUTTONS_PER_ROW
+from valentina.models.database import CharacterTrait
 
 
-class Wizard:
-    """A character creation wizard."""
+class RatingView(discord.ui.View):
+    """A View that lets the user select a rating."""
+
+    def __init__(  # type: ignore [no-untyped-def]
+        self,
+        trait: CharacterTrait,
+        callback,
+        failback,
+    ) -> None:
+        """Initialize the view."""
+        super().__init__(timeout=300)
+        self.callback = callback
+        self.failback = failback
+
+        self.trait_id = trait.id
+        self.trait_name = trait.name
+        self.trait_max_value = trait.max_value
+        self.ratings: dict[str, int] = {}
+        self.response: int = None
+        self.last_interaction = None
+
+        for rating in range(1, self.trait_max_value + 1):
+            button_id = str(uuid.uuid4())
+            self.ratings[button_id] = rating
+
+            # Calculate the row number for the button
+            row = 1 if rating <= MAX_BUTTONS_PER_ROW else 0
+
+            button: Button = Button(
+                label=str(rating), custom_id=button_id, style=discord.ButtonStyle.primary, row=row
+            )
+            button.callback = self.button_pressed  # type: ignore [method-assign]
+            self.add_item(button)
+
+        # Add the 0 button at the end, so it appears at the bottom
+        zero_button_id = str(uuid.uuid4())
+        self.ratings[zero_button_id] = 0
+        zero_button: Button = Button(
+            label="0", custom_id=zero_button_id, style=discord.ButtonStyle.secondary, row=2
+        )
+        zero_button.callback = self.button_pressed  # type: ignore [method-assign]
+        self.add_item(zero_button)
+
+    async def button_pressed(self, interaction) -> None:  # type: ignore [no-untyped-def]
+        """Respond to the button."""
+        button_id = interaction.data["custom_id"]
+        rating = self.ratings.get(button_id, 0)
+        self.last_interaction = interaction
+
+        await self.callback(rating, interaction)
+
+
+class CharGenWizard:
+    """Character creation wizard."""
 
     def __init__(
         self,
         ctx: discord.ApplicationContext,
-        quick_char: bool,
-        properties: dict[str, Any],
+        all_traits: list[CharacterTrait],
+        first_name: str | None = None,
+        last_name: str | None = None,
+        nickname: str | None = None,
     ) -> None:
         self.ctx = ctx
-        self.quick_char = quick_char
-        self.properties = properties
+        self.msg = None
+        self.all_traits = all_traits
+        self.assigned_traits: dict[int, int] = {}
+        self.view: discord.ui.View = None
 
-        self.using_dms = True
-        self.msg = None  # We will be editing this message instead of sending new ones
-        self.assigned_traits: dict[str, int] = {}
-        self.traits_to_enter = self.__define_traits_to_enter()
-        logger.debug(f"CHARGEN: Started by {ctx.user.name} on {ctx.guild.name}")
-        self.view = RatingView(self._assign_next_trait, self._timeout)
+        self.name = first_name.title()
+        self.name += f" ({nickname.title()})" if nickname else ""
+        self.name += f" {last_name.title() }" if last_name else ""
 
-    def __define_traits_to_enter(self) -> list[str]:
-        """Builds the list of traits to enter during character generation."""
-        traits_list: list[str] = []
-        traits_list.extend(COMMON_TRAITS["Physical"])
-        traits_list.extend(COMMON_TRAITS["Social"])
-        traits_list.extend(COMMON_TRAITS["Mental"])
+    async def begin_chargen(self) -> None:
+        """Start the chargen wizard."""
+        await self.__send_messages()
 
-        if self.quick_char:
-            traits_list.extend(["Alertness", "Dodge", "Firearms", "Melee"])
-        else:
-            traits_list.extend(COMMON_TRAITS["Talents"])
-            traits_list.extend(COMMON_TRAITS["Skills"])
-            traits_list.extend(COMMON_TRAITS["Knowledges"])
+    async def wait_until_done(self) -> dict[int, int]:
+        """Wait until the wizard is done."""
+        while self.all_traits:
+            await asyncio.sleep(1)  # Wait a bit then check again
+        return self.assigned_traits
 
-        traits_list.extend(COMMON_TRAITS["Virtues"])
-        # Remove values set in modal view
-        _universal = [x for x in COMMON_TRAITS["Universal"] if x not in ["Willpower", "Humanity"]]
-        traits_list.extend(_universal)
-
-        if self.properties["char_class"].lower() == "vampire":
-            for clan, disciplines in CLAN_DISCIPLINES.items():
-                if self.properties["vampire_clan"].lower() == clan.lower():
-                    traits_list.extend(disciplines)
-
-        if self.properties["char_class"].lower() == "mage":
-            traits_list.extend(MAGE_TRAITS["Spheres"])
-
-        if self.properties["char_class"].lower() == "werewolf":
-            traits_list.extend(WEREWOLF_TRAITS["Renown"])
-
-        return traits_list
-
-    @logger.catch
-    async def __finalize_character(self) -> None:
-        """Add the character to the database and inform the user they are done."""
-        # Find foreign keys
-        db_char_class = CharacterClass.get(CharacterClass.name == self.properties["char_class"])
-        self.properties["char_class"] = db_char_class.id
-
-        if self.properties["vampire_clan"]:
-            vampire_clan_id = VampireClan.get(VampireClan.name == self.properties["vampire_clan"])
-            self.properties["clan_id"] = vampire_clan_id.id
-
-        # Remove non-DB values
-        self.properties.pop("vampire_clan")
-
-        # Create the character
-        character = Character.create(
-            guild=self.ctx.guild.id,
-            created_by=user_svc.fetch_user(self.ctx).id,
-            **self.properties,
-            **self.assigned_traits,
-        )
-
-        log_embed = discord.Embed(title="Character Created", color=EmbedColor.INFO.value)
-        log_embed.add_field(name="Character", value=character.name)
-        log_embed.add_field(name="Class", value=character.char_class.name)
-        log_embed.timestamp = datetime.now()
-        log_embed.set_footer(
-            text=f"Command invoked by {self.ctx.author.display_name} in #{self.ctx.channel.name}"
-        )
-        await guild_svc.send_log(self.ctx, log_embed)
-
-        logger.info(f"DATABASE: Add {character.char_class.name} character {character.name}")
-        logger.debug(f"CHARGEN: Completed by {self.ctx.user.name} on {self.ctx.guild.name}")
-
-        self.view.stop()
-        await self.__finalize_embed()
-
-    async def __finalize_embed(self) -> None:
-        """Display finalizing message in an embed."""
-        embed = discord.Embed(
-            title="Success!",
-            description=f"{self.properties['char_class']} **{self.properties['first_name']}** has been created in ***{self.ctx.guild.name}***!",
-            colour=discord.Color.blue(),
-        )
-        embed.set_author(
-            name=f"Valentina on {self.ctx.guild.name}", icon_url=self.ctx.guild.icon or ""
-        )
-        embed.add_field(name="Make a mistake?", value="Use `/character update trait` to fix.")
-        # TODO: Add notes on how to add custom traits
-
-        embed.set_footer(text="See /help for further details.")
-
-        button: discord.ui.Button = Button(
-            label=f"Back to {self.ctx.guild.name}", url=self.ctx.guild.jump_url
-        )
-
-        await self.edit_message(embed=embed, view=discord.ui.View(button))
-
-    def __query_embed(self, message: str | None = None) -> discord.Embed:
-        """Present the query in an embed."""
-        description = "This wizard will guide you through the character creation process.\n\n"
-        if message is not None:
-            description = message
-
-        embed = discord.Embed(
-            title=f"Select the rating for: {self.traits_to_enter[0]}",
-            description=description,
-            color=0x7777FF,
-        )
-        embed.set_author(
-            name=f"Creating {self.properties['first_name']} on {self.ctx.guild.name}",
-            icon_url=self.ctx.guild.icon or "",
-        )
-        embed.set_footer(text="Your character will not be saved until you have entered all traits.")
-
-        return embed
-
-    async def __query_trait(
-        self, *, interaction: discord.Interaction | None = None, message: str | None = None
-    ) -> None:
-        """Query for the next trait."""
-        embed = self.__query_embed(message)
-
-        if self.msg is None:
-            # First time we're sending the message. Try DMs first and fallback
-            # to ephemeral messages if that fails. We prefer DMs so the user
-            # always has a copy of the documentation link.
-            if self.using_dms:
-                try:
-                    self.msg = await self.ctx.author.send(embed=embed, view=self.view)
-                    # If successful, we post this message in the originating channel
-                    await self.ctx.respond(
-                        "Please check your DMs! I hope you have your character sheet ready.",
-                        ephemeral=True,
-                    )
-                except discord.errors.Forbidden:
-                    self.using_dms = False
-
-            if not self.using_dms:
-                self.msg = await self.ctx.respond(embed=embed, view=self.view, ephemeral=True)  # type: ignore [assignment]
-
-        else:
-            # Message is being edited
-            await interaction.response.edit_message(embed=embed, view=self.view)  # type: ignore [unreachable]
-
-    async def _assign_next_trait(self, rating: int, interaction: discord.Interaction) -> None:
+    async def __view_callback(self, rating: int, interaction: discord.Interaction) -> None:
         """Assign the next trait.
 
         Assign the next trait in the list and display the next trait or finish
@@ -186,27 +104,89 @@ class Wizard:
             rating (int): The value for the next rating in the list.
             interaction (discord.Interaction): The interaction that triggered
         """
-        trait = self.traits_to_enter.pop(0)
-        self.assigned_traits[trait.lower()] = rating
+        # Remove the first trait from the list and assign it
+        previously_rated_trait = self.all_traits.pop(0)
+        self.assigned_traits[previously_rated_trait.id] = rating
 
-        if not self.traits_to_enter:
+        if not self.all_traits:
             # We're finished; create the character
             await self.__finalize_character()
         else:
-            await self.__query_trait(message=f"{trait} set to {rating}.", interaction=interaction)
+            await self.__send_messages(
+                message=f"`{previously_rated_trait.name}` set to `{rating}`",
+                interaction=interaction,
+            )
 
-    async def _timeout(self) -> None:
+    async def __finalize_character(
+        self,
+    ) -> None:
+        """Add the character to the database and inform the user they are done."""
+        embed = discord.Embed(
+            title="Success!",
+            description=f"{self.name} has been created",
+            colour=discord.Color.blue(),
+        )
+        embed.set_author(
+            name=f"Valentina on {self.ctx.guild.name}", icon_url=self.ctx.guild.icon or ""
+        )
+        embed.add_field(name="Make a mistake?", value="Use `/character update trait`", inline=False)
+        embed.add_field(
+            name="Need to add a trait?", value="Use `/character add trait`", inline=False
+        )
+
+        embed.set_footer(text="See /help for further details")
+
+        button: discord.ui.Button = Button(
+            label=f"Back to {self.ctx.guild.name}", url=self.ctx.guild.jump_url
+        )
+
+        self.view.stop()
+        await self.edit_message(embed=embed, view=discord.ui.View(button))
+
+    async def __send_messages(
+        self, *, interaction: discord.Interaction | None = None, message: str | None = None
+    ) -> None:
+        """Query a trait."""
+        trait_to_be_rated = self.all_traits[0]
+
+        description = "This wizard will guide you through the character creation process.\n\n"
+
+        if message is not None:
+            description = message
+
+        embed = discord.Embed(
+            title=f"Select the rating for: {trait_to_be_rated.name}",
+            description=description,
+            color=0x7777FF,
+        )
+        embed.set_author(
+            name=f"Creating {self.name}",
+            icon_url=self.ctx.guild.icon or "",
+        )
+        embed.set_footer(text="Your character will not be saved until you have entered all traits.")
+
+        # Build the view with the first trait in the list. (Note, it is removed from the list in the callback)
+
+        self.view = RatingView(trait_to_be_rated, self.__view_callback, self.__timeout)
+
+        if self.msg is None:
+            # Send DM with the character generation wizard as a DM. This is the first message.
+            self.msg = await self.ctx.author.send(embed=embed, view=self.view)
+
+            # Respond in-channel to check DM
+            await self.ctx.respond(
+                "Please check your DMs! I hope you have your character sheet ready.",
+                ephemeral=True,
+            )
+        else:
+            # Subsequent sends, edit the interaction of the DM
+            await interaction.response.edit_message(embed=embed, view=self.view)  # type: ignore [unreachable]
+
+    async def __timeout(self) -> None:
         """Inform the user they took too long."""
         errmsg = f"Due to inactivity, your character generation on **{self.ctx.guild.name}** has been canceled."
         await self.edit_message(content=errmsg, embed=None, view=None)
         logger.info("CHARACTER CREATE: Timed out")
-
-    async def begin_chargen(self) -> None:
-        """Start the chargen wizard."""
-        if self.traits_to_enter:
-            await self.__query_trait()
-        else:
-            await self.__finalize_character()
 
     @property
     def edit_message(self) -> Any:

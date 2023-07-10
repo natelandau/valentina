@@ -126,8 +126,8 @@ class Xp(commands.Cog, name="XP"):
         if view.confirmed:
             new_value = old_value + 1
             new_experience = character.experience - upgrade_cost
-            char_svc.update_trait_value(ctx, character, trait, new_value)
-            char_svc.update_char(
+            char_svc.update_trait_value_by_name(ctx, character, trait, new_value)
+            char_svc.update_character(
                 ctx,
                 character.id,
                 **{"experience": new_experience},
@@ -163,7 +163,7 @@ class Xp(commands.Cog, name="XP"):
         new_exp = character.experience + exp
         new_total = character.experience_total + exp
 
-        char_svc.update_char(
+        char_svc.update_character(
             ctx,
             character.id,
             experience=new_exp,
@@ -196,7 +196,7 @@ class Xp(commands.Cog, name="XP"):
         new_cp = character.cool_points + cp
         new_total = character.cool_points_total + cp
 
-        char_svc.update_char(
+        char_svc.update_character(
             ctx,
             character.id,
             cool_points=new_cp,

@@ -15,26 +15,41 @@ import pytest
 from valentina.models.database import (
     Character,
     CharacterClass,
+    CharacterTrait,
+    Chronicle,
+    ChronicleChapter,
+    ChronicleNote,
+    ChronicleNPC,
     CustomSection,
     CustomTrait,
     DatabaseVersion,
     Guild,
     GuildUser,
     Macro,
+    RollThumbnail,
+    TraitValue,
     User,
     VampireClan,
 )
+from valentina.models.database_services import DatabaseService
 
 # IMPORTANT: This list must be kept in sync with all the models defined in src/valentina/models/database.py
 MODELS = [
     Character,
     CharacterClass,
+    CharacterTrait,
+    Chronicle,
+    ChronicleChapter,
+    ChronicleNote,
+    ChronicleNPC,
     CustomSection,
     CustomTrait,
     DatabaseVersion,
     Guild,
     GuildUser,
     Macro,
+    RollThumbnail,
+    TraitValue,
     User,
     VampireClan,
 ]
@@ -43,8 +58,6 @@ databaseversion = {"version": "1.0.0"}
 guild = {"id": 1, "name": "test_guild"}
 user1 = {"id": 1, "username": "test_user", "name": "Test User"}
 user22 = {"id": 22, "username": "test_user22", "name": "Test User22"}
-characterclass = {"name": "test_class"}
-vampireclan = {"name": "test_clan"}
 character1 = {
     "first_name": "test",
     "last_name": "character",
@@ -92,6 +105,9 @@ macro = {
     "trait_one": "test_trait_one",
     "trait_two": "test_trait_two",
 }
+trait_values1 = {"character_id": 1, "trait_id": 1, "value": 1}
+trait_values2 = {"character_id": 1, "trait_id": 2, "value": 2}
+trait_values3 = {"character_id": 1, "trait_id": 3, "value": 3}
 
 
 @pytest.fixture(scope="class")
@@ -101,31 +117,35 @@ def mock_db() -> pw.SqliteDatabase:
     full_db.bind(MODELS, bind_refs=False, bind_backrefs=False)
     full_db.connect()
     full_db.create_tables(MODELS)
+    DatabaseService.sync_enums(full_db)
 
     # Create test data
+
     DatabaseVersion.create(**databaseversion)
     Guild.create(**guild)
     User.create(**user1)
     User.create(**user22)
-    CharacterClass.create(**characterclass)
-    VampireClan.create(**vampireclan)
     Character.create(**character1)
     Character.create(**character2)
     CustomTrait.create(**customtrait)
     CustomSection.create(**custom_section)
     GuildUser.create(**guilduser)
     Macro.create(**macro)
+    TraitValue.create(**trait_values1)
+    TraitValue.create(**trait_values2)
+    TraitValue.create(**trait_values3)
 
     # Confirm test data was created
     assert Guild.get_by_id(1).name == "test_guild"
     assert User.get_by_id(1).username == "test_user"
-    assert CharacterClass.get_by_id(1).name == "test_class"
-    assert VampireClan.get_by_id(1).name == "test_clan"
+    assert CharacterClass.get_by_id(1).name == "Mortal"
+    assert VampireClan.get_by_id(1).name == "Assamite"
     assert Character.get_by_id(1).first_name == "test"
     assert CustomTrait.get_by_id(1).name == "Test_Trait"
     assert CustomSection.get_by_id(1).title == "test_section"
     assert GuildUser.get_by_id(1).guild.name == "test_guild"
     assert Macro.get_by_id(1).name == "test_macro"
+    assert TraitValue.get_by_id(3).value == 3
 
     yield full_db
 

@@ -25,7 +25,7 @@ def column_exists(table: str, column: str) -> bool:
 
 
 @logger.catch
-def update_character_model() -> None:
+def update_characteracter_model() -> None:
     """Update the character table with all traits in GROUPED_TRAITS.
 
     Note that this will not update the Character model itself but is, instead, either:
