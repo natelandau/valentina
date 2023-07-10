@@ -1,3 +1,13 @@
+## v0.12.0 (2023-07-10)
+
+### Feat
+
+- cleanup character creation and trait management (#21)
+
+### Fix
+
+- **character**: remove incorrect werewolf traits
+
 ## v0.11.2 (2023-07-05)
 
 ### Fix
