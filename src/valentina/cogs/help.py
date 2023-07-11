@@ -37,6 +37,19 @@ class Help(commands.Cog):
             delete_after=15,
         )
 
+    def __build_command_list(self) -> list:
+        """Build a list of commands for the help command."""
+        unsorted_commands: list = []
+        for cog in self.bot.cogs:
+            for cmd in self.bot.get_cog(cog).get_commands():
+                unsorted_commands.append(cmd)
+
+        for c in self.bot.walk_commands():
+            if c.name != "help":
+                unsorted_commands.append(c)
+
+        return sorted(unsorted_commands, key=lambda x: x.name)
+
     help = discord.SlashCommandGroup("help", "Help with Valentina")  # noqa: A003
 
     @help.command(name="commands", description="Help information for Valentina's commands")
@@ -44,87 +57,55 @@ class Help(commands.Cog):
         self, ctx: discord.ApplicationContext, command: Option(str, required=False)  # type: ignore
     ) -> None:
         """Provide help information."""
-        ephemeral = True
-        level = "info"
         fields = []
+
+        commands = self.__build_command_list()
+
         if not command:
-            # Start to build the description
-            title = "Valentina Noir Help"
-            description = "Use Valentina's commands by typing `/<command> <subcommand>`\n\nUse `/help <command>` for detailed help information on each command below.\n\n"
             fields.append(("\u200b", "**COMMANDS**"))
-
-            # iterate trough cogs, gathering descriptions
-            for cog in sorted(self.bot.cogs):
-                fields.append((f"{cog}", self.bot.cogs[cog].__doc__ or "No description"))
-
-            # iterate through uncategorized commands
-            for command in sorted(self.bot.walk_commands(), key=lambda x: x.name):
-                # if command not in a cog
-                # listing command if cog name is None and command isn't hidden
-                if not command.cog_name and not command.hidden and command.name != "help":
-                    fields.append((f"{command.name}", command.description))
-
-            # Add owner information
-            owners = [
-                ctx.guild.get_member(int(x)).display_name
-                for x in CONFIG["VALENTINA_OWNER_IDS"].split(",")
-            ]
-
-            fields.append(
-                (
-                    "\u200b",
-                    f"***About Valentina Noir:***\n Version: `v{__version__}`\n Developed by {' ,'.join(owners)}\n[View source on Github](https://github.com/natelandau/valentina)",
-                )
+            fields.extend([(f"**/{x.name}**", x.description) for x in commands])
+            await present_embed(
+                ctx,
+                title="Valentina Noir Help",
+                description="Use Valentina's commands by typing `/<command> <subcommand>`\n\nUse `/help <command>` for detailed help information on each command below.\n\n",
+                fields=fields,
+                level="info",
             )
-        # trying to find matching cog and it's commands
         else:
-            for cog in self.bot.cogs:
-                c = cog.lower()
-                if c == command.lower():
-                    title = f"Help for\u0020\u0020`/{c}`"
-                    description = (
-                        f"{self.bot.cogs[cog].__doc__}\n\nUsage:\u0020\u0020`/{c} <subcommand>`"
-                    )
+            found_command = False
+            for cmd in commands:
+                if cmd.name == command:
+                    found_command = True
+                    fields.append(("\u200b", "**COMMAND**"))
+                    fields.append((f"**/{cmd.name} [subcommand]**", cmd.description))
                     fields.append(("\u200b", "**SUBCOMMANDS**"))
-                    # getting commands from cog
-                    for command in sorted(
-                        self.bot.get_cog(cog).walk_commands(), key=lambda x: (x.parent.name, x.name)
-                    ):
-                        if (
-                            isinstance(command, discord.commands.core.SlashCommand)
-                            and command.parent.name.lower() != c
-                        ):
-                            fields.append(
-                                (
-                                    f"`{command.parent.name} {command.name}`",
-                                    command.description,
-                                )
-                            )
-                        elif isinstance(command, discord.commands.core.SlashCommand):
-                            fields.append(
-                                (
-                                    f"`{command.name}`",
-                                    command.description if command.description else "",
-                                )
-                            )
-
-                    # found cog - breaking loop
+                    for c in sorted(cmd.subcommands, key=lambda x: x.name):
+                        if not hasattr(c, "subcommands"):
+                            fields.append((f"**{c.name}**", c.description))
+                        if hasattr(c, "subcommands"):
+                            for x in sorted(c.subcommands, key=lambda x: x.name):
+                                fields.append((f"**{c.name} {x.name}**", x.description))
                     break
-            # if input not found
-            # yes, for-loops have an else statement, it's called when no 'break' was issued
-            else:
-                title = "What's that?!"
-                description = f"I've never heard of a command named `{command}` before :scream:"
-                level = "error"
 
-        await present_embed(
-            ctx=ctx,
-            title=title,
-            description=description,
-            fields=fields,
-            level=level,
-            ephemeral=ephemeral,
-        )
+            if not found_command:
+                await present_embed(
+                    ctx,
+                    title="Command not found",
+                    description=f"Command `{command}` not found. :scream:",
+                    level="error",
+                    ephemeral=True,
+                    delete_after=15,
+                )
+                return
+
+            await present_embed(
+                ctx,
+                title="Valentina Noir Help",
+                description="Use Valentina's commands by typing `/<command> <subcommand>`\n\nUse `/help <command>` for detailed help information on each command below.\n\n",
+                fields=fields,
+                level="info",
+                ephemeral=True,
+            )
 
     @help.command(name="guide", description="A guide on how to use Valentina Noir")
     async def readme(self, ctx: discord.ApplicationContext) -> None:
