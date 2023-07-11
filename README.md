@@ -69,10 +69,13 @@ There are two ways to contribute to this project.
 3. Install the Poetry environment with `poetry install`.
 4. Activate your Poetry environment with `poetry shell`.
 5. Install the pre-commit hooks with `pre-commit install --install-hooks`.
-6. Before running valentina locally, set the ENV variables with `export VAR=abc`
+6. Before running valentina locally, set the necessary ENV variables with `export VAR=abc`
     - `VALENTINA_DISCORD_TOKEN`
     - `VALENTINA_GUILDS`
     - `VALENTINA_OWNER_IDS`
+    - `VALENTINA_LOG_FILE`
+    - `VALENTINA_DB_PATH`
+    - `VALENTINA_BACKUP_PATH`
 
 ### 2. Containerized development
 
@@ -80,6 +83,7 @@ There are two ways to contribute to this project.
 2. Open the repository in Visual Studio Code
 3. Start the [Dev Container](https://code.visualstudio.com/docs/remote/containers). Run <kbd>Ctrl/⌘</kbd> + <kbd>⇧</kbd> + <kbd>P</kbd> → _Remote-Containers: Reopen in Container_.
 4. Run `poetry env info -p` to find the PATH to the Python interpreter if needed by VSCode.
+5. Set the necessary environment variables from within the development container
 
 ## Developing
 

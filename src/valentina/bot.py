@@ -5,10 +5,12 @@ from pathlib import Path
 from typing import Any
 
 import discord
+from aiohttp import ClientSession
 from discord.ext import commands, tasks
 from loguru import logger
 
 from valentina.__version__ import __version__
+from valentina.utils.context import Context
 
 
 class Valentina(commands.Bot):
@@ -63,9 +65,16 @@ class Valentina(commands.Bot):
 
             DatabaseService(DATABASE).sync_enums()
 
+            await self.change_presence(
+                activity=discord.Activity(type=discord.ActivityType.watching, name="for /help")
+            )
+
             for guild in self.guilds:
                 guild_svc.update_or_add(guild)
                 char_svc.fetch_all_characters(guild.id)
+                await guild.system_channel.send(
+                    ":wave: Beware, I have connected to this server. I will be watching you."
+                )
 
             # Start tasks
             # #######################
@@ -87,6 +96,15 @@ class Valentina(commands.Bot):
         if message.reference is None:
             logger.debug("BOT: Disregarding message with no reference.")
             return
+
+    async def get_application_context(self, interaction: discord.Interaction) -> Context:  # type: ignore [override]
+        """Return a custom application context."""
+        return Context(self, interaction)
+
+    @property
+    def http_session(self) -> ClientSession:
+        """Return the aiohttp session."""
+        return self.http._HTTPClient__session  # type: ignore # it exists, I promise
 
 
 @tasks.loop(time=time(0, tzinfo=timezone.utc))

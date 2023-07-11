@@ -1,4 +1,5 @@
 """Custom error types for Valentina."""
+from discord import DiscordException
 
 
 class CharacterClaimedError(Exception):
@@ -146,3 +147,15 @@ class SectionNotFoundError(Exception):
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 
         super().__init__(msg, *args, **kwargs)
+
+
+class BotMissingPermissions(DiscordException):
+    """Raised when the bot is missing permissions to run a command."""
+
+    def __init__(self, permissions: list[str]) -> None:
+        missing = [
+            f"**{perm.replace('_', ' ').replace('guild', 'server').title()}**"
+            for perm in permissions
+        ]
+        sub = f"{', '.join(missing[:-1])} and {missing[-1]}" if len(missing) > 1 else missing[0]
+        super().__init__(f"I require {sub} permissions to run this command.")

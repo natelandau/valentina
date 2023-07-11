@@ -57,11 +57,12 @@ async def present_embed(  # noqa: C901
 
     embed.description = description
 
-    if author and thumbnail:
+    if author and author_avatar:
         embed.set_author(name=author, icon_url=author_avatar)
     elif author:
         embed.set_author(name=author)
-    elif thumbnail:
+
+    if thumbnail:
         embed.set_thumbnail(url=thumbnail)
 
     for field in fields:
