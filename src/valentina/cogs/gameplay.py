@@ -1,5 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Gameplay cog for Valentina."""
+import random
 
 import discord
 from discord.commands import Option
@@ -282,6 +283,14 @@ class Roll(commands.Cog):
                 ephemeral=True,
                 log=True,
             )
+
+    @roll.command(name="coinflip", help="Flip a coin")
+    async def coinflip(self, ctx: discord.ApplicationContext) -> None:
+        """Coinflip!"""
+        coinsides = ["Heads", "Tails"]
+        await ctx.respond(
+            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coinsides)}**!"  # noqa: S311
+        )
 
 
 def setup(bot: Valentina) -> None:
