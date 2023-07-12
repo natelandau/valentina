@@ -57,7 +57,7 @@ logger.add(
 logger.add(
     CONFIG["VALENTINA_LOG_FILE"],
     level=CONFIG["VALENTINA_LOG_LEVEL"].upper(),
-    rotation="10 MB",
+    rotation="5 MB",
     compression="zip",
     enqueue=True,
 )
@@ -92,6 +92,7 @@ def main(
         owner_ids=[int(o) for o in CONFIG["VALENTINA_OWNER_IDS"].split(",")],
         parent_dir=DIR,
         config=CONFIG,
+        command_prefix="!",
     )
 
     bot.run(CONFIG["VALENTINA_DISCORD_TOKEN"])  # run the bot

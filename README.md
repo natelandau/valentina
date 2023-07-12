@@ -49,6 +49,7 @@ Before running Valentina, the following must be configured or installed.
 | VALENTINA_LOG_LEVEL         | `INFO`                     | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
 | VALENTINA_LOG_LEVEL_DB      | `INFO`                     | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                         |
 | VALENTINA_LOG_LEVEL_HTTP    | `INFO`                     | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_OWNER_CHANNELS    |                            | Sets the Discord channels that are allowed to run bot admin commands. This is a comma separated list of Discord channel IDs.         |
 | VALENTINA_MONTHLY_RETENTION | `12`                       | Sets the number of months to retain database backups.                                                                                |
 | VALENTINA_OWNER_IDS         |                            | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated list of Discord user IDs.            |
 | VALENTINA_WEEKLY_RETENTION  | `4`                        | Sets the number of weeks to retain database backups.                                                                                 |

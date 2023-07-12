@@ -1,10 +1,8 @@
 # mypy: disable-error-code="valid-type"
 """Administration commands for Valentina."""
-from datetime import datetime
-from io import BytesIO
-from pathlib import Path
 
-import aiofiles
+from io import BytesIO
+
 import discord
 from discord.commands import Option
 from discord.ext import commands
@@ -12,16 +10,12 @@ from discord.ext.commands import MemberConverter
 from loguru import logger
 
 from valentina import (
-    CONFIG,
     Valentina,
-    __version__,
     char_svc,
     chron_svc,
-    db_svc,
     guild_svc,
     user_svc,
 )
-from valentina.models.constants import MAX_CHARACTER_COUNT
 from valentina.utils import Context
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import pluralize
@@ -126,76 +120,6 @@ class Admin(commands.Cog):
 
         await present_embed(ctx, title=message, level="success", ephemeral=True, log=True)
 
-    @admin.command(description="View bot status")
-    async def status(self, ctx: discord.ApplicationContext) -> None:
-        """Show server status information."""
-        logger.debug("ADMIN: Show server status information")
-
-        delta_uptime = datetime.utcnow() - self.bot.start_time
-        hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
-        minutes, seconds = divmod(remainder, 60)
-        days, hours = divmod(hours, 24)
-        creation = ((ctx.guild.id >> 22) + 1420070400000) // 1000
-
-        await present_embed(
-            ctx,
-            title="Connection Information",
-            description="",
-            fields=[
-                ("Status", str(self.bot.status)),
-                ("Uptime", f"`{days}d, {hours}h, {minutes}m, {seconds}s`"),
-                ("Latency", f"`{self.bot.latency!s}`"),
-                ("Connected Guilds", str(len(self.bot.guilds))),
-                ("Bot Version", f"`{__version__}`"),
-                ("Pycord Version", f"`{discord.__version__}`"),
-                ("Database Version", f"`{db_svc.database_version()}`"),
-                ("Server Creation", f"<t:{creation}>\n<t:{creation}:R>"),
-                (
-                    "Server Roles",
-                    f"`{len(ctx.guild._roles)}` roles\nHighest:\n{ctx.guild.roles[-1].mention}",
-                ),
-                (
-                    "Server Members",
-                    f"Total: `{ctx.guild.member_count}`\nBots: `{sum(m.bot for m in ctx.guild.members)}`",
-                ),
-            ],
-            inline_fields=True,
-            level="info",
-            ephemeral=True,
-        )
-
-    @admin.command(description="Live reload Valentina")
-    async def reload(self, ctx: discord.ApplicationContext) -> None:
-        """Reloads all cogs."""
-        logger.debug("Admin: Reload the bot")
-        count = 0
-        for cog in Path(self.bot.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
-            if cog.stem[0] != "_":
-                count += 1
-                logger.info(f"COGS: Reloading - {cog.stem}")
-                self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
-
-        await present_embed(
-            ctx, "Reload Bot", f"{count} cogs successfully reloaded", level="info", ephemeral=True
-        )
-
-    @admin.command(description="View last lines of the Valentina's logs")
-    async def tail_logs(self, ctx: discord.ApplicationContext) -> None:
-        """Tail the bot's logs."""
-        logger.debug("ADMIN: Tail bot logs")
-        max_lines_from_bottom = 20
-        log_lines = []
-
-        async with aiofiles.open(CONFIG["VALENTINA_LOG_FILE"], mode="r") as f:
-            async for line in f:
-                if "has connected to Gateway" not in line:
-                    log_lines.append(line)
-                    if len(log_lines) > max_lines_from_bottom:
-                        log_lines.pop(0)
-
-        response = "".join(log_lines)
-        await ctx.respond("```" + response[-MAX_CHARACTER_COUNT:] + "```", ephemeral=True)
-
     @admin.command(description="Purge the bot's cache and reload data from DB")
     @logger.catch
     async def puge_cache(
@@ -247,26 +171,6 @@ class Admin(commands.Cog):
             level="success",
             ephemeral=True,
             log=True,
-        )
-
-    @admin.command(description="Shutdown Valentina")
-    @commands.is_owner()
-    async def shutdown(self, ctx: discord.ApplicationContext) -> None:
-        """Shutdown the bot."""
-        logger.warning(f"ADMIN: {ctx.author.display_name} has shut down the bot")
-        await present_embed(
-            ctx, title="Shutting down Valentina...", level="warning", ephemeral=True, log=True
-        )
-        await self.bot.close()
-
-    @admin.command(description="Create DB Backup")
-    @commands.is_owner()
-    async def db_backup(self, ctx: discord.ApplicationContext) -> None:
-        """Create a backup of the database."""
-        logger.info("ADMIN: Manually create database backup")
-        await db_svc.backup_database(CONFIG)
-        await present_embed(
-            ctx, title="Database backup created", level="success", ephemeral=True, log=True
         )
 
     ### MODERATION COMMANDS ################################################################
@@ -328,6 +232,76 @@ class Admin(commands.Cog):
 
     @moderate.command()
     @discord.guild_only()
+    async def kick(
+        self, ctx: Context, member: discord.Member, *, reason: str = "No reason given"
+    ) -> None:
+        """Kick a target member, by ID or mention."""
+        if member.id == ctx.author.id:
+            raise ValueError("You cannot kick yourself.")
+
+        if member.top_role >= ctx.author.top_role:
+            raise ValueError("You cannot kick this member.")
+
+        await member.kick(reason=reason)
+
+        await present_embed(
+            ctx,
+            title="Kick Successful",
+            description=f"Kicked {member.mention} ({member})",
+            fields=[("Reason", reason)] if reason else [],
+            level="success",
+            ephemeral=True,
+            log=True,
+        )
+
+    @moderate.command()
+    @discord.guild_only()
+    @commands.has_permissions(ban_members=True)
+    async def ban(
+        self, ctx: Context, user: discord.User, *, reason: str = "No reason given"
+    ) -> None:
+        """Ban a target member, by ID or mention."""
+        if user := discord.utils.get(ctx.guild.members, id=user.id):
+            if user.id == ctx.author.id:
+                raise ValueError("You cannot ban yourself.")
+
+            if user.top_role >= ctx.author.top_role:
+                raise ValueError("You cannot ban this member.")
+
+        await ctx.guild.ban(
+            discord.Object(id=user.id), reason=f"{ctx.author} ({ctx.author.id}): {reason}"
+        )
+
+        await present_embed(
+            ctx,
+            title="Ban Successful",
+            description=f"Banned {user.mention} ({user})",
+            fields=[("Reason", reason)] if reason else [],
+            level="success",
+            ephemeral=True,
+            log=True,
+        )
+
+    @moderate.command()
+    @discord.guild_only()
+    async def unban(self, ctx: Context, user: discord.User) -> None:
+        """Revoke ban from a banned user."""
+        try:
+            await ctx.guild.unban(user)
+        except discord.HTTPException as e:
+            raise Exception("This user has not been banned.") from e
+
+        await present_embed(
+            ctx,
+            title="Unban Successful",
+            description=f"Unbanned `{user} ({user.id})`.",
+            level="success",
+            ephemeral=True,
+            log=True,
+        )
+
+    @moderate.command()
+    @discord.guild_only()
     async def massban(
         self,
         ctx: Context,
@@ -357,8 +331,14 @@ class Admin(commands.Cog):
             )
             return
 
-        for member in converted_members:
-            await ctx.guild.ban(member, reason=f"{ctx.author} ({ctx.author.id}): {reason}")
+        for user in converted_members:
+            if user := discord.utils.get(ctx.guild.members, id=user.id):
+                if user.id == ctx.author.id:
+                    raise ValueError("You cannot ban yourself.")
+
+                if user.top_role >= ctx.author.top_role:
+                    raise ValueError("You cannot ban this member.")
+            await ctx.guild.ban(user, reason=f"{ctx.author} ({ctx.author.id}): {reason}")
 
         await present_embed(
             ctx,

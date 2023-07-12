@@ -41,8 +41,9 @@ class Help(commands.Cog):
         """Build a list of commands for the help command."""
         unsorted_commands: list = []
         for cog in self.bot.cogs:
-            for cmd in self.bot.get_cog(cog).get_commands():
-                unsorted_commands.append(cmd)
+            if cog != "Owner":
+                for cmd in self.bot.get_cog(cog).get_commands():
+                    unsorted_commands.append(cmd)
 
         for c in self.bot.walk_commands():
             if c.name != "help":
@@ -70,6 +71,7 @@ class Help(commands.Cog):
                 description="Use Valentina's commands by typing `/<command> <subcommand>`\n\nUse `/help <command>` for detailed help information on each command below.\n\n",
                 fields=fields,
                 level="info",
+                ephemeral=True,
             )
         else:
             found_command = False

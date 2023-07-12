@@ -23,6 +23,7 @@ class Valentina(commands.Bot):
         self.char_service: Any = None
         self.parent_dir = parent_dir
         self.config = config
+        self.owner_channels = [int(x) for x in self.config["VALENTINA_OWNER_CHANNELS"].split(",")]
 
         logger.info("BOT: Running setup tasks")
         for cog in Path(self.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
@@ -90,12 +91,10 @@ class Valentina(commands.Bot):
         if message.author.bot:
             logger.debug("BOT: Disregarding bot message")
             return
-        if message.type != discord.MessageType.reply:
-            logger.debug("BOT: Disregarding non-reply message.")
-            return
-        if message.reference is None:
-            logger.debug("BOT: Disregarding message with no reference.")
-            return
+
+        # This line allows using prefixed commands
+        if message.channel.id in self.owner_channels:
+            await self.process_commands(message)
 
     async def get_application_context(self, interaction: discord.Interaction) -> Context:  # type: ignore [override]
         """Return a custom application context."""
