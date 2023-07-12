@@ -7,11 +7,12 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina, char_svc, guild_svc, user_svc
+from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor, RollResultType
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import ValidThumbnailURL
 from valentina.utils.errors import MacroNotFoundError, NoClaimError
+from valentina.utils.options import select_macro
 from valentina.views import ConfirmCancelButtons, ReRollButton, present_embed
 from valentina.views.roll_display import RollDisplay
 
@@ -46,12 +47,12 @@ class Roll(commands.Cog):
     async def __trait_one_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:
-            character = char_svc.fetch_claim(ctx)
+            character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
         except NoClaimError:
             return ["No character claimed"]
 
         traits = []
-        for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
+        for trait in ctx.bot.char_svc.fetch_all_character_traits(character, flat_list=True):  # type: ignore [attr-defined]
             if trait.lower().startswith(ctx.options["trait_one"].lower()):
                 traits.append(trait)
             if len(traits) >= MAX_OPTION_LIST_SIZE:
@@ -61,27 +62,17 @@ class Roll(commands.Cog):
     async def __trait_two_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         try:
-            character = char_svc.fetch_claim(ctx)
+            character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
         except NoClaimError:
             return ["No character claimed"]
 
         traits = []
-        for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
+        for trait in ctx.bot.char_svc.fetch_all_character_traits(character, flat_list=True):  # type: ignore [attr-defined]
             if trait.lower().startswith(ctx.options["trait_two"].lower()):
                 traits.append(trait)
             if len(traits) >= MAX_OPTION_LIST_SIZE:
                 break
         return traits
-
-    async def __macro_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
-        """Populate a select list with a users' macros."""
-        macros = []
-        for macro in user_svc.fetch_macros(ctx):
-            if macro.name.lower().startswith(ctx.options["macro"].lower()):
-                macros.append(f"{macro.name} ({macro.abbreviation})")
-            if len(macros) >= MAX_OPTION_LIST_SIZE:
-                break
-        return macros
 
     roll = discord.SlashCommandGroup("roll", "Roll dice")
 
@@ -141,9 +132,11 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
-        character = char_svc.fetch_claim(ctx)
-        trait_one_value = char_svc.fetch_trait_value(ctx, character, trait_one)
-        trait_two_value = char_svc.fetch_trait_value(ctx, character, trait_two) if trait_two else 0
+        character = self.bot.char_svc.fetch_claim(ctx)
+        trait_one_value = self.bot.char_svc.fetch_trait_value(ctx, character, trait_one)
+        trait_two_value = (
+            self.bot.char_svc.fetch_trait_value(ctx, character, trait_two) if trait_two else 0
+        )
         pool = trait_one_value + trait_two_value
 
         roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
@@ -201,7 +194,7 @@ class Roll(commands.Cog):
             str,
             description="Macro to roll",
             required=True,
-            autocomplete=__macro_autocomplete,
+            autocomplete=select_macro,
         ),
         difficulty: Option(
             int,
@@ -212,14 +205,14 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll a macro."""
-        m = user_svc.fetch_macro(ctx, macro.split("(")[0].strip())
+        m = self.bot.user_svc.fetch_macro(ctx, macro.split("(")[0].strip())
         if not m:
             raise MacroNotFoundError(macro=macro)
 
-        character = char_svc.fetch_claim(ctx)
-        trait_one_value = char_svc.fetch_trait_value(ctx, character, m.trait_one)
+        character = self.bot.char_svc.fetch_claim(ctx)
+        trait_one_value = self.bot.char_svc.fetch_trait_value(ctx, character, m.trait_one)
         trait_two_value = (
-            char_svc.fetch_trait_value(ctx, character, m.trait_two) if m.trait_two else 0
+            self.bot.char_svc.fetch_trait_value(ctx, character, m.trait_two) if m.trait_two else 0
         )
         pool = trait_one_value + trait_two_value
 
@@ -271,7 +264,7 @@ class Roll(commands.Cog):
             await msg.edit_original_response(embed=embed, view=None)
             return
         if view.confirmed:
-            guild_svc.add_roll_result_thumb(ctx, roll_type, url)
+            self.bot.guild_svc.add_roll_result_thumb(ctx, roll_type, url)
             await msg.delete_original_response()
 
             await present_embed(

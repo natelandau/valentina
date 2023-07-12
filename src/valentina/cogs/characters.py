@@ -6,17 +6,22 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina, char_svc, trait_svc, user_svc
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal, CustomSectionModal
 from valentina.character.wizard import CharGenWizard
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, CharClass, TraitCategory, VampClanList
+from valentina.models.bot import Valentina
+from valentina.models.constants import CharClass, TraitCategory, VampClanList
 from valentina.models.database import CharacterClass, VampireClan
 from valentina.utils.converters import ValidCharacterClass, ValidCharacterName, ValidClan
-from valentina.utils.errors import NoClaimError, SectionExistsError
+from valentina.utils.errors import SectionExistsError
 from valentina.utils.helpers import normalize_to_db_row
-from valentina.utils.options import select_character
+from valentina.utils.options import (
+    select_character,
+    select_custom_section,
+    select_custom_trait,
+    select_trait,
+)
 from valentina.views import ConfirmCancelButtons, present_embed
 
 possible_classes = sorted([char_class.value for char_class in CharClass])
@@ -50,53 +55,6 @@ class Characters(commands.Cog, name="Character"):
             ephemeral=True,
             delete_after=15,
         )
-
-    async def __custom_trait_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
-        """Populates the autocomplete with custom traits."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-        except NoClaimError:
-            return ["No character claimed"]
-
-        traits = []
-        for trait in char_svc.fetch_char_custom_traits(ctx, character):
-            if trait.name.lower().startswith(ctx.options["trait"].lower()):
-                traits.append(trait.name)
-            if len(traits) >= MAX_OPTION_LIST_SIZE:
-                break
-
-        return traits
-
-    async def __trait_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
-        """Populates the autocomplete for the trait option."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-        except NoClaimError:
-            return ["No character claimed"]
-
-        traits = []
-        for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
-            if trait.lower().startswith(ctx.options["trait"].lower()):
-                traits.append(trait)
-            if len(traits) >= MAX_OPTION_LIST_SIZE:
-                break
-        return traits
-
-    async def __custom_section_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
-        """Populates the autocomplete for the custom section option."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-        except NoClaimError:
-            return ["No character claimed"]
-
-        sections = []
-        for section in char_svc.fetch_char_custom_sections(ctx, character):
-            if section.title.lower().startswith(ctx.options["custom_section"].lower()):
-                sections.append(section.title)
-            if len(sections) >= MAX_OPTION_LIST_SIZE:
-                break
-
-        return sections
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
     update = chars.create_subgroup("update", "Update existing characters")
@@ -138,7 +96,7 @@ class Characters(commands.Cog, name="Character"):
             vampire_clan (str, optional): The character's vampire clan. Defaults to None.
         """
         # Ensure the user is in the database
-        user_svc.fetch_user(ctx)
+        self.bot.user_svc.fetch_user(ctx)
 
         if char_class.lower() == "vampire" and not vampire_clan:
             await present_embed(
@@ -156,7 +114,7 @@ class Characters(commands.Cog, name="Character"):
             vampire_clan_instance = None
 
         # Fetch all traits and set them
-        fetched_traits = trait_svc.fetch_all_class_traits(char_class)
+        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class)
 
         wizard = CharGenWizard(
             ctx,
@@ -169,7 +127,7 @@ class Characters(commands.Cog, name="Character"):
         trait_values_from_chargen = await wizard.wait_until_done()
 
         # Create the character and traits in the db
-        character = char_svc.create_character(
+        character = self.bot.char_svc.create_character(
             ctx,
             first_name=first_name,
             last_name=last_name,
@@ -177,7 +135,7 @@ class Characters(commands.Cog, name="Character"):
             char_class=char_class_instance,
             clan=vampire_clan_instance,
         )
-        char_svc.update_traits_by_id(ctx, character, trait_values_from_chargen)
+        self.bot.char_svc.update_traits_by_id(ctx, character, trait_values_from_chargen)
         logger.info(f"CHARACTER: Create character [{character.id}] {character.name}")
 
     @chars.command(name="sheet", description="View a character sheet")
@@ -194,10 +152,10 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Displays a character sheet in the channel."""
         char_db_id = int(character)
-        character = char_svc.fetch_by_id(ctx.guild.id, char_db_id)
+        character = self.bot.char_svc.fetch_by_id(ctx.guild.id, char_db_id)
 
-        if char_svc.is_char_claimed(ctx.guild.id, char_db_id):
-            user_id_num = char_svc.fetch_user_of_character(ctx.guild.id, character.id)
+        if self.bot.char_svc.is_char_claimed(ctx.guild.id, char_db_id):
+            user_id_num = self.bot.char_svc.fetch_user_of_character(ctx.guild.id, character.id)
             claimed_by = self.bot.get_user(user_id_num)
         else:
             claimed_by = None
@@ -218,8 +176,8 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Claim a character to your user. This will allow you to roll without specifying traits, edit the character, and more."""
-        character = char_svc.fetch_by_id(ctx.guild.id, char_id)
-        char_svc.add_claim(ctx.guild.id, char_id, ctx.user.id)
+        character = self.bot.char_svc.fetch_by_id(ctx.guild.id, char_id)
+        self.bot.char_svc.add_claim(ctx.guild.id, char_id, ctx.user.id)
 
         logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}")
         await present_embed(
@@ -237,9 +195,9 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
     ) -> None:
         """Unclaim currently claimed character. This will allow you to claim a new character."""
-        if char_svc.user_has_claim(ctx):
-            character = char_svc.fetch_claim(ctx)
-            char_svc.remove_claim(ctx)
+        if self.bot.char_svc.user_has_claim(ctx):
+            character = self.bot.char_svc.fetch_claim(ctx)
+            self.bot.char_svc.remove_claim(ctx)
             await present_embed(
                 ctx=ctx,
                 title="Character Unclaimed",
@@ -262,7 +220,7 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
     ) -> None:
         """List all characters."""
-        characters = char_svc.fetch_all_characters(ctx.guild.id)
+        characters = self.bot.char_svc.fetch_all_characters(ctx.guild.id)
         if len(characters) == 0:
             await present_embed(
                 ctx,
@@ -277,7 +235,7 @@ class Characters(commands.Cog, name="Character"):
         description = f"**{len(characters)}** character{plural} on this server\n\u200b"
 
         for character in sorted(characters, key=lambda x: x.name):
-            user_id = char_svc.fetch_user_of_character(ctx.guild.id, character.id)
+            user_id = self.bot.char_svc.fetch_user_of_character(ctx.guild.id, character.id)
             user = self.bot.get_user(user_id).display_name if user_id else ""
             fields.append(
                 (character.name, f"Class: {character.char_class.name}\nClaimed by: {user}")
@@ -317,7 +275,7 @@ class Characters(commands.Cog, name="Character"):
         description: Option(str, "A description of the trait", required=False),
     ) -> None:
         """Add a custom trait to a character."""
-        character = char_svc.fetch_claim(ctx)
+        character = self.bot.char_svc.fetch_claim(ctx)
         await add_trait(
             ctx=ctx,
             character=character,
@@ -331,19 +289,19 @@ class Characters(commands.Cog, name="Character"):
     @add.command(name="custom_section", description="Add a custom section to the character sheet")
     async def add_custom_section(self, ctx: discord.ApplicationContext) -> None:
         """Add a custom section to the character sheet."""
-        character = char_svc.fetch_claim(ctx)
+        character = self.bot.char_svc.fetch_claim(ctx)
         modal = CustomSectionModal(title=f"Custom section for {character.name}")
         await ctx.send_modal(modal)
         await modal.wait()
         section_title = modal.section_title.strip().title()
         section_description = modal.section_description.strip()
 
-        existing_sections = char_svc.fetch_char_custom_sections(ctx, character)
+        existing_sections = self.bot.char_svc.fetch_char_custom_sections(ctx, character)
         if normalize_to_db_row(section_title) in [
             normalize_to_db_row(x.title) for x in existing_sections
         ]:
             raise SectionExistsError
-        char_svc.add_custom_section(ctx, character, section_title, section_description)
+        self.bot.char_svc.add_custom_section(ctx, character, section_title, section_description)
         await present_embed(
             ctx,
             title="Custom Section Added",
@@ -362,7 +320,7 @@ class Characters(commands.Cog, name="Character"):
     @update.command(name="bio", description="Add or update a character's bio")
     async def update_bio(self, ctx: discord.ApplicationContext) -> None:
         """Update a character's bio."""
-        character = char_svc.fetch_claim(ctx)
+        character = self.bot.char_svc.fetch_claim(ctx)
 
         modal = BioModal(
             title=f"Enter the biography for {character.name}", current_bio=character.bio
@@ -371,7 +329,7 @@ class Characters(commands.Cog, name="Character"):
         await modal.wait()
         biography = modal.bio.strip()
 
-        char_svc.update_character(ctx, character.id, bio=biography)
+        self.bot.char_svc.update_character(ctx, character.id, bio=biography)
         logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
 
         await present_embed(
@@ -392,12 +350,12 @@ class Characters(commands.Cog, name="Character"):
             str,
             description="Custom section to update",
             required=True,
-            autocomplete=__custom_section_autocomplete,
+            autocomplete=select_custom_section,
         ),
     ) -> None:
         """Update a custom section."""
-        character = char_svc.fetch_claim(ctx)
-        section = char_svc.fetch_custom_section(ctx, character, title=custom_section)
+        character = self.bot.char_svc.fetch_claim(ctx)
+        section = self.bot.char_svc.fetch_custom_section(ctx, character, title=custom_section)
 
         modal = CustomSectionModal(
             section_title=section.title,
@@ -409,7 +367,7 @@ class Characters(commands.Cog, name="Character"):
         section_title = modal.section_title.strip().title()
         section_description = modal.section_description.strip()
 
-        char_svc.update_custom_section(
+        self.bot.char_svc.update_custom_section(
             ctx,
             section.id,
             **{"title": section_title, "description": section_description},
@@ -432,17 +390,15 @@ class Characters(commands.Cog, name="Character"):
     async def update_trait(
         self,
         ctx: discord.ApplicationContext,
-        trait: Option(
-            str, description="Trait to update", required=True, autocomplete=__trait_autocomplete
-        ),
+        trait: Option(str, description="Trait to update", required=True, autocomplete=select_trait),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
         ),
     ) -> None:
         """Update the value of a trait."""
-        character = char_svc.fetch_claim(ctx)
+        character = self.bot.char_svc.fetch_claim(ctx)
 
-        old_value = char_svc.fetch_trait_value(ctx, character=character, trait=trait)
+        old_value = self.bot.char_svc.fetch_trait_value(ctx, character=character, trait=trait)
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
@@ -470,7 +426,7 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        if view.confirmed and char_svc.update_trait_value_by_name(
+        if view.confirmed and self.bot.char_svc.update_trait_value_by_name(
             ctx, character=character, trait_name=trait, new_value=new_value
         ):
             await msg.delete_original_response()
@@ -492,11 +448,11 @@ class Characters(commands.Cog, name="Character"):
             str,
             description="Trait to delete",
             required=True,
-            autocomplete=__custom_trait_autocomplete,
+            autocomplete=select_custom_trait,
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        character = char_svc.fetch_claim(ctx)
+        character = self.bot.char_svc.fetch_claim(ctx)
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
@@ -518,7 +474,7 @@ class Characters(commands.Cog, name="Character"):
             return
 
         if view.confirmed:
-            char_svc.delete_custom_trait(ctx, character, trait)
+            self.bot.char_svc.delete_custom_trait(ctx, character, trait)
             await msg.delete_original_response()
             await present_embed(
                 ctx=ctx,
@@ -538,12 +494,12 @@ class Characters(commands.Cog, name="Character"):
             str,
             description="Custom section to delete",
             required=True,
-            autocomplete=__custom_section_autocomplete,
+            autocomplete=select_custom_section,
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        character = char_svc.fetch_claim(ctx)
-        char_svc.delete_custom_section(ctx, character, custom_section)
+        character = self.bot.char_svc.fetch_claim(ctx)
+        self.bot.char_svc.delete_custom_section(ctx, character, custom_section)
         await present_embed(
             ctx=ctx,
             title="Deleted Custom Section",

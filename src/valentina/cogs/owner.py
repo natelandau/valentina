@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina, __version__, db_svc
+from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_CHARACTER_COUNT
 from valentina.utils import Context
 from valentina.utils.helpers import pluralize
@@ -31,8 +31,9 @@ class Owner(commands.Cog):
     async def db_backup(self, ctx: Context) -> None:
         """Create a backup of the database."""
         logger.info("ADMIN: Manually create database backup")
-        await db_svc.backup_database(self.bot.config)
+        db_file = await self.bot.db_svc.backup_database(self.bot.config)
         embed = discord.Embed(title="Database backup created", color=discord.Color.green())
+        embed.add_field(name="File", value=f"`{db_file}`")
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -103,9 +104,9 @@ class Owner(commands.Cog):
         embed.add_field(name="Uptime", value=f"`{days}d, {hours}h, {minutes}m, {seconds}s`")
         embed.add_field(name="Latency", value=f"`{self.bot.latency!s}`")
         embed.add_field(name="Connected Guilds", value=str(len(self.bot.guilds)))
-        embed.add_field(name="Bot Version", value=f"`{__version__}`")
+        embed.add_field(name="Bot Version", value=f"`{self.bot.version}`")
         embed.add_field(name="Pycord Version", value=f"`{discord.__version__}`")
-        embed.add_field(name="Database Version", value=f"`{db_svc.database_version()}`")
+        embed.add_field(name="Database Version", value=f"`{self.bot.db_svc.database_version()}`")
 
         await ctx.send(embed=embed)
 

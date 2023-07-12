@@ -1,14 +1,47 @@
 """Models for the database."""
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 
-from peewee import BooleanField, DateTimeField, ForeignKeyField, IntegerField, Model, TextField
-
-from valentina import DATABASE
+from dotenv import dotenv_values
+from peewee import (
+    BooleanField,
+    DateTimeField,
+    ForeignKeyField,
+    IntegerField,
+    Model,
+    SqliteDatabase,
+    TextField,
+)
 
 
 def time_now() -> datetime:
     """Return the current time in UTC."""
     return datetime.now(timezone.utc).replace(microsecond=0)
+
+
+# Import configuration from environment variables
+env_dir = Path(__file__).parents[3].absolute()
+config = {
+    **dotenv_values(env_dir / ".env"),  # load shared variables
+    **dotenv_values(env_dir / ".env.secrets"),  # load sensitive variables
+    **os.environ,  # override loaded values with environment variables
+}
+for k, v in config.items():
+    config[k] = v.replace('"', "").replace("'", "").replace(" ", "")
+
+
+# Instantiate Database
+DATABASE = SqliteDatabase(
+    config["VALENTINA_DB_PATH"],
+    pragmas={
+        "journal_mode": "wal",
+        "cache_size": -1 * 64000,  # 64MB
+        "foreign_keys": 1,
+        "ignore_check_constraints": 0,
+        "synchronous": 1,
+    },
+)
 
 
 class BaseModel(Model):

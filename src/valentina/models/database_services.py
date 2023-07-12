@@ -2,6 +2,7 @@
 
 import re
 from datetime import datetime
+from pathlib import Path
 
 import discord
 from discord import ApplicationContext, AutocompleteContext
@@ -40,6 +41,7 @@ from valentina.models.database import (
     VampireClan,
     time_now,
 )
+from valentina.utils import DBBackup
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
@@ -1393,12 +1395,11 @@ class DatabaseService:
         """Initialize the DatabaseService."""
         self.db = database
 
-    async def backup_database(self, config: dict) -> None:
+    async def backup_database(self, config: dict) -> Path:
         """Create a backup of the database."""
-        from valentina.backup_db import DBBackup
-
-        await DBBackup(config).create_backup()
+        backup_file = await DBBackup(config).create_backup()
         await DBBackup(config).clean_old_backups()
+        return backup_file
 
     def column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.

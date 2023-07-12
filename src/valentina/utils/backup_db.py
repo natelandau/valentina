@@ -40,8 +40,12 @@ class DBBackup:
 
         return "daily"
 
-    async def create_backup(self) -> None:
-        """Perform the backup."""
+    async def create_backup(self) -> Path:
+        """Perform the backup.
+
+        Returns:
+            str: The name of the backup file.
+        """
         backup_type = self.type_of_backup()
 
         await aiofiles.os.makedirs(self.backup_dir, exist_ok=True)
@@ -60,6 +64,8 @@ class DBBackup:
                 await dest_file.write(chunk)
 
         logger.info(f"BACKUP: {backup_type} database backup complete")
+        logger.debug(f"BACKUP: Backup file: {backup_file}")
+        return backup_file
 
     async def clean_old_backups(self) -> int:
         """Cleans old backups based off the retention policies. Returns the number of files deleted."""

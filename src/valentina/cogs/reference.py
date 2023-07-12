@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina
+from valentina.models.bot import Valentina
 from valentina.views import present_embed
 
 

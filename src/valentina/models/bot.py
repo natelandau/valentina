@@ -9,21 +9,38 @@ from aiohttp import ClientSession
 from discord.ext import commands, tasks
 from loguru import logger
 
-from valentina.__version__ import __version__
-from valentina.utils.context import Context
+from valentina.models.database import DATABASE
+from valentina.models.database_services import (
+    CharacterService,
+    ChronicleService,
+    DatabaseService,
+    GuildService,
+    TraitService,
+    UserService,
+)
+from valentina.utils import Context, DBBackup
 
 
 class Valentina(commands.Bot):
     """Subclass discord.Bot."""
 
-    def __init__(self, parent_dir: Path, config: dict, *args: Any, **kwargs: Any):
+    def __init__(self, parent_dir: Path, config: dict, version: str, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
         self.char_service: Any = None
         self.parent_dir = parent_dir
         self.config = config
+        self.version = version
         self.owner_channels = [int(x) for x in self.config["VALENTINA_OWNER_CHANNELS"].split(",")]
+
+        # Create in-memory caches
+        self.db_svc = DatabaseService(DATABASE)
+        self.guild_svc = GuildService()
+        self.char_svc = CharacterService()
+        self.chron_svc = ChronicleService()
+        self.trait_svc = TraitService()
+        self.user_svc = UserService()
 
         logger.info("BOT: Running setup tasks")
         for cog in Path(self.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
@@ -55,36 +72,36 @@ class Valentina(commands.Bot):
         self.start_time = datetime.utcnow()
 
         if not self.welcomed:
-            from valentina import DATABASE, char_svc, guild_svc
-            from valentina.models.database_services import DatabaseService
-
-            # Database setup
-            DatabaseService(DATABASE).create_tables()
-
-            if DatabaseService(DATABASE).requires_migration(__version__):
-                DatabaseService(DATABASE).migrate_old_database(__version__)
-
-            DatabaseService(DATABASE).sync_enums()
+            # Start tasks
+            # #######################
+            backup_db.start(self.config)
+            logger.debug("BOT: Start background database backup task")
 
             await self.change_presence(
                 activity=discord.Activity(type=discord.ActivityType.watching, name="for /help")
             )
 
-            for guild in self.guilds:
-                guild_svc.update_or_add(guild)
-                char_svc.fetch_all_characters(guild.id)
-                await guild.system_channel.send(
-                    ":wave: Beware, I have connected to this server. I will be watching you."
-                )
-
-            # Start tasks
+            # Setup database
             # #######################
-            backup_db.start(self.config)
+            self.db_svc.create_tables()
 
-            logger.info("BOT: Internal cache built")
-            self.welcomed = True
+            if self.db_svc.requires_migration(self.version):
+                self.db_svc.migrate_old_database(self.version)
 
-        logger.info("BOT: Ready")
+            self.db_svc.sync_enums()
+
+            # Setup Guilds
+            # #######################
+
+            for guild in self.guilds:
+                logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
+                self.guild_svc.update_or_add(guild)
+                self.char_svc.fetch_all_characters(guild.id)
+
+        logger.info("BOT: In-memory caches created")
+
+        self.welcomed = True
+        logger.info(f"{self.user} is ready")
 
     async def on_message(self, message: discord.Message) -> None:
         """If the message is a reply to an RP post, ping the RP post's author."""
@@ -109,7 +126,5 @@ class Valentina(commands.Bot):
 @tasks.loop(time=time(0, tzinfo=timezone.utc))
 async def backup_db(config: dict) -> None:
     """Backup the database."""
-    from .backup_db import DBBackup
-
     await DBBackup(config).create_backup()
     await DBBackup(config).clean_old_backups()

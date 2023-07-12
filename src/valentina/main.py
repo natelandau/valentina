@@ -9,9 +9,8 @@ import discord
 import typer
 from dotenv import dotenv_values
 from loguru import logger
-from peewee import SqliteDatabase
 
-from valentina import Valentina
+from valentina.models.bot import Valentina
 from valentina.utils import InterceptHandler
 
 from .__version__ import __version__
@@ -38,7 +37,6 @@ CONFIG = {
 for k, v in CONFIG.items():
     CONFIG[k] = v.replace('"', "").replace("'", "").replace(" ", "")
 
-DB_PATH = DIR / CONFIG["VALENTINA_DB_PATH"]
 
 # Instantiate Logging
 logging.getLogger("discord.http").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
@@ -62,18 +60,6 @@ logger.add(
     enqueue=True,
 )
 
-# Instantiate Database
-DATABASE = SqliteDatabase(
-    DB_PATH,
-    pragmas={
-        "journal_mode": "wal",
-        "cache_size": -1 * 64000,  # 64MB
-        "foreign_keys": 1,
-        "ignore_check_constraints": 0,
-        "synchronous": 1,
-    },
-)
-
 # Intercept standard discord.py logs and redirect to Loguru
 logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
@@ -93,6 +79,7 @@ def main(
         parent_dir=DIR,
         config=CONFIG,
         command_prefix="!",
+        version=__version__,
     )
 
     bot.run(CONFIG["VALENTINA_DISCORD_TOKEN"])  # run the bot

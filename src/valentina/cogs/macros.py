@@ -5,8 +5,9 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina import Valentina, guild_svc, user_svc
+from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor
+from valentina.utils.options import select_macro
 from valentina.views import ConfirmCancelButtons, MacroCreateModal, present_embed
 
 
@@ -40,7 +41,7 @@ class Macros(commands.Cog):
     async def __trait_one_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         traits = []
-        for trait in guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):
+        for trait in ctx.bot.guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):  # type: ignore [attr-defined]
             if trait.lower().startswith(ctx.options["trait_one"].lower()):
                 traits.append(trait)
             if len(traits) >= MAX_OPTION_LIST_SIZE:
@@ -50,22 +51,12 @@ class Macros(commands.Cog):
     async def __trait_two_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
         """Populates the autocomplete for the trait option."""
         traits = []
-        for trait in guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):
+        for trait in ctx.bot.guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):  # type: ignore [attr-defined]
             if trait.lower().startswith(ctx.options["trait_two"].lower()):
                 traits.append(trait)
             if len(traits) >= MAX_OPTION_LIST_SIZE:
                 break
         return traits
-
-    async def __macro_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
-        """Populate a select list with a users' macros."""
-        macros = []
-        for macro in user_svc.fetch_macros(ctx):
-            if macro.name.lower().startswith(ctx.options["macro"].lower()):
-                macros.append(f"{macro.name} ({macro.abbreviation})")
-            if len(macros) >= MAX_OPTION_LIST_SIZE:
-                break
-        return macros
 
     macros = discord.SlashCommandGroup("macros", "Manage macros for quick rolls")
 
@@ -101,7 +92,7 @@ class Macros(commands.Cog):
         abbreviation = modal.abbreviation.strip() if modal.abbreviation else None
         description = modal.description.strip() if modal.description else None
 
-        macros = user_svc.fetch_macros(ctx)
+        macros = self.bot.user_svc.fetch_macros(ctx)
         if any(macro.name.lower() == name.lower() for macro in macros) or any(
             macro.abbreviation.lower() == abbreviation.lower() for macro in macros
         ):
@@ -113,7 +104,7 @@ class Macros(commands.Cog):
             )
             return
 
-        user_svc.create_macro(
+        self.bot.user_svc.create_macro(
             ctx,
             name=name.strip(),
             abbreviation=abbreviation.strip() if abbreviation else None,
@@ -143,7 +134,7 @@ class Macros(commands.Cog):
         ctx: discord.ApplicationContext,
     ) -> None:
         """List all macros associated with a user account."""
-        macros = sorted(user_svc.fetch_macros(ctx), key=lambda macro: macro.name)
+        macros = sorted(self.bot.user_svc.fetch_macros(ctx), key=lambda macro: macro.name)
         if len(macros) > 0:
             await present_embed(
                 ctx,
@@ -175,7 +166,7 @@ class Macros(commands.Cog):
             str,
             description="Macro to delete",
             required=True,
-            autocomplete=__macro_autocomplete,
+            autocomplete=select_macro,
         ),
     ) -> None:
         """Delete a macro from a user."""
@@ -197,7 +188,7 @@ class Macros(commands.Cog):
             return
 
         if view.confirmed:
-            user_svc.delete_macro(ctx, macro_name=name)
+            self.bot.user_svc.delete_macro(ctx, macro_name=name)
             await msg.delete_original_response()
             await present_embed(
                 ctx,

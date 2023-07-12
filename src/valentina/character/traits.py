@@ -1,7 +1,6 @@
 """Add a trait to a character."""
 import discord
 
-from valentina import char_svc
 from valentina.models.constants import FLAT_COMMON_TRAITS
 from valentina.models.database import Character, CustomTrait
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -47,7 +46,7 @@ async def add_trait(
         )
         await view.wait()
         if view.confirmed:
-            char_svc.add_trait(
+            ctx.bot.char_svc.add_trait(  # type: ignore [attr-defined]
                 ctx,
                 character,
                 name=trait_name,

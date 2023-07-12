@@ -69,10 +69,8 @@ def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] |
 
 def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
     """Take a string and return a random gif url."""
-    from valentina import guild_svc
-
     thumb_list = DICEROLL_THUBMS[result.name]
-    database_thumbs = guild_svc.fetch_roll_result_thumbs(ctx)
+    database_thumbs = ctx.bot.guild_svc.fetch_roll_result_thumbs(ctx)  # type: ignore [attr-defined]
     for category, thumbnails in database_thumbs.items():
         if category.lower() == result.name.lower():
             thumb_list.extend(thumbnails)

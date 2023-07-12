@@ -5,7 +5,6 @@ import arrow
 import discord
 from discord.ext import pages
 
-from valentina import char_svc
 from valentina.models.database import Character
 
 MAX_DOT_DISPLAY = 6
@@ -58,7 +57,7 @@ def __embed1(
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
     modified = arrow.get(character.modified).humanize()
-    char_traits = char_svc.fetch_all_character_trait_values(ctx, character)
+    char_traits = ctx.bot.char_svc.fetch_all_character_trait_values(ctx, character)  # type: ignore [attr-defined]
 
     embed = discord.Embed(title=f"{character.name}", description="", color=0x7777FF)
     embed.set_footer(text=f"{character.name} last updated {modified}")
@@ -126,7 +125,8 @@ def __embed2(
     claimed_by: discord.User | None = None,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
-    custom_sections = char_svc.fetch_char_custom_sections(ctx, character)
+    custom_sections = ctx.bot.char_svc.fetch_char_custom_sections(ctx, character)  # type: ignore [attr-defined]
+
     # Return None if there is no bio or custom sections
     if not character.bio and len(custom_sections) == 0:
         return None

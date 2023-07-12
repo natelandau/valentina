@@ -5,8 +5,7 @@ import discord
 from discord.commands import Option
 from discord.ext import commands, pages
 
-from valentina import CONFIG, Valentina
-from valentina.__version__ import __version__
+from valentina.models.bot import Valentina
 from valentina.views import present_embed
 
 
@@ -114,7 +113,7 @@ class Help(commands.Cog):
         """A walkthrough of Valentina Noir."""
         owners = [
             ctx.guild.get_member(int(x)).display_name
-            for x in CONFIG["VALENTINA_OWNER_IDS"].split(",")
+            for x in self.bot.config["VALENTINA_OWNER_IDS"].split(",")
         ]
 
         page1 = dedent(
@@ -282,7 +281,7 @@ class Help(commands.Cog):
         **ADDITIONAL INFORMATION**
         For bug reports, feature requests, or general questions, please add an issue to the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina).  Or reach out to the developer {' ,'.join(owners)}.
 
-        You are running Valentina Noir version `{__version__}`.
+        You are running Valentina Noir version `{self.bot.version}`.
 
         """
         )
@@ -292,12 +291,11 @@ class Help(commands.Cog):
         paginator.remove_button("last")
 
         # Send the paginator as a dm to the user
-        await paginator.respond(ctx.interaction, target=ctx.author)
-
-        # If successful, we post this message in the originating channel
-        await ctx.respond(
-            "Please check your DMs! The Guide to Valentina Noir has been sent to you.",
+        await paginator.respond(
+            ctx.interaction,
+            target=ctx.author,
             ephemeral=True,
+            target_message="Please check your DMs! The Guide to Valentina Noir has been sent to you.",
         )
 
 

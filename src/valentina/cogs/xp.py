@@ -6,10 +6,10 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina import Valentina, char_svc
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor
-from valentina.utils.errors import NoClaimError
+from valentina.models.bot import Valentina
+from valentina.models.constants import EmbedColor
 from valentina.utils.helpers import get_max_trait_value, get_trait_multiplier, get_trait_new_value
+from valentina.utils.options import select_trait
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
@@ -42,21 +42,6 @@ class Xp(commands.Cog, name="XP"):
 
     xp = discord.SlashCommandGroup("xp", "Add or spend xp")
 
-    async def __trait_autocomplete(self, ctx: discord.AutocompleteContext) -> list[str]:
-        """Populates the autocomplete for the trait option."""
-        try:
-            character = char_svc.fetch_claim(ctx)
-        except NoClaimError:
-            return ["No character claimed"]
-
-        traits = []
-        for trait in char_svc.fetch_all_character_traits(character, flat_list=True):
-            if trait.lower().startswith(ctx.options["trait"].lower()):
-                traits.append(trait)
-            if len(traits) >= MAX_OPTION_LIST_SIZE:
-                break
-        return traits
-
     @xp.command(name="spend", description="Spend experience points to upgrade a trait")
     async def spend_xp(
         self,
@@ -65,14 +50,14 @@ class Xp(commands.Cog, name="XP"):
             str,
             description="Trait to raise with xp",
             required=True,
-            autocomplete=__trait_autocomplete,
+            autocomplete=select_trait,
         ),
     ) -> None:
         """Spend experience points."""
-        character = char_svc.fetch_claim(ctx)
+        character = self.bot.char_svc.fetch_claim(ctx)
 
-        old_value = char_svc.fetch_trait_value(ctx, character, trait)
-        category = char_svc.fetch_trait_category(ctx, character, trait)
+        old_value = self.bot.char_svc.fetch_trait_value(ctx, character, trait)
+        category = self.bot.char_svc.fetch_trait_category(ctx, character, trait)
 
         multiplier = get_trait_multiplier(trait, category)
 
@@ -126,8 +111,8 @@ class Xp(commands.Cog, name="XP"):
         if view.confirmed:
             new_value = old_value + 1
             new_experience = character.experience - upgrade_cost
-            char_svc.update_trait_value_by_name(ctx, character, trait, new_value)
-            char_svc.update_character(
+            self.bot.char_svc.update_trait_value_by_name(ctx, character, trait, new_value)
+            self.bot.char_svc.update_character(
                 ctx,
                 character.id,
                 **{"experience": new_experience},
@@ -157,13 +142,13 @@ class Xp(commands.Cog, name="XP"):
         exp: Option(int, description="The amount of experience to add", required=True),
     ) -> None:
         """Add experience to a character."""
-        character = char_svc.fetch_claim(ctx)
+        character = self.bot.char_svc.fetch_claim(ctx)
 
         exp = int(exp)
         new_exp = character.experience + exp
         new_total = character.experience_total + exp
 
-        char_svc.update_character(
+        self.bot.char_svc.update_character(
             ctx,
             character.id,
             experience=new_exp,
@@ -190,13 +175,13 @@ class Xp(commands.Cog, name="XP"):
         cp: Option(int, description="The number of cool points to add", required=True),
     ) -> None:
         """Add cool points to a character."""
-        character = char_svc.fetch_claim(ctx)
+        character = self.bot.char_svc.fetch_claim(ctx)
 
         cp = int(cp)
         new_cp = character.cool_points + cp
         new_total = character.cool_points_total + cp
 
-        char_svc.update_character(
+        self.bot.char_svc.update_character(
             ctx,
             character.id,
             cool_points=new_cp,

@@ -9,13 +9,7 @@ from discord.ext import commands
 from discord.ext.commands import MemberConverter
 from loguru import logger
 
-from valentina import (
-    Valentina,
-    char_svc,
-    chron_svc,
-    guild_svc,
-    user_svc,
-)
+from valentina.models.bot import Valentina
 from valentina.utils import Context
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import pluralize
@@ -66,7 +60,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Toggle audit log on/off."""
-        setting = guild_svc.is_audit_logging(ctx)
+        setting = self.bot.guild_svc.is_audit_logging(ctx)
         if setting:
             fields = [
                 ("Current audit log status", "Enabled"),
@@ -96,11 +90,11 @@ class Admin(commands.Cog):
             return
 
         if setting:
-            await guild_svc.send_log(ctx, "Audit logging disabled")
-            guild_svc.set_audit_log(ctx, False)
+            await self.bot.guild_svc.send_log(ctx, "Audit logging disabled")
+            self.bot.guild_svc.set_audit_log(ctx, False)
             return
 
-        if not guild_svc.fetch_log_channel(ctx) and not channel_name:
+        if not self.bot.guild_svc.fetch_log_channel(ctx) and not channel_name:
             await present_embed(
                 ctx,
                 title="No audit log channel",
@@ -110,12 +104,12 @@ class Admin(commands.Cog):
             )
             return
 
-        if not guild_svc.fetch_log_channel(ctx) and channel_name:
-            await guild_svc.create_bot_log_channel(ctx.guild, channel_name)
-            guild_svc.set_audit_log(ctx, True)
+        if not self.bot.guild_svc.fetch_log_channel(ctx) and channel_name:
+            await self.bot.guild_svc.create_bot_log_channel(ctx.guild, channel_name)
+            self.bot.guild_svc.set_audit_log(ctx, True)
             message = f"Logging to channel **{channel_name}**"
         else:
-            guild_svc.set_audit_log(ctx, True)
+            self.bot.guild_svc.set_audit_log(ctx, True)
             message = "Logging to audit channel enabled"
 
         await present_embed(ctx, title=message, level="success", ephemeral=True, log=True)
@@ -151,17 +145,17 @@ class Admin(commands.Cog):
             return
 
         if not all_guilds:
-            guild_svc.purge_cache(ctx)
-            user_svc.purge_cache(ctx)
-            char_svc.purge_cache(ctx, with_claims=True)
-            chron_svc.purge_cache(ctx)
+            self.bot.guild_svc.purge_cache(ctx)
+            self.bot.user_svc.purge_cache(ctx)
+            self.bot.char_svc.purge_cache(ctx, with_claims=True)
+            self.bot.chron_svc.purge_cache(ctx)
             logger.info(f"ADMIN: Purge cache for {ctx.guild.name}")
 
         if all_guilds:
-            guild_svc.purge_cache()
-            user_svc.purge_cache()
-            char_svc.purge_cache(with_claims=True)
-            chron_svc.purge_cache()
+            self.bot.guild_svc.purge_cache()
+            self.bot.user_svc.purge_cache()
+            self.bot.char_svc.purge_cache(with_claims=True)
+            self.bot.chron_svc.purge_cache()
             logger.info("ADMIN: Purge cache for all guilds")
 
         await msg.delete_original_response()
