@@ -3,6 +3,7 @@
 
 import re
 
+import aiohttp
 from discord.ext.commands import BadArgument, Context, Converter
 
 from valentina.models.constants import CharClass, VampClanList
@@ -18,6 +19,11 @@ class ValidThumbnailURL(Converter):
 
         if not re.match(r".+\.(png|jpg|jpeg|gif)$", argument):
             raise BadArgument("Thumbnail URLs must end with a valid image extension")
+
+        async with aiohttp.ClientSession() as session, session.get(argument) as r:
+            success_status_codes = [200, 201, 202, 203, 204, 205, 206]
+            if r.status not in success_status_codes:
+                raise BadArgument(f"Thumbnail URL could not be accessed\nStatus: {r.status}")
 
         # Replace media.giphy.com URLs with i.giphy.com URLs
         return re.sub(r"//media\.giphy\.com", "//i.giphy.com", argument)
