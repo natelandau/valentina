@@ -7,8 +7,13 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import EmbedColor
-from valentina.utils.helpers import get_max_trait_value, get_trait_multiplier, get_trait_new_value
+from valentina.models.constants import EmbedColor, XPMultiplier
+from valentina.utils.helpers import (
+    fetch_clan_disciplines,
+    get_max_trait_value,
+    get_trait_multiplier,
+    get_trait_new_value,
+)
 from valentina.utils.options import select_trait
 from valentina.views import ConfirmCancelButtons, present_embed
 
@@ -59,7 +64,12 @@ class Xp(commands.Cog, name="XP"):
         old_value = self.bot.char_svc.fetch_trait_value(ctx, character, trait)
         category = self.bot.char_svc.fetch_trait_category(ctx, character, trait)
 
-        multiplier = get_trait_multiplier(trait, category)
+        if character.char_class.name == "Vampire" and trait in fetch_clan_disciplines(
+            character.clan_name
+        ):
+            multiplier = XPMultiplier.CLAN_DISCIPLINE.value
+        else:
+            multiplier = get_trait_multiplier(trait, category)
 
         if old_value > 0:
             upgrade_cost = (old_value + 1) * multiplier
@@ -91,7 +101,7 @@ class Xp(commands.Cog, name="XP"):
         msg = await present_embed(
             ctx,
             title=f"Upgrade {trait}?",
-            description=f"Upgrading **{trait}** by **1** dot will cost **{upgrade_cost} XP**\n Raise from **{old_value}** dots to **{old_value + 1}** dots",
+            description=f"Upgrading **{trait}** from **{old_value}** to **{old_value + 1}** dots will cost **{upgrade_cost} XP**",
             fields=[
                 ("Current XP", character.experience),
                 ("XP Cost", str(upgrade_cost)),

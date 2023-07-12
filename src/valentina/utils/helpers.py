@@ -6,6 +6,7 @@ import discord
 from numpy.random import default_rng
 
 from valentina.models.constants import (
+    CLAN_DISCIPLINES,
     COMMON_TRAITS,
     DICEROLL_THUBMS,
     HUNTER_TRAITS,
@@ -40,6 +41,18 @@ def merge_dictionaries(
         return list({item for sublist in result.values() for item in sublist})
 
     return dict(result)
+
+
+def fetch_clan_disciplines(clan: str) -> list[str]:
+    """Fetch the disciplines for a clan.
+
+    Examples:
+        >>> fetch_clan_disciplines("toreador")
+        ['Auspex', 'Celerity', 'Presence']
+
+
+    """
+    return CLAN_DISCIPLINES[clan.title()]
 
 
 def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] | list[str]:
@@ -129,7 +142,7 @@ def get_trait_multiplier(trait: str, category: str) -> int:
         int: The multiplier associated with the trait.
 
     >>> get_trait_multiplier("Dominate", "Disciplines")
-    5
+    7
 
     >>> get_trait_multiplier("Humanity", "Universal")
     2

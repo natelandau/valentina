@@ -19,6 +19,7 @@ from valentina.models.constants import (
     WEREWOLF_TRAITS,
     CharClass,
     EmbedColor,
+    MaxTraitValue,
     VampClanList,
 )
 from valentina.models.database import (
@@ -564,11 +565,9 @@ class CharacterService:
         description: str,
         category: str,
         value: int,
-        max_value: int = 5,
+        max_value: int = MaxTraitValue.DEFAULT.value,
     ) -> None:
         """Create a custom trait for a character."""
-        # TODO: max_value default should pull from MaxTraitValue enum
-
         key = self.__get_char_key(ctx.guild.id, character.id)
 
         CustomTrait.create(

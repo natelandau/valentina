@@ -161,6 +161,11 @@ class Character(BaseModel):
         """Return the character's class from the char_class table."""
         return self.char_class.name
 
+    @property
+    def clan_name(self) -> str:
+        """Return the character's clan from the vampire_clans table."""
+        return self.clan.name
+
     def __str__(self) -> str:
         """Return the string representation of the model."""
         return f"""Character({self.id} - {self.name})"""

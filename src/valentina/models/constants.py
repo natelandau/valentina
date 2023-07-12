@@ -67,8 +67,7 @@ class XPMultiplier(Enum):
     VIRTUES = 2
     SPHERES = 7
     CLAN_DISCIPLINE = 5
-    OTHER_DISCIPLINE = 7
-    DISCIPLINES = 5  # TODO: Remove this and replace with clan/other
+    DISCIPLINES = 7
     MERITS = 2
     FLAWS = 2
     BACKGROUNDS = 2
