@@ -1416,7 +1416,7 @@ class DatabaseService:
         return column in columns
 
     def create_tables(self) -> None:
-        """Create all tables in the database and populate default values if they are constants."""
+        """Create all tables in the database if they don't exist."""
         with self.db:
             self.db.create_tables(
                 [
@@ -1440,7 +1440,6 @@ class DatabaseService:
                 ]
             )
         logger.info("DATABASE: Create Tables")
-        logger.debug(f"DATABASE: {self.get_tables()}")
 
     def sync_enums(self) -> None:
         """Ensure that the CharacterClass and VampireCan tables are up to date with their enums."""
@@ -1492,34 +1491,20 @@ class DatabaseService:
         return DatabaseVersion.get_by_id(1).version
 
     @logger.catch
-    def requires_migration(self, bot_version: str) -> bool:
-        """Determine if the database requires a migration.
-
-        Args:
-            bot_version (str): The version of the bot to compare against the database version.
-
-        Returns:
-            bool: True if the database requires a migration, False otherwise.
-        """
-        current_db, created = DatabaseVersion.get_or_create(
+    def initialize_database(self, bot_version: str) -> None:
+        """Migrate from old database versions to the current one."""
+        existing_data, new_db_created = DatabaseVersion.get_or_create(
             id=1,
             defaults={"version": bot_version},
         )
-        if created:
+
+        # If we are creating a new database, populate the necessary tables with data
+        if new_db_created:
             logger.info(f"DATABASE: Create version v{bot_version}")
-            return False
+            return
 
-        if Version.parse(bot_version) > Version.parse(current_db.version):
-            logger.info(f"DATABASE: Database v{current_db.version} < bot v{bot_version}")
-            return True
-
-        logger.debug(f"DATABASE: Database v{current_db.version} is up to date")
-        return False
-
-    @logger.catch
-    def migrate_old_database(self, bot_version: str) -> None:
-        """Migrate from old database versions to the current one."""
-        db_version = DatabaseVersion.get_by_id(1).version
+        # If the database already exists, check if we need to migrate
+        db_version = existing_data.version
 
         if Version.parse(db_version) < Version.parse("0.8.2"):
             logger.debug(f"DATABASE: Migrate database v{db_version} to v0.8.2")
@@ -1562,6 +1547,13 @@ class DatabaseService:
 
             logger.debug("DATABASE: Remove trait columns from Character table")
 
-        # Complete migration and bump the database version
-        logger.info(f"DATABASE: Migrate database to v{bot_version}")
+        if Version.parse(db_version) < Version.parse("0.12.0"):
+            # Update traits to match class specifics
+            CharacterTrait.update(character_class=CharClass.WEREWOLF.value).where(
+                CharacterTrait.name == "Primal-Urge"
+            ).execute()
+            logger.warning("DATABASE: Migrate database v0.12.0 to v0.13.0")
+
+        # Complete any migrations and bump the database version
         DatabaseVersion.set_by_id(1, {"version": bot_version})
+        logger.info(f"DATABASE: Database is up-to-date with v{bot_version}")

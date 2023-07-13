@@ -59,32 +59,12 @@ def test_sync_enums(empty_db):
     assert VampireClan.get_by_id(2).name == values[1]
 
 
-def test_requires_migration_one(empty_db):
-    """Test DatabaseService.requires_migration().
+def test_initialize_database_one(empty_db):
+    """Test DatabaseService.initialize_database().
 
     GIVEN an empty database
-    WHEN DatabaseService.requires_migration() is called
-    THEN True is returned and the database version is set
+    WHEN DatabaseService.initialize_database() is called
+    THEN the initial database version is set
     """
-    assert DatabaseService(empty_db).requires_migration("2.3.2") is False
-    assert DatabaseVersion.get_by_id(1).version == "2.3.2"
-
-
-@pytest.mark.parametrize(
-    ("version", "expected"),
-    [
-        ("0.1.0", False),
-        ("1.0.0", False),
-        ("1.0.1", True),
-        ("2.3.3", True),
-    ],
-)
-def test_requires_migration_two(mock_db, version, expected):
-    """Test DatabaseService.requires_migration().
-
-    GIVEN a database with a version
-    WHEN DatabaseService.requires_migration() is called
-    THEN the correct value is passed
-    """
-    print(DatabaseVersion.get_by_id(1).version)
-    assert DatabaseService(mock_db).requires_migration(version) is expected
+    DatabaseService(empty_db).initialize_database("2000.3.2")
+    assert DatabaseVersion.get_by_id(1).version == "2000.3.2"

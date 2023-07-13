@@ -84,9 +84,7 @@ class Valentina(commands.Bot):
             # Setup database
             # #######################
             self.db_svc.create_tables()
-
-            if self.db_svc.requires_migration(self.version):
-                self.db_svc.migrate_old_database(self.version)
+            self.db_svc.initialize_database(self.version)
 
             self.db_svc.sync_enums()
 
