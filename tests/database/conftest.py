@@ -12,7 +12,6 @@ import discord
 import pytest
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.models.constants import DBConstants
 from valentina.models.database import (
     Character,
     CharacterClass,
@@ -35,7 +34,6 @@ from valentina.models.database import (
     User,
     VampireClan,
 )
-from valentina.models.database_services import DatabaseService
 from valentina.utils.db_initialize import PopulateDatabase
 
 # IMPORTANT: This list must be kept in sync with all the models defined in src/valentina/models/database.py
