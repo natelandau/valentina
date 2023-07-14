@@ -15,6 +15,7 @@ from valentina.models.constants import DBConstants
 from valentina.utils.converters import ValidCharacterClass, ValidCharacterName, ValidClan
 from valentina.utils.errors import SectionExistsError
 from valentina.utils.options import (
+    select_char_class,
     select_character,
     select_custom_section,
     select_custom_trait,
@@ -65,9 +66,9 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
         char_class: Option(
             ValidCharacterClass,
-            name="class",
+            name="char_class",
             description="The character's class",
-            choices=[c.name for c in DBConstants.char_classes()],
+            autocomplete=select_char_class,
             required=True,
         ),
         first_name: Option(ValidCharacterName, "Character's name", required=True),

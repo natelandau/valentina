@@ -161,6 +161,18 @@ async def select_character(ctx: discord.AutocompleteContext) -> list[OptionChoic
     return found_chars
 
 
+async def select_char_class(ctx: discord.AutocompleteContext) -> list[str]:
+    """Generate a list of available character classes."""
+    classes = []
+    for char_class in DBConstants.char_classes():
+        if char_class.name.lower().startswith(ctx.options["char_class"].lower()):
+            classes.append(char_class.name)
+        if len(classes) >= MAX_OPTION_LIST_SIZE:
+            break
+
+    return classes
+
+
 async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available vampire clans."""
     clans = []
