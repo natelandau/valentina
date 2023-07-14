@@ -7,7 +7,6 @@ from valentina.models.database import (
     Character,
     CustomSection,
     CustomTrait,
-    Trait,
 )
 from valentina.models.database_services import CharacterService
 from valentina.utils.errors import (

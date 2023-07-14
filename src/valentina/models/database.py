@@ -187,21 +187,6 @@ class Character(BaseModel):
         table_name = "characters"
 
 
-class CharacterTrait(BaseModel):
-    """Character Trait model for the database."""
-
-    name = TextField()
-    category = TextField(null=True)
-    subcategory = TextField(null=True)
-    max_value = IntegerField(default=0)
-    character_class = ForeignKeyField(CharacterClass, backref="traits", null=True)
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "character_traits"
-
-
 class CustomTrait(BaseModel):
     """Custom Trait model for the database."""
 

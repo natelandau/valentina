@@ -15,7 +15,6 @@ from valentina.models.database import (
     TraitClass,
     TraitValue,
     VampireClan,
-    time_now,
 )
 
 common_traits = {
@@ -25,25 +24,21 @@ common_traits = {
     "Talents": [
         "Alertness",
         "Athletics",
+        "Awareness",
         "Brawl",
         "Dodge",
         "Empathy",
         "Expression",
         "Intimidation",
         "Leadership",
-        "Primal-Urge",
         "Streetwise",
         "Subterfuge",
     ],
     "Skills": [
         "Animal Ken",
-        "Crafts",
         "Drive",
         "Etiquette",
         "Firearms",
-        "Insight",
-        "Larceny",
-        "Meditation",
         "Melee",
         "Performance",
         "Persuasion",
@@ -51,13 +46,11 @@ common_traits = {
         "Security",
         "Stealth",
         "Survival",
-        "Technology",
     ],
     "Knowledges": [
         "Academics",
         "Bureaucracy",
         "Computer",
-        "Enigmas",
         "Finance",
         "Investigation",
         "Law",
@@ -65,13 +58,13 @@ common_traits = {
         "Medicine",
         "Occult",
         "Politics",
-        "Rituals",
         "Science",
     ],
     "Other": ["Willpower", "Desperation", "Reputation"],
 }
 mage_traits = {
     "Other": ["Humanity", "Arete", "Quintessence"],
+    "Knowledges": ["Cosmology", "Enigmas"],
     "Virtues": ["Conscience", "Self-Control", "Courage"],
     "Spheres": [
         "Correspondence",
@@ -109,18 +102,21 @@ vampire_traits = {
     ],
 }
 werewolf_traits = {
-    # TODO: Add these custom werewolf traits
-    # "Talents"- Primal-Urge"
-    # "Skills"- "Ranged"
-    # "Knowledges"- "Legend-Lore"
+    "Talents": ["Primal-Urge"],
+    "Knowledges": ["Rituals"],
     "Other": ["Gnosis", "Rage"],
     "Renown": ["Glory", "Honor", "Wisdom"],
 }
 hunter_traits = {
+    "Skills": ["Crafts", "Demolitions", "Technology"],
     "Other": ["Conviction", "Faith", "Humanity"],
     "Virtues": ["Conscience", "Self-Control", "Courage"],
 }
-mortal_traits = {"Other": ["Humanity"], "Virtues": ["Conscience", "Self-Control", "Courage"]}
+mortal_traits = {
+    "Skills": ["Crafts", "Larceny"],
+    "Other": ["Humanity"],
+    "Virtues": ["Conscience", "Self-Control", "Courage"],
+}
 
 
 class MigrateDatabase:
@@ -137,9 +133,6 @@ class MigrateDatabase:
 
         if Version.parse(self.db_version) <= Version.parse("0.8.2"):
             self.__0_8_2()
-
-        if Version.parse(self.db_version) <= Version.parse("0.11.3"):
-            self.__0_11_3()
 
         if Version.parse(self.db_version) <= Version.parse("0.12.0"):
             self.__0_12_0()
@@ -159,46 +152,76 @@ class MigrateDatabase:
         columns = [row[1] for row in cursor.fetchall()]
         return column in columns
 
+    def get_tables(self) -> list[str]:
+        """Get all tables in the Database."""
+        with self.db:
+            cursor = self.db.execute_sql("SELECT name FROM sqlite_master WHERE type='table';")
+            return [row[0] for row in cursor.fetchall()]
+
     def __0_8_2(self) -> None:
         """Migrate from database from v0.8.2."""
         logger.info("DATABASE: Migrate database to v0.8.2")
         self.db.execute_sql("ALTER TABLE characters ADD COLUMN security INTEGER DEFAULT 0;")
 
-    def __0_11_3(self) -> None:
-        """Migrate from database from v0.11.3."""
-        logger.info("DATABASE: Migrate database to v0.11.3")
-
-        # Populate the trait values table
-        for trait in Trait.select():
-            column_name = trait.name.lower().replace(" ", "_").replace("-", "_")
-            if self._column_exists("characters", column_name):
-                for character in Character.select():
-                    logger.debug(f"DATABASE: Populate {trait.name} for {character.name}")
-                    trait_value = self.db.execute_sql(
-                        "SELECT "  # noqa: S608
-                        + column_name
-                        + " FROM characters WHERE id = "
-                        + str(character.id)
-                        + ";"
-                    ).fetchone()[0]
-
-                    TraitValue.create(
-                        character=character,
-                        trait=trait,
-                        value=trait_value,
-                        modified=time_now(),
-                    )
-
-        # Remove the trait columns from the character table
-        for trait in Trait.select():
-            column_name = trait.name.lower().replace(" ", "_").replace("-", "_")
-            if self._column_exists("characters", column_name):
-                self.db.execute_sql("ALTER TABLE characters DROP COLUMN " + column_name + ";")
-                logger.debug(f"DATABASE: Remove {trait.name} from Character table")
-
     def __0_12_0(self) -> None:
         """Migration from db v0.12.0."""
-        logger.warning("DATABASE: Migrate database from v0.12.0")
+        logger.info("DATABASE: Migrate database from v0.12.0")
+
+        if "character_traits" in self.get_tables():
+            tvs = {}
+            for row in TraitValue.select():
+                tvs[row.id] = {
+                    "char": row.character_id,
+                    "trait": row.trait_id,
+                    "value": row.value,
+                    "modified": row.modified,
+                }
+                row.delete_instance()
+
+            for key, value in tvs.items():
+                old_name = self.db.execute_sql(
+                    "SELECT name FROM character_traits WHERE id =  ?;", (value["trait"],)
+                ).fetchone()[0]
+                new_trait = Trait.get_or_none(name=old_name)
+                if not new_trait:
+                    logger.debug(f"Trait {old_name} no longer exists. Dropping.")
+                    tvs[key]["new_id"] = "DROP"
+                    continue
+
+                tvs[key]["new_id"] = new_trait.id
+
+            self.db.execute_sql("DROP TABLE character_traits;")
+            self.db.execute_sql("DROP TABLE trait_values;")
+
+            # Now we can create the new table and insert the values
+            with self.db:
+                self.db.create_tables([TraitValue])
+
+            for value in sorted(tvs.values(), key=lambda x: x["char"]):
+                if value["new_id"] == "DROP":
+                    continue
+
+                character_class = Character.get(id=value["char"]).char_class
+                if (
+                    not TraitClass.get_or_none(
+                        trait_id=value["new_id"], character_class=character_class
+                    )
+                    and value["value"] == 0
+                ):
+                    logger.debug(f"Dropping not class trait {value['new_id']}")
+                    continue
+
+                if not TraitValue.get_or_none(
+                    character=value["char"], trait=value["new_id"], value=value["value"]
+                ):
+                    TraitValue.create(
+                        character=value["char"],
+                        trait=value["new_id"],
+                        value=value["value"],
+                        modified=value["modified"],
+                    )
+                else:
+                    logger.debug(f"Skipping duplicate trait value for trait {value['new_id']}")
 
 
 class PopulateDatabase:

@@ -97,13 +97,16 @@ class MaxTraitValue(Enum):
 
     DEFAULT = 5
     # Specific values
-    WILLPOWER = 10
-    HUMANITY = 10
-    RAGE = 10
-    GNOSIS = 10
     ARETE = 10
     BLOOD_POOL = 20
+    GLORY = 10
+    GNOSIS = 10
+    HONOR = 10
+    HUMANITY = 10
     QUINTESSENCE = 20
+    RAGE = 10
+    WILLPOWER = 10
+    WISDOM = 10
     # Category values
     PHYSICAL = 5
     SOCIAL = 5

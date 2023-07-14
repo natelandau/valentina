@@ -1,9 +1,9 @@
 # type: ignore
 """Test working with new databases and the DatabaseService class."""
-import peewee as pw
-import pytest
 
-from valentina.models.database import CharacterClass, DatabaseVersion, VampireClan
+from playhouse.sqlite_ext import CSqliteExtDatabase
+
+from valentina.models.database import DatabaseVersion
 from valentina.models.database_services import DatabaseService
 
 from .conftest import MODELS
@@ -17,7 +17,7 @@ def test_create_tables(tmp_path):
     THEN the tables are created
     """
     db_path = tmp_path / "test.db"
-    test_db = pw.SqliteDatabase(db_path)
+    test_db = CSqliteExtDatabase(db_path)
     test_db.bind(MODELS, bind_refs=False, bind_backrefs=False)
     test_db.connect()
 

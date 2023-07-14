@@ -2,13 +2,7 @@
 """Test the TraitService class."""
 import pytest
 
-from valentina.models.database import (
-    CustomTrait,
-    Trait,
-    TraitCategory,
-    TraitClass,
-    TraitValue,
-)
+from valentina.models.database import Trait
 from valentina.models.database_services import TraitService
 from valentina.utils.errors import TraitNotFoundError
 
@@ -27,7 +21,7 @@ class TestTraitService:
         THEN return only the traits associated with that class
         """
         traits = [x.name for x in self.trait_svc.fetch_all_class_traits("Vampire")]
-        assert len(traits) > 70
+        assert len(traits) == 67
 
         for t in ["Willpower", "Strength", "Firearms", "Humanity", "Celerity", "Blood Pool"]:
             assert t in traits

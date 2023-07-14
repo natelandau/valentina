@@ -9,8 +9,8 @@ empty_db: A database with tables but no data for use in tests. Any changes made 
 
 """
 import discord
-import peewee as pw
 import pytest
+from playhouse.sqlite_ext import CSqliteExtDatabase
 
 from valentina.models.constants import DBConstants
 from valentina.models.database import (
@@ -119,9 +119,9 @@ trait_values3 = {"character_id": 1, "trait_id": 3, "value": 3}
 
 
 @pytest.fixture(scope="class")
-def mock_db() -> pw.SqliteDatabase:
+def mock_db() -> CSqliteExtDatabase:
     """Create a mock database with test data for use in tests."""
-    test_db = pw.SqliteDatabase(":memory:")
+    test_db = CSqliteExtDatabase(":memory:")
     test_db.bind(MODELS, bind_refs=False, bind_backrefs=False)
     test_db.connect()
     test_db.create_tables(MODELS)
@@ -161,9 +161,9 @@ def mock_db() -> pw.SqliteDatabase:
 
 
 @pytest.fixture()
-def empty_db() -> pw.SqliteDatabase:
+def empty_db() -> CSqliteExtDatabase:
     """Create an empty database for use in tests."""
-    empty_db = pw.SqliteDatabase(":memory:")
+    empty_db = CSqliteExtDatabase(":memory:")
     empty_db.bind(MODELS, bind_refs=False, bind_backrefs=False)
     empty_db.connect()
     empty_db.create_tables(MODELS)
