@@ -11,7 +11,6 @@ from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal, CustomSectionModal
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
-from valentina.models.constants import DBConstants
 from valentina.utils.converters import ValidCharacterClass, ValidCharacterName, ValidClan
 from valentina.utils.errors import SectionExistsError
 from valentina.utils.options import (
@@ -20,6 +19,7 @@ from valentina.utils.options import (
     select_custom_section,
     select_custom_trait,
     select_trait,
+    select_trait_category,
     select_vampire_clan,
 )
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -251,9 +251,10 @@ class Characters(commands.Cog, name="Character"):
         trait: Option(str, "The new trait to add.", required=True),
         category: Option(
             str,
-            "The category to add the trait to",
+            name="category",
+            description="The category to add the trait to",
             required=True,
-            choices=sorted([x.name for x in DBConstants.trait_categories()]),
+            autocomplete=select_trait_category,
         ),
         value: Option(int, "The value of the trait", required=True, min_value=0, max_value=20),
         max_value: Option(

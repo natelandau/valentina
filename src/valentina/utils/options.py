@@ -183,3 +183,15 @@ async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[str]:
             break
 
     return clans
+
+
+async def select_trait_category(ctx: discord.AutocompleteContext) -> list[str]:
+    """Generate a list of available trait categories."""
+    categories = []
+    for category in DBConstants.trait_categories():
+        if category.name.lower().startswith(ctx.options["category"].lower()):
+            categories.append(category.name)
+        if len(categories) >= MAX_OPTION_LIST_SIZE:
+            break
+
+    return categories
