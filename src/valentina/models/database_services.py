@@ -7,7 +7,8 @@ from pathlib import Path
 import discord
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
-from peewee import DoesNotExist, IntegrityError, ModelSelect, SqliteDatabase, fn
+from peewee import DoesNotExist, IntegrityError, ModelSelect, fn
+from playhouse.sqlite_ext import CSqliteExtDatabase
 
 from valentina.models.constants import (
     DBConstants,
@@ -15,6 +16,7 @@ from valentina.models.constants import (
     MaxTraitValue,
 )
 from valentina.models.database import (
+    DATABASE,
     Character,
     CharacterClass,
     Chronicle,
@@ -1376,14 +1378,15 @@ class GuildService:
 class DatabaseService:
     """Representation of the database."""
 
-    def __init__(self, database: SqliteDatabase) -> None:
+    def __init__(self, database: CSqliteExtDatabase) -> None:
         """Initialize the DatabaseService."""
         self.db = database
 
-    async def backup_database(self, config: dict) -> Path:
+    @staticmethod
+    async def backup_database(config: dict) -> Path:
         """Create a backup of the database."""
-        backup_file = await DBBackup(config).create_backup()
-        await DBBackup(config).clean_old_backups()
+        backup_file = await DBBackup(config, DATABASE).create_backup()
+        await DBBackup(config, DATABASE).clean_old_backups()
         return backup_file
 
     def column_exists(self, table: str, column: str) -> bool:

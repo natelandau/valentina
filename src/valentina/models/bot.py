@@ -73,7 +73,7 @@ class Valentina(commands.Bot):
         if not self.welcomed:
             # Start tasks
             # #######################
-            backup_db.start(self.config)
+            backup_db.start(self.config, DATABASE)
             logger.debug("BOT: Start background database backup task")
 
             await self.change_presence(
@@ -116,5 +116,5 @@ class Valentina(commands.Bot):
 @tasks.loop(time=time(0, tzinfo=timezone.utc))
 async def backup_db(config: dict) -> None:
     """Backup the database."""
-    await DBBackup(config).create_backup()
-    await DBBackup(config).clean_old_backups()
+    await DBBackup(config, DATABASE).create_backup()
+    await DBBackup(config, DATABASE).clean_old_backups()

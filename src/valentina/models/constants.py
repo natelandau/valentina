@@ -90,7 +90,10 @@ class DBConstants:
 
 ### ENUMS ###
 class MaxTraitValue(Enum):
-    """Maximum value for a trait."""
+    """Maximum value for a trait.
+
+    Note: Maximum values for custom traits are managed in the database.
+    """
 
     DEFAULT = 5
     # Specific values

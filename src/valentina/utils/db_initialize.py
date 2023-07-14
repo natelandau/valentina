@@ -3,7 +3,7 @@
 IMPORTANT: If you change the data in this file, you must add/delete/migrate the corresponding in any existing databases!
 """
 from loguru import logger
-from peewee import SqliteDatabase
+from playhouse.sqlite_ext import CSqliteExtDatabase
 from semver import Version
 
 from valentina.models.database import (
@@ -126,7 +126,7 @@ mortal_traits = {"Other": ["Humanity"], "Virtues": ["Conscience", "Self-Control"
 class MigrateDatabase:
     """A class that handles migrating an existing database."""
 
-    def __init__(self, db: SqliteDatabase, bot_version: str, db_version: str) -> None:
+    def __init__(self, db: CSqliteExtDatabase, bot_version: str, db_version: str) -> None:
         self.db = db
         self.bot_version = bot_version
         self.db_version = db_version
@@ -207,7 +207,7 @@ class PopulateDatabase:
     IMPORTANT: If you change the data in this file, you must add/delete/migrate the corresponding in any existing databases using the MigrateDatabase class!
     """
 
-    def __init__(self, db: SqliteDatabase) -> None:
+    def __init__(self, db: CSqliteExtDatabase) -> None:
         self.db = db
 
     def populate(self) -> None:

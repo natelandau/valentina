@@ -10,9 +10,9 @@ from peewee import (
     ForeignKeyField,
     IntegerField,
     Model,
-    SqliteDatabase,
     TextField,
 )
+from playhouse.sqlite_ext import CSqliteExtDatabase
 
 
 def time_now() -> datetime:
@@ -32,7 +32,7 @@ for k, v in config.items():
 
 
 # Instantiate Database
-DATABASE = SqliteDatabase(
+DATABASE = CSqliteExtDatabase(
     config["VALENTINA_DB_PATH"],
     pragmas={
         "journal_mode": "wal",
