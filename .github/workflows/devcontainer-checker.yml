@@ -19,8 +19,8 @@ on:
             - ".github/workflows/devcontainer-checker.yml"
 
 env:
-    VALENTINA_LOG_FILE: "valentina.log"
-    VALENTINA_DB_PATH: "valentina.sqlite"
+    VALENTINA_LOG_FILE: "/tmp/valentina.log"
+    VALENTINA_DB_PATH: "/tmp/valentina.sqlite"
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}

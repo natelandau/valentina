@@ -14,8 +14,8 @@ concurrency:
 env:
     REGISTRY: ghcr.io
     IMAGE_NAME: ${{ github.repository }}
-    VALENTINA_LOG_FILE: "valentina.log" # Pass tests
-    VALENTINA_DB_PATH: "valentina.sqlite" # Pass tests
+    VALENTINA_LOG_FILE: "/tmp/valentina.log" # Pass tests
+    VALENTINA_DB_PATH: "/tmp/valentina.sqlite" # Pass tests
 
 jobs:
     build-and-push-image:
