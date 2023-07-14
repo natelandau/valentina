@@ -1,8 +1,8 @@
 """Views for the character cog."""
 import discord
-from discord.ui import InputText, Modal, Select, View
+from discord.ui import InputText, Modal
 
-from valentina.models.constants import EmbedColor, VampClanList
+from valentina.models.constants import EmbedColor
 
 
 class CustomSectionModal(Modal):
@@ -212,29 +212,3 @@ class CharGenModal(Modal):
 
         await interaction.response.send_message(embeds=[embed], ephemeral=True)
         self.stop()
-
-
-class SelectClan(View):
-    """A dropdown for selecting a clan."""
-
-    def __init__(self, author: discord.User) -> None:
-        super().__init__()
-        self.author = author
-        self.value = ""
-
-    @discord.ui.select(
-        options=[discord.SelectOption(label=clan.value, value=clan.value) for clan in VampClanList],
-        placeholder="Select a clan",
-    )
-    async def select_callback(self, select: Select, interaction: discord.Interaction) -> None:
-        """Callback for the clan selection dropdown."""
-        select.disabled = True
-        await interaction.response.edit_message(view=self)
-        await interaction.followup.send(f"You selected {select.values[0]}", ephemeral=True)
-        if isinstance(select.values[0], str):
-            self.value = select.values[0]
-            self.stop()
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        """Disables buttons for everyone except the user who created the embed."""
-        return interaction.user.id == self.author.id

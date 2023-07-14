@@ -1,13 +1,13 @@
 # type: ignore
 """Test the CharacterService class."""
 
-
 import pytest
 
 from valentina.models.database import (
     Character,
     CustomSection,
     CustomTrait,
+    Trait,
 )
 from valentina.models.database_services import CharacterService
 from valentina.utils.errors import (
@@ -138,7 +138,7 @@ class TestCharacterService:
         returned = self.char_svc.fetch_all_character_traits(existing_character)
 
         assert returned == {
-            "Common": ["Strength", "Dexterity", "Stamina"],
+            "Physical": ["Strength", "Dexterity", "Stamina"],
             "Test_Category": ["Test_Trait", "Test_Trait2"],
         }
 

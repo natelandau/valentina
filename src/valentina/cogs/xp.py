@@ -88,7 +88,7 @@ class Xp(commands.Cog, name="XP"):
             )
             return
 
-        if old_value >= get_max_trait_value(trait):
+        if old_value >= get_max_trait_value(trait, category):
             await present_embed(
                 ctx,
                 title=f"Error: {trait} at max value",

@@ -1,19 +1,12 @@
 """Helper functions for Valentina."""
 import re
-from collections import defaultdict
 
 import discord
 from numpy.random import default_rng
 
 from valentina.models.constants import (
     CLAN_DISCIPLINES,
-    COMMON_TRAITS,
     DICEROLL_THUBMS,
-    HUNTER_TRAITS,
-    MAGE_TRAITS,
-    MORTAL_TRAITS,
-    VAMPIRE_TRAITS,
-    WEREWOLF_TRAITS,
     MaxTraitValue,
     RollResultType,
     XPMultiplier,
@@ -21,26 +14,6 @@ from valentina.models.constants import (
 )
 
 _rng = default_rng()
-
-
-def merge_dictionaries(
-    dict_list: list[dict[str, list[str]]], flat_list: bool = False
-) -> dict[str, list[str]] | list[str]:
-    """Merges a list of dictionaries into a single dictionary."""
-    result: defaultdict[str, list[str]] = defaultdict(list)
-
-    for d in dict_list:
-        for key, value in d.items():
-            if key in result:
-                result[key].extend([item for item in value if item not in result[key]])
-            else:
-                result[key].extend(value)
-
-    if flat_list:
-        # Flattens the dictionary to a single list, while removing duplicates
-        return list({item for sublist in result.values() for item in sublist})
-
-    return dict(result)
 
 
 def fetch_clan_disciplines(clan: str) -> list[str]:
@@ -55,31 +28,6 @@ def fetch_clan_disciplines(clan: str) -> list[str]:
     return CLAN_DISCIPLINES[clan.title()]
 
 
-def all_traits_from_constants(flat_list: bool = False) -> dict[str, list[str]] | list[str]:
-    """Return all traits from the constants as a dictionary inclusive of all classes."""
-    trait_dicts = [
-        COMMON_TRAITS,
-        MAGE_TRAITS,
-        VAMPIRE_TRAITS,
-        WEREWOLF_TRAITS,
-        HUNTER_TRAITS,
-        MORTAL_TRAITS,
-    ]
-
-    all_traits: dict[str, list[str]] = {}
-    for dictionary in trait_dicts:
-        for category, traits in dictionary.items():
-            if category in all_traits:
-                all_traits[category].extend(traits)
-            else:
-                all_traits[category] = traits
-
-    if flat_list:
-        return list({y for x in all_traits.values() for y in x})
-
-    return all_traits
-
-
 def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
     """Take a string and return a random gif url."""
     thumb_list = DICEROLL_THUBMS[result.name]
@@ -91,39 +39,38 @@ def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) 
     return thumb_list[_rng.integers(0, len(thumb_list))]
 
 
-def get_max_trait_value(trait: str, is_custom_trait: bool = False) -> int | None:
+def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False) -> int | None:
     """Get the maximum value for a trait by looking up the trait in the XPMultiplier enum.
 
     Args:
         trait (str): The trait to get the max value for.
+        category (str): The category of the trait.
         is_custom_trait (bool, optional): Whether the trait is a custom trait. Defaults to False.
 
     Returns:
         int | None: The maximum value for the trait or None if the trait is a custom trait and no default for it's parent category exists.
+
+    Examples:
+        >>> get_max_trait_value("Dominate", "Disciplines")
+        5
+
+        >>> get_max_trait_value("Willpower", "Other")
+        10
+
+        >>> get_max_trait_value("xxx", "xxx")
+        5
+
+        >>> get_max_trait_value("xxx", "xxx", True)
+
 
     """
     # Some traits have their own max value. Check for those first.
     if trait.upper() in MaxTraitValue.__members__:
         return MaxTraitValue[trait.upper()].value
 
-    # Try to find the max value by looking up the parent key of the trait
-    all_constants = [
-        COMMON_TRAITS,
-        MAGE_TRAITS,
-        VAMPIRE_TRAITS,
-        WEREWOLF_TRAITS,
-        HUNTER_TRAITS,
-        MORTAL_TRAITS,
-    ]
-    all_traits = merge_dictionaries(all_constants, flat_list=False)
-
-    if isinstance(all_traits, dict):
-        for category, traits in all_traits.items():
-            if (
-                trait.lower() in [x.lower() for x in traits]
-                and category.upper() in MaxTraitValue.__members__
-            ):
-                return MaxTraitValue[category.upper()].value
+    # Try to find the max value by looking up the category of the trait
+    if category.upper() in MaxTraitValue.__members__:
+        return MaxTraitValue[category.upper()].value
 
     if is_custom_trait:
         return None
@@ -185,11 +132,6 @@ def get_trait_new_value(trait: str, category: str) -> int:
         return XPNew[category.upper()].value
 
     return XPNew.DEFAULT.value
-
-
-def normalize_to_db_row(row: str) -> str:
-    """Takes a string and returns a normalized version of it for use as a row in the database."""
-    return row.replace("-", "_").replace(" ", "_").lower()
 
 
 def num_to_circles(num: int = 0, maximum: int = 5) -> str:

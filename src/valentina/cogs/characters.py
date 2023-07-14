@@ -11,20 +11,17 @@ from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal, CustomSectionModal
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
-from valentina.models.constants import CharClass, TraitCategory, VampClanList
-from valentina.models.database import CharacterClass, VampireClan
+from valentina.models.constants import DBConstants
 from valentina.utils.converters import ValidCharacterClass, ValidCharacterName, ValidClan
 from valentina.utils.errors import SectionExistsError
-from valentina.utils.helpers import normalize_to_db_row
 from valentina.utils.options import (
     select_character,
     select_custom_section,
     select_custom_trait,
     select_trait,
+    select_vampire_clan,
 )
 from valentina.views import ConfirmCancelButtons, present_embed
-
-possible_classes = sorted([char_class.value for char_class in CharClass])
 
 # TODO: Add a way to mark a character as dead
 
@@ -70,7 +67,7 @@ class Characters(commands.Cog, name="Character"):
             ValidCharacterClass,
             name="class",
             description="The character's class",
-            choices=[char_class.value for char_class in CharClass],
+            choices=[c.name for c in DBConstants.char_classes()],
             required=True,
         ),
         first_name: Option(ValidCharacterName, "Character's name", required=True),
@@ -80,7 +77,7 @@ class Characters(commands.Cog, name="Character"):
             ValidClan,
             name="vampire_clan",
             description="The character's clan (only for vampires)",
-            choices=[clan.value for clan in VampClanList],
+            autocomplete=select_vampire_clan,
             required=False,
             default=None,
         ),
@@ -88,17 +85,17 @@ class Characters(commands.Cog, name="Character"):
         """Create a new character.
 
         Args:
-            char_class (CharClass): The character's class
+            char_class (CharacterClass): The character's class
             ctx (discord.ApplicationContext): The context of the command
             first_name (str): The character's first name
             last_name (str, optional): The character's last name. Defaults to None.
             nickname (str, optional): The character's nickname. Defaults to None.
-            vampire_clan (str, optional): The character's vampire clan. Defaults to None.
+            vampire_clan (VampireClan, optional): The character's vampire clan. Defaults to None.
         """
         # Ensure the user is in the database
         self.bot.user_svc.fetch_user(ctx)
 
-        if char_class.lower() == "vampire" and not vampire_clan:
+        if char_class.name.lower() == "vampire" and not vampire_clan:
             await present_embed(
                 ctx,
                 title="Vampire clan required",
@@ -107,14 +104,8 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        char_class_instance = CharacterClass.get(CharacterClass.name == char_class)
-        if char_class.lower() == "vampire":
-            vampire_clan_instance = VampireClan.get(VampireClan.name == vampire_clan)
-        else:
-            vampire_clan_instance = None
-
         # Fetch all traits and set them
-        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class)
+        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
 
         wizard = CharGenWizard(
             ctx,
@@ -132,8 +123,8 @@ class Characters(commands.Cog, name="Character"):
             first_name=first_name,
             last_name=last_name,
             nickname=nickname,
-            char_class=char_class_instance,
-            clan=vampire_clan_instance,
+            char_class=char_class,
+            clan=vampire_clan,
         )
         self.bot.char_svc.update_traits_by_id(ctx, character, trait_values_from_chargen)
         logger.info(f"CHARACTER: Create character [{character.id}] {character.name}")
@@ -261,7 +252,7 @@ class Characters(commands.Cog, name="Character"):
             str,
             "The category to add the trait to",
             required=True,
-            choices=sorted([x.value for x in TraitCategory]),
+            choices=sorted([x.name for x in DBConstants.trait_categories()]),
         ),
         value: Option(int, "The value of the trait", required=True, min_value=0, max_value=20),
         max_value: Option(
@@ -297,8 +288,8 @@ class Characters(commands.Cog, name="Character"):
         section_description = modal.section_description.strip()
 
         existing_sections = self.bot.char_svc.fetch_char_custom_sections(ctx, character)
-        if normalize_to_db_row(section_title) in [
-            normalize_to_db_row(x.title) for x in existing_sections
+        if section_title.replace("-", "_").replace(" ", "_").lower() in [
+            x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
         ]:
             raise SectionExistsError
         self.bot.char_svc.add_custom_section(ctx, character, section_title, section_description)

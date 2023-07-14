@@ -35,28 +35,8 @@ def test_get_tables(mock_db):
     THEN the list of tables is returned
     """
     tables = DatabaseService(mock_db).get_tables()
-    assert len(tables) == 17
+    assert len(tables) == 20
     assert "characters" in tables
-
-
-def test_sync_enums(empty_db):
-    """Test DatabaseService.sync_enums().
-
-    GIVEN a database
-    WHEN DatabaseService.sync_enums() is called
-    THEN the enums are synced
-    """
-    from valentina.models.constants import CharClass, VampClanList
-
-    DatabaseService(empty_db).sync_enums()
-
-    values = [x.value for x in CharClass]
-    assert CharacterClass.get_by_id(1).name == values[0]
-    assert CharacterClass.get_by_id(2).name == values[1]
-
-    values = [x.value for x in VampClanList]
-    assert VampireClan.get_by_id(1).name == values[0]
-    assert VampireClan.get_by_id(2).name == values[1]
 
 
 def test_initialize_database_one(empty_db):

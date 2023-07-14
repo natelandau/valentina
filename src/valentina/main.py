@@ -11,6 +11,8 @@ from dotenv import dotenv_values
 from loguru import logger
 
 from valentina.models.bot import Valentina
+from valentina.models.database import DATABASE
+from valentina.models.database_services import DatabaseService
 from valentina.utils import InterceptHandler
 
 from .__version__ import __version__
@@ -71,6 +73,12 @@ def main(
     ),
 ) -> None:
     """Run Valentina."""
+    # Setup database
+    db = DatabaseService(DATABASE)
+    db.create_tables()
+    db.initialize_database(__version__)
+
+    # Instantiate the bot
     intents = discord.Intents.all()
     bot = Valentina(
         debug_guilds=[int(g) for g in CONFIG["VALENTINA_GUILDS"].split(",")],

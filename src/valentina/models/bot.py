@@ -42,13 +42,12 @@ class Valentina(commands.Bot):
         self.trait_svc = TraitService()
         self.user_svc = UserService()
 
-        logger.info("BOT: Running setup tasks")
+        # Load Cogs
+        # #######################
         for cog in Path(self.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
             if cog.stem[0] != "_":
                 logger.info(f"COGS: Loading - {cog.stem}")
                 self.load_extension(f"valentina.cogs.{cog.stem}")
-
-        logger.info("BOT: Setup tasks complete")
 
     async def on_connect(self) -> None:
         """Perform early setup."""
@@ -80,13 +79,6 @@ class Valentina(commands.Bot):
             await self.change_presence(
                 activity=discord.Activity(type=discord.ActivityType.watching, name="for /help")
             )
-
-            # Setup database
-            # #######################
-            self.db_svc.create_tables()
-            self.db_svc.initialize_database(self.version)
-
-            self.db_svc.sync_enums()
 
             # Setup Guilds
             # #######################

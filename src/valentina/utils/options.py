@@ -3,7 +3,7 @@
 import discord
 from discord.commands import OptionChoice
 
-from valentina.models.constants import MAX_OPTION_LIST_SIZE
+from valentina.models.constants import MAX_OPTION_LIST_SIZE, DBConstants
 from valentina.utils.errors import NoClaimError
 
 
@@ -159,3 +159,15 @@ async def select_character(ctx: discord.AutocompleteContext) -> list[OptionChoic
         return [OptionChoice(f"Too many characters to display. {instructions}", "")]
 
     return found_chars
+
+
+async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[str]:
+    """Generate a list of available vampire clans."""
+    clans = []
+    for clan in DBConstants.vampire_clans():
+        if clan.name.lower().startswith(ctx.options["vampire_clan"].lower()):
+            clans.append(clan.name)
+        if len(clans) >= MAX_OPTION_LIST_SIZE:
+            break
+
+    return clans
