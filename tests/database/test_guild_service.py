@@ -48,7 +48,7 @@ class TestGuildService:
         """
         returned = GuildService.fetch_all_traits(guild_id=1)
         assert isinstance(returned, dict)
-        assert returned["Test_Category"] == ["Test_Trait"]
+        assert "Test_Trait" in returned["Skills"]
         assert returned["Social"] == ["Appearance", "Charisma", "Manipulation"]
 
     def test_fetch_all_traits_two(self):

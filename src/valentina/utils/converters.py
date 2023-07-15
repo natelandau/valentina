@@ -7,27 +7,8 @@ import aiohttp
 from discord.ext.commands import BadArgument, Context, Converter
 
 from valentina.models.constants import DBConstants
-from valentina.models.database import CharacterClass, VampireClan
-
-
-class ValidThumbnailURL(Converter):
-    """Converter that ensures a requested thumbnail URL is valid."""
-
-    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
-        """Validate and normalize thumbnail URLs."""
-        if not re.match(r"^https?://", argument):
-            raise BadArgument("Thumbnail URLs must start with `http://` or `https://`")
-
-        if not re.match(r".+\.(png|jpg|jpeg|gif)$", argument):
-            raise BadArgument("Thumbnail URLs must end with a valid image extension")
-
-        async with aiohttp.ClientSession() as session, session.get(argument) as r:
-            success_status_codes = [200, 201, 202, 203, 204, 205, 206]
-            if r.status not in success_status_codes:
-                raise BadArgument(f"Thumbnail URL could not be accessed\nStatus: {r.status}")
-
-        # Replace media.giphy.com URLs with i.giphy.com URLs
-        return re.sub(r"//media\.giphy\.com", "//i.giphy.com", argument)
+from valentina.models.database import Character, CharacterClass, TraitCategory, VampireClan
+from valentina.utils.errors import CharacterNotFoundError
 
 
 class ValidCharacterClass(Converter):
@@ -40,18 +21,6 @@ class ValidCharacterClass(Converter):
                 return c
 
         raise BadArgument(f"`{argument}` is not a valid character class")
-
-
-class ValidClan(Converter):
-    """A converter that ensures a requested vampire clan is valid."""
-
-    async def convert(self, ctx: Context, argument: str) -> VampireClan:  # noqa: ARG002
-        """Validate and normalize character's clan."""
-        for c in DBConstants.vampire_clans():
-            if argument.lower() == c.name.lower():
-                return c
-
-        raise BadArgument(f"`{argument}` is not a valid vampire clan")
 
 
 class ValidCharacterName(Converter):
@@ -113,3 +82,58 @@ class ValidChannelName(Converter):
 
         # Replace invalid characters with unicode alternatives.
         return argument
+
+
+class ValidCharacterObject(Converter):
+    """A converter that ensures a character exists."""
+
+    async def convert(self, ctx: Context, argument: str) -> Character:
+        """Return a character object from a character id."""
+        try:
+            return ctx.bot.char_svc.fetch_by_id(ctx.guild.id, int(argument))
+        except CharacterNotFoundError as e:
+            raise BadArgument(str(e)) from e
+
+
+class ValidClan(Converter):
+    """A converter that ensures a requested vampire clan is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> VampireClan:  # noqa: ARG002
+        """Validate and normalize character's clan."""
+        for c in DBConstants.vampire_clans():
+            if argument.lower() == c.name.lower():
+                return c
+
+        raise BadArgument(f"`{argument}` is not a valid vampire clan")
+
+
+class ValidThumbnailURL(Converter):
+    """Converter that ensures a requested thumbnail URL is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
+        """Validate and normalize thumbnail URLs."""
+        if not re.match(r"^https?://", argument):
+            raise BadArgument("Thumbnail URLs must start with `http://` or `https://`")
+
+        if not re.match(r".+\.(png|jpg|jpeg|gif)$", argument):
+            raise BadArgument("Thumbnail URLs must end with a valid image extension")
+
+        async with aiohttp.ClientSession() as session, session.get(argument) as r:
+            success_status_codes = [200, 201, 202, 203, 204, 205, 206]
+            if r.status not in success_status_codes:
+                raise BadArgument(f"Thumbnail URL could not be accessed\nStatus: {r.status}")
+
+        # Replace media.giphy.com URLs with i.giphy.com URLs
+        return re.sub(r"//media\.giphy\.com", "//i.giphy.com", argument)
+
+
+class ValidTraitCategory(Converter):
+    """A converter that ensures a requested trait category is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> TraitCategory:  # noqa: ARG002
+        """Validate and normalize trait categories."""
+        for c in DBConstants.trait_categories():
+            if argument.lower() == c.name.lower():
+                return c
+
+        raise BadArgument(f"`{argument}` is not a valid trait category")

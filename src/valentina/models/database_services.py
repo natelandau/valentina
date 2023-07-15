@@ -542,7 +542,6 @@ class CharacterService:
         CustomSection.create(
             title=section_title,
             description=section_description,
-            guild=ctx.guild.id,
             character=character.id,
         )
 
@@ -557,7 +556,7 @@ class CharacterService:
         character: Character,
         name: str,
         description: str,
-        category: str,
+        category: TraitCategory,
         value: int,
         max_value: int = MaxTraitValue.DEFAULT.value,
     ) -> None:
@@ -570,14 +569,13 @@ class CharacterService:
             category=category,
             value=value,
             character=character.id,
-            guild_id=ctx.guild.id,
             max_value=max_value,
         )
 
         if key in self.custom_traits:
             self.custom_traits.pop(key, None)
 
-        logger.info(f"CHARACTER: Added custom trait {name} to {character.id}")
+        logger.info(f"CHARACTER: Add trait '{name}' to [{character.id}] {character.name}")
 
     def is_cached_char(
         self, guild_id: int | None = None, char_id: int | None = None, key: str | None = None
@@ -613,7 +611,6 @@ class CharacterService:
         try:
             custom_section = CustomSection.get(
                 CustomSection.character == character,
-                CustomSection.guild_id == ctx.guild.id,
                 fn.Lower(CustomSection.title) == section_title.lower(),
             )
             custom_section.delete_instance()
@@ -631,7 +628,6 @@ class CharacterService:
         try:
             custom_trait = CustomTrait.get(
                 CustomTrait.character == character,
-                CustomTrait.guild_id == ctx.guild.id,
                 fn.Lower(CustomTrait.name) == name,
             )
             custom_trait.delete_instance()
@@ -693,7 +689,7 @@ class CharacterService:
 
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                category = custom_trait.category.title()
+                category = custom_trait.category.name.title()
                 if category not in all_traits:
                     all_traits[category] = []
 
@@ -743,7 +739,7 @@ class CharacterService:
 
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                category = custom_trait.category.title()
+                category = custom_trait.category.name.title()
 
                 if category not in all_traits:
                     all_traits[category] = []
@@ -776,9 +772,7 @@ class CharacterService:
         if key in self.custom_sections:
             return self.custom_sections[key]
 
-        sections = CustomSection.select().where(
-            (CustomSection.character == character.id) & (CustomSection.guild_id == guild_id)
-        )
+        sections = CustomSection.select().where(CustomSection.character == character.id)
         self.custom_sections[key] = sections
         return sections
 
@@ -828,11 +822,15 @@ class CharacterService:
             logger.debug(f"CACHE: Fetch character {char_id}")
             return self.characters[key]
 
-        character = Character.get_by_id(char_id)
-
-        self.characters[key] = character
-        logger.info(f"DATABASE: Fetch character: {character.name}")
-        return character
+        try:
+            character = Character.get_by_id(char_id)
+            self.characters[key] = character
+            logger.info(f"DATABASE: Fetch character: [{char_id}] {character.name}")
+            return character
+        except DoesNotExist as e:
+            raise CharacterNotFoundError(
+                f"No character found with ID {char_id} on guild [{guild_id}]"
+            ) from e
 
     def fetch_claim(self, ctx: ApplicationContext | AutocompleteContext) -> Character:
         """Fetch the character claimed by a user."""
@@ -1007,17 +1005,16 @@ class CharacterService:
         modified = time_now()
 
         for trait_id, value in trait_values_dict.items():
-            _, created = TraitValue.get_or_create(
+            found_trait, created = TraitValue.get_or_create(
                 character=character.id,
                 trait=trait_id,
                 defaults={"value": value, "modified": modified},
             )
 
             if not created:
-                query = TraitValue.update(value=value, modified=modified).where(
-                    TraitValue.character == character.id, TraitValue.trait == trait_id
-                )
-                query.execute()
+                found_trait.value = value
+                found_trait.modified = modified
+                found_trait.save()
 
         logger.info(f"DATABASE: Update traits for character [{character.id}] {character.name}")
 
@@ -1241,10 +1238,11 @@ class GuildService:
             flat_list (bool, optional): Return a flat list of traits. Defaults to False.
         """
         all_traits = DBConstants.traits_by_category()
-        custom_traits = CustomTrait.select().where(CustomTrait.guild == guild_id)
+
+        custom_traits = CustomTrait.select().join(Character).where(Character.guild_id == guild_id)
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                category = custom_trait.category.title()
+                category = custom_trait.category.name.title()
                 if category not in all_traits:
                     all_traits[category] = []
                 all_traits[category].append(custom_trait.name.title())

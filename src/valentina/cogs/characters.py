@@ -11,7 +11,13 @@ from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal, CustomSectionModal
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
-from valentina.utils.converters import ValidCharacterClass, ValidCharacterName, ValidClan
+from valentina.utils.converters import (
+    ValidCharacterClass,
+    ValidCharacterName,
+    ValidCharacterObject,
+    ValidClan,
+    ValidTraitCategory,
+)
 from valentina.utils.errors import SectionExistsError
 from valentina.utils.options import (
     select_char_class,
@@ -136,17 +142,14 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         character: Option(
-            int,
+            ValidCharacterObject,
             description="The character to view",
             autocomplete=select_character,
             required=True,
         ),
     ) -> None:
         """Displays a character sheet in the channel."""
-        char_db_id = int(character)
-        character = self.bot.char_svc.fetch_by_id(ctx.guild.id, char_db_id)
-
-        if self.bot.char_svc.is_char_claimed(ctx.guild.id, char_db_id):
+        if self.bot.char_svc.is_char_claimed(ctx.guild.id, character.id):
             user_id_num = self.bot.char_svc.fetch_user_of_character(ctx.guild.id, character.id)
             claimed_by = self.bot.get_user(user_id_num)
         else:
@@ -159,8 +162,8 @@ class Characters(commands.Cog, name="Character"):
     async def claim_character(
         self,
         ctx: discord.ApplicationContext,
-        char_id: Option(
-            int,
+        character: Option(
+            ValidCharacterObject,
             description="The character to claim",
             autocomplete=select_character,
             required=True,
@@ -168,8 +171,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Claim a character to your user. This will allow you to roll without specifying traits, edit the character, and more."""
-        character = self.bot.char_svc.fetch_by_id(ctx.guild.id, char_id)
-        self.bot.char_svc.add_claim(ctx.guild.id, char_id, ctx.user.id)
+        self.bot.char_svc.add_claim(ctx.guild.id, character.id, ctx.user.id)
 
         logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}")
         await present_embed(
@@ -250,7 +252,7 @@ class Characters(commands.Cog, name="Character"):
         ctx: discord.ApplicationContext,
         trait: Option(str, "The new trait to add.", required=True),
         category: Option(
-            str,
+            ValidTraitCategory,
             name="category",
             description="The category to add the trait to",
             required=True,

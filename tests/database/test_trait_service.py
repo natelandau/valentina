@@ -21,7 +21,7 @@ class TestTraitService:
         THEN return only the traits associated with that class
         """
         traits = [x.name for x in self.trait_svc.fetch_all_class_traits("Vampire")]
-        assert len(traits) == 67
+        assert len(traits) == 63
 
         for t in ["Willpower", "Strength", "Firearms", "Humanity", "Celerity", "Blood Pool"]:
             assert t in traits

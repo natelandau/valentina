@@ -16,6 +16,17 @@ from valentina.models.constants import (
 _rng = default_rng()
 
 
+def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
+    """Take a string and return a random gif url."""
+    thumb_list = DICEROLL_THUBMS[result.name]
+    database_thumbs = ctx.bot.guild_svc.fetch_roll_result_thumbs(ctx)  # type: ignore [attr-defined]
+    for category, thumbnails in database_thumbs.items():
+        if category.lower() == result.name.lower():
+            thumb_list.extend(thumbnails)
+
+    return thumb_list[_rng.integers(0, len(thumb_list))]
+
+
 def fetch_clan_disciplines(clan: str) -> list[str]:
     """Fetch the disciplines for a clan.
 
@@ -26,17 +37,6 @@ def fetch_clan_disciplines(clan: str) -> list[str]:
 
     """
     return CLAN_DISCIPLINES[clan.title()]
-
-
-def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
-    """Take a string and return a random gif url."""
-    thumb_list = DICEROLL_THUBMS[result.name]
-    database_thumbs = ctx.bot.guild_svc.fetch_roll_result_thumbs(ctx)  # type: ignore [attr-defined]
-    for category, thumbnails in database_thumbs.items():
-        if category.lower() == result.name.lower():
-            thumb_list.extend(thumbnails)
-
-    return thumb_list[_rng.integers(0, len(thumb_list))]
 
 
 def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False) -> int | None:

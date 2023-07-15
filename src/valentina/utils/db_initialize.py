@@ -9,6 +9,8 @@ from semver import Version
 from valentina.models.database import (
     Character,
     CharacterClass,
+    CustomSection,
+    CustomTrait,
     Trait,
     TraitCategory,
     TraitCategoryClass,
@@ -24,7 +26,6 @@ common_traits = {
     "Talents": [
         "Alertness",
         "Athletics",
-        "Awareness",
         "Brawl",
         "Dodge",
         "Empathy",
@@ -41,15 +42,12 @@ common_traits = {
         "Firearms",
         "Melee",
         "Performance",
-        "Persuasion",
-        "Repair",
         "Security",
         "Stealth",
         "Survival",
     ],
     "Knowledges": [
         "Academics",
-        "Bureaucracy",
         "Computer",
         "Finance",
         "Investigation",
@@ -65,6 +63,7 @@ common_traits = {
 mage_traits = {
     "Other": ["Humanity", "Arete", "Quintessence"],
     "Knowledges": ["Cosmology", "Enigmas"],
+    "Skills": ["Technology"],
     "Virtues": ["Conscience", "Self-Control", "Courage"],
     "Spheres": [
         "Correspondence",
@@ -103,7 +102,7 @@ vampire_traits = {
 }
 werewolf_traits = {
     "Talents": ["Primal-Urge"],
-    "Knowledges": ["Rituals"],
+    "Knowledges": ["Rituals", "Enigmas"],
     "Other": ["Gnosis", "Rage"],
     "Renown": ["Glory", "Honor", "Wisdom"],
 }
@@ -163,11 +162,13 @@ class MigrateDatabase:
         logger.info("DATABASE: Migrate database to v0.8.2")
         self.db.execute_sql("ALTER TABLE characters ADD COLUMN security INTEGER DEFAULT 0;")
 
-    def __0_12_0(self) -> None:
+    def __0_12_0(self) -> None:  # noqa: C901, PLR0912
         """Migration from db v0.12.0."""
         logger.info("DATABASE: Migrate database from v0.12.0")
 
+        # Update Trait values
         if "character_traits" in self.get_tables():
+            logger.debug("DATABASE: Migrate trait values")
             tvs = {}
             for row in TraitValue.select():
                 tvs[row.id] = {
@@ -182,6 +183,11 @@ class MigrateDatabase:
                 old_name = self.db.execute_sql(
                     "SELECT name FROM character_traits WHERE id =  ?;", (value["trait"],)
                 ).fetchone()[0]
+
+                if old_name.lower() == "larceny":
+                    tvs[key]["new_id"] = "DROP"
+                    continue
+
                 new_trait = Trait.get_or_none(name=old_name)
                 if not new_trait:
                     logger.debug(f"Trait {old_name} no longer exists. Dropping.")
@@ -208,7 +214,6 @@ class MigrateDatabase:
                     )
                     and value["value"] == 0
                 ):
-                    logger.debug(f"Dropping not class trait {value['new_id']}")
                     continue
 
                 if not TraitValue.get_or_none(
@@ -221,7 +226,62 @@ class MigrateDatabase:
                         modified=value["modified"],
                     )
                 else:
-                    logger.debug(f"Skipping duplicate trait value for trait {value['new_id']}")
+                    logger.debug(
+                        f"Skip duplicate trait value for {Trait.get(id=value['new_id']).name} on {Character.get(id=value['char']).name}"
+                    )
+
+        # Update Custom Sections
+        if self._column_exists("custom_sections", "guild_id"):
+            logger.debug("DATABASE: Migrate custom sections")
+
+            cursor = self.db.execute_sql("SELECT * FROM custom_sections;").fetchall()
+
+            self.db.execute_sql("DROP TABLE custom_sections;")
+
+            with self.db:
+                self.db.create_tables([CustomSection])
+
+            for _id, char, created, modified, description, _guild, title in cursor:
+                CustomSection.create(
+                    character=Character.get(id=char),
+                    created=created,
+                    modified=modified,
+                    description=description,
+                    title=title,
+                )
+
+        # Update Custom Traits
+        if self._column_exists("custom_traits", "category"):
+            logger.debug("DATABASE: Migrate custom traits")
+
+            cursor = self.db.execute_sql("SELECT * FROM custom_traits;").fetchall()
+
+            self.db.execute_sql("DROP TABLE custom_traits;")
+            with self.db:
+                self.db.create_tables([CustomTrait])
+
+            for (
+                _id,
+                char,
+                created,
+                modified,
+                description,
+                _guild,
+                name,
+                category,
+                value,
+                max_value,
+            ) in cursor:
+                CustomTrait.create(
+                    character=Character.get(id=char),
+                    created=created,
+                    modified=modified,
+                    description=description,
+                    name=name,
+                    category=TraitCategory.get(name=category),
+                    value=value,
+                    max_value=max_value,
+                )
 
 
 class PopulateDatabase:

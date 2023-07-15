@@ -2,7 +2,7 @@
 import discord
 
 from valentina.models.constants import DBConstants
-from valentina.models.database import Character, CustomTrait
+from valentina.models.database import Character, CustomTrait, TraitCategory
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
@@ -19,7 +19,7 @@ def __validate_trait_name(trait_name: str, character: Character) -> None:
 async def add_trait(
     ctx: discord.ApplicationContext,
     trait_name: str,
-    category: str,
+    category: TraitCategory,
     trait_value: int,
     max_value: int,
     trait_description: str,
@@ -28,13 +28,14 @@ async def add_trait(
     """Add a trait to a character."""
     try:
         __validate_trait_name(trait_name, character)
+
         view = ConfirmCancelButtons(ctx.author)
         await present_embed(
             ctx,
             title=f"Create {trait_name}",
             description=f"Confirm creating custom trait: **{trait_name}**",
             fields=[
-                ("Category", category),
+                ("Category", category.name),
                 ("Value", f"`{trait_value!s}`"),
                 ("Max Value", f"`{max_value!s}`"),
                 ("Description", trait_description),
@@ -60,7 +61,7 @@ async def add_trait(
                 title=f"Custom trait added to {character.name}",
                 fields=[
                     ("Trait", f"**{trait_name.title()}**"),
-                    ("Category", category),
+                    ("Category", category.name),
                     ("Description", trait_description),
                     ("Value", f"`{trait_value!s}`"),
                     ("Max Value", f"`{max_value!s}`"),

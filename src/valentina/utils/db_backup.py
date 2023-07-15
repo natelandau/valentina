@@ -8,6 +8,8 @@ import arrow
 from loguru import logger
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
+from valentina.utils.helpers import pluralize
+
 
 class DBBackup:
     """Class to backup the bot database."""
@@ -80,9 +82,9 @@ class DBBackup:
             retention_policy = getattr(self, f"retention_{backup_type}")
             if len(backups[backup_type]) > retention_policy:
                 for backup in backups[backup_type][retention_policy:]:
-                    logger.debug(f"BACKUP: Deleting old backup: {backup.name}")
+                    logger.debug(f"BACKUP: Delete {backup.name}")
                     await aiofiles.os.remove(backup)
                     deleted += 1
 
-        logger.info(f"BACKUP: old database backups deleted: {deleted}")
+        logger.info(f"BACKUP: Delete {deleted} old db {pluralize(deleted, 'backup')}")
         return deleted

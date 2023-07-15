@@ -194,9 +194,8 @@ class CustomTrait(BaseModel):
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     description = TextField(null=True)
-    guild = ForeignKeyField(Guild, backref="custom_traits")
     name = TextField()
-    category = TextField(null=True)
+    category = ForeignKeyField(TraitCategory, backref="custom_traits")
     value = IntegerField(default=0)
     max_value = IntegerField(default=0)
 
@@ -213,7 +212,6 @@ class CustomSection(BaseModel):
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     description = TextField(null=True)
-    guild = ForeignKeyField(Guild, backref="custom_traits")
     title = TextField()
 
     class Meta:

@@ -90,13 +90,12 @@ customtrait = {
     "character": 1,
     "guild": 1,
     "name": "Test_Trait",
-    "category": "test_category",
+    "category": TraitCategory.get(name="Skills"),
     "value": 2,
     "max_value": 5,
 }
 custom_section = {
     "character": 1,
-    "guild": 1,
     "title": "test_section",
     "description": "test_description",
 }

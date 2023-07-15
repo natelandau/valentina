@@ -3,11 +3,7 @@
 
 import pytest
 
-from valentina.models.database import (
-    Character,
-    CustomSection,
-    CustomTrait,
-)
+from valentina.models.database import Character, CustomSection, CustomTrait, TraitCategory
 from valentina.models.database_services import CharacterService
 from valentina.utils.errors import (
     CharacterClaimedError,
@@ -87,7 +83,7 @@ class TestCharacterService:
             character=existing_character,
             name="test_trait2",
             value=2,
-            category="test_category",
+            category=TraitCategory.get(name="Skills"),
             description="test_description",
         )
 
@@ -138,7 +134,7 @@ class TestCharacterService:
 
         assert returned == {
             "Physical": ["Strength", "Dexterity", "Stamina"],
-            "Test_Category": ["Test_Trait", "Test_Trait2"],
+            "Skills": ["Test_Trait", "Test_Trait2"],
         }
 
     def test_fetch_all_character_traits_two(self, existing_character):
@@ -166,7 +162,7 @@ class TestCharacterService:
             ("Dexterity", 2, 5, "●●○○○"),
             ("Stamina", 3, 5, "●●●○○"),
         ]
-        assert returned["Test_Category"] == [
+        assert returned["Skills"] == [
             ("Test_Trait", 2, 5, "●●○○○"),
             ("Test_Trait2", 2, 5, "●●○○○"),
         ]

@@ -85,6 +85,7 @@ def __embed1(
     ):
         embed.add_field(name=category, value=traits, inline=True)
 
+    embed.add_field(name="\u200b", value="**Advantages**", inline=False)
     for category, traits in __build_trait_display(
         char_traits,
         [
@@ -94,25 +95,9 @@ def __embed1(
             "talents",
             "skills",
             "knowledges",
-            "disciplines",
-            "spheres",
         ],
         exclude_from_list=True,
         sort_items=True,
-    ):
-        embed.add_field(name=category, value=traits, inline=True)
-
-    # Show class specific traits.
-    # Werewolf/hunter traits aren't here b/c they are not a large list and should be shown with the rest of the traits with zeros included.
-    class_list = []
-    match character.class_name.lower():
-        case "vampire":
-            class_list = ["disciplines"]
-        case "mage":
-            class_list = ["spheres"]
-
-    for category, traits in __build_trait_display(
-        char_traits, class_list, show_zeros=False, sort_items=True
     ):
         embed.add_field(name=category, value=traits, inline=True)
 
