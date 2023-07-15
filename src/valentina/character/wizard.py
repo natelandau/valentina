@@ -8,7 +8,8 @@ from discord.ui import Button
 from loguru import logger
 
 from valentina.models.constants import MAX_BUTTONS_PER_ROW
-from valentina.models.database import CharacterTrait
+from valentina.models.database import Trait
+from valentina.utils.helpers import get_max_trait_value
 
 
 class RatingView(discord.ui.View):
@@ -16,7 +17,7 @@ class RatingView(discord.ui.View):
 
     def __init__(  # type: ignore [no-untyped-def]
         self,
-        trait: CharacterTrait,
+        trait: Trait,
         callback,
         failback,
     ) -> None:
@@ -27,7 +28,8 @@ class RatingView(discord.ui.View):
 
         self.trait_id = trait.id
         self.trait_name = trait.name
-        self.trait_max_value = trait.max_value
+        self.trait_category = trait.category.name
+        self.trait_max_value = get_max_trait_value(self.trait_name, self.trait_category)
         self.ratings: dict[str, int] = {}
         self.response: int = None
         self.last_interaction = None
@@ -69,7 +71,7 @@ class CharGenWizard:
     def __init__(
         self,
         ctx: discord.ApplicationContext,
-        all_traits: list[CharacterTrait],
+        all_traits: list[Trait],
         first_name: str | None = None,
         last_name: str | None = None,
         nickname: str | None = None,

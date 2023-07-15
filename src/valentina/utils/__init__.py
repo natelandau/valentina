@@ -1,7 +1,7 @@
 """Utility functions for Valentina."""
 
-from .backup_db import DBBackup
 from .context import Context
+from .db_backup import DBBackup
 from .logging import InterceptHandler
 
 __all__ = ["DBBackup", "Context", "InterceptHandler"]

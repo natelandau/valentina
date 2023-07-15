@@ -6,7 +6,8 @@ import re
 import aiohttp
 from discord.ext.commands import BadArgument, Context, Converter
 
-from valentina.models.constants import CharClass, VampClanList
+from valentina.models.constants import DBConstants
+from valentina.models.database import CharacterClass, VampireClan
 
 
 class ValidThumbnailURL(Converter):
@@ -30,25 +31,27 @@ class ValidThumbnailURL(Converter):
 
 
 class ValidCharacterClass(Converter):
-    """A converter that ensures a requested character class is valid."""
+    """A converter that ensures a requested character class name is valid."""
 
-    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
+    async def convert(self, ctx: Context, argument: str) -> CharacterClass:  # noqa: ARG002
         """Validate and normalize character classes."""
-        try:
-            return CharClass(argument).value
-        except ValueError as e:
-            raise BadArgument(f"`{argument}` is not a valid character class") from e
+        for c in DBConstants.char_classes():
+            if argument.lower() == c.name.lower():
+                return c
+
+        raise BadArgument(f"`{argument}` is not a valid character class")
 
 
 class ValidClan(Converter):
     """A converter that ensures a requested vampire clan is valid."""
 
-    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
+    async def convert(self, ctx: Context, argument: str) -> VampireClan:  # noqa: ARG002
         """Validate and normalize character's clan."""
-        try:
-            return VampClanList(argument).value
-        except ValueError as e:
-            raise BadArgument(f"`{argument}` is not a valid vampire clan") from e
+        for c in DBConstants.vampire_clans():
+            if argument.lower() == c.name.lower():
+                return c
+
+        raise BadArgument(f"`{argument}` is not a valid vampire clan")
 
 
 class ValidCharacterName(Converter):

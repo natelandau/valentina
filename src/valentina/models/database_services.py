@@ -7,25 +7,18 @@ from pathlib import Path
 import discord
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
-from peewee import DoesNotExist, IntegrityError, ModelSelect, SqliteDatabase, fn
-from semver import Version
+from peewee import DoesNotExist, IntegrityError, ModelSelect, fn
+from playhouse.sqlite_ext import CSqliteExtDatabase
 
 from valentina.models.constants import (
-    COMMON_TRAITS,
-    HUNTER_TRAITS,
-    MAGE_TRAITS,
-    MORTAL_TRAITS,
-    VAMPIRE_TRAITS,
-    WEREWOLF_TRAITS,
-    CharClass,
+    DBConstants,
     EmbedColor,
     MaxTraitValue,
-    VampClanList,
 )
 from valentina.models.database import (
+    DATABASE,
     Character,
     CharacterClass,
-    CharacterTrait,
     Chronicle,
     ChronicleChapter,
     ChronicleNote,
@@ -37,12 +30,17 @@ from valentina.models.database import (
     GuildUser,
     Macro,
     RollThumbnail,
+    Trait,
+    TraitCategory,
+    TraitCategoryClass,
+    TraitClass,
     TraitValue,
     User,
     VampireClan,
     time_now,
 )
 from valentina.utils import DBBackup
+from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
@@ -54,8 +52,6 @@ from valentina.utils.errors import (
 )
 from valentina.utils.helpers import (
     get_max_trait_value,
-    merge_dictionaries,
-    normalize_to_db_row,
     num_to_circles,
 )
 
@@ -64,54 +60,52 @@ class TraitService:
     """Traits manager cache/in-memory database."""
 
     def __init__(self) -> None:
-        self.class_traits: dict[str, list[CharacterTrait]] = {}  # {class: [traits]}
+        self.class_traits: dict[str, list[Trait]] = {}  # {class: [traits]}
 
-    def fetch_all_class_traits(self, char_class: str) -> list[CharacterTrait]:
+    def fetch_all_class_traits(self, char_class: str) -> list[Trait]:
         """Fetch all traits for a character class."""
-        if char_class.lower() in self.class_traits:
+        if char_class in self.class_traits:
             logger.debug(f"TRAITS: Returning cached traits for `{char_class}`")
-            return self.class_traits[char_class.lower()]
+            return self.class_traits[char_class]
 
         logger.info(f"DATABASE: Fetch all traits for `{char_class}`")
 
-        traits = CharacterTrait.select().where(
-            (CharacterTrait.category == "Common")
-            | (fn.lower(CharacterTrait.category) == char_class.lower())
+        traits = (
+            Trait.select()
+            .join(TraitClass)
+            .join(CharacterClass)
+            .where(CharacterClass.name == char_class)
         )
-        self.class_traits[char_class.lower()] = [x for x in traits]
-        return self.class_traits[char_class.lower()]
+
+        self.class_traits[char_class] = [x for x in traits]
+        return self.class_traits[char_class]
 
     def fetch_trait_id_from_name(self, trait_name: str) -> int:
         """Fetch a trait ID from the trait name."""
         logger.debug(f"DATABASE: Fetch trait ID for `{trait_name}`")
+
         try:
-            trait = CharacterTrait.get(fn.lower(CharacterTrait.name) == trait_name.lower())
+            trait = Trait.get(fn.lower(Trait.name) == trait_name.lower())
             return trait.id
         except DoesNotExist as e:
             raise TraitNotFoundError(f"Trait `{trait_name}` not found") from e
 
-    def purge(self) -> None:
-        """Purge the cache."""
-        logger.info("TRAITS: Purging cache")
-        self.class_traits = {}
-
-    def fetch_trait_category(
-        self, trait_name: str | None = None, trait_id: int | None = None
-    ) -> str:
+    def fetch_trait_category(self, query: str | int) -> str:
         """Fetch the category of a trait."""
         try:
-            if trait_id and not trait_name:
-                trait = CharacterTrait.get(CharacterTrait.id == trait_id)
-                return trait.subcategory
+            if isinstance(query, int):
+                return Trait.get(Trait.id == query).category.name
 
-            if trait_name and not trait_id:
-                trait = CharacterTrait.get(fn.lower(CharacterTrait.name) == trait_name.lower())
-                return trait.subcategory
-
-            raise ValueError("Must provide either trait name or trait ID")
+            if isinstance(query, str):
+                return Trait.get(fn.lower(Trait.name) == query.lower()).category.name
 
         except DoesNotExist as e:
-            raise TraitNotFoundError(f"Trait `{trait_name}` not found") from e
+            raise TraitNotFoundError(f"Trait `{query}` not found") from e
+
+    def purge(self) -> None:
+        """Purge the cache."""
+        logger.info("TRAITS: Purge cache")
+        self.class_traits = {}
 
 
 class ChronicleService:
@@ -689,18 +683,21 @@ class CharacterService:
         all_traits: dict[str, list[str]] = {}
 
         for tv in TraitValue.select().where(TraitValue.character == character.id):
-            if not tv.trait.character_class or tv.trait.character_class == character.char_class:
-                if tv.trait.category.title() not in all_traits:
-                    all_traits[tv.trait.category.title()] = []
+            category = tv.trait.category.name.title()
+            if category not in all_traits:
+                all_traits[category] = []
 
-                all_traits[tv.trait.category.title()].append(tv.trait.name.title())
+            all_traits[category].append(tv.trait.name.title())
 
         custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
+
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                if custom_trait.category.title() not in all_traits:
-                    all_traits[custom_trait.category.title()] = []
-                all_traits[custom_trait.category.title()].append(custom_trait.name.title())
+                category = custom_trait.category.title()
+                if category not in all_traits:
+                    all_traits[category] = []
+
+                all_traits[category].append(custom_trait.name.title())
 
         if flat_list:
             return sorted(list({y for x in all_traits.values() for y in x}))
@@ -726,16 +723,14 @@ class CharacterService:
         all_traits: dict[str, list[tuple[str, int, int, str]]] = {}
 
         for tv in TraitValue.select().where(TraitValue.character == character.id):
-            if not tv.trait.character_class or tv.trait.character_class == character.char_class:
-                if tv.trait.subcategory.title() not in all_traits:
-                    all_traits[tv.trait.subcategory.title()] = []
+            category = tv.trait.category.name.title()
+            if category not in all_traits:
+                all_traits[category] = []
 
-                value = tv.value
-                max_value = tv.trait.max_value
-                dots = num_to_circles(value, max_value)
-                all_traits[tv.trait.subcategory.title()].append(
-                    (tv.trait.name, value, max_value, dots)
-                )
+            value = tv.value
+            max_value = get_max_trait_value(trait=tv.trait.name, category=category)
+            dots = num_to_circles(value, max_value)
+            all_traits[category].append((tv.trait.name, value, max_value, dots))
 
         if key in self.custom_traits:
             custom_traits = self.custom_traits[key]
@@ -748,17 +743,21 @@ class CharacterService:
 
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
-                if custom_trait.category.title() not in all_traits:
-                    all_traits[custom_trait.category.title()] = []
+                category = custom_trait.category.title()
+
+                if category not in all_traits:
+                    all_traits[category] = []
                 custom_trait_name = custom_trait.name.title()
                 custom_trait_value = custom_trait.value
 
-                max_value = get_max_trait_value(trait=custom_trait_name, is_custom_trait=True)
+                max_value = get_max_trait_value(
+                    trait=custom_trait_name, category=category, is_custom_trait=True
+                )
                 if not max_value:
                     max_value = custom_trait.max_value
 
                 dots = num_to_circles(custom_trait_value, max_value)
-                all_traits[custom_trait.category.title()].append(
+                all_traits[category].append(
                     (custom_trait_name, custom_trait_value, max_value, dots)
                 )
 
@@ -863,8 +862,8 @@ class CharacterService:
         tv_value = (
             TraitValue.select()
             .where(TraitValue.character == character)
-            .join(CharacterTrait)
-            .where(fn.lower(CharacterTrait.name) == trait.lower())
+            .join(Trait)
+            .where(fn.lower(Trait.name) == trait.lower())
         )
 
         if len(tv_value) != 0:
@@ -886,7 +885,7 @@ class CharacterService:
     ) -> str:
         """Fetch the category of a trait for a character."""
         try:
-            return TraitService().fetch_trait_category(trait_name=trait)
+            return TraitService().fetch_trait_category(trait)
 
         except TraitNotFoundError as e:
             custom_trait = [
@@ -1241,31 +1240,20 @@ class GuildService:
             guild_id (int): The guild to fetch traits for.
             flat_list (bool, optional): Return a flat list of traits. Defaults to False.
         """
-        all_constants = [
-            COMMON_TRAITS,
-            MAGE_TRAITS,
-            VAMPIRE_TRAITS,
-            WEREWOLF_TRAITS,
-            HUNTER_TRAITS,
-            MORTAL_TRAITS,
-        ]
-        all_traits = merge_dictionaries(all_constants, flat_list=False)
+        all_traits = DBConstants.traits_by_category()
+        custom_traits = CustomTrait.select().where(CustomTrait.guild == guild_id)
+        if len(custom_traits) > 0:
+            for custom_trait in custom_traits:
+                category = custom_trait.category.title()
+                if category not in all_traits:
+                    all_traits[category] = []
+                all_traits[category].append(custom_trait.name.title())
 
-        if isinstance(all_traits, dict):
-            custom_traits = CustomTrait.select().where(CustomTrait.guild == guild_id)
-            if len(custom_traits) > 0:
-                for custom_trait in custom_traits:
-                    if custom_trait.category.title() not in all_traits:
-                        all_traits[custom_trait.category.title()] = []
-                    all_traits[custom_trait.category.title()].append(custom_trait.name.title())
+        if flat_list:
+            # Flattens the dictionary to a single list, while removing duplicates
+            return sorted(list({item for sublist in all_traits.values() for item in sublist}))
 
-            if flat_list:
-                # Flattens the dictionary to a single list, while removing duplicates
-                return sorted(list({item for sublist in all_traits.values() for item in sublist}))
-
-            return all_traits
-
-        return None
+        return all_traits
 
     def add_roll_result_thumb(self, ctx: ApplicationContext, roll_type: str, url: str) -> None:
         """Add a roll result thumbnail to the database."""
@@ -1390,14 +1378,15 @@ class GuildService:
 class DatabaseService:
     """Representation of the database."""
 
-    def __init__(self, database: SqliteDatabase) -> None:
+    def __init__(self, database: CSqliteExtDatabase) -> None:
         """Initialize the DatabaseService."""
         self.db = database
 
-    async def backup_database(self, config: dict) -> Path:
+    @staticmethod
+    async def backup_database(config: dict) -> Path:
         """Create a backup of the database."""
-        backup_file = await DBBackup(config).create_backup()
-        await DBBackup(config).clean_old_backups()
+        backup_file = await DBBackup(config, DATABASE).create_backup()
+        await DBBackup(config, DATABASE).clean_old_backups()
         return backup_file
 
     def column_exists(self, table: str, column: str) -> bool:
@@ -1416,70 +1405,33 @@ class DatabaseService:
         return column in columns
 
     def create_tables(self) -> None:
-        """Create all tables in the database and populate default values if they are constants."""
+        """Create all tables in the database if they don't exist."""
         with self.db:
             self.db.create_tables(
                 [
                     Character,
                     CharacterClass,
                     CustomSection,
+                    TraitCategory,
                     CustomTrait,
                     DatabaseVersion,
                     Guild,
                     Macro,
                     RollThumbnail,
                     User,
-                    CharacterTrait,
                     VampireClan,
                     Chronicle,
                     ChronicleNote,
                     ChronicleChapter,
                     ChronicleNPC,
+                    Trait,
+                    TraitClass,
                     TraitValue,
                     GuildUser,
+                    TraitCategoryClass,
                 ]
             )
         logger.info("DATABASE: Create Tables")
-        logger.debug(f"DATABASE: {self.get_tables()}")
-
-    def sync_enums(self) -> None:
-        """Ensure that the CharacterClass and VampireCan tables are up to date with their enums."""
-        # Populate default values
-        for char_class in CharClass:
-            CharacterClass.get_or_create(name=char_class.value)
-        logger.debug("DATABASE: Sync character classes")
-
-        for clan in VampClanList:
-            VampireClan.get_or_create(name=clan.value)
-        logger.debug("DATABASE: Sync vampire clans")
-
-        categories = [
-            {"category": "Common", "dict": COMMON_TRAITS},
-            {"category": "Mage", "dict": MAGE_TRAITS, "class": CharClass.MAGE.value},
-            {"category": "Vampire", "dict": VAMPIRE_TRAITS, "class": CharClass.VAMPIRE.value},
-            {"category": "Werewolf", "dict": WEREWOLF_TRAITS, "class": CharClass.WEREWOLF.value},
-            {"category": "Hunter", "dict": HUNTER_TRAITS, "class": CharClass.HUNTER.value},
-            {"category": "Mortal", "dict": MORTAL_TRAITS, "class": CharClass.MORTAL.value},
-        ]
-
-        for category in categories:
-            if isinstance(category["dict"], dict):
-                for subcategory, traits in category["dict"].items():
-                    for trait in traits:
-                        CharacterTrait.get_or_create(
-                            name=trait,
-                            category=category["category"],
-                            subcategory=subcategory.title(),
-                            max_value=get_max_trait_value(trait),
-                            character_class=CharacterClass.get(
-                                CharacterClass.name == category["class"]
-                            ).id
-                            if "class" in category
-                            else None,
-                        )
-        logger.debug("DATABASE: Sync character traits")
-
-        logger.info("DATABASE: Populate Enums")
 
     def get_tables(self) -> list[str]:
         """Get all tables in the Database."""
@@ -1492,76 +1444,27 @@ class DatabaseService:
         return DatabaseVersion.get_by_id(1).version
 
     @logger.catch
-    def requires_migration(self, bot_version: str) -> bool:
-        """Determine if the database requires a migration.
+    def initialize_database(self, bot_version: str) -> None:
+        """Migrate from old database versions to the current one."""
+        PopulateDatabase(self.db).populate()
 
-        Args:
-            bot_version (str): The version of the bot to compare against the database version.
-
-        Returns:
-            bool: True if the database requires a migration, False otherwise.
-        """
-        current_db, created = DatabaseVersion.get_or_create(
+        existing_data, new_db_created = DatabaseVersion.get_or_create(
             id=1,
             defaults={"version": bot_version},
         )
-        if created:
+
+        # If we are creating a new database, populate the necessary tables with data
+        if new_db_created:
             logger.info(f"DATABASE: Create version v{bot_version}")
-            return False
+            return
 
-        if Version.parse(bot_version) > Version.parse(current_db.version):
-            logger.info(f"DATABASE: Database v{current_db.version} < bot v{bot_version}")
-            return True
+        # If database exists, perform migrations if necessary
+        MigrateDatabase(
+            self.db,
+            bot_version=bot_version,
+            db_version=existing_data.version,
+        ).migrate()
 
-        logger.debug(f"DATABASE: Database v{current_db.version} is up to date")
-        return False
-
-    @logger.catch
-    def migrate_old_database(self, bot_version: str) -> None:
-        """Migrate from old database versions to the current one."""
-        db_version = DatabaseVersion.get_by_id(1).version
-
-        if Version.parse(db_version) < Version.parse("0.8.2"):
-            logger.debug(f"DATABASE: Migrate database v{db_version} to v0.8.2")
-            self.db.execute_sql("ALTER TABLE characters ADD COLUMN security INTEGER DEFAULT 0;")
-
-        if Version.parse(db_version) < Version.parse("0.11.3"):
-            logger.warning(f"DATABASE: Migrate database v{db_version} to v0.11.3")
-
-            # Populate the traits table
-            self.sync_enums()
-
-            # Populate the trait values table
-            for trait in CharacterTrait.select():
-                column_name = normalize_to_db_row(trait.name)
-                if self.column_exists("characters", column_name):
-                    for character in Character.select():
-                        logger.debug(f"DATABASE: Populate {trait.name} for {character.name}")
-                        trait_value = self.db.execute_sql(
-                            "SELECT "  # noqa: S608
-                            + column_name
-                            + " FROM characters WHERE id = "
-                            + str(character.id)
-                            + ";"
-                        ).fetchone()[0]
-
-                        TraitValue.create(
-                            character=character,
-                            trait=trait,
-                            value=trait_value,
-                            modified=time_now(),
-                        )
-            logger.debug("DATABASE: Populate TraitValue table")
-
-            # Remove the trait columns from the character table
-            for trait in CharacterTrait.select():
-                column_name = normalize_to_db_row(trait.name)
-                if self.column_exists("characters", column_name):
-                    self.db.execute_sql("ALTER TABLE characters DROP COLUMN " + column_name + ";")
-                    logger.debug(f"DATABASE: Remove {trait.name} from Character table")
-
-            logger.debug("DATABASE: Remove trait columns from Character table")
-
-        # Complete migration and bump the database version
-        logger.info(f"DATABASE: Migrate database to v{bot_version}")
+        # Bump the database version to the latest bot version
         DatabaseVersion.set_by_id(1, {"version": bot_version})
+        logger.info(f"DATABASE: Database is up-to-date with v{bot_version}")

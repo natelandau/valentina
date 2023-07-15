@@ -9,13 +9,12 @@ empty_db: A database with tables but no data for use in tests. Any changes made 
 
 """
 import discord
-import peewee as pw
 import pytest
+from playhouse.sqlite_ext import CSqliteExtDatabase
 
 from valentina.models.database import (
     Character,
     CharacterClass,
-    CharacterTrait,
     Chronicle,
     ChronicleChapter,
     ChronicleNote,
@@ -27,17 +26,21 @@ from valentina.models.database import (
     GuildUser,
     Macro,
     RollThumbnail,
+    Trait,
+    TraitCategory,
+    TraitCategoryClass,
+    TraitClass,
     TraitValue,
     User,
     VampireClan,
 )
-from valentina.models.database_services import DatabaseService
+from valentina.utils.db_initialize import PopulateDatabase
 
 # IMPORTANT: This list must be kept in sync with all the models defined in src/valentina/models/database.py
 MODELS = [
     Character,
     CharacterClass,
-    CharacterTrait,
+    Trait,
     Chronicle,
     ChronicleChapter,
     ChronicleNote,
@@ -49,6 +52,9 @@ MODELS = [
     GuildUser,
     Macro,
     RollThumbnail,
+    TraitCategory,
+    TraitCategoryClass,
+    TraitClass,
     TraitValue,
     User,
     VampireClan,
@@ -111,13 +117,13 @@ trait_values3 = {"character_id": 1, "trait_id": 3, "value": 3}
 
 
 @pytest.fixture(scope="class")
-def mock_db() -> pw.SqliteDatabase:
+def mock_db() -> CSqliteExtDatabase:
     """Create a mock database with test data for use in tests."""
-    full_db = pw.SqliteDatabase(":memory:")
-    full_db.bind(MODELS, bind_refs=False, bind_backrefs=False)
-    full_db.connect()
-    full_db.create_tables(MODELS)
-    DatabaseService.sync_enums(full_db)
+    test_db = CSqliteExtDatabase(":memory:")
+    test_db.bind(MODELS, bind_refs=False, bind_backrefs=False)
+    test_db.connect()
+    test_db.create_tables(MODELS)
+    PopulateDatabase(test_db).populate()
 
     # Create test data
 
@@ -147,15 +153,15 @@ def mock_db() -> pw.SqliteDatabase:
     assert Macro.get_by_id(1).name == "test_macro"
     assert TraitValue.get_by_id(3).value == 3
 
-    yield full_db
+    yield test_db
 
-    full_db.close()
+    test_db.close()
 
 
 @pytest.fixture()
-def empty_db() -> pw.SqliteDatabase:
+def empty_db() -> CSqliteExtDatabase:
     """Create an empty database for use in tests."""
-    empty_db = pw.SqliteDatabase(":memory:")
+    empty_db = CSqliteExtDatabase(":memory:")
     empty_db.bind(MODELS, bind_refs=False, bind_backrefs=False)
     empty_db.connect()
     empty_db.create_tables(MODELS)

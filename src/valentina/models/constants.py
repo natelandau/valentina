@@ -1,5 +1,16 @@
 """Constants for Valentina models."""
 from enum import Enum
+from functools import cache
+
+from loguru import logger
+
+from valentina.models.database import (
+    CharacterClass,
+    Trait,
+    TraitCategory,
+    TraitCategoryClass,
+    VampireClan,
+)
 
 # maximum number of options in a discord select menu
 MAX_OPTION_LIST_SIZE = 25
@@ -9,18 +20,93 @@ MAX_PAGE_CHARACTER_COUNT = 1950
 MAX_BUTTONS_PER_ROW = 5
 
 
+class DBConstants:
+    """Constants from the database."""
+
+    @staticmethod
+    @cache
+    def char_classes() -> list[CharacterClass]:
+        """Fetch the character classes from the database."""
+        logger.debug("DATABASE: Fetch character classes")
+        return [x for x in CharacterClass.select().order_by(CharacterClass.name.asc())]
+
+    @staticmethod
+    @cache
+    def vampire_clans() -> list[VampireClan]:
+        """Fetch the vampire clans from the database."""
+        logger.debug("DATABASE: Fetch vampire clans")
+        return [x for x in VampireClan.select().order_by(VampireClan.name.asc())]
+
+    @staticmethod
+    @cache
+    def trait_categories() -> list[TraitCategory]:
+        """Fetch the trait categories from the database."""
+        logger.debug("DATABASE: Fetch trait categories")
+        return [x for x in TraitCategory.select().order_by(TraitCategory.name.asc())]
+
+    @staticmethod
+    @cache
+    def trait_categories_by_class() -> dict[CharacterClass, list[TraitCategory]]:
+        """Fetch the trait categories by class from the database."""
+        logger.debug("DATABASE: Fetch trait categories by class")
+        return {
+            char_class: [
+                x
+                for x in TraitCategory.select()
+                .join(TraitCategoryClass)
+                .where(TraitCategoryClass.character_class == char_class)
+            ]
+            for char_class in DBConstants.char_classes()
+        }
+
+    @staticmethod
+    @cache
+    def traits_by_category() -> dict[str, list[str]]:
+        """Fetch the traits by category from the database.
+
+        Returns:
+            dict[str, list[Trait]]: A dictionary of trait names by category name.
+        """
+        logger.debug("DATABASE: Fetch traits by category")
+        return {
+            category.name: [
+                x.name
+                for x in Trait.select().where(Trait.category == category).order_by(Trait.name.asc())
+            ]
+            for category in DBConstants.trait_categories()
+        }
+
+    @staticmethod
+    @cache
+    def all_traits() -> list[Trait]:
+        """Fetch all traits from the database.
+
+        Returns:
+            list[Trait]: A list of all traits.
+        """
+        logger.debug("DATABASE: Fetch all traits")
+        return [x for x in Trait.select().order_by(Trait.name.asc())]
+
+
+### ENUMS ###
 class MaxTraitValue(Enum):
-    """Maximum value for a trait."""
+    """Maximum value for a trait.
+
+    Note: Maximum values for custom traits are managed in the database.
+    """
 
     DEFAULT = 5
     # Specific values
-    WILLPOWER = 10
-    HUMANITY = 10
-    RAGE = 10
-    GNOSIS = 10
     ARETE = 10
     BLOOD_POOL = 20
+    GLORY = 10
+    GNOSIS = 10
+    HONOR = 10
+    HUMANITY = 10
     QUINTESSENCE = 20
+    RAGE = 10
+    WILLPOWER = 10
+    WISDOM = 10
     # Category values
     PHYSICAL = 5
     SOCIAL = 5
@@ -114,165 +200,6 @@ class RollResultType(Enum):
     OTHER = "Other"
 
 
-class CharClass(Enum):
-    """Enum for types of characters."""
-
-    # NOTE: Anything here must be added to the database CharacterClass table
-
-    MORTAL = "Mortal"
-    VAMPIRE = "Vampire"
-    WEREWOLF = "Werewolf"
-    MAGE = "Mage"
-    HUNTER = "Hunter"
-    Other = "Other"
-
-
-class TraitCategory(Enum):
-    """Enum for categories of traits to be used for categorizing custom traits."""
-
-    # Abilities
-    PHYSICAL = "Physical"
-    SOCIAL = "Social"
-    MENTAL = "Mental"
-    # Attributes
-    TALENTS = "Talents"
-    SKILLS = "Skills"
-    KNOWLEDGES = "Knowledges"
-
-    # Other
-    VIRTUES = "Virtues"
-    BACKGROUNDS = "Backgrounds"
-    MERITS = "Merits"
-    FLAWS = "Flaws"
-    PATHS = "Paths"
-
-    OTHER = "Other"
-
-    # Class Specific
-    DISCIPLINES = "Disciplines"  # Vampire
-    SPHERES = "Spheres"  # Mage
-    GIFTS = "Gifts"  # Werewolf
-
-
-class VampClanList(Enum):
-    """Vampire clans."""
-
-    # NOTE: Anything added here must be added to the VampireClan class in models/database.py
-    ASSAMITE = "Assamite"
-    BRUJAH = "Brujah"
-    FOLLOWERS_OF_SET = "Followers of Set"
-    GANGREL = "Gangrel"
-    GIOVANNI = "Giovanni"
-    LASOMBRA = "Lasombra"
-    MALKAVIAN = "Malkavian"
-    NOSFERATU = "Nosferatu"
-    RAVNOS = "Ravnos"
-    TOREADOR = "Toreador"
-    TREMERE = "Tremere"
-    TZIMISCE = "Tzimisce"
-    VENTRUE = "Ventrue"
-
-
-# NOTE: Anything added here must be added to the Character class in models/database.py
-COMMON_TRAITS = {
-    "Physical": ["Strength", "Dexterity", "Stamina"],
-    "Social": ["Charisma", "Manipulation", "Appearance"],
-    "Mental": ["Perception", "Intelligence", "Wits"],
-    "Talents": [
-        "Alertness",
-        "Athletics",
-        "Brawl",
-        "Dodge",
-        "Empathy",
-        "Expression",
-        "Intimidation",
-        "Leadership",
-        "Primal-Urge",
-        "Streetwise",
-        "Subterfuge",
-    ],
-    "Skills": [
-        "Animal Ken",
-        "Crafts",
-        "Drive",
-        "Etiquette",
-        "Firearms",
-        "Insight",
-        "Larceny",
-        "Meditation",
-        "Melee",
-        "Performance",
-        "Persuasion",
-        "Repair",
-        "Security",
-        "Stealth",
-        "Survival",
-        "Technology",
-    ],
-    "Knowledges": [
-        "Academics",
-        "Bureaucracy",
-        "Computer",
-        "Enigmas",
-        "Finance",
-        "Investigation",
-        "Law",
-        "Linguistics",
-        "Medicine",
-        "Occult",
-        "Politics",
-        "Rituals",
-        "Science",
-    ],
-    "Universal": ["Willpower", "Desperation", "Reputation"],
-}
-MAGE_TRAITS = {
-    "Universal": ["Humanity", "Arete", "Quintessence"],
-    "Virtues": ["Conscience", "Self-Control", "Courage"],
-    "Spheres": [
-        "Correspondence",
-        "Entropy",
-        "Forces",
-        "Life",
-        "Matter",
-        "Mind",
-        "Prime",
-        "Spirit",
-        "Time",
-    ],
-}
-VAMPIRE_TRAITS = {
-    "Universal": ["Blood Pool", "Humanity"],
-    "Virtues": ["Conscience", "Self-Control", "Courage"],
-    "Disciplines": [
-        "Animalism",
-        "Auspex",
-        "Blood Sorcery",
-        "Celerity",
-        "Chimerstry",
-        "Dominate",
-        "Fortitude",
-        "Necromancy",
-        "Obeah",
-        "Obfuscate",
-        "Oblivion",
-        "Potence",
-        "Presence",
-        "Protean",
-        "Serpentis",
-        "Thaumaturgy",
-        "Vicissitude",
-    ],
-}
-WEREWOLF_TRAITS = {
-    "Universal": ["Gnosis", "Rage"],
-    "Renown": ["Glory", "Honor", "Wisdom"],
-}
-HUNTER_TRAITS = {
-    "Universal": ["Conviction", "Faith", "Humanity"],
-    "Virtues": ["Conscience", "Self-Control", "Courage"],
-}
-MORTAL_TRAITS = {"Universal": ["Humanity"], "Virtues": ["Conscience", "Self-Control", "Courage"]}
 CLAN_DISCIPLINES = {
     "Assamite": ["Celerity", "Obfuscate", "Quietus"],
     "Brujah": ["Celerity", "Potence", "Presence"],
@@ -290,7 +217,6 @@ CLAN_DISCIPLINES = {
 }
 
 
-FLAT_COMMON_TRAITS = [trait for trait_list in COMMON_TRAITS.values() for trait in trait_list]
 DICEROLL_THUBMS = {
     "BOTCH": [
         "https://em-content.zobj.net/source/animated-noto-color-emoji/356/face-vomiting_1f92e.gif",

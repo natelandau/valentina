@@ -42,13 +42,12 @@ class Valentina(commands.Bot):
         self.trait_svc = TraitService()
         self.user_svc = UserService()
 
-        logger.info("BOT: Running setup tasks")
+        # Load Cogs
+        # #######################
         for cog in Path(self.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
             if cog.stem[0] != "_":
                 logger.info(f"COGS: Loading - {cog.stem}")
                 self.load_extension(f"valentina.cogs.{cog.stem}")
-
-        logger.info("BOT: Setup tasks complete")
 
     async def on_connect(self) -> None:
         """Perform early setup."""
@@ -74,21 +73,12 @@ class Valentina(commands.Bot):
         if not self.welcomed:
             # Start tasks
             # #######################
-            backup_db.start(self.config)
+            backup_db.start(self.config, DATABASE)
             logger.debug("BOT: Start background database backup task")
 
             await self.change_presence(
                 activity=discord.Activity(type=discord.ActivityType.watching, name="for /help")
             )
-
-            # Setup database
-            # #######################
-            self.db_svc.create_tables()
-
-            if self.db_svc.requires_migration(self.version):
-                self.db_svc.migrate_old_database(self.version)
-
-            self.db_svc.sync_enums()
 
             # Setup Guilds
             # #######################
@@ -126,5 +116,5 @@ class Valentina(commands.Bot):
 @tasks.loop(time=time(0, tzinfo=timezone.utc))
 async def backup_db(config: dict) -> None:
     """Backup the database."""
-    await DBBackup(config).create_backup()
-    await DBBackup(config).clean_old_backups()
+    await DBBackup(config, DATABASE).create_backup()
+    await DBBackup(config, DATABASE).clean_old_backups()

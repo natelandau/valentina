@@ -10,9 +10,9 @@ from peewee import (
     ForeignKeyField,
     IntegerField,
     Model,
-    SqliteDatabase,
     TextField,
 )
+from playhouse.sqlite_ext import CSqliteExtDatabase
 
 
 def time_now() -> datetime:
@@ -32,7 +32,7 @@ for k, v in config.items():
 
 
 # Instantiate Database
-DATABASE = SqliteDatabase(
+DATABASE = CSqliteExtDatabase(
     config["VALENTINA_DB_PATH"],
     pragmas={
         "journal_mode": "wal",
@@ -110,12 +110,23 @@ class CharacterClass(BaseModel):
 class VampireClan(BaseModel):
     """Vampire clans."""
 
-    name = TextField()
+    name = TextField(unique=True)
 
     class Meta:
         """Meta class for the model."""
 
         table_name = "vampire_clans"
+
+
+class TraitCategory(BaseModel):
+    """Trait Category model for the database."""
+
+    name = TextField(unique=True)
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "trait_categories"
 
 
 class Character(BaseModel):
@@ -174,21 +185,6 @@ class Character(BaseModel):
         """Meta class for the model."""
 
         table_name = "characters"
-
-
-class CharacterTrait(BaseModel):
-    """Character Trait model for the database."""
-
-    name = TextField()
-    category = TextField(null=True)
-    subcategory = TextField(null=True)
-    max_value = IntegerField(default=0)
-    character_class = ForeignKeyField(CharacterClass, backref="traits", null=True)
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "character_traits"
 
 
 class CustomTrait(BaseModel):
@@ -352,6 +348,18 @@ class ChronicleNote(BaseModel):
         return display
 
 
+class Trait(BaseModel):
+    """Character Trait model for the database."""
+
+    name = TextField(unique=True)
+    category = ForeignKeyField(TraitCategory, backref="traits")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "traits"
+
+
 # Lookup tables
 
 
@@ -363,10 +371,10 @@ class GuildUser(BaseModel):
 
 
 class TraitValue(BaseModel):
-    """Join table for Character and CharacterTrait."""
+    """Join table for Character and Trait."""
 
     character = ForeignKeyField(Character, backref="trait_values")
-    trait = ForeignKeyField(CharacterTrait, backref="trait_values", null=True)
+    trait = ForeignKeyField(Trait, backref="trait_values", null=True)
     value = IntegerField(default=0)
     modified = DateTimeField(default=time_now)
 
@@ -375,3 +383,35 @@ class TraitValue(BaseModel):
 
         table_name = "trait_values"
         indexes = ((("character", "trait", "value"), False),)
+
+
+class TraitClass(BaseModel):
+    """Join table for Trait and CharacterClass."""
+
+    trait = ForeignKeyField(Trait, backref="classes")
+    character_class = ForeignKeyField(CharacterClass, backref="traits")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "trait_classes"
+        indexes = (
+            (("trait", "character_class"), False),
+            (("character_class", "trait"), False),
+        )
+
+
+class TraitCategoryClass(BaseModel):
+    """Join table for TraitCategory and CharacterClass."""
+
+    category = ForeignKeyField(TraitCategory, backref="classes")
+    character_class = ForeignKeyField(CharacterClass, backref="trait_categories")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "trait_category_classes"
+        indexes = (
+            (("category", "character_class"), False),
+            (("character_class", "category"), False),
+        )

@@ -6,18 +6,20 @@ from pathlib import Path
 import aiofiles.os
 import arrow
 from loguru import logger
+from playhouse.sqlite_ext import CSqliteExtDatabase
 
 
 class DBBackup:
     """Class to backup the bot database."""
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, db: CSqliteExtDatabase) -> None:
         self.retention_daily = int(config["VALENTINA_DAILY_RETENTION"])
         self.retention_weekly = int(config["VALENTINA_WEEKLY_RETENTION"])
         self.retention_monthly = int(config["VALENTINA_MONTHLY_RETENTION"])
         self.retention_yearly = int(config["VALENTINA_YEARLY_RETENTION"])
         self.db_path = Path(config["VALENTINA_DB_PATH"])
         self.backup_dir = Path(config["VALENTINA_BACKUP_PATH"])
+        self.db = db
 
     def type_of_backup(self) -> str:
         """Determine the type of backup to perform.
@@ -54,14 +56,7 @@ class DBBackup:
             self.backup_dir / f"{arrow.now().format('YYYY-MM-DDTHHmmss')}-{backup_type}.sqlite"
         )
 
-        async with aiofiles.open(self.db_path, mode="rb") as source_file, aiofiles.open(
-            backup_file, mode="wb"
-        ) as dest_file:
-            while True:
-                chunk = await source_file.read(1024)
-                if not chunk:
-                    break
-                await dest_file.write(chunk)
+        self.db.backup_to_file(backup_file)
 
         logger.info(f"BACKUP: {backup_type} database backup complete")
         logger.debug(f"BACKUP: Backup file: {backup_file}")
