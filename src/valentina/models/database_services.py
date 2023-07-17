@@ -216,19 +216,7 @@ class ChronicleService:
         self.notes.pop(ctx.guild.id, None)
         self.npcs.pop(ctx.guild.id, None)
 
-        for chapter in self.fetch_all_chapters(ctx, chronicle):
-            if chapter.chronicle == chronicle.id:
-                chapter.delete_instance()
-
-        for note in self.fetch_all_notes(ctx, chronicle):
-            if note.chronicle == chronicle.id:
-                note.delete_instance()
-
-        for npc in self.fetch_all_npcs(ctx, chronicle):
-            if npc.chronicle == chronicle.id:
-                npc.delete_instance()
-
-        chronicle.delete_instance()
+        chronicle.remove()
 
         logger.info(f"CHRONICLE: Delete {chronicle.name} and all associated content")
 

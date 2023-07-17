@@ -372,6 +372,19 @@ class Chronicle(BaseModel):
     guild = ForeignKeyField(Guild, backref="chronicles")
     is_active = BooleanField(default=False)
 
+    def remove(self) -> None:
+        """Delete the macro and associated macro traits."""
+        for npc in self.npcs:
+            npc.delete_instance()
+
+        for chap in self.chapters:
+            chap.delete_instance()
+
+        for note in self.notes:
+            note.delete_instance()
+
+        super().delete_instance()
+
     class Meta:
         """Meta class for the model."""
 
