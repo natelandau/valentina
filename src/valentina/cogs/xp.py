@@ -133,8 +133,11 @@ class Xp(commands.Cog, name="XP"):
                 TraitValue.character == character, TraitValue.trait == trait
             ).execute()
 
-        character.modified = time_now()
-        character.save()
+        self.bot.char_svc.update_character(
+            ctx,
+            character.id,
+            experience=new_experience,
+        )
 
         logger.debug(f"XP: {character.name} {trait.name} upgraded by {ctx.author.name}")
 
