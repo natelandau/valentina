@@ -51,13 +51,12 @@ def __build_trait_display(
 
 
 def __embed1(
-    ctx: discord.ApplicationContext,
     character: Character,
     claimed_by: discord.User | None = None,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
     modified = arrow.get(character.modified).humanize()
-    char_traits = ctx.bot.char_svc.fetch_all_character_trait_values(ctx, character)  # type: ignore [attr-defined]
+    char_traits = character.all_trait_values
 
     embed = discord.Embed(title=f"{character.name}", description="", color=0x7777FF)
     embed.set_footer(text=f"{character.name} last updated {modified}")
@@ -105,12 +104,11 @@ def __embed1(
 
 
 def __embed2(
-    ctx: discord.ApplicationContext,
     character: Character,
     claimed_by: discord.User | None = None,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
-    custom_sections = ctx.bot.char_svc.fetch_char_custom_sections(ctx, character)  # type: ignore [attr-defined]
+    custom_sections = character.custom_sections
 
     # Return None if there is no bio or custom sections
     if not character.bio and len(custom_sections) == 0:
@@ -149,8 +147,8 @@ async def show_sheet(
     ephemeral: Any = False,
 ) -> Any:
     """Show a character sheet."""
-    embed1 = __embed1(ctx, character, claimed_by)
-    embed2 = __embed2(ctx, character, claimed_by)
+    embed1 = __embed1(character, claimed_by)
+    embed2 = __embed2(character, claimed_by)
 
     if embed2 is None:
         await ctx.respond(embed=embed1, ephemeral=ephemeral)

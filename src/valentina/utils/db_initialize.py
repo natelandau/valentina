@@ -11,6 +11,7 @@ from valentina.models.database import (
     CharacterClass,
     CustomSection,
     CustomTrait,
+    Macro,
     Trait,
     TraitCategory,
     TraitCategoryClass,
@@ -76,6 +77,7 @@ mage_traits = {
         "Spirit",
         "Time",
     ],
+    "Resonance": ["Dynamic", "Entropic", "Static"],
 }
 vampire_traits = {
     "Other": ["Blood Pool", "Humanity"],
@@ -283,6 +285,12 @@ class MigrateDatabase:
                     max_value=max_value,
                 )
 
+        if self._column_exists("macros", "trait_one"):
+            logger.debug("DATABASE: Migrate macros")
+            self.db.execute_sql("DROP TABLE macros;")
+            with self.db:
+                self.db.create_tables([Macro])
+
 
 class PopulateDatabase:
     """A class that handles the populating a new database. This is only used when creating a new database.
@@ -357,6 +365,8 @@ class PopulateDatabase:
             "Spheres": ["Mage"],
             "Talents": ["Common"],
             "Virtues": ["Common"],
+            "Numina": ["Mage", "Mortal", "Hunter"],
+            "Resonance": ["Mage"],
         }
         with self.db.atomic():
             for category, classes in categories.items():

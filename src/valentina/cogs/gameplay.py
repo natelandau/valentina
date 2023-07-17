@@ -8,11 +8,11 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor, RollResultType
+from valentina.models.constants import EmbedColor, RollResultType
+from valentina.models.database import MacroTrait, Trait
 from valentina.models.dicerolls import DiceRoll
-from valentina.utils.converters import ValidThumbnailURL
-from valentina.utils.errors import MacroNotFoundError, NoClaimError
-from valentina.utils.options import select_macro
+from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
+from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
 from valentina.views import ConfirmCancelButtons, ReRollButton, present_embed
 from valentina.views.roll_display import RollDisplay
 
@@ -30,6 +30,8 @@ class Roll(commands.Cog):
         if hasattr(error, "original"):
             error = error.original
 
+        logger.exception(error)
+
         command_name = ""
         if ctx.command.parent.name:
             command_name = f"{ctx.command.parent.name} "
@@ -43,36 +45,6 @@ class Roll(commands.Cog):
             ephemeral=True,
             delete_after=15,
         )
-
-    async def __trait_one_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
-        """Populates the autocomplete for the trait option."""
-        try:
-            character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-        except NoClaimError:
-            return ["No character claimed"]
-
-        traits = []
-        for trait in ctx.bot.char_svc.fetch_all_character_traits(character, flat_list=True):  # type: ignore [attr-defined]
-            if trait.lower().startswith(ctx.options["trait_one"].lower()):
-                traits.append(trait)
-            if len(traits) >= MAX_OPTION_LIST_SIZE:
-                break
-        return traits
-
-    async def __trait_two_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
-        """Populates the autocomplete for the trait option."""
-        try:
-            character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-        except NoClaimError:
-            return ["No character claimed"]
-
-        traits = []
-        for trait in ctx.bot.char_svc.fetch_all_character_traits(character, flat_list=True):  # type: ignore [attr-defined]
-            if trait.lower().startswith(ctx.options["trait_two"].lower()):
-                traits.append(trait)
-            if len(traits) >= MAX_OPTION_LIST_SIZE:
-                break
-        return traits
 
     roll = discord.SlashCommandGroup("roll", "Roll dice")
 
@@ -112,16 +84,16 @@ class Roll(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         trait_one: Option(
-            str,
+            ValidCharTrait,
             description="First trait to roll",
             required=True,
-            autocomplete=__trait_one_autocomplete,
+            autocomplete=select_char_trait,
         ),
         trait_two: Option(
-            str,
+            ValidCharTrait,
             description="Second trait to roll",
             required=True,
-            autocomplete=__trait_two_autocomplete,
+            autocomplete=select_char_trait_two,
         ),
         difficulty: Option(
             int,
@@ -133,10 +105,9 @@ class Roll(commands.Cog):
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        trait_one_value = self.bot.char_svc.fetch_trait_value(ctx, character, trait_one)
-        trait_two_value = (
-            self.bot.char_svc.fetch_trait_value(ctx, character, trait_two) if trait_two else 0
-        )
+        trait_one_value = character.trait_value(trait_one)
+        trait_two_value = character.trait_value(trait_two)
+
         pool = trait_one_value + trait_two_value
 
         roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
@@ -147,9 +118,9 @@ class Roll(commands.Cog):
                 ctx,
                 roll=roll,
                 comment=comment,
-                trait_one_name=trait_one,
+                trait_one_name=trait_one.name,
                 trait_one_value=trait_one_value,
-                trait_two_name=trait_two,
+                trait_two_name=trait_two.name,
                 trait_two_value=trait_two_value,
             ).get_embed()
             await ctx.respond(embed=embed, view=view)
@@ -191,7 +162,7 @@ class Roll(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         macro: Option(
-            str,
+            ValidMacroFromID,
             description="Macro to roll",
             required=True,
             autocomplete=select_macro,
@@ -205,15 +176,15 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll a macro."""
-        m = self.bot.user_svc.fetch_macro(ctx, macro.split("(")[0].strip())
-        if not m:
-            raise MacroNotFoundError(macro=macro)
-
         character = self.bot.char_svc.fetch_claim(ctx)
-        trait_one_value = self.bot.char_svc.fetch_trait_value(ctx, character, m.trait_one)
-        trait_two_value = (
-            self.bot.char_svc.fetch_trait_value(ctx, character, m.trait_two) if m.trait_two else 0
-        )
+        traits = Trait.select().join(MacroTrait).where(MacroTrait.macro == macro)
+        trait_one = traits[0]
+        trait_two = traits[1]
+
+        trait_one_value = character.trait_value(trait_one)
+        trait_two_value = character.trait_value(trait_two)
+        ###########################################3333
+
         pool = trait_one_value + trait_two_value
 
         roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
@@ -224,9 +195,9 @@ class Roll(commands.Cog):
                 ctx,
                 roll=roll,
                 comment=comment,
-                trait_one_name=m.trait_one,
+                trait_one_name=trait_one.name,
                 trait_one_value=trait_one_value,
-                trait_two_name=m.trait_two,
+                trait_two_name=trait_two.name,
                 trait_two_value=trait_two_value,
             ).get_embed()
             await ctx.respond(embed=embed, view=view)

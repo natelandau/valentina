@@ -11,20 +11,24 @@ from valentina.character.view_sheet import show_sheet
 from valentina.character.views import BioModal, CustomSectionModal
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
+from valentina.models.database import CustomTrait, TraitValue, time_now
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
     ValidCharacterObject,
+    ValidCharTrait,
     ValidClan,
+    ValidCustomSection,
+    ValidCustomTrait,
     ValidTraitCategory,
 )
 from valentina.utils.errors import SectionExistsError
 from valentina.utils.options import (
     select_char_class,
+    select_char_trait,
     select_character,
     select_custom_section,
     select_custom_trait,
-    select_trait,
     select_trait_category,
     select_vampire_clan,
 )
@@ -45,6 +49,8 @@ class Characters(commands.Cog, name="Character"):
         """Handle exceptions and errors from the cog."""
         if hasattr(error, "original"):
             error = error.original
+
+        logger.exception(error)
 
         command_name = ""
         if ctx.command.parent.name:
@@ -291,12 +297,12 @@ class Characters(commands.Cog, name="Character"):
         section_title = modal.section_title.strip().title()
         section_description = modal.section_description.strip()
 
-        existing_sections = self.bot.char_svc.fetch_char_custom_sections(ctx, character)
+        existing_sections = character.custom_sections
         if section_title.replace("-", "_").replace(" ", "_").lower() in [
             x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
         ]:
             raise SectionExistsError
-        self.bot.char_svc.add_custom_section(ctx, character, section_title, section_description)
+        self.bot.char_svc.add_custom_section(character, section_title, section_description)
         await present_embed(
             ctx,
             title="Custom Section Added",
@@ -342,7 +348,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         custom_section: Option(
-            str,
+            ValidCustomSection,
             description="Custom section to update",
             required=True,
             autocomplete=select_custom_section,
@@ -350,11 +356,10 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Update a custom section."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        section = self.bot.char_svc.fetch_custom_section(ctx, character, title=custom_section)
 
         modal = CustomSectionModal(
-            section_title=section.title,
-            section_description=section.description,
+            section_title=custom_section.title,
+            section_description=custom_section.description,
             title=f"Custom section for {character.name}",
         )
         await ctx.send_modal(modal)
@@ -362,11 +367,10 @@ class Characters(commands.Cog, name="Character"):
         section_title = modal.section_title.strip().title()
         section_description = modal.section_description.strip()
 
-        self.bot.char_svc.update_custom_section(
-            ctx,
-            section.id,
-            **{"title": section_title, "description": section_description},
-        )
+        custom_section.title = section_title
+        custom_section.description = section_description
+        custom_section.save()
+
         await present_embed(
             ctx,
             title="Custom Section Updated",
@@ -385,7 +389,12 @@ class Characters(commands.Cog, name="Character"):
     async def update_trait(
         self,
         ctx: discord.ApplicationContext,
-        trait: Option(str, description="Trait to update", required=True, autocomplete=select_trait),
+        trait: Option(
+            ValidCharTrait,
+            description="Trait to update",
+            required=True,
+            autocomplete=select_char_trait,
+        ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
         ),
@@ -393,13 +402,12 @@ class Characters(commands.Cog, name="Character"):
         """Update the value of a trait."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
-        old_value = self.bot.char_svc.fetch_trait_value(ctx, character=character, trait=trait)
+        old_value = character.trait_value(trait)
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Update {trait}",
-            description=f"Confirm updating {trait}",
+            title=f"Update {trait.name}",
             fields=[
                 ("Old Value", str(old_value)),
                 ("New Value", new_value),
@@ -415,24 +423,33 @@ class Characters(commands.Cog, name="Character"):
             await msg.edit_original_response(
                 embed=discord.Embed(
                     title="Update Cancelled",
-                    description=f"**{trait}** will not be updated.",
+                    description=f"**{trait.name}** will not be updated.",
                     color=discord.Color.red(),
                 )
             )
             return
 
-        if view.confirmed and self.bot.char_svc.update_trait_value_by_name(
-            ctx, character=character, trait_name=trait, new_value=new_value
-        ):
-            await msg.delete_original_response()
-            await present_embed(
-                ctx=ctx,
-                title="Trait value updated",
-                description=f"**{trait}** updated from **{old_value}** to **{new_value}** on **{character.name}**",
-                level="success",
-                ephemeral=True,
-                log=True,
-            )
+        if isinstance(trait, CustomTrait):
+            trait.value = new_value
+            trait.modified = time_now()
+            trait.save()
+        else:
+            TraitValue.update(value=new_value, modified=time_now()).where(
+                TraitValue.character == character, TraitValue.trait == trait
+            ).execute()
+
+        character.modified = time_now()
+        character.save()
+
+        await msg.delete_original_response()
+        await present_embed(
+            ctx=ctx,
+            title="Trait value updated",
+            description=f"**{trait.name}** updated from **{old_value}** to **{new_value}** on **{character.name}**",
+            level="success",
+            ephemeral=True,
+            log=True,
+        )
 
     ### DELETE COMMANDS ####################################################################
     @delete.command(name="trait", description="Delete a custom trait from a character")
@@ -440,7 +457,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         trait: Option(
-            str,
+            ValidCustomTrait,
             description="Trait to delete",
             required=True,
             autocomplete=select_custom_trait,
@@ -452,7 +469,7 @@ class Characters(commands.Cog, name="Character"):
         msg = await present_embed(
             ctx,
             title="Delete Trait",
-            description=f"Confirm deleting {trait}",
+            description=f"Confirm deleting {trait.name}",
             ephemeral=True,
             view=view,
             level="info",
@@ -462,19 +479,20 @@ class Characters(commands.Cog, name="Character"):
             await msg.edit_original_response(
                 embed=discord.Embed(
                     title="Delete Cancelled",
-                    description=f"**{trait}** will not be deleted.",
+                    description=f"**{trait.name}** will not be deleted.",
                     color=discord.Color.red(),
                 )
             )
             return
 
         if view.confirmed:
-            self.bot.char_svc.delete_custom_trait(ctx, character, trait)
+            saved_trait_name = trait.name
+            trait.delete_instance()
             await msg.delete_original_response()
             await present_embed(
                 ctx=ctx,
                 title="Deleted Trait",
-                fields=[("Character", character.name), ("Trait", trait)],
+                fields=[("Character", character.name), ("Trait", saved_trait_name)],
                 inline_fields=True,
                 level="success",
                 log=True,
@@ -486,7 +504,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         custom_section: Option(
-            str,
+            ValidCustomSection,
             description="Custom section to delete",
             required=True,
             autocomplete=select_custom_section,
@@ -494,11 +512,33 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Delete a custom trait from a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        self.bot.char_svc.delete_custom_section(ctx, character, custom_section)
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title="Delete Custom Section",
+            description=f"Confirm deleting {custom_section.title}",
+            ephemeral=True,
+            view=view,
+            level="info",
+        )
+        await view.wait()
+        if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(
+                    title="Delete Cancelled",
+                    description=f"**{custom_section.title}** will not be deleted.",
+                    color=discord.Color.red(),
+                )
+            )
+            return
+
+        saved_section_title = custom_section.title
+        custom_section.delete_instance()
+
         await present_embed(
             ctx=ctx,
             title="Deleted Custom Section",
-            fields=[("Character", character.name), ("Section", custom_section)],
+            fields=[("Character", character.name), ("Section", saved_section_title)],
             level="success",
             log=True,
             ephemeral=True,

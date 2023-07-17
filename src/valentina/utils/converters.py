@@ -5,9 +5,19 @@ import re
 
 import aiohttp
 from discord.ext.commands import BadArgument, Context, Converter
+from loguru import logger
+from peewee import DoesNotExist
 
-from valentina.models.constants import DBConstants
-from valentina.models.database import Character, CharacterClass, TraitCategory, VampireClan
+from valentina.models.database import (
+    Character,
+    CharacterClass,
+    CustomSection,
+    CustomTrait,
+    Macro,
+    Trait,
+    TraitCategory,
+    VampireClan,
+)
 from valentina.utils.errors import CharacterNotFoundError
 
 
@@ -16,7 +26,7 @@ class ValidCharacterClass(Converter):
 
     async def convert(self, ctx: Context, argument: str) -> CharacterClass:  # noqa: ARG002
         """Validate and normalize character classes."""
-        for c in DBConstants.char_classes():
+        for c in CharacterClass.select().order_by(CharacterClass.name.asc()):
             if argument.lower() == c.name.lower():
                 return c
 
@@ -87,10 +97,10 @@ class ValidChannelName(Converter):
 class ValidCharacterObject(Converter):
     """A converter that ensures a character exists."""
 
-    async def convert(self, ctx: Context, argument: str) -> Character:
+    async def convert(self, ctx: Context, argument: str) -> Character:  # noqa: ARG002
         """Return a character object from a character id."""
         try:
-            return ctx.bot.char_svc.fetch_by_id(ctx.guild.id, int(argument))
+            return Character.get_by_id(int(argument))
         except CharacterNotFoundError as e:
             raise BadArgument(str(e)) from e
 
@@ -100,9 +110,37 @@ class ValidClan(Converter):
 
     async def convert(self, ctx: Context, argument: str) -> VampireClan:  # noqa: ARG002
         """Validate and normalize character's clan."""
-        for c in DBConstants.vampire_clans():
+        for c in VampireClan.select().order_by(VampireClan.name.asc()):
             if argument.lower() == c.name.lower():
                 return c
+
+        raise BadArgument(f"`{argument}` is not a valid vampire clan")
+
+
+class ValidCustomSection(Converter):
+    """Converter to ensure a custom section is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> CustomSection:
+        """Validate and return a custom section."""
+        character = ctx.bot.char_svc.fetch_claim(ctx)
+
+        for cs in CustomSection.select().where(CustomSection.character == character):
+            if argument.lower() == cs.title.lower():
+                return cs
+
+        raise BadArgument(f"`{argument}` is not a valid vampire clan")
+
+
+class ValidCustomTrait(Converter):
+    """Converter to ensure a custom trait is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> CustomTrait:
+        """Validate and return a custom trait."""
+        character = ctx.bot.char_svc.fetch_claim(ctx)
+
+        for ct in CustomTrait.select().where(CustomTrait.character == character):
+            if argument.lower() == ct.name.lower():
+                return ct
 
         raise BadArgument(f"`{argument}` is not a valid vampire clan")
 
@@ -132,8 +170,47 @@ class ValidTraitCategory(Converter):
 
     async def convert(self, ctx: Context, argument: str) -> TraitCategory:  # noqa: ARG002
         """Validate and normalize trait categories."""
-        for c in DBConstants.trait_categories():
+        for c in TraitCategory.select().order_by(TraitCategory.name.asc()):
             if argument.lower() == c.name.lower():
                 return c
 
         raise BadArgument(f"`{argument}` is not a valid trait category")
+
+
+class ValidCharTrait(Converter):
+    """A converter that ensures a requested trait is a valid character trait or custom trait."""
+
+    async def convert(self, ctx: Context, argument: str) -> Trait | CustomTrait:
+        """Validate and normalize traits."""
+        character = ctx.bot.char_svc.fetch_claim(ctx)
+        for trait in character.traits_list:
+            if argument.lower() == trait.name.lower():
+                return trait
+
+        raise BadArgument(f"`{argument}` is not a valid trait")
+
+
+class ValidMacroFromID(Converter):
+    """A converter that ensures a requested macro is valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> Macro:  # noqa: ARG002
+        """Convert a macro id to a Macro object."""
+        try:
+            return Macro.get_by_id(int(argument))
+        except DoesNotExist as e:
+            logger.exception(e)
+            raise BadArgument(f"`{argument}` is not a valid macro") from e
+
+
+class ValidTrait(Converter):
+    """A converter that ensures a requested trait is a valid character trait or custom trait."""
+
+    async def convert(self, ctx: Context, argument: str) -> Trait:  # noqa: ARG002
+        """Validate and normalize traits."""
+        # TODO: Include custom traits associated with characters the user owns
+
+        for trait in Trait.select().order_by(Trait.name.asc()):
+            if argument.lower() == trait.name.lower():
+                return trait
+
+        raise BadArgument(f"`{argument}` is not a valid trait")

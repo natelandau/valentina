@@ -29,6 +29,8 @@ class Admin(commands.Cog):
         if hasattr(error, "original"):
             error = error.original
 
+        logger.exception(error)
+
         command_name = ""
         if ctx.command.parent.name:
             command_name = f"{ctx.command.parent.name} "

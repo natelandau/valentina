@@ -1,14 +1,13 @@
 """Add a trait to a character."""
 import discord
 
-from valentina.models.constants import DBConstants
-from valentina.models.database import Character, CustomTrait, TraitCategory
+from valentina.models.database import Character, CustomTrait, Trait, TraitCategory
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
 def __validate_trait_name(trait_name: str, character: Character) -> None:
     """Ensure the trait name is unique."""
-    if trait_name.lower() in [x.name.lower() for x in DBConstants.all_traits()]:
+    if trait_name.lower() in [x.name.lower() for x in Trait.select().order_by(Trait.name.asc())]:
         raise ValueError(f"Trait name **{trait_name}** already exists.")
 
     custom_traits = CustomTrait.select().where(CustomTrait.character == character.id)
@@ -48,7 +47,6 @@ async def add_trait(
         await view.wait()
         if view.confirmed:
             ctx.bot.char_svc.add_trait(  # type: ignore [attr-defined]
-                ctx,
                 character,
                 name=trait_name,
                 description=trait_description,

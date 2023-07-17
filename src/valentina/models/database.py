@@ -7,12 +7,15 @@ from dotenv import dotenv_values
 from peewee import (
     BooleanField,
     DateTimeField,
+    DeferredForeignKey,
     ForeignKeyField,
     IntegerField,
     Model,
     TextField,
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase
+
+from valentina.utils.helpers import get_max_trait_value, num_to_circles
 
 
 def time_now() -> datetime:
@@ -129,6 +132,90 @@ class TraitCategory(BaseModel):
         table_name = "trait_categories"
 
 
+class CustomTrait(BaseModel):
+    """Custom Trait model for the database."""
+
+    character = DeferredForeignKey("Character", backref="custom_traits")
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    description = TextField(null=True)
+    name = TextField()
+    category = ForeignKeyField(TraitCategory, backref="custom_traits")
+    value = IntegerField(default=0)
+    max_value = IntegerField(default=0)
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "custom_traits"
+
+
+class Trait(BaseModel):
+    """Character Trait model for the database."""
+
+    name = TextField(unique=True)
+    category = ForeignKeyField(TraitCategory, backref="traits")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "traits"
+
+
+class CustomSection(BaseModel):
+    """Custom sections added to a character sheet."""
+
+    character = DeferredForeignKey("Character", backref="custom_sections")
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    description = TextField(null=True)
+    title = TextField()
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "custom_sections"
+
+
+class Macro(BaseModel):
+    """Macros for quick dice rolls."""
+
+    name = TextField()
+    abbreviation = TextField()
+    description = TextField(null=True)
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    guild = ForeignKeyField(Guild, backref="macros")
+    user = ForeignKeyField(User, backref="macros")
+
+    def remove(self) -> None:
+        """Delete the macro and associated macro traits."""
+        for mt in self.traits:
+            mt.delete_instance()
+
+        super().delete_instance()
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "macros"
+
+
+class RollThumbnail(BaseModel):
+    """Thumbnail for a roll."""
+
+    url = TextField()
+    roll_type = TextField()
+    created = DateTimeField(default=time_now)
+    guild = ForeignKeyField(Guild, backref="roll_thumbnails")
+    user = ForeignKeyField(User, backref="roll_thumbnails")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "roll_thumbnails"
+
+
 class Character(BaseModel):
     """Character model for the database."""
 
@@ -177,81 +264,101 @@ class Character(BaseModel):
         """Return the character's clan from the vampire_clans table."""
         return self.clan.name
 
+    @property
+    def traits_list(self) -> list[Trait | CustomTrait]:
+        """Fetch all traits for this character.
+
+        Returns:
+            list[Trait | CustomTrait]: List of all traits and custom traits when flat_traits is True.
+        """
+        all_traits = []
+        for tv in TraitValue.select().where(TraitValue.character == self):
+            all_traits.append(tv.trait)
+
+        for ct in self.custom_traits:
+            all_traits.append(ct)
+
+        return sorted(list(set(all_traits)), key=lambda x: x.name)
+
+    @property
+    def traits_dict(self) -> dict[str, list[Trait | CustomTrait]]:
+        """Fetch all traits for this character.
+
+        Returns:
+            dict[str, list[Trait | CustomTrait]]: Dictionary of traits and custom traits with trait category as the key.
+        """
+        all_traits: dict[str, list[Trait | CustomTrait]] = {}
+
+        for tv in TraitValue.select().where(TraitValue.character == self):
+            category = str(tv.trait.category.name)
+
+            if category not in all_traits:
+                all_traits[category] = []
+
+            all_traits[category].append(tv.trait)
+
+        for ct in self.custom_traits:
+            category = str(ct.category.name)
+
+            if category not in all_traits:
+                all_traits[category] = []
+
+            all_traits[category].append(ct)
+
+        return all_traits
+
+    @property
+    def all_trait_values(self) -> dict[str, list[tuple[str, int, int, str]]]:
+        """Fetch all trait values for a character inclusive of common and custom for display on a character sheet.
+
+        Returns:
+            dict[str, list[tuple[str, int, int, str]]]: Dictionary key is category. Values are a tuple of (trait name, trait value, trait max value, trait dots)
+
+        Example:
+            {
+                "Physical": [("Strength", 3, 5, "●●●○○"), ("Agility", 2, 5, "●●●○○")],
+                "Social": [("Persuasion", 1, 5, "●○○○○")]
+            }
+        """
+        all_traits: dict[str, list[tuple[str, int, int, str]]] = {}
+
+        for category, traits in self.traits_dict.items():
+            if category not in all_traits:
+                all_traits[category] = []
+
+            for trait in traits:
+                if isinstance(trait, Trait):
+                    value = TraitValue.get(
+                        TraitValue.character == self, TraitValue.trait == trait
+                    ).value
+
+                if isinstance(trait, CustomTrait):
+                    value = trait.value
+
+                max_value = get_max_trait_value(trait=trait.name, category=category)
+                dots = num_to_circles(value, max_value)
+                all_traits[category].append((trait.name, value, max_value, dots))
+
+        return all_traits
+
+    def trait_value(self, trait: Trait | CustomTrait) -> int:
+        """Return the character's value of a trait."""
+        try:
+            if isinstance(trait, Trait):
+                return TraitValue.get(TraitValue.character == self, TraitValue.trait == trait).value
+
+            return trait.value  # custom traits
+        except TraitValue.DoesNotExist:
+            return 0
+
     def __str__(self) -> str:
         """Return the string representation of the model."""
-        return f"""Character({self.id} - {self.name})"""
+        return f"""Character([{self.id}] {self.name})"""
 
     class Meta:
         """Meta class for the model."""
 
         table_name = "characters"
-
-
-class CustomTrait(BaseModel):
-    """Custom Trait model for the database."""
-
-    character = ForeignKeyField(Character, backref="custom_traits")
-    created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    description = TextField(null=True)
-    name = TextField()
-    category = ForeignKeyField(TraitCategory, backref="custom_traits")
-    value = IntegerField(default=0)
-    max_value = IntegerField(default=0)
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "custom_traits"
-
-
-class CustomSection(BaseModel):
-    """Custom sections added to a character sheet."""
-
-    character = ForeignKeyField(Character, backref="custom_traits")
-    created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    description = TextField(null=True)
-    title = TextField()
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "custom_sections"
-
-
-class Macro(BaseModel):
-    """Macros for quick dice rolls."""
-
-    name = TextField()
-    abbreviation = TextField()
-    description = TextField(null=True)
-    created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    trait_one = TextField(null=True)
-    trait_two = TextField(null=True)
-    guild = ForeignKeyField(Guild, backref="macros")
-    user = ForeignKeyField(User, backref="macros")
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "macros"
-
-
-class RollThumbnail(BaseModel):
-    """Thumbnail for a roll."""
-
-    url = TextField()
-    roll_type = TextField()
-    created = DateTimeField(default=time_now)
-    guild = ForeignKeyField(Guild, backref="roll_thumbnails")
-    user = ForeignKeyField(User, backref="roll_thumbnails")
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "roll_thumbnails"
 
 
 ###### Chronicle Models ######
@@ -346,18 +453,6 @@ class ChronicleNote(BaseModel):
         return display
 
 
-class Trait(BaseModel):
-    """Character Trait model for the database."""
-
-    name = TextField(unique=True)
-    category = ForeignKeyField(TraitCategory, backref="traits")
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "traits"
-
-
 # Lookup tables
 
 
@@ -366,6 +461,23 @@ class GuildUser(BaseModel):
 
     guild = ForeignKeyField(Guild, backref="users")
     user = ForeignKeyField(User, backref="guilds")
+
+
+class MacroTrait(BaseModel):
+    """Join table for Macro and Trait."""
+
+    macro = ForeignKeyField(Macro, backref="traits")
+    trait = ForeignKeyField(Trait, backref="macros", null=True)
+    custom_trait = ForeignKeyField(CustomTrait, backref="macros", null=True)
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "macro_traits"
+        indexes = (
+            (("macro", "trait"), False),
+            (("macro", "custom_trait"), False),
+        )
 
 
 class TraitValue(BaseModel):

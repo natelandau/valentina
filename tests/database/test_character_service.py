@@ -3,13 +3,12 @@
 
 import pytest
 
-from valentina.models.database import Character, CustomSection, CustomTrait, TraitCategory
+from valentina.models.database import Character, CustomSection, CustomTrait, Trait, TraitCategory
 from valentina.models.database_services import CharacterService
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
     NoClaimError,
-    SectionNotFoundError,
     TraitNotFoundError,
 )
 
@@ -53,34 +52,29 @@ class TestCharacterService:
         with pytest.raises(CharacterClaimedError):
             self.char_svc.add_claim(guild_id=1, char_id=1, user_id=22)
 
-    def test_add_custom_section_one(self, ctx_existing):
+    def test_add_custom_section_one(self):
         """Test add_custom_section().
 
         Given a ctx object and a character
         When a custom section is added
         Then the custom section is added to the database
         """
-        character = Character.get(Character.id == 1)
-        self.char_svc.fetch_char_custom_sections(ctx=ctx_existing, character=character)
-        assert "1_1" in self.char_svc.custom_sections
+        character = Character.get_by_id(1)
 
-        self.char_svc.add_custom_section(ctx_existing, character, "new", "new description")
-        assert "1_1" not in self.char_svc.custom_sections
+        self.char_svc.add_custom_section(character, "new", "new description")
         section = CustomSection.get(CustomSection.id == 2)
         assert section.title == "new"
         section.delete_instance()
 
-    def test_add_trait_one(self, ctx_existing, existing_character):
+    def test_add_trait_one(self):
         """Test add_trait().
 
         Given a ctx object and a character
         When a trait is added
         Then the trait is added to the database and cache
         """
-        assert self.char_svc.custom_traits == {}
         self.char_svc.add_trait(
-            ctx=ctx_existing,
-            character=existing_character,
+            character=Character.get_by_id(1),
             name="test_trait2",
             value=2,
             category=TraitCategory.get(name="Skills"),
@@ -105,7 +99,7 @@ class TestCharacterService:
         When is_cached_char is called
         Then the expected result is returned
         """
-        assert self.char_svc.fetch_by_id(1, 1)
+        self.char_svc.fetch_all_characters(1)
         assert self.char_svc.is_cached_char(1, id) == expected
 
     def test_fetch_all_characters_one(self):
@@ -117,45 +111,48 @@ class TestCharacterService:
         """
         self.char_svc.purge_cache()
         assert len(self.char_svc.characters) == 0
-        assert self.char_svc.fetch_by_id(1, 1)
-        assert len(self.char_svc.characters) == 1
         characters = self.char_svc.fetch_all_characters(1)
         assert len(self.char_svc.characters) == 2
         assert len(characters) == 2
 
-    def test_fetch_all_character_traits_one(self, existing_character):
-        """Test fetch_all_character_traits().
+    def test_character_traits_dict(self):
+        """Test character.traits_dict.
 
         Given a character with traits
-        When fetch_all_character_traits is called
+        When character.traits_dict is called
         Then all traits associated with that character are returned as a dictionary
         """
-        returned = self.char_svc.fetch_all_character_traits(existing_character)
+        returned = Character.get_by_id(1).traits_dict
 
         assert returned == {
-            "Physical": ["Strength", "Dexterity", "Stamina"],
-            "Skills": ["Test_Trait", "Test_Trait2"],
+            "Physical": [Trait.get_by_id(1), Trait.get_by_id(2), Trait.get_by_id(3)],
+            "Skills": [CustomTrait.get_by_id(1), CustomTrait.get_by_id(2)],
         }
 
-    def test_fetch_all_character_traits_two(self, existing_character):
-        """Test fetch_all_character_traits().
+    def test_character_traits_list(self):
+        """Test character.traits_list).
 
         Given a character with traits
-        When fetch_all_character_traits is called as a flat list
+        When character.all_traits_list is called as a flat list
         Then all traits associated with that character are returned as a list
         """
-        returned = self.char_svc.fetch_all_character_traits(existing_character, flat_list=True)
-        assert returned == ["Dexterity", "Stamina", "Strength", "Test_Trait", "Test_Trait2"]
+        returned = Character.get_by_id(1).traits_list
+        assert returned == [
+            Trait.get_by_id(2),
+            Trait.get_by_id(3),
+            Trait.get_by_id(1),
+            CustomTrait.get_by_id(1),
+            CustomTrait.get_by_id(2),
+        ]
 
-    def test_fetch_all_character_trait_values(self, ctx_existing):
-        """Test fetch_all_character_trait_values().
+    def test_character_all_trait_values(self):
+        """Test character.all_trait_values.
 
         Given a character with traits
-        When fetch_all_character_trait_values is called
+        When character.all_trait_values is called
         Then all trait values are returned as a dictionary containing the appropriate tuple values
         """
-        character = Character.get_by_id(1)
-        returned = self.char_svc.fetch_all_character_trait_values(ctx_existing, character)
+        returned = Character.get_by_id(1).all_trait_values
 
         assert returned["Physical"] == [
             ("Strength", 1, 5, "●○○○○"),
@@ -167,40 +164,25 @@ class TestCharacterService:
             ("Test_Trait2", 2, 5, "●●○○○"),
         ]
 
-    def test_fetch_char_custom_sections(self, ctx_existing, existing_character):
-        """Test fetch_char_custom_sections().
+    def test_char_custom_sections(self):
+        """Test character.custom_sections.
 
         Given a character with custom sections
-        When fetch_char_custom_sections is called
-        Then all custom sections are returned as a list
+        When character.custom_sections is called
+        Then all custom sections are returned
         """
-        returned = self.char_svc.fetch_char_custom_sections(ctx_existing, existing_character)
+        returned = Character.get_by_id(1).custom_sections
         assert len(returned) == 1
         assert returned[0].title == "test_section"
 
-    def test_fetch_custom_section(self, ctx_existing):
-        """Test fetch_custom_section().
-
-        Given a section title and a character
-        When fetch_custom_section is called
-        Then the section is returned or SectionNotFoundError is raised
-        """
-        character = Character.get(Character.id == 1)
-        returned = self.char_svc.fetch_custom_section(ctx_existing, character, "test_section")
-        assert returned.title == "test_section"
-
-        with pytest.raises(SectionNotFoundError):
-            self.char_svc.fetch_custom_section(ctx_existing, character, "exception")
-
-    def test_fetch_char_custom_traits(self, ctx_existing, existing_character):
-        """Test fetch_char_custom_traits().
+    def test_character_custom_traits(self):
+        """Test character.custom_traits.
 
         Given a character with custom traits
-        When fetch_char_custom_traits is called
-        Then all custom traits are returned in a list
+        When character.custom_traits is called
+        Then all custom traits are returned
         """
-        self.char_svc.custom_traits = {}
-        returned = self.char_svc.fetch_char_custom_traits(ctx_existing, existing_character)
+        returned = Character.get_by_id(1).custom_traits
         assert len(returned) == 2
         assert returned[0].name == "Test_Trait"
         assert returned[1].name == "Test_Trait2"
@@ -239,7 +221,7 @@ class TestCharacterService:
             ("exception", 2),
         ],
     )
-    def test_fetch_trait_value(self, ctx_existing, trait, expected):
+    def test_fetch_trait_value(self, trait, expected):
         """Test fetch_trait_value().
 
         Given a trait name
@@ -250,9 +232,9 @@ class TestCharacterService:
 
         if trait == "exception":
             with pytest.raises(TraitNotFoundError):
-                self.char_svc.fetch_trait_value(ctx_existing, character, trait)
+                self.char_svc.fetch_trait_value(character, trait)
         else:
-            assert self.char_svc.fetch_trait_value(ctx_existing, character, trait) == expected
+            assert self.char_svc.fetch_trait_value(character, trait) == expected
 
     @pytest.mark.parametrize(
         ("char_id", "expected"),
@@ -305,8 +287,6 @@ class TestCharacterService:
         """
         character = Character.get_by_id(1)
         assert character.experience == 0
-        self.char_svc.fetch_by_id(1, 1)
-        assert "1_1" in self.char_svc.characters
 
         self.char_svc.update_character(ctx_existing, 1, **{"experience": 5})
         character = Character.get_by_id(1)
@@ -315,28 +295,6 @@ class TestCharacterService:
 
         with pytest.raises(CharacterNotFoundError):
             self.char_svc.update_character(ctx_existing, 12345678, **{"experience": 5})
-
-    def test_update_custom_section(self, ctx_existing):
-        """Test update_custom_section().
-
-        Given a character id, section name, and new value
-        When update_custom_section is called
-        Then the section value is updated in the database and purged from the cache
-        """
-        character = Character.get_by_id(1)
-        self.char_svc.fetch_char_custom_sections(ctx_existing, character)
-        assert "1_1" in self.char_svc.custom_sections
-
-        properties = {"title": "a new title", "description": "a new description"}
-        self.char_svc.update_custom_section(ctx_existing, 1, **properties)
-
-        assert "1_1" not in self.char_svc.custom_sections
-        section = CustomSection.get_by_id(1)
-        assert section.title == "a new title"
-        assert section.description == "a new description"
-
-        with pytest.raises(SectionNotFoundError):
-            self.char_svc.update_custom_section(ctx_existing, 12345678, **properties)
 
     def test_update_trait_value_by_name(self, ctx_existing):
         """Test update_trait_value_by_name().

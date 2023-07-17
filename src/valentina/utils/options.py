@@ -3,7 +3,8 @@
 import discord
 from discord.commands import OptionChoice
 
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, DBConstants
+from valentina.models.constants import MAX_OPTION_LIST_SIZE
+from valentina.models.database import CharacterClass, Trait, TraitCategory, VampireClan
 from valentina.utils.errors import NoClaimError
 
 
@@ -33,37 +34,79 @@ async def select_character(ctx: discord.AutocompleteContext) -> list[OptionChoic
 
     # TODO: Check for chars associated with a user
     characters = ctx.bot.char_svc.fetch_all_characters(guild.id)  # type: ignore [attr-defined]
-    chars = []
+    all_chars = []
     for character in characters:
         char_id = character.id
         name = f"{character.name}"
-        chars.append((name, char_id))
+        all_chars.append((name, char_id))
 
     name_search = ctx.value.casefold()
 
-    found_chars = [
+    options = [
         OptionChoice(name, str(char_id))
-        for name, char_id in sorted(chars)
+        for name, char_id in sorted(all_chars)
         if name.casefold().startswith(name_search or "")
     ]
 
-    if len(found_chars) > MAX_OPTION_LIST_SIZE:
+    if len(options) > MAX_OPTION_LIST_SIZE:
         instructions = "Keep typing ..." if ctx.value else "Start typing a name."
         return [OptionChoice(f"Too many characters to display. {instructions}", "")]
 
-    return found_chars
+    return options
 
 
 async def select_char_class(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available character classes."""
     classes = []
-    for char_class in DBConstants.char_classes():
+    for char_class in CharacterClass.select().order_by(CharacterClass.name.asc()):
         if char_class.name.lower().startswith(ctx.options["char_class"].lower()):
             classes.append(char_class.name)
         if len(classes) >= MAX_OPTION_LIST_SIZE:
             break
 
     return classes
+
+
+async def select_char_trait(ctx: discord.AutocompleteContext) -> list[str]:
+    """Generate a list of available common and custom traits for a character."""
+    try:
+        character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
+    except NoClaimError:
+        return ["No character claimed"]
+
+    # Discord option can be either "trait" or "trait_one"
+    if "trait" in ctx.options:
+        argument = ctx.options["trait"]
+    elif "trait_one" in ctx.options:
+        argument = ctx.options["trait_one"]
+
+    traits = []
+    for t in character.traits_list:
+        if t.name.lower().startswith(argument.lower()):
+            traits.append(t.name)
+
+        if len(traits) >= MAX_OPTION_LIST_SIZE:
+            break
+
+    return traits
+
+
+async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
+    """Generate a list of available common and custom traits for a character."""
+    try:
+        character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
+    except NoClaimError:
+        return ["No character claimed"]
+
+    traits = []
+    for t in character.traits_list:
+        if t.name.lower().startswith(ctx.options["trait_two"].lower()):
+            traits.append(t.name)
+
+        if len(traits) >= MAX_OPTION_LIST_SIZE:
+            break
+
+    return traits
 
 
 async def select_chronicle(ctx: discord.ApplicationContext) -> list[str]:
@@ -86,7 +129,7 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[str]:
         return ["No character claimed"]
 
     sections = []
-    for section in ctx.bot.char_svc.fetch_char_custom_sections(ctx, character):  # type: ignore [attr-defined]
+    for section in character.custom_sections:
         if section.title.lower().startswith(ctx.options["custom_section"].lower()):
             sections.append(section.title)
         if len(sections) >= MAX_OPTION_LIST_SIZE:
@@ -103,7 +146,7 @@ async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
         return ["No character claimed"]
 
     traits = []
-    for trait in ctx.bot.char_svc.fetch_char_custom_traits(ctx, character):  # type: ignore [attr-defined]
+    for trait in character.custom_traits:
         if trait.name.lower().startswith(ctx.options["trait"].lower()):
             traits.append(trait.name)
         if len(traits) >= MAX_OPTION_LIST_SIZE:
@@ -112,15 +155,19 @@ async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
     return traits
 
 
-async def select_macro(ctx: discord.ApplicationContext) -> list[str]:
+async def select_macro(ctx: discord.ApplicationContext) -> list[OptionChoice]:
     """Populate a select list with a users' macros."""
-    macros = []
-    for macro in ctx.bot.user_svc.fetch_macros(ctx):  # type: ignore [attr-defined]
-        if macro.name.lower().startswith(ctx.options["macro"].lower()):
-            macros.append(f"{macro.name} ({macro.abbreviation})")
-        if len(macros) >= MAX_OPTION_LIST_SIZE:
-            break
-    return macros
+    options = [
+        OptionChoice(f"{macro.name} {macro.abbreviation}", str(macro.id))
+        for macro in ctx.bot.user_svc.fetch_macros(ctx)  # type: ignore [attr-defined]
+        if macro.name.lower().startswith(ctx.options["macro"].lower())
+    ]
+
+    if len(options) >= MAX_OPTION_LIST_SIZE:
+        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
+        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
+
+    return options
 
 
 async def select_note(ctx: discord.ApplicationContext) -> list[str]:
@@ -158,25 +205,44 @@ async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
 
 
 async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available traits."""
-    try:
-        character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except NoClaimError:
-        return ["No character claimed"]
+    """Generate a list of available common and custom traits."""
+    # Discord option can be either "trait" or "trait_one"
+    if "trait" in ctx.options:
+        argument = ctx.options["trait"]
+    elif "trait_one" in ctx.options:
+        argument = ctx.options["trait_one"]
+
+    # TODO: Include custom traits associated with characters the user owns
 
     traits = []
-    for trait in ctx.bot.char_svc.fetch_all_character_traits(character, flat_list=True):  # type: ignore [attr-defined]
-        if trait.lower().startswith(ctx.options["trait"].lower()):
-            traits.append(trait)
+    for t in Trait.select().order_by(Trait.name.asc()):
+        if t.name.lower().startswith(argument.lower()):
+            traits.append(t.name)
+
         if len(traits) >= MAX_OPTION_LIST_SIZE:
             break
+
+    return traits
+
+
+async def select_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
+    """Generate a list of available common and custom traits."""
+    traits = []
+    # TODO: Include custom traits associated with characters the user owns
+    for t in Trait.select().order_by(Trait.name.asc()):
+        if t.name.lower().startswith(ctx.options["trait_two"].lower()):
+            traits.append(t.name)
+
+        if len(traits) >= MAX_OPTION_LIST_SIZE:
+            break
+
     return traits
 
 
 async def select_trait_category(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available trait categories."""
     categories = []
-    for category in DBConstants.trait_categories():
+    for category in TraitCategory.select().order_by(TraitCategory.name.asc()):
         if category.name.lower().startswith(ctx.options["category"].lower()):
             categories.append(category.name)
         if len(categories) >= MAX_OPTION_LIST_SIZE:
@@ -188,7 +254,7 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[str]:
 async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available vampire clans."""
     clans = []
-    for clan in DBConstants.vampire_clans():
+    for clan in VampireClan.select().order_by(VampireClan.name.asc()):
         if clan.name.lower().startswith(ctx.options["vampire_clan"].lower()):
             clans.append(clan.name)
         if len(clans) >= MAX_OPTION_LIST_SIZE:

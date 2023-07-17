@@ -98,35 +98,3 @@ class TestUserService:
         assert self.user_svc.fetch_macro(ctx_existing, "test_macro") == Macro(
             id=1, name="test_macro", content="test content"
         )
-
-    def test_create_macro(self, ctx_existing):
-        """Test creating a macro.
-
-        Given a context object with a user in the database
-        When a macro is created
-        Then the macro is added to the cache and database
-        """
-        self.user_svc.create_macro(
-            ctx_existing,
-            name="testmacro3",
-            description="test content",
-            abbreviation="t3",
-            trait_one="test_trait_one",
-            trait_two="test_trait_two",
-        )
-
-        # Confirm added to database
-        assert Macro.get_by_id(2).name == "testmacro3"
-
-    def test_delete_macro(self, ctx_existing):
-        """Test deleting a macro.
-
-        Given a context object with a user in the database
-        When a macro is deleted
-        Then the macro is removed from the cache and database
-        """
-        self.user_svc.delete_macro(ctx_existing, "test_macro")
-
-        # Confirm deleted from database
-        with pytest.raises(Macro.DoesNotExist):
-            Macro.get_by_id(1)

@@ -1,16 +1,5 @@
 """Constants for Valentina models."""
-from enum import Enum
-from functools import cache
-
-from loguru import logger
-
-from valentina.models.database import (
-    CharacterClass,
-    Trait,
-    TraitCategory,
-    TraitCategoryClass,
-    VampireClan,
-)
+from enum import Enum, IntEnum
 
 # maximum number of options in a discord select menu
 MAX_OPTION_LIST_SIZE = 25
@@ -18,74 +7,6 @@ MAX_CHARACTER_COUNT = 1990
 MAX_FIELD_COUNT = 1010
 MAX_PAGE_CHARACTER_COUNT = 1950
 MAX_BUTTONS_PER_ROW = 5
-
-
-class DBConstants:
-    """Constants from the database."""
-
-    @staticmethod
-    @cache
-    def char_classes() -> list[CharacterClass]:
-        """Fetch the character classes from the database."""
-        logger.debug("DATABASE: Fetch character classes")
-        return [x for x in CharacterClass.select().order_by(CharacterClass.name.asc())]
-
-    @staticmethod
-    @cache
-    def vampire_clans() -> list[VampireClan]:
-        """Fetch the vampire clans from the database."""
-        logger.debug("DATABASE: Fetch vampire clans")
-        return [x for x in VampireClan.select().order_by(VampireClan.name.asc())]
-
-    @staticmethod
-    @cache
-    def trait_categories() -> list[TraitCategory]:
-        """Fetch the trait categories from the database."""
-        logger.debug("DATABASE: Fetch trait categories")
-        return [x for x in TraitCategory.select().order_by(TraitCategory.name.asc())]
-
-    @staticmethod
-    @cache
-    def trait_categories_by_class() -> dict[CharacterClass, list[TraitCategory]]:
-        """Fetch the trait categories by class from the database."""
-        logger.debug("DATABASE: Fetch trait categories by class")
-        return {
-            char_class: [
-                x
-                for x in TraitCategory.select()
-                .join(TraitCategoryClass)
-                .where(TraitCategoryClass.character_class == char_class)
-            ]
-            for char_class in DBConstants.char_classes()
-        }
-
-    @staticmethod
-    @cache
-    def traits_by_category() -> dict[str, list[str]]:
-        """Fetch the traits by category from the database.
-
-        Returns:
-            dict[str, list[Trait]]: A dictionary of trait names by category name.
-        """
-        logger.debug("DATABASE: Fetch traits by category")
-        return {
-            category.name: [
-                x.name
-                for x in Trait.select().where(Trait.category == category).order_by(Trait.name.asc())
-            ]
-            for category in DBConstants.trait_categories()
-        }
-
-    @staticmethod
-    @cache
-    def all_traits() -> list[Trait]:
-        """Fetch all traits from the database.
-
-        Returns:
-            list[Trait]: A list of all traits.
-        """
-        logger.debug("DATABASE: Fetch all traits")
-        return [x for x in Trait.select().order_by(Trait.name.asc())]
 
 
 ### ENUMS ###
@@ -198,6 +119,30 @@ class RollResultType(Enum):
     BOTCH = "Botch"
     CRITICAL = "Critical Success"
     OTHER = "Other"
+
+
+class TraitCategoryOrder(IntEnum):
+    """The order of trait categories to mimic character sheets."""
+
+    Physical = 1
+    Social = 2
+    Mental = 3
+    Talents = 4
+    Skills = 5
+    Knowledges = 6
+    Spheres = 7
+    Disciplines = 8
+    Numina = 9
+    Backgrounds = 10
+    Merits = 12
+    Flaws = 13
+    Virtues = 14
+    Resonance = 16
+    Gifts = 17
+    Renown = 18
+    Paths = 19
+    Edges = 20
+    Other = 21
 
 
 CLAN_DISCIPLINES = {

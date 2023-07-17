@@ -4,10 +4,13 @@
 import discord
 from discord.commands import Option
 from discord.ext import commands
+from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import MAX_OPTION_LIST_SIZE, EmbedColor
-from valentina.utils.options import select_macro
+from valentina.models.constants import EmbedColor
+from valentina.models.database import CustomTrait, Macro, MacroTrait, Trait
+from valentina.utils.converters import ValidMacroFromID, ValidTrait
+from valentina.utils.options import select_macro, select_trait, select_trait_two
 from valentina.views import ConfirmCancelButtons, MacroCreateModal, present_embed
 
 
@@ -24,6 +27,8 @@ class Macros(commands.Cog):
         if hasattr(error, "original"):
             error = error.original
 
+        logger.exception(error)
+
         command_name = ""
         if ctx.command.parent.name:
             command_name = f"{ctx.command.parent.name} "
@@ -38,26 +43,6 @@ class Macros(commands.Cog):
             delete_after=15,
         )
 
-    async def __trait_one_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
-        """Populates the autocomplete for the trait option."""
-        traits = []
-        for trait in ctx.bot.guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):  # type: ignore [attr-defined]
-            if trait.lower().startswith(ctx.options["trait_one"].lower()):
-                traits.append(trait)
-            if len(traits) >= MAX_OPTION_LIST_SIZE:
-                break
-        return traits
-
-    async def __trait_two_autocomplete(self, ctx: discord.ApplicationContext) -> list[str]:
-        """Populates the autocomplete for the trait option."""
-        traits = []
-        for trait in ctx.bot.guild_svc.fetch_all_traits(ctx.interaction.guild.id, flat_list=True):  # type: ignore [attr-defined]
-            if trait.lower().startswith(ctx.options["trait_two"].lower()):
-                traits.append(trait)
-            if len(traits) >= MAX_OPTION_LIST_SIZE:
-                break
-        return traits
-
     macros = discord.SlashCommandGroup("macros", "Manage macros for quick rolls")
 
     @macros.command(name="create", description="Create a new macro")
@@ -65,23 +50,25 @@ class Macros(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         trait_one: Option(
-            str,
+            ValidTrait,
             description="First trait to roll",
             required=True,
-            autocomplete=__trait_one_autocomplete,
+            autocomplete=select_trait,
         ),
         trait_two: Option(
-            str,
+            ValidTrait,
             description="Second trait to roll",
             required=True,
-            autocomplete=__trait_two_autocomplete,
+            autocomplete=select_trait_two,
         ),
     ) -> None:
         """Create a new macro."""
+        self.bot.user_svc.fetch_user(ctx)
+
         modal = MacroCreateModal(
             title="Enter the details for your macro",
-            trait_one=trait_one,
-            trait_two=trait_two,
+            trait_one=trait_one.name,
+            trait_two=trait_two.name,
         )
         await ctx.send_modal(modal)
         await modal.wait()
@@ -101,24 +88,36 @@ class Macros(commands.Cog):
                 title="Macro already exists",
                 description=f"A macro already exists with the name **{name}** or abbreviation **{abbreviation}**\nPlease choose a different name or abbreviation or delete the existing macro with `/macros delete`",
                 level="error",
+                ephemeral=True,
             )
             return
 
-        self.bot.user_svc.create_macro(
-            ctx,
-            name=name.strip(),
-            abbreviation=abbreviation.strip() if abbreviation else None,
-            description=description.strip() if description else None,
-            trait_one=trait_one,
-            trait_two=trait_two,
+        macro = Macro.create(
+            name=name,
+            abbreviation=abbreviation,
+            description=description,
+            user=ctx.author.id,
+            guild=ctx.guild.id,
         )
+        if isinstance(trait_one, Trait):
+            MacroTrait.create(macro=macro, trait=trait_one)
+        elif isinstance(trait_one, CustomTrait):
+            MacroTrait.create(macro=macro, custom_trait=trait_one)
+
+        if isinstance(trait_two, Trait):
+            MacroTrait.create(macro=macro, trait=trait_two)
+        elif isinstance(trait_two, CustomTrait):
+            MacroTrait.create(macro=macro, custom_trait=trait_two)
+
+        self.bot.user_svc.purge_cache(ctx)
+
+        logger.info(f"DATABASE: Create macro '{name}' for user '{ctx.author.display_name}'")
 
         await present_embed(
             ctx,
             title=f"Created Macro: {name}",
-            description=f"**{ctx.author.display_name}** created a new macro that combines **{trait_one}** and **{trait_two}**.",
+            description=f"Created a macro that combines **{trait_one.name}** and **{trait_two.name}**.",
             fields=[
-                ("Macro Name", name),
                 ("Abbreviation", abbreviation),
                 ("Description", description),
             ],
@@ -135,25 +134,34 @@ class Macros(commands.Cog):
     ) -> None:
         """List all macros associated with a user account."""
         macros = sorted(self.bot.user_svc.fetch_macros(ctx), key=lambda macro: macro.name)
+
+        fields = []
+        for macro in macros:
+            # TODO: Handle custom traits
+            traits = Trait.select().join(MacroTrait).where(MacroTrait.macro == macro)
+            trait_one = traits[0]
+            trait_two = traits[1]
+            fields.append(
+                (
+                    f"{macro.name} ({macro.abbreviation}): `{trait_one.name}` + `{trait_two.name}`",
+                    f"{macro.description}",
+                )
+            )
+
         if len(macros) > 0:
             await present_embed(
                 ctx,
                 title=f"Macros for {ctx.author.display_name}",
-                description=f"**{ctx.author.display_name}** has the following macros associated with their account.",
-                fields=[
-                    (
-                        f"{macro.name} ({macro.abbreviation}) - `{macro.trait_one} + {macro.trait_two}`",
-                        f"{macro.description}",
-                    )
-                    for macro in macros
-                ],
+                description="You have the following macros associated with your account.",
+                fields=fields,
                 level="info",
+                ephemeral=True,
             )
         else:
             await present_embed(
                 ctx,
                 title="No Macros",
-                description=f"**{ctx.author.mention}** does not have any macros associated with their account.",
+                description="You do not have any macros associated with your account.",
                 level="info",
                 ephemeral=True,
             )
@@ -163,19 +171,18 @@ class Macros(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         macro: Option(
-            str,
+            ValidMacroFromID,
             description="Macro to delete",
             required=True,
             autocomplete=select_macro,
         ),
     ) -> None:
         """Delete a macro from a user."""
-        name = macro.split("(")[0].strip()
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Confirm deletion of macro: {name}",
-            description=f"Are you sure you want to delete the macro **{name}**?",
+            title=f"Confirm deletion of macro: {macro.name}",
+            description=f"Are you sure you want to delete the macro **{macro.name}**?",
             inline_fields=False,
             ephemeral=True,
             level="info",
@@ -187,19 +194,21 @@ class Macros(commands.Cog):
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        if view.confirmed:
-            self.bot.user_svc.delete_macro(ctx, macro_name=name)
-            await msg.delete_original_response()
-            await present_embed(
-                ctx,
-                title=f"Deleted Macro: {name}",
-                description=f"**{ctx.author.display_name}** deleted the macro **{name}**.",
-                level="success",
-                log=True,
-                ephemeral=True,
-            )
-        else:
-            await present_embed(ctx, title="Macro deletion cancelled", level="info", ephemeral=True)
+        saved_macro_name = macro.name
+        macro.remove()
+        self.bot.user_svc.purge_cache(ctx)
+
+        logger.debug(
+            f"DATABASE: Delete macro '{saved_macro_name}' for user '{ctx.author.display_name}'"
+        )
+        await msg.delete_original_response()
+        await present_embed(
+            ctx,
+            title=f"Deleted Macro: {saved_macro_name}",
+            level="success",
+            log=True,
+            ephemeral=True,
+        )
 
 
 def setup(bot: Valentina) -> None:

@@ -10,11 +10,7 @@ from loguru import logger
 from peewee import DoesNotExist, IntegrityError, ModelSelect, fn
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.models.constants import (
-    DBConstants,
-    EmbedColor,
-    MaxTraitValue,
-)
+from valentina.models.constants import EmbedColor, MaxTraitValue, TraitCategoryOrder
 from valentina.models.database import (
     DATABASE,
     Character,
@@ -29,6 +25,7 @@ from valentina.models.database import (
     Guild,
     GuildUser,
     Macro,
+    MacroTrait,
     RollThumbnail,
     Trait,
     TraitCategory,
@@ -39,20 +36,14 @@ from valentina.models.database import (
     VampireClan,
     time_now,
 )
-from valentina.utils import DBBackup
+from valentina.utils.db_backup import DBBackup
 from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
     DuplicateRollResultThumbError,
     NoClaimError,
-    SectionExistsError,
-    SectionNotFoundError,
     TraitNotFoundError,
-)
-from valentina.utils.helpers import (
-    get_max_trait_value,
-    num_to_circles,
 )
 
 
@@ -77,7 +68,10 @@ class TraitService:
             .where(CharacterClass.name == char_class)
         )
 
-        self.class_traits[char_class] = [x for x in traits]
+        self.class_traits[char_class] = sorted(
+            [x for x in traits], key=lambda x: TraitCategoryOrder[x.category.name]
+        )
+
         return self.class_traits[char_class]
 
     def fetch_trait_id_from_name(self, trait_name: str) -> int:
@@ -485,8 +479,6 @@ class CharacterService:
         ##################################
         self.characters: dict[str, Character] = {}  # {char_key: Character, ...}
         self.claims: dict[str, str] = {}  # {claim_key: char_key}
-        self.custom_traits: dict[str, list[CustomTrait]] = {}  # {char_key: [CustomTrait]}
-        self.custom_sections: dict[str, list[CustomSection]] = {}  # {char_key: [CustomSection]}
 
     @staticmethod
     def __get_char_key(guild_id: int, char_id: int) -> str:
@@ -531,28 +523,22 @@ class CharacterService:
 
     def add_custom_section(
         self,
-        ctx: ApplicationContext,
         character: Character,
         section_title: str | None = None,
         section_description: str | None = None,
     ) -> bool:
         """Add or update a custom section to a character."""
-        key = self.__get_char_key(ctx.guild.id, character.id)
-
         CustomSection.create(
             title=section_title,
             description=section_description,
             character=character.id,
         )
 
-        self.custom_sections.pop(key, None)
-
         logger.debug(f"DATABASE: Add custom section to character {character.id}")
         return True
 
     def add_trait(
         self,
-        ctx: ApplicationContext,
         character: Character,
         name: str,
         description: str,
@@ -561,8 +547,6 @@ class CharacterService:
         max_value: int = MaxTraitValue.DEFAULT.value,
     ) -> None:
         """Create a custom trait for a character."""
-        key = self.__get_char_key(ctx.guild.id, character.id)
-
         CustomTrait.create(
             name=name.strip().title(),
             description=description.strip() if description else None,
@@ -571,9 +555,6 @@ class CharacterService:
             character=character.id,
             max_value=max_value,
         )
-
-        if key in self.custom_traits:
-            self.custom_traits.pop(key, None)
 
         logger.info(f"CHARACTER: Add trait '{name}' to [{character.id}] {character.name}")
 
@@ -601,42 +582,6 @@ class CharacterService:
         )
 
         return character
-
-    def delete_custom_section(
-        self, ctx: ApplicationContext, character: Character, section_title: str
-    ) -> bool:
-        """Delete a custom section from a character."""
-        section_title = section_title.lower()
-        key = self.__get_char_key(ctx.guild.id, character.id)
-        try:
-            custom_section = CustomSection.get(
-                CustomSection.character == character,
-                fn.Lower(CustomSection.title) == section_title.lower(),
-            )
-            custom_section.delete_instance()
-            if key in self.custom_sections:
-                self.custom_sections.pop(key, None)
-
-            return True
-        except SectionExistsError:
-            return False
-
-    def delete_custom_trait(self, ctx: ApplicationContext, character: Character, name: str) -> bool:
-        """Delete a custom trait from a character."""
-        name = name.lower()
-        key = self.__get_char_key(ctx.guild.id, character.id)
-        try:
-            custom_trait = CustomTrait.get(
-                CustomTrait.character == character,
-                fn.Lower(CustomTrait.name) == name,
-            )
-            custom_trait.delete_instance()
-            if key in self.custom_traits:
-                self.custom_traits.pop(key, None)
-
-            return True
-        except TraitNotFoundError:
-            return False
 
     @logger.catch
     def fetch_all_characters(self, guild_id: int) -> ModelSelect:
@@ -672,166 +617,6 @@ class CharacterService:
 
         return chars_to_return
 
-    def fetch_all_character_traits(
-        self, character: Character, flat_list: bool = False
-    ) -> dict[str, list[str]] | list[str]:
-        """Fetch all traits for a character inclusive of common and custom."""
-        all_traits: dict[str, list[str]] = {}
-
-        for tv in TraitValue.select().where(TraitValue.character == character.id):
-            category = tv.trait.category.name.title()
-            if category not in all_traits:
-                all_traits[category] = []
-
-            all_traits[category].append(tv.trait.name.title())
-
-        custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
-
-        if len(custom_traits) > 0:
-            for custom_trait in custom_traits:
-                category = custom_trait.category.name.title()
-                if category not in all_traits:
-                    all_traits[category] = []
-
-                all_traits[category].append(custom_trait.name.title())
-
-        if flat_list:
-            return sorted(list({y for x in all_traits.values() for y in x}))
-
-        return all_traits
-
-    def fetch_all_character_trait_values(
-        self,
-        ctx: ApplicationContext,
-        character: Character,
-    ) -> dict[str, list[tuple[str, int, int, str]]]:
-        """Fetch all trait values for a character inclusive of common and custom for display on a character sheet.
-
-        Returns a tuple of (trait name, trait value, trait max value, trait dots).
-
-        Example:
-            {
-                "Physical": [("Strength", 3, 5, "●●●○○"), ("Agility", 2, 5, "●●●○○")],
-                "Social": [("Persuasion", 1, 5, "●○○○○")]
-            }
-        """
-        key = self.__get_char_key(ctx.guild.id, character.id)
-        all_traits: dict[str, list[tuple[str, int, int, str]]] = {}
-
-        for tv in TraitValue.select().where(TraitValue.character == character.id):
-            category = tv.trait.category.name.title()
-            if category not in all_traits:
-                all_traits[category] = []
-
-            value = tv.value
-            max_value = get_max_trait_value(trait=tv.trait.name, category=category)
-            dots = num_to_circles(value, max_value)
-            all_traits[category].append((tv.trait.name, value, max_value, dots))
-
-        if key in self.custom_traits:
-            custom_traits = self.custom_traits[key]
-        else:
-            custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
-            # Build cache
-            self.custom_traits[key] = []
-            for custom_trait in custom_traits:
-                self.custom_traits[key].append(custom_trait)
-
-        if len(custom_traits) > 0:
-            for custom_trait in custom_traits:
-                category = custom_trait.category.name.title()
-
-                if category not in all_traits:
-                    all_traits[category] = []
-                custom_trait_name = custom_trait.name.title()
-                custom_trait_value = custom_trait.value
-
-                max_value = get_max_trait_value(
-                    trait=custom_trait_name, category=category, is_custom_trait=True
-                )
-                if not max_value:
-                    max_value = custom_trait.max_value
-
-                dots = num_to_circles(custom_trait_value, max_value)
-                all_traits[category].append(
-                    (custom_trait_name, custom_trait_value, max_value, dots)
-                )
-
-        return all_traits
-
-    def fetch_char_custom_sections(
-        self, ctx: ApplicationContext | AutocompleteContext, character: Character
-    ) -> ModelSelect:
-        """Fetch a list of custom sections for a character."""
-        if isinstance(ctx, ApplicationContext):
-            guild_id = ctx.guild.id
-        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
-            guild_id = ctx.interaction.guild.id
-
-        key = self.__get_char_key(guild_id, character.id)
-        if key in self.custom_sections:
-            return self.custom_sections[key]
-
-        sections = CustomSection.select().where(CustomSection.character == character.id)
-        self.custom_sections[key] = sections
-        return sections
-
-    def fetch_custom_section(
-        self, ctx: ApplicationContext, character: Character, title: str
-    ) -> CustomSection:
-        """Fetch a custom section by title."""
-        sections = self.fetch_char_custom_sections(ctx, character)
-        for section in sections:
-            if section.title.lower() == title.lower():
-                return section
-
-        raise SectionNotFoundError(f"{character.first_name} has no section {title}")
-
-    def fetch_char_custom_traits(
-        self, ctx: ApplicationContext | AutocompleteContext, character: Character
-    ) -> list[CustomTrait]:
-        """Fetch all custom traits for a character."""
-        if isinstance(ctx, ApplicationContext):
-            guild = ctx.guild
-        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
-            guild = ctx.interaction.guild
-
-        key = self.__get_char_key(guild.id, character.id)
-
-        if key in self.custom_traits:
-            logger.debug(f"CACHE: Fetch custom traits for {character.name}")
-            return self.custom_traits[key]
-
-        custom_traits = CustomTrait.select().where(CustomTrait.character_id == character.id)
-        self.custom_traits[key] = custom_traits
-        logger.info(f"DATABASE: Fetch custom traits for {character.name}")
-        return custom_traits
-
-    def fetch_by_id(self, guild_id: int, char_id: int) -> Character:
-        """Fetch a character by database id.
-
-        Args:
-            char_id (int): The database id of the character.
-            guild_id (int): The discord guild id to fetch characters for.
-
-        Returns:
-            Character: The character object.
-        """
-        key = self.__get_char_key(guild_id, char_id)
-        if self.is_cached_char(key=key):
-            logger.debug(f"CACHE: Fetch character {char_id}")
-            return self.characters[key]
-
-        try:
-            character = Character.get_by_id(char_id)
-            self.characters[key] = character
-            logger.info(f"DATABASE: Fetch character: [{char_id}] {character.name}")
-            return character
-        except DoesNotExist as e:
-            raise CharacterNotFoundError(
-                f"No character found with ID {char_id} on guild [{guild_id}]"
-            ) from e
-
     def fetch_claim(self, ctx: ApplicationContext | AutocompleteContext) -> Character:
         """Fetch the character claimed by a user."""
         if isinstance(ctx, ApplicationContext):
@@ -850,11 +635,11 @@ class CharacterService:
                 return self.characters[char_key]
 
             char_id = re.sub(r"[a-zA-Z0-9]+_", "", char_key)
-            return self.fetch_by_id(guild.id, int(char_id))
+            return Character.get_by_id(int(char_id))
 
         raise NoClaimError
 
-    def fetch_trait_value(self, ctx: ApplicationContext, character: Character, trait: str) -> int:
+    def fetch_trait_value(self, character: Character, trait: str) -> int:
         """Fetch the value of a trait for a character."""
         # First grab the trait from the database
         tv_value = (
@@ -867,30 +652,20 @@ class CharacterService:
         if len(tv_value) != 0:
             return tv_value[0].value
 
-        custom_trait = [
-            x
-            for x in self.fetch_char_custom_traits(ctx, character)
-            if x.name.lower() == trait.lower()
-        ]
+        custom_trait = [x for x in character.custom_traits if x.name.lower() == trait.lower()]
 
         if len(custom_trait) > 0:
             return custom_trait[0].value
 
         raise TraitNotFoundError(trait.title())
 
-    def fetch_trait_category(
-        self, ctx: ApplicationContext, character: Character, trait: str
-    ) -> str:
+    def fetch_trait_category(self, character: Character, trait: str) -> str:
         """Fetch the category of a trait for a character."""
         try:
             return TraitService().fetch_trait_category(trait)
 
         except TraitNotFoundError as e:
-            custom_trait = [
-                x
-                for x in self.fetch_char_custom_traits(ctx, character)
-                if x.name.lower() == trait.lower()
-            ]
+            custom_trait = [x for x in character.custom_traits if x.name.lower() == trait.lower()]
 
             if len(custom_trait) > 0:
                 return custom_trait[0].category
@@ -915,11 +690,7 @@ class CharacterService:
 
     def purge_cache(self, ctx: ApplicationContext | None = None, with_claims: bool = False) -> None:
         """Purge all character caches. If ctx is provided, only purge the caches for that guild."""
-        caches: dict[str, dict] = {
-            "characters": self.characters,
-            "custom_traits": self.custom_traits,
-            "custom_sections": self.custom_sections,
-        }
+        caches: dict[str, dict] = {"characters": self.characters}
         if with_claims:
             caches["claims"] = self.claims
 
@@ -956,8 +727,6 @@ class CharacterService:
 
         # Clear character from cache but keep claims intact
         self.characters.pop(key, None)
-        self.custom_traits.pop(key, None)
-        self.custom_sections.pop(key, None)
 
         try:
             character = Character.get_by_id(char_id)
@@ -971,27 +740,6 @@ class CharacterService:
         logger.debug(f"DATABASE: Update character: {char_id}")
         return character
 
-    def update_custom_section(
-        self,
-        ctx: ApplicationContext,
-        custom_section_id: int,
-        **kwargs: str | int,
-    ) -> CustomSection:
-        """Update a custom character section in the cache and database."""
-        try:
-            custom_section = CustomSection.get_by_id(custom_section_id)
-        except DoesNotExist as e:
-            raise SectionNotFoundError(f"Custom section {custom_section_id} was not found") from e
-
-        CustomSection.update(modified=time_now(), **kwargs).where(
-            CustomSection.id == custom_section.id
-        ).execute()
-
-        self.purge_cache(ctx)
-
-        logger.debug(f"DATABASE: Update custom section: {custom_section_id}")
-        return custom_section
-
     def update_traits_by_id(
         self, ctx: ApplicationContext, character: Character, trait_values_dict: dict[int, int]
     ) -> None:
@@ -999,8 +747,6 @@ class CharacterService:
         key = self.__get_char_key(ctx.guild.id, character.id)
         # Clear character from cache but keep claims intact
         self.characters.pop(key, None)
-        self.custom_traits.pop(key, None)
-        self.custom_sections.pop(key, None)
 
         modified = time_now()
 
@@ -1096,11 +842,16 @@ class UserService:
         key = self.__get_user_key(guild_id, author_id)
 
         if key in self.macro_cache:
-            logger.debug(f"CACHE: Return macros for {key}")
+            logger.debug(f"CACHE: Return macros for user: {author_id}")
             return self.macro_cache[key]
 
-        macros = Macro.select().where((Macro.user == author_id) & (Macro.guild == guild_id))
-        self.macro_cache[key] = sorted(macros, key=lambda m: m.name)
+        logger.debug(f"DATABASE: Fetch macros for user: {author_id}")
+        macros = (
+            Macro.select()
+            .where((Macro.user == author_id) & (Macro.guild == guild_id))
+            .order_by(Macro.name.asc())
+        )
+        self.macro_cache[key] = [x for x in macros]
 
         logger.debug(f"DATABASE: Fetch macros for {key}")
         return self.macro_cache[key]
@@ -1156,42 +907,6 @@ class UserService:
         self.user_cache[key] = user
         return user
 
-    def create_macro(
-        self,
-        ctx: ApplicationContext,
-        name: str,
-        abbreviation: str,
-        description: str,
-        trait_one: str,
-        trait_two: str,
-    ) -> None:
-        """Create a new macro for a user."""
-        user = self.fetch_user(ctx)
-        macro = Macro.create(
-            name=name,
-            abbreviation=abbreviation,
-            description=description,
-            guild_id=ctx.guild.id,
-            user_id=user.id,
-            trait_one=trait_one,
-            trait_two=trait_two,
-        )
-        macro.save()
-
-        self.purge_cache(ctx)
-        logger.info(f"DATABASE: Create macro '{name}' for user '{user.name}'")
-
-    def delete_macro(self, ctx: ApplicationContext, macro_name: str) -> None:
-        """Delete a macro from the database and purge the user cache."""
-        Macro.delete().where(
-            (fn.Lower(Macro.name) == macro_name.lower())
-            & (Macro.user == ctx.author.id)
-            & (Macro.guild == ctx.guild.id)
-        ).execute()
-
-        self.purge_cache(ctx)
-        logger.info(f"DATABASE: Delete macro '{macro_name}' for user '{ctx.author.name}'")
-
 
 class GuildService:
     """Manage guilds in the database. Guilds are created on bot connect."""
@@ -1237,7 +952,13 @@ class GuildService:
             guild_id (int): The guild to fetch traits for.
             flat_list (bool, optional): Return a flat list of traits. Defaults to False.
         """
-        all_traits = DBConstants.traits_by_category()
+        all_traits: dict[str, list[str]] = {}
+        for category in TraitCategory.select().order_by(TraitCategory.name.asc()):
+            if category not in all_traits:
+                all_traits[category.name] = []
+
+            for trait in sorted(category.traits, key=lambda x: x.name):
+                all_traits[category.name].append(trait.name)
 
         custom_traits = CustomTrait.select().join(Character).where(Character.guild_id == guild_id)
         if len(custom_traits) > 0:
@@ -1427,6 +1148,7 @@ class DatabaseService:
                     TraitValue,
                     GuildUser,
                     TraitCategoryClass,
+                    MacroTrait,
                 ]
             )
         logger.info("DATABASE: Create Tables")
@@ -1465,4 +1187,4 @@ class DatabaseService:
 
         # Bump the database version to the latest bot version
         DatabaseVersion.set_by_id(1, {"version": bot_version})
-        logger.info(f"DATABASE: Database is up-to-date with v{bot_version}")
+        logger.info(f"DATABASE: Database running v{bot_version}")

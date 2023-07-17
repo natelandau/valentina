@@ -60,8 +60,8 @@ class DBBackup:
 
         self.db.backup_to_file(backup_file)
 
-        logger.info(f"BACKUP: {backup_type} database backup complete")
-        logger.debug(f"BACKUP: Backup file: {backup_file}")
+        logger.info(f"BACKUP: {backup_type} database backup")
+        logger.debug(f"BACKUP: Create {backup_file}")
         return backup_file
 
     async def clean_old_backups(self) -> int:

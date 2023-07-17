@@ -8,13 +8,15 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import EmbedColor, XPMultiplier
+from valentina.models.database import CustomTrait, TraitValue, time_now
+from valentina.utils.converters import ValidCharTrait
 from valentina.utils.helpers import (
     fetch_clan_disciplines,
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
 )
-from valentina.utils.options import select_trait
+from valentina.utils.options import select_char_trait
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
@@ -30,6 +32,8 @@ class Xp(commands.Cog, name="XP"):
         """Handle exceptions and errors from the cog."""
         if hasattr(error, "original"):
             error = error.original
+
+        logger.exception(error)
 
         command_name = ""
         if ctx.command.parent.name:
@@ -52,56 +56,56 @@ class Xp(commands.Cog, name="XP"):
         self,
         ctx: discord.ApplicationContext,
         trait: Option(
-            str,
+            ValidCharTrait,
             description="Trait to raise with xp",
             required=True,
-            autocomplete=select_trait,
+            autocomplete=select_char_trait,
         ),
     ) -> None:
         """Spend experience points."""
         character = self.bot.char_svc.fetch_claim(ctx)
+        old_value = character.trait_value(trait)
+        category = trait.category.name
 
-        old_value = self.bot.char_svc.fetch_trait_value(ctx, character, trait)
-        category = self.bot.char_svc.fetch_trait_category(ctx, character, trait)
-
-        if character.char_class.name == "Vampire" and trait in fetch_clan_disciplines(
+        if character.char_class.name == "Vampire" and trait.name in fetch_clan_disciplines(
             character.clan_name
         ):
             multiplier = XPMultiplier.CLAN_DISCIPLINE.value
         else:
-            multiplier = get_trait_multiplier(trait, category)
+            multiplier = get_trait_multiplier(trait.name, category)
 
         if old_value > 0:
             upgrade_cost = (old_value + 1) * multiplier
 
         if old_value == 0:
-            upgrade_cost = get_trait_new_value(trait, category)
+            upgrade_cost = get_trait_new_value(trait.name, category)
 
         remaining_xp = character.experience - upgrade_cost
         if remaining_xp < 0:
             await present_embed(
                 ctx,
                 title="Error: Not enough XP",
-                description=f"**{trait}** upgrade cost is **{upgrade_cost} XP**. You have **{character.experience} XP**.",
+                description=f"**{trait.name}** upgrade cost is **{upgrade_cost} XP**. You have **{character.experience} XP**.",
                 level="error",
                 ephemeral=True,
             )
             return
 
-        if old_value >= get_max_trait_value(trait, category):
+        if old_value >= get_max_trait_value(trait.name, category):
             await present_embed(
                 ctx,
-                title=f"Error: {trait} at max value",
-                description=f"**{trait}** is already at max value of {old_value}.",
+                title=f"Error: {trait.name} at max value",
+                description=f"**{trait.name}** is already at max value of {old_value}.",
                 level="error",
             )
             return
 
         view = ConfirmCancelButtons(ctx.author)
+
         msg = await present_embed(
             ctx,
-            title=f"Upgrade {trait}?",
-            description=f"Upgrading **{trait}** from **{old_value}** to **{old_value + 1}** dots will cost **{upgrade_cost} XP**",
+            title=f"Upgrade {trait.name}?",
+            description=f"Upgrading **{trait.name}** from **{old_value}** to **{old_value + 1}** dots will cost **{upgrade_cost} XP**",
             fields=[
                 ("Current XP", character.experience),
                 ("XP Cost", str(upgrade_cost)),
@@ -118,32 +122,37 @@ class Xp(commands.Cog, name="XP"):
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        if view.confirmed:
-            new_value = old_value + 1
-            new_experience = character.experience - upgrade_cost
-            self.bot.char_svc.update_trait_value_by_name(ctx, character, trait, new_value)
-            self.bot.char_svc.update_character(
-                ctx,
-                character.id,
-                **{"experience": new_experience},
-            )
+        new_value = old_value + 1
+        new_experience = character.experience - upgrade_cost
+        if isinstance(trait, CustomTrait):
+            trait.value = new_value
+            trait.modified = time_now()
+            trait.save()
+        else:
+            TraitValue.update(value=new_value, modified=time_now()).where(
+                TraitValue.character == character, TraitValue.trait == trait
+            ).execute()
 
-            logger.info(f"XP: {character.name} {trait} upgraded by {ctx.author.name}")
-            await msg.delete_original_response()
-            await present_embed(
-                ctx=ctx,
-                title=f"{character.name} upgraded",
-                level="success",
-                fields=[
-                    ("Trait", trait),
-                    ("Original Value", str(old_value)),
-                    ("New Value", str(new_value)),
-                    ("XP Cost", str(upgrade_cost)),
-                    ("Remaining XP", str(new_experience)),
-                ],
-                inline_fields=True,
-                log=True,
-            )
+        character.modified = time_now()
+        character.save()
+
+        logger.debug(f"XP: {character.name} {trait.name} upgraded by {ctx.author.name}")
+
+        await msg.delete_original_response()
+        await present_embed(
+            ctx=ctx,
+            title=f"{character.name} upgraded",
+            level="success",
+            fields=[
+                ("Trait", trait.name),
+                ("Original Value", str(old_value)),
+                ("New Value", str(new_value)),
+                ("XP Cost", str(upgrade_cost)),
+                ("Remaining XP", str(new_experience)),
+            ],
+            inline_fields=True,
+            log=True,
+        )
 
     @xp.command(name="add", description="Add experience to a character")
     async def add_xp(

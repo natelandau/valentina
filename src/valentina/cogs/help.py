@@ -4,6 +4,7 @@ from textwrap import dedent
 import discord
 from discord.commands import Option
 from discord.ext import commands, pages
+from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.views import present_embed
@@ -21,6 +22,8 @@ class Help(commands.Cog):
         """Handle exceptions and errors from the cog."""
         if hasattr(error, "original"):
             error = error.original
+
+        logger.exception(error)
 
         command_name = ""
         if ctx.command.parent.name:

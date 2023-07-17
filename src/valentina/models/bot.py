@@ -18,7 +18,8 @@ from valentina.models.database_services import (
     TraitService,
     UserService,
 )
-from valentina.utils import Context, DBBackup
+from valentina.utils import Context
+from valentina.utils.db_backup import DBBackup
 
 
 class Valentina(commands.Bot):
