@@ -1,3 +1,24 @@
+## v1.0.0 (2023-07-17)
+
+### Feat
+
+- **admin**: use prefix commands in DMs for bot admin commands
+- **gameplay**: add coinflip option
+- **admin**: add moderation commands
+
+### Fix
+
+- **character**: class specific traits
+- **database**: improve database schema (#22)
+- **character**: spending xp recognizes clan disciplines
+- disallow thumbnails with bad http status
+- **help**: improve help command
+
+### Refactor
+
+- favor methods on database objects
+- reorganize package
+
 ## v0.12.0 (2023-07-10)
 
 ### Feat
