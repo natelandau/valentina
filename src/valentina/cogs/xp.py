@@ -176,7 +176,7 @@ class Xp(commands.Cog, name="XP"):
             experience=new_exp,
             experience_total=new_total,
         )
-        logger.info(f"EXP: {character.name} exp updated by {ctx.author.name}")
+        logger.info(f"XP: {character} xp updated by {ctx.author.name}")
         await present_embed(
             ctx=ctx,
             title=f"{character.name} gained experience",
@@ -209,7 +209,7 @@ class Xp(commands.Cog, name="XP"):
             cool_points=new_cp,
             cool_points_total=new_total,
         )
-        logger.info(f"CP: {character.name} cool points updated by {ctx.author.name}")
+        logger.info(f"CP: {character} cool points updated by {ctx.author.name}")
         await present_embed(
             ctx=ctx,
             title=f"{character.name} gained cool points",

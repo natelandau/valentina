@@ -75,7 +75,7 @@ class Valentina(commands.Bot):
             # Start tasks
             # #######################
             backup_db.start(self.config, DATABASE)
-            logger.debug("BOT: Start background database backup task")
+            logger.info("BOT: Start background database backup task")
 
             await self.change_presence(
                 activity=discord.Activity(type=discord.ActivityType.watching, name="for /help")
@@ -97,7 +97,6 @@ class Valentina(commands.Bot):
     async def on_message(self, message: discord.Message) -> None:
         """If the message is a reply to an RP post, ping the RP post's author."""
         if message.author.bot:
-            logger.debug("BOT: Disregarding bot message")
             return
 
         # This line allows using prefixed commands

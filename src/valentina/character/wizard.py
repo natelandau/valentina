@@ -188,7 +188,7 @@ class CharGenWizard:
         """Inform the user they took too long."""
         errmsg = f"Due to inactivity, your character generation on **{self.ctx.guild.name}** has been canceled."
         await self.edit_message(content=errmsg, embed=None, view=None)
-        logger.info("CHARACTER CREATE: Timed out")
+        logger.info("CHARGEN: Timed out")
 
     @property
     def edit_message(self) -> Any:

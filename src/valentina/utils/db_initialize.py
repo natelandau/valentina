@@ -130,7 +130,7 @@ class MigrateDatabase:
 
     def migrate(self) -> None:
         """Migrate the database to the latest version."""
-        logger.debug("DATABASE: Begin migration")
+        logger.debug("DATABASE: Migration check")
 
         if Version.parse(self.db_version) <= Version.parse("0.8.2"):
             self.__0_8_2()

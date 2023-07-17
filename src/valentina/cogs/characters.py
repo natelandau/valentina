@@ -72,7 +72,6 @@ class Characters(commands.Cog, name="Character"):
     delete = chars.create_subgroup("delete", "Delete information from existing characters")
 
     @chars.command(name="create", description="Create a new character")
-    @logger.catch
     async def create_character(
         self,
         ctx: discord.ApplicationContext,
@@ -143,7 +142,6 @@ class Characters(commands.Cog, name="Character"):
         logger.info(f"CHARACTER: Create character [{character.id}] {character.name}")
 
     @chars.command(name="sheet", description="View a character sheet")
-    @logger.catch
     async def view_character_sheet(
         self,
         ctx: discord.ApplicationContext,
@@ -164,7 +162,6 @@ class Characters(commands.Cog, name="Character"):
         await show_sheet(ctx, character=character, claimed_by=claimed_by)
 
     @chars.command(name="claim", description="Claim a character")
-    @logger.catch
     async def claim_character(
         self,
         ctx: discord.ApplicationContext,
@@ -189,7 +186,6 @@ class Characters(commands.Cog, name="Character"):
         )
 
     @chars.command(name="unclaim", description="Unclaim a character")
-    @logger.catch
     async def unclaim_character(
         self,
         ctx: discord.ApplicationContext,
@@ -214,7 +210,6 @@ class Characters(commands.Cog, name="Character"):
             )
 
     @chars.command(name="list", description="List all characters")
-    @logger.catch
     async def list_characters(
         self,
         ctx: discord.ApplicationContext,
@@ -331,7 +326,7 @@ class Characters(commands.Cog, name="Character"):
         biography = modal.bio.strip()
 
         self.bot.char_svc.update_character(ctx, character.id, bio=biography)
-        logger.info(f"BIO: {character.name} bio updated by {ctx.author.name}.")
+        logger.info(f"BIO: {character} bio updated by {ctx.author.name}.")
 
         await present_embed(
             ctx,

@@ -56,10 +56,10 @@ class TraitService:
     def fetch_all_class_traits(self, char_class: str) -> list[Trait]:
         """Fetch all traits for a character class."""
         if char_class in self.class_traits:
-            logger.debug(f"TRAITS: Returning cached traits for `{char_class}`")
+            logger.debug(f"CACHE: Return traits for `{char_class}`")
             return self.class_traits[char_class]
 
-        logger.info(f"DATABASE: Fetch all traits for `{char_class}`")
+        logger.debug(f"DATABASE: Fetch all traits for `{char_class}`")
 
         traits = (
             Trait.select()
@@ -326,7 +326,7 @@ class ChronicleService:
 
         try:
             chapters = ChronicleChapter.select().where(ChronicleChapter.chronicle == chronicle.id)
-            logger.debug(f"DATABASE: Fetching all chapters for guild {guild_id}")
+            logger.debug(f"DATABASE: Fetch all chapters for guild {guild_id}")
             self.chapters[guild_id] = chapters
             return chapters
         except DoesNotExist as e:
@@ -342,11 +342,12 @@ class ChronicleService:
             guild_id = ctx.interaction.guild.id
 
         if guild_id in self.notes:
+            logger.debug(f"CACHE: Return notes for guild {guild_id}")
             return self.notes[guild_id]
 
         try:
             notes = ChronicleNote.select().where(ChronicleNote.chronicle == chronicle.id)
-            logger.debug(f"DATABASE: Fetching all notes for guild {guild_id}")
+            logger.debug(f"DATABASE: Fetch all notes for guild {guild_id}")
             self.notes[guild_id] = notes
             return notes
         except DoesNotExist as e:
@@ -362,11 +363,12 @@ class ChronicleService:
             guild_id = ctx.interaction.guild.id
 
         if guild_id in self.npcs:
+            logger.debug(f"CACHE: Return npcs for guild {guild_id}")
             return self.npcs[guild_id]
 
         try:
             npcs = ChronicleNPC.select().where(ChronicleNPC.chronicle == chronicle.id)
-            logger.debug(f"DATABASE: Fetching all npcs for guild {guild_id}")
+            logger.debug(f"DATABASE: Fetch all npcs for guild {guild_id}")
             self.npcs[guild_id] = npcs
             return npcs
         except DoesNotExist as e:
@@ -420,7 +422,7 @@ class ChronicleService:
         chronicle.modified = time_now()
         chronicle.save()
         self.purge_cache(ctx)
-        logger.info(f"CHRONICLE: Set {chronicle.name} as inactive")
+        logger.debug(f"CHRONICLE: Set {chronicle.name} as inactive")
 
     def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
         """Purge the cache."""
@@ -447,7 +449,7 @@ class ChronicleService:
 
         self.chapters.pop(ctx.guild.id, None)
 
-        logger.info(f"CHRONICLE: Update chapter {chapter.name} for guild {ctx.guild.id}")
+        logger.debug(f"CHRONICLE: Update chapter {chapter.name} for guild {ctx.guild.id}")
 
     def update_note(self, ctx: ApplicationContext, note: ChronicleNote, **kwargs: str) -> None:
         """Update a note."""
@@ -457,7 +459,7 @@ class ChronicleService:
 
         self.notes.pop(ctx.guild.id, None)
 
-        logger.info(f"CHRONICLE: Update note {note.name} for guild {ctx.guild.id}")
+        logger.debug(f"CHRONICLE: Update note {note.name} for guild {ctx.guild.id}")
 
     def update_npc(self, ctx: ApplicationContext, npc: ChronicleNPC, **kwargs: str) -> None:
         """Update an NPC."""
@@ -467,7 +469,7 @@ class ChronicleService:
 
         self.npcs.pop(ctx.guild.id, None)
 
-        logger.info(f"CHRONICLE: Update NPC {npc.name} for guild {ctx.guild.id}")
+        logger.debug(f"CHRONICLE: Update NPC {npc.name} for guild {ctx.guild.id}")
 
 
 class CharacterService:
@@ -556,7 +558,7 @@ class CharacterService:
             max_value=max_value,
         )
 
-        logger.info(f"CHARACTER: Add trait '{name}' to [{character.id}] {character.name}")
+        logger.debug(f"CHARACTER: Add trait '{name}' to [{character.id}] {character.name}")
 
     def is_cached_char(
         self, guild_id: int | None = None, char_id: int | None = None, key: str | None = None
@@ -607,7 +609,7 @@ class CharacterService:
             & ~(Character.id.in_(cached_ids))  # grab only characters not in cache
         )
         if len(characters) > 0:
-            logger.info(f"DATABASE: Fetch {len(characters)} characters")
+            logger.debug(f"DATABASE: Fetch {len(characters)} characters")
         else:
             logger.debug("DATABASE: No characters to fetch")
 
@@ -699,17 +701,17 @@ class CharacterService:
                 for key in cache.copy():
                     if key.startswith(str(ctx.guild.id)):
                         cache.pop(key, None)
-            logger.debug(f"CACHE: Purged character caches for guild {ctx.guild}")
+            logger.debug(f"CACHE: Purge character caches for guild {ctx.guild}")
         else:
             for cache in caches.values():
                 cache.clear()
-            logger.debug("CACHE: Purged all character caches")
+            logger.debug("CACHE: Purge all character caches")
 
     def remove_claim(self, ctx: ApplicationContext) -> bool:
         """Remove a claim from a user."""
         claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
         if claim_key in self.claims:
-            logger.debug(f"CLAIM: Removing claim for user {ctx.author}")
+            logger.debug(f"CLAIM: Remove claim for user {ctx.author}")
             del self.claims[claim_key]
             return True
         return False
@@ -737,7 +739,7 @@ class CharacterService:
             Character.id == character.id
         ).execute()
 
-        logger.debug(f"DATABASE: Update character: {char_id}")
+        logger.debug(f"DATABASE: Update character: {character}")
         return character
 
     def update_traits_by_id(
@@ -762,7 +764,7 @@ class CharacterService:
                 found_trait.modified = modified
                 found_trait.save()
 
-        logger.info(f"DATABASE: Update traits for character [{character.id}] {character.name}")
+        logger.debug(f"DATABASE: Update traits for character [{character}")
 
     def update_trait_value_by_name(
         self, ctx: ApplicationContext, character: Character, trait_name: str, new_value: int
@@ -771,9 +773,7 @@ class CharacterService:
         try:
             trait_id = TraitService().fetch_trait_id_from_name(trait_name)
             self.update_traits_by_id(ctx, character, {trait_id: new_value})
-            logger.debug(
-                f"DATABASE: Update '{trait_name}' for [{character.id}] {character.name} to {new_value}"
-            )
+            logger.debug(f"DATABASE: Update '{trait_name}' for [{character} to {new_value}")
             return True
         except TraitNotFoundError as e:
             # Update custom traits
@@ -871,7 +871,7 @@ class UserService:
         key = self.__get_user_key(ctx.guild.id, ctx.author.id)
 
         if key in self.user_cache:
-            logger.info(f"CACHE: Return user {key} from cache")
+            logger.debug(f"CACHE: Return user {key} from cache")
             return self.user_cache[key]
 
         user, created = User.get_or_create(
@@ -893,7 +893,7 @@ class UserService:
                 defaults={"guild_id": ctx.guild.id, "user_id": ctx.author.id},
             )
             if lookup_created:
-                logger.info(
+                logger.debug(
                     f"DATABASE: Create guild_user lookup for user:{ctx.author.name} guild:{ctx.guild.name}"
                 )
 
@@ -903,7 +903,7 @@ class UserService:
             user.last_seen = time_now()
             user.save()
 
-        logger.info(f"CACHE: Add user {user.name}")
+        logger.debug(f"CACHE: Add user {user.name}")
         self.user_cache[key] = user
         return user
 
@@ -940,7 +940,7 @@ class GuildService:
         if not is_created:
             kwargs["modified"] = time_now()
             Guild.set_by_id(guild.id, kwargs)
-            logger.info(f"DATABASE: Update guild '{db_id.name}'")
+            logger.debug(f"DATABASE: Update guild '{db_id.name}'")
 
     @staticmethod
     def fetch_all_traits(
@@ -1000,7 +1000,7 @@ class GuildService:
             if existing_guild:
                 if channel.id == existing_guild.log_channel_id:
                     log_channel = channel
-                    logger.info(f"DATABASE: Fetch bot audit log channel: '{channel.name}'")
+                    logger.debug(f"DATABASE: Fetch bot audit log channel: '{channel.name}'")
                     return channel  # type: ignore [return-value]
             elif channel.name.lower().strip() == log_channel_name.lower().strip():
                 print(f"SUCCESS: {channel.name.lower()} == {log_channel_name.lower()}")
@@ -1065,12 +1065,12 @@ class GuildService:
             self.log_channel_cache.pop(ctx.guild.id, None)
             self.settings_cache.pop(ctx.guild.id, None)
             self.roll_result_thumbs.pop(ctx.guild.id, None)
-            logger.debug(f"DATABASE: Purge guild cache for '{ctx.guild.name}'")
+            logger.debug(f"CACHE: Purge guild cache for '{ctx.guild.name}'")
         else:
             self.log_channel_cache = {}
             self.settings_cache = {}
             self.roll_result_thumbs = {}
-            logger.debug("DATABASE: Purge all guild caches")
+            logger.debug("CACHE: Purge all guild caches")
 
     def set_audit_log(self, ctx: ApplicationContext, value: bool) -> None:
         """Set the value of the audit log setting for a guild."""

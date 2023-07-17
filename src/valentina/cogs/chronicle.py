@@ -302,7 +302,7 @@ An overview of {chronicle.name}.
             fields.append((f"**{c.name}** (Active)" if c.is_active else f"**{c.name}**", ""))
 
         await present_embed(ctx, title="Chronicles", fields=fields, level="info")
-        logger.debug("CHRONICLE: Listed all chronicles")
+        logger.debug("CHRONICLE: List all chronicles")
 
     @npc.command(name="create", description="Create a new NPC")
     async def create_npc(self, ctx: discord.ApplicationContext) -> None:
