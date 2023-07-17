@@ -86,14 +86,7 @@ character2 = {
     "strength": 5,
     "willpower": 5,
 }
-customtrait = {
-    "character": 1,
-    "guild": 1,
-    "name": "Test_Trait",
-    "category": TraitCategory.get(name="Skills"),
-    "value": 2,
-    "max_value": 5,
-}
+
 custom_section = {
     "character": 1,
     "title": "test_section",
@@ -132,6 +125,15 @@ def mock_db() -> CSqliteExtDatabase:
     User.create(**user22)
     Character.create(**character1)
     Character.create(**character2)
+
+    customtrait = {
+        "character": 1,
+        "guild": 1,
+        "name": "Test_Trait",
+        "category": TraitCategory.get(name="Skills"),
+        "value": 2,
+        "max_value": 5,
+    }
     CustomTrait.create(**customtrait)
     CustomSection.create(**custom_section)
     GuildUser.create(**guilduser)
