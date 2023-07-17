@@ -194,6 +194,25 @@ class Reference(commands.Cog):
             inline_fields=True,
         )
 
+    @reference.command(name="thaumaturgy", description="Thaumaturgy")
+    async def thaumaturgy(self, ctx: discord.ApplicationContext) -> None:
+        """Reference information for Thaumaturgy Paths."""
+        page1 = dedent(
+            """
+            Created by exhaustive research and extensive experimentation, Thaumaturgy utilizes the principles of Hermetic magic used by House Tremere when it was still a cabal of mages, adapted to be fueled by the inherent magical power of Vitae rather than Quintessence. While it is certainly powerful and versatile, it is organized very differently to the [Spheres](https://whitewolf.fandom.com/wiki/Sphere); Thaumaturgy is largely unknown to mages, and universally distrusted and reviled by those who have encountered it.
+
+            Thaumaturgy uses a system of paths and rituals to focus the thaumaturge's will. Paths are learned expressions of thaumaturgical principles developed into reliable, repeatable effects. Unlike the "natural" powers of Disciplines, however, thaumaturges must concentrate their will, forcing the power of their blood to unnatural ends. If their concentration is not complete, if they falter, then the magic will fail, and in extreme cases such failure can have a lasting effect on the thaumaturge, draining their mental resources.
+
+            [Rituals](https://whitewolf.fandom.com/wiki/Ritual_(VTM)), by contrast, are elaborate, sophisticated and codified instructions for producing set magical effects. Rituals vary in complexity, and require varying levels of thaumaturgical knowledge to complete successfully. They often require the trappings of Hermetic magic - circles drawn in chalk, locks of the victim's hair, meditation, chanting ancient words of power, and the like. Rituals can take hours, days or even months to perform, but - if successfully completed - will always produce the same result. They can be incredibly powerful, particularly when senior thaumaturges join forces; it was a thaumaturgical ritual that cursed the entire Assamite clan.
+
+            - [Paths Info](https://whitewolf.fandom.com/wiki/Thaumaturgy_(VTM))
+            - [Rituals Info](https://whitewolf.fandom.com/wiki/List_of_Thaumaturgy_Rituals)
+
+            """
+        )
+
+        await present_embed(ctx, title="Thaumaturgy", description=page1, level="info")
+
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
