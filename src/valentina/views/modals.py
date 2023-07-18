@@ -2,8 +2,148 @@
 import discord
 
 from valentina.models.constants import MAX_FIELD_COUNT
-from valentina.models.database import ChronicleChapter, ChronicleNote, ChronicleNPC
+from valentina.models.database import Character, ChronicleChapter, ChronicleNote, ChronicleNPC
 from valentina.views import ConfirmCancelButtons
+
+
+class ProfileModal(discord.ui.Modal):
+    """Update a character's profile."""
+
+    def __init__(self, character: Character, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+        super().__init__(*args, **kwargs)
+        self.confirmed: bool = False
+        self.character: Character = character
+        self.results: dict[str, str] = {
+            "demeanor": "",
+            "nature": "",
+            "generation": "",
+            "sire": "",
+            "essence": "",
+            "tradition": "",
+            "breed": "",
+            "tribe": "",
+            "auspice": "",
+        }
+
+        self.add_item(
+            discord.ui.InputText(
+                label="demeanor",
+                value=self.character.demeanor if self.character.demeanor else None,
+                placeholder="Enter a demeanor",
+                required=False,
+                style=discord.InputTextStyle.short,
+                custom_id="demeanor",
+            )
+        )
+        self.add_item(
+            discord.ui.InputText(
+                label="nature",
+                value=self.character.nature if self.character.nature else None,
+                placeholder="Enter a nature",
+                required=False,
+                style=discord.InputTextStyle.short,
+                custom_id="nature",
+            )
+        )
+
+        if self.character.char_class.name == "Vampire":
+            self.add_item(
+                discord.ui.InputText(
+                    label="generation",
+                    value=self.character.generation if self.character.generation else None,
+                    placeholder="Enter a generation (integer, e.g. 13 or 3)",
+                    required=False,
+                    style=discord.InputTextStyle.short,
+                    custom_id="generation",
+                )
+            )
+
+            self.add_item(
+                discord.ui.InputText(
+                    label="sire",
+                    value=self.character.generation if self.character.generation else None,
+                    placeholder="Name of your sire",
+                    required=False,
+                    style=discord.InputTextStyle.short,
+                    custom_id="sire",
+                )
+            )
+
+        if self.character.char_class.name == "Mage":
+            self.add_item(
+                discord.ui.InputText(
+                    label="essence",
+                    value=self.character.generation if self.character.generation else None,
+                    placeholder="Your essence",
+                    required=False,
+                    style=discord.InputTextStyle.short,
+                    custom_id="essence",
+                )
+            )
+            self.add_item(
+                discord.ui.InputText(
+                    label="tradition",
+                    value=self.character.generation if self.character.generation else None,
+                    placeholder="Your tradition",
+                    required=False,
+                    style=discord.InputTextStyle.short,
+                    custom_id="tradition",
+                )
+            )
+
+        if self.character.char_class.name == "Werewolf":
+            self.add_item(
+                discord.ui.InputText(
+                    label="breed",
+                    value=self.character.generation if self.character.generation else None,
+                    placeholder="Your breed",
+                    required=False,
+                    style=discord.InputTextStyle.short,
+                    custom_id="breed",
+                )
+            )
+            self.add_item(
+                discord.ui.InputText(
+                    label="tribe",
+                    value=self.character.generation if self.character.generation else None,
+                    placeholder="Your tribe",
+                    required=False,
+                    style=discord.InputTextStyle.short,
+                    custom_id="tribe",
+                )
+            )
+            self.add_item(
+                discord.ui.InputText(
+                    label="auspice",
+                    value=self.character.generation if self.character.generation else None,
+                    placeholder="Your auspice",
+                    required=False,
+                    style=discord.InputTextStyle.short,
+                    custom_id="auspice",
+                )
+            )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        """Callback for the modal."""
+        view = ConfirmCancelButtons(interaction.user)
+        for c in self.children:
+            self.results[c.custom_id] = c.value
+
+        embed = discord.Embed(title="Confirm Profile")
+        for k, v in self.results.items():
+            if v:
+                embed.add_field(name=k.capitalize(), value=v, inline=True)
+
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await view.wait()
+        if view.confirmed:
+            self.confirmed = True
+            await interaction.delete_original_response()
+        else:
+            self.confirmed = False
+            await interaction.edit_original_response(embeds=[discord.Embed(title="Cancelled")])
+
+        self.stop()
 
 
 class NoteModal(discord.ui.Modal):

@@ -38,7 +38,7 @@ def __build_trait_display(
 
         formatted = []
         for trait, value, max_value, dots in traits:
-            if not show_zeros and value == 0:
+            if (not show_zeros or category == "Disciplines") and value == 0:
                 continue
             if max_value > MAX_DOT_DISPLAY:
                 formatted.append(f"`{trait:13}: {value}/{max_value}`")
@@ -62,9 +62,22 @@ def __embed1(
     embed.set_footer(text=f"{character.name} last updated {modified}")
 
     embed.add_field(name="Class", value=character.class_name, inline=True)
+    embed.add_field(name="Demeanor", value=character.demeanor, inline=True)
+    embed.add_field(name="Nature", value=character.nature, inline=True)
 
-    if character.class_name.lower() == "vampire" and character.clan:
+    if character.class_name.lower() == "vampire":
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
+        embed.add_field(name="Generation", value=f"{character.generation}", inline=True)
+        embed.add_field(name="Sire", value=f"{character.sire}", inline=True)
+
+    if character.class_name.lower() == "mage":
+        embed.add_field(name="Tradition", value=character.tradition.name, inline=True)
+        embed.add_field(name="Essence", value=f"{character.essence}", inline=True)
+
+    if character.class_name.lower() == "werewolf":
+        embed.add_field(name="Tribe", value=character.tribe.name, inline=True)
+        embed.add_field(name="Auspice", value=character.auspice.name, inline=True)
+        embed.add_field(name="Breed", value=f"{character.breed}", inline=True)
 
     embed.add_field(
         name="Claimed By", value=f"{claimed_by.display_name}" if claimed_by else "-", inline=True
@@ -96,7 +109,6 @@ def __embed1(
             "knowledges",
         ],
         exclude_from_list=True,
-        sort_items=True,
     ):
         embed.add_field(name=category, value=traits, inline=True)
 

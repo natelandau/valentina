@@ -3,6 +3,8 @@
 IMPORTANT: If you change the data in this file, you must add/delete/migrate the corresponding in any existing databases!
 """
 from loguru import logger
+from peewee import TextField
+from playhouse.migrate import SqliteMigrator, migrate
 from playhouse.sqlite_ext import CSqliteExtDatabase
 from semver import Version
 
@@ -137,6 +139,9 @@ class MigrateDatabase:
 
         if Version.parse(self.db_version) <= Version.parse("0.12.0"):
             self.__0_12_0()
+
+        if Version.parse(self.db_version) <= Version.parse("1.0.2"):
+            self.__1_0_2()
 
     def _column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.
@@ -290,6 +295,32 @@ class MigrateDatabase:
             self.db.execute_sql("DROP TABLE macros;")
             with self.db:
                 self.db.create_tables([Macro])
+
+    def __1_0_2(self) -> None:
+        """Migrate from version 1.0.2."""
+        logger.info("DATABASE: Migrate database from v1.0.2")
+
+        if not self._column_exists(Character._meta.table_name, "generation"):
+            migrator = SqliteMigrator(self.db)
+
+            # Fields to add
+            generation = TextField(null=True)
+            sire = TextField(null=True)
+            breed = TextField(null=True)
+            tribe = TextField(null=True)
+            auspice = TextField(null=True)
+            essence = TextField(null=True)
+            tradition = TextField(null=True)
+
+            migrate(
+                migrator.add_column(Character._meta.table_name, "generation", generation),
+                migrator.add_column(Character._meta.table_name, "sire", sire),
+                migrator.add_column(Character._meta.table_name, "breed", breed),
+                migrator.add_column(Character._meta.table_name, "tribe", tribe),
+                migrator.add_column(Character._meta.table_name, "auspice", auspice),
+                migrator.add_column(Character._meta.table_name, "essence", essence),
+                migrator.add_column(Character._meta.table_name, "tradition", tradition),
+            )
 
 
 class PopulateDatabase:

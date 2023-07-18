@@ -32,7 +32,7 @@ from valentina.utils.options import (
     select_trait_category,
     select_vampire_clan,
 )
-from valentina.views import ConfirmCancelButtons, present_embed
+from valentina.views import ConfirmCancelButtons, ProfileModal, present_embed
 
 # TODO: Add a way to mark a character as dead
 
@@ -182,7 +182,6 @@ class Characters(commands.Cog, name="Character"):
             title="Character Claimed",
             description=f"**{character.name}** has been claimed by **{ctx.author.display_name}**",
             level="success",
-            log=True,
         )
 
     @chars.command(name="unclaim", description="Unclaim a character")
@@ -198,7 +197,6 @@ class Characters(commands.Cog, name="Character"):
                 ctx=ctx,
                 title="Character Unclaimed",
                 description=f"**{character.name}** unclaimed by **{ctx.author.display_name}**",
-                log=True,
                 level="success",
             )
         else:
@@ -207,6 +205,7 @@ class Characters(commands.Cog, name="Character"):
                 title="You have no character claimed",
                 description="To claim a character, use `/character claim`.",
                 level="error",
+                ephemeral=True,
             )
 
     @chars.command(name="list", description="List all characters")
@@ -244,6 +243,30 @@ class Characters(commands.Cog, name="Character"):
             inline_fields=False,
             level="info",
         )
+
+    @chars.command(name="profile", description="Update a character's profile")
+    async def update_profile(self, ctx: discord.ApplicationContext) -> None:
+        """Update a character's profile."""
+        character = self.bot.char_svc.fetch_claim(ctx)
+
+        modal = ProfileModal(title=f"Profile for {character}", character=character)
+        await ctx.send_modal(modal)
+        await modal.wait()
+        if modal.confirmed:
+            for k, v in modal.results.items():
+                if v:
+                    character.__setattr__(k, v)
+
+            character.save()
+            self.bot.char_svc.purge_cache(ctx)
+
+            await present_embed(
+                ctx,
+                title="Profile Updated",
+                log=True,
+                level="success",
+                ephemeral=True,
+            )
 
     ### ADD COMMANDS ####################################################################
 
@@ -365,6 +388,7 @@ class Characters(commands.Cog, name="Character"):
         custom_section.title = section_title
         custom_section.description = section_description
         custom_section.save()
+        self.bot.char_service.purge_cache(ctx)
 
         await present_embed(
             ctx,

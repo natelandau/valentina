@@ -232,7 +232,7 @@ class Character(BaseModel):
     created_by = ForeignKeyField(User, backref="created_characters")
     owned_by = ForeignKeyField(User, backref="owned_characters", null=True)
     clan = ForeignKeyField(VampireClan, backref="characters", null=True)
-    # CHARACTER SHEET ############################
+    # Character Sheet ############################
     alive = BooleanField(default=True)
     age = IntegerField(null=True)
     archived = BooleanField(default=False)
@@ -240,11 +240,18 @@ class Character(BaseModel):
     concept = TextField(null=True)
     cool_points = IntegerField(default=0)
     cool_points_total = IntegerField(default=0)
-    demeanor = TextField(null=True)
     experience = IntegerField(default=0)
     experience_total = IntegerField(default=0)
-    gender = TextField(null=True)
+    # Profile ############################
     nature = TextField(null=True)
+    demeanor = TextField(null=True)
+    generation = TextField(null=True)  # Vampire
+    sire = TextField(null=True)  # Vampire
+    breed = TextField(null=True)  # Werewolf
+    tribe = TextField(null=True)  # Werewolf
+    auspice = TextField(null=True)  # Werewolf
+    essence = TextField(null=True)  # Mage
+    tradition = TextField(null=True)  # Mage
 
     @property
     def name(self) -> str:
