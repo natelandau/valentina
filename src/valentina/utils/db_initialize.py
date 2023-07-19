@@ -298,9 +298,8 @@ class MigrateDatabase:
 
     def __1_0_2(self) -> None:
         """Migrate from version 1.0.2."""
-        logger.info("DATABASE: Migrate database from v1.0.2")
-
         if not self._column_exists(Character._meta.table_name, "generation"):
+            logger.info("DATABASE: Migrate database from v1.0.2")
             migrator = SqliteMigrator(self.db)
 
             # Fields to add

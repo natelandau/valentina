@@ -48,6 +48,8 @@ class Chronicle(commands.Cog):
     npc = chronicle.create_subgroup(name="npc", description="Manage chronicle NPCs")
     notes = chronicle.create_subgroup(name="notes", description="Manage chronicle notes")
 
+    ### CHRONICLE COMMANDS ####################################################################
+
     @chronicle.command(name="create", description="Create a new chronicle")
     @commands.has_permissions(administrator=True)
     async def create_chronicle(
@@ -304,6 +306,8 @@ An overview of {chronicle.name}.
         await present_embed(ctx, title="Chronicles", fields=fields, level="info")
         logger.debug("CHRONICLE: List all chronicles")
 
+    ### NPC COMMANDS ####################################################################
+
     @npc.command(name="create", description="Create a new NPC")
     async def create_npc(self, ctx: discord.ApplicationContext) -> None:
         """Create a new NPC."""
@@ -447,6 +451,8 @@ An overview of {chronicle.name}.
             log=True,
             level="success",
         )
+
+    ### CHAPTER COMMANDS ####################################################################
 
     @chapter.command(name="create", description="Create a new chapter")
     async def create_chapter(self, ctx: discord.ApplicationContext) -> None:
@@ -601,6 +607,8 @@ An overview of {chronicle.name}.
             log=True,
             level="success",
         )
+
+    ### NOTE COMMANDS ####################################################################
 
     @notes.command(name="create", description="Create a new note")
     async def create_note(

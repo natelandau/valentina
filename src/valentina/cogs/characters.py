@@ -8,7 +8,6 @@ from loguru import logger
 
 from valentina.character.traits import add_trait
 from valentina.character.view_sheet import show_sheet
-from valentina.character.views import BioModal, CustomSectionModal
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
 from valentina.models.database import CustomTrait, TraitValue, time_now
@@ -32,7 +31,13 @@ from valentina.utils.options import (
     select_trait_category,
     select_vampire_clan,
 )
-from valentina.views import ConfirmCancelButtons, ProfileModal, present_embed
+from valentina.views import (
+    BioModal,
+    ConfirmCancelButtons,
+    CustomSectionModal,
+    ProfileModal,
+    present_embed,
+)
 
 # TODO: Add a way to mark a character as dead
 
@@ -244,30 +249,6 @@ class Characters(commands.Cog, name="Character"):
             level="info",
         )
 
-    @chars.command(name="profile", description="Update a character's profile")
-    async def update_profile(self, ctx: discord.ApplicationContext) -> None:
-        """Update a character's profile."""
-        character = self.bot.char_svc.fetch_claim(ctx)
-
-        modal = ProfileModal(title=f"Profile for {character}", character=character)
-        await ctx.send_modal(modal)
-        await modal.wait()
-        if modal.confirmed:
-            for k, v in modal.results.items():
-                if v:
-                    character.__setattr__(k, v)
-
-            character.save()
-            self.bot.char_svc.purge_cache(ctx)
-
-            await present_embed(
-                ctx,
-                title="Profile Updated",
-                log=True,
-                level="success",
-                ephemeral=True,
-            )
-
     ### ADD COMMANDS ####################################################################
 
     @add.command(name="trait", description="Add a custom trait to a character")
@@ -403,6 +384,30 @@ class Characters(commands.Cog, name="Character"):
             level="success",
             log=True,
         )
+
+    @chars.command(name="profile", description="Update a character's profile")
+    async def update_profile(self, ctx: discord.ApplicationContext) -> None:
+        """Update a character's profile."""
+        character = self.bot.char_svc.fetch_claim(ctx)
+
+        modal = ProfileModal(title=f"Profile for {character}", character=character)
+        await ctx.send_modal(modal)
+        await modal.wait()
+        if modal.confirmed:
+            for k, v in modal.results.items():
+                if v:
+                    character.__setattr__(k, v)
+
+            character.save()
+            self.bot.char_svc.purge_cache(ctx)
+
+            await present_embed(
+                ctx,
+                title="Profile Updated",
+                log=True,
+                level="success",
+                ephemeral=True,
+            )
 
     @update.command(name="trait", description="Update the value of a trait for a character")
     async def update_trait(
