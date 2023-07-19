@@ -1,3 +1,16 @@
+## v1.0.3 (2023-07-19)
+
+### Fix
+
+- **character**: add profile for characters
+- **chronicle**: fix broken `chronicle delete` command
+- **reference**: add thaumaturgy reference
+- **logging**: improve logging
+
+### Refactor
+
+- combine all modals into single file
+
 ## v1.0.2 (2023-07-17)
 
 ### Fix
