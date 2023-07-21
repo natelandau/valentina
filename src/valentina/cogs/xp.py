@@ -7,7 +7,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import EmbedColor, XPMultiplier
+from valentina.models.constants import COOL_POINT_VALUE, EmbedColor, XPMultiplier
 from valentina.models.database import CustomTrait, TraitValue, time_now
 from valentina.utils.converters import ValidCharTrait
 from valentina.utils.helpers import (
@@ -201,7 +201,7 @@ class Xp(commands.Cog, name="XP"):
             log=True,
         )
 
-    @xp.command(name="cp", description="Add cool points to a character")
+    @xp.command(name="add_cp", description="Add cool points to a character")
     async def add_cool_points(
         self,
         ctx: discord.ApplicationContext,
@@ -225,11 +225,16 @@ class Xp(commands.Cog, name="XP"):
         new_cp = character.cool_points + cp
         new_total = character.cool_points_total + cp
 
+        new_xp = character.experience + (cp * COOL_POINT_VALUE)
+        new_xp_total = character.experience_total + new_xp
+
         self.bot.char_svc.update_character(
             ctx,
             character.id,
             cool_points=new_cp,
             cool_points_total=new_total,
+            experience=new_xp_total,
+            experience_total=new_xp_total,
         )
         logger.info(f"CP: {character} cool points updated by {ctx.author.name}")
         await present_embed(
@@ -237,8 +242,9 @@ class Xp(commands.Cog, name="XP"):
             title=f"{character.name} gained cool points",
             fields=[
                 ("Cool Points Added", str(cp)),
-                ("Current Cool Points", new_cp),
                 ("All time Cool Points", f"{new_total}"),
+                ("Experience Added", str(new_xp)),
+                ("Current XP", f"{new_xp_total}"),
             ],
             level="success",
             log=True,

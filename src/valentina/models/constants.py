@@ -163,6 +163,8 @@ class TraitCategoryOrder(IntEnum):
     Other = 21
 
 
+COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
+
 CLAN_DISCIPLINES = {
     "Assamite": ["Celerity", "Obfuscate", "Quietus"],
     "Brujah": ["Celerity", "Potence", "Presence"],
