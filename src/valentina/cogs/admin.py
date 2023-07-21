@@ -4,12 +4,14 @@
 from io import BytesIO
 
 import discord
+from discord import OptionChoice
 from discord.commands import Option
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 from loguru import logger
 
 from valentina.models.bot import Valentina
+from valentina.models.constants import TraitPermissions, XPPermissions
 from valentina.utils import Context
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import pluralize
@@ -53,71 +55,8 @@ class Admin(commands.Cog):
         default_member_permissions=discord.Permissions(administrator=True),
     )
 
-    @admin.command(description="Toggle audit log on/off")
-    async def audit_log(
-        self,
-        ctx: discord.ApplicationContext,
-        channel_name: Option(
-            ValidChannelName, "Audit log channel name", required=False, default=None
-        ),
-    ) -> None:
-        """Toggle audit log on/off."""
-        setting = self.bot.guild_svc.is_audit_logging(ctx)
-        if setting:
-            fields = [
-                ("Current audit log status", "Enabled"),
-                ("\u200b", "**Disable logging to audit channel?**"),
-            ]
-        else:
-            fields = [
-                ("Current audit log status", "Disabled"),
-                ("\u200b", "**Enable logging to audit channel?**"),
-            ]
-
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title="Manage Audit Log Settings",
-            level="info",
-            ephemeral=True,
-            fields=fields,
-            view=view,
-        )
-        await view.wait()
-
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(title="Setting change cancelled", color=discord.Color.red())
-            )
-            return
-
-        if setting:
-            await self.bot.guild_svc.send_log(ctx, "Audit logging disabled")
-            self.bot.guild_svc.set_audit_log(ctx, False)
-            return
-
-        if not self.bot.guild_svc.fetch_log_channel(ctx) and not channel_name:
-            await present_embed(
-                ctx,
-                title="No audit log channel",
-                description="Please rerun the command and enter a channel name",
-                level="error",
-                ephemeral=True,
-            )
-            return
-
-        if not self.bot.guild_svc.fetch_log_channel(ctx) and channel_name:
-            await self.bot.guild_svc.create_bot_log_channel(ctx.guild, channel_name)
-            self.bot.guild_svc.set_audit_log(ctx, True)
-            message = f"Logging to channel **{channel_name}**"
-        else:
-            self.bot.guild_svc.set_audit_log(ctx, True)
-            message = "Logging to audit channel enabled"
-
-        await present_embed(ctx, title=message, level="success", ephemeral=True, log=True)
-
     @admin.command(description="Purge the bot's cache and reload data from DB")
-    @logger.catch
+    @commands.guild_only()
     async def puge_cache(
         self,
         ctx: discord.ApplicationContext,
@@ -167,6 +106,124 @@ class Admin(commands.Cog):
             level="success",
             ephemeral=True,
             log=True,
+        )
+
+    @admin.command(description="Manage settings")
+    @commands.guild_only()
+    async def settings(
+        self,
+        ctx: discord.ApplicationContext,
+        xp_permissions: Option(
+            str,
+            "Whether users should be allowed to edit their XP totals.",
+            choices=[
+                OptionChoice(x.name.title().replace("_", " "), str(x.value)) for x in XPPermissions
+            ],
+            required=False,
+        ),
+        use_audit_log: Option(
+            bool,
+            "Send audit logs to channel",
+            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
+            required=False,
+            default=None,
+        ),
+        audit_log_channel: Option(
+            ValidChannelName,
+            "Log to this channel",
+            required=False,
+            default=None,
+        ),
+        trait_permissions: Option(
+            str,
+            "Whether users should be allowed to edit their traits.",
+            choices=[
+                OptionChoice(x.name.title().replace("_", " "), str(x.value))
+                for x in TraitPermissions
+            ],
+            required=False,
+        ),
+    ) -> None:
+        """Manage settings."""
+        fields = []
+        if xp_permissions is not None:
+            logger.debug(
+                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) XP Permissions: {XPPermissions(int(xp_permissions)).name.title()}"
+            )
+            fields.append(("XP Permissions", XPPermissions(int(xp_permissions)).name.title()))
+            self.bot.guild_svc.update_or_add(ctx=ctx, xp_permissions=int(xp_permissions))
+
+        if trait_permissions is not None:
+            logger.debug(
+                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Trait Permissions: {TraitPermissions(int(trait_permissions)).name.title()}"
+            )
+            fields.append(
+                ("Trait Permissions", TraitPermissions(int(trait_permissions)).name.title())
+            )
+            self.bot.guild_svc.update_or_add(ctx=ctx, trait_permissions=int(trait_permissions))
+
+        if use_audit_log is not None:
+            guild_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
+
+            if use_audit_log and not guild_settings["log_channel_id"] and not audit_log_channel:
+                await present_embed(
+                    ctx,
+                    title="No audit log channel",
+                    description="Please rerun the command and enter a channel name for audit logging",
+                    level="error",
+                    ephemeral=True,
+                )
+                return
+
+            logger.debug(
+                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Log to channel: {use_audit_log}"
+            )
+            fields.append(("Audit Logging", "Enabled" if use_audit_log else "Disabled"))
+            self.bot.guild_svc.update_or_add(ctx=ctx, use_audit_log=use_audit_log)
+
+        if audit_log_channel is not None:
+            channel = await self.bot.guild_svc.create_bot_log_channel(ctx, audit_log_channel)
+            logger.debug(
+                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Log channel: {channel.name}"
+            )
+            fields.append(("Audit Log Channel", channel.mention))
+
+        if len(fields) > 0:
+            await present_embed(
+                ctx,
+                title="Settings Updated",
+                fields=fields,
+                level="success",
+                log=True,
+                ephemeral=True,
+            )
+        else:
+            await present_embed(ctx, title="No settings updated", level="info", ephemeral=True)
+
+    @admin.command(description="Show server settings")
+    @commands.guild_only()
+    async def show_settings(self, ctx: discord.ApplicationContext) -> None:
+        """Show server settings."""
+        settings = self.bot.guild_svc.fetch_guild_settings(ctx)
+
+        fields = [
+            ("XP Permissions", XPPermissions(settings["xp_permissions"]).name.title()),
+            ("Trait Permissions", TraitPermissions(settings["trait_permissions"]).name.title()),
+            ("Audit Logging", "Enabled" if settings["use_audit_log"] else "Disabled"),
+            (
+                "Audit Log Channel",
+                discord.utils.get(ctx.guild.text_channels, id=settings["log_channel_id"]).mention
+                if settings["log_channel_id"]
+                else "Not set",
+            ),
+        ]
+        await present_embed(
+            ctx,
+            title="Server Settings",
+            fields=fields,
+            inline_fields=True,
+            level="info",
+            ephemeral=True,
         )
 
     ### MODERATION COMMANDS ################################################################

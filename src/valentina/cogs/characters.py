@@ -426,6 +426,17 @@ class Characters(commands.Cog, name="Character"):
         """Update the value of a trait."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
+        if not self.bot.user_svc.has_trait_permissions(ctx, character):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to update traits on this character\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
+
         old_value = character.trait_value(trait)
 
         view = ConfirmCancelButtons(ctx.author)
