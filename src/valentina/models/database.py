@@ -75,6 +75,12 @@ class Guild(BaseModel):
     modified = DateTimeField(default=time_now)
     log_channel_id = IntegerField(null=True)
     use_audit_log = BooleanField(default=False)
+    xp_permissions = IntegerField(default=0)
+    trait_permissions = IntegerField(default=0)
+
+    def __str__(self) -> str:
+        """Return the string representation of the model."""
+        return f"[{self.id}] {self.name}"
 
     class Meta:
         """Meta class for the model."""
@@ -360,7 +366,7 @@ class Character(BaseModel):
 
     def __str__(self) -> str:
         """Return the string representation of the model."""
-        return f"""Character([{self.id}] {self.name})"""
+        return f"[{self.id}] {self.name}"
 
     class Meta:
         """Meta class for the model."""

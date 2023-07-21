@@ -101,11 +101,11 @@ async def log_to_channel(
 ) -> None:
     """Log an event to the guild log channel."""
     if isinstance(log, str):
-        await ctx.bot.guild_svc.send_log(ctx, log)  # type: ignore [attr-defined]
+        await ctx.bot.guild_svc.send_to_log(ctx, log)  # type: ignore [attr-defined]
     else:
         log_embed = embed.copy()
         log_embed.timestamp = datetime.now()
         log_embed.set_footer(
             text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
         )
-        await ctx.bot.guild_svc.send_log(ctx, log_embed)  # type: ignore [attr-defined]
+        await ctx.bot.guild_svc.send_to_log(ctx, log_embed)  # type: ignore [attr-defined]

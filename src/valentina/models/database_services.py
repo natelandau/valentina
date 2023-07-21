@@ -1,16 +1,23 @@
 """Models for maintaining in-memory caches of database queries."""
 
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
+import arrow
 import discord
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
 from peewee import DoesNotExist, IntegrityError, ModelSelect, fn
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.models.constants import EmbedColor, MaxTraitValue, TraitCategoryOrder
+from valentina.models.constants import (
+    EmbedColor,
+    MaxTraitValue,
+    TraitCategoryOrder,
+    TraitPermissions,
+    XPPermissions,
+)
 from valentina.models.database import (
     DATABASE,
     Character,
@@ -173,13 +180,13 @@ class ChronicleService:
         chapter: ChronicleChapter | None = None,
     ) -> ChronicleNote:
         """Create a new note."""
-        UserService().fetch_user(ctx)
+        user = self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         note = ChronicleNote.create(
             chronicle=chronicle.id,
             name=name,
             description=description,
-            user=ctx.author.id,
+            user=user.id,
             created=time_now(),
             modified=time_now(),
             chapter=chapter.id if chapter else None,
@@ -524,7 +531,7 @@ class CharacterService:
             character=character.id,
         )
 
-        logger.debug(f"DATABASE: Add custom section to character {character.id}")
+        logger.debug(f"DATABASE: Add custom section to {character}")
         return True
 
     def add_trait(
@@ -546,7 +553,7 @@ class CharacterService:
             max_value=max_value,
         )
 
-        logger.debug(f"CHARACTER: Add trait '{name}' to [{character.id}] {character.name}")
+        logger.debug(f"CHARACTER: Add trait '{name}' to {character}")
 
     def is_cached_char(
         self, guild_id: int | None = None, char_id: int | None = None, key: str | None = None
@@ -559,17 +566,15 @@ class CharacterService:
         """Create a character in the cache and database."""
         # Normalize kwargs keys to database column names
 
-        user = UserService().fetch_user(ctx)
+        user = self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         character = Character.create(
-            guild_id=1113431693165088821,
+            guild_id=ctx.guild.id,
             created_by=user.id,
             **kwargs,
         )
 
-        logger.info(
-            f"DATABASE: Create character: [{character.id}] [{character.name}] for {ctx.author.display_name}"
-        )
+        logger.info(f"DATABASE: Create character: {character}] for {ctx.author.display_name}")
 
         return character
 
@@ -621,7 +626,7 @@ class CharacterService:
             char_key = self.claims[claim_key]
 
             if self.is_cached_char(key=char_key):
-                logger.debug(f"CACHE: Fetch character {char_key}")
+                logger.debug(f"CACHE: Fetch character {self.characters[char_key]}")
                 return self.characters[char_key]
 
             char_id = re.sub(r"[a-zA-Z0-9]+_", "", char_key)
@@ -733,7 +738,13 @@ class CharacterService:
     def update_traits_by_id(
         self, ctx: ApplicationContext, character: Character, trait_values_dict: dict[int, int]
     ) -> None:
-        """Update traits for a character by id."""
+        """Update traits for a character by id.
+
+        Args:
+            ctx (ApplicationContext): The context of the command.
+            character (Character): The character to update.
+            trait_values_dict (dict[int, int]): A dictionary of trait IDs and their new values.
+        """
         key = self.__get_char_key(ctx.guild.id, character.id)
         # Clear character from cache but keep claims intact
         self.characters.pop(key, None)
@@ -752,7 +763,7 @@ class CharacterService:
                 found_trait.modified = modified
                 found_trait.save()
 
-        logger.debug(f"DATABASE: Update traits for character [{character}")
+        logger.debug(f"DATABASE: Update traits for character {character}")
 
     def update_trait_value_by_name(
         self, ctx: ApplicationContext, character: Character, trait_name: str, new_value: int
@@ -774,9 +785,7 @@ class CharacterService:
                 custom_trait.value = new_value
                 custom_trait.save()
                 self.update_character(ctx, character.id)
-                logger.debug(
-                    f"DATABASE: Update '{trait_name}' for [{character.id}] {character.name} to {new_value}"
-                )
+                logger.debug(f"DATABASE: Update '{trait_name}' for {character} to {new_value}")
 
                 # Reset custom traits cache for character
                 self.purge_cache(ctx)
@@ -895,12 +904,54 @@ class UserService:
         self.user_cache[key] = user
         return user
 
+    def has_xp_permissions(self, ctx: ApplicationContext, character: Character = None) -> bool:
+        """Determine if the user has permissions to add xp."""
+        if ctx.author.guild_permissions.administrator:
+            return True
+
+        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
+
+        if settings["xp_permissions"] == XPPermissions.UNRESTRICTED.value:
+            return True
+
+        if settings["xp_permissions"] == XPPermissions.CHARACTER_OWNER_ONLY.value and character:
+            return character.created_by.id == ctx.author.id
+
+        if settings["xp_permissions"] == XPPermissions.WITHIN_24_HOURS.value and character:
+            return (character.created_by.id == ctx.author.id) and (
+                arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)
+            )
+
+        return False
+
+    def has_trait_permissions(self, ctx: ApplicationContext, character: Character = None) -> bool:
+        """Determines if the user have permissions to update trait values."""
+        if ctx.author.guild_permissions.administrator:
+            return True
+
+        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
+
+        if settings["trait_permissions"] == TraitPermissions.UNRESTRICTED.value:
+            return True
+
+        if (
+            settings["trait_permissions"] == TraitPermissions.CHARACTER_OWNER_ONLY.value
+            and character
+        ):
+            return character.created_by.id == ctx.author.id
+
+        if settings["trait_permissions"] == TraitPermissions.WITHIN_24_HOURS.value and character:
+            return (character.created_by.id == ctx.author.id) and (
+                arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)
+            )
+
+        return False
+
 
 class GuildService:
     """Manage guilds in the database. Guilds are created on bot connect."""
 
     def __init__(self) -> None:
-        self.log_channel_cache: dict[int, int | None] = {}
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
 
@@ -908,27 +959,6 @@ class GuildService:
     def is_in_db(guild_id: int) -> bool:
         """Check if the guild is in the database."""
         return Guild.select().where(Guild.id == guild_id).exists()
-
-    @staticmethod
-    @logger.catch
-    def update_or_add(guild: discord.Guild, **kwargs: str | int | datetime) -> None:
-        """Add a guild to the database or update it if it already exists."""
-        db_id, is_created = Guild.get_or_create(
-            id=guild.id,
-            defaults={
-                "id": guild.id,
-                "name": guild.name,
-                "created": time_now(),
-                "modified": time_now(),
-            },
-        )
-        if is_created:
-            logger.info(f"DATABASE: Create guild {db_id.name}")
-
-        if not is_created:
-            kwargs["modified"] = time_now()
-            Guild.set_by_id(guild.id, kwargs)
-            logger.debug(f"DATABASE: Update guild '{db_id.name}'")
 
     @staticmethod
     def fetch_all_traits(
@@ -962,9 +992,25 @@ class GuildService:
 
         return all_traits
 
+    def fetch_guild_settings(self, ctx: ApplicationContext) -> dict[str, str | int | bool]:
+        """Fetch all guild settings."""
+        if ctx.guild.id in self.settings_cache:
+            return self.settings_cache[ctx.guild.id]
+
+        self.settings_cache[ctx.guild.id] = {}
+
+        guild = Guild.get_by_id(ctx.guild.id)
+        self.settings_cache[ctx.guild.id]["xp_permissions"] = guild.xp_permissions
+        self.settings_cache[ctx.guild.id]["trait_permissions"] = guild.trait_permissions
+        self.settings_cache[ctx.guild.id]["log_channel_id"] = guild.log_channel_id
+        self.settings_cache[ctx.guild.id]["use_audit_log"] = guild.use_audit_log
+
+        logger.debug(f"DATABASE: Fetch guild settings for '{ctx.guild.name}'")
+        return self.settings_cache[ctx.guild.id]
+
     def add_roll_result_thumb(self, ctx: ApplicationContext, roll_type: str, url: str) -> None:
         """Add a roll result thumbnail to the database."""
-        UserService().fetch_user(ctx)
+        self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         self.roll_result_thumbs.pop(ctx.guild.id, None)
 
@@ -976,51 +1022,81 @@ class GuildService:
         logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
 
     async def create_bot_log_channel(
-        self, guild: discord.Guild, log_channel_name: str
+        self, ctx: ApplicationContext, log_channel_name: str
     ) -> discord.TextChannel:
         """Fetch the bot log channel for a guild and create it if it doesn't exist."""
         log_channel = None
+        self.settings_cache.pop(ctx.guild.id, None)
 
-        # Use the log channel from the database if it exists
-        existing_guild = Guild.get_or_none(id=guild.id)
+        guild_object = Guild.get_or_none(id=ctx.guild.id)
 
-        for channel in await guild.fetch_channels():
-            if existing_guild:
-                if channel.id == existing_guild.log_channel_id:
-                    log_channel = channel
-                    logger.debug(f"DATABASE: Fetch bot audit log channel: '{channel.name}'")
-                    return channel  # type: ignore [return-value]
-            elif channel.name.lower().strip() == log_channel_name.lower().strip():
-                print(f"SUCCESS: {channel.name.lower()} == {log_channel_name.lower()}")
-                log_channel = channel
-                logger.debug(f"BOT: Using '{log_channel_name}' for bot audit logging")
-                break
-
-        if not log_channel:
-            log_channel = await guild.create_text_channel(
-                log_channel_name,
-                topic="A channel for Valentina audit logs.",
-                position=100,
+        # If the guild has a log channel set which matches the name, use it and create nothing
+        if guild_object.log_channel_id:
+            existing_channel = discord.utils.get(
+                ctx.guild.text_channels, id=guild_object.log_channel_id
             )
-            logger.info(f"BOT: Created '{log_channel_name}' channel for bot audit logging")
+            if (
+                existing_channel
+                and existing_channel.name.lower().strip() == log_channel_name.lower().strip()
+            ):
+                logger.debug(f"DATABASE: Fetch bot audit log channel for '{ctx.guild.name}'")
+                await existing_channel.set_permissions(
+                    ctx.guild.default_role,
+                    send_messages=False,
+                    manage_messages=False,
+                    add_reactions=True,
+                )
+                for user in ctx.guild.members:
+                    if user.bot:
+                        await existing_channel.set_permissions(
+                            user, send_messages=True, manage_message=True
+                        )
+                return existing_channel
 
-            if existing_guild:
-                GuildService.update_or_add(guild, log_channel_id=log_channel.id)
+        # If the channel already exists, use it and update the database
+        existing_channel = discord.utils.get(
+            ctx.guild.text_channels, name=log_channel_name.lower().strip()
+        )
 
-        self.log_channel_cache.pop(guild.id, None)
-        return log_channel  # type: ignore [return-value]
+        if existing_channel:
+            await existing_channel.set_permissions(
+                ctx.guild.default_role,
+                send_messages=False,
+                manage_messages=False,
+                add_reactions=True,
+            )
+            for user in ctx.guild.members:
+                if user.bot:
+                    await existing_channel.set_permissions(
+                        user, send_messages=True, manage_message=True
+                    )
 
-    def fetch_log_channel(self, ctx: ApplicationContext) -> int | None:
-        """Fetch the log channel for a guild."""
-        if ctx.guild.id not in self.log_channel_cache:
-            self.log_channel_cache[ctx.guild.id] = Guild.get_by_id(ctx.guild.id).log_channel_id
+            self.update_or_add(ctx=ctx, log_channel_id=existing_channel.id)
+            logger.debug(f"DATABASE: Set bot audit log channel for '{ctx.guild.name}'")
+            return existing_channel
 
-        return self.log_channel_cache[ctx.guild.id]
+        # If the channel doesn't exist, create it and update the database
+        log_channel = await ctx.guild.create_text_channel(
+            log_channel_name,
+            topic="A channel for Valentina audit logs.",
+            position=100,
+        )
+        await log_channel.set_permissions(
+            ctx.guild.default_role, send_messages=False, manage_messages=False, add_reactions=True
+        )
+        for user in ctx.guild.members:
+            if user.bot:
+                await log_channel.set_permissions(user, send_messages=True, manage_message=True)
+
+        self.update_or_add(ctx=ctx, log_channel_id=log_channel.id)
+        logger.debug(f"DATABASE: Set bot audit log channel for '{ctx.guild.name}'")
+        return log_channel
 
     def fetch_roll_result_thumbs(self, ctx: ApplicationContext) -> dict[str, list[str]]:
         """Get all roll result thumbnails for a guild."""
         if ctx.guild.id not in self.roll_result_thumbs:
             self.roll_result_thumbs[ctx.guild.id] = {}
+
             logger.debug(f"DATABASE: Fetch roll result thumbnails for '{ctx.guild.name}'")
             for thumb in RollThumbnail.select().where(RollThumbnail.guild == ctx.guild.id):
                 if thumb.roll_type not in self.roll_result_thumbs[ctx.guild.id]:
@@ -1030,19 +1106,6 @@ class GuildService:
 
         return self.roll_result_thumbs[ctx.guild.id]
 
-    def is_audit_logging(self, ctx: ApplicationContext) -> bool:
-        """Settings check: audit_log."""
-        if ctx.guild.id not in self.settings_cache:
-            self.settings_cache[ctx.guild.id] = {}
-
-        if "use_audit_log" not in self.settings_cache[ctx.guild.id]:
-            self.settings_cache[ctx.guild.id]["use_audit_log"] = Guild.get_by_id(
-                ctx.guild.id
-            ).use_audit_log
-            logger.debug(f"DATABASE: Fetch audit log setting for '{ctx.guild.name}'")
-
-        return bool(self.settings_cache[ctx.guild.id]["use_audit_log"])
-
     def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
         """Purge the cache for a guild or all guilds.
 
@@ -1050,26 +1113,19 @@ class GuildService:
             ctx (ApplicationContext, optional): The context to purge. Defaults to None.
         """
         if ctx:
-            self.log_channel_cache.pop(ctx.guild.id, None)
             self.settings_cache.pop(ctx.guild.id, None)
             self.roll_result_thumbs.pop(ctx.guild.id, None)
             logger.debug(f"CACHE: Purge guild cache for '{ctx.guild.name}'")
         else:
-            self.log_channel_cache = {}
             self.settings_cache = {}
             self.roll_result_thumbs = {}
             logger.debug("CACHE: Purge all guild caches")
 
-    def set_audit_log(self, ctx: ApplicationContext, value: bool) -> None:
-        """Set the value of the audit log setting for a guild."""
-        self.settings_cache.pop(ctx.guild.id, None)
-        Guild.set_by_id(ctx.guild.id, {"use_audit_log": value})
-
-    async def send_log(self, ctx: ApplicationContext, message: str | discord.Embed) -> None:
+    async def send_to_log(self, ctx: ApplicationContext, message: str | discord.Embed) -> None:
         """Send a message to the log channel for a guild."""
-        log_channel_id = self.fetch_log_channel(ctx)
-        if log_channel_id:
-            log_channel = ctx.guild.get_channel(log_channel_id)
+        settings = self.fetch_guild_settings(ctx)
+        if settings["use_audit_log"] and settings["log_channel_id"] is not None:
+            log_channel = ctx.guild.get_channel(settings["log_channel_id"])
             if log_channel:
                 if isinstance(message, discord.Embed):
                     await log_channel.send(embed=message)
@@ -1080,6 +1136,42 @@ class GuildService:
                         text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
                     )
                     await log_channel.send(embed=embed)
+
+    def update_or_add(
+        self,
+        guild: discord.Guild = None,
+        ctx: ApplicationContext = None,
+        **kwargs: str | int | datetime,
+    ) -> None:
+        """Add a guild to the database or update it if it already exists."""
+        if guild and ctx:
+            raise ValueError("Cannot provide both guild and ctx")
+
+        if guild:
+            guild_id = guild.id
+            guild_name = guild.name
+
+        if ctx:
+            guild_id = ctx.guild.id
+            guild_name = ctx.guild.name
+            self.purge_cache(ctx)
+
+        db_id, is_created = Guild.get_or_create(
+            id=guild_id,
+            defaults={
+                "id": guild_id,
+                "name": guild_name,
+                "created": time_now(),
+                "modified": time_now(),
+            },
+        )
+        if is_created:
+            logger.info(f"DATABASE: Create guild {db_id.name}")
+
+        if not is_created:
+            kwargs["modified"] = time_now()
+            Guild.set_by_id(guild_id, kwargs)
+            logger.debug(f"DATABASE: Update guild '{db_id.name}'")
 
 
 class DatabaseService:

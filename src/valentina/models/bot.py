@@ -86,7 +86,7 @@ class Valentina(commands.Bot):
 
             for guild in self.guilds:
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
-                self.guild_svc.update_or_add(guild)
+                self.guild_svc.update_or_add(guild=guild)
                 self.char_svc.fetch_all_characters(guild.id)
 
         logger.info("BOT: In-memory caches created")

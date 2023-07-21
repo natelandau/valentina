@@ -166,6 +166,17 @@ class Xp(commands.Cog, name="XP"):
         """Add experience to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
+        if not self.bot.user_svc.has_xp_permissions(ctx, character):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to add experience on this character\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
+
         exp = int(exp)
         new_exp = character.experience + exp
         new_total = character.experience_total + exp
@@ -198,6 +209,17 @@ class Xp(commands.Cog, name="XP"):
     ) -> None:
         """Add cool points to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
+
+        if not self.bot.user_svc.has_xp_permissions(ctx, character):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to add experience on this character\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
 
         cp = int(cp)
         new_cp = character.cool_points + cp
