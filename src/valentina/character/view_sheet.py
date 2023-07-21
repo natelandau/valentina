@@ -66,17 +66,17 @@ def __embed1(
     embed.add_field(name="Nature", value=character.nature, inline=True)
 
     if character.class_name.lower() == "vampire":
-        embed.add_field(name="Clan", value=character.clan.name, inline=True)
+        embed.add_field(name="Clan", value=f"{character.clan.name}", inline=True)
         embed.add_field(name="Generation", value=f"{character.generation}", inline=True)
         embed.add_field(name="Sire", value=f"{character.sire}", inline=True)
 
     if character.class_name.lower() == "mage":
-        embed.add_field(name="Tradition", value=character.tradition.name, inline=True)
+        embed.add_field(name="Tradition", value=f"{character.tradition}", inline=True)
         embed.add_field(name="Essence", value=f"{character.essence}", inline=True)
 
     if character.class_name.lower() == "werewolf":
-        embed.add_field(name="Tribe", value=character.tribe.name, inline=True)
-        embed.add_field(name="Auspice", value=character.auspice.name, inline=True)
+        embed.add_field(name="Tribe", value=f"{character.tribe}", inline=True)
+        embed.add_field(name="Auspice", value=f"{character.auspice}", inline=True)
         embed.add_field(name="Breed", value=f"{character.breed}", inline=True)
 
     embed.add_field(
