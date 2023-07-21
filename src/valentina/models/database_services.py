@@ -180,7 +180,7 @@ class ChronicleService:
         chapter: ChronicleChapter | None = None,
     ) -> ChronicleNote:
         """Create a new note."""
-        user = self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         note = ChronicleNote.create(
             chronicle=chronicle.id,
@@ -566,7 +566,7 @@ class CharacterService:
         """Create a character in the cache and database."""
         # Normalize kwargs keys to database column names
 
-        user = self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         character = Character.create(
             guild_id=ctx.guild.id,
@@ -1010,7 +1010,7 @@ class GuildService:
 
     def add_roll_result_thumb(self, ctx: ApplicationContext, roll_type: str, url: str) -> None:
         """Add a roll result thumbnail to the database."""
-        self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         self.roll_result_thumbs.pop(ctx.guild.id, None)
 
@@ -1030,6 +1030,17 @@ class GuildService:
 
         guild_object = Guild.get_or_none(id=ctx.guild.id)
 
+        # Set channel permissions
+        member_overwrite = discord.PermissionOverwrite()
+        member_overwrite.send_messages = False  # type: ignore [misc]
+        member_overwrite.read_messages = True  # type: ignore [misc]
+        member_overwrite.manage_messages = False  # type: ignore [misc]
+        member_overwrite.add_reactions = True  # type: ignore [misc]
+        bot_overwrite = discord.PermissionOverwrite()
+        bot_overwrite.send_messages = True  # type: ignore [misc]
+        bot_overwrite.read_messages = True  # type: ignore [misc]
+        bot_overwrite.manage_messages = True  # type: ignore [misc]
+
         # If the guild has a log channel set which matches the name, use it and create nothing
         if guild_object.log_channel_id:
             existing_channel = discord.utils.get(
@@ -1040,17 +1051,13 @@ class GuildService:
                 and existing_channel.name.lower().strip() == log_channel_name.lower().strip()
             ):
                 logger.debug(f"DATABASE: Fetch bot audit log channel for '{ctx.guild.name}'")
+
                 await existing_channel.set_permissions(
-                    ctx.guild.default_role,
-                    send_messages=False,
-                    manage_messages=False,
-                    add_reactions=True,
+                    ctx.guild.default_role, overwrite=member_overwrite
                 )
                 for user in ctx.guild.members:
                     if user.bot:
-                        await existing_channel.set_permissions(
-                            user, send_messages=True, manage_message=True
-                        )
+                        await existing_channel.set_permissions(user, overwrite=bot_overwrite)
                 return existing_channel
 
         # If the channel already exists, use it and update the database
@@ -1060,16 +1067,11 @@ class GuildService:
 
         if existing_channel:
             await existing_channel.set_permissions(
-                ctx.guild.default_role,
-                send_messages=False,
-                manage_messages=False,
-                add_reactions=True,
+                ctx.guild.default_role, overwrite=member_overwrite
             )
             for user in ctx.guild.members:
                 if user.bot:
-                    await existing_channel.set_permissions(
-                        user, send_messages=True, manage_message=True
-                    )
+                    await existing_channel.set_permissions(user, overwrite=bot_overwrite)
 
             self.update_or_add(ctx=ctx, log_channel_id=existing_channel.id)
             logger.debug(f"DATABASE: Set bot audit log channel for '{ctx.guild.name}'")
@@ -1081,12 +1083,10 @@ class GuildService:
             topic="A channel for Valentina audit logs.",
             position=100,
         )
-        await log_channel.set_permissions(
-            ctx.guild.default_role, send_messages=False, manage_messages=False, add_reactions=True
-        )
+        await log_channel.set_permissions(ctx.guild.default_role, overwrite=member_overwrite)
         for user in ctx.guild.members:
             if user.bot:
-                await log_channel.set_permissions(user, send_messages=True, manage_message=True)
+                await log_channel.set_permissions(user, overwrite=bot_overwrite)
 
         self.update_or_add(ctx=ctx, log_channel_id=log_channel.id)
         logger.debug(f"DATABASE: Set bot audit log channel for '{ctx.guild.name}'")
