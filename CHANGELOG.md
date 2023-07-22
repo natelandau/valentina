@@ -1,3 +1,9 @@
+## v1.1.3 (2023-07-22)
+
+### Fix
+
+- **character**: always show second page of character sheet
+
 ## v1.1.2 (2023-07-22)
 
 ### Fix
