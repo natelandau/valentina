@@ -129,10 +129,6 @@ def __embed2(
     footer = f"Claimed by: {claimed_by.display_name} • " if claimed_by else ""
     footer += f"Last updated: {modified}"
 
-    # Return None if there is no bio or custom sections
-    if not character.bio and len(custom_sections) == 0:
-        return None
-
     embed = discord.Embed(title=f"{character.name} - Page 2", description="", color=0x7777FF)
 
     embed.set_footer(text=footer)
@@ -171,10 +167,6 @@ async def show_sheet(
     """Show a character sheet."""
     embed1 = __embed1(ctx, character, claimed_by)
     embed2 = __embed2(character, claimed_by)
-
-    if embed2 is None:
-        await ctx.respond(embed=embed1, ephemeral=ephemeral)
-        return
 
     paginator = pages.Paginator(pages=[embed1, embed2])  # type: ignore [arg-type]
     paginator.remove_button("first")
