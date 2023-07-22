@@ -67,7 +67,8 @@ common_traits = {
 mage_traits = {
     "Other": ["Humanity", "Arete", "Quintessence"],
     "Knowledges": ["Cosmology", "Enigmas"],
-    "Skills": ["Technology"],
+    "Skills": ["Crafts", "Technology"],
+    "Talents": ["Awareness"],
     "Virtues": ["Conscience", "Self-Control", "Courage"],
     "Spheres": [
         "Correspondence",
@@ -83,7 +84,7 @@ mage_traits = {
     "Resonance": ["Dynamic", "Entropic", "Static"],
 }
 vampire_traits = {
-    "Other": ["Blood Pool", "Humanity"],
+    "Other": ["Blood Pool", "Humanity"],  # TODO: Change to "Humanity/Path" for vampires
     "Virtues": ["Conscience", "Self-Control", "Courage"],
     "Disciplines": [
         "Animalism",
@@ -112,12 +113,13 @@ werewolf_traits = {
     "Renown": ["Glory", "Honor", "Wisdom"],
 }
 hunter_traits = {
-    "Skills": ["Crafts", "Demolitions", "Technology"],
+    "Skills": ["Crafts", "Demolitions", "Larceny", "Technology", "Repair"],
+    "Talents": ["Awareness", "Insight", "Persuasion"],
     "Other": ["Conviction", "Faith", "Humanity"],
     "Virtues": ["Conscience", "Self-Control", "Courage"],
 }
 mortal_traits = {
-    "Skills": ["Crafts", "Larceny"],
+    "Skills": ["Crafts", "Larceny", "Repair"],
     "Other": ["Humanity"],
     "Virtues": ["Conscience", "Self-Control", "Courage"],
 }
@@ -422,6 +424,7 @@ class PopulateDatabase:
             "Virtues": ["Common"],
             "Numina": ["Mage", "Mortal", "Hunter"],
             "Resonance": ["Mage"],
+            "Advantages": ["Common"],
         }
         with self.db.atomic():
             for category, classes in categories.items():

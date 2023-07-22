@@ -61,11 +61,14 @@ class XPNew(Enum):
 class XPMultiplier(Enum):
     """Experience costs for raising character traits. Values are the multiplier against current rating."""
 
+    # TODO: Need ability to charge 10points for 1st dot of a discipline
+
     DEFAULT = 2  # TODO: Is this the right value?
     # Attributes
-    PHYSICAL = 4
-    SOCIAL = 4
-    MENTAL = 4
+    # TODO: Mage/Mortal attributes are 5 vampires are 4
+    PHYSICAL = 5
+    SOCIAL = 5
+    MENTAL = 5
     # Abilities
     TALENTS = 2
     SKILLS = 2
