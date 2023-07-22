@@ -1,3 +1,10 @@
+## v1.1.1 (2023-07-22)
+
+### Fix
+
+- **character**: initital implementation of character age
+- **character**: update xp cost and base skills
+
 ## v1.1.0 (2023-07-21)
 
 ### Feat
