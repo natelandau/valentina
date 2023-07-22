@@ -252,7 +252,7 @@ class Characters(commands.Cog, name="Character"):
 
     ### ADD COMMANDS ####################################################################
 
-    @add.command(name="set_dob", description="Set the age of a character")
+    @add.command(name="date_of_birth", description="Set the DOB of a character")
     async def date_of_birth(
         self,
         ctx: discord.ApplicationContext,
@@ -267,7 +267,7 @@ class Characters(commands.Cog, name="Character"):
         await present_embed(
             ctx,
             title="Date of Birth Updated",
-            description=f"{character} born on {dob!s}",
+            description=f"{character} born on {dob:%Y-%m-%d}",
             level="success",
             ephemeral=True,
             log=True,

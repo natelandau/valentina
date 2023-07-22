@@ -51,15 +51,27 @@ def __build_trait_display(
 
 
 def __embed1(
+    ctx: discord.ApplicationContext,
     character: Character,
     claimed_by: discord.User | None = None,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
     modified = arrow.get(character.modified).humanize()
+
+    footer = f"Claimed by: {claimed_by.display_name} • " if claimed_by else ""
+    footer += f"Last updated: {modified}"
     char_traits = character.all_trait_values
 
     embed = discord.Embed(title=f"{character.name}", description="", color=0x7777FF)
-    embed.set_footer(text=f"{character.name} last updated {modified}")
+    embed.set_footer(text=footer)
+
+    try:
+        chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined] # it exists
+        if chronicle.current_date and character.date_of_birth:
+            age = arrow.get(chronicle.current_date) - arrow.get(character.date_of_birth)
+            embed.add_field(name="Age", value=f"`{age.days // 365}`", inline=True)
+    except ValueError:
+        pass
 
     embed.add_field(name="Class", value=character.class_name, inline=True)
     embed.add_field(name="Demeanor", value=character.demeanor, inline=True)
@@ -79,14 +91,6 @@ def __embed1(
         embed.add_field(name="Auspice", value=f"{character.auspice}", inline=True)
         embed.add_field(name="Breed", value=f"{character.breed}", inline=True)
 
-    embed.add_field(
-        name="Claimed By", value=f"{claimed_by.display_name}" if claimed_by else "-", inline=True
-    )
-
-    embed.add_field(name="\u200b", value="**EXPERIENCE**", inline=False)
-    embed.add_field(name="Experience", value=f"`{character.experience}`", inline=True)
-    embed.add_field(name="Cool Points", value=f"`{character.cool_points}`", inline=True)
-
     embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
     for category, traits in __build_trait_display(char_traits, ["physical", "social", "mental"]):
         embed.add_field(name=category, value=traits, inline=True)
@@ -97,7 +101,6 @@ def __embed1(
     ):
         embed.add_field(name=category, value=traits, inline=True)
 
-    embed.add_field(name="\u200b", value="**Advantages**", inline=False)
     for category, traits in __build_trait_display(
         char_traits,
         [
@@ -121,23 +124,30 @@ def __embed2(
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     custom_sections = character.custom_sections
+    modified = arrow.get(character.modified).humanize()
+
+    footer = f"Claimed by: {claimed_by.display_name} • " if claimed_by else ""
+    footer += f"Last updated: {modified}"
 
     # Return None if there is no bio or custom sections
     if not character.bio and len(custom_sections) == 0:
         return None
 
-    modified = arrow.get(character.modified).humanize()
     embed = discord.Embed(title=f"{character.name} - Page 2", description="", color=0x7777FF)
-    embed.set_footer(text=f"{character.name} last updated {modified}")
+
+    embed.set_footer(text=footer)
 
     embed.add_field(name="Class", value=character.class_name, inline=True)
 
     if character.class_name.lower() == "vampire" and character.clan:
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
 
+    embed.add_field(name="\u200b", value="**EXPERIENCE**", inline=False)
+    embed.add_field(name="Experience", value=f"`{character.experience}`", inline=True)
     embed.add_field(
-        name="Claimed By", value=f"{claimed_by.display_name}" if claimed_by else "-", inline=True
+        name="Lifetime Experience", value=f"`{character.experience_total}`", inline=True
     )
+    embed.add_field(name="Lifetime Cool Points", value=f"`{character.cool_points}`", inline=True)
 
     if character.bio:
         embed.add_field(name=f"**About {character.name}**", value=character.bio, inline=False)
@@ -159,7 +169,7 @@ async def show_sheet(
     ephemeral: Any = False,
 ) -> Any:
     """Show a character sheet."""
-    embed1 = __embed1(character, claimed_by)
+    embed1 = __embed1(ctx, character, claimed_by)
     embed2 = __embed2(character, claimed_by)
 
     if embed2 is None:

@@ -446,6 +446,15 @@ class ChronicleService:
 
         logger.debug(f"CHRONICLE: Update chapter {chapter.name} for guild {ctx.guild.id}")
 
+    def update_chronicle(
+        self, ctx: ApplicationContext, chronicle: Chronicle, **kwargs: str
+    ) -> None:
+        """Update a chronicle."""
+        Chronicle.update(modified=time_now(), **kwargs).where(
+            chronicle.id == chronicle.id
+        ).execute()
+        self.purge_cache(ctx)
+
     def update_note(self, ctx: ApplicationContext, note: ChronicleNote, **kwargs: str) -> None:
         """Update a note."""
         ChronicleNote.update(modified=time_now(), **kwargs).where(

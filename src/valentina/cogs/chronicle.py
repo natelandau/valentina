@@ -8,6 +8,7 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT, EmbedColor
+from valentina.utils.converters import ValidYYYYMMDD
 from valentina.utils.options import select_chapter, select_chronicle, select_note, select_npc
 from valentina.views import ChapterModal, ConfirmCancelButtons, NoteModal, NPCModal, present_embed
 
@@ -87,6 +88,26 @@ class Chronicle(commands.Cog):
                 log=True,
                 level="success",
             )
+
+    @chronicle.command(name="current_date", description="Set the current date of a campaign")
+    async def current_date(
+        self,
+        ctx: discord.ApplicationContext,
+        date: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
+    ) -> None:
+        """Set the age of a character."""
+        chronicle = self.bot.chron_svc.fetch_active(ctx)
+
+        self.bot.chron_svc.update_chronicle(ctx, chronicle, current_date=date)
+
+        await present_embed(
+            ctx,
+            title="Current Date Set",
+            description=f"{date:%Y-%m-%d}",
+            level="success",
+            ephemeral=True,
+            log=True,
+        )
 
     @chronicle.command(name="delete", description="Delete a chronicle")
     @commands.has_permissions(administrator=True)
