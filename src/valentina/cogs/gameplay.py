@@ -129,6 +129,8 @@ class Roll(commands.Cog):
             await view.wait()
             if view.confirmed:
                 roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
+            if not view.confirmed:
+                break
 
     @roll.command(description="Simple dice roll of any size.")
     async def simple(
@@ -156,6 +158,8 @@ class Roll(commands.Cog):
                 await view.wait()
                 if view.confirmed:
                     roll = DiceRoll(ctx, pool=pool, dice_size=dice_size, difficulty=0)
+                if not view.confirmed:
+                    break
         except ValueError as e:
             await ctx.respond(f"Error rolling dice: {e}", ephemeral=True)
 
@@ -206,6 +210,8 @@ class Roll(commands.Cog):
             await view.wait()
             if view.confirmed:
                 roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
+            if not view.confirmed:
+                break
 
     @roll.command(description="Add images to roll result embeds")
     async def upload_thumbnail(
