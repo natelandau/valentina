@@ -1,3 +1,9 @@
+## v1.1.2 (2023-07-22)
+
+### Fix
+
+- **character**: compute age from chronicle date
+
 ## v1.1.1 (2023-07-22)
 
 ### Fix
