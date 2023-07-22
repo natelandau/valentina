@@ -12,7 +12,7 @@ class ReRollButton(View):
         self.author = author
         self.confirmed: bool = None
 
-    @discord.ui.button(label="Re-Roll", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="Re-Roll", style=discord.ButtonStyle.success, custom_id="reroll")
     async def reroll_callback(self, button: Button, interaction: Interaction) -> None:
         """Callback for the re-roll button."""
         button.label += " ✅"
@@ -21,10 +21,26 @@ class ReRollButton(View):
         self.confirmed = True
         self.stop()
 
+    @discord.ui.button(label="Done", style=discord.ButtonStyle.secondary, custom_id="done")
+    async def done_callback(self, button: Button, interaction: Interaction) -> None:
+        """Callback for the re-roll button."""
+        button.label += " ✅"
+        button.disabled = True
+        for child in self.children:
+            if type(child) == Button:
+                child.disabled = True
+        await interaction.response.edit_message(view=None)
+        self.confirmed = False
+        self.stop()
+
     async def interaction_check(self, interaction: Interaction) -> bool:
         """Disables buttons for everyone except the user who created the embed."""
         if self.author is None:
             return True
+
+        if self.author.guild_permissions.administrator:  # type: ignore
+            return True
+
         return interaction.user.id == self.author.id
 
 

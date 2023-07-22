@@ -78,6 +78,8 @@ class Roll(commands.Cog):
             await view.wait()
             if view.confirmed:
                 roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
+            if not view.confirmed:
+                break
 
     @roll.command(name="traits", description="Throw a roll based on trait names")
     async def traits(
