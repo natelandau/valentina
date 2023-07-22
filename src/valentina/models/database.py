@@ -258,6 +258,7 @@ class Character(BaseModel):
     auspice = TextField(null=True)  # Werewolf
     essence = TextField(null=True)  # Mage
     tradition = TextField(null=True)  # Mage
+    date_of_birth = DateTimeField(null=True, formats=["%Y-%m-%d"])
 
     @property
     def name(self) -> str:
@@ -383,6 +384,7 @@ class Chronicle(BaseModel):
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     guild = ForeignKeyField(Guild, backref="chronicles")
+    current_date = DateTimeField(null=True, formats=["%Y-%m-%d"])
     is_active = BooleanField(default=False)
 
     def remove(self) -> None:
@@ -390,11 +392,11 @@ class Chronicle(BaseModel):
         for npc in self.npcs:
             npc.delete_instance()
 
-        for chap in self.chapters:
-            chap.delete_instance()
-
         for note in self.notes:
             note.delete_instance()
+
+        for chap in self.chapters:
+            chap.delete_instance()
 
         super().delete_instance()
 

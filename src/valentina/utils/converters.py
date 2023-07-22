@@ -2,6 +2,7 @@
 
 
 import re
+from datetime import datetime
 
 import aiohttp
 from discord.ext.commands import BadArgument, Context, Converter
@@ -186,6 +187,17 @@ class ValidCharTrait(Converter):
         for trait in character.traits_list:
             if argument.lower() == trait.name.lower():
                 return trait
+
+        raise BadArgument(f"`{argument}` is not a valid trait")
+
+
+class ValidYYYYMMDD(Converter):
+    """A converter that ensures a requested trait is a valid character trait or custom trait."""
+
+    async def convert(self, ctx: Context, argument: str) -> datetime:  # noqa: ARG002
+        """Validate and normalize traits."""
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", argument):
+            return datetime.strptime(argument, "%Y-%m-%d")
 
         raise BadArgument(f"`{argument}` is not a valid trait")
 

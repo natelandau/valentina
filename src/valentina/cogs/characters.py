@@ -20,6 +20,7 @@ from valentina.utils.converters import (
     ValidCustomSection,
     ValidCustomTrait,
     ValidTraitCategory,
+    ValidYYYYMMDD,
 )
 from valentina.utils.errors import SectionExistsError
 from valentina.utils.options import (
@@ -250,6 +251,27 @@ class Characters(commands.Cog, name="Character"):
         )
 
     ### ADD COMMANDS ####################################################################
+
+    @add.command(name="set_dob", description="Set the age of a character")
+    async def date_of_birth(
+        self,
+        ctx: discord.ApplicationContext,
+        dob: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
+    ) -> None:
+        """Set the age of a character."""
+        character = self.bot.char_svc.fetch_claim(ctx)
+
+        self.bot.char_svc.update_character(ctx, character.id, date_of_birth=dob)
+        logger.debug(f"CHARACTER: {character} dob updated by {ctx.author.name}.")
+
+        await present_embed(
+            ctx,
+            title="Date of Birth Updated",
+            description=f"{character} born on {dob!s}",
+            level="success",
+            ephemeral=True,
+            log=True,
+        )
 
     @add.command(name="trait", description="Add a custom trait to a character")
     async def add_trait(

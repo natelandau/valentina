@@ -149,6 +149,9 @@ class MigrateDatabase:
         if Version.parse(self.db_version) <= Version.parse("1.0.3"):
             self.__1_0_3()
 
+        if Version.parse(self.db_version) <= Version.parse("1.1.0"):
+            self.__1_1_0()
+
     def _column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.
 
@@ -347,6 +350,18 @@ class MigrateDatabase:
         if not self._column_exists(Guild._meta.table_name, "xp_permissions"):
             logger.debug("DATABASE: Add xp_permissions column")
             self.db.execute_sql("ALTER TABLE guilds ADD COLUMN xp_permissions INTEGER DEFAULT 0;")
+
+    def __1_1_0(self) -> None:
+        """Migrate from version 1.1.0."""
+        if not self._column_exists(Character._meta.table_name, "date_of_birth"):
+            logger.info("DATABASE: Migrate database from v1.1.0")
+
+            self.db.execute_sql(
+                "ALTER TABLE characters ADD COLUMN date_of_birth DATETIME DEFAULT NULL;"
+            )
+            self.db.execute_sql(
+                "ALTER TABLE chronicles ADD COLUMN current_date DATETIME DEFAULT NULL;"
+            )
 
 
 class PopulateDatabase:
