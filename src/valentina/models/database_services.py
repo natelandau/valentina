@@ -1038,13 +1038,20 @@ class GuildService:
         self.settings_cache.pop(ctx.guild.id, None)
 
         guild_object = Guild.get_or_none(id=ctx.guild.id)
+        player_role = discord.utils.get(ctx.guild.roles, name="Player")
+        storyteller_role = discord.utils.get(ctx.guild.roles, name="Storyteller")
 
         # Set channel permissions
-        member_overwrite = discord.PermissionOverwrite()
-        member_overwrite.send_messages = False  # type: ignore [misc]
-        member_overwrite.read_messages = True  # type: ignore [misc]
-        member_overwrite.manage_messages = False  # type: ignore [misc]
-        member_overwrite.add_reactions = True  # type: ignore [misc]
+        player_overwrite = discord.PermissionOverwrite()
+        player_overwrite.send_messages = False  # type: ignore [misc]
+        player_overwrite.read_messages = False  # type: ignore [misc]
+        player_overwrite.manage_messages = False  # type: ignore [misc]
+        player_overwrite.add_reactions = True  # type: ignore [misc]
+        storyteller_overwrite = discord.PermissionOverwrite()
+        storyteller_overwrite.send_messages = False  # type: ignore [misc]
+        storyteller_overwrite.read_messages = True  # type: ignore [misc]
+        storyteller_overwrite.manage_messages = False  # type: ignore [misc]
+        storyteller_overwrite.add_reactions = True  # type: ignore [misc]
         bot_overwrite = discord.PermissionOverwrite()
         bot_overwrite.send_messages = True  # type: ignore [misc]
         bot_overwrite.read_messages = True  # type: ignore [misc]
@@ -1061,12 +1068,18 @@ class GuildService:
             ):
                 logger.debug(f"DATABASE: Fetch bot audit log channel for '{ctx.guild.name}'")
 
-                await existing_channel.set_permissions(
-                    ctx.guild.default_role, overwrite=member_overwrite
-                )
                 for user in ctx.guild.members:
                     if user.bot:
                         await existing_channel.set_permissions(user, overwrite=bot_overwrite)
+
+                await existing_channel.set_permissions(
+                    ctx.guild.default_role, overwrite=player_overwrite
+                )
+                await existing_channel.set_permissions(player_role, overwrite=player_overwrite)
+                await existing_channel.set_permissions(
+                    storyteller_role, overwrite=storyteller_overwrite
+                )
+
                 return existing_channel
 
         # If the channel already exists, use it and update the database
@@ -1075,12 +1088,17 @@ class GuildService:
         )
 
         if existing_channel:
-            await existing_channel.set_permissions(
-                ctx.guild.default_role, overwrite=member_overwrite
-            )
             for user in ctx.guild.members:
                 if user.bot:
                     await existing_channel.set_permissions(user, overwrite=bot_overwrite)
+
+            await existing_channel.set_permissions(
+                ctx.guild.default_role, overwrite=player_overwrite
+            )
+            await existing_channel.set_permissions(player_role, overwrite=player_overwrite)
+            await existing_channel.set_permissions(
+                storyteller_role, overwrite=storyteller_overwrite
+            )
 
             self.update_or_add(ctx=ctx, log_channel_id=existing_channel.id)
             logger.debug(f"DATABASE: Set bot audit log channel for '{ctx.guild.name}'")
@@ -1092,10 +1110,12 @@ class GuildService:
             topic="A channel for Valentina audit logs.",
             position=100,
         )
-        await log_channel.set_permissions(ctx.guild.default_role, overwrite=member_overwrite)
         for user in ctx.guild.members:
             if user.bot:
                 await log_channel.set_permissions(user, overwrite=bot_overwrite)
+        await log_channel.set_permissions(ctx.guild.default_role, overwrite=player_overwrite)
+        await log_channel.set_permissions(player_role, overwrite=player_overwrite)
+        await log_channel.set_permissions(storyteller_role, overwrite=storyteller_overwrite)
 
         self.update_or_add(ctx=ctx, log_channel_id=log_channel.id)
         logger.debug(f"DATABASE: Set bot audit log channel for '{ctx.guild.name}'")

@@ -85,9 +85,106 @@ class Valentina(commands.Bot):
             # #######################
 
             for guild in self.guilds:
-                logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
+                # Create Storyteller role
+                # ############################
+                storyteller = discord.utils.get(guild.roles, name="Storyteller")
+
+                if storyteller is None:
+                    storyteller = await guild.create_role(
+                        name="Storyteller",
+                        color=discord.Color.dark_teal(),
+                        mentionable=True,
+                        hoist=True,
+                    )
+
+                perms = discord.Permissions()
+                perms.update(
+                    add_reactions=True,
+                    attach_files=True,
+                    can_create_instant_invite=True,
+                    change_nickname=True,
+                    connect=True,
+                    create_private_threads=True,
+                    create_public_threads=True,
+                    embed_links=True,
+                    external_emojis=True,
+                    external_stickers=True,
+                    manage_messages=True,
+                    manage_threads=True,
+                    mention_everyone=True,
+                    read_message_history=True,
+                    read_messages=True,
+                    send_messages_in_threads=True,
+                    send_messages=True,
+                    send_tts_messages=True,
+                    speak=True,
+                    stream=True,
+                    use_application_commands=True,
+                    use_external_emojis=True,
+                    use_external_stickers=True,
+                    use_slash_commands=True,
+                    use_voice_activation=True,
+                    view_channel=True,
+                )
+                await storyteller.edit(reason=None, permissions=perms)
+                logger.debug(f"CONNECT: {storyteller.name} role created")
+
+                # Create Player role
+                # ############################
+                player = discord.utils.get(guild.roles, name="Player", mentionable=True, hoist=True)
+
+                if player is None:
+                    player = await guild.create_role(
+                        name="Player",
+                        color=discord.Color.dark_blue(),
+                        mentionable=True,
+                        hoist=True,
+                    )
+
+                perms = discord.Permissions()
+                perms.update(
+                    add_reactions=True,
+                    attach_files=True,
+                    can_create_instant_invite=True,
+                    change_nickname=True,
+                    connect=True,
+                    create_private_threads=True,
+                    create_public_threads=True,
+                    embed_links=True,
+                    external_emojis=True,
+                    external_stickers=True,
+                    mention_everyone=True,
+                    read_message_history=True,
+                    read_messages=True,
+                    send_messages_in_threads=True,
+                    send_messages=True,
+                    send_tts_messages=True,
+                    speak=True,
+                    stream=True,
+                    use_application_commands=True,
+                    use_external_emojis=True,
+                    use_external_stickers=True,
+                    use_slash_commands=True,
+                    use_voice_activation=True,
+                    view_channel=True,
+                )
+                await player.edit(reason=None, permissions=perms)
+                logger.debug(f"CONNECT: {player.name} role created")
+
+                positions = {
+                    guild.default_role: 0,
+                    player: 1,
+                    storyteller: 2,
+                }  # penultimate role
+
+                await guild.edit_role_positions(positions=positions)  # type: ignore [arg-type]
+
+                # Add guild to database
+                # ############################
+
                 self.guild_svc.update_or_add(guild=guild)
                 self.char_svc.fetch_all_characters(guild.id)
+                logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
         logger.info("BOT: In-memory caches created")
 
