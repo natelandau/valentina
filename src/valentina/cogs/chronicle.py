@@ -189,7 +189,7 @@ An overview of {chronicle.name}.
             if len(current_string) + len(chapter.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
                 chapter_pages.append(f"\u200b\nChapters in **{chronicle.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n \n{chapter.chronicle_display()}"
+            current_string += f"\n{chapter.chronicle_display()}"
 
         if current_string:
             chapter_pages.append(f"\u200b\nChapters in **{chronicle.name}**" + current_string)
@@ -201,7 +201,7 @@ An overview of {chronicle.name}.
             if len(current_string) + len(npc.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
                 npc_pages.append(f"\u200b\nNPCs in **{chronicle.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n \n{npc.chronicle_display()}"
+            current_string += f"\n{npc.chronicle_display()}"
 
         if current_string:
             npc_pages.append(f"\u200b\nNPCs in **{chronicle.name}**" + current_string)
@@ -213,7 +213,7 @@ An overview of {chronicle.name}.
             if len(current_string) + len(note.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
                 note_pages.append(f"\u200b\nNotes in **{chronicle.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n \n{note.chronicle_display()}"
+            current_string += f"\n{note.chronicle_display()}"
 
         if current_string:
             note_pages.append(f"\u200b\nNotes in **{chronicle.name}**" + current_string)
