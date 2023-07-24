@@ -11,7 +11,7 @@ from discord.ext.commands import MemberConverter
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import TraitPermissions, XPPermissions
+from valentina.models.constants import ChannelPermission, TraitPermissions, XPPermissions
 from valentina.utils import Context
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import pluralize
@@ -128,9 +128,22 @@ class Admin(commands.Cog):
             required=False,
             default=None,
         ),
-        audit_log_channel: Option(
+        audit_log_channel_name: Option(
             ValidChannelName,
             "Log to this channel",
+            required=False,
+            default=None,
+        ),
+        use_storyteller_channel: Option(
+            bool,
+            "Use a storyteller channel",
+            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
+            required=False,
+            default=None,
+        ),
+        storyteller_channel_name: Option(
+            ValidChannelName,
+            "Name for the storyteller channel",
             required=False,
             default=None,
         ),
@@ -165,7 +178,11 @@ class Admin(commands.Cog):
         if use_audit_log is not None:
             guild_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
 
-            if use_audit_log and not guild_settings["log_channel_id"] and not audit_log_channel:
+            if (
+                use_audit_log
+                and not guild_settings["log_channel_id"]
+                and not audit_log_channel_name
+            ):
                 await present_embed(
                     ctx,
                     title="No audit log channel",
@@ -181,13 +198,67 @@ class Admin(commands.Cog):
             fields.append(("Audit Logging", "Enabled" if use_audit_log else "Disabled"))
             self.bot.guild_svc.update_or_add(ctx=ctx, use_audit_log=use_audit_log)
 
-        if audit_log_channel is not None:
-            channel = await self.bot.guild_svc.create_bot_log_channel(ctx, audit_log_channel)
+        if audit_log_channel_name is not None:
+            channel = await self.bot.guild_svc.create_channel(
+                ctx,
+                audit_log_channel_name,
+                topic="Audit logs",
+                position=100,
+                database_column_for_id="log_channel_id",
+                default_role=ChannelPermission.HIDDEN,
+                player=ChannelPermission.HIDDEN,
+                storyteller=ChannelPermission.READ_ONLY,
+            )
+
             logger.debug(
                 f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Log channel: {channel.name}"
             )
             fields.append(("Audit Log Channel", channel.mention))
 
+        if use_storyteller_channel is not None:
+            guild_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
+
+            if (
+                use_storyteller_channel
+                and not guild_settings["storyteller_channel_id"]
+                and not storyteller_channel_name
+            ):
+                await present_embed(
+                    ctx,
+                    title="No storyteller log channel",
+                    description="Please rerun the command and enter a name for the storyteller channel",
+                    level="error",
+                    ephemeral=True,
+                )
+                return
+
+            logger.debug(
+                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Use storyteller channel: {use_storyteller_channel}"
+            )
+            fields.append(
+                ("Storyteller Channel", "Enabled" if use_storyteller_channel else "Disabled")
+            )
+            self.bot.guild_svc.update_or_add(
+                ctx=ctx, use_storyteller_channel=use_storyteller_channel
+            )
+
+        if storyteller_channel_name is not None:
+            channel = await self.bot.guild_svc.create_channel(
+                ctx,
+                storyteller_channel_name,
+                topic="Storyteller channel",
+                position=90,
+                database_column_for_id="storyteller_channel_id",
+                default_role=ChannelPermission.HIDDEN,
+                player=ChannelPermission.HIDDEN,
+                storyteller=ChannelPermission.POST,
+            )
+
+            logger.debug(
+                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) storyteller channel: {channel.name}"
+            )
+            fields.append(("Storyteller Channel", channel.mention))
+        # Show results
         if len(fields) > 0:
             await present_embed(
                 ctx,
@@ -214,6 +285,18 @@ class Admin(commands.Cog):
                 "Audit Log Channel",
                 discord.utils.get(ctx.guild.text_channels, id=settings["log_channel_id"]).mention
                 if settings["log_channel_id"]
+                else "Not set",
+            ),
+            (
+                "Use Storyteller Channel",
+                "Enabled" if settings["use_storyteller_channel"] else "Disabled",
+            ),
+            (
+                "Storyteller Channel",
+                discord.utils.get(
+                    ctx.guild.text_channels, id=settings["storyteller_channel_id"]
+                ).mention
+                if settings["storyteller_channel_id"]
                 else "Not set",
             ),
         ]

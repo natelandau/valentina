@@ -7,6 +7,7 @@ from numpy.random import default_rng
 from valentina.models.constants import (
     CLAN_DISCIPLINES,
     DICEROLL_THUBMS,
+    ChannelPermission,
     MaxTraitValue,
     RollResultType,
     XPMultiplier,
@@ -14,6 +15,42 @@ from valentina.models.constants import (
 )
 
 _rng = default_rng()
+
+
+def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
+    """Set the channel permissions for a role from a ChannelPermission enum."""
+    perms = discord.PermissionOverwrite()
+
+    match requested_permission:
+        case ChannelPermission.HIDDEN:
+            perms.send_messages = False  # type: ignore [misc]
+            perms.read_messages = False  # type: ignore [misc]
+            perms.manage_messages = False  # type: ignore [misc]
+            perms.add_reactions = False  # type: ignore [misc]
+            perms.view_channel = False  # type: ignore [misc]
+
+        case ChannelPermission.READ_ONLY:
+            perms.send_messages = False  # type: ignore [misc]
+            perms.read_messages = True  # type: ignore [misc]
+            perms.manage_messages = False  # type: ignore [misc]
+            perms.add_reactions = True  # type: ignore [misc]
+            perms.view_channel = True  # type: ignore [misc]
+
+        case ChannelPermission.POST:
+            perms.send_messages = True  # type: ignore [misc]
+            perms.read_messages = True  # type: ignore [misc]
+            perms.manage_messages = False  # type: ignore [misc]
+            perms.add_reactions = True  # type: ignore [misc]
+            perms.view_channel = True  # type: ignore [misc]
+
+        case ChannelPermission.MANAGE:
+            perms.send_messages = True  # type: ignore [misc]
+            perms.read_messages = True  # type: ignore [misc]
+            perms.manage_messages = True  # type: ignore [misc]
+            perms.add_reactions = True  # type: ignore [misc]
+            perms.view_channel = True  # type: ignore [misc]
+
+    return perms
 
 
 def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:

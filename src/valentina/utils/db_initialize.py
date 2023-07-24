@@ -152,6 +152,9 @@ class MigrateDatabase:
         if Version.parse(self.db_version) <= Version.parse("1.1.0"):
             self.__1_1_0()
 
+        if Version.parse(self.db_version) < Version.parse("1.1.5"):
+            self.__1_1_5()
+
     def _column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.
 
@@ -359,8 +362,20 @@ class MigrateDatabase:
             self.db.execute_sql(
                 "ALTER TABLE characters ADD COLUMN date_of_birth DATETIME DEFAULT NULL;"
             )
+
             self.db.execute_sql(
                 "ALTER TABLE chronicles ADD COLUMN current_date DATETIME DEFAULT NULL;"
+            )
+
+    def __1_1_5(self) -> None:
+        """Migrate from version 1.1.5."""
+        if not self._column_exists(Guild._meta.table_name, "use_storyteller_channel"):
+            logger.info("DATABASE: Migrate database from v1.1.5")
+            self.db.execute_sql(
+                f"ALTER TABLE {Guild._meta.table_name} ADD COLUMN use_storyteller_channel INTEGER NOT NULL DEFAULT 0;"
+            )
+            self.db.execute_sql(
+                f"ALTER TABLE {Guild._meta.table_name} ADD COLUMN storyteller_channel_id INTEGER DEFAULT NULL;"
             )
 
 

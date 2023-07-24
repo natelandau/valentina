@@ -77,6 +77,8 @@ class Guild(BaseModel):
     use_audit_log = BooleanField(default=False)
     xp_permissions = IntegerField(default=0)
     trait_permissions = IntegerField(default=0)
+    use_storyteller_channel = BooleanField(default=False)
+    storyteller_channel_id = IntegerField(null=True)
 
     def __str__(self) -> str:
         """Return the string representation of the model."""

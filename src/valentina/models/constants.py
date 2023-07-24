@@ -142,6 +142,16 @@ class RollResultType(Enum):
     OTHER = "Other"
 
 
+class ChannelPermission(Enum):
+    """Enum for permissions when creating a character. Default is UNRESTRICTED."""
+
+    DEFAULT = 0  # Default
+    HIDDEN = 1
+    READ_ONLY = 2
+    POST = 3
+    MANAGE = 4
+
+
 class TraitCategoryOrder(IntEnum):
     """The order of trait categories to mimic character sheets."""
 

@@ -12,6 +12,7 @@ from peewee import DoesNotExist, IntegrityError, ModelSelect, fn
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
 from valentina.models.constants import (
+    ChannelPermission,
     EmbedColor,
     MaxTraitValue,
     TraitCategoryOrder,
@@ -52,6 +53,7 @@ from valentina.utils.errors import (
     NoClaimError,
     TraitNotFoundError,
 )
+from valentina.utils.helpers import set_channel_perms
 
 
 class TraitService:
@@ -1013,6 +1015,8 @@ class GuildService:
         self.settings_cache[ctx.guild.id]["trait_permissions"] = guild.trait_permissions
         self.settings_cache[ctx.guild.id]["log_channel_id"] = guild.log_channel_id
         self.settings_cache[ctx.guild.id]["use_audit_log"] = guild.use_audit_log
+        self.settings_cache[ctx.guild.id]["use_storyteller_channel"] = guild.use_storyteller_channel
+        self.settings_cache[ctx.guild.id]["storyteller_channel_id"] = guild.storyteller_channel_id
 
         logger.debug(f"DATABASE: Fetch guild settings for '{ctx.guild.name}'")
         return self.settings_cache[ctx.guild.id]
@@ -1030,96 +1034,55 @@ class GuildService:
         RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
         logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
 
-    async def create_bot_log_channel(
-        self, ctx: ApplicationContext, log_channel_name: str
+    async def create_channel(
+        self,
+        ctx: ApplicationContext,
+        channel_name: str,
+        topic: str,
+        position: int,
+        database_column_for_id: str,
+        default_role: ChannelPermission,
+        player: ChannelPermission,
+        storyteller: ChannelPermission,
     ) -> discord.TextChannel:
-        """Fetch the bot log channel for a guild and create it if it doesn't exist."""
-        log_channel = None
+        """Create a channel for a guild."""
         self.settings_cache.pop(ctx.guild.id, None)
-
         guild_object = Guild.get_or_none(id=ctx.guild.id)
+        id_from_db = getattr(guild_object, database_column_for_id)
         player_role = discord.utils.get(ctx.guild.roles, name="Player")
         storyteller_role = discord.utils.get(ctx.guild.roles, name="Storyteller")
 
+        channel = discord.utils.get(ctx.guild.text_channels, name=channel_name.lower().strip())
+
+        # If the guild has a log channel set which matches the name, use it
+        if channel and id_from_db != channel.id:
+            setattr(guild_object, database_column_for_id, channel.id)
+            guild_object.save()
+
+        if not channel:
+            channel = await ctx.guild.create_text_channel(
+                channel_name,
+                topic=topic,
+                position=position,
+            )
+            setattr(guild_object, database_column_for_id, channel.id)
+            guild_object.save()
+
         # Set channel permissions
-        player_overwrite = discord.PermissionOverwrite()
-        player_overwrite.send_messages = False  # type: ignore [misc]
-        player_overwrite.read_messages = False  # type: ignore [misc]
-        player_overwrite.manage_messages = False  # type: ignore [misc]
-        player_overwrite.add_reactions = True  # type: ignore [misc]
-        storyteller_overwrite = discord.PermissionOverwrite()
-        storyteller_overwrite.send_messages = False  # type: ignore [misc]
-        storyteller_overwrite.read_messages = True  # type: ignore [misc]
-        storyteller_overwrite.manage_messages = False  # type: ignore [misc]
-        storyteller_overwrite.add_reactions = True  # type: ignore [misc]
-        bot_overwrite = discord.PermissionOverwrite()
-        bot_overwrite.send_messages = True  # type: ignore [misc]
-        bot_overwrite.read_messages = True  # type: ignore [misc]
-        bot_overwrite.manage_messages = True  # type: ignore [misc]
-
-        # If the guild has a log channel set which matches the name, use it and create nothing
-        if guild_object.log_channel_id:
-            existing_channel = discord.utils.get(
-                ctx.guild.text_channels, id=guild_object.log_channel_id
-            )
-            if (
-                existing_channel
-                and existing_channel.name.lower().strip() == log_channel_name.lower().strip()
-            ):
-                logger.debug(f"DATABASE: Fetch bot audit log channel for '{ctx.guild.name}'")
-
-                for user in ctx.guild.members:
-                    if user.bot:
-                        await existing_channel.set_permissions(user, overwrite=bot_overwrite)
-
-                await existing_channel.set_permissions(
-                    ctx.guild.default_role, overwrite=player_overwrite
-                )
-                await existing_channel.set_permissions(player_role, overwrite=player_overwrite)
-                await existing_channel.set_permissions(
-                    storyteller_role, overwrite=storyteller_overwrite
-                )
-
-                return existing_channel
-
-        # If the channel already exists, use it and update the database
-        existing_channel = discord.utils.get(
-            ctx.guild.text_channels, name=log_channel_name.lower().strip()
-        )
-
-        if existing_channel:
-            for user in ctx.guild.members:
-                if user.bot:
-                    await existing_channel.set_permissions(user, overwrite=bot_overwrite)
-
-            await existing_channel.set_permissions(
-                ctx.guild.default_role, overwrite=player_overwrite
-            )
-            await existing_channel.set_permissions(player_role, overwrite=player_overwrite)
-            await existing_channel.set_permissions(
-                storyteller_role, overwrite=storyteller_overwrite
-            )
-
-            self.update_or_add(ctx=ctx, log_channel_id=existing_channel.id)
-            logger.debug(f"DATABASE: Set bot audit log channel for '{ctx.guild.name}'")
-            return existing_channel
-
-        # If the channel doesn't exist, create it and update the database
-        log_channel = await ctx.guild.create_text_channel(
-            log_channel_name,
-            topic="A channel for Valentina audit logs.",
-            position=100,
-        )
         for user in ctx.guild.members:
             if user.bot:
-                await log_channel.set_permissions(user, overwrite=bot_overwrite)
-        await log_channel.set_permissions(ctx.guild.default_role, overwrite=player_overwrite)
-        await log_channel.set_permissions(player_role, overwrite=player_overwrite)
-        await log_channel.set_permissions(storyteller_role, overwrite=storyteller_overwrite)
+                await channel.set_permissions(
+                    user, overwrite=set_channel_perms(ChannelPermission.MANAGE)
+                )
 
-        self.update_or_add(ctx=ctx, log_channel_id=log_channel.id)
-        logger.debug(f"DATABASE: Set bot audit log channel for '{ctx.guild.name}'")
-        return log_channel
+        await channel.set_permissions(
+            ctx.guild.default_role, overwrite=set_channel_perms(default_role)
+        )
+        await channel.set_permissions(player_role, overwrite=set_channel_perms(player))
+        await channel.set_permissions(storyteller_role, overwrite=set_channel_perms(storyteller))
+
+        logger.debug(f"GUILD: Create channel '{channel_name}' for '{ctx.guild.name}'")
+        return channel
 
     def fetch_roll_result_thumbs(self, ctx: ApplicationContext) -> dict[str, list[str]]:
         """Get all roll result thumbnails for a guild."""
