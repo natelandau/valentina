@@ -28,10 +28,13 @@ class Admin(commands.Cog):
         self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
     ) -> None:
         """Handle exceptions and errors from the cog."""
+        from discord.ext.commands.errors import MissingAnyRole
+
         if hasattr(error, "original"):
             error = error.original
 
-        logger.exception(error)
+        if not isinstance(error, MissingAnyRole):
+            logger.exception(error)
 
         command_name = ""
         if ctx.command.parent.name:
@@ -55,8 +58,83 @@ class Admin(commands.Cog):
         default_member_permissions=discord.Permissions(administrator=True),
     )
 
+    @admin.command(description="Add user to role")
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def add_role(
+        self,
+        ctx: discord.ApplicationContext,
+        member: discord.Member,
+        role: discord.Role,
+        reason: Option(str, description="Reason for adding role", default="No reason provided"),
+    ) -> None:
+        """Add user to role."""
+        await member.add_roles(role, reason=reason)  # type: ignore [arg-type]
+        await present_embed(
+            ctx,
+            title="Role Added",
+            description=f"{member.display_name} was added to {role.mention}",
+            level="success",
+            ephemeral=True,
+        )
+
+    @admin.command()
+    @discord.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def userinfo(
+        self,
+        ctx: discord.ApplicationContext,
+        user: Option(
+            discord.User,
+            description="The user to view information for",
+            required=True,
+        ),
+    ) -> None:
+        """View information about a user."""
+        target = user or ctx.author
+        creation = ((target.id >> 22) + 1420070400000) // 1000
+
+        fields = [("Account Created", f"<t:{creation}:R> on <t:{creation}:D>")]
+        if isinstance(target, discord.Member):
+            fields.append(
+                (
+                    "Joined Server",
+                    f"<t:{int(target.joined_at.timestamp())}:R> on <t:{int(target.joined_at.timestamp())}:D>",
+                )
+            )
+            fields.append(
+                (
+                    f"Roles ({len(target._roles)})",
+                    ", ".join(r.mention for r in target.roles[::-1][:-1])
+                    or "_Member has no roles_",
+                )
+            )
+            if boost := target.premium_since:
+                fields.append(
+                    (
+                        "Boosting Since",
+                        f"<t:{int(boost.timestamp())}:R> on <t:{int(boost.timestamp())}:D>",
+                    )
+                )
+            else:
+                fields.append(("Boosting Server?", "No"))
+
+        await present_embed(
+            ctx,
+            title=f"{target.display_name}",
+            fields=fields,
+            inline_fields=False,
+            thumbnail=target.display_avatar.url,
+            author=str(target),
+            author_avatar=target.display_avatar.url,
+            footer=f"Requested by {ctx.author}",
+            ephemeral=True,
+            level="info",
+        )
+
     @admin.command(description="Purge the bot's cache and reload data from DB")
     @commands.guild_only()
+    @commands.has_permissions(administrator=True)
     async def puge_cache(
         self,
         ctx: discord.ApplicationContext,
@@ -110,6 +188,7 @@ class Admin(commands.Cog):
 
     @admin.command(description="Manage settings")
     @commands.guild_only()
+    @commands.has_permissions(administrator=True)
     async def settings(
         self,
         ctx: discord.ApplicationContext,
@@ -273,6 +352,7 @@ class Admin(commands.Cog):
 
     @admin.command(description="Show server settings")
     @commands.guild_only()
+    @commands.has_permissions(administrator=True)
     async def show_settings(self, ctx: discord.ApplicationContext) -> None:
         """Show server settings."""
         settings = self.bot.guild_svc.fetch_guild_settings(ctx)
@@ -319,55 +399,7 @@ class Admin(commands.Cog):
 
     @moderate.command()
     @discord.guild_only()
-    async def userinfo(
-        self,
-        ctx: discord.ApplicationContext,
-        user: Option(discord.User, description="The user to view information for", default=None),
-    ) -> None:
-        """View information about a user."""
-        target = user or ctx.author
-        creation = ((target.id >> 22) + 1420070400000) // 1000
-
-        fields = [("Account Created", f"<t:{creation}:R> on <t:{creation}:D>")]
-        if isinstance(target, discord.Member):
-            fields.append(
-                (
-                    "Joined Server",
-                    f"<t:{int(target.joined_at.timestamp())}:R> on <t:{int(target.joined_at.timestamp())}:D>",
-                )
-            )
-            fields.append(
-                (
-                    f"Roles ({len(target._roles)})",
-                    ", ".join(r.mention for r in target.roles[::-1][:-1])
-                    or "_Member has no roles_",
-                )
-            )
-            if boost := target.premium_since:
-                fields.append(
-                    (
-                        "Boosting Since",
-                        f"<t:{int(boost.timestamp())}:R> on <t:{int(boost.timestamp())}:D>",
-                    )
-                )
-            else:
-                fields.append(("Boosting Server?", "No"))
-
-        await present_embed(
-            ctx,
-            title=f"{target.display_name}",
-            fields=fields,
-            inline_fields=False,
-            thumbnail=target.display_avatar.url,
-            author=str(target),
-            author_avatar=target.display_avatar.url,
-            footer=f"Requested by {ctx.author}",
-            ephemeral=True,
-            level="info",
-        )
-
-    @moderate.command()
-    @discord.guild_only()
+    @commands.has_permissions(administrator=True)
     async def kick(
         self, ctx: Context, member: discord.Member, *, reason: str = "No reason given"
     ) -> None:
@@ -420,6 +452,7 @@ class Admin(commands.Cog):
 
     @moderate.command()
     @discord.guild_only()
+    @commands.has_permissions(administrator=True)
     async def unban(self, ctx: Context, user: discord.User) -> None:
         """Revoke ban from a banned user."""
         try:
@@ -438,6 +471,7 @@ class Admin(commands.Cog):
 
     @moderate.command()
     @discord.guild_only()
+    @commands.has_permissions(administrator=True)
     async def massban(
         self,
         ctx: Context,
@@ -487,6 +521,7 @@ class Admin(commands.Cog):
 
     @moderate.command()
     @discord.guild_only()
+    @commands.has_permissions(administrator=True)
     async def slowmode(
         self,
         ctx: Context,
@@ -521,6 +556,7 @@ class Admin(commands.Cog):
 
     @moderate.command()
     @discord.guild_only()
+    @commands.has_permissions(administrator=True)
     async def lock(
         self,
         ctx: Context,
@@ -557,6 +593,7 @@ class Admin(commands.Cog):
 
     @moderate.command()
     @discord.guild_only()
+    @commands.has_permissions(administrator=True)
     async def unlock(
         self,
         ctx: Context,
@@ -589,6 +626,7 @@ class Admin(commands.Cog):
         )
 
     @moderate.command()
+    @commands.has_permissions(administrator=True)
     @discord.option(
         "limit",
         description="The amount of messages to delete",
@@ -624,6 +662,7 @@ class Admin(commands.Cog):
         return
 
     @moderate.command()
+    @commands.has_permissions(administrator=True)
     @discord.option(
         "member",
         description="The member whose messages will be deleted.",
@@ -666,6 +705,7 @@ class Admin(commands.Cog):
         return
 
     @moderate.command()
+    @commands.has_permissions(administrator=True)
     @discord.option(
         "limit",
         description="The amount of messages to search.",
@@ -701,6 +741,7 @@ class Admin(commands.Cog):
         return
 
     @moderate.command()
+    @commands.has_permissions(administrator=True)
     @discord.option(
         "phrase",
         description="The phrase to delete messages containing it.",

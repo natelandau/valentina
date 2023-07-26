@@ -610,6 +610,7 @@ class CharacterService:
 
         characters = Character.select().where(
             (Character.guild_id == guild_id)  # grab only characters for the guild
+            & (Character.storyteller_character == False)  # grab only player characters # noqa: E712
             & ~(Character.id.in_(cached_ids))  # grab only characters not in cache
         )
         if len(characters) > 0:
