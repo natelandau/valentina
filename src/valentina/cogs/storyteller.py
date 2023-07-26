@@ -12,6 +12,7 @@ from valentina.utils.converters import ValidCharacterClass, ValidCharacterObject
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
     select_char_class,
+    select_country,
     select_storyteller_character,
     select_vampire_clan,
 )
@@ -96,7 +97,15 @@ class StoryTeller(commands.Cog):
             name="specialty",
             description="The character's specialty",
             required=True,
-            choices=["Generalist", "Fighter", "Thinker", "Leader"],
+            choices=["No Specialty", "Fighter", "Thinker", "Leader"],
+            default="No Specialty",
+        ),
+        name_type: Option(
+            str,
+            name="name_type",
+            description="The character's name type",
+            autocomplete=select_country,
+            default="us",
         ),
         vampire_clan: Option(
             ValidClan,
@@ -108,7 +117,7 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Test command."""
-        first_name, last_name = await fetch_random_name(gender=gender)
+        first_name, last_name = await fetch_random_name(gender=gender, country=name_type)
 
         if char_class.name.lower() == "vampire" and not vampire_clan:
             vampire_clan = VampireClan.select().order_by(fn.Random()).limit(1)[0]

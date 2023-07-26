@@ -155,6 +155,34 @@ async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
     return traits
 
 
+async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of available countries."""
+    options = [
+        OptionChoice("United States", "us"),
+        OptionChoice("African", "ng,ke,za"),
+        OptionChoice("Arabia", "da,mn,ta,jo,tn,ma,eg"),
+        OptionChoice("Asian", "cn,jp,kr"),
+        OptionChoice("Brazil", "br"),
+        OptionChoice("France", "fr"),
+        OptionChoice("Germany", "de"),
+        OptionChoice("Greece", "gr"),
+        OptionChoice("India", "in"),
+        OptionChoice("Italy", "it"),
+        OptionChoice("Mexico", "mx"),
+        OptionChoice("Russia", "ru"),
+        OptionChoice("Scaninavia", "nl,se,no,dk,fi"),
+        OptionChoice("South American", "ar,cl,co,pe,ve"),
+        OptionChoice("Spain", "es"),
+        OptionChoice("Turkey", "tr"),
+    ]
+
+    if len(options) > MAX_OPTION_LIST_SIZE:
+        instructions = "Keep typing ..." if ctx.value else "Start typing a country."
+        return [OptionChoice(f"Too many options to display. {instructions}", "")]
+
+    return options
+
+
 async def select_macro(ctx: discord.ApplicationContext) -> list[OptionChoice]:
     """Populate a select list with a users' macros."""
     options = [
