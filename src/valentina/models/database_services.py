@@ -479,13 +479,14 @@ class ChronicleService:
 
 
 class CharacterService:
-    """A service for managing the Character Manager cache/in-memory database."""
+    """A service for managing the Player characters in the cache/in-memory database."""
 
     def __init__(self) -> None:
         """Initialize the CharacterService."""
         # Caches to avoid database queries
         ##################################
         self.characters: dict[str, Character] = {}  # {char_key: Character, ...}
+        self.storyteller_character_cache: dict[int, list[Character]] = {}  # {guild_id: Character}
         self.claims: dict[str, str] = {}  # {claim_key: char_key}
 
     @staticmethod
@@ -585,11 +586,17 @@ class CharacterService:
             **kwargs,
         )
 
+        # Add storyteller characters to the cache
+        if character.storyteller_character:
+            if ctx.guild.id not in self.storyteller_character_cache:
+                self.storyteller_character_cache[ctx.guild.id] = []
+
+            self.storyteller_character_cache[ctx.guild.id].append(character)
+
         logger.info(f"DATABASE: Create character: {character}] for {ctx.author.display_name}")
 
         return character
 
-    @logger.catch
     def fetch_all_characters(self, guild_id: int) -> ModelSelect:
         """Returns all characters for a specific guild. Checks the cache first and then the database. If characters are found in the database, they are added to the cache.
 
@@ -623,6 +630,31 @@ class CharacterService:
             chars_to_return.append(character)
 
         return chars_to_return
+
+    def fetch_all_storyteller_characters(
+        self, ctx: ApplicationContext | AutocompleteContext = None, guild_id: int | None = None
+    ) -> list[Character]:
+        """Fetch all StoryTeller characters for a guild."""
+        if guild_id is None and isinstance(ctx, ApplicationContext):
+            guild_id = ctx.guild.id
+        if guild_id is None and isinstance(ctx, AutocompleteContext):
+            guild_id = ctx.interaction.guild.id
+
+        if guild_id in self.storyteller_character_cache:
+            logger.debug(
+                f"CACHE: Return {len(self.storyteller_character_cache[guild_id])} StoryTeller characters"
+            )
+            return self.storyteller_character_cache[guild_id]
+
+        self.storyteller_character_cache[guild_id] = []
+        characters = Character.select().where(
+            (Character.guild_id == guild_id)
+            & (Character.storyteller_character == True)  # noqa: E712
+        )
+
+        logger.debug(f"DATABASE: Fetch {len(characters)} StoryTeller characters")
+        self.storyteller_character_cache[guild_id] = [x for x in characters]
+        return self.storyteller_character_cache[guild_id]
 
     def fetch_claim(self, ctx: ApplicationContext | AutocompleteContext) -> Character:
         """Fetch the character claimed by a user."""
@@ -702,12 +734,14 @@ class CharacterService:
             caches["claims"] = self.claims
 
         if ctx:
+            self.storyteller_character_cache.pop(ctx.guild.id, None)
             for _cache_name, cache in caches.items():
                 for key in cache.copy():
                     if key.startswith(str(ctx.guild.id)):
                         cache.pop(key, None)
             logger.debug(f"CACHE: Purge character caches for guild {ctx.guild}")
         else:
+            self.storyteller_character_cache = {}
             for cache in caches.values():
                 cache.clear()
             logger.debug("CACHE: Purge all character caches")
@@ -732,9 +766,6 @@ class CharacterService:
         """Update a character in the cache and database."""
         key = self.__get_char_key(ctx.guild.id, char_id)
 
-        # Clear character from cache but keep claims intact
-        self.characters.pop(key, None)
-
         try:
             character = Character.get_by_id(char_id)
         except DoesNotExist as e:
@@ -743,6 +774,13 @@ class CharacterService:
         Character.update(modified=time_now(), **kwargs).where(
             Character.id == character.id
         ).execute()
+
+        # Clear caches
+        if not character.storyteller_character:
+            self.characters.pop(key, None)
+
+        if character.storyteller_character:
+            self.storyteller_character_cache.pop(ctx.guild.id, None)
 
         logger.debug(f"DATABASE: Update character: {character}")
         return character

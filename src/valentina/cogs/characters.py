@@ -219,7 +219,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
     ) -> None:
-        """List all characters."""
+        """List all player characters."""
         characters = self.bot.char_svc.fetch_all_characters(ctx.guild.id)
         if len(characters) == 0:
             await present_embed(

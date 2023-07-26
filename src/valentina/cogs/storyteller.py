@@ -57,7 +57,7 @@ class StoryTeller(commands.Cog):
         checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
     )
 
-    @storyteller.command(name="new_story_character", description="Create a new character")
+    @storyteller.command(name="new_character", description="Create a new character")
     async def create_story_char(
         self,
         ctx: discord.ApplicationContext,
@@ -151,6 +151,39 @@ class StoryTeller(commands.Cog):
                 title=f"{character.name} saved",
                 color=discord.Color.green(),
             ),
+        )
+
+    @storyteller.command(name="list_characters", description="List all characters")
+    async def list_characters(
+        self,
+        ctx: discord.ApplicationContext,
+    ) -> None:
+        """List all storyteller characters."""
+        characters = self.bot.char_svc.fetch_all_storyteller_characters(ctx=ctx)
+
+        if len(characters) == 0:
+            await present_embed(
+                ctx,
+                title="No Storyteller Characters",
+                description="There are no characters.\nCreate one with `/storyteller new_character`",
+                level="error",
+            )
+            return
+
+        fields = []
+        plural = "s" if len(characters) > 1 else ""
+        description = f"**{len(characters)}** character{plural} on this server\n\u200b"
+
+        for character in sorted(characters, key=lambda x: x.name):
+            fields.append((character.name, ""))
+
+        await present_embed(
+            ctx=ctx,
+            title="List of characters",
+            description=description,
+            fields=fields,
+            inline_fields=False,
+            level="info",
         )
 
 
