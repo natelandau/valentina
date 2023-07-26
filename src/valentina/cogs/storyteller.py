@@ -8,12 +8,16 @@ from peewee import fn
 
 from valentina.models.bot import Valentina
 from valentina.models.database import VampireClan
-from valentina.utils.converters import ValidCharacterClass, ValidClan
+from valentina.utils.converters import ValidCharacterClass, ValidCharacterObject, ValidClan
 from valentina.utils.helpers import fetch_random_name
-from valentina.utils.options import select_char_class, select_vampire_clan
+from valentina.utils.options import (
+    select_char_class,
+    select_storyteller_character,
+    select_vampire_clan,
+)
 from valentina.utils.storyteller import storyteller_character_traits
 from valentina.views import ConfirmCancelButtons, present_embed
-from valentina.views.character_sheet import sheet_embed
+from valentina.views.character_sheet import sheet_embed, show_sheet
 
 
 class StoryTeller(commands.Cog):
@@ -185,6 +189,20 @@ class StoryTeller(commands.Cog):
             inline_fields=False,
             level="info",
         )
+
+    @storyteller.command(name="sheet", description="View a character sheet")
+    async def view_character_sheet(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to view",
+            autocomplete=select_storyteller_character,
+            required=True,
+        ),
+    ) -> None:
+        """View a character sheet for a storyteller character."""
+        await show_sheet(ctx, character=character, claimed_by=None)
 
 
 def setup(bot: Valentina) -> None:

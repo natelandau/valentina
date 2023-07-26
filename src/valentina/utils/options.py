@@ -204,6 +204,34 @@ async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
     return npcs
 
 
+async def select_storyteller_character(ctx: discord.ApplicationContext) -> list[OptionChoice]:
+    """Generate a list of the user's available storyteller characters."""
+    if (guild := ctx.interaction.guild) is None:
+        return []
+
+    characters = ctx.bot.char_svc.fetch_all_storyteller_characters(guild_id=guild.id)  # type: ignore [attr-defined]
+
+    all_chars = []
+    for character in characters:
+        char_id = character.id
+        name = f"{character.name}"
+        all_chars.append((name, char_id))
+
+    name_search = ctx.value.casefold()
+
+    options = [
+        OptionChoice(name, str(char_id))
+        for name, char_id in sorted(all_chars)
+        if name.casefold().startswith(name_search or "")
+    ]
+
+    if len(options) > MAX_OPTION_LIST_SIZE:
+        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
+        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
+
+    return options
+
+
 async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available common and custom traits."""
     # Discord option can be either "trait" or "trait_one"
