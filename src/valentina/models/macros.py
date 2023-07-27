@@ -37,7 +37,7 @@ class MacroService:
         trait_two: Trait | CustomTrait,
         abbreviation: str | None = None,
         description: str | None = None,
-    ) -> None:
+    ) -> Macro:
         """Create a macro and associated macro traits."""
         existing_macros = self.fetch_macros(ctx.guild.id, ctx.author.id)
 
@@ -64,6 +64,8 @@ class MacroService:
         MacroTrait.create_from_trait_name(macro, trait_one.name)
         MacroTrait.create_from_trait_name(macro, trait_two.name)
         self.purge(ctx)
+
+        return macro
 
     def delete_macro(self, ctx: discord.ApplicationContext, macro: Macro) -> None:
         """Delete the macro and associated macro traits."""
