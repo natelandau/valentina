@@ -8,7 +8,7 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import EmbedColor
-from valentina.models.database import CustomTrait, Macro, MacroTrait, Trait
+from valentina.models.database import Macro, MacroTrait, Trait
 from valentina.utils.converters import ValidMacroFromID, ValidTrait
 from valentina.utils.options import select_macro, select_trait, select_trait_two
 from valentina.views import ConfirmCancelButtons, MacroCreateModal, present_embed
@@ -99,15 +99,8 @@ class Macros(commands.Cog):
             user=ctx.author.id,
             guild=ctx.guild.id,
         )
-        if isinstance(trait_one, Trait):
-            MacroTrait.create(macro=macro, trait=trait_one)
-        elif isinstance(trait_one, CustomTrait):
-            MacroTrait.create(macro=macro, custom_trait=trait_one)
-
-        if isinstance(trait_two, Trait):
-            MacroTrait.create(macro=macro, trait=trait_two)
-        elif isinstance(trait_two, CustomTrait):
-            MacroTrait.create(macro=macro, custom_trait=trait_two)
+        MacroTrait.create_from_trait_name(macro, trait_one.name)
+        MacroTrait.create_from_trait_name(macro, trait_two.name)
 
         self.bot.user_svc.purge_cache(ctx)
 

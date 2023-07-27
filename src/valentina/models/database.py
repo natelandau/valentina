@@ -1,4 +1,6 @@
 """Models for the database."""
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
@@ -7,6 +9,7 @@ from peewee import (
     BooleanField,
     DateTimeField,
     DeferredForeignKey,
+    DoesNotExist,
     ForeignKeyField,
     IntegerField,
     Model,
@@ -495,6 +498,16 @@ class MacroTrait(BaseModel):
     macro = ForeignKeyField(Macro, backref="traits")
     trait = ForeignKeyField(Trait, backref="macros", null=True)
     custom_trait = ForeignKeyField(CustomTrait, backref="macros", null=True)
+
+    @classmethod
+    def create_from_trait_name(cls, macro: Macro, trait_name: str) -> MacroTrait:
+        """Create a MacroTrait for the given macro and trait_name."""
+        try:
+            trait = Trait.get(Trait.name == trait_name)
+            return cls.create(macro=macro, trait=trait)
+        except DoesNotExist:
+            custom_trait = CustomTrait.get(CustomTrait.name == trait_name)
+            return cls.create(macro=macro, custom_trait=custom_trait)
 
     class Meta:
         """Meta class for the model."""
