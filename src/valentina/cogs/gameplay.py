@@ -9,7 +9,6 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
-from valentina.models.database import MacroTrait, Trait
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
@@ -197,7 +196,8 @@ class Roll(commands.Cog):
     ) -> None:
         """Roll a macro."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        traits = Trait.select().join(MacroTrait).where(MacroTrait.macro == macro)
+
+        traits = self.bot.macro_svc.fetch_macro_traits(macro)
         trait_one = traits[0]
         trait_two = traits[1]
 

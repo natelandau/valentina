@@ -8,7 +8,7 @@ import discord
 from valentina.models.constants import EmbedColor
 
 
-async def present_embed(
+async def present_embed(  # noqa: C901
     ctx: discord.ApplicationContext,
     title: str = "",
     description: str = "",
@@ -82,9 +82,10 @@ async def present_embed(
     respond_kwargs = {
         "embed": embed,
         "ephemeral": ephemeral,
-        "view": view,
         "delete_after": delete_after,
     }
+    if view:
+        respond_kwargs["view"] = view
     return await ctx.respond(**respond_kwargs)  # type: ignore [return-value]
 
 

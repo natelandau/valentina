@@ -168,6 +168,7 @@ class Admin(commands.Cog):
             self.bot.user_svc.purge_cache(ctx.guild)
             self.bot.char_svc.purge_cache(ctx.guild, with_claims=True)
             self.bot.chron_svc.purge_cache(ctx.guild)
+            self.bot.macro_svc.purge()
             logger.info(f"ADMIN: Purge cache for {ctx.guild.name}")
 
         if all_guilds:
@@ -175,6 +176,7 @@ class Admin(commands.Cog):
             self.bot.user_svc.purge_cache()
             self.bot.char_svc.purge_cache(with_claims=True)
             self.bot.chron_svc.purge_cache()
+            self.bot.macro_svc.purge()
             logger.info("ADMIN: Purge cache for all guilds")
 
         await msg.delete_original_response()

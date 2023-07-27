@@ -187,7 +187,7 @@ async def select_macro(ctx: discord.ApplicationContext) -> list[OptionChoice]:
     """Populate a select list with a users' macros."""
     options = [
         OptionChoice(f"{macro.name} {macro.abbreviation}", str(macro.id))
-        for macro in ctx.bot.user_svc.fetch_macros(ctx)  # type: ignore [attr-defined]
+        for macro in ctx.bot.macro_svc.fetch_macros(ctx.interaction.guild.id, ctx.interaction.user.id)  # type: ignore [attr-defined]
         if macro.name.lower().startswith(ctx.options["macro"].lower())
     ]
 

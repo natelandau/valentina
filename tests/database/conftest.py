@@ -12,6 +12,7 @@ import discord
 import pytest
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
+from valentina.models import Macro
 from valentina.models.database import (
     Character,
     CharacterClass,
@@ -24,7 +25,6 @@ from valentina.models.database import (
     DatabaseVersion,
     Guild,
     GuildUser,
-    Macro,
     RollThumbnail,
     Trait,
     TraitCategory,

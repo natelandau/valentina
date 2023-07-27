@@ -9,6 +9,7 @@ from aiohttp import ClientSession
 from discord.ext import commands, tasks
 from loguru import logger
 
+from valentina.models import MacroService
 from valentina.models.database import DATABASE
 from valentina.models.database_services import (
     CharacterService,
@@ -42,6 +43,7 @@ class Valentina(commands.Bot):
         self.chron_svc = ChronicleService()
         self.trait_svc = TraitService()
         self.user_svc = UserService()
+        self.macro_svc = MacroService()
 
         # Load Cogs
         # #######################

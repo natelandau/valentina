@@ -9,7 +9,6 @@ from peewee import (
     BooleanField,
     DateTimeField,
     DeferredForeignKey,
-    DoesNotExist,
     ForeignKeyField,
     IntegerField,
     Model,
@@ -181,30 +180,6 @@ class CustomSection(BaseModel):
         table_name = "custom_sections"
 
 
-class Macro(BaseModel):
-    """Macros for quick dice rolls."""
-
-    name = TextField()
-    abbreviation = TextField()
-    description = TextField(null=True)
-    created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    guild = ForeignKeyField(Guild, backref="macros")
-    user = ForeignKeyField(User, backref="macros")
-
-    def remove(self) -> None:
-        """Delete the macro and associated macro traits."""
-        for mt in self.traits:
-            mt.delete_instance()
-
-        super().delete_instance()
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "macros"
-
-
 class RollThumbnail(BaseModel):
     """Thumbnail for a roll."""
 
@@ -289,7 +264,7 @@ class Character(BaseModel):
         """Fetch all traits for this character.
 
         Returns:
-            list[Trait | CustomTrait]: List of all traits and custom traits when flat_traits is True.
+            list[Trait | CustomTrait]: List of all traits and custom traits.
         """
         all_traits = []
         for tv in TraitValue.select().where(TraitValue.character == self):
@@ -490,33 +465,6 @@ class GuildUser(BaseModel):
 
     guild = ForeignKeyField(Guild, backref="users")
     user = ForeignKeyField(User, backref="guilds")
-
-
-class MacroTrait(BaseModel):
-    """Join table for Macro and Trait."""
-
-    macro = ForeignKeyField(Macro, backref="traits")
-    trait = ForeignKeyField(Trait, backref="macros", null=True)
-    custom_trait = ForeignKeyField(CustomTrait, backref="macros", null=True)
-
-    @classmethod
-    def create_from_trait_name(cls, macro: Macro, trait_name: str) -> MacroTrait:
-        """Create a MacroTrait for the given macro and trait_name."""
-        try:
-            trait = Trait.get(Trait.name == trait_name)
-            return cls.create(macro=macro, trait=trait)
-        except DoesNotExist:
-            custom_trait = CustomTrait.get(CustomTrait.name == trait_name)
-            return cls.create(macro=macro, custom_trait=custom_trait)
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "macro_traits"
-        indexes = (
-            (("macro", "trait"), False),
-            (("macro", "custom_trait"), False),
-        )
 
 
 class TraitValue(BaseModel):

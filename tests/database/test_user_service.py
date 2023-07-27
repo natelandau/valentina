@@ -4,7 +4,8 @@
 
 import pytest
 
-from valentina.models.database import GuildUser, Macro, User
+from valentina.models import Macro
+from valentina.models.database import GuildUser, User
 from valentina.models.database_services import UserService
 
 
@@ -74,27 +75,3 @@ class TestUserService:
         assert len(self.user_svc.user_cache) == 1
         assert "1_1" not in self.user_svc.user_cache
         assert "1_2" in self.user_svc.user_cache
-
-    def test_fetch_macros(self, ctx_existing):
-        """Test fetching macros.
-
-        Given a context object with a user in the database
-        When macros are fetched for that user
-        Then the macros are returned and added to the cache
-        """
-        assert self.user_svc.macro_cache == {}
-        macros = self.user_svc.fetch_macros(ctx_existing)
-        assert len(macros) == 1
-        assert macros[0] == Macro(id=1, name="test_macro", content="test content")
-        assert "1_1" in self.user_svc.macro_cache
-
-    def test_fetch_macro(self, ctx_existing):
-        """Test fetching macros.
-
-        Given a context object with a user in the database
-        When a macro is fetched for that user
-        Then the macro is returned and added to the cache
-        """
-        assert self.user_svc.fetch_macro(ctx_existing, "test_macro") == Macro(
-            id=1, name="test_macro", content="test content"
-        )

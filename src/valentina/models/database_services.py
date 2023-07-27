@@ -11,6 +11,7 @@ from loguru import logger
 from peewee import DoesNotExist, IntegrityError, ModelSelect, fn
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
+from valentina.models import Macro, MacroTrait
 from valentina.models.constants import (
     ChannelPermission,
     EmbedColor,
@@ -32,8 +33,6 @@ from valentina.models.database import (
     DatabaseVersion,
     Guild,
     GuildUser,
-    Macro,
-    MacroTrait,
     RollThumbnail,
     Trait,
     TraitCategory,
@@ -871,7 +870,6 @@ class UserService:
     def __init__(self) -> None:
         """Initialize the UserService."""
         self.user_cache: dict[str, User] = {}  # {user_key: User, ...}
-        self.macro_cache: dict[str, list[Macro]] = {}  # {user_key: [Macro, ...]}
 
     @staticmethod
     def __get_user_key(guild_id: int, user_id: int) -> str:
@@ -891,48 +889,10 @@ class UserService:
         if ctx:
             key = self.__get_user_key(ctx.guild.id, ctx.author.id)
             self.user_cache.pop(key, None)
-            self.macro_cache.pop(key, None)
             logger.debug(f"CACHE: Purge user cache: {key}")
         else:
             self.user_cache = {}
-            self.macro_cache = {}
             logger.debug("CACHE: Purge all user caches")
-
-    def fetch_macros(self, ctx: ApplicationContext | AutocompleteContext) -> list[Macro]:
-        """Fetch a list of macros for a user."""
-        if isinstance(ctx, ApplicationContext):
-            author_id = ctx.author.id
-            guild_id = ctx.guild.id
-        if isinstance(ctx, AutocompleteContext):
-            author_id = ctx.interaction.user.id
-            guild_id = ctx.interaction.guild.id
-
-        key = self.__get_user_key(guild_id, author_id)
-
-        if key in self.macro_cache:
-            logger.debug(f"CACHE: Return macros for user: {author_id}")
-            return self.macro_cache[key]
-
-        logger.debug(f"DATABASE: Fetch macros for user: {author_id}")
-        macros = (
-            Macro.select()
-            .where((Macro.user == author_id) & (Macro.guild == guild_id))
-            .order_by(Macro.name.asc())
-        )
-        self.macro_cache[key] = [x for x in macros]
-
-        logger.debug(f"DATABASE: Fetch macros for {key}")
-        return self.macro_cache[key]
-
-    def fetch_macro(self, ctx: ApplicationContext, macro_name: str) -> Macro:
-        """Fetch a macro by name."""
-        macros = self.fetch_macros(ctx)
-
-        for macro in macros:
-            if macro.name.lower() == macro_name.lower():
-                return macro
-
-        return None
 
     def fetch_user(self, ctx: ApplicationContext) -> User:
         """Fetch a user object from the cache or database. If user doesn't exist, create in the database and the cache."""
