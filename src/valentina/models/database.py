@@ -270,6 +270,13 @@ class Character(BaseModel):
         return display_name
 
     @property
+    def full_name(self) -> str:
+        """Return the first and last name of the character."""
+        display_name = f"{self.first_name.title()}"
+        display_name += f" {self.last_name.title() }" if self.last_name else ""
+        return display_name
+
+    @property
     def class_name(self) -> str:
         """Return the character's class from the char_class table."""
         return self.char_class.name

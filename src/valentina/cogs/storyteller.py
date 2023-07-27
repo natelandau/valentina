@@ -144,7 +144,9 @@ class StoryTeller(commands.Cog):
 
         # Confirm character creation
         view = ConfirmCancelButtons(ctx.author)
-        embed = await sheet_embed(ctx, character, title=f"Confirm creation of {character.name}")
+        embed = await sheet_embed(
+            ctx, character, title=f"Confirm creation of {character.full_name}"
+        )
         msg = await ctx.respond(embed=embed, view=view, ephemeral=True)
 
         await view.wait()
@@ -153,7 +155,7 @@ class StoryTeller(commands.Cog):
 
             await msg.edit_original_response(  # type: ignore [union-attr]
                 embed=discord.Embed(
-                    title=f"{character.name} discarded",
+                    title=f"{character.full_name} discarded",
                     color=discord.Color.red(),
                 ),
             )
@@ -161,8 +163,14 @@ class StoryTeller(commands.Cog):
 
         await msg.edit_original_response(  # type: ignore [union-attr]
             embed=discord.Embed(
-                title=f"{character.name} saved",
+                title=f"{character.full_name} saved",
                 color=discord.Color.green(),
+            ),
+        )
+        await self.bot.guild_svc.send_to_log(
+            ctx,
+            discord.Embed(
+                title="Storyteller character created", description=f"Created {character.full_name}"
             ),
         )
 
@@ -180,6 +188,7 @@ class StoryTeller(commands.Cog):
                 title="No Storyteller Characters",
                 description="There are no characters.\nCreate one with `/storyteller new_character`",
                 level="error",
+                ephemeral=True,
             )
             return
 
@@ -188,11 +197,16 @@ class StoryTeller(commands.Cog):
         description = f"**{len(characters)}** character{plural} on this server\n\u200b"
 
         for character in sorted(characters, key=lambda x: x.name):
-            fields.append((character.name, ""))
+            fields.append(
+                (
+                    character.full_name,
+                    f"Class: `{character.char_class.name}`",
+                )
+            )
 
         await present_embed(
             ctx=ctx,
-            title="List of characters",
+            title="List of storyteller characters",
             description=description,
             fields=fields,
             inline_fields=False,
@@ -212,6 +226,51 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """View a character sheet for a storyteller character."""
         await show_sheet(ctx, character=character, claimed_by=None)
+
+    @storyteller.command(name="delete_character", description="Delete a character")
+    async def delete_character(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to delete",
+            autocomplete=select_storyteller_character,
+            required=True,
+        ),
+    ) -> None:
+        """Delete a storyteller character."""
+        view = ConfirmCancelButtons(ctx.author)
+        embed = await sheet_embed(
+            ctx, character, title=f"Confirm deletion of {character.full_name}"
+        )
+        msg = await ctx.respond(embed=embed, view=view, ephemeral=True)
+
+        await view.wait()
+        if not view.confirmed:
+            await msg.edit_original_response(  # type: ignore [union-attr]
+                embed=discord.Embed(
+                    title=f"{character.full_name} not deleted",
+                    color=discord.Color.red(),
+                ),
+            )
+            return
+
+        character.delete_instance(delete_nullable=True, recursive=True)
+        self.bot.char_svc.purge_cache(ctx)
+        await msg.edit_original_response(  # type: ignore [union-attr]
+            embed=discord.Embed(
+                title=f"{character.full_name} deleted",
+                color=discord.Color.green(),
+            ),
+        )
+        await self.bot.guild_svc.send_to_log(
+            ctx,
+            discord.Embed(
+                title="Storyteller character deleted",
+                description=f"Deleted {character.full_name}",
+                color=discord.Color.green(),
+            ),
+        )
 
 
 def setup(bot: Valentina) -> None:

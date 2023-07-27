@@ -242,7 +242,7 @@ async def select_storyteller_character(ctx: discord.ApplicationContext) -> list[
     all_chars = []
     for character in characters:
         char_id = character.id
-        name = f"{character.name}"
+        name = f"{character.full_name} ({character.char_class.name})"
         all_chars.append((name, char_id))
 
     name_search = ctx.value.casefold()
