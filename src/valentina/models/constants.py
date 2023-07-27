@@ -177,6 +177,7 @@ class TraitCategoryOrder(IntEnum):
 
 
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
+DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
 
 CLAN_DISCIPLINES = {
     "Assamite": ["Celerity", "Obfuscate", "Quietus"],

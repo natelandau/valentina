@@ -8,7 +8,7 @@ import discord
 from valentina.models.constants import EmbedColor
 
 
-async def present_embed(  # noqa: C901
+async def present_embed(
     ctx: discord.ApplicationContext,
     title: str = "",
     description: str = "",
@@ -25,7 +25,7 @@ async def present_embed(  # noqa: C901
     show_author: bool = False,
     timestamp: bool = False,
     view: Any = None,
-    delete_after: float | None = None,
+    delete_after: float = 120,  # 2 minutes by default
 ) -> discord.Interaction:
     """Display a nice embed.
 
@@ -64,8 +64,7 @@ async def present_embed(  # noqa: C901
     if thumbnail:
         embed.set_thumbnail(url=thumbnail)
 
-    for field in fields:
-        name, value = field
+    for name, value in fields:
         embed.add_field(name=name, value=value, inline=inline_fields)
 
     if image:
@@ -80,18 +79,13 @@ async def present_embed(  # noqa: C901
     if log:
         await log_to_channel(ctx, log, embed)
 
-    if view and delete_after:
-        return await ctx.respond(  # type: ignore [return-value]
-            embed=embed, ephemeral=ephemeral, view=view, delete_after=delete_after
-        )
-
-    if view:
-        return await ctx.respond(embed=embed, ephemeral=ephemeral, view=view)  # type: ignore [return-value]
-
-    if delete_after:
-        return await ctx.respond(embed=embed, ephemeral=ephemeral, delete_after=delete_after)  # type: ignore [return-value]
-
-    return await ctx.respond(embed=embed, ephemeral=ephemeral)  # type: ignore [return-value]
+    respond_kwargs = {
+        "embed": embed,
+        "ephemeral": ephemeral,
+        "view": view,
+        "delete_after": delete_after,
+    }
+    return await ctx.respond(**respond_kwargs)  # type: ignore [return-value]
 
 
 async def log_to_channel(
@@ -100,12 +94,12 @@ async def log_to_channel(
     embed: discord.Embed | None = None,
 ) -> None:
     """Log an event to the guild log channel."""
-    if isinstance(log, str):
-        await ctx.bot.guild_svc.send_to_log(ctx, log)  # type: ignore [attr-defined]
-    else:
+    if embed is not None:
         log_embed = embed.copy()
         log_embed.timestamp = datetime.now()
         log_embed.set_footer(
             text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
         )
         await ctx.bot.guild_svc.send_to_log(ctx, log_embed)  # type: ignore [attr-defined]
+    else:
+        await ctx.bot.guild_svc.send_to_log(ctx, log)  # type: ignore [attr-defined]

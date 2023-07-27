@@ -8,7 +8,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import DiceType, EmbedColor, RollResultType
+from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
 from valentina.models.database import MacroTrait, Trait
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
@@ -101,7 +101,8 @@ class Roll(commands.Cog):
         difficulty: Option(
             int,
             "The difficulty of the roll",
-            required=True,
+            required=False,
+            default=DEFAULT_DIFFICULTY,
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
@@ -135,7 +136,7 @@ class Roll(commands.Cog):
             int,
             "The difficulty of the roll",
             required=False,
-            default=6,
+            default=DEFAULT_DIFFICULTY,
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
@@ -190,7 +191,7 @@ class Roll(commands.Cog):
             int,
             "The difficulty of the roll",
             required=False,
-            default=6,
+            default=DEFAULT_DIFFICULTY,
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
