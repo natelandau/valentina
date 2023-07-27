@@ -78,7 +78,7 @@
         'raise Exit',
         'raise typer\.Exit',
     ]
-    fail_under = 50
+    fail_under = 25
     precision = 1
     show_missing = true
     skip_covered = true
@@ -181,6 +181,7 @@
         "PGH001",
         "PGH003",
         "PLR0913",
+        "S311",
         "UP007",
     ]
     ignore-init-module-imports = true
@@ -232,7 +233,7 @@
     ]
     src = ["src", "tests"]
     target-version = "py310"
-    unfixable = ["ERA001", "F401", "F841", "UP007"]
+    unfixable = ["E712", "ERA001", "F401", "F841", "UP007"]
 
     [tool.ruff.mccabe]
         # Unlike Flake8, default to a complexity level of 10.

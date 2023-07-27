@@ -155,6 +155,34 @@ async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
     return traits
 
 
+async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of available countries."""
+    options = [
+        OptionChoice("United States", "us"),
+        OptionChoice("African", "ng,ke,za"),
+        OptionChoice("Arabia", "da,mn,ta,jo,tn,ma,eg"),
+        OptionChoice("Asian", "cn,jp,kr"),
+        OptionChoice("Brazil", "br"),
+        OptionChoice("France", "fr"),
+        OptionChoice("Germany", "de"),
+        OptionChoice("Greece", "gr"),
+        OptionChoice("India", "in"),
+        OptionChoice("Italy", "it"),
+        OptionChoice("Mexico", "mx"),
+        OptionChoice("Russia", "ru"),
+        OptionChoice("Scaninavia", "nl,se,no,dk,fi"),
+        OptionChoice("South American", "ar,cl,co,pe,ve"),
+        OptionChoice("Spain", "es"),
+        OptionChoice("Turkey", "tr"),
+    ]
+
+    if len(options) > MAX_OPTION_LIST_SIZE:
+        instructions = "Keep typing ..." if ctx.value else "Start typing a country."
+        return [OptionChoice(f"Too many options to display. {instructions}", "")]
+
+    return options
+
+
 async def select_macro(ctx: discord.ApplicationContext) -> list[OptionChoice]:
     """Populate a select list with a users' macros."""
     options = [
@@ -204,15 +232,41 @@ async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
     return npcs
 
 
+async def select_storyteller_character(ctx: discord.ApplicationContext) -> list[OptionChoice]:
+    """Generate a list of the user's available storyteller characters."""
+    if (guild := ctx.interaction.guild) is None:
+        return []
+
+    characters = ctx.bot.char_svc.fetch_all_storyteller_characters(guild_id=guild.id)  # type: ignore [attr-defined]
+
+    all_chars = []
+    for character in characters:
+        char_id = character.id
+        name = f"{character.full_name} ({character.char_class.name})"
+        all_chars.append((name, char_id))
+
+    name_search = ctx.value.casefold()
+
+    options = [
+        OptionChoice(name, str(char_id))
+        for name, char_id in sorted(all_chars)
+        if name.casefold().startswith(name_search or "")
+    ]
+
+    if len(options) > MAX_OPTION_LIST_SIZE:
+        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
+        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
+
+    return options
+
+
 async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available common and custom traits."""
+    """Generate a list of available common traits."""
     # Discord option can be either "trait" or "trait_one"
     if "trait" in ctx.options:
         argument = ctx.options["trait"]
     elif "trait_one" in ctx.options:
         argument = ctx.options["trait_one"]
-
-    # TODO: Include custom traits associated with characters the user owns
 
     traits = []
     for t in Trait.select().order_by(Trait.name.asc()):
@@ -226,9 +280,9 @@ async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
 
 
 async def select_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available common and custom traits."""
+    """Generate a list of available common traits."""
     traits = []
-    # TODO: Include custom traits associated with characters the user owns
+
     for t in Trait.select().order_by(Trait.name.asc()):
         if t.name.lower().startswith(ctx.options["trait_two"].lower()):
             traits.append(t.name)

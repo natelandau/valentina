@@ -7,7 +7,6 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.character.traits import add_trait
-from valentina.character.view_sheet import show_sheet
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
 from valentina.models.database import CustomTrait, TraitValue, time_now
@@ -39,6 +38,7 @@ from valentina.views import (
     ProfileModal,
     present_embed,
 )
+from valentina.views.character_sheet import show_sheet
 
 # TODO: Add a way to mark a character as dead
 
@@ -219,7 +219,7 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
     ) -> None:
-        """List all characters."""
+        """List all player characters."""
         characters = self.bot.char_svc.fetch_all_characters(ctx.guild.id)
         if len(characters) == 0:
             await present_embed(

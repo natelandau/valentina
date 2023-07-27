@@ -15,8 +15,6 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.utils.helpers import get_max_trait_value, num_to_circles
-
 
 def time_now() -> datetime:
     """Return the current time in UTC."""
@@ -233,6 +231,7 @@ class Character(BaseModel):
     nickname = TextField(null=True)
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
+    storyteller_character = BooleanField(default=False)
     # Foreign Keys ###############################
     char_class = ForeignKeyField(CharacterClass, backref="characters")
     guild = ForeignKeyField(Guild, backref="characters")
@@ -267,6 +266,13 @@ class Character(BaseModel):
         """Return the name of the character."""
         display_name = f"{self.first_name.title()}"
         display_name += f" ({self.nickname.title()})" if self.nickname else ""
+        display_name += f" {self.last_name.title() }" if self.last_name else ""
+        return display_name
+
+    @property
+    def full_name(self) -> str:
+        """Return the first and last name of the character."""
+        display_name = f"{self.first_name.title()}"
         display_name += f" {self.last_name.title() }" if self.last_name else ""
         return display_name
 
@@ -336,6 +342,8 @@ class Character(BaseModel):
                 "Social": [("Persuasion", 1, 5, "●○○○○")]
             }
         """
+        from valentina.utils.helpers import get_max_trait_value, num_to_circles
+
         all_traits: dict[str, list[tuple[str, int, int, str]]] = {}
 
         for category, traits in self.traits_dict.items():

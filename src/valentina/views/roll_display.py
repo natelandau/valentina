@@ -34,9 +34,7 @@ class RollDisplay:
         embed = discord.Embed(title=title, colour=self.roll.embed_color)
 
         # Thumbnail
-        embed.set_thumbnail(
-            url=self.roll.thumbnail_url,
-        )
+        embed.set_thumbnail(url=self.roll.thumbnail_url)
 
         roll_string = ""
         for die in self.roll.roll:

@@ -1,8 +1,9 @@
 """Helper functions for Valentina."""
+import random
 import re
 
 import discord
-from numpy.random import default_rng
+from aiohttp import ClientSession
 
 from valentina.models.constants import (
     CLAN_DISCIPLINES,
@@ -14,7 +15,33 @@ from valentina.models.constants import (
     XPNew,
 )
 
-_rng = default_rng()
+
+def round_trait_value(value: int, max_value: int) -> int:
+    """Bound a value to a trait value."""
+    if value < 0:
+        return 0
+    if value > max_value:
+        return max_value
+
+    return value
+
+
+async def fetch_random_name(gender: str | None = None, country: str = "us") -> tuple[str, str]:
+    """Fetch a random name from the randomuser.me API."""
+    if not gender:
+        gender = random.choice(["male", "female"])
+
+    url = "https://randomuser.me/api/?"
+    url += f"gender={gender}&"
+    url += f"nat={country}&"
+    url += "inc=name&"
+
+    async with ClientSession() as session, session.get(url) as res:
+        if 300 > res.status >= 200:  # noqa: PLR2004
+            data = await res.json()
+            return (data["results"][0]["name"]["first"], data["results"][0]["name"]["last"])
+
+        return ("John", "Doe")
 
 
 def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
@@ -57,11 +84,12 @@ def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) 
     """Take a string and return a random gif url."""
     thumb_list = DICEROLL_THUBMS[result.name]
     database_thumbs = ctx.bot.guild_svc.fetch_roll_result_thumbs(ctx)  # type: ignore [attr-defined]
+
     for category, thumbnails in database_thumbs.items():
         if category.lower() == result.name.lower():
             thumb_list.extend(thumbnails)
 
-    return thumb_list[_rng.integers(0, len(thumb_list))]
+    return random.choice(thumb_list)
 
 
 def fetch_clan_disciplines(clan: str) -> list[str]:

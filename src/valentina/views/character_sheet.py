@@ -54,15 +54,19 @@ def __embed1(
     ctx: discord.ApplicationContext,
     character: Character,
     claimed_by: discord.User | None = None,
+    title: str | None = None,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
     modified = arrow.get(character.modified).humanize()
+
+    if title is None:
+        title = character.name
 
     footer = f"Claimed by: {claimed_by.display_name} • " if claimed_by else ""
     footer += f"Last updated: {modified}"
     char_traits = character.all_trait_values
 
-    embed = discord.Embed(title=f"{character.name}", description="", color=0x7777FF)
+    embed = discord.Embed(title=title, description="", color=0x7777FF)
     embed.set_footer(text=footer)
 
     try:
@@ -121,15 +125,19 @@ def __embed1(
 def __embed2(
     character: Character,
     claimed_by: discord.User | None = None,
+    title: str | None = None,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     custom_sections = character.custom_sections
     modified = arrow.get(character.modified).humanize()
 
+    if title is None:
+        title = f"{character.name} - Page 2"
+
     footer = f"Claimed by: {claimed_by.display_name} • " if claimed_by else ""
     footer += f"Last updated: {modified}"
 
-    embed = discord.Embed(title=f"{character.name} - Page 2", description="", color=0x7777FF)
+    embed = discord.Embed(title=title, description="", color=0x7777FF)
 
     embed.set_footer(text=footer)
 
@@ -172,3 +180,13 @@ async def show_sheet(
     paginator.remove_button("first")
     paginator.remove_button("last")
     await paginator.respond(ctx.interaction, ephemeral=ephemeral)
+
+
+async def sheet_embed(
+    ctx: discord.ApplicationContext,
+    character: Character,
+    claimed_by: discord.User | None = None,
+    title: str | None = None,
+) -> discord.Embed:
+    """Return the first page of the sheet as an embed."""
+    return __embed1(ctx, character, claimed_by=claimed_by, title=title)

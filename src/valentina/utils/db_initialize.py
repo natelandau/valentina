@@ -152,7 +152,8 @@ class MigrateDatabase:
         if Version.parse(self.db_version) <= Version.parse("1.1.0"):
             self.__1_1_0()
 
-        if Version.parse(self.db_version) < Version.parse("1.1.5"):
+        if Version.parse(self.db_version) <= Version.parse("1.1.5"):
+            logger.info("DATABASE: Migrate database from v1.1.5")
             self.__1_1_5()
 
     def _column_exists(self, table: str, column: str) -> bool:
@@ -370,12 +371,19 @@ class MigrateDatabase:
     def __1_1_5(self) -> None:
         """Migrate from version 1.1.5."""
         if not self._column_exists(Guild._meta.table_name, "use_storyteller_channel"):
-            logger.info("DATABASE: Migrate database from v1.1.5")
+            logger.debug("DATABASE: create guilds:use_storyteller_channel column")
             self.db.execute_sql(
                 f"ALTER TABLE {Guild._meta.table_name} ADD COLUMN use_storyteller_channel INTEGER NOT NULL DEFAULT 0;"
             )
+            logger.debug("DATABASE: create guilds:storyteller_channel_id column")
             self.db.execute_sql(
                 f"ALTER TABLE {Guild._meta.table_name} ADD COLUMN storyteller_channel_id INTEGER DEFAULT NULL;"
+            )
+
+        if not self._column_exists(Character._meta.table_name, "storyteller_character"):
+            logger.debug("DATABASE: create chracters:storyteller_character column")
+            self.db.execute_sql(
+                f"ALTER TABLE {Character._meta.table_name} ADD COLUMN storyteller_character INTEGER DEFAULT 0;"
             )
 
 
