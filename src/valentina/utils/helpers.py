@@ -17,16 +17,6 @@ from valentina.models.constants import (
 )
 
 
-def round_trait_value(value: int, max_value: int) -> int:
-    """Bound a value to a trait value."""
-    if value < 0:
-        return 0
-    if value > max_value:
-        return max_value
-
-    return value
-
-
 async def fetch_random_name(gender: str | None = None, country: str = "us") -> tuple[str, str]:
     """Fetch a random name from the randomuser.me API."""
     if not gender:
@@ -313,3 +303,30 @@ def pluralize(value: int, noun: str) -> str:
         return plural
 
     return noun
+
+
+def round_trait_value(value: int, max_value: int) -> int:
+    """Bound a value to a trait value.
+
+    Args:
+        value (int): The value to bound.
+        max_value (int): The maximum value.
+
+    Returns:
+        int: The bounded value.
+
+    >>> round_trait_value(5, 5)
+    5
+
+    >>> round_trait_value(6, 5)
+    5
+
+    >>> round_trait_value(-10, 5)
+    0
+    """
+    if value < 0:
+        return 0
+    if value > max_value:
+        return max_value
+
+    return value

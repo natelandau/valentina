@@ -8,7 +8,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import EmbedColor, RollResultType
+from valentina.models.constants import DiceType, EmbedColor, RollResultType
 from valentina.models.database import MacroTrait, Trait
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
@@ -48,8 +48,52 @@ class Roll(commands.Cog):
 
     roll = discord.SlashCommandGroup("roll", "Roll dice")
 
+    async def _perform_roll(
+        self,
+        ctx: discord.ApplicationContext,
+        pool: int,
+        difficulty: int,
+        dice_size: int,
+        comment: str | None = None,
+        trait_one_name: str | None = None,
+        trait_one_value: int | None = None,
+        trait_two_name: str | None = None,
+        trait_two_value: int | None = None,
+    ) -> None:
+        """Perform a dice roll and display the result.
+
+        Args:
+            ctx (discord.ApplicationContext): The context of the command.
+            pool (int): The number of dice to roll.
+            difficulty (int): The difficulty of the roll.
+            dice_size (int): The size of the dice.
+            comment (str, optional): A comment to display with the roll. Defaults to None.
+            trait_one_name (str, optional): The name of the first trait. Defaults to None.
+            trait_one_value (int, optional): The value of the first trait. Defaults to None.
+            trait_two_name (str, optional): The name of the second trait. Defaults to None.
+            trait_two_value (int, optional): The value of the second trait. Defaults to None.
+        """
+        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
+
+        while True:
+            view = ReRollButton(ctx.author)
+            embed = await RollDisplay(
+                ctx,
+                roll,
+                comment,
+                trait_one_name,
+                trait_one_value,
+                trait_two_name,
+                trait_two_value,
+            ).get_embed()
+            await ctx.respond(embed=embed, view=view)
+            await view.wait()
+            if view.confirmed:
+                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
+            else:
+                break
+
     @roll.command(description="Throw a roll of d10s")
-    @logger.catch
     async def throw(
         self,
         ctx: discord.ApplicationContext,
@@ -69,17 +113,7 @@ class Roll(commands.Cog):
             difficulty (int): The difficulty of the roll
             pool (int): The number of dice to roll
         """
-        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
-
-        while True:
-            view = ReRollButton(ctx.author)
-            embed = await RollDisplay(ctx, roll, comment).get_embed()
-            await ctx.respond(embed=embed, view=view)
-            await view.wait()
-            if view.confirmed:
-                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
-            if not view.confirmed:
-                break
+        await self._perform_roll(ctx, pool, difficulty, DiceType.D10.value, comment)
 
     @roll.command(name="traits", description="Throw a roll based on trait names")
     async def traits(
@@ -112,25 +146,17 @@ class Roll(commands.Cog):
 
         pool = trait_one_value + trait_two_value
 
-        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
-
-        while True:
-            view = ReRollButton(ctx.author)
-            embed = await RollDisplay(
-                ctx,
-                roll=roll,
-                comment=comment,
-                trait_one_name=trait_one.name,
-                trait_one_value=trait_one_value,
-                trait_two_name=trait_two.name,
-                trait_two_value=trait_two_value,
-            ).get_embed()
-            await ctx.respond(embed=embed, view=view)
-            await view.wait()
-            if view.confirmed:
-                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
-            if not view.confirmed:
-                break
+        await self._perform_roll(
+            ctx,
+            pool,
+            difficulty,
+            DiceType.D10.value,
+            comment,
+            trait_one_name=trait_one.name,
+            trait_one_value=trait_one_value,
+            trait_two_name=trait_two.name,
+            trait_two_value=trait_two_value,
+        )
 
     @roll.command(description="Simple dice roll of any size.")
     async def simple(
@@ -148,20 +174,7 @@ class Roll(commands.Cog):
             dice_size (int): The number of sides on the dice
             pool (int): The number of dice to roll
         """
-        try:
-            roll = DiceRoll(ctx, pool=pool, dice_size=dice_size, difficulty=0)
-
-            while True:
-                view = ReRollButton(ctx.author)
-                embed = await RollDisplay(ctx, roll, comment).get_embed()
-                await ctx.respond(embed=embed, view=view)
-                await view.wait()
-                if view.confirmed:
-                    roll = DiceRoll(ctx, pool=pool, dice_size=dice_size, difficulty=0)
-                if not view.confirmed:
-                    break
-        except ValueError as e:
-            await ctx.respond(f"Error rolling dice: {e}", ephemeral=True)
+        await self._perform_roll(ctx, pool, 0, dice_size, comment)
 
     @roll.command(name="macro", description="Roll a macro")
     async def roll_macro(
@@ -189,29 +202,20 @@ class Roll(commands.Cog):
 
         trait_one_value = character.trait_value(trait_one)
         trait_two_value = character.trait_value(trait_two)
-        ###########################################3333
 
         pool = trait_one_value + trait_two_value
 
-        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
-
-        while True:
-            view = ReRollButton(ctx.author)
-            embed = await RollDisplay(
-                ctx,
-                roll=roll,
-                comment=comment,
-                trait_one_name=trait_one.name,
-                trait_one_value=trait_one_value,
-                trait_two_name=trait_two.name,
-                trait_two_value=trait_two_value,
-            ).get_embed()
-            await ctx.respond(embed=embed, view=view)
-            await view.wait()
-            if view.confirmed:
-                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
-            if not view.confirmed:
-                break
+        await self._perform_roll(
+            ctx,
+            pool,
+            difficulty,
+            DiceType.D10.value,
+            comment,
+            trait_one_name=trait_one.name,
+            trait_one_value=trait_one_value,
+            trait_two_name=trait_two.name,
+            trait_two_value=trait_two_value,
+        )
 
     @roll.command(description="Add images to roll result embeds")
     async def upload_thumbnail(
