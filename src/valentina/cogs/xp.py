@@ -8,13 +8,14 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import COOL_POINT_VALUE, EmbedColor, XPMultiplier
-from valentina.models.database import CustomTrait, TraitValue, time_now
+from valentina.models.database import CustomTrait, TraitValue
 from valentina.utils.converters import ValidCharTrait
 from valentina.utils.helpers import (
     fetch_clan_disciplines,
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
+    time_now,
 )
 from valentina.utils.options import select_char_trait
 from valentina.views import ConfirmCancelButtons, present_embed

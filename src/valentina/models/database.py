@@ -1,6 +1,5 @@
 """Models for the database."""
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -15,11 +14,7 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-
-def time_now() -> datetime:
-    """Return the current time in UTC."""
-    return datetime.now(timezone.utc).replace(microsecond=0)
-
+from valentina.utils.helpers import time_now
 
 # Import configuration from environment variables
 env_dir = Path(__file__).parents[3].absolute()

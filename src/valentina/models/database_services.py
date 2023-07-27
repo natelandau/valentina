@@ -42,7 +42,6 @@ from valentina.models.database import (
     TraitValue,
     User,
     VampireClan,
-    time_now,
 )
 from valentina.utils.db_backup import DBBackup
 from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
@@ -53,7 +52,7 @@ from valentina.utils.errors import (
     NoClaimError,
     TraitNotFoundError,
 )
-from valentina.utils.helpers import set_channel_perms
+from valentina.utils.helpers import set_channel_perms, time_now
 
 
 class TraitService:

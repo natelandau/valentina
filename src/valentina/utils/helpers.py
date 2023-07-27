@@ -1,6 +1,7 @@
 """Helper functions for Valentina."""
 import random
 import re
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 import discord
@@ -330,3 +331,8 @@ def round_trait_value(value: int, max_value: int) -> int:
         return max_value
 
     return value
+
+
+def time_now() -> datetime:
+    """Return the current time in UTC."""
+    return datetime.now(timezone.utc).replace(microsecond=0)
