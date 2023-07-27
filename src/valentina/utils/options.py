@@ -261,14 +261,12 @@ async def select_storyteller_character(ctx: discord.ApplicationContext) -> list[
 
 
 async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available common and custom traits."""
+    """Generate a list of available common traits."""
     # Discord option can be either "trait" or "trait_one"
     if "trait" in ctx.options:
         argument = ctx.options["trait"]
     elif "trait_one" in ctx.options:
         argument = ctx.options["trait_one"]
-
-    # TODO: Include custom traits associated with characters the user owns
 
     traits = []
     for t in Trait.select().order_by(Trait.name.asc()):
@@ -282,9 +280,9 @@ async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
 
 
 async def select_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available common and custom traits."""
+    """Generate a list of available common traits."""
     traits = []
-    # TODO: Include custom traits associated with characters the user owns
+
     for t in Trait.select().order_by(Trait.name.asc()):
         if t.name.lower().startswith(ctx.options["trait_two"].lower()):
             traits.append(t.name)

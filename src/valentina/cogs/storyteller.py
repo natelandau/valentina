@@ -8,17 +8,25 @@ from peewee import fn
 
 from valentina.models.bot import Valentina
 from valentina.models.database import VampireClan
-from valentina.utils.converters import ValidCharacterClass, ValidCharacterObject, ValidClan
+from valentina.models.dicerolls import DiceRoll
+from valentina.utils.converters import (
+    ValidCharacterClass,
+    ValidCharacterObject,
+    ValidClan,
+)
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
     select_char_class,
     select_country,
     select_storyteller_character,
+    select_trait,
+    select_trait_two,
     select_vampire_clan,
 )
 from valentina.utils.storyteller import storyteller_character_traits
-from valentina.views import ConfirmCancelButtons, present_embed
+from valentina.views import ConfirmCancelButtons, ReRollButton, present_embed
 from valentina.views.character_sheet import sheet_embed, show_sheet
+from valentina.views.roll_display import RollDisplay
 
 
 class StoryTeller(commands.Cog):
@@ -271,6 +279,66 @@ class StoryTeller(commands.Cog):
                 color=discord.Color.green(),
             ),
         )
+
+    @storyteller.command(name="roll_traits", description="Roll traits for a character")
+    async def roll_traits(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to roll traits for",
+            autocomplete=select_storyteller_character,
+            required=True,
+        ),
+        trait_one: Option(
+            str,
+            description="First trait to roll",
+            required=True,
+            autocomplete=select_trait,
+        ),
+        trait_two: Option(
+            str,
+            description="Second trait to roll",
+            required=True,
+            autocomplete=select_trait_two,
+        ),
+        difficulty: Option(
+            int,
+            "The difficulty of the roll",
+            required=False,
+            default=6,
+        ),
+        comment: Option(str, "A comment to display with the roll", required=False, default=None),
+    ) -> None:
+        """Roll traits for a storyteller character."""
+        trait_one = self.bot.trait_svc.fetch_trait_from_name(trait_one)
+        trait_two = self.bot.trait_svc.fetch_trait_from_name(trait_two)
+
+        trait_one_value = character.trait_value(trait_one)
+        trait_two_value = character.trait_value(trait_two)
+
+        pool = trait_one_value + trait_two_value
+
+        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
+
+        while True:
+            view = ReRollButton(ctx.author)
+            embed = await RollDisplay(
+                ctx,
+                roll=roll,
+                comment=comment,
+                trait_one_name=trait_one.name,
+                trait_one_value=trait_one_value,
+                trait_two_name=trait_two.name,
+                trait_two_value=trait_two_value,
+            ).get_embed()
+
+            await ctx.respond(embed=embed, view=view)
+            await view.wait()
+            if view.confirmed:
+                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
+            if not view.confirmed:
+                break
 
 
 def setup(bot: Valentina) -> None:

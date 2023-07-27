@@ -4,7 +4,6 @@ import re
 
 import discord
 from aiohttp import ClientSession
-from numpy.random import default_rng
 
 from valentina.models.constants import (
     CLAN_DISCIPLINES,
@@ -15,8 +14,6 @@ from valentina.models.constants import (
     XPMultiplier,
     XPNew,
 )
-
-_rng = default_rng()
 
 
 def round_trait_value(value: int, max_value: int) -> int:
@@ -87,11 +84,12 @@ def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) 
     """Take a string and return a random gif url."""
     thumb_list = DICEROLL_THUBMS[result.name]
     database_thumbs = ctx.bot.guild_svc.fetch_roll_result_thumbs(ctx)  # type: ignore [attr-defined]
+
     for category, thumbnails in database_thumbs.items():
         if category.lower() == result.name.lower():
             thumb_list.extend(thumbnails)
 
-    return thumb_list[_rng.integers(0, high=len(thumb_list) + 1)]
+    return random.choice(thumb_list)
 
 
 def fetch_clan_disciplines(clan: str) -> list[str]:

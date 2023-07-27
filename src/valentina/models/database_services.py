@@ -93,6 +93,15 @@ class TraitService:
         except DoesNotExist as e:
             raise TraitNotFoundError(f"Trait `{trait_name}` not found") from e
 
+    def fetch_trait_from_name(self, trait_name: str) -> Trait:
+        """Fetch a trait from the trait name."""
+        logger.debug(f"DATABASE: Fetch trait `{trait_name}`")
+
+        try:
+            return Trait.get(fn.lower(Trait.name) == trait_name.lower())
+        except DoesNotExist as e:
+            raise TraitNotFoundError(f"Trait `{trait_name}` not found") from e
+
     def fetch_trait_category(self, query: str | int) -> str:
         """Fetch the category of a trait."""
         try:

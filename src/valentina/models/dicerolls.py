@@ -170,7 +170,11 @@ class DiceRoll:
     @property
     def is_critical(self) -> bool:
         """Determine if the roll is a critical success (greater than half the pool are 10s)."""
-        if not self.is_botch and self.criticals >= (self.pool / 2):
+        if (
+            not self.is_botch
+            and self.criticals >= (self.pool / 2)
+            and self.pool > 2  # noqa: PLR2004
+        ):
             return True
         return False
 
@@ -185,10 +189,9 @@ class DiceRoll:
             return diceroll_thumbnail(self.ctx, RollResultType.CRITICAL)
         if self.is_success:
             return diceroll_thumbnail(self.ctx, RollResultType.SUCCESS)
-        if self.is_failure:
-            return diceroll_thumbnail(self.ctx, RollResultType.FAILURE)
 
-        return None
+        # Return a failure as for all other cases
+        return diceroll_thumbnail(self.ctx, RollResultType.FAILURE)
 
     @property
     def embed_color(self) -> int:
@@ -201,10 +204,9 @@ class DiceRoll:
             return 0x37FD12
         if self.is_success:
             return 0x4FC978
-        if self.is_failure:
-            return 0x808080
 
-        return None
+        # Return a failure as for all other cases
+        return 0x808080
 
     @property
     def takeaway(self) -> str:
@@ -217,7 +219,6 @@ class DiceRoll:
             return f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'Success')}"
         if self.is_success:
             return f"{self.result} {pluralize(self.result, 'Success')}"
-        if self.is_failure:
-            return f"{self.result} {pluralize(self.result, 'Success')}"
 
-        return None
+        # Return a failure as for all other cases
+        return f"{self.result} {pluralize(self.result, 'Success')}"
