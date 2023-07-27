@@ -40,12 +40,11 @@
         black         = "^23.7.0"
         commitizen    = "^3.5.3"
         coverage      = "^7.2.5"
-        interrogate   = "^1.5.0"
         mypy          = "^1.4.1"
         pdoc          = "^14.0.0"
         poethepoet    = "^0.21.1"
         pre-commit    = "^3.3.3"
-        ruff          = "^0.0.278"
+        ruff          = "^0.0.280"
         sh            = "^2.0.4"
         shellcheck-py = "^0.9.0.5"
         typeguard     = "^4.0.0"
@@ -99,12 +98,6 @@
 
 [tool.coverage.xml]
     output = "reports/coverage.xml"
-
-[tool.interrogate]
-    exclude            = ["build", "docs", "src/valentina/cogs/test_cog.py"]
-    fail-under         = 90
-    ignore-init-method = true
-    verbose            = 2
 
 [tool.mypy] # https://mypy.readthedocs.io/en/latest/config_file.html
     disallow_any_unimported = false
@@ -286,9 +279,6 @@
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "yamllint ."
-
-        [[tool.poe.tasks.lint.sequence]]
-            shell = "interrogate -c pyproject.toml ."
 
 [tool.poe.tasks.test]
     help = "Test this package"

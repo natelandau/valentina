@@ -261,7 +261,7 @@ class Roll(commands.Cog):
         """Coinflip!"""
         coinsides = ["Heads", "Tails"]
         await ctx.respond(
-            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coinsides)}**!"  # noqa: S311
+            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coinsides)}**!"
         )
 
 
