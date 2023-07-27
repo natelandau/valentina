@@ -313,18 +313,12 @@ class Character(BaseModel):
 
         for tv in TraitValue.select().where(TraitValue.character == self):
             category = str(tv.trait.category.name)
-
-            if category not in all_traits:
-                all_traits[category] = []
-
+            all_traits.setdefault(category, [])
             all_traits[category].append(tv.trait)
 
         for ct in self.custom_traits:
             category = str(ct.category.name)
-
-            if category not in all_traits:
-                all_traits[category] = []
-
+            all_traits.setdefault(category, [])
             all_traits[category].append(ct)
 
         return all_traits
@@ -347,8 +341,7 @@ class Character(BaseModel):
         all_traits: dict[str, list[tuple[str, int, int, str]]] = {}
 
         for category, traits in self.traits_dict.items():
-            if category not in all_traits:
-                all_traits[category] = []
+            all_traits.setdefault(category, [])
 
             for trait in traits:
                 if isinstance(trait, Trait):

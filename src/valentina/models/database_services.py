@@ -564,10 +564,25 @@ class CharacterService:
         value: int,
         max_value: int = MaxTraitValue.DEFAULT.value,
     ) -> None:
-        """Create a custom trait for a character."""
+        """Create a custom trait for a specified character.
+
+        Args:
+            character (Character): The character to which the trait is to be added.
+            name (str): The name of the trait.
+            description (str): The description of the trait.
+            category (TraitCategory): The category of the trait.
+            value (int): The value of the trait.
+            max_value (int, optional): The maximum value that the trait can have. Defaults to MaxTraitValue.DEFAULT.value.
+
+        Returns:
+            None
+        """
+        name = name.strip().title()
+        description = description.strip().title() if description else None
+
         CustomTrait.create(
-            name=name.strip().title(),
-            description=description.strip() if description else None,
+            name=name,
+            description=description,
             category=category,
             value=value,
             character=character.id,
@@ -597,9 +612,7 @@ class CharacterService:
 
         # Add storyteller characters to the cache
         if character.storyteller_character:
-            if ctx.guild.id not in self.storyteller_character_cache:
-                self.storyteller_character_cache[ctx.guild.id] = []
-
+            self.storyteller_character_cache.setdefault(ctx.guild.id, [])
             self.storyteller_character_cache[ctx.guild.id].append(character)
 
         logger.info(f"DATABASE: Create character: {character}] for {ctx.author.display_name}")
@@ -1031,8 +1044,7 @@ class GuildService:
         """
         all_traits: dict[str, list[str]] = {}
         for category in TraitCategory.select().order_by(TraitCategory.name.asc()):
-            if category not in all_traits:
-                all_traits[category.name] = []
+            all_traits.setdefault(category.name, [])
 
             for trait in sorted(category.traits, key=lambda x: x.name):
                 all_traits[category.name].append(trait.name)
@@ -1041,8 +1053,7 @@ class GuildService:
         if len(custom_traits) > 0:
             for custom_trait in custom_traits:
                 category = custom_trait.category.name.title()
-                if category not in all_traits:
-                    all_traits[category] = []
+                all_traits.setdefault(category, [])
                 all_traits[category].append(custom_trait.name.title())
 
         if flat_list:
@@ -1146,16 +1157,16 @@ class GuildService:
 
         return self.roll_result_thumbs[ctx.guild.id]
 
-    def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
+    def purge_cache(self, guild: discord.Guild | None = None) -> None:
         """Purge the cache for a guild or all guilds.
 
         Args:
-            ctx (ApplicationContext, optional): The context to purge. Defaults to None.
+            guild (discord.Guild, optional): The guild to purge the cache for. Defaults to None.
         """
-        if ctx:
-            self.settings_cache.pop(ctx.guild.id, None)
-            self.roll_result_thumbs.pop(ctx.guild.id, None)
-            logger.debug(f"CACHE: Purge guild cache for '{ctx.guild.name}'")
+        if guild:
+            self.settings_cache.pop(guild.id, None)
+            self.roll_result_thumbs.pop(guild.id, None)
+            logger.debug(f"CACHE: Purge guild cache for '{guild.name}'")
         else:
             self.settings_cache = {}
             self.roll_result_thumbs = {}
@@ -1179,28 +1190,17 @@ class GuildService:
 
     def update_or_add(
         self,
-        guild: discord.Guild = None,
-        ctx: ApplicationContext = None,
+        guild: discord.Guild,
         **kwargs: str | int | datetime,
     ) -> None:
         """Add a guild to the database or update it if it already exists."""
-        if guild and ctx:
-            raise ValueError("Cannot provide both guild and ctx")
-
-        if guild:
-            guild_id = guild.id
-            guild_name = guild.name
-
-        if ctx:
-            guild_id = ctx.guild.id
-            guild_name = ctx.guild.name
-            self.purge_cache(ctx)
+        self.purge_cache(guild)
 
         db_id, is_created = Guild.get_or_create(
-            id=guild_id,
+            id=guild.id,
             defaults={
-                "id": guild_id,
-                "name": guild_name,
+                "id": guild.id,
+                "name": guild.name,
                 "created": time_now(),
                 "modified": time_now(),
             },
@@ -1210,7 +1210,7 @@ class GuildService:
 
         if not is_created:
             kwargs["modified"] = time_now()
-            Guild.set_by_id(guild_id, kwargs)
+            Guild.set_by_id(guild.id, kwargs)
             logger.debug(f"DATABASE: Update guild '{db_id.name}'")
 
 

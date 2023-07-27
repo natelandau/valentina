@@ -164,10 +164,10 @@ class Admin(commands.Cog):
             return
 
         if not all_guilds:
-            self.bot.guild_svc.purge_cache(ctx)
-            self.bot.user_svc.purge_cache(ctx)
-            self.bot.char_svc.purge_cache(ctx, with_claims=True)
-            self.bot.chron_svc.purge_cache(ctx)
+            self.bot.guild_svc.purge_cache(ctx.guild)
+            self.bot.user_svc.purge_cache(ctx.guild)
+            self.bot.char_svc.purge_cache(ctx.guild, with_claims=True)
+            self.bot.chron_svc.purge_cache(ctx.guild)
             logger.info(f"ADMIN: Purge cache for {ctx.guild.name}")
 
         if all_guilds:
@@ -243,7 +243,7 @@ class Admin(commands.Cog):
                 f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) XP Permissions: {XPPermissions(int(xp_permissions)).name.title()}"
             )
             fields.append(("XP Permissions", XPPermissions(int(xp_permissions)).name.title()))
-            self.bot.guild_svc.update_or_add(ctx=ctx, xp_permissions=int(xp_permissions))
+            self.bot.guild_svc.update_or_add(ctx.guild, xp_permissions=int(xp_permissions))
 
         if trait_permissions is not None:
             logger.debug(
@@ -252,7 +252,7 @@ class Admin(commands.Cog):
             fields.append(
                 ("Trait Permissions", TraitPermissions(int(trait_permissions)).name.title())
             )
-            self.bot.guild_svc.update_or_add(ctx=ctx, trait_permissions=int(trait_permissions))
+            self.bot.guild_svc.update_or_add(ctx.guild, trait_permissions=int(trait_permissions))
 
         if use_audit_log is not None:
             guild_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
@@ -275,7 +275,7 @@ class Admin(commands.Cog):
                 f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Log to channel: {use_audit_log}"
             )
             fields.append(("Audit Logging", "Enabled" if use_audit_log else "Disabled"))
-            self.bot.guild_svc.update_or_add(ctx=ctx, use_audit_log=use_audit_log)
+            self.bot.guild_svc.update_or_add(ctx.guild, use_audit_log=use_audit_log)
 
         if audit_log_channel_name is not None:
             channel = await self.bot.guild_svc.create_channel(
@@ -318,7 +318,7 @@ class Admin(commands.Cog):
                 ("Storyteller Channel", "Enabled" if use_storyteller_channel else "Disabled")
             )
             self.bot.guild_svc.update_or_add(
-                ctx=ctx, use_storyteller_channel=use_storyteller_channel
+                ctx.guild, use_storyteller_channel=use_storyteller_channel
             )
 
         if storyteller_channel_name is not None:

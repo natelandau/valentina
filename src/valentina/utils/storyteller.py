@@ -40,15 +40,9 @@ def __storyteller_attributes(
     """
     trait_values: dict[int, int] = {}
 
-    match level:
-        case "Weakling":
-            attribute_adjustment = 0
-        case "Average":
-            attribute_adjustment = 0
-        case "Strong":
-            attribute_adjustment = 1
-        case "Super":
-            attribute_adjustment = 2
+    # Attribute adjustment based on level
+    attribute_adjustment_map = {"Weakling": 0, "Average": 0, "Strong": 1, "Super": 2}
+    attribute_adjustment = attribute_adjustment_map.get(level, 0)
 
     # Attributes
     attribute_values = {"primary": [3, 2, 2], "secondary": [2, 2, 1], "tertiary": [1, 1, 1]}
@@ -93,49 +87,45 @@ def __storyteller_disciplines(
     Returns:
         dict[int, int]: A dictionary of trait values.
     """
+
+    def __adjust_value(value: int, level: str) -> int:
+        """Adjust discipline value based on character level."""
+        if level in ["Strong", "Super"]:
+            value = value + 1
+
+        if level == "Weakling" and value > 3:  # noqa: PLR2004
+            value = 3
+
+        elif value == 0:
+            value = 1
+
+        return round_trait_value(value, 5)
+
     trait_values: dict[int, int] = {}
 
+    level_discipline_count_map = {"Weakling": 0, "Average": 0, "Strong": 1, "Super": 3}
     clan_disciplines = [x for x in discipline_list if x.name in fetch_clan_disciplines(clan)]
-    non_clan_disciplines = []
 
-    # Add more disciplines based on level
-    if level == "Strong":
-        non_clan_disciplines = random.sample(
-            [x for x in discipline_list if x.name not in clan_disciplines], 1
-        )
-
-    if level == "Super":
-        non_clan_disciplines = random.sample(
-            [x for x in discipline_list if x.name not in clan_disciplines], 3
-        )
+    # Grab extra disciplines based on level
+    non_clan_disciplines = random.sample(
+        [x for x in discipline_list if x not in clan_disciplines], level_discipline_count_map[level]
+    )
 
     # Set normal distribution values based on characters level
     mean, distribution = __normal_distribution_values(level)
 
     # Set the trait values from a normal distribution
     values = [
-        round_trait_value(x, 6)
+        __adjust_value(x, level)
         for x in _rng.normal(
             mean, distribution, len(clan_disciplines) + len(non_clan_disciplines)
         ).astype(int32)
     ]
 
-    for discipline in clan_disciplines:
+    for discipline in clan_disciplines + non_clan_disciplines:
         value = values.pop(0)
-
-        if level in ["Strong", "Super"]:
-            value = round_trait_value(value + 1, 6)
-
-        if level in ["Weakling", "Average"] and value == 0:
+        if value == 0:
             value = 1
-
-        trait_values[discipline.id] = value
-
-    for discipline in non_clan_disciplines:
-        value = values.pop(0)
-
-        if level in ["Super"]:
-            value = round_trait_value(value + 1, 6)
 
         trait_values[discipline.id] = value
 
@@ -143,75 +133,98 @@ def __storyteller_disciplines(
 
 
 def __normal_distribution_values(level: str) -> tuple[float, float]:
-    """Return the mean and distribution for a level.  To reach more about this model, see https://numpy.org/doc/stable/reference/random/generated/numpy.random.Generator.normal.html.
+    """Return the mean and standard deviation for a character's attribute values, based on the character's level. The attribute values are modeled as a normal distribution where the mean and standard deviation vary by level.
+
+    The function uses the numpy library's random number generator to generate attribute values. For more information about this model, see the numpy documentation at https://numpy.org/doc/stable/reference/random/generated/numpy.random.Generator.normal.html.
+
 
     Args:
-        level (str): The storyteller character's level.
+        level (str): The character's level. This should be one of the following strings:
+        "Weakling", "Average", "Strong", "Super".
 
     Returns:
-        tuple[float, float]: A tuple containing the mean and distribution values.
+        tuple[float, float]: A tuple containing the mean (first element) and standard deviation
+        (second element) for the character's attribute values. If an unrecognized level is provided,
+        the function returns (0, 0).
 
     Examples:
         >>> __normal_distribution_values("Weakling")
         (1.0, 2.0)
-    """
-    match level:
-        case "Weakling":
-            mean = 1.0
-            distribution = 2.0
-        case "Average":
-            mean = 1.5
-            distribution = 2.0
-        case "Strong":
-            mean = 2.5
-            distribution = 2.0
-        case "Super":
-            mean = 3.0
-            distribution = 2.0
 
-    return (mean, distribution)
+        >>> __normal_distribution_values("Super")
+        (3.0, 2.0)
+    """
+    level_distribution_map = {
+        "Weakling": (1.0, 2.0),
+        "Average": (1.5, 2.0),
+        "Strong": (2.5, 2.0),
+        "Super": (3.0, 2.0),
+    }
+
+    return level_distribution_map.get(level, (0, 0))  # return (0, 0) for unrecognized levels
 
 
 def storyteller_character_traits(
     traits: list[Trait], level: str, specialty: str, clan: str | None = None
 ) -> dict[int, int]:
-    """Create a storyteller character."""
-    traits_by_category: dict[str, list[Trait]] = {}
-    trait_values: dict[int, int] = {}
-    attributes: dict[str, list[Trait]] = {}
-    disciplines: list[Trait] = []
+    """Create a storyteller character by generating trait values based on the provided traits, level, specialty, and clan.
+
+    The function generates trait values following a normal distribution, where the mean and standard deviation of the distribution depend on the character's level. The mean and standard deviation for each level are determined by the __normal_distribution_values helper function.
+
+    After generating a list of potential trait values, the function assigns each trait a value. The assignment process varies based on the trait's category (Physical, Social, Mental, Disciplines) and the character's level and specialty.
+
+    Args:
+        traits (list[Trait]): A list of Trait objects representing the character's potential traits.
+        level (str): The storyteller character's level which determines the mean and standard deviation of the normal distribution used to generate trait values.
+        specialty (str): The storyteller character's specialty. This can influence which traits receive higher values.
+        clan (str | None): The storyteller character's clan. Defaults to None. Some traits (disciplines) are specific to certain clans.
+
+    Returns:
+        dict[int, int]: A dictionary mapping trait ids to their corresponding values.
+    """
+
+    def __specialty_traits_match(specialty: str, trait_name: str) -> bool:
+        """Check if a trait matches with the specialty.
+
+        Args:
+            specialty (str): The storyteller character's specialty.
+            trait_name (str): Name of the trait.
+
+        Returns:
+            bool: True if the trait matches the specialty, False otherwise.
+        """
+        specialty_traits = {
+            "Fighter": _fighter_traits,
+            "Leader": _leader_traits,
+            "Doer": _doer_traits,
+        }
+        return trait_name in specialty_traits.get(specialty, [])
 
     # Parse the traits into categories for easier processing
+    traits_by_category: dict[str, list[Trait]] = {trait.category.name: [] for trait in traits}
     for trait in traits:
-        # Build a list of attributes
-        if trait.category.name in ["Physical", "Social", "Mental"]:
-            if trait.category.name not in attributes:
-                attributes[trait.category.name] = []
-
-            attributes[trait.category.name].append(trait)
-            continue
-
-        # Build a list of disciplines
-        if trait.category.name == "Disciplines":
-            disciplines.append(trait)
-            continue
-
-        # Build list of all other traits
-        if trait.category.name not in traits_by_category:
-            traits_by_category[trait.category.name] = []
-
         traits_by_category[trait.category.name].append(trait)
 
-    # Add attributes trait values
-    trait_values.update(__storyteller_attributes(attributes, level, specialty))
-
-    # Add disciplines trait values
-    trait_values.update(__storyteller_disciplines(disciplines, level, clan))
+    # Calculate attribute and discipline trait values
+    attributes = {
+        cat: traits
+        for cat, traits in traits_by_category.items()
+        if cat in ["Physical", "Social", "Mental"]
+    }
+    trait_values = __storyteller_attributes(attributes, level, specialty)
+    if "Disciplines" in traits_by_category:
+        trait_values.update(
+            __storyteller_disciplines(traits_by_category["Disciplines"], level, clan)
+        )
 
     # Set normal distribution values based on characters level
     mean, distribution = __normal_distribution_values(level)
 
     for category, traits in traits_by_category.items():
+        if category in ["Physical", "Social", "Mental", "Disciplines"]:
+            continue  # Skip attributes and disciplines as they are already processed
+
+        # Calculate trait values
         values = [
             round_trait_value(x, get_max_trait_value(trait.name, category))
             for x in _rng.normal(mean, distribution, len(traits)).astype(int32)
@@ -219,14 +232,8 @@ def storyteller_character_traits(
 
         for trait in traits:
             value = values.pop(0)
-
-            if level in ["Strong", "Super"] and (
-                (specialty == "Fighter" and trait.name in _fighter_traits)
-                or (specialty == "Leader" and trait.name in _leader_traits)
-                or (specialty == "Doer" and trait.name in _doer_traits)
-            ):
-                round_trait_value(value + 1, get_max_trait_value(trait.name, category))
-
+            if level in ["Strong", "Super"] and __specialty_traits_match(specialty, trait.name):
+                value = round_trait_value(value + 1, get_max_trait_value(trait.name, category))
             trait_values[trait.id] = value
 
     return trait_values

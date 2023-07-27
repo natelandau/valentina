@@ -25,7 +25,7 @@ class TestGuildService:
         THEN the guild is updated
         """
         g = GuildService()
-        g.update_or_add(guild=ctx_existing.guild)
+        g.update_or_add(ctx_existing.guild)
         assert Guild.get_by_id(1).name == "test_guild"
         assert Guild.get_by_id(1).id == 1
 
@@ -37,7 +37,7 @@ class TestGuildService:
         THEN the guild is created in the db
         """
         g = GuildService()
-        g.update_or_add(guild=ctx_new_user_guild.guild)
+        g.update_or_add(ctx_new_user_guild.guild)
         assert Guild.get_by_id(2).name == "Test Guild 2"
         assert Guild.get_by_id(2).id == 2
 
@@ -49,7 +49,7 @@ class TestGuildService:
         THEN the guild is updated
         """
         g = GuildService()
-        g.update_or_add(ctx=ctx_existing)
+        g.update_or_add(ctx_existing.guild)
         assert Guild.get_by_id(1).name == "test_guild"
         assert Guild.get_by_id(1).id == 1
 
