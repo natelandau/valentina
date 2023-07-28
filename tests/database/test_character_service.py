@@ -213,30 +213,6 @@ class TestCharacterService:
         assert returned.name == "Test (Testy) Character"
 
     @pytest.mark.parametrize(
-        ("trait", "expected"),
-        [
-            ("Test_Trait", 2),
-            ("strength", 1),
-            ("DEXTERITY", 2),
-            ("exception", 2),
-        ],
-    )
-    def test_fetch_trait_value(self, trait, expected):
-        """Test fetch_trait_value().
-
-        Given a trait name
-        When fetch_trait_value is called
-        Then the trait value is returned
-        """
-        character = Character.get_by_id(1)
-
-        if trait == "exception":
-            with pytest.raises(TraitNotFoundError):
-                self.char_svc.fetch_trait_value(character, trait)
-        else:
-            assert self.char_svc.fetch_trait_value(character, trait) == expected
-
-    @pytest.mark.parametrize(
         ("char_id", "expected"),
         [
             (1, 1),

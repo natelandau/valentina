@@ -9,13 +9,12 @@ from aiohttp import ClientSession
 from discord.ext import commands, tasks
 from loguru import logger
 
-from valentina.models import GuildService, MacroService
+from valentina.models import GuildService, MacroService, TraitService
 from valentina.models.database import DATABASE
 from valentina.models.database_services import (
     CharacterService,
     ChronicleService,
     DatabaseService,
-    TraitService,
     UserService,
 )
 from valentina.utils import Context

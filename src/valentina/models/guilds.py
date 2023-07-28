@@ -12,7 +12,7 @@ from valentina.models.constants import ChannelPermission, EmbedColor
 from valentina.utils.errors import DuplicateRollResultThumbError
 from valentina.utils.helpers import set_channel_perms, time_now
 
-from .database import Character, CustomTrait, Guild, RollThumbnail, TraitCategory
+from .database import Guild, RollThumbnail
 
 
 class GuildService:
@@ -21,37 +21,6 @@ class GuildService:
     def __init__(self) -> None:
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
-
-    @staticmethod
-    def fetch_all_traits(
-        guild_id: int, flat_list: bool = False
-    ) -> dict[str, list[str]] | list[str]:
-        """Fetch all traits for a guild inclusive of common and custom.
-
-        Args:
-            guild_id (int): The guild to fetch traits for.
-            flat_list (bool, optional): Return a flat list of traits. Defaults to False.
-        """
-        # TODO: Move this to the Traits Service
-        all_traits: dict[str, list[str]] = {}
-        for category in TraitCategory.select().order_by(TraitCategory.name.asc()):
-            all_traits.setdefault(category.name, [])
-
-            for trait in sorted(category.traits, key=lambda x: x.name):
-                all_traits[category.name].append(trait.name)
-
-        custom_traits = CustomTrait.select().join(Character).where(Character.guild_id == guild_id)
-        if len(custom_traits) > 0:
-            for custom_trait in custom_traits:
-                category = custom_trait.category.name.title()
-                all_traits.setdefault(category, [])
-                all_traits[category].append(custom_trait.name.title())
-
-        if flat_list:
-            # Flattens the dictionary to a single list, while removing duplicates
-            return sorted(list({item for sublist in all_traits.values() for item in sublist}))
-
-        return all_traits
 
     def fetch_guild_settings(self, ctx: ApplicationContext) -> dict[str, str | int | bool]:
         """Fetch all guild settings.

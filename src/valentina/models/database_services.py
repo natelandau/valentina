@@ -7,13 +7,12 @@ from pathlib import Path
 import arrow
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
-from peewee import DoesNotExist, IntegrityError, ModelSelect, fn
+from peewee import DoesNotExist, IntegrityError, ModelSelect
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.models import Macro, MacroTrait
+from valentina.models import Macro, MacroTrait, TraitService
 from valentina.models.constants import (
     MaxTraitValue,
-    TraitCategoryOrder,
     TraitPermissions,
     XPPermissions,
 )
@@ -48,70 +47,6 @@ from valentina.utils.errors import (
     TraitNotFoundError,
 )
 from valentina.utils.helpers import time_now
-
-
-class TraitService:
-    """Traits manager cache/in-memory database."""
-
-    def __init__(self) -> None:
-        self.class_traits: dict[str, list[Trait]] = {}  # {class: [traits]}
-
-    def fetch_all_class_traits(self, char_class: str) -> list[Trait]:
-        """Fetch all traits for a character class."""
-        if char_class in self.class_traits:
-            logger.debug(f"CACHE: Return traits for `{char_class}`")
-            return self.class_traits[char_class]
-
-        logger.debug(f"DATABASE: Fetch all traits for `{char_class}`")
-
-        traits = (
-            Trait.select()
-            .join(TraitClass)
-            .join(CharacterClass)
-            .where(CharacterClass.name == char_class)
-        )
-
-        self.class_traits[char_class] = sorted(
-            [x for x in traits], key=lambda x: TraitCategoryOrder[x.category.name]
-        )
-
-        return self.class_traits[char_class]
-
-    def fetch_trait_id_from_name(self, trait_name: str) -> int:
-        """Fetch a trait ID from the trait name."""
-        logger.debug(f"DATABASE: Fetch trait ID for `{trait_name}`")
-
-        try:
-            trait = Trait.get(fn.lower(Trait.name) == trait_name.lower())
-            return trait.id
-        except DoesNotExist as e:
-            raise TraitNotFoundError(f"Trait `{trait_name}` not found") from e
-
-    def fetch_trait_from_name(self, trait_name: str) -> Trait:
-        """Fetch a trait from the trait name."""
-        logger.debug(f"DATABASE: Fetch trait `{trait_name}`")
-
-        try:
-            return Trait.get(fn.lower(Trait.name) == trait_name.lower())
-        except DoesNotExist as e:
-            raise TraitNotFoundError(f"Trait `{trait_name}` not found") from e
-
-    def fetch_trait_category(self, query: str | int) -> str:
-        """Fetch the category of a trait."""
-        try:
-            if isinstance(query, int):
-                return Trait.get(Trait.id == query).category.name
-
-            if isinstance(query, str):
-                return Trait.get(fn.lower(Trait.name) == query.lower()).category.name
-
-        except DoesNotExist as e:
-            raise TraitNotFoundError(f"Trait `{query}` not found") from e
-
-    def purge(self) -> None:
-        """Purge the cache."""
-        logger.info("TRAITS: Purge cache")
-        self.class_traits = {}
 
 
 class ChronicleService:
@@ -693,39 +628,6 @@ class CharacterService:
             return Character.get_by_id(int(char_id))
 
         raise NoClaimError
-
-    def fetch_trait_value(self, character: Character, trait: str) -> int:
-        """Fetch the value of a trait for a character."""
-        # First grab the trait from the database
-        tv_value = (
-            TraitValue.select()
-            .where(TraitValue.character == character)
-            .join(Trait)
-            .where(fn.lower(Trait.name) == trait.lower())
-        )
-
-        if len(tv_value) != 0:
-            return tv_value[0].value
-
-        custom_trait = [x for x in character.custom_traits if x.name.lower() == trait.lower()]
-
-        if len(custom_trait) > 0:
-            return custom_trait[0].value
-
-        raise TraitNotFoundError(trait.title())
-
-    def fetch_trait_category(self, character: Character, trait: str) -> str:
-        """Fetch the category of a trait for a character."""
-        try:
-            return TraitService().fetch_trait_category(trait)
-
-        except TraitNotFoundError as e:
-            custom_trait = [x for x in character.custom_traits if x.name.lower() == trait.lower()]
-
-            if len(custom_trait) > 0:
-                return custom_trait[0].category
-
-            raise TraitNotFoundError from e
 
     def fetch_user_of_character(self, guild_id: int, char_id: int) -> int:
         """Returns the user id of the user who claimed a character."""

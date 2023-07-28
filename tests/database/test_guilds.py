@@ -62,30 +62,6 @@ class TestGuildService:
         assert data["log_channel_id"] == "xxx"
         assert data["new_key"] == "new_value"
 
-    def test_fetch_all_traits_one(self):
-        """Test GuildService.fetch_all_traits().
-
-        GIVEN a database with a guild
-        WHEN GuildService.fetch_all_traits() is called
-        THEN the traits are returned as a dictionary
-        """
-        returned = GuildService.fetch_all_traits(guild_id=1)
-        assert isinstance(returned, dict)
-        assert "Test_Trait" in returned["Skills"]
-        assert returned["Social"] == ["Appearance", "Charisma", "Manipulation"]
-
-    def test_fetch_all_traits_two(self):
-        """Test GuildService.fetch_all_traits().
-
-        GIVEN a database with a guild
-        WHEN GuildService.fetch_all_traits() is called with flat_list=True
-        THEN the traits are returned as a list
-        """
-        returned = GuildService.fetch_all_traits(guild_id=1, flat_list=True)
-        assert isinstance(returned, list)
-        for i in ["Test_Trait", "Charisma", "Manipulation", "Appearance"]:
-            assert i in returned
-
     def test_fetch_guild_settings(self, ctx_existing, caplog):
         """Test GuildService.fetch_guild_settings().
 

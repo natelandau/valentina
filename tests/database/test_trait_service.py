@@ -2,8 +2,8 @@
 """Test the TraitService class."""
 import pytest
 
+from valentina.models import TraitService
 from valentina.models.database import Trait
-from valentina.models.database_services import TraitService
 from valentina.utils.errors import TraitNotFoundError
 
 
@@ -73,3 +73,27 @@ class TestTraitService:
         assert len(self.trait_svc.class_traits) > 0
         self.trait_svc.purge()
         assert len(self.trait_svc.class_traits) == 0
+
+    def test_fetch_all_traits_one(self):
+        """Test TraitService.fetch_all_traits().
+
+        GIVEN a database with a guild
+        WHEN TraitService.fetch_all_traits() is called
+        THEN the traits are returned as a dictionary
+        """
+        returned = self.trait_svc.fetch_all_traits(guild_id=1)
+        assert isinstance(returned, dict)
+        assert "Test_Trait" in returned["Skills"]
+        assert returned["Social"] == ["Appearance", "Charisma", "Manipulation"]
+
+    def test_fetch_all_traits_two(self):
+        """Test TraitService.fetch_all_traits().
+
+        GIVEN a database with a guild
+        WHEN TraitService.fetch_all_traits() is called with flat_list=True
+        THEN the traits are returned as a list
+        """
+        returned = self.trait_svc.fetch_all_traits(guild_id=1, flat_list=True)
+        assert isinstance(returned, list)
+        for i in ["Test_Trait", "Charisma", "Manipulation", "Appearance"]:
+            assert i in returned
