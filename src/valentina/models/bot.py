@@ -9,14 +9,20 @@ from aiohttp import ClientSession
 from discord.ext import commands, tasks
 from loguru import logger
 
-from valentina.models import DatabaseService, GuildService, MacroService, TraitService, UserService
+from valentina.models import (
+    DatabaseService,
+    DBBackup,
+    GuildService,
+    MacroService,
+    TraitService,
+    UserService,
+)
 from valentina.models.database_services import (
     CharacterService,
     ChronicleService,
 )
 from valentina.models.db_tables import DATABASE
 from valentina.utils import Context
-from valentina.utils.db_backup import DBBackup
 
 
 class Valentina(commands.Bot):

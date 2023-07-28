@@ -1,6 +1,9 @@
 """When a new database is created, this file is used to populate it with the initial data.
 
-IMPORTANT: If you change the data in this file, you must add/delete/migrate the corresponding in any existing databases!
+IMPORTANT notes about Populating the Database:
+    - Adding new data should be fine in an existing database
+    - Updating existing data must be handled in the MigrateDatabase class
+    - Deleting data must be handled in the MigrateDatabase class
 """
 
 import json
@@ -452,9 +455,13 @@ class MigrateDatabase:
 
 
 class PopulateDatabase:
-    """A class that handles the populating a new database. This is only used when creating a new database.
+    """A class that handles the populating data in a database.
 
-    IMPORTANT: If you change the data in this file, you must add/delete/migrate the corresponding in any existing databases using the MigrateDatabase class!
+    Important:
+        - Adding new data should be fine in an existing database
+        - Updating existing data must be handled in the MigrateDatabase class
+        - Deleting data must be handled in the MigrateDatabase class
+
     """
 
     def __init__(self, db: CSqliteExtDatabase) -> None:
@@ -504,7 +511,11 @@ class PopulateDatabase:
         logger.debug("DATABASE: Populate vampire clans")
 
     def _trait_categories(self) -> None:
-        """Create the initial trait categories."""
+        """Populate the database with initial trait categories and associated character classes.
+
+        This method associates predefined character classes to each category. If a category
+        is associated with the 'Common' class, it will be linked with all character classes.
+        """
         # Dictionary of category and associated character classes
         categories = {
             "Backgrounds": ["Common"],

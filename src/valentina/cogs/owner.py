@@ -106,7 +106,9 @@ class Owner(commands.Cog):
         embed.add_field(name="Connected Guilds", value=str(len(self.bot.guilds)))
         embed.add_field(name="Bot Version", value=f"`{self.bot.version}`")
         embed.add_field(name="Pycord Version", value=f"`{discord.__version__}`")
-        embed.add_field(name="Database Version", value=f"`{self.bot.db_svc.database_version()}`")
+        embed.add_field(
+            name="Database Version", value=f"`{self.bot.db_svc.fetch_database_version()}`"
+        )
 
         await ctx.send(embed=embed)
 

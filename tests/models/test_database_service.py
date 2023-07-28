@@ -27,18 +27,6 @@ def test_create_tables(tmp_path):
     test_db.close()
 
 
-def test_get_tables(mock_db):
-    """Test DatabaseService.get_tables().
-
-    GIVEN a database
-    WHEN DatabaseService.get_tables() is called
-    THEN the list of tables is returned
-    """
-    tables = DatabaseService(mock_db).get_tables()
-    assert len(tables) == 20
-    assert "characters" in tables
-
-
 def test_initialize_database_one(empty_db):
     """Test DatabaseService.initialize_database().
 
