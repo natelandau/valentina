@@ -8,7 +8,12 @@ import discord
 from discord import ApplicationContext
 from loguru import logger
 
-from valentina.models.constants import ChannelPermission, EmbedColor
+from valentina.models.constants import (
+    ChannelPermission,
+    EmbedColor,
+    TraitPermissions,
+    XPPermissions,
+)
 from valentina.utils.errors import DuplicateRollResultThumbError
 from valentina.utils.helpers import set_channel_perms, time_now
 
@@ -229,8 +234,8 @@ class GuildService:
                     "modified": str(time_now()),
                     "log_channel_id": None,
                     "use_audit_log": False,
-                    "trait_permissions": 2,
-                    "xp_permissions": 2,
+                    "trait_permissions": TraitPermissions.WITHIN_24_HOURS.value,
+                    "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
                     "use_storyteller_channel": False,
                     "storyteller_channel_id": None,
                 },

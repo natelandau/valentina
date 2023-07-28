@@ -1,21 +1,15 @@
 """Models for maintaining in-memory caches of database queries."""
 
 import re
-from datetime import timedelta
 from pathlib import Path
 
-import arrow
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
 from peewee import DoesNotExist, IntegrityError, ModelSelect
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
 from valentina.models import Macro, MacroTrait, TraitService
-from valentina.models.constants import (
-    MaxTraitValue,
-    TraitPermissions,
-    XPPermissions,
-)
+from valentina.models.constants import MaxTraitValue
 from valentina.models.database import (
     DATABASE,
     Character,
@@ -760,121 +754,6 @@ class CharacterService:
                 return True
 
             raise TraitNotFoundError from e
-
-
-class UserService:
-    """User manager and in-memory cache."""
-
-    def __init__(self) -> None:
-        """Initialize the UserService."""
-        self.user_cache: dict[str, User] = {}  # {user_key: User, ...}
-
-    @staticmethod
-    def __get_user_key(guild_id: int, user_id: int) -> str:
-        """Get the guild and user IDs.
-
-        Args:
-            guild_id (discord.Guild | int): The guild to get the ID for.
-            user_id (discord.User | int): The user to get the ID for.
-
-        Returns:
-            str: The guild and user IDs joined by an underscore.
-        """
-        return f"{guild_id}_{user_id}"
-
-    def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
-        """Purge user service cache. If ctx is None, purge all caches."""
-        if ctx:
-            key = self.__get_user_key(ctx.guild.id, ctx.author.id)
-            self.user_cache.pop(key, None)
-            logger.debug(f"CACHE: Purge user cache: {key}")
-        else:
-            self.user_cache = {}
-            logger.debug("CACHE: Purge all user caches")
-
-    def fetch_user(self, ctx: ApplicationContext) -> User:
-        """Fetch a user object from the cache or database. If user doesn't exist, create in the database and the cache."""
-        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
-
-        if key in self.user_cache:
-            logger.debug(f"CACHE: Return user {key} from cache")
-            return self.user_cache[key]
-
-        user, created = User.get_or_create(
-            id=ctx.author.id,
-            defaults={
-                "id": ctx.author.id,
-                "name": ctx.author.display_name,
-                "username": ctx.author.name,
-                "mention": ctx.author.mention,
-                "first_seen": time_now(),
-                "last_seen": time_now(),
-            },
-        )
-        if created:
-            # Add user to guild_user lookup table
-            existing_guild_user, lookup_created = GuildUser.get_or_create(
-                user=ctx.author.id,
-                guild=ctx.guild.id,
-                defaults={"guild_id": ctx.guild.id, "user_id": ctx.author.id},
-            )
-            if lookup_created:
-                logger.debug(
-                    f"DATABASE: Create guild_user lookup for user:{ctx.author.name} guild:{ctx.guild.name}"
-                )
-
-            logger.info(f"DATABASE: Create user '{ctx.author.display_name}'")
-
-        else:
-            user.last_seen = time_now()
-            user.save()
-
-        logger.debug(f"CACHE: Add user {user.name}")
-        self.user_cache[key] = user
-        return user
-
-    def has_xp_permissions(self, ctx: ApplicationContext, character: Character = None) -> bool:
-        """Determine if the user has permissions to add xp."""
-        if ctx.author.guild_permissions.administrator:
-            return True
-
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
-
-        if settings["xp_permissions"] == XPPermissions.UNRESTRICTED.value:
-            return True
-
-        if settings["xp_permissions"] == XPPermissions.CHARACTER_OWNER_ONLY.value and character:
-            return character.created_by.id == ctx.author.id
-
-        if settings["xp_permissions"] == XPPermissions.WITHIN_24_HOURS.value and character:
-            return (character.created_by.id == ctx.author.id) and (
-                arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)
-            )
-
-        return False
-
-    def has_trait_permissions(self, ctx: ApplicationContext, character: Character = None) -> bool:
-        """Determines if the user have permissions to update trait values."""
-        if ctx.author.guild_permissions.administrator:
-            return True
-
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
-
-        if settings["trait_permissions"] == TraitPermissions.UNRESTRICTED.value:
-            return True
-
-        if (
-            settings["trait_permissions"] == TraitPermissions.CHARACTER_OWNER_ONLY.value
-            and character
-        ):
-            return character.created_by.id == ctx.author.id
-
-        if settings["trait_permissions"] == TraitPermissions.WITHIN_24_HOURS.value and character:
-            return (character.created_by.id == ctx.author.id) and (
-                arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)
-            )
-
-        return False
 
 
 class DatabaseService:
