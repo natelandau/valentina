@@ -14,7 +14,7 @@ from peewee import (
     Model,
     TextField,
 )
-from playhouse.sqlite_ext import CSqliteExtDatabase
+from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
 from valentina.utils.helpers import time_now
 
@@ -67,13 +67,7 @@ class Guild(BaseModel):
     id = IntegerField(primary_key=True)  # noqa: A003
     name = TextField()
     created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    log_channel_id = IntegerField(null=True)
-    use_audit_log = BooleanField(default=False)
-    xp_permissions = IntegerField(default=0)
-    trait_permissions = IntegerField(default=0)
-    use_storyteller_channel = BooleanField(default=False)
-    storyteller_channel_id = IntegerField(null=True)
+    data = JSONField(null=True)
 
     def __str__(self) -> str:
         """Return the string representation of the model."""

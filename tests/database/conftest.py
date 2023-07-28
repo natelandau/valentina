@@ -68,7 +68,7 @@ MODELS = [
 ]
 
 databaseversion = {"version": "1.0.0"}
-guild = {"id": 1, "name": "test_guild"}
+guild = {"id": 1, "name": "test_guild", "data": {"key": "value"}}
 user1 = {"id": 1, "username": "test_user", "name": "Test User"}
 user22 = {"id": 22, "username": "test_user22", "name": "Test User22"}
 character1 = {
@@ -200,6 +200,7 @@ class MockGuild(discord.Guild):
     def __init__(self, id, name: str | None = None):
         self.id = id
         self.name = name
+        self.data = {"key": "value"}
 
 
 class MockUser:

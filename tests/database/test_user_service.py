@@ -1,10 +1,8 @@
 # type: ignore
 """Test the UserService class."""
 
-
 import pytest
 
-from valentina.models import Macro
 from valentina.models.database import GuildUser, User
 from valentina.models.database_services import UserService
 

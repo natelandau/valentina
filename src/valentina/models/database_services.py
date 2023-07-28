@@ -1,11 +1,10 @@
 """Models for maintaining in-memory caches of database queries."""
 
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 import arrow
-import discord
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
 from peewee import DoesNotExist, IntegrityError, ModelSelect, fn
@@ -13,8 +12,6 @@ from playhouse.sqlite_ext import CSqliteExtDatabase
 
 from valentina.models import Macro, MacroTrait
 from valentina.models.constants import (
-    ChannelPermission,
-    EmbedColor,
     MaxTraitValue,
     TraitCategoryOrder,
     TraitPermissions,
@@ -47,11 +44,10 @@ from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
-    DuplicateRollResultThumbError,
     NoClaimError,
     TraitNotFoundError,
 )
-from valentina.utils.helpers import set_channel_perms, time_now
+from valentina.utils.helpers import time_now
 
 
 class TraitService:
@@ -977,200 +973,6 @@ class UserService:
             )
 
         return False
-
-
-class GuildService:
-    """Manage guilds in the database. Guilds are created on bot connect."""
-
-    def __init__(self) -> None:
-        self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
-        self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
-
-    @staticmethod
-    def is_in_db(guild_id: int) -> bool:
-        """Check if the guild is in the database."""
-        return Guild.select().where(Guild.id == guild_id).exists()
-
-    @staticmethod
-    def fetch_all_traits(
-        guild_id: int, flat_list: bool = False
-    ) -> dict[str, list[str]] | list[str]:
-        """Fetch all traits for a guild inclusive of common and custom.
-
-        Args:
-            guild_id (int): The guild to fetch traits for.
-            flat_list (bool, optional): Return a flat list of traits. Defaults to False.
-        """
-        all_traits: dict[str, list[str]] = {}
-        for category in TraitCategory.select().order_by(TraitCategory.name.asc()):
-            all_traits.setdefault(category.name, [])
-
-            for trait in sorted(category.traits, key=lambda x: x.name):
-                all_traits[category.name].append(trait.name)
-
-        custom_traits = CustomTrait.select().join(Character).where(Character.guild_id == guild_id)
-        if len(custom_traits) > 0:
-            for custom_trait in custom_traits:
-                category = custom_trait.category.name.title()
-                all_traits.setdefault(category, [])
-                all_traits[category].append(custom_trait.name.title())
-
-        if flat_list:
-            # Flattens the dictionary to a single list, while removing duplicates
-            return sorted(list({item for sublist in all_traits.values() for item in sublist}))
-
-        return all_traits
-
-    def fetch_guild_settings(self, ctx: ApplicationContext) -> dict[str, str | int | bool]:
-        """Fetch all guild settings."""
-        if ctx.guild.id in self.settings_cache:
-            return self.settings_cache[ctx.guild.id]
-
-        self.settings_cache[ctx.guild.id] = {}
-
-        guild = Guild.get_by_id(ctx.guild.id)
-        self.settings_cache[ctx.guild.id]["xp_permissions"] = guild.xp_permissions
-        self.settings_cache[ctx.guild.id]["trait_permissions"] = guild.trait_permissions
-        self.settings_cache[ctx.guild.id]["log_channel_id"] = guild.log_channel_id
-        self.settings_cache[ctx.guild.id]["use_audit_log"] = guild.use_audit_log
-        self.settings_cache[ctx.guild.id]["use_storyteller_channel"] = guild.use_storyteller_channel
-        self.settings_cache[ctx.guild.id]["storyteller_channel_id"] = guild.storyteller_channel_id
-
-        logger.debug(f"DATABASE: Fetch guild settings for '{ctx.guild.name}'")
-        return self.settings_cache[ctx.guild.id]
-
-    def add_roll_result_thumb(self, ctx: ApplicationContext, roll_type: str, url: str) -> None:
-        """Add a roll result thumbnail to the database."""
-        ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
-
-        self.roll_result_thumbs.pop(ctx.guild.id, None)
-
-        already_exists = RollThumbnail.get_or_none(guild=ctx.guild.id, url=url)
-        if already_exists:
-            raise DuplicateRollResultThumbError
-
-        RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
-        logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
-
-    async def create_channel(
-        self,
-        ctx: ApplicationContext,
-        channel_name: str,
-        topic: str,
-        position: int,
-        database_column_for_id: str,
-        default_role: ChannelPermission,
-        player: ChannelPermission,
-        storyteller: ChannelPermission,
-    ) -> discord.TextChannel:
-        """Create a channel for a guild."""
-        self.settings_cache.pop(ctx.guild.id, None)
-        guild_object = Guild.get_or_none(id=ctx.guild.id)
-        id_from_db = getattr(guild_object, database_column_for_id)
-        player_role = discord.utils.get(ctx.guild.roles, name="Player")
-        storyteller_role = discord.utils.get(ctx.guild.roles, name="Storyteller")
-
-        channel = discord.utils.get(ctx.guild.text_channels, name=channel_name.lower().strip())
-
-        # If the guild has a log channel set which matches the name, use it
-        if channel and id_from_db != channel.id:
-            setattr(guild_object, database_column_for_id, channel.id)
-            guild_object.save()
-
-        if not channel:
-            channel = await ctx.guild.create_text_channel(
-                channel_name,
-                topic=topic,
-                position=position,
-            )
-            setattr(guild_object, database_column_for_id, channel.id)
-            guild_object.save()
-
-        # Set channel permissions
-        for user in ctx.guild.members:
-            if user.bot:
-                await channel.set_permissions(
-                    user, overwrite=set_channel_perms(ChannelPermission.MANAGE)
-                )
-
-        await channel.set_permissions(
-            ctx.guild.default_role, overwrite=set_channel_perms(default_role)
-        )
-        await channel.set_permissions(player_role, overwrite=set_channel_perms(player))
-        await channel.set_permissions(storyteller_role, overwrite=set_channel_perms(storyteller))
-
-        logger.debug(f"GUILD: Create channel '{channel_name}' for '{ctx.guild.name}'")
-        return channel
-
-    def fetch_roll_result_thumbs(self, ctx: ApplicationContext) -> dict[str, list[str]]:
-        """Get all roll result thumbnails for a guild."""
-        if ctx.guild.id not in self.roll_result_thumbs:
-            self.roll_result_thumbs[ctx.guild.id] = {}
-
-            logger.debug(f"DATABASE: Fetch roll result thumbnails for '{ctx.guild.name}'")
-            for thumb in RollThumbnail.select().where(RollThumbnail.guild == ctx.guild.id):
-                if thumb.roll_type not in self.roll_result_thumbs[ctx.guild.id]:
-                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type] = [thumb.url]
-                else:
-                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type].append(thumb.url)
-
-        return self.roll_result_thumbs[ctx.guild.id]
-
-    def purge_cache(self, guild: discord.Guild | None = None) -> None:
-        """Purge the cache for a guild or all guilds.
-
-        Args:
-            guild (discord.Guild, optional): The guild to purge the cache for. Defaults to None.
-        """
-        if guild:
-            self.settings_cache.pop(guild.id, None)
-            self.roll_result_thumbs.pop(guild.id, None)
-            logger.debug(f"CACHE: Purge guild cache for '{guild.name}'")
-        else:
-            self.settings_cache = {}
-            self.roll_result_thumbs = {}
-            logger.debug("CACHE: Purge all guild caches")
-
-    async def send_to_log(self, ctx: ApplicationContext, message: str | discord.Embed) -> None:
-        """Send a message to the log channel for a guild."""
-        settings = self.fetch_guild_settings(ctx)
-        if settings["use_audit_log"] and settings["log_channel_id"] is not None:
-            log_channel = ctx.guild.get_channel(settings["log_channel_id"])
-            if log_channel:
-                if isinstance(message, discord.Embed):
-                    await log_channel.send(embed=message)
-                else:
-                    embed = discord.Embed(title=message, color=EmbedColor.INFO.value)
-                    embed.timestamp = datetime.now()
-                    embed.set_footer(
-                        text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
-                    )
-                    await log_channel.send(embed=embed)
-
-    def update_or_add(
-        self,
-        guild: discord.Guild,
-        **kwargs: str | int | datetime,
-    ) -> None:
-        """Add a guild to the database or update it if it already exists."""
-        self.purge_cache(guild)
-
-        db_id, is_created = Guild.get_or_create(
-            id=guild.id,
-            defaults={
-                "id": guild.id,
-                "name": guild.name,
-                "created": time_now(),
-                "modified": time_now(),
-            },
-        )
-        if is_created:
-            logger.info(f"DATABASE: Create guild {db_id.name}")
-
-        if not is_created:
-            kwargs["modified"] = time_now()
-            Guild.set_by_id(guild.id, kwargs)
-            logger.debug(f"DATABASE: Update guild '{db_id.name}'")
 
 
 class DatabaseService:

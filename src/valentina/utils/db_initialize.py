@@ -2,6 +2,9 @@
 
 IMPORTANT: If you change the data in this file, you must add/delete/migrate the corresponding in any existing databases!
 """
+
+import json
+
 from loguru import logger
 from peewee import TextField
 from playhouse.migrate import SqliteMigrator, migrate
@@ -370,21 +373,82 @@ class MigrateDatabase:
 
     def __1_1_5(self) -> None:
         """Migrate from version 1.1.5."""
-        if not self._column_exists(Guild._meta.table_name, "use_storyteller_channel"):
-            logger.debug("DATABASE: create guilds:use_storyteller_channel column")
-            self.db.execute_sql(
-                f"ALTER TABLE {Guild._meta.table_name} ADD COLUMN use_storyteller_channel INTEGER NOT NULL DEFAULT 0;"
-            )
-            logger.debug("DATABASE: create guilds:storyteller_channel_id column")
-            self.db.execute_sql(
-                f"ALTER TABLE {Guild._meta.table_name} ADD COLUMN storyteller_channel_id INTEGER DEFAULT NULL;"
-            )
-
         if not self._column_exists(Character._meta.table_name, "storyteller_character"):
             logger.debug("DATABASE: create chracters:storyteller_character column")
             self.db.execute_sql(
                 f"ALTER TABLE {Character._meta.table_name} ADD COLUMN storyteller_character INTEGER DEFAULT 0;"
             )
+
+        if not self._column_exists(Guild._meta.table_name, "data"):
+            # Grab the old data and add it to a dictionary to be migrated
+            cursor = self.db.execute_sql("SELECT * FROM guilds;").fetchall()
+            migration_data = {}
+
+            for (
+                guild_id,
+                _name,
+                _created,
+                modified,
+                log_channel_id,
+                use_audit_log,
+                trait_permissions,
+                xp_permissions,
+            ) in cursor:
+                migration_data[guild_id] = {
+                    "modified": str(modified),
+                    "log_channel_id": log_channel_id,
+                    "use_audit_log": use_audit_log,
+                    "trait_permissions": trait_permissions,
+                    "xp_permissions": xp_permissions,
+                    "use_storyteller_channel": 0,
+                    "storyteller_channel_id": None,
+                }
+            logger.debug("DATABASE: grab old Guild data")
+
+            # Disable foreign keys
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+
+            # Create new table
+            self.db.execute_sql(
+                """
+                CREATE TABLE new_guilds (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    created DATETIME NOT NULL
+                );
+            """
+            )
+
+            # Copy data from old table to new table
+            self.db.execute_sql(
+                """
+                INSERT INTO new_guilds (id, name, created)
+                SELECT id, name, created
+                FROM guilds;
+            """
+            )
+
+            # Drop old table
+            self.db.execute_sql("DROP TABLE guilds;")
+
+            # Rename new table to old table name
+            self.db.execute_sql("ALTER TABLE new_guilds RENAME TO guilds;")
+
+            # Re-enable foreign keys
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
+
+            logger.debug("DATABASE: complete initial Guild migration")
+
+            # Add the data column
+            self.db.execute_sql(f"ALTER TABLE {Guild._meta.table_name} ADD COLUMN data JSON;")
+            logger.debug("DATABASE: add Guild data column")
+
+            for guild, data in migration_data.items():
+                json_object = json.dumps(data)
+                self.db.execute_sql(
+                    "UPDATE guilds SET data = ? WHERE id = ?;", (json_object, guild)
+                )
+            logger.debug("DATABASE: complete Guild data migration")
 
 
 class PopulateDatabase:
