@@ -3,8 +3,8 @@
 
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.models.database import DatabaseVersion
-from valentina.models.database_services import DatabaseService
+from valentina.models import DatabaseService
+from valentina.models.db_tables import DatabaseVersion
 
 from .conftest import MODELS
 

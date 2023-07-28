@@ -11,7 +11,7 @@ from peewee import DoesNotExist, fn
 from valentina.models.constants import TraitCategoryOrder
 from valentina.utils.errors import TraitNotFoundError
 
-from .database import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass
+from .db_tables import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass
 
 
 class TraitService:

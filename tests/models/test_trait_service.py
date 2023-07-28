@@ -3,7 +3,7 @@
 import pytest
 
 from valentina.models import TraitService
-from valentina.models.database import Trait
+from valentina.models.db_tables import Trait
 from valentina.utils.errors import TraitNotFoundError
 
 

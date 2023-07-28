@@ -1,7 +1,14 @@
 """Models for Valentina."""
+from .database import DatabaseService
 from .guilds import GuildService
-from .macros import Macro, MacroService, MacroTrait
+from .macros import MacroService
 from .traits import TraitService
 from .users import UserService
 
-__all__ = ["GuildService", "Macro", "MacroService", "MacroTrait", "TraitService", "UserService"]
+__all__ = [
+    "DatabaseService",
+    "GuildService",
+    "MacroService",
+    "TraitService",
+    "UserService",
+]

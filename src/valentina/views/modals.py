@@ -3,7 +3,7 @@ import discord
 from discord.ui import InputText, Modal
 
 from valentina.models.constants import MAX_FIELD_COUNT, EmbedColor
-from valentina.models.database import Character, ChronicleChapter, ChronicleNote, ChronicleNPC
+from valentina.models.db_tables import Character, ChronicleChapter, ChronicleNote, ChronicleNPC
 from valentina.views import ConfirmCancelButtons
 
 

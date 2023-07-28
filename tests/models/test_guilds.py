@@ -4,7 +4,7 @@ import pytest
 from rich.console import Console
 
 from valentina.models import GuildService
-from valentina.models.database import Guild
+from valentina.models.db_tables import Guild
 
 # ARG001
 

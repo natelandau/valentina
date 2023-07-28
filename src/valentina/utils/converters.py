@@ -1,6 +1,5 @@
 """Converters, validators, and normalizers for Valentina."""
 
-
 import re
 from datetime import datetime
 
@@ -9,12 +8,12 @@ from discord.ext.commands import BadArgument, Context, Converter
 from loguru import logger
 from peewee import DoesNotExist
 
-from valentina.models import Macro
-from valentina.models.database import (
+from valentina.models.db_tables import (
     Character,
     CharacterClass,
     CustomSection,
     CustomTrait,
+    Macro,
     Trait,
     TraitCategory,
     VampireClan,

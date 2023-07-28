@@ -2,8 +2,8 @@
 """Test the MacroService class."""
 import pytest
 
-from valentina.models import Macro, MacroService
-from valentina.models.database import Trait
+from valentina.models import MacroService
+from valentina.models.db_tables import Macro, Trait
 
 
 @pytest.mark.usefixtures("mock_db")
@@ -54,7 +54,9 @@ class TestMacroService:
         THEN the database is updated
         """
         # Mock the MacroTrait.create_from_trait_name method
-        mocker.patch("valentina.models.MacroTrait.create_from_trait_name", return_value=None)
+        mocker.patch(
+            "valentina.models.db_tables.MacroTrait.create_from_trait_name", return_value=None
+        )
 
         # Grab a Trait object to use
         trait = Trait.get_by_id(1)
@@ -83,7 +85,9 @@ class TestMacroService:
         THEN raise a ValueError
         """
         # Mock the MacroTrait.create_from_trait_name method
-        mocker.patch("valentina.models.MacroTrait.create_from_trait_name", return_value=None)
+        mocker.patch(
+            "valentina.models.db_tables.MacroTrait.create_from_trait_name", return_value=None
+        )
 
         # Grab a Trait object to use
         trait = Trait.get_by_id(1)
@@ -100,7 +104,9 @@ class TestMacroService:
         THEN raise a ValueError
         """
         # Mock the MacroTrait.create_from_trait_name method
-        mocker.patch("valentina.models.MacroTrait.create_from_trait_name", return_value=None)
+        mocker.patch(
+            "valentina.models.db_tables.MacroTrait.create_from_trait_name", return_value=None
+        )
 
         # Grab a Trait object to use
         trait = Trait.get_by_id(1)

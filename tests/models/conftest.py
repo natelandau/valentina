@@ -19,8 +19,7 @@ import pytest
 from loguru import logger
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.models import Macro
-from valentina.models.database import (
+from valentina.models.db_tables import (
     Character,
     CharacterClass,
     Chronicle,
@@ -32,6 +31,7 @@ from valentina.models.database import (
     DatabaseVersion,
     Guild,
     GuildUser,
+    Macro,
     RollThumbnail,
     Trait,
     TraitCategory,

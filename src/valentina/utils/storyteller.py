@@ -5,7 +5,7 @@ import random
 from numpy import int32
 from numpy.random import default_rng
 
-from valentina.models.database import Trait
+from valentina.models.db_tables import Trait
 from valentina.utils.helpers import fetch_clan_disciplines, get_max_trait_value, round_trait_value
 
 _rng = default_rng()

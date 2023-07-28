@@ -4,7 +4,7 @@ import discord
 from discord.commands import OptionChoice
 
 from valentina.models.constants import MAX_OPTION_LIST_SIZE
-from valentina.models.database import CharacterClass, Trait, TraitCategory, VampireClan
+from valentina.models.db_tables import CharacterClass, Trait, TraitCategory, VampireClan
 from valentina.utils.errors import NoClaimError
 
 

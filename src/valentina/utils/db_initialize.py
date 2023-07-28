@@ -11,13 +11,13 @@ from playhouse.migrate import SqliteMigrator, migrate
 from playhouse.sqlite_ext import CSqliteExtDatabase
 from semver import Version
 
-from valentina.models import Macro
-from valentina.models.database import (
+from valentina.models.db_tables import (
     Character,
     CharacterClass,
     CustomSection,
     CustomTrait,
     Guild,
+    Macro,
     Trait,
     TraitCategory,
     TraitCategoryClass,

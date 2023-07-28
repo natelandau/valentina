@@ -8,7 +8,7 @@ from discord.ui import Button
 from loguru import logger
 
 from valentina.models.constants import MAX_BUTTONS_PER_ROW
-from valentina.models.database import Trait
+from valentina.models.db_tables import Trait
 from valentina.utils.helpers import get_max_trait_value
 
 

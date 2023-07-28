@@ -3,8 +3,8 @@
 
 import pytest
 
-from valentina.models.database import Character, CustomSection, CustomTrait, Trait, TraitCategory
 from valentina.models.database_services import CharacterService
+from valentina.models.db_tables import Character, CustomSection, CustomTrait, Trait, TraitCategory
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,

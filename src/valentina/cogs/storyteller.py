@@ -8,7 +8,7 @@ from peewee import fn
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType
-from valentina.models.database import VampireClan
+from valentina.models.db_tables import VampireClan
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import (
     ValidCharacterClass,

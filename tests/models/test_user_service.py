@@ -7,7 +7,7 @@ from discord import ApplicationContext
 
 from valentina.models import UserService
 from valentina.models.constants import XPPermissions
-from valentina.models.database import Character, GuildUser, User
+from valentina.models.db_tables import Character, GuildUser, User
 
 
 @pytest.mark.usefixtures("mock_db")

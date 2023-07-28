@@ -17,7 +17,7 @@ from valentina.models.constants import (
 from valentina.utils.errors import DuplicateRollResultThumbError
 from valentina.utils.helpers import set_channel_perms, time_now
 
-from .database import Guild, RollThumbnail
+from .db_tables import Guild, RollThumbnail
 
 
 class GuildService:
