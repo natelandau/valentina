@@ -10,16 +10,14 @@ from discord.ext import commands, tasks
 from loguru import logger
 
 from valentina.models import (
+    CharacterService,
+    ChronicleService,
     DatabaseService,
     DBBackup,
     GuildService,
     MacroService,
     TraitService,
     UserService,
-)
-from valentina.models.database_services import (
-    CharacterService,
-    ChronicleService,
 )
 from valentina.models.db_tables import DATABASE
 from valentina.utils import Context

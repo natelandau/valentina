@@ -8,7 +8,8 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT, EmbedColor
-from valentina.utils.converters import ValidYYYYMMDD
+from valentina.utils.converters import ValidChronicle, ValidYYYYMMDD
+from valentina.utils.errors import NoActiveChronicleError
 from valentina.utils.options import select_chapter, select_chronicle, select_note, select_npc
 from valentina.views import ChapterModal, ConfirmCancelButtons, NoteModal, NPCModal, present_embed
 
@@ -25,13 +26,20 @@ class Chronicle(commands.Cog):
         self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
     ) -> None:
         """Handle exceptions and errors from the cog."""
+        exceptions_to_ignore = [
+            discord.ext.commands.errors.MissingAnyRole,
+            discord.ext.commands.errors.MissingRole,
+            NoActiveChronicleError,
+        ]
+
         if hasattr(error, "original"):
             error = error.original
 
-        logger.exception(error)
+        if type(error) not in exceptions_to_ignore:
+            logger.exception(error)
 
         command_name = ""
-        if ctx.command.parent.name:
+        if ctx.command.parent and ctx.command.parent.name:
             command_name = f"{ctx.command.parent.name} "
         command_name += ctx.command.name
 
@@ -115,7 +123,7 @@ class Chronicle(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         chronicle: Option(
-            str,
+            ValidChronicle,
             description="Name of the chronicle",
             required=True,
             autocomplete=select_chronicle,
@@ -126,7 +134,7 @@ class Chronicle(commands.Cog):
         msg = await present_embed(
             ctx,
             title="Delete chronicle?",
-            description=f"Delete chronicle: **{chronicle}** and all associated data (NPCs, notes, chapters)?",
+            description=f"Delete chronicle: **{chronicle.name}** and all associated data (NPCs, notes, chapters)?",
             view=view,
             ephemeral=True,
         )
@@ -141,12 +149,11 @@ class Chronicle(commands.Cog):
             return
 
         if view.confirmed:
-            chronicle_object = self.bot.chron_svc.fetch_chronicle_by_name(ctx, chronicle)
-            self.bot.chron_svc.delete_chronicle(ctx, chronicle_object)
+            self.bot.chron_svc.delete_chronicle(ctx, chronicle)
             await msg.delete_original_response()
             await present_embed(
                 ctx,
-                title=f"Deleted chronicle: {chronicle}",
+                title=f"Deleted chronicle: {chronicle.name}",
                 ephemeral=True,
                 log=True,
                 level="success",
@@ -158,9 +165,9 @@ class Chronicle(commands.Cog):
         # TODO: Allow viewing any chronicle
 
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        npcs = self.bot.chron_svc.fetch_all_npcs(ctx, chronicle)
-        chapters = self.bot.chron_svc.fetch_all_chapters(ctx, chronicle)
-        notes = self.bot.chron_svc.fetch_all_notes(ctx, chronicle)
+        npcs = self.bot.chron_svc.fetch_all_npcs(chronicle)
+        chapters = self.bot.chron_svc.fetch_all_chapters(chronicle)
+        notes = self.bot.chron_svc.fetch_all_notes(chronicle)
 
         chapter_list = sorted([c for c in chapters], key=lambda c: c.chapter)
         npc_list = sorted([n for n in npcs], key=lambda n: n.name)
@@ -189,7 +196,7 @@ An overview of {chronicle.name}.
             if len(current_string) + len(chapter.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
                 chapter_pages.append(f"\u200b\nChapters in **{chronicle.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n{chapter.chronicle_display()}"
+            current_string += f"\n\n{chapter.chronicle_display()}"
 
         if current_string:
             chapter_pages.append(f"\u200b\nChapters in **{chronicle.name}**" + current_string)
@@ -201,7 +208,7 @@ An overview of {chronicle.name}.
             if len(current_string) + len(npc.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
                 npc_pages.append(f"\u200b\nNPCs in **{chronicle.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n{npc.chronicle_display()}"
+            current_string += f"\n\n{npc.chronicle_display()}"
 
         if current_string:
             npc_pages.append(f"\u200b\nNPCs in **{chronicle.name}**" + current_string)
@@ -213,7 +220,7 @@ An overview of {chronicle.name}.
             if len(current_string) + len(note.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
                 note_pages.append(f"\u200b\nNotes in **{chronicle.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n{note.chronicle_display()}"
+            current_string += f"\n\n{note.chronicle_display()}"
 
         if current_string:
             note_pages.append(f"\u200b\nNotes in **{chronicle.name}**" + current_string)
@@ -237,7 +244,7 @@ An overview of {chronicle.name}.
         self,
         ctx: discord.ApplicationContext,
         chronicle: Option(
-            str,
+            ValidChronicle,
             description="Name of the chronicle",
             required=True,
             autocomplete=select_chronicle,
@@ -248,7 +255,7 @@ An overview of {chronicle.name}.
         msg = await present_embed(
             ctx,
             title="Set chronicle as active?",
-            description=f"Set chronicle **{chronicle}** as active",
+            description=f"Set chronicle **{chronicle.name}** as active",
             view=view,
             ephemeral=True,
         )
@@ -267,7 +274,7 @@ An overview of {chronicle.name}.
             await msg.delete_original_response()
             await present_embed(
                 ctx,
-                title=f"Set chronicle as active: {chronicle}",
+                title=f"Set chronicle as active: {chronicle.name}",
                 ephemeral=True,
                 log=True,
                 level="success",
@@ -371,7 +378,7 @@ An overview of {chronicle.name}.
     async def list_npcs(self, ctx: discord.ApplicationContext) -> None:
         """List all NPCs."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        npcs = self.bot.chron_svc.fetch_all_npcs(ctx, chronicle)
+        npcs = self.bot.chron_svc.fetch_all_npcs(chronicle)
         if len(npcs) == 0:
             await present_embed(
                 ctx,
@@ -400,7 +407,7 @@ An overview of {chronicle.name}.
     ) -> None:
         """Edit an NPC."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        npc = self.bot.chron_svc.fetch_npc_by_name(chronicle, npc)
+        npc = self.bot.chron_svc.fetch_npc_by_name(ctx, chronicle, npc)
 
         modal = NPCModal(title="Edit NPC", npc=npc)
         await ctx.send_modal(modal)
@@ -443,7 +450,7 @@ An overview of {chronicle.name}.
     ) -> None:
         """Delete an NPC."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        npc = self.bot.chron_svc.fetch_npc_by_name(chronicle, npc)
+        npc = self.bot.chron_svc.fetch_npc_by_name(ctx, chronicle, npc)
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
@@ -516,7 +523,7 @@ An overview of {chronicle.name}.
     async def list_chapters(self, ctx: discord.ApplicationContext) -> None:
         """List all chapters."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        chapters = self.bot.chron_svc.fetch_all_chapters(ctx, chronicle)
+        chapters = self.bot.chron_svc.fetch_all_chapters(chronicle)
         if len(chapters) == 0:
             await present_embed(
                 ctx,
@@ -552,9 +559,7 @@ An overview of {chronicle.name}.
     ) -> None:
         """Edit a chapter."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        chapter = self.bot.chron_svc.fetch_chapter_by_name(
-            ctx, chronicle, chapter_select.split(":")[1]
-        )
+        chapter = self.bot.chron_svc.fetch_chapter_by_name(chronicle, chapter_select.split(":")[1])
 
         modal = ChapterModal(title="Edit chapter", chapter=chapter)
         await ctx.send_modal(modal)
@@ -597,9 +602,7 @@ An overview of {chronicle.name}.
     ) -> None:
         """Delete a chapter."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        chapter = self.bot.chron_svc.fetch_chapter_by_name(
-            ctx, chronicle, chapter_select.split(":")[1]
-        )
+        chapter = self.bot.chron_svc.fetch_chapter_by_name(chronicle, chapter_select.split(":")[1])
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
@@ -647,7 +650,7 @@ An overview of {chronicle.name}.
         """Create a new note."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
         chapter = (
-            self.bot.chron_svc.fetch_chapter_by_name(ctx, chronicle, chapter_select.split(":")[1])
+            self.bot.chron_svc.fetch_chapter_by_name(chronicle, chapter_select.split(":")[1])
             if chapter_select
             else None
         )
@@ -691,7 +694,7 @@ An overview of {chronicle.name}.
     async def list_notes(self, ctx: discord.ApplicationContext) -> None:
         """List all notes."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        notes = self.bot.chron_svc.fetch_all_notes(ctx, chronicle)
+        notes = self.bot.chron_svc.fetch_all_notes(chronicle)
         if len(notes) == 0:
             await present_embed(
                 ctx,
@@ -730,7 +733,7 @@ An overview of {chronicle.name}.
     ) -> None:
         """Edit a note."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        note = self.bot.chron_svc.fetch_note_by_id(ctx, note_select.split(":")[0])
+        note = self.bot.chron_svc.fetch_note_by_id(note_select.split(":")[0])
 
         modal = NoteModal(title="Edit note", note=note)
         await ctx.send_modal(modal)
@@ -775,7 +778,7 @@ An overview of {chronicle.name}.
     ) -> None:
         """Delete a note."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
-        note = self.bot.chron_svc.fetch_note_by_id(ctx, note_select.split(":")[0])
+        note = self.bot.chron_svc.fetch_note_by_id(note_select.split(":")[0])
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(

@@ -6,7 +6,7 @@ This module contains shared fixtures that are used by multiple database tests.
 Fixtures:
     mock_db: A mock database with test data for use in tests.
     empty_db: A database with no data for use in tests.
-    ctx_existing: A context object with an existing user.
+    ctx: A context object with an existing user.
     ctx_new_user: A context object with a new user.
     ctx_new_user_guild: A context object with a new user and a new guild.
     existing_character: A character object that exists in the mock database.
@@ -32,6 +32,7 @@ from valentina.models.db_tables import (
     Guild,
     GuildUser,
     Macro,
+    MacroTrait,
     RollThumbnail,
     Trait,
     TraitCategory,
@@ -47,28 +48,30 @@ from valentina.utils.db_initialize import PopulateDatabase
 MODELS = [
     Character,
     CharacterClass,
-    Trait,
-    Chronicle,
-    ChronicleChapter,
-    ChronicleNote,
-    ChronicleNPC,
     CustomSection,
+    TraitCategory,
     CustomTrait,
     DatabaseVersion,
     Guild,
-    GuildUser,
     Macro,
     RollThumbnail,
-    TraitCategory,
-    TraitCategoryClass,
-    TraitClass,
-    TraitValue,
     User,
     VampireClan,
+    Chronicle,
+    ChronicleNote,
+    ChronicleChapter,
+    ChronicleNPC,
+    Trait,
+    TraitClass,
+    TraitValue,
+    GuildUser,
+    TraitCategoryClass,
+    MacroTrait,
 ]
 
 databaseversion = {"version": "1.0.0"}
 guild = {"id": 1, "name": "test_guild", "data": {"key": "value"}}
+guild2 = {"id": 2, "name": "test_guild2", "data": {"key": "value"}}
 user1 = {"id": 1, "username": "test_user", "name": "Test User"}
 user22 = {"id": 22, "username": "test_user22", "name": "Test User22"}
 character1 = {
@@ -136,6 +139,7 @@ def mock_db() -> CSqliteExtDatabase:
 
     DatabaseVersion.create(**databaseversion)
     Guild.create(**guild)
+    Guild.create(**guild2)
     User.create(**user1)
     User.create(**user22)
     Character.create(**character1)
@@ -175,7 +179,7 @@ def mock_db() -> CSqliteExtDatabase:
     test_db.close()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def empty_db() -> CSqliteExtDatabase:
     """Create an empty database for use in tests.
 
@@ -244,11 +248,25 @@ class MockTrait:
 
 
 @pytest.fixture()
-def ctx_existing():
+def mock_ctx():
     """Create a mock context object containing object in the mock database."""
     mock_guild = MockGuild(1, "Test Guild")
     mock_user = MockUser(1, "Test User", "testuser", "<@1>")
     return MockCTX(mock_guild, mock_user)
+
+
+@pytest.fixture()
+def mock_ctx2():
+    """Create a mock context object containing object in the mock database."""
+    mock_guild = MockGuild(2, "Test Guild2")
+    mock_user = MockUser(1, "Test User", "testuser", "<@1>")
+    return MockCTX(mock_guild, mock_user)
+
+
+@pytest.fixture()
+def existing_user():
+    """Create a mock user object."""
+    return MockUser(1, "Test User 1", "testuser 1", "<@1>")
 
 
 @pytest.fixture()
@@ -262,8 +280,8 @@ def ctx_new_user():
 @pytest.fixture()
 def ctx_new_user_guild():
     """Create a mock context object that has a user and a guild not in the mock database."""
-    mock_guild = MockGuild(2, "Test Guild 2")
-    mock_user = MockUser(2, "Test User 2", "testuser 2", "<@2>")
+    mock_guild = MockGuild(500, "Test Guild 500")
+    mock_user = MockUser(500, "Test User 500", "testuser 500", "<@500>")
     return MockCTX(mock_guild, mock_user)
 
 

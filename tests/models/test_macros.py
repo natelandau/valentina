@@ -46,7 +46,7 @@ class TestMacroService:
         assert result == [macro]
         assert self.macro_svc._macro_cache == {"1_1": [macro]}
 
-    def test_create_macro_one(self, mocker, ctx_existing, caplog):
+    def test_create_macro_one(self, mocker, mock_ctx, caplog):
         """Test creating a macro.
 
         GIVEN a macro service
@@ -65,9 +65,7 @@ class TestMacroService:
         assert len(self.macro_svc._macro_cache) == 1
 
         # Create the new macro
-        result = self.macro_svc.create_macro(
-            ctx_existing, "new_macro", trait, trait, "nm", "new macro"
-        )
+        result = self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "nm", "new macro")
         captured = caplog.text
         assert "DATABASE: Create macro new_macro for Test User" in captured
 
@@ -77,7 +75,7 @@ class TestMacroService:
         # Verify the cache is purged
         assert len(self.macro_svc._macro_cache) == 0
 
-    def test_create_macro_two(self, mocker, ctx_existing):
+    def test_create_macro_two(self, mocker, mock_ctx):
         """Test creating a macro.
 
         GIVEN a macro service
@@ -94,9 +92,9 @@ class TestMacroService:
 
         # Create the new macro
         with pytest.raises(ValueError, match="Macro already exists"):
-            self.macro_svc.create_macro(ctx_existing, "test_macro", trait, trait, "nm", "new macro")
+            self.macro_svc.create_macro(mock_ctx, "test_macro", trait, trait, "nm", "new macro")
 
-    def test_create_macro_three(self, mocker, ctx_existing):
+    def test_create_macro_three(self, mocker, mock_ctx):
         """Test creating a macro.
 
         GIVEN a macro service
@@ -113,9 +111,9 @@ class TestMacroService:
 
         # Create the new macro
         with pytest.raises(ValueError, match="Macro already exists"):
-            self.macro_svc.create_macro(ctx_existing, "new_macro", trait, trait, "tm", "new macro")
+            self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "tm", "new macro")
 
-    def test_delete_macro_one(self, ctx_existing, caplog):
+    def test_delete_macro_one(self, mock_ctx, caplog):
         """Test deleting a macro.
 
         GIVEN a macro service
@@ -134,7 +132,7 @@ class TestMacroService:
         num_macros = len(Macro.select())
 
         # Delete the macro
-        self.macro_svc.delete_macro(ctx_existing, macro_to_delete)
+        self.macro_svc.delete_macro(mock_ctx, macro_to_delete)
 
         # Verify it was deleted
         captured = caplog.text

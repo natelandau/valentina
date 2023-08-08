@@ -16,7 +16,7 @@ class TestUserService:
 
     user_svc = UserService()
 
-    def test_fetch_user(self, ctx_existing):
+    def test_fetch_user(self, mock_ctx):
         """Test fetching a user.
 
         Given a context object with a user in the database
@@ -24,7 +24,7 @@ class TestUserService:
         Then the user object is returned and added to the cache
         """
         # Confirm user object is returned
-        assert self.user_svc.fetch_user(ctx_existing) == User(id=1, name="Test User")
+        assert self.user_svc.fetch_user(mock_ctx) == User(id=1, name="Test User")
 
         # Confirm user object is in the cache
         user_one = User(id=1)
@@ -57,7 +57,7 @@ class TestUserService:
         self.user_svc.purge_cache()
         assert self.user_svc.user_cache == {}
 
-    def test_purge_by_id(self, ctx_existing, ctx_new_user):
+    def test_purge_by_id(self, mock_ctx, ctx_new_user):
         """Test purging a user from the cache.
 
         Given a cache with two users
@@ -65,12 +65,12 @@ class TestUserService:
         Then the cache contains only the other user
         """
         # Confirm two users in cache
-        assert self.user_svc.fetch_user(ctx_existing) == User(id=1, name="Test User")
+        assert self.user_svc.fetch_user(mock_ctx) == User(id=1, name="Test User")
         assert self.user_svc.fetch_user(ctx_new_user) == User(id=2, name="Test User 2")
         assert len(self.user_svc.user_cache) == 2
 
         # Purge one user
-        self.user_svc.purge_cache(ctx_existing)
+        self.user_svc.purge_cache(mock_ctx)
 
         # Confirm one user in cache
         assert len(self.user_svc.user_cache) == 1
@@ -167,12 +167,12 @@ class TestUserService:
         THEN the correct result is returned
         """
         # GIVEN a mock ApplicationContext and Character
-        mock_ctx = mocker.Mock(spec=ApplicationContext)
-        mock_ctx.author.guild_permissions.administrator = is_admin
+        mocker_ctx = mocker.Mock(spec=ApplicationContext)
+        mocker_ctx.author.guild_permissions.administrator = is_admin
         mock_character = mocker.Mock(spec=Character)
         mock_character.created_by.id = 1 if is_char_owner else 2
         mock_character.created = arrow.utcnow().shift(hours=-hours_since_creation).datetime
-        mock_ctx.author.id = 1  # the author is the creator of the character
+        mocker_ctx.author.id = 1  # the author is the creator of the character
 
         # Create mock bot and guild_svc and set them on mock_ctx
         mock_bot = mocker.Mock()
@@ -183,10 +183,10 @@ class TestUserService:
         mock_guild_svc.fetch_guild_settings = mocker.Mock(return_value=mock_settings)
 
         mock_bot.guild_svc = mock_guild_svc
-        mock_ctx.bot = mock_bot
+        mocker_ctx.bot = mock_bot
 
         # WHEN calling the method with the mock context and character
-        result = self.user_svc.has_trait_permissions(mock_ctx, mock_character)
+        result = self.user_svc.has_trait_permissions(mocker_ctx, mock_character)
 
         # THEN return the correct result
         assert result is expected

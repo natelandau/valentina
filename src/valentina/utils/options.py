@@ -17,7 +17,7 @@ async def select_chapter(ctx: discord.ApplicationContext) -> list[str]:
 
     chapters = []
     for chapter in sorted(
-        ctx.bot.chron_svc.fetch_all_chapters(ctx, chronicle=chronicle), key=lambda c: c.chapter  # type: ignore [attr-defined]
+        ctx.bot.chron_svc.fetch_all_chapters(chronicle=chronicle), key=lambda c: c.chapter  # type: ignore [attr-defined]
     ):
         if chapter.name.lower().startswith(ctx.options["chapter"].lower()):
             chapters.append(f"{chapter.chapter}: {chapter.name}")
@@ -206,7 +206,7 @@ async def select_note(ctx: discord.ApplicationContext) -> list[str]:
         return ["No active chronicle"]
 
     notes = []
-    for note in ctx.bot.chron_svc.fetch_all_notes(ctx, chronicle=chronicle):  # type: ignore [attr-defined]
+    for note in ctx.bot.chron_svc.fetch_all_notes(chronicle):  # type: ignore [attr-defined]
         if note.name.lower().startswith(ctx.options["note"].lower()):
             notes.append(f"{note.id}: {note.name}")
         if len(notes) >= MAX_OPTION_LIST_SIZE:
@@ -223,7 +223,7 @@ async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
         return ["No active chronicle"]
 
     npcs = []
-    for npc in ctx.bot.chron_svc.fetch_all_npcs(ctx, chronicle=chronicle):  # type: ignore [attr-defined]
+    for npc in ctx.bot.chron_svc.fetch_all_npcs(chronicle=chronicle):  # type: ignore [attr-defined]
         if npc.name.lower().startswith(ctx.options["npc"].lower()):
             npcs.append(npc.name)
         if len(npcs) >= MAX_OPTION_LIST_SIZE:

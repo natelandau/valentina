@@ -500,7 +500,7 @@ class ChronicleNote(BaseModel):
 
     def chronicle_display(self) -> str:
         """Return the display for chronicle overview."""
-        display = f"**{self.name}**"
+        display = f"**{self.name}**\n"
         display += f"{self.description}" if self.description else ""
 
         return display

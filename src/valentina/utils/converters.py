@@ -6,11 +6,12 @@ from datetime import datetime
 import aiohttp
 from discord.ext.commands import BadArgument, Context, Converter
 from loguru import logger
-from peewee import DoesNotExist
+from peewee import DoesNotExist, fn
 
 from valentina.models.db_tables import (
     Character,
     CharacterClass,
+    Chronicle,
     CustomSection,
     CustomTrait,
     Macro,
@@ -92,6 +93,20 @@ class ValidChannelName(Converter):
 
         # Replace invalid characters with unicode alternatives.
         return argument
+
+
+class ValidChronicle(Converter):
+    """A converter to grab a chronicle object from it's name."""
+
+    async def convert(self, ctx: Context, argument: str) -> Chronicle:
+        """Convert from name to chronicle object."""
+        chronicle = Chronicle.get_or_none(
+            (fn.lower(Chronicle.name) == argument.lower()) & (Chronicle.guild_id == ctx.guild.id)
+        )
+        if chronicle:
+            return chronicle
+
+        raise (BadArgument(f"Chronicle {argument} not found"))
 
 
 class ValidCharacterObject(Converter):

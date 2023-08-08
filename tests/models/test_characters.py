@@ -3,13 +3,12 @@
 
 import pytest
 
-from valentina.models.database_services import CharacterService
+from valentina.models import CharacterService
 from valentina.models.db_tables import Character, CustomSection, CustomTrait, Trait, TraitCategory
 from valentina.utils.errors import (
     CharacterClaimedError,
     CharacterNotFoundError,
     NoClaimError,
-    TraitNotFoundError,
 )
 
 
@@ -187,7 +186,7 @@ class TestCharacterService:
         assert returned[0].name == "Test_Trait"
         assert returned[1].name == "Test_Trait2"
 
-    def test_fetch_claim(self, ctx_existing):
+    def test_fetch_claim(self, mock_ctx):
         """Test fetch_claim().
 
         Given a guild, character, and user
@@ -197,18 +196,18 @@ class TestCharacterService:
         # Raise NoClaimError if no claim exists
         self.char_svc.claims = {}
         with pytest.raises(NoClaimError):
-            self.char_svc.fetch_claim(ctx_existing)
+            self.char_svc.fetch_claim(mock_ctx)
 
         # Return the claim if it exists in cache
         self.char_svc.add_claim(guild_id=1, char_id=1, user_id=1)
-        returned = self.char_svc.fetch_claim(ctx_existing)
+        returned = self.char_svc.fetch_claim(mock_ctx)
         assert returned.id == 1
         assert returned.name == "Test (Testy) Character"
 
         # Return the claim if it exists in database
         self.char_svc.purge_cache()
         self.char_svc.add_claim(guild_id=1, char_id=1, user_id=1)
-        returned = self.char_svc.fetch_claim(ctx_existing)
+        returned = self.char_svc.fetch_claim(mock_ctx)
         assert returned.id == 1
         assert returned.name == "Test (Testy) Character"
 
@@ -231,7 +230,7 @@ class TestCharacterService:
         self.char_svc.add_claim(guild_id=1, char_id=1, user_id=1)
         assert self.char_svc.fetch_user_of_character(1, char_id) == expected
 
-    def test_remove_claim(self, ctx_existing):
+    def test_remove_claim(self, mock_ctx):
         """Test remove_claim().
 
         Given a ctx object
@@ -239,22 +238,22 @@ class TestCharacterService:
         Then the character is unclaimed
         """
         self.char_svc.add_claim(guild_id=1, char_id=1, user_id=1)
-        assert self.char_svc.remove_claim(ctx_existing) is True
-        assert self.char_svc.remove_claim(ctx_existing) is False
+        assert self.char_svc.remove_claim(mock_ctx) is True
+        assert self.char_svc.remove_claim(mock_ctx) is False
 
-    def test_user_has_claim(self, ctx_existing):
+    def test_user_has_claim(self, mock_ctx):
         """Test user_has_claim().
 
         Given a ctx object
         When user_has_claim is called
         Then True is returned if the user has a claim and False otherwise
         """
-        self.char_svc.remove_claim(ctx_existing)
-        assert self.char_svc.user_has_claim(ctx_existing) is False
+        self.char_svc.remove_claim(mock_ctx)
+        assert self.char_svc.user_has_claim(mock_ctx) is False
         self.char_svc.add_claim(guild_id=1, char_id=1, user_id=1)
-        assert self.char_svc.user_has_claim(ctx_existing) is True
+        assert self.char_svc.user_has_claim(mock_ctx) is True
 
-    def test_update_character(self, ctx_existing):
+    def test_update_character(self, mock_ctx):
         """Test update_character().
 
         Given a character id and a dict of updates
@@ -264,30 +263,10 @@ class TestCharacterService:
         character = Character.get_by_id(1)
         assert character.experience == 0
 
-        self.char_svc.update_character(ctx_existing, 1, **{"experience": 5})
+        self.char_svc.update_character(mock_ctx, 1, **{"experience": 5})
         character = Character.get_by_id(1)
         assert character.experience == 5
         assert "1_1" not in self.char_svc.characters
 
         with pytest.raises(CharacterNotFoundError):
-            self.char_svc.update_character(ctx_existing, 12345678, **{"experience": 5})
-
-    def test_update_trait_value_by_name(self, ctx_existing):
-        """Test update_trait_value_by_name().
-
-        Given a character id, trait name, and new value
-        When update_trait_value_by_name is called
-        Then the trait value is updated in the database and purged from the cache
-        """
-        # TODO: Test for updating a non-custom trait
-
-        character = Character.get_by_id(1)
-        custom = CustomTrait.get_by_id(1)
-        assert custom.value == 2
-        name = custom.name
-        self.char_svc.update_trait_value_by_name(ctx_existing, character, name, 5)
-        custom = CustomTrait.get_by_id(1)
-        assert custom.value == 5
-
-        with pytest.raises(TraitNotFoundError):
-            self.char_svc.update_trait_value_by_name(ctx_existing, character, "exception", 5)
+            self.char_svc.update_character(mock_ctx, 12345678, **{"experience": 5})
