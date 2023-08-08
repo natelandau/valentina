@@ -13,7 +13,6 @@ from valentina.models import (
     CharacterService,
     ChronicleService,
     DatabaseService,
-    DBBackup,
     GuildService,
     MacroService,
     TraitService,
@@ -76,7 +75,7 @@ class Valentina(commands.Bot):
         if not self.welcomed:
             # Start tasks
             # #######################
-            backup_db.start(self.config, DATABASE)
+            backup_db.start(self.db_svc, self.config)
             logger.info("BOT: Start background database backup task")
 
             await self.change_presence(
@@ -213,7 +212,7 @@ class Valentina(commands.Bot):
 
 
 @tasks.loop(time=time(0, tzinfo=timezone.utc))
-async def backup_db(config: dict) -> None:
+async def backup_db(db_svc: DatabaseService, config: dict) -> None:
     """Backup the database."""
-    await DBBackup(config, DATABASE).create_backup()
-    await DBBackup(config, DATABASE).clean_old_backups()
+    logger.info("BOT: Run background database backup task")
+    await db_svc.backup_database(config)
