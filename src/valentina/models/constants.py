@@ -107,8 +107,8 @@ class EmbedColor(Enum):
 class XPPermissions(Enum):
     """Permissions for adding xp to a character."""
 
-    UNRESTRICTED = 0  # Default
-    WITHIN_24_HOURS = 1
+    UNRESTRICTED = 0
+    WITHIN_24_HOURS = 1  # Default
     CHARACTER_OWNER_ONLY = 2
     ADMIN_ONLY = 3
 
@@ -116,8 +116,8 @@ class XPPermissions(Enum):
 class TraitPermissions(Enum):
     """Permissions for updating character trait values."""
 
-    UNRESTRICTED = 0  # Default
-    WITHIN_24_HOURS = 1
+    UNRESTRICTED = 0
+    WITHIN_24_HOURS = 1  # Default
     CHARACTER_OWNER_ONLY = 2
     ADMIN_ONLY = 3
 
@@ -177,6 +177,7 @@ class TraitCategoryOrder(IntEnum):
 
 
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
+DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
 
 CLAN_DISCIPLINES = {
     "Assamite": ["Celerity", "Obfuscate", "Quietus"],

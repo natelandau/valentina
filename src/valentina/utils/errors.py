@@ -2,6 +2,24 @@
 from discord import DiscordException
 
 
+class NoActiveChronicleError(Exception):
+    """Raised when a no active chronicle is found."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "No active chronicle found\nUse `/chronicle set_active`"
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class CharacterClaimedError(Exception):
     """Raised when a character is claimed by another user."""
 

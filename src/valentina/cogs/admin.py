@@ -164,10 +164,11 @@ class Admin(commands.Cog):
             return
 
         if not all_guilds:
-            self.bot.guild_svc.purge_cache(ctx)
-            self.bot.user_svc.purge_cache(ctx)
-            self.bot.char_svc.purge_cache(ctx, with_claims=True)
-            self.bot.chron_svc.purge_cache(ctx)
+            self.bot.guild_svc.purge_cache(ctx.guild)
+            self.bot.user_svc.purge_cache(ctx.guild)
+            self.bot.char_svc.purge_cache(ctx.guild, with_claims=True)
+            self.bot.chron_svc.purge_cache(ctx.guild)
+            self.bot.macro_svc.purge()
             logger.info(f"ADMIN: Purge cache for {ctx.guild.name}")
 
         if all_guilds:
@@ -175,6 +176,7 @@ class Admin(commands.Cog):
             self.bot.user_svc.purge_cache()
             self.bot.char_svc.purge_cache(with_claims=True)
             self.bot.chron_svc.purge_cache()
+            self.bot.macro_svc.purge()
             logger.info("ADMIN: Purge cache for all guilds")
 
         await msg.delete_original_response()
@@ -237,29 +239,23 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Manage settings."""
+        current_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
         fields = []
+        update_data: dict[str, str | int | bool] = {}
         if xp_permissions is not None:
-            logger.debug(
-                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) XP Permissions: {XPPermissions(int(xp_permissions)).name.title()}"
-            )
             fields.append(("XP Permissions", XPPermissions(int(xp_permissions)).name.title()))
-            self.bot.guild_svc.update_or_add(ctx=ctx, xp_permissions=int(xp_permissions))
+            update_data["xp_permissions"] = int(xp_permissions)
 
         if trait_permissions is not None:
-            logger.debug(
-                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Trait Permissions: {TraitPermissions(int(trait_permissions)).name.title()}"
-            )
             fields.append(
                 ("Trait Permissions", TraitPermissions(int(trait_permissions)).name.title())
             )
-            self.bot.guild_svc.update_or_add(ctx=ctx, trait_permissions=int(trait_permissions))
+            update_data["trait_permissions"] = int(trait_permissions)
 
         if use_audit_log is not None:
-            guild_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
-
             if (
                 use_audit_log
-                and not guild_settings["log_channel_id"]
+                and not current_settings["log_channel_id"]
                 and not audit_log_channel_name
             ):
                 await present_embed(
@@ -270,12 +266,8 @@ class Admin(commands.Cog):
                     ephemeral=True,
                 )
                 return
-
-            logger.debug(
-                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Log to channel: {use_audit_log}"
-            )
             fields.append(("Audit Logging", "Enabled" if use_audit_log else "Disabled"))
-            self.bot.guild_svc.update_or_add(ctx=ctx, use_audit_log=use_audit_log)
+            update_data["use_audit_log"] = use_audit_log
 
         if audit_log_channel_name is not None:
             channel = await self.bot.guild_svc.create_channel(
@@ -288,18 +280,13 @@ class Admin(commands.Cog):
                 player=ChannelPermission.HIDDEN,
                 storyteller=ChannelPermission.READ_ONLY,
             )
-
-            logger.debug(
-                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Log channel: {channel.name}"
-            )
             fields.append(("Audit Log Channel", channel.mention))
+            update_data["log_channel_id"] = channel.id
 
         if use_storyteller_channel is not None:
-            guild_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
-
             if (
                 use_storyteller_channel
-                and not guild_settings["storyteller_channel_id"]
+                and not current_settings["storyteller_channel_id"]
                 and not storyteller_channel_name
             ):
                 await present_embed(
@@ -310,16 +297,10 @@ class Admin(commands.Cog):
                     ephemeral=True,
                 )
                 return
-
-            logger.debug(
-                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) Use storyteller channel: {use_storyteller_channel}"
-            )
             fields.append(
                 ("Storyteller Channel", "Enabled" if use_storyteller_channel else "Disabled")
             )
-            self.bot.guild_svc.update_or_add(
-                ctx=ctx, use_storyteller_channel=use_storyteller_channel
-            )
+            update_data["use_storyteller_channel"] = use_storyteller_channel
 
         if storyteller_channel_name is not None:
             channel = await self.bot.guild_svc.create_channel(
@@ -333,12 +314,11 @@ class Admin(commands.Cog):
                 storyteller=ChannelPermission.POST,
             )
 
-            logger.debug(
-                f"SETTINGS: ([{ctx.guild.id}] {ctx.guild.name}) storyteller channel: {channel.name}"
-            )
             fields.append(("Storyteller Channel", channel.mention))
+            update_data["storyteller_channel_id"] = channel.id
         # Show results
         if len(fields) > 0:
+            self.bot.guild_svc.update_or_add(ctx.guild, update_data)
             await present_embed(
                 ctx,
                 title="Settings Updated",
@@ -347,6 +327,7 @@ class Admin(commands.Cog):
                 log=True,
                 ephemeral=True,
             )
+
         else:
             await present_embed(ctx, title="No settings updated", level="info", ephemeral=True)
 
@@ -357,15 +338,24 @@ class Admin(commands.Cog):
         """Show server settings."""
         settings = self.bot.guild_svc.fetch_guild_settings(ctx)
 
+        audit_log_channel = (
+            discord.utils.get(ctx.guild.text_channels, id=settings["log_channel_id"])
+            if settings["log_channel_id"]
+            else None
+        )
+        storyteller_channel = (
+            discord.utils.get(ctx.guild.text_channels, id=settings["storyteller_channel_id"])
+            if settings["storyteller_channel_id"]
+            else None
+        )
+
         fields = [
             ("XP Permissions", XPPermissions(settings["xp_permissions"]).name.title()),
             ("Trait Permissions", TraitPermissions(settings["trait_permissions"]).name.title()),
             ("Audit Logging", "Enabled" if settings["use_audit_log"] else "Disabled"),
             (
                 "Audit Log Channel",
-                discord.utils.get(ctx.guild.text_channels, id=settings["log_channel_id"]).mention
-                if settings["log_channel_id"]
-                else "Not set",
+                audit_log_channel.mention if audit_log_channel else "Not set",
             ),
             (
                 "Use Storyteller Channel",
@@ -373,11 +363,7 @@ class Admin(commands.Cog):
             ),
             (
                 "Storyteller Channel",
-                discord.utils.get(
-                    ctx.guild.text_channels, id=settings["storyteller_channel_id"]
-                ).mention
-                if settings["storyteller_channel_id"]
-                else "Not set",
+                storyteller_channel.mention if storyteller_channel else "Not set",
             ),
         ]
         await present_embed(

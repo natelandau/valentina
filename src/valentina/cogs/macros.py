@@ -8,9 +8,12 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import EmbedColor
-from valentina.models.database import CustomTrait, Macro, MacroTrait, Trait
-from valentina.utils.converters import ValidMacroFromID, ValidTrait
-from valentina.utils.options import select_macro, select_trait, select_trait_two
+from valentina.utils.converters import ValidMacroFromID, ValidTraitOrCustomTrait
+from valentina.utils.options import (
+    select_char_trait,
+    select_char_trait_two,
+    select_macro,
+)
 from valentina.views import ConfirmCancelButtons, MacroCreateModal, present_embed
 
 
@@ -50,16 +53,16 @@ class Macros(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         trait_one: Option(
-            ValidTrait,
+            ValidTraitOrCustomTrait,
             description="First trait to roll",
             required=True,
-            autocomplete=select_trait,
+            autocomplete=select_char_trait,
         ),
         trait_two: Option(
-            ValidTrait,
+            ValidTraitOrCustomTrait,
             description="Second trait to roll",
             required=True,
-            autocomplete=select_trait_two,
+            autocomplete=select_char_trait_two,
         ),
     ) -> None:
         """Create a new macro."""
@@ -79,10 +82,12 @@ class Macros(commands.Cog):
         abbreviation = modal.abbreviation.strip() if modal.abbreviation else None
         description = modal.description.strip() if modal.description else None
 
-        macros = self.bot.user_svc.fetch_macros(ctx)
-        if any(macro.name.lower() == name.lower() for macro in macros) or any(
-            macro.abbreviation.lower() == abbreviation.lower() for macro in macros
-        ):
+        #################################################
+        try:
+            self.bot.macro_svc.create_macro(
+                ctx, name, trait_one, trait_two, abbreviation, description
+            )
+        except ValueError:
             await present_embed(
                 ctx,
                 title="Macro already exists",
@@ -91,27 +96,6 @@ class Macros(commands.Cog):
                 ephemeral=True,
             )
             return
-
-        macro = Macro.create(
-            name=name,
-            abbreviation=abbreviation,
-            description=description,
-            user=ctx.author.id,
-            guild=ctx.guild.id,
-        )
-        if isinstance(trait_one, Trait):
-            MacroTrait.create(macro=macro, trait=trait_one)
-        elif isinstance(trait_one, CustomTrait):
-            MacroTrait.create(macro=macro, custom_trait=trait_one)
-
-        if isinstance(trait_two, Trait):
-            MacroTrait.create(macro=macro, trait=trait_two)
-        elif isinstance(trait_two, CustomTrait):
-            MacroTrait.create(macro=macro, custom_trait=trait_two)
-
-        self.bot.user_svc.purge_cache(ctx)
-
-        logger.info(f"DATABASE: Create macro '{name}' for user '{ctx.author.display_name}'")
 
         await present_embed(
             ctx,
@@ -133,22 +117,20 @@ class Macros(commands.Cog):
         ctx: discord.ApplicationContext,
     ) -> None:
         """List all macros associated with a user account."""
-        macros = sorted(self.bot.user_svc.fetch_macros(ctx), key=lambda macro: macro.name)
-
-        fields = []
-        for macro in macros:
-            # TODO: Handle custom traits
-            traits = Trait.select().join(MacroTrait).where(MacroTrait.macro == macro)
-            trait_one = traits[0]
-            trait_two = traits[1]
-            fields.append(
-                (
-                    f"{macro.name} ({macro.abbreviation}): `{trait_one.name}` + `{trait_two.name}`",
-                    f"{macro.description}",
-                )
-            )
+        macros = self.bot.macro_svc.fetch_macros(ctx.guild.id, ctx.author.id)
 
         if len(macros) > 0:
+            fields = []
+            for macro in macros:
+                traits = self.bot.macro_svc.fetch_macro_traits(macro)
+                trait_one = traits[0]
+                trait_two = traits[1]
+                fields.append(
+                    (
+                        f"{macro.name} ({macro.abbreviation}): `{trait_one.name}` + `{trait_two.name}`",
+                        f"{macro.description}",
+                    )
+                )
             await present_embed(
                 ctx,
                 title=f"Macros for {ctx.author.display_name}",
@@ -195,12 +177,8 @@ class Macros(commands.Cog):
             return
 
         saved_macro_name = macro.name
-        macro.remove()
-        self.bot.user_svc.purge_cache(ctx)
+        self.bot.macro_svc.delete_macro(ctx, macro)
 
-        logger.debug(
-            f"DATABASE: Delete macro '{saved_macro_name}' for user '{ctx.author.display_name}'"
-        )
         await msg.delete_original_response()
         await present_embed(
             ctx,

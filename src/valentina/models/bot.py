@@ -9,17 +9,17 @@ from aiohttp import ClientSession
 from discord.ext import commands, tasks
 from loguru import logger
 
-from valentina.models.database import DATABASE
-from valentina.models.database_services import (
+from valentina.models import (
     CharacterService,
     ChronicleService,
     DatabaseService,
     GuildService,
+    MacroService,
     TraitService,
     UserService,
 )
+from valentina.models.db_tables import DATABASE
 from valentina.utils import Context
-from valentina.utils.db_backup import DBBackup
 
 
 class Valentina(commands.Bot):
@@ -42,6 +42,7 @@ class Valentina(commands.Bot):
         self.chron_svc = ChronicleService()
         self.trait_svc = TraitService()
         self.user_svc = UserService()
+        self.macro_svc = MacroService()
 
         # Load Cogs
         # #######################
@@ -74,7 +75,7 @@ class Valentina(commands.Bot):
         if not self.welcomed:
             # Start tasks
             # #######################
-            backup_db.start(self.config, DATABASE)
+            backup_db.start(self.db_svc, self.config)
             logger.info("BOT: Start background database backup task")
 
             await self.change_presence(
@@ -182,7 +183,7 @@ class Valentina(commands.Bot):
                 # Add guild to database
                 # ############################
 
-                self.guild_svc.update_or_add(guild=guild)
+                self.guild_svc.update_or_add(guild)
                 self.char_svc.fetch_all_characters(guild.id)
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
@@ -211,7 +212,7 @@ class Valentina(commands.Bot):
 
 
 @tasks.loop(time=time(0, tzinfo=timezone.utc))
-async def backup_db(config: dict) -> None:
+async def backup_db(db_svc: DatabaseService, config: dict) -> None:
     """Backup the database."""
-    await DBBackup(config, DATABASE).create_backup()
-    await DBBackup(config, DATABASE).clean_old_backups()
+    logger.info("BOT: Run background database backup task")
+    await db_svc.backup_database(config)

@@ -1,17 +1,17 @@
 """Converters, validators, and normalizers for Valentina."""
 
-
 import re
 from datetime import datetime
 
 import aiohttp
 from discord.ext.commands import BadArgument, Context, Converter
 from loguru import logger
-from peewee import DoesNotExist
+from peewee import DoesNotExist, fn
 
-from valentina.models.database import (
+from valentina.models.db_tables import (
     Character,
     CharacterClass,
+    Chronicle,
     CustomSection,
     CustomTrait,
     Macro,
@@ -93,6 +93,20 @@ class ValidChannelName(Converter):
 
         # Replace invalid characters with unicode alternatives.
         return argument
+
+
+class ValidChronicle(Converter):
+    """A converter to grab a chronicle object from it's name."""
+
+    async def convert(self, ctx: Context, argument: str) -> Chronicle:
+        """Convert from name to chronicle object."""
+        chronicle = Chronicle.get_or_none(
+            (fn.lower(Chronicle.name) == argument.lower()) & (Chronicle.guild_id == ctx.guild.id)
+        )
+        if chronicle:
+            return chronicle
+
+        raise (BadArgument(f"Chronicle {argument} not found"))
 
 
 class ValidCharacterObject(Converter):
@@ -219,10 +233,25 @@ class ValidTrait(Converter):
 
     async def convert(self, ctx: Context, argument: str) -> Trait:  # noqa: ARG002
         """Validate and normalize traits."""
-        # TODO: Include custom traits associated with characters the user owns
-
         for trait in Trait.select().order_by(Trait.name.asc()):
             if argument.lower() == trait.name.lower():
                 return trait
 
         raise BadArgument(f"`{argument}` is not a valid trait")
+
+
+class ValidTraitOrCustomTrait(Converter):
+    """A converter to ensure a requested trait is a valid character trait or custom trait."""
+
+    async def convert(self, ctx: Context, argument: str) -> Trait | CustomTrait:
+        """Validate and normalize traits."""
+        try:
+            character = ctx.bot.char_svc.fetch_claim(ctx)
+
+            for trait in character.traits_list:
+                if argument.lower() == trait.name.lower():
+                    return trait
+
+            raise BadArgument(f"`{argument}` is not a valid trait")
+        except CharacterNotFoundError as e:
+            raise BadArgument from e

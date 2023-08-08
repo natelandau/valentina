@@ -10,9 +10,9 @@ import typer
 from dotenv import dotenv_values
 from loguru import logger
 
+from valentina.models import DatabaseService
 from valentina.models.bot import Valentina
-from valentina.models.database import DATABASE
-from valentina.models.database_services import DatabaseService
+from valentina.models.db_tables import DATABASE
 from valentina.utils import InterceptHandler
 
 from .__version__ import __version__

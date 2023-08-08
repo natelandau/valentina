@@ -1,7 +1,7 @@
 """Add a trait to a character."""
 import discord
 
-from valentina.models.database import Character, CustomTrait, Trait, TraitCategory
+from valentina.models.db_tables import Character, CustomTrait, Trait, TraitCategory
 from valentina.views import ConfirmCancelButtons, present_embed
 
 

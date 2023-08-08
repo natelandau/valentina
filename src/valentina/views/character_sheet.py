@@ -5,7 +5,7 @@ import arrow
 import discord
 from discord.ext import pages
 
-from valentina.models.database import Character
+from valentina.models.db_tables import Character
 
 MAX_DOT_DISPLAY = 6
 

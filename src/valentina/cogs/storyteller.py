@@ -7,7 +7,8 @@ from loguru import logger
 from peewee import fn
 
 from valentina.models.bot import Valentina
-from valentina.models.database import VampireClan
+from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType
+from valentina.models.db_tables import VampireClan
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import (
     ValidCharacterClass,
@@ -63,6 +64,51 @@ class StoryTeller(commands.Cog):
             ephemeral=True,
             delete_after=15,
         )
+
+    async def _perform_roll(
+        self,
+        ctx: discord.ApplicationContext,
+        pool: int,
+        difficulty: int,
+        dice_size: int,
+        comment: str | None = None,
+        trait_one_name: str | None = None,
+        trait_one_value: int | None = None,
+        trait_two_name: str | None = None,
+        trait_two_value: int | None = None,
+    ) -> None:
+        """Perform a dice roll and display the result.
+
+        Args:
+            ctx (discord.ApplicationContext): The context of the command.
+            pool (int): The number of dice to roll.
+            difficulty (int): The difficulty of the roll.
+            dice_size (int): The size of the dice.
+            comment (str, optional): A comment to display with the roll. Defaults to None.
+            trait_one_name (str, optional): The name of the first trait. Defaults to None.
+            trait_one_value (int, optional): The value of the first trait. Defaults to None.
+            trait_two_name (str, optional): The name of the second trait. Defaults to None.
+            trait_two_value (int, optional): The value of the second trait. Defaults to None.
+        """
+        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
+
+        while True:
+            view = ReRollButton(ctx.author)
+            embed = await RollDisplay(
+                ctx,
+                roll,
+                comment,
+                trait_one_name,
+                trait_one_value,
+                trait_two_name,
+                trait_two_value,
+            ).get_embed()
+            await ctx.respond(embed=embed, view=view)
+            await view.wait()
+            if view.confirmed:
+                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
+            else:
+                break
 
     storyteller = discord.SlashCommandGroup(
         "storyteller",
@@ -306,7 +352,7 @@ class StoryTeller(commands.Cog):
             int,
             "The difficulty of the roll",
             required=False,
-            default=6,
+            default=DEFAULT_DIFFICULTY,
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
@@ -319,26 +365,17 @@ class StoryTeller(commands.Cog):
 
         pool = trait_one_value + trait_two_value
 
-        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
-
-        while True:
-            view = ReRollButton(ctx.author)
-            embed = await RollDisplay(
-                ctx,
-                roll=roll,
-                comment=comment,
-                trait_one_name=trait_one.name,
-                trait_one_value=trait_one_value,
-                trait_two_name=trait_two.name,
-                trait_two_value=trait_two_value,
-            ).get_embed()
-
-            await ctx.respond(embed=embed, view=view)
-            await view.wait()
-            if view.confirmed:
-                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=10)
-            if not view.confirmed:
-                break
+        await self._perform_roll(
+            ctx,
+            pool,
+            difficulty,
+            DiceType.D10.value,
+            comment,
+            trait_one_name=trait_one.name,
+            trait_one_value=trait_one_value,
+            trait_two_name=trait_two.name,
+            trait_two_value=trait_two_value,
+        )
 
 
 def setup(bot: Valentina) -> None:

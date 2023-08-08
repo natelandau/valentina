@@ -3,8 +3,8 @@
 
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.models.database import DatabaseVersion
-from valentina.models.database_services import DatabaseService
+from valentina.models import DatabaseService
+from valentina.models.db_tables import DatabaseVersion
 
 from .conftest import MODELS
 
@@ -25,18 +25,6 @@ def test_create_tables(tmp_path):
     assert test_db.table_exists("guilds")
     assert test_db.table_exists("characters")
     test_db.close()
-
-
-def test_get_tables(mock_db):
-    """Test DatabaseService.get_tables().
-
-    GIVEN a database
-    WHEN DatabaseService.get_tables() is called
-    THEN the list of tables is returned
-    """
-    tables = DatabaseService(mock_db).get_tables()
-    assert len(tables) == 20
-    assert "characters" in tables
 
 
 def test_initialize_database_one(empty_db):

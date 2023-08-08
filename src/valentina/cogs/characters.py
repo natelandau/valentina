@@ -9,7 +9,7 @@ from loguru import logger
 from valentina.character.traits import add_trait
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
-from valentina.models.database import CustomTrait, TraitValue, time_now
+from valentina.models.db_tables import CustomTrait, TraitValue
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
@@ -22,6 +22,7 @@ from valentina.utils.converters import (
     ValidYYYYMMDD,
 )
 from valentina.utils.errors import SectionExistsError
+from valentina.utils.helpers import time_now
 from valentina.utils.options import (
     select_char_class,
     select_char_trait,
