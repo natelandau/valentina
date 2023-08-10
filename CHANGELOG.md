@@ -1,3 +1,20 @@
+## v1.2.0 (2023-08-09)
+
+### Feat
+
+- **storyteller**: add storyteller commands (#25)
+- **storyteller**: add storyteller channel
+- **guild**: create `player` and `storyteller` roles
+
+### Fix
+
+- **chronicle**: improve chronicle display
+
+### Refactor
+
+- **character**: improve character service (#32)
+- improve database services (#31)
+
 ## v1.1.5 (2023-07-22)
 
 ### Fix
