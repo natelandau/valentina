@@ -199,7 +199,7 @@ class Characters(commands.Cog, name="Character"):
         """Unclaim currently claimed character. This will allow you to claim a new character."""
         if self.bot.char_svc.user_has_claim(ctx):
             character = self.bot.char_svc.fetch_claim(ctx)
-            self.bot.char_svc.remove_claim(ctx)
+            self.bot.char_svc.remove_claim(ctx.guild.id, ctx.author.id)
             await present_embed(
                 ctx=ctx,
                 title="Character Unclaimed",
@@ -275,7 +275,7 @@ class Characters(commands.Cog, name="Character"):
         )
 
     @add.command(name="trait", description="Add a custom trait to a character")
-    async def add_trait(
+    async def add_custom_trait(
         self,
         ctx: discord.ApplicationContext,
         trait: Option(str, "The new trait to add.", required=True),
