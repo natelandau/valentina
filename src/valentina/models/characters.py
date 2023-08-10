@@ -4,7 +4,7 @@ import re
 
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
-from peewee import DoesNotExist, ModelSelect
+from peewee import DoesNotExist
 
 from valentina.models.constants import MaxTraitValue
 from valentina.models.db_tables import (
@@ -26,12 +26,23 @@ class CharacterService:
     """A service for managing the Player characters in the cache/in-memory database."""
 
     def __init__(self) -> None:
-        """Initialize the CharacterService."""
-        # Caches to avoid database queries
-        ##################################
-        self.characters: dict[str, Character] = {}  # {char_key: Character, ...}
-        self.storyteller_character_cache: dict[int, list[Character]] = {}  # {guild_id: Character}
-        self.claims: dict[str, str] = {}  # {claim_key: char_key}
+        """Initialize the CharacterService.
+
+        This method sets up three dictionaries that serve as caches to avoid unnecessary database queries.
+
+        Attributes:
+            characters (dict[str, Character]): A dictionary mapping character keys to Character instances.
+            storyteller_character_cache (dict[int, list[Character]]): A dictionary mapping guild IDs to lists of Character instances.
+            claims (dict[str, str]): A dictionary mapping claim keys to character keys.
+        """
+        # Initialize a dictionary to store characters, using character keys as keys and Character instances as values
+        self.character_cache: dict[str, Character] = {}
+
+        # Initialize a dictionary to store storyteller characters, using guild IDs as keys and lists of Character instances as values
+        self.storyteller_character_cache: dict[int, list[Character]] = {}
+
+        # Initialize a dictionary to store claims, using claim keys as keys and character keys as values
+        self.claim_cache: dict[str, str] = {}
 
     @staticmethod
     def __get_char_key(guild_id: int, char_id: int) -> str:
@@ -44,34 +55,57 @@ class CharacterService:
         Returns:
             str: The guild and character IDs joined by an underscore.
         """
+        # Generate a unique key for the character by joining the guild ID and character ID with an underscore
         return f"{guild_id}_{char_id}"
 
     @staticmethod
     def __get_claim_key(guild_id: int, user_id: int) -> str:
         """Generate a key for the claim cache.
 
+        This method generates a unique key for each claim by joining the guild ID and user ID with an underscore.
+        This key is used to store and retrieve claims from the cache.
+
         Args:
-            guild_id (int): The guild ID
-            user_id (int): The user database ID
+            guild_id (int): The ID of the guild.
+            user_id (int): The ID of the user in the database.
 
         Returns:
-            str: The guild and user IDs joined by an underscore.
+            str: The generated key, consisting of the guild ID and user ID joined by an underscore.
         """
+        # Generate a unique key for the claim by joining the guild ID and user ID with an underscore
         return f"{guild_id}_{user_id}"
 
     def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
-        """Claim a character for a user."""
+        """Claim a character for a user.
+
+        This method allows a user to claim a character. It first generates the character key and claim key. If the claim already exists for the user and character, it returns True. If the character is already claimed by another user, it raises a CharacterClaimedError. Otherwise, it adds the claim to the claims dictionary and returns True.
+
+        Args:
+            guild_id (int): The ID of the guild.
+            char_id (int): The ID of the character in the database.
+            user_id (int): The ID of the user in the database.
+
+        Returns:
+            bool: True if the claim is successfully added or already exists, False otherwise.
+
+        Raises:
+            CharacterClaimedError: If the character is already claimed by another user.
+        """
+        # Generate the character key and claim key
         char_key = self.__get_char_key(guild_id, char_id)
         claim_key = self.__get_claim_key(guild_id, user_id)
 
-        if claim_key in self.claims and self.claims[claim_key] == char_key:
+        # If the claim already exists for the user and character, return True
+        if claim_key in self.claim_cache and self.claim_cache[claim_key] == char_key:
             return True
 
-        if any(char_key == claim for claim in self.claims.values()):
+        # If the character is already claimed by another user, raise a CharacterClaimedError
+        if any(char_key == claim for claim in self.claim_cache.values()):
             logger.debug(f"CLAIM: Character {char_id} is already claimed")
             raise CharacterClaimedError
 
-        self.claims[claim_key] = char_key
+        # Add the claim to the claims dictionary
+        self.claim_cache[claim_key] = char_key
         return True
 
     def add_custom_section(
@@ -80,7 +114,18 @@ class CharacterService:
         section_title: str | None = None,
         section_description: str | None = None,
     ) -> bool:
-        """Add or update a custom section to a character."""
+        """Add or update a custom section to a character.
+
+        This method creates a new custom section with the given title and description and associates it with the specified character.
+
+        Args:
+            character (Character): The character object to which the custom section will be added.
+            section_title (str | None): The title of the custom section. Defaults to None.
+            section_description (str | None): The description of the custom section. Defaults to None.
+
+        Returns:
+            bool: True if the custom section was successfully added, False otherwise.
+        """
         CustomSection.create(
             title=section_title,
             description=section_description,
@@ -90,7 +135,7 @@ class CharacterService:
         logger.debug(f"DATABASE: Add custom section to {character}")
         return True
 
-    def add_trait(
+    def add_custom_trait(
         self,
         character: Character,
         name: str,
@@ -99,15 +144,15 @@ class CharacterService:
         value: int,
         max_value: int = MaxTraitValue.DEFAULT.value,
     ) -> None:
-        """Create a custom trait for a specified character.
+        """Create and add a custom trait to a specified character.
 
         Args:
-            character (Character): The character to which the trait is to be added.
-            name (str): The name of the trait.
-            description (str): The description of the trait.
-            category (TraitCategory): The category of the trait.
-            value (int): The value of the trait.
-            max_value (int, optional): The maximum value that the trait can have. Defaults to MaxTraitValue.DEFAULT.value.
+            character (Character): Character receiving the trait.
+            name (str): Trait name.
+            description (str): Trait description.
+            category (TraitCategory): Trait category.
+            value (int): Trait value.
+            max_value (int, optional): Trait's maximum value. Defaults to MaxTraitValue.DEFAULT.value.
 
         Returns:
             None
@@ -125,13 +170,6 @@ class CharacterService:
         )
 
         logger.debug(f"CHARACTER: Add trait '{name}' to {character}")
-
-    def is_cached_char(
-        self, guild_id: int | None = None, char_id: int | None = None, key: str | None = None
-    ) -> bool:
-        """Check if the user is in the cache."""
-        key = self.__get_char_key(guild_id, char_id) if key is None else key
-        return key in self.characters
 
     def create_character(self, ctx: ApplicationContext, **kwargs: str | int) -> Character:
         """Create a character in the cache and database."""
@@ -154,140 +192,254 @@ class CharacterService:
 
         return character
 
-    def fetch_all_characters(self, guild_id: int) -> ModelSelect:
-        """Returns all characters for a specific guild. Checks the cache first and then the database. If characters are found in the database, they are added to the cache.
+    def fetch_all_characters(self, guild_id: int) -> list[Character]:
+        """Fetch all characters for a specific guild, checking the cache first and then the database.
 
         Args:
-            guild_id (int): The discord guild id to fetch characters for.
+            guild_id (int): The Discord guild ID to fetch characters for.
 
         Returns:
-            ModelSelect: A peewee ModelSelect object representing all the characters for the guild.
+            list[Character]: List of characters for the guild.
         """
-        cached_ids = []
-        chars_to_return = []
+        # Fetch characters from cache
+        cached_chars = [
+            character
+            for key, character in self.character_cache.items()
+            if key.startswith(str(guild_id))
+        ]
+        cached_ids = [character.id for character in cached_chars]
+        logger.debug(f"CACHE: Fetch {len(cached_chars)} characters")
 
-        for key, character in self.characters.items():
-            if key.startswith(str(guild_id)):
-                cached_ids.append(character.id)
-                chars_to_return.append(character)
-        logger.debug(f"CACHE: Fetch {len(chars_to_return)} characters")
-
+        # Fetch characters from database not in cache
         characters = Character.select().where(
-            (Character.guild_id == guild_id)  # grab only characters for the guild
-            & (Character.storyteller_character == False)  # grab only player characters # noqa: E712
-            & ~(Character.id.in_(cached_ids))  # grab only characters not in cache
+            (Character.guild_id == guild_id)
+            & (Character.storyteller_character == False)  # noqa: E712
+            & (Character.id.not_in(cached_ids))
         )
-        if len(characters) > 0:
-            logger.debug(f"DATABASE: Fetch {len(characters)} characters")
-        else:
-            logger.debug("DATABASE: No characters to fetch")
+        logger.debug(
+            f"DATABASE: Fetch {len(characters)} characters"
+            if characters
+            else "DATABASE: No characters to fetch"
+        )
 
+        # Add characters from database to cache
         for character in characters:
-            self.characters[self.__get_char_key(guild_id, character.id)] = character
-            chars_to_return.append(character)
+            key = self.__get_char_key(guild_id, character.id)
+            self.character_cache[key] = character
 
-        return chars_to_return
+        return cached_chars + list(characters)
 
     def fetch_all_storyteller_characters(
         self, ctx: ApplicationContext | AutocompleteContext = None, guild_id: int | None = None
     ) -> list[Character]:
-        """Fetch all StoryTeller characters for a guild."""
-        if guild_id is None and isinstance(ctx, ApplicationContext):
-            guild_id = ctx.guild.id
-        if guild_id is None and isinstance(ctx, AutocompleteContext):
-            guild_id = ctx.interaction.guild.id
+        """Fetch all StoryTeller characters for a guild, checking the cache first and then the database.
 
-        if guild_id in self.storyteller_character_cache:
-            logger.debug(
-                f"CACHE: Return {len(self.storyteller_character_cache[guild_id])} StoryTeller characters"
-            )
-            return self.storyteller_character_cache[guild_id]
+        Args:
+            ctx (ApplicationContext | AutocompleteContext, optional): Context object containing guild information.
+            guild_id (int, optional): The Discord guild ID to fetch characters for. If not provided, it will be extracted from ctx.
 
-        self.storyteller_character_cache[guild_id] = []
+        Returns:
+            list[Character]: List of StoryTeller characters for the guild.
+        """
+        # Determine guild_id from the context if not provided
+        if guild_id is None:
+            if isinstance(ctx, ApplicationContext):
+                guild_id = ctx.guild.id
+            elif isinstance(ctx, AutocompleteContext):
+                guild_id = ctx.interaction.guild.id
+
+        # Initialize cache for guild_id if not present
+        if guild_id not in self.storyteller_character_cache:
+            self.storyteller_character_cache[guild_id] = []
+
+        # Fetch cached characters' IDs
+        cached_ids = [character.id for character in self.storyteller_character_cache[guild_id]]
+        logger.debug(f"CACHE: Fetch {len(cached_ids)} StoryTeller characters")
+
+        # Query the database for StoryTeller characters not in cache
         characters = Character.select().where(
             (Character.guild_id == guild_id)
             & (Character.storyteller_character == True)  # noqa: E712
+            & (Character.id.not_in(cached_ids))
         )
 
+        # Log the number of characters fetched from the database
         logger.debug(f"DATABASE: Fetch {len(characters)} StoryTeller characters")
-        self.storyteller_character_cache[guild_id] = [x for x in characters]
+
+        # Update the cache with the fetched characters
+        self.storyteller_character_cache[guild_id] += list(characters)
+
         return self.storyteller_character_cache[guild_id]
 
     def fetch_claim(self, ctx: ApplicationContext | AutocompleteContext) -> Character:
-        """Fetch the character claimed by a user."""
+        """Fetch the character claimed by a user based on the context provided.
+
+        This method tries to fetch the character claimed by a user from cache if available,
+        otherwise, it fetches the character from the database using the character ID.
+
+        Args:
+            ctx (ApplicationContext | AutocompleteContext): The context which contains the author and guild information.
+
+        Returns:
+            Character: The claimed character.
+
+        Raises:
+            NoClaimError: If no claim is found for the given context.
+        """
         if isinstance(ctx, ApplicationContext):
-            author = ctx.author
-            guild = ctx.guild
-        if isinstance(ctx, AutocompleteContext):  # pragma: no cover
-            author = ctx.interaction.user
-            guild = ctx.interaction.guild
+            author, guild = ctx.author, ctx.guild
+        else:
+            author, guild = ctx.interaction.user, ctx.interaction.guild
 
         claim_key = self.__get_claim_key(guild.id, author.id)
-        if claim_key in self.claims:
-            char_key = self.claims[claim_key]
 
-            if self.is_cached_char(key=char_key):
-                logger.debug(f"CACHE: Fetch character {self.characters[char_key]}")
-                return self.characters[char_key]
+        try:
+            char_key = self.claim_cache[claim_key]
+        except KeyError as e:
+            raise NoClaimError from e
 
-            char_id = re.sub(r"[a-zA-Z0-9]+_", "", char_key)
-            return Character.get_by_id(int(char_id))
+        if self.is_cached_character(key=char_key):
+            character = self.character_cache[char_key]
+            logger.debug(f"CACHE: Fetch character {character} for author {author} in guild {guild}")
+            return character
 
-        raise NoClaimError
+        char_id = re.sub(r"[a-zA-Z0-9]+_", "", char_key)
+        return Character.get_by_id(int(char_id))
 
-    def fetch_user_of_character(self, guild_id: int, char_id: int) -> int:
-        """Returns the user id of the user who claimed a character."""
+    def fetch_user_of_character(self, guild_id: int, char_id: int) -> int | None:
+        """Returns the user ID of the user who claimed a character.
+
+        Args:
+            guild_id (int): The Discord guild ID to fetch the user for.
+            char_id (int): The character ID to fetch the user for.
+
+        Returns:
+            int | None: The user ID of the user who claimed the character, or None if the character is not claimed.
+        """
+        # Check if the character is claimed
         if self.is_char_claimed(guild_id, char_id):
             char_key = self.__get_char_key(guild_id, char_id)
-            for claim_key, claim in self.claims.items():
-                if claim == char_key:
-                    user_id = re.sub(r"[a-zA-Z0-9]+_", "", claim_key)
-                    return int(user_id)
+
+            # Find the claim key that matches the character key
+            return next(
+                (
+                    int(re.sub(r"[a-zA-Z0-9]+_", "", claim_key))
+                    for claim_key, claim in self.claim_cache.items()
+                    if claim == char_key
+                ),
+                None,
+            )
 
         return None
 
+    def is_cached_character(
+        self, guild_id: int | None = None, char_id: int | None = None, key: str | None = None
+    ) -> bool:
+        """Check if the character is in the cache using either a guild ID and character ID or a specified key.
+
+        Args:
+            guild_id (int, optional): The guild ID of the character. Defaults to None.
+            char_id (int, optional): The character ID. Defaults to None.
+            key (str, optional): The key representing the character in the cache. If not provided, it will be generated using guild_id and char_id. Defaults to None.
+
+        Returns:
+            bool: True if the character is in the cache, False otherwise.
+        """
+        key = key or self.__get_char_key(guild_id, char_id)
+        return key in self.character_cache
+
     def is_char_claimed(self, guild_id: int, char_id: int) -> bool:
-        """Check if a character is claimed by any user."""
+        """Check if a character is claimed by any user.
+
+        Args:
+            guild_id (int): The Discord guild ID to check the claim for.
+            char_id (int): The character ID to check the claim for.
+
+        Returns:
+            bool: True if the character is claimed, False otherwise.
+        """
         char_key = self.__get_char_key(guild_id, char_id)
-        return any(char_key == claim for claim in self.claims.values())
+        return any(char_key == claim for claim in self.claim_cache.values())
 
     def purge_cache(self, ctx: ApplicationContext | None = None, with_claims: bool = False) -> None:
-        """Purge all character caches. If ctx is provided, only purge the caches for that guild."""
-        caches: dict[str, dict] = {"characters": self.characters}
+        """Purge all character caches. If ctx is provided, only purge the caches for that guild.
+
+        Args:
+            ctx (ApplicationContext | None, optional): Context object containing guild information. If provided, only caches for that guild are purged.
+            with_claims (bool, optional): If True, also purge the claims cache. Defaults to False.
+
+        Returns:
+            None
+        """
+        # Initialize caches to purge
+        caches: dict[str, dict] = {"characters": self.character_cache}
         if with_claims:
-            caches["claims"] = self.claims
+            caches["claims"] = self.claim_cache
 
         if ctx:
+            # Purge caches for the specific guild
             self.storyteller_character_cache.pop(ctx.guild.id, None)
-            for _cache_name, cache in caches.items():
-                for key in cache.copy():
-                    if key.startswith(str(ctx.guild.id)):
-                        cache.pop(key, None)
+            for cache in caches.values():
+                keys_to_remove = [key for key in cache if key.startswith(str(ctx.guild.id))]
+                for key in keys_to_remove:
+                    cache.pop(key, None)
             logger.debug(f"CACHE: Purge character caches for guild {ctx.guild}")
         else:
+            # Purge all character caches
             self.storyteller_character_cache = {}
             for cache in caches.values():
                 cache.clear()
             logger.debug("CACHE: Purge all character caches")
 
-    def remove_claim(self, ctx: ApplicationContext) -> bool:
-        """Remove a claim from a user."""
-        claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
-        if claim_key in self.claims:
-            logger.debug(f"CLAIM: Remove claim for user {ctx.author}")
-            del self.claims[claim_key]
+    def remove_claim(self, guild_id: int, user_id: int) -> bool:
+        """Remove a user's claim.
+
+        This method removes a user's claim from the claims dictionary. If the claim exists, it deletes the claim and returns True.
+        If the claim doesn't exist, it returns False.
+
+        Args:
+            guild_id (int): The ID of the guild.
+            user_id (int): The ID of the user in the database.
+
+        Returns:
+            bool: True if the claim is successfully removed, False otherwise.
+        """
+        # Generate the claim key
+        claim_key = self.__get_claim_key(guild_id, user_id)
+
+        # If the claim exists, delete it from the claims dictionary and return True
+        if claim_key in self.claim_cache:
+            del self.claim_cache[claim_key]
             return True
+
+        # If the claim doesn't exist, return False
         return False
 
     def user_has_claim(self, ctx: ApplicationContext) -> bool:
-        """Check if a user has a claim."""
+        """Check if a user has a claim.
+
+        Args:
+            ctx (ApplicationContext): Context object containing guild and author information.
+
+        Returns:
+            bool: True if the user has a claim, False otherwise.
+        """
         claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
-        return claim_key in self.claims
+        return claim_key in self.claim_cache
 
     def update_character(
         self, ctx: ApplicationContext, char_id: int, **kwargs: str | int
     ) -> Character:
-        """Update a character in the cache and database."""
+        """Update a character in the cache and database.
+
+        Args:
+            ctx (ApplicationContext): Context object containing guild information.
+            char_id (int): The character ID to update.
+            **kwargs (str | int): Additional keyword arguments to update the character attributes.
+
+        Returns:
+            Character: The updated character object.
+        """
         key = self.__get_char_key(ctx.guild.id, char_id)
 
         try:
@@ -295,16 +447,19 @@ class CharacterService:
         except DoesNotExist as e:
             raise CharacterNotFoundError(e=e) from e
 
+        # Update the character in the database
         Character.update(modified=time_now(), **kwargs).where(
             Character.id == character.id
         ).execute()
 
-        # Clear caches
-        if not character.storyteller_character:
-            self.characters.pop(key, None)
+        # Re-query the character object to reflect the changes
+        character = Character.get_by_id(char_id)
 
+        # Clear caches based on character type
         if character.storyteller_character:
             self.storyteller_character_cache.pop(ctx.guild.id, None)
+        else:
+            self.character_cache.pop(key, None)
 
         logger.debug(f"DATABASE: Update character: {character}")
         return character
@@ -312,16 +467,15 @@ class CharacterService:
     def update_traits_by_id(
         self, ctx: ApplicationContext, character: Character, trait_values_dict: dict[int, int]
     ) -> None:
-        """Update traits for a character by id.
+        """Update traits for a character by ID.
 
         Args:
             ctx (ApplicationContext): The context of the command.
             character (Character): The character to update.
             trait_values_dict (dict[int, int]): A dictionary of trait IDs and their new values.
         """
-        key = self.__get_char_key(ctx.guild.id, character.id)
         # Clear character from cache but keep claims intact
-        self.characters.pop(key, None)
+        self.purge_cache(ctx)
 
         modified = time_now()
 

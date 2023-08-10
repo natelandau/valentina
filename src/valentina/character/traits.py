@@ -46,7 +46,7 @@ async def add_trait(
         )
         await view.wait()
         if view.confirmed:
-            ctx.bot.char_svc.add_trait(  # type: ignore [attr-defined]
+            ctx.bot.char_svc.add_custom_trait(  # type: ignore [attr-defined]
                 character,
                 name=trait_name,
                 description=trait_description,
