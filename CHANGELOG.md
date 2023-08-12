@@ -1,3 +1,9 @@
+## v1.2.1 (2023-08-12)
+
+### Fix
+
+- **errors**: improve error logging (#33)
+
 ## v1.2.0 (2023-08-09)
 
 ### Feat
