@@ -10,6 +10,7 @@ from valentina.character.traits import add_trait
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import CustomTrait, TraitValue
+from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
@@ -21,7 +22,6 @@ from valentina.utils.converters import (
     ValidTraitCategory,
     ValidYYYYMMDD,
 )
-from valentina.utils.errors import SectionExistsError
 from valentina.utils.helpers import time_now
 from valentina.utils.options import (
     select_char_class,
@@ -300,7 +300,7 @@ class Characters(commands.Cog, name="Character"):
         if section_title.replace("-", "_").replace(" ", "_").lower() in [
             x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
         ]:
-            raise SectionExistsError
+            raise errors.ValidationError("Custom section already exists")
         self.bot.char_svc.add_custom_section(character, section_title, section_description)
         await present_embed(
             ctx,

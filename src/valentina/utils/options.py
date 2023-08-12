@@ -12,7 +12,7 @@ async def select_chapter(ctx: discord.ApplicationContext) -> list[str]:
     """Populates the autocomplete for the chapter option."""
     try:
         chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined]
-    except ValueError:
+    except errors.NoActiveChronicleError:
         return ["No active chronicle"]
 
     chapters = []
@@ -202,7 +202,7 @@ async def select_note(ctx: discord.ApplicationContext) -> list[str]:
     """Populates the autocomplete for the note option."""
     try:
         chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined]
-    except ValueError:
+    except errors.NoActiveChronicleError:
         return ["No active chronicle"]
 
     notes = []
@@ -219,7 +219,7 @@ async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
     """Populates the autocomplete for the npc option."""
     try:
         chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined]
-    except ValueError:
+    except errors.NoActiveChronicleError:
         return ["No active chronicle"]
 
     npcs = []

@@ -10,7 +10,7 @@ from valentina.models.db_tables import (
     ChronicleNote,
     ChronicleNPC,
 )
-from valentina.utils.errors import NoActiveChronicleError
+from valentina.utils import errors
 
 console = Console()
 
@@ -46,13 +46,13 @@ class TestChronicleService:
 
         GIVEN a chronicle service
         WHEN a chronicle is created with the same name as an existing chronicle
-        THEN raise a ValueError
+        THEN raise a ValidationError
         """
         # Set up the test
         current_count = Chronicle.select().count()
 
         # Create the new chronicle
-        with pytest.raises(ValueError, match=r"Chronicle '\w+' already exists"):
+        with pytest.raises(errors.ValidationError, match=r"Chronicle '\w+' already exists"):
             self.chron_svc.create_chronicle(mock_ctx, "new_chronicle", "new chronicle desc")
 
         assert Chronicle.select().count() == current_count
@@ -260,7 +260,7 @@ class TestChronicleService:
         WHEN the active chronicle is fetched
         THEN raise NoActiveChronicleError if not active chronicle is found
         """
-        with pytest.raises(NoActiveChronicleError, match="No active chronicle found"):
+        with pytest.raises(errors.NoActiveChronicleError, match="No active chronicle found"):
             self.chron_svc.fetch_active(mock_ctx)
 
     def test_fetch_active_two(self, mock_ctx, caplog):
@@ -366,9 +366,9 @@ class TestChronicleService:
 
         GIVEN a chronicle service
         WHEN fetch_chapter_by_id is called
-        THEN raise ValueError when chapter not found
+        THEN raise DatabaseError when chapter not found
         """
-        with pytest.raises(ValueError, match="No chapter found"):
+        with pytest.raises(errors.DatabaseError, match="No chapter found with ID 2298765432118"):
             self.chron_svc.fetch_chapter_by_id(2298765432118)
 
     def test_fetch_chapter_by_name_one(self, caplog):
@@ -402,13 +402,13 @@ class TestChronicleService:
 
         GIVEN a chronicle service
         WHEN fetch_chapter_by_name is called
-        THEN raise ValueError when chapter not found
+        THEN raise DatabaseError when chapter not found
         """
         # set up the test
         chronicle = Chronicle.get_by_id(1)
 
         # Fetch the chapter
-        with pytest.raises(ValueError, match="No chapter found"):
+        with pytest.raises(errors.DatabaseError, match="No chapter found"):
             self.chron_svc.fetch_chapter_by_name(chronicle, "quick brown fox")
 
     def test_fetch_chronicle_by_name(self, mock_ctx, caplog):
@@ -558,8 +558,8 @@ class TestChronicleService:
         assert result == note1
 
         # WHEN checking for a note that doesn't exist
-        # THEN raise a ValueError
-        with pytest.raises(ValueError, match="No note found with ID"):
+        # THEN raise a DatabaseError
+        with pytest.raises(errors.DatabaseError, match="No note found with ID"):
             self.chron_svc.fetch_note_by_id(98765438820012)
 
     def test_fetch_all_npcs(self, mock_ctx, caplog):

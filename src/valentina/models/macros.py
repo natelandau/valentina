@@ -5,6 +5,7 @@ import discord
 from loguru import logger
 
 from valentina.models.db_tables import CustomTrait, Macro, MacroTrait, Trait
+from valentina.utils import errors
 
 
 class MacroService:
@@ -49,7 +50,9 @@ class MacroService:
             )
         ):
             logger.debug(f"CACHE: Macro already exists for {ctx.author.display_name}")
-            raise ValueError("Macro already exists")
+            raise errors.ValidationError(
+                f"Macro named `{name}` or with the same abbreviation already exists."
+            )
 
         logger.debug(f"DATABASE: Create macro {name} for {ctx.author.display_name}")
         macro = Macro.create(

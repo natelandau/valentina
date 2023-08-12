@@ -10,7 +10,7 @@ from valentina.models.db_tables import (
     ChronicleNote,
     ChronicleNPC,
 )
-from valentina.utils.errors import NoActiveChronicleError
+from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
 
@@ -43,7 +43,7 @@ class ChronicleService:
             Chronicle: The created Chronicle object.
 
         Raises:
-            ValueError: If a chronicle with the same name already exists in the database.
+            ValidationError: If a chronicle with the same name already exists in the database.
         """
         try:
             chronicle = Chronicle.create(
@@ -55,7 +55,7 @@ class ChronicleService:
                 is_active=False,
             )
         except IntegrityError as e:
-            raise ValueError(f"Chronicle '{name}' already exists.") from e
+            raise errors.ValidationError(f"Chronicle '{name}' already exists.") from e
 
         # Remove this guild's chronicles from the cache, forcing a refresh next time they're accessed
         self.purge_cache(ctx)
@@ -258,7 +258,7 @@ class ChronicleService:
             Chronicle: The active chronicle for the guild.
 
         Raises:
-            ValueError: If no active chronicle is found.
+            NoActiveChronicleError: If no active chronicle is found.
         """
         # Determine the guild ID from the context
         guild_id = ctx.guild.id if isinstance(ctx, ApplicationContext) else ctx.interaction.guild.id
@@ -274,7 +274,7 @@ class ChronicleService:
             self.active_chronicle_cache[guild_id] = active_chronicle
             logger.debug(f"DATABASE: Fetch active chronicle for guild {guild_id}")
         except DoesNotExist as e:
-            raise NoActiveChronicleError from e
+            raise errors.NoActiveChronicleError from e
 
         self.active_chronicle_cache[guild_id] = active_chronicle
 
@@ -293,7 +293,7 @@ class ChronicleService:
             list[Chronicle]: A list of all chronicles for the guild.
 
         Raises:
-            ValueError: If no chronicles are found for the guild.
+            ValidationError: If no chronicles are found for the guild.
         """
         # Determine the guild ID from the context
         guild_id = ctx.guild.id if isinstance(ctx, ApplicationContext) else ctx.interaction.guild.id
@@ -309,7 +309,7 @@ class ChronicleService:
             chronicles = [x for x in Chronicle.select().where(Chronicle.guild == guild_id)]
 
         except DoesNotExist as e:
-            raise ValueError("No chronicles found") from e
+            raise errors.ValidationError("No chronicles found") from e
 
         # Update the cache with the fetched chronicles
         self.chronicle_cache[guild_id] = chronicles
@@ -326,7 +326,7 @@ class ChronicleService:
             ChronicleChapter: The chapter with the corresponding ID.
 
         Raises:
-            ValueError: If no chapter is found with the given ID.
+            DatabaseError: If no chapter is found with the given ID.
         """
         try:
             # Fetch chapter from database if not in cache.
@@ -336,7 +336,7 @@ class ChronicleService:
             logger.debug(f"DATABASE: fetch chapter {chapter.id}")
             return chapter
         except DoesNotExist as e:
-            raise ValueError(f"No chapter found with ID {chapter_id}") from e
+            raise errors.DatabaseError(f"No chapter found with ID {chapter_id}") from e
 
     def fetch_chapter_by_name(self, chronicle: Chronicle, name: str) -> ChronicleChapter:
         """Fetch a chapter by its name.
@@ -349,7 +349,7 @@ class ChronicleService:
             ChronicleChapter: The chapter with the corresponding name.
 
         Raises:
-            ValueError: If no chapter is found with the given name.
+            DatabaseError: If no chapter is found with the given name.
         """
         name = name.strip()
 
@@ -361,7 +361,7 @@ class ChronicleService:
             logger.debug(f"DATABASE: fetch chapter {chapter.name}")
             return chapter
         except DoesNotExist as e:
-            raise ValueError(f"No chapter found with name {name}") from e
+            raise errors.DatabaseError(f"No chapter found with name {name}") from e
 
     def fetch_all_chapters(self, chronicle: Chronicle) -> list[ChronicleChapter]:
         """Fetch all chapters for a chronicle.
@@ -376,7 +376,7 @@ class ChronicleService:
             list[ChronicleChapter]: A list of all chapters for the chronicle.
 
         Raises:
-            ValueError: If no chapters are found for the chronicle.
+            NoMatchingItemsError: If no chapters are found for the chronicle.
         """
         # If the chapters for this chronicle are already in the cache, return them
 
@@ -392,7 +392,7 @@ class ChronicleService:
             ]
             logger.debug(f"DATABASE: Fetch all chapters for chronicle {chronicle.id}")
         except DoesNotExist as e:
-            raise ValueError("No chapters found") from e
+            raise errors.NoMatchingItemsError("No chapters found") from e
 
         # Update the cache with the fetched chapters
         self.chapter_cache[chronicle.id] = chapters
@@ -410,9 +410,6 @@ class ChronicleService:
 
         Returns:
             list[ChronicleNote]: A list of all notes for the chronicle.
-
-        Raises:
-            ValueError: If no notes are found for the chronicle.
         """
         if chronicle.id in self.note_cache and self.note_cache[chronicle.id]:
             logger.debug(f"CACHE: Return notes for chronicle {chronicle.id}")
@@ -441,13 +438,13 @@ class ChronicleService:
             ChronicleNote: The note corresponding to the given ID.
 
         Raises:
-            ValueError: If no note is found with the given ID.
+            DatabaseError: If no note is found with the given ID.
         """
         try:
             note = ChronicleNote.get(id=note_id)
             logger.debug(f"DATABASE: Fetch note id {note_id}")
         except DoesNotExist as e:
-            raise ValueError(f"No note found with ID {note_id}") from e
+            raise errors.DatabaseError(f"No note found with ID {note_id}") from e
 
         return note
 
@@ -464,7 +461,7 @@ class ChronicleService:
             list[ChronicleNPC]: A list of all NPCs for the chronicle.
 
         Raises:
-            ValueError: If no NPCs are found for the chronicle.
+            NoMatchingItemsError: If no NPCs are found for the chronicle.
         """
         # Return the cache if it exists
         if chronicle.id in self.npc_cache and self.npc_cache[chronicle.id]:
@@ -477,7 +474,7 @@ class ChronicleService:
             ]
             logger.debug(f"DATABASE: Fetch all NPCs for chronicle {chronicle.name}")
         except DoesNotExist as e:
-            raise ValueError("No NPCs found") from e
+            raise errors.NoMatchingItemsError("No NPCs found") from e
 
         self.npc_cache[chronicle.id] = npcs
 
@@ -502,7 +499,7 @@ class ChronicleService:
             ChronicleNPC: The NPC corresponding to the given name.
 
         Raises:
-            ValueError: If no NPC is found with the given name.
+            NoMatchingItemsError: If no NPC is found with the given name.
         """
         guild_id = ctx.guild.id
 
@@ -510,7 +507,7 @@ class ChronicleService:
             npc = ChronicleNPC.get(name=name, chronicle=chronicle.id)
             logger.debug(f"DATABASE: Fetch NPC for guild {guild_id}")
         except DoesNotExist as e:
-            raise ValueError(f"No NPC found with name {name}") from e
+            raise errors.NoMatchingItemsError(f"No NPC found with name {name}") from e
 
         return npc
 
@@ -522,9 +519,6 @@ class ChronicleService:
         Args:
             ctx (ApplicationContext): Context providing information about the guild.
             chronicle (Chronicle): The chronicle to set active
-
-        Raises:
-            ValueError: If no chronicle is found with the given name.
         """
         # Set any other chronicle that is active to inactive
         chronicles = Chronicle.select().where(Chronicle.guild_id == ctx.guild.id)
@@ -550,9 +544,6 @@ class ChronicleService:
 
         Args:
             ctx (ApplicationContext): Context providing information about the guild.
-
-        Raises:
-            ValueError: If no active chronicle is found.
         """
         # Fetch the active chronicle
         chronicle = self.fetch_active(ctx)
@@ -608,6 +599,9 @@ class ChronicleService:
             ctx (ApplicationContext): The application context carrying metadata for the command invocation.
             chapter (ChronicleChapter): The chapter to be updated.
             **kwargs (str): Field-value pairs to update on the chapter.
+
+        Raises:
+            DatabaseError: If no chapter is found with the given ID.
         """
         try:
             ChronicleChapter.update(modified=time_now(), **kwargs).where(
@@ -619,10 +613,7 @@ class ChronicleService:
             logger.debug(f"CHRONICLE: Update chapter {chapter.name} for guild {ctx.guild.id}")
 
         except DoesNotExist as e:
-            logger.error(
-                f"CHRONICLE: Chapter {chapter.name} does not exist for guild {ctx.guild.id}"
-            )
-            raise ValueError(f"No chapter found with ID {chapter.id}") from e
+            raise errors.DatabaseError(f"No chapter found with ID {chapter.id}") from e
 
         except Exception as e:
             logger.error(
@@ -641,6 +632,9 @@ class ChronicleService:
             ctx (ApplicationContext): The application context carrying metadata for the command invocation.
             chronicle (Chronicle): The chronicle to be updated.
             **kwargs (str): Field-value pairs to update on the chronicle.
+
+        Raises:
+            DatabaseError: If no chronicle is found with the given ID.
         """
         try:
             Chronicle.update(modified=time_now(), **kwargs).where(
@@ -650,8 +644,7 @@ class ChronicleService:
             self.purge_cache(ctx)
 
         except DoesNotExist as e:
-            logger.error(f"CHRONICLE: Chronicle does not exist for guild {ctx.guild.id}")
-            raise ValueError(f"No chronicle found with ID {chronicle.id}") from e
+            raise errors.DatabaseError(f"No chronicle found with ID {chronicle.id}") from e
         except Exception as e:
             logger.error(
                 f"CHRONICLE: Unexpected error occurred while updating chronicle for guild {ctx.guild.id}"
@@ -667,6 +660,9 @@ class ChronicleService:
             ctx (ApplicationContext): The application context carrying metadata for the command invocation.
             note (ChronicleNote): The note to be updated.
             **kwargs (str): Field-value pairs to update on the note.
+
+        Raises:
+            DatabaseError: If no note is found with the given ID.
         """
         try:
             ChronicleNote.update(modified=time_now(), **kwargs).where(
@@ -677,8 +673,7 @@ class ChronicleService:
 
             logger.debug(f"CHRONICLE: Update note {note.name} for guild {ctx.guild.id}")
         except DoesNotExist as e:
-            logger.error(f"CHRONICLE: Note does not exist for guild {ctx.guild.id}")
-            raise ValueError(f"No note found with ID {note.id}") from e
+            raise errors.DatabaseError(f"No note found with ID {note.id}") from e
         except Exception as e:
             logger.error(
                 f"CHRONICLE: Unexpected error occurred while updating note for guild {ctx.guild.id}"
@@ -694,6 +689,9 @@ class ChronicleService:
             ctx (ApplicationContext): The application context carrying metadata for the command invocation.
             npc (ChronicleNPC): The NPC to be updated.
             **kwargs (str): Field-value pairs to update on the NPC.
+
+        Raises:
+            DatabaseError: If no NPC is found with the given ID.
         """
         try:
             ChronicleNPC.update(modified=time_now(), **kwargs).where(
@@ -704,8 +702,7 @@ class ChronicleService:
 
             logger.debug(f"CHRONICLE: Update NPC {npc.name} for guild {ctx.guild.id}")
         except DoesNotExist as e:
-            logger.error(f"CHRONICLE: NPC does not exist for guild {ctx.guild.id}")
-            raise ValueError(f"No NPC found with ID {npc.id}") from e
+            raise errors.DatabaseError(f"No NPC found with ID {npc.id}") from e
         except Exception as e:
             logger.error(
                 f"CHRONICLE: Unexpected error occurred while updating NPC for guild {ctx.guild.id}"

@@ -58,20 +58,7 @@ class Macros(commands.Cog):
         abbreviation = modal.abbreviation.strip() if modal.abbreviation else None
         description = modal.description.strip() if modal.description else None
 
-        #################################################
-        try:
-            self.bot.macro_svc.create_macro(
-                ctx, name, trait_one, trait_two, abbreviation, description
-            )
-        except ValueError:
-            await present_embed(
-                ctx,
-                title="Macro already exists",
-                description=f"A macro already exists with the name **{name}** or abbreviation **{abbreviation}**\nPlease choose a different name or abbreviation or delete the existing macro with `/macros delete`",
-                level="error",
-                ephemeral=True,
-            )
-            return
+        self.bot.macro_svc.create_macro(ctx, name, trait_one, trait_two, abbreviation, description)
 
         await present_embed(
             ctx,

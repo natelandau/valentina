@@ -2,6 +2,7 @@
 import discord
 from discord.ext import commands
 from loguru import logger
+from peewee import DoesNotExist
 
 from valentina.utils import errors
 from valentina.views.embeds import user_error_embed
@@ -36,16 +37,24 @@ class ErrorReporter:
         if isinstance(
             error,
             errors.CharacterClaimedError
-            | errors.CharacterNotFoundError
-            | errors.DuplicateRollResultThumbError
-            | errors.MacroNotFoundError
             | errors.NoActiveChronicleError
             | errors.NoClaimError
-            | errors.SectionExistsError
-            | errors.SectionNotFoundError
-            | errors.TraitNotFoundError,
+            | errors.ValidationError
+            | errors.NoMatchingItemsError,
         ):
             user_msg = str(error)
+
+        if isinstance(error, errors.DatabaseError):
+            user_msg = (
+                "Sorry, there was a database error. This is likely a bug and has been reported."
+            )
+            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and no object was found in the database"
+            show_traceback = True
+
+        if isinstance(error, DoesNotExist):
+            user_msg = "Sorry I couldn't find that. Potential bug has been reported."
+            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` with an invalid database ID"
+            show_traceback = True
 
         if isinstance(error, errors.MessageTooLongError):
             user_msg = "Message too long to send. This is a bug has been reported."
@@ -63,7 +72,7 @@ class ErrorReporter:
         if isinstance(error, commands.NoPrivateMessage):
             user_msg = "Sorry, this command can only be run in a server!"
 
-        if isinstance(error, discord.errors.DiscordServerError | ValueError):
+        if isinstance(error, discord.errors.DiscordServerError):
             # There's nothing we can do about these
             user_msg = "Discord server error detected"
             log_msg = "SERVER: Discord server error detected"

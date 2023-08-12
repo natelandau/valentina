@@ -4,7 +4,7 @@ import pytest
 
 from valentina.models import TraitService
 from valentina.models.db_tables import Trait
-from valentina.utils.errors import TraitNotFoundError
+from valentina.utils import errors
 
 
 @pytest.mark.usefixtures("mock_db")
@@ -34,13 +34,13 @@ class TestTraitService:
 
         GIVEN a trait name
         WHEN fetching the trait id for that name
-        THEN return the trait id or raise TraitNotFoundError
+        THEN return the trait id or raise NoMatchingItemsError
         """
         for t in ["Willpower", "Strength", "Firearms", "Humanity", "Celerity", "Blood Pool"]:
             t_id = Trait.get(Trait.name == t).id
             assert self.trait_svc.fetch_trait_id_from_name(t) == t_id
 
-        with pytest.raises(TraitNotFoundError):
+        with pytest.raises(errors.NoMatchingItemsError):
             self.trait_svc.fetch_trait_id_from_name("Exception")
 
     def test_fetch_trait_category(self) -> None:
@@ -48,7 +48,7 @@ class TestTraitService:
 
         GIVEN a trait name
         WHEN fetching the trait category for that name
-        THEN return the trait category or raise TraitNotFoundError
+        THEN return the trait category or raise NoMatchingItemsError
         """
         assert self.trait_svc.fetch_trait_category("Willpower") == "Other"
         assert self.trait_svc.fetch_trait_category("Strength") == "Physical"
@@ -57,10 +57,10 @@ class TestTraitService:
         t_id = Trait.get(Trait.name == "Strength").id
         assert self.trait_svc.fetch_trait_category(t_id) == "Physical"
 
-        with pytest.raises(TraitNotFoundError, match=r"Trait `\w+` not found"):
+        with pytest.raises(errors.NoMatchingItemsError, match=r"Trait `\w+` not found"):
             self.trait_svc.fetch_trait_category("Exception")
 
-        with pytest.raises(TraitNotFoundError, match=r"Trait `\w+` not found"):
+        with pytest.raises(errors.NoMatchingItemsError, match=r"Trait `\w+` not found"):
             self.trait_svc.fetch_trait_category(999999)
 
     def test_purge(self) -> None:
@@ -68,7 +68,7 @@ class TestTraitService:
 
         GIVEN a trait name
         WHEN purging that trait
-        THEN return True or raise TraitNotFoundError
+        THEN purge the cache
         """
         assert len(self.trait_svc.class_traits) > 0
         self.trait_svc.purge()

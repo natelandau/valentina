@@ -3,6 +3,7 @@
 import pytest
 
 from valentina.models.dicerolls import DiceRoll
+from valentina.utils import errors
 
 
 class MockContext:
@@ -19,19 +20,21 @@ def test_roll_exceptions():
     WHEN an argument is invalid
     THEN raise the appropriate exception
     """
-    with pytest.raises(ValueError, match="Pool cannot be less than 0."):
+    with pytest.raises(errors.ValidationError, match="Pool cannot be less than 0."):
         DiceRoll(MockContext, pool=-1)
 
-    with pytest.raises(ValueError, match="Difficulty cannot exceed the size of the dice."):
+    with pytest.raises(
+        errors.ValidationError, match="Difficulty cannot exceed the size of the dice."
+    ):
         DiceRoll(MockContext, difficulty=11, pool=1)
 
-    with pytest.raises(ValueError, match="Pool cannot exceed 100."):
+    with pytest.raises(errors.ValidationError, match="Pool cannot exceed 100."):
         DiceRoll(MockContext, pool=101)
 
-    with pytest.raises(ValueError, match="Difficulty cannot be less than 0."):
+    with pytest.raises(errors.ValidationError, match="Difficulty cannot be less than 0."):
         DiceRoll(MockContext, difficulty=-1, pool=1)
 
-    with pytest.raises(ValueError, match="Invalid dice size"):
+    with pytest.raises(errors.ValidationError, match="Invalid dice size"):
         DiceRoll(MockContext, difficulty=6, pool=6, dice_size=3)
 
 

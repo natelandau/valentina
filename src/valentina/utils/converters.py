@@ -116,7 +116,9 @@ class ValidCharacterObject(Converter):
         try:
             return Character.get_by_id(int(argument))
         except DoesNotExist as e:
-            raise errors.CharacterNotFoundError from e
+            raise errors.DatabaseError(
+                f"No character found in database with id `{argument}`"
+            ) from e
 
 
 class ValidClan(Converter):
@@ -142,7 +144,7 @@ class ValidCustomSection(Converter):
             if argument.lower() == cs.title.lower():
                 return cs
 
-        raise errors.SectionNotFoundError
+        raise errors.DatabaseError(f"`{argument}` is not a valid custom section")
 
 
 class ValidCustomTrait(Converter):
@@ -223,7 +225,7 @@ class ValidMacroFromID(Converter):
         try:
             return Macro.get_by_id(int(argument))
         except DoesNotExist as e:
-            raise errors.MacroNotFoundError from e
+            raise errors.DatabaseError from e
 
 
 class ValidTrait(Converter):

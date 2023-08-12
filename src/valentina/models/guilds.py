@@ -63,7 +63,7 @@ class GuildService:
 
         already_exists = RollThumbnail.get_or_none(guild=ctx.guild.id, url=url)
         if already_exists:
-            raise errors.DuplicateRollResultThumbError
+            raise errors.ValidationError("That thumbnail already exists")
 
         RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
         logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")

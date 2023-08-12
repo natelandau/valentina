@@ -12,7 +12,7 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import ChannelPermission, TraitPermissions, XPPermissions
-from valentina.utils import Context
+from valentina.utils import Context, errors
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import pluralize
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -423,10 +423,10 @@ class Admin(commands.Cog):
     ) -> None:
         """Kick a target member, by ID or mention."""
         if member.id == ctx.author.id:
-            raise ValueError("You cannot kick yourself.")
+            raise errors.ValidationError("You cannot kick yourself.")
 
         if member.top_role >= ctx.author.top_role:
-            raise ValueError("You cannot kick this member.")
+            raise errors.ValidationError("You cannot kick this member.")
 
         await member.kick(reason=reason)
 
@@ -449,10 +449,10 @@ class Admin(commands.Cog):
         """Ban a target member, by ID or mention."""
         if user := discord.utils.get(ctx.guild.members, id=user.id):
             if user.id == ctx.author.id:
-                raise ValueError("You cannot ban yourself.")
+                raise errors.ValidationError("You cannot ban yourself.")
 
             if user.top_role >= ctx.author.top_role:
-                raise ValueError("You cannot ban this member.")
+                raise errors.ValidationError("You cannot ban this member.")
 
         await ctx.guild.ban(
             discord.Object(id=user.id), reason=f"{ctx.author} ({ctx.author.id}): {reason}"
@@ -522,10 +522,10 @@ class Admin(commands.Cog):
         for user in converted_members:
             if user := discord.utils.get(ctx.guild.members, id=user.id):
                 if user.id == ctx.author.id:
-                    raise ValueError("You cannot ban yourself.")
+                    raise errors.ValidationError("You cannot ban yourself.")
 
                 if user.top_role >= ctx.author.top_role:
-                    raise ValueError("You cannot ban this member.")
+                    raise errors.ValidationError("You cannot ban this member.")
             await ctx.guild.ban(user, reason=f"{ctx.author} ({ctx.author.id}): {reason}")
 
         await present_embed(
