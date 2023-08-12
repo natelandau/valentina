@@ -24,32 +24,6 @@ class Admin(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    async def cog_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
-    ) -> None:
-        """Handle exceptions and errors from the cog."""
-        from discord.ext.commands.errors import MissingAnyRole
-
-        if hasattr(error, "original"):
-            error = error.original
-
-        if not isinstance(error, MissingAnyRole):
-            logger.exception(error)
-
-        command_name = ""
-        if ctx.command.parent.name:
-            command_name = f"{ctx.command.parent.name} "
-        command_name += ctx.command.name
-
-        await present_embed(
-            ctx,
-            title=f"Error running `{command_name}` command",
-            description=str(error),
-            level="error",
-            ephemeral=True,
-            delete_after=15,
-        )
-
     ### BOT ADMINISTRATION COMMANDS ################################################################
 
     admin = discord.SlashCommandGroup(
@@ -69,7 +43,7 @@ class Admin(commands.Cog):
         reason: Option(str, description="Reason for adding role", default="No reason provided"),
     ) -> None:
         """Add user to role."""
-        await member.add_roles(role, reason=reason)  # type: ignore [arg-type]
+        await member.add_roles(role, reason=reason)
         await present_embed(
             ctx,
             title="Role Added",
@@ -191,7 +165,7 @@ class Admin(commands.Cog):
     @admin.command(description="Manage settings")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def settings(
+    async def settings(  # noqa: C901, PLR0912
         self,
         ctx: discord.ApplicationContext,
         xp_permissions: Option(
@@ -237,6 +211,19 @@ class Admin(commands.Cog):
             ],
             required=False,
         ),
+        use_error_log_channel: Option(
+            bool,
+            "Log errors to a specified channel",
+            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
+            required=False,
+            default=None,
+        ),
+        error_log_channel_name: Option(
+            ValidChannelName,
+            "Name for the error log channel",
+            required=False,
+            default=None,
+        ),
     ) -> None:
         """Manage settings."""
         current_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
@@ -275,7 +262,7 @@ class Admin(commands.Cog):
                 audit_log_channel_name,
                 topic="Audit logs",
                 position=100,
-                database_column_for_id="log_channel_id",
+                database_key="log_channel_id",
                 default_role=ChannelPermission.HIDDEN,
                 player=ChannelPermission.HIDDEN,
                 storyteller=ChannelPermission.READ_ONLY,
@@ -308,7 +295,7 @@ class Admin(commands.Cog):
                 storyteller_channel_name,
                 topic="Storyteller channel",
                 position=90,
-                database_column_for_id="storyteller_channel_id",
+                database_key="storyteller_channel_id",
                 default_role=ChannelPermission.HIDDEN,
                 player=ChannelPermission.HIDDEN,
                 storyteller=ChannelPermission.POST,
@@ -316,6 +303,38 @@ class Admin(commands.Cog):
 
             fields.append(("Storyteller Channel", channel.mention))
             update_data["storyteller_channel_id"] = channel.id
+
+        if use_error_log_channel is not None:
+            if (
+                use_error_log_channel
+                and not current_settings["error_log_channel_id"]
+                and not error_log_channel_name
+            ):
+                await present_embed(
+                    ctx,
+                    title="No Error Log channel",
+                    description="Please rerun the command and enter a name for the Error Log channel",
+                    level="error",
+                    ephemeral=True,
+                )
+                return
+            fields.append(("Error Log Channel", "Enabled" if use_error_log_channel else "Disabled"))
+            update_data["use_error_log_channel"] = use_error_log_channel
+
+        if error_log_channel_name is not None:
+            channel = await self.bot.guild_svc.create_channel(
+                ctx,
+                error_log_channel_name,
+                topic="Error log channel",
+                position=90,
+                database_key="error_log_channel_id",
+                default_role=ChannelPermission.HIDDEN,
+                player=ChannelPermission.HIDDEN,
+                storyteller=ChannelPermission.HIDDEN,
+            )
+
+            fields.append(("Error Log Channel", channel.mention))
+            update_data["error_log_channel_id"] = channel.id
         # Show results
         if len(fields) > 0:
             self.bot.guild_svc.update_or_add(ctx.guild, update_data)
@@ -348,6 +367,11 @@ class Admin(commands.Cog):
             if settings["storyteller_channel_id"]
             else None
         )
+        error_log_channel = (
+            discord.utils.get(ctx.guild.text_channels, id=settings["error_log_channel_id"])
+            if settings["error_log_channel_id"]
+            else None
+        )
 
         fields = [
             ("XP Permissions", XPPermissions(settings["xp_permissions"]).name.title()),
@@ -364,6 +388,14 @@ class Admin(commands.Cog):
             (
                 "Storyteller Channel",
                 storyteller_channel.mention if storyteller_channel else "Not set",
+            ),
+            (
+                "Use Error Log Channel",
+                "Enabled" if settings["use_error_log_channel"] else "Disabled",
+            ),
+            (
+                "Error Log Channel",
+                error_log_channel.mention if error_log_channel else "Not set",
             ),
         ]
         await present_embed(

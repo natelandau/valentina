@@ -18,29 +18,6 @@ class Reference(commands.Cog):
 
     reference = discord.SlashCommandGroup("reference", "Get information about the game")
 
-    async def cog_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
-    ) -> None:
-        """Handle exceptions and errors from the cog."""
-        if hasattr(error, "original"):
-            error = error.original
-
-        logger.exception(error)
-
-        command_name = ""
-        if ctx.command.parent.name:
-            command_name = f"{ctx.command.parent.name} "
-        command_name += ctx.command.name
-
-        await present_embed(
-            ctx,
-            title=f"Error running `{command_name}` command",
-            description=str(error),
-            level="error",
-            ephemeral=True,
-            delete_after=15,
-        )
-
     @reference.command(description="See health levels")
     async def health(self, ctx: discord.ApplicationContext) -> None:
         """Display health levels."""

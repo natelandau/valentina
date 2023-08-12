@@ -5,7 +5,7 @@ from discord.commands import OptionChoice
 
 from valentina.models.constants import MAX_OPTION_LIST_SIZE
 from valentina.models.db_tables import CharacterClass, Trait, TraitCategory, VampireClan
-from valentina.utils.errors import NoClaimError
+from valentina.utils import errors
 
 
 async def select_chapter(ctx: discord.ApplicationContext) -> list[str]:
@@ -71,7 +71,7 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available common and custom traits for a character."""
     try:
         character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except NoClaimError:
+    except errors.NoClaimError:
         return ["No character claimed"]
 
     # Discord option can be either "trait" or "trait_one"
@@ -95,7 +95,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available common and custom traits for a character."""
     try:
         character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except NoClaimError:
+    except errors.NoClaimError:
         return ["No character claimed"]
 
     traits = []
@@ -125,7 +125,7 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of the user's available custom sections."""
     try:
         character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except NoClaimError:
+    except errors.NoClaimError:
         return ["No character claimed"]
 
     sections = []
@@ -142,7 +142,7 @@ async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available custom traits."""
     try:
         character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except NoClaimError:
+    except errors.NoClaimError:
         return ["No character claimed"]
 
     traits = []

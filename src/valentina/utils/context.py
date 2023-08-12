@@ -2,7 +2,7 @@
 
 from discord import ApplicationContext
 
-from .errors import BotMissingPermissions
+from .errors import BotMissingPermissionsError
 
 
 class Context(ApplicationContext):
@@ -15,4 +15,4 @@ class Context(ApplicationContext):
             for perm, value in permissions.items()
             if getattr(self.app_permissions, perm) != value
         ]:
-            raise BotMissingPermissions(missing)
+            raise BotMissingPermissionsError(missing)

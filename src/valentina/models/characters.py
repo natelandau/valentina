@@ -445,7 +445,7 @@ class CharacterService:
         try:
             character = Character.get_by_id(char_id)
         except DoesNotExist as e:
-            raise CharacterNotFoundError(e=e) from e
+            raise CharacterNotFoundError from e
 
         # Update the character in the database
         Character.update(modified=time_now(), **kwargs).where(

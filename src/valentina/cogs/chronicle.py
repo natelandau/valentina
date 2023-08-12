@@ -9,7 +9,6 @@ from loguru import logger
 from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT, EmbedColor
 from valentina.utils.converters import ValidChronicle, ValidYYYYMMDD
-from valentina.utils.errors import NoActiveChronicleError
 from valentina.utils.options import select_chapter, select_chronicle, select_note, select_npc
 from valentina.views import ChapterModal, ConfirmCancelButtons, NoteModal, NPCModal, present_embed
 
@@ -21,36 +20,6 @@ class Chronicle(commands.Cog):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
-
-    async def cog_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
-    ) -> None:
-        """Handle exceptions and errors from the cog."""
-        exceptions_to_ignore = [
-            discord.ext.commands.errors.MissingAnyRole,
-            discord.ext.commands.errors.MissingRole,
-            NoActiveChronicleError,
-        ]
-
-        if hasattr(error, "original"):
-            error = error.original
-
-        if type(error) not in exceptions_to_ignore:
-            logger.exception(error)
-
-        command_name = ""
-        if ctx.command.parent and ctx.command.parent.name:
-            command_name = f"{ctx.command.parent.name} "
-        command_name += ctx.command.name
-
-        await present_embed(
-            ctx,
-            title=f"Error running `{command_name}` command",
-            description=str(error),
-            level="error",
-            ephemeral=True,
-            delete_after=15,
-        )
 
     chronicle = discord.SlashCommandGroup("chronicle", "Manage chronicles")
     chapter = chronicle.create_subgroup(name="chapter", description="Manage chronicle chapters")

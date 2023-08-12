@@ -2,22 +2,16 @@
 from discord import DiscordException
 
 
-class NoActiveChronicleError(Exception):
-    """Raised when a no active chronicle is found."""
+class BotMissingPermissionsError(DiscordException):
+    """Raised when the bot is missing permissions to run a command."""
 
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "No active chronicle found\nUse `/chronicle set_active`"
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
+    def __init__(self, permissions: list[str]) -> None:
+        missing = [
+            f"**{perm.replace('_', ' ').replace('guild', 'server').title()}**"
+            for perm in permissions
+        ]
+        sub = f"{', '.join(missing[:-1])} and {missing[-1]}" if len(missing) > 1 else missing[0]
+        super().__init__(f"I require {sub} permissions to run this command.")
 
 
 class CharacterClaimedError(Exception):
@@ -32,6 +26,24 @@ class CharacterClaimedError(Exception):
     ):
         if not msg:
             msg = "The requested character is already claimed by another user."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class CharacterNotFoundError(Exception):
+    """Raised when a character is not found."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The requested character could not be found"
         if e:
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 
@@ -77,6 +89,42 @@ class MacroNotFoundError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class MessageTooLongError(Exception):
+    """Raised when a message is too long to send."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "Apologies. The message was too long to send. This bug has been reported."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class NoActiveChronicleError(Exception):
+    """Raised when a no active chronicle is found."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "No active chronicle found\nUse `/chronicle set_active`"
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class NoClaimError(Exception):
     """Raised when a user has no claim on a character."""
 
@@ -89,42 +137,6 @@ class NoClaimError(Exception):
     ):
         if not msg:
             msg = "You have no character claimed.\nUse `/claim` to claim a character."
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
-class CharacterNotFoundError(Exception):
-    """Raised when a character is not found."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "The requested character could not be found"
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
-class TraitNotFoundError(Exception):
-    """Raised when a trait is not found on a character."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "The requested trait could not be found."
         if e:
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 
@@ -167,13 +179,19 @@ class SectionNotFoundError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
-class BotMissingPermissions(DiscordException):
-    """Raised when the bot is missing permissions to run a command."""
+class TraitNotFoundError(Exception):
+    """Raised when a trait is not found on a character."""
 
-    def __init__(self, permissions: list[str]) -> None:
-        missing = [
-            f"**{perm.replace('_', ' ').replace('guild', 'server').title()}**"
-            for perm in permissions
-        ]
-        sub = f"{', '.join(missing[:-1])} and {missing[-1]}" if len(missing) > 1 else missing[0]
-        super().__init__(f"I require {sub} permissions to run this command.")
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The requested trait could not be found."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)

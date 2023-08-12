@@ -274,9 +274,7 @@ class ChronicleService:
             self.active_chronicle_cache[guild_id] = active_chronicle
             logger.debug(f"DATABASE: Fetch active chronicle for guild {guild_id}")
         except DoesNotExist as e:
-            raise NoActiveChronicleError(
-                "No active chronicle found\nUse `/chronicle set_active`"
-            ) from e
+            raise NoActiveChronicleError from e
 
         self.active_chronicle_cache[guild_id] = active_chronicle
 

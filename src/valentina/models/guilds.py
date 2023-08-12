@@ -14,7 +14,7 @@ from valentina.models.constants import (
     TraitPermissions,
     XPPermissions,
 )
-from valentina.utils.errors import DuplicateRollResultThumbError
+from valentina.utils import errors
 from valentina.utils.helpers import set_channel_perms, time_now
 
 from .db_tables import Guild, RollThumbnail
@@ -63,7 +63,7 @@ class GuildService:
 
         already_exists = RollThumbnail.get_or_none(guild=ctx.guild.id, url=url)
         if already_exists:
-            raise DuplicateRollResultThumbError
+            raise errors.DuplicateRollResultThumbError
 
         RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
         logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
@@ -74,7 +74,7 @@ class GuildService:
         channel_name: str,
         topic: str,
         position: int,
-        database_column_for_id: str,
+        database_key: str,
         default_role: ChannelPermission,
         player: ChannelPermission,
         storyteller: ChannelPermission,
@@ -90,7 +90,7 @@ class GuildService:
             channel_name (str): The name of the channel.
             topic (str): The topic of the channel.
             position (int): The position of the channel in the channel list.
-            database_column_for_id (str): The name of the database column to store the channel id.
+            database_key (str): The key for the channel (value) in the database.
             default_role (ChannelPermission): The permissions for the default role.
             player (ChannelPermission): The permissions for the player role.
             storyteller (ChannelPermission): The permissions for the storyteller role.
@@ -122,7 +122,7 @@ class GuildService:
 
         if channel:
             await channel.edit(overwrites=overwrites, topic=topic, position=position)
-            setattr(guild_object, database_column_for_id, channel.id)
+            setattr(guild_object, database_key, channel.id)
             guild_object.save()
         else:
             channel = await ctx.guild.create_text_channel(
@@ -131,7 +131,7 @@ class GuildService:
                 topic=topic,
                 position=position,
             )
-            setattr(guild_object, database_column_for_id, channel.id)
+            setattr(guild_object, database_key, channel.id)
             guild_object.save()
 
         logger.debug(f"GUILD: Created or updated channel '{channel_name}' for '{ctx.guild.name}'")
@@ -167,10 +167,10 @@ class GuildService:
             self.roll_result_thumbs = {}
             logger.debug("CACHE: Purge all guild caches")
 
-    async def send_to_log(
+    async def send_to_audit_log(
         self, ctx: ApplicationContext, message: str | discord.Embed
     ) -> None:  # pragma: no cover
-        """Send a message to the log channel for a guild.
+        """Send a message to the audit log channel for a guild.
 
         If a string is passed in, an embed will be created from it. If an embed is passed in, it will be sent as is.
 
@@ -195,7 +195,45 @@ class GuildService:
                 else None
             )
             embed = self._message_to_embed(message, ctx) if isinstance(message, str) else message
-            await audit_log_channel.send(embed=embed)
+
+            try:
+                await audit_log_channel.send(embed=embed)
+            except discord.HTTPException as e:
+                raise errors.MessageTooLongError from e
+
+    async def send_to_error_log(
+        self, ctx: ApplicationContext, message: str | discord.Embed, error: Exception
+    ) -> None:  # pragma: no cover
+        """Send a message to the error log channel for a guild.
+
+        If a string is passed in, an embed will be created from it. If an embed is passed in, it will be sent as is.
+
+        Args:
+            ctx (discord.ApplicationContext): The context in which the command was invoked.
+            error (Exception): The exception that was raised.
+            message (str|discord.Embed): The message to be sent to the error log channel.
+
+        Raises:
+            discord.DiscordException: If the message could not be sent.
+        """
+        settings = self.fetch_guild_settings(ctx)
+        error_log_channel = (
+            discord.utils.get(ctx.guild.text_channels, id=settings["error_log_channel_id"])
+            if settings["error_log_channel_id"]
+            else None
+        )
+
+        if settings["use_error_log_channel"] and error_log_channel:
+            embed = self._message_to_embed(message, ctx) if isinstance(message, str) else message
+            try:
+                await error_log_channel.send(embed=embed)
+            except discord.HTTPException:
+                embed = discord.Embed(
+                    title=f"A {error.__class__.__name__} exception was raised",
+                    description="The error was too long to fit! Check the logs",
+                    color=EmbedColor.ERROR.value,
+                )
+                await error_log_channel.send(embed=embed)
 
     def _message_to_embed(
         self, message: str, ctx: discord.ApplicationContext
@@ -216,6 +254,40 @@ class GuildService:
         )
 
         return embed
+
+    def verify_guild_defaults(self, guild: discord.Guild) -> None:
+        """Verify that the guild defaults are set.  If any keys are missing, they are added to the guild's data with default values.
+
+        Args:
+            guild (discord.Guild): The guild to verify.
+
+
+        """
+        default_values = {
+            "log_channel_id": None,
+            "use_audit_log": False,
+            "trait_permissions": TraitPermissions.WITHIN_24_HOURS.value,
+            "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
+            "use_storyteller_channel": False,
+            "storyteller_channel_id": None,
+            "use_error_log_channel": False,
+            "error_log_channel_id": None,
+        }
+
+        instance = Guild.get_by_id(guild.id)
+        instance.data = instance.data or {}  # Ensure data is not None
+
+        updated = False
+        for default_key, default_value in default_values.items():
+            if default_key not in instance.data:
+                logger.info(
+                    f"DATABASE: Updated guild '{guild.name}' with default '{default_key}: {default_value}'"
+                )
+                instance.data[default_key] = default_value
+                updated = True
+
+        if updated:
+            instance.save()
 
     def update_or_add(
         self,
@@ -238,6 +310,8 @@ class GuildService:
                     "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
                     "use_storyteller_channel": False,
                     "storyteller_channel_id": None,
+                    "use_error_log_channel": False,
+                    "error_log_channel_id": None,
                 },
             },
         )
