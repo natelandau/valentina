@@ -27,6 +27,70 @@ class GuildService:
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
 
+    async def get_setting_review_embed(self, ctx: ApplicationContext) -> discord.Embed:
+        """Get an embed of all guild settings."""
+        # Confirm channels exist in discord
+        current_settings = self.fetch_guild_settings(ctx)
+
+        audit_log_channel = (
+            discord.utils.get(ctx.guild.text_channels, id=current_settings["log_channel_id"])
+            if current_settings["log_channel_id"]
+            else None
+        )
+        storyteller_channel = (
+            discord.utils.get(
+                ctx.guild.text_channels, id=current_settings["storyteller_channel_id"]
+            )
+            if current_settings["storyteller_channel_id"]
+            else None
+        )
+        error_log_channel = (
+            discord.utils.get(ctx.guild.text_channels, id=current_settings["error_log_channel_id"])
+            if current_settings["error_log_channel_id"]
+            else None
+        )
+
+        # Build the embed
+        embed = discord.Embed(
+            title=f"Settings for {ctx.guild.name}",
+            color=EmbedColor.INFO.value,
+        )
+
+        embed.add_field(name="\u200b", value="**CHARACTER  PERMISSIONS**", inline=False)
+        embed.add_field(
+            name="Editing XP",
+            value=XPPermissions(current_settings["xp_permissions"]).name.title(),
+            inline=True,
+        )
+        embed.add_field(
+            name="Editing Traits",
+            value=TraitPermissions(current_settings["trait_permissions"]).name.title(),
+            inline=True,
+        )
+
+        embed.add_field(name="\u200b", value="**LOGGING**", inline=False)
+
+        desc = "Status: "
+        desc += "`Enabled`" if current_settings["use_audit_log"] else "`Disabled`"
+        desc += "\nChannel: "
+        desc += audit_log_channel.mention if audit_log_channel else "Not set"
+        embed.add_field(name="Audit Log", value=desc, inline=True)
+
+        desc = "Status: "
+        desc += "`Enabled`" if current_settings["use_error_log_channel"] else "`Disabled`"
+        desc += "\nChannel: "
+        desc += error_log_channel.mention if error_log_channel else "Not set"
+        embed.add_field(name="Error Log", value=desc, inline=True)
+
+        embed.add_field(name="\u200b", value="**STORYTELLER**", inline=False)
+        desc = "Status: "
+        desc += "`Enabled`" if current_settings["use_storyteller_channel"] else "`Disabled`"
+        desc += "\nChannel: "
+        desc += storyteller_channel.mention if storyteller_channel else "Not set"
+        embed.add_field(name="Private Storyteller Channel", value=desc, inline=True)
+
+        return embed
+
     def fetch_guild_settings(self, ctx: ApplicationContext) -> dict[str, str | int | bool]:
         """Fetch all guild settings.
 
@@ -249,9 +313,19 @@ class GuildService:
         """
         embed = discord.Embed(title=message, color=EmbedColor.INFO.value)
         embed.timestamp = datetime.now()
-        embed.set_footer(
-            text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
-        )
+
+        footer = ""
+        if hasattr(ctx, "command"):
+            footer += f"Command: /{ctx.command}"
+        else:
+            footer += "Command: Unknown"
+
+        if hasattr(ctx, "author"):
+            footer += f" | User: @{ctx.author.display_name}"
+        if hasattr(ctx, "channel"):
+            footer += f" | Channel: #{ctx.channel.name}"
+
+        embed.set_footer(text=footer)
 
         return embed
 

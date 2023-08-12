@@ -168,6 +168,15 @@ class Admin(commands.Cog):
     async def settings(  # noqa: C901, PLR0912
         self,
         ctx: discord.ApplicationContext,
+        trait_permissions: Option(
+            str,
+            "Whether users should be allowed to edit their traits.",
+            choices=[
+                OptionChoice(x.name.title().replace("_", " "), str(x.value))
+                for x in TraitPermissions
+            ],
+            required=False,
+        ),
         xp_permissions: Option(
             str,
             "Whether users should be allowed to edit their XP totals.",
@@ -185,31 +194,9 @@ class Admin(commands.Cog):
         ),
         audit_log_channel_name: Option(
             ValidChannelName,
-            "Log to this channel",
+            "Audit command usage to this channel",
             required=False,
             default=None,
-        ),
-        use_storyteller_channel: Option(
-            bool,
-            "Use a storyteller channel",
-            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
-            required=False,
-            default=None,
-        ),
-        storyteller_channel_name: Option(
-            ValidChannelName,
-            "Name for the storyteller channel",
-            required=False,
-            default=None,
-        ),
-        trait_permissions: Option(
-            str,
-            "Whether users should be allowed to edit their traits.",
-            choices=[
-                OptionChoice(x.name.title().replace("_", " "), str(x.value))
-                for x in TraitPermissions
-            ],
-            required=False,
         ),
         use_error_log_channel: Option(
             bool,
@@ -221,6 +208,19 @@ class Admin(commands.Cog):
         error_log_channel_name: Option(
             ValidChannelName,
             "Name for the error log channel",
+            required=False,
+            default=None,
+        ),
+        use_storyteller_channel: Option(
+            bool,
+            "Use a private storyteller channel",
+            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
+            required=False,
+            default=None,
+        ),
+        storyteller_channel_name: Option(
+            ValidChannelName,
+            "Name the private storyteller channel",
             required=False,
             default=None,
         ),
@@ -355,57 +355,8 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def show_settings(self, ctx: discord.ApplicationContext) -> None:
         """Show server settings."""
-        settings = self.bot.guild_svc.fetch_guild_settings(ctx)
-
-        audit_log_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=settings["log_channel_id"])
-            if settings["log_channel_id"]
-            else None
-        )
-        storyteller_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=settings["storyteller_channel_id"])
-            if settings["storyteller_channel_id"]
-            else None
-        )
-        error_log_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=settings["error_log_channel_id"])
-            if settings["error_log_channel_id"]
-            else None
-        )
-
-        fields = [
-            ("XP Permissions", XPPermissions(settings["xp_permissions"]).name.title()),
-            ("Trait Permissions", TraitPermissions(settings["trait_permissions"]).name.title()),
-            ("Audit Logging", "Enabled" if settings["use_audit_log"] else "Disabled"),
-            (
-                "Audit Log Channel",
-                audit_log_channel.mention if audit_log_channel else "Not set",
-            ),
-            (
-                "Use Storyteller Channel",
-                "Enabled" if settings["use_storyteller_channel"] else "Disabled",
-            ),
-            (
-                "Storyteller Channel",
-                storyteller_channel.mention if storyteller_channel else "Not set",
-            ),
-            (
-                "Use Error Log Channel",
-                "Enabled" if settings["use_error_log_channel"] else "Disabled",
-            ),
-            (
-                "Error Log Channel",
-                error_log_channel.mention if error_log_channel else "Not set",
-            ),
-        ]
-        await present_embed(
-            ctx,
-            title="Server Settings",
-            fields=fields,
-            inline_fields=True,
-            level="info",
-            ephemeral=True,
-        )
+        embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
+        await ctx.respond(embed=embed, ephemeral=True)
 
     ### MODERATION COMMANDS ################################################################
 

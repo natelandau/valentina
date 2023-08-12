@@ -116,7 +116,7 @@ async def log_to_channel(
     log: str | bool,
     embed: discord.Embed | None = None,
 ) -> None:
-    """Log an event to the guild log channel."""
+    """Log an event to the guild audit log channel."""
     if embed is not None:
         log_embed = embed.copy()
         log_embed.timestamp = datetime.now()

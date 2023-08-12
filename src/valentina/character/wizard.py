@@ -99,8 +99,7 @@ class CharGenWizard:
     async def __view_callback(self, rating: int, interaction: discord.Interaction) -> None:
         """Assign the next trait.
 
-        Assign the next trait in the list and display the next trait or finish
-        creating the character if finished.
+        Assign the next trait in the list and display the next trait or finish creating the character if finished.
 
         Args:
             rating (int): The value for the next rating in the list.
