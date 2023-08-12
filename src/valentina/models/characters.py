@@ -14,11 +14,7 @@ from valentina.models.db_tables import (
     TraitCategory,
     TraitValue,
 )
-from valentina.utils.errors import (
-    CharacterClaimedError,
-    CharacterNotFoundError,
-    NoClaimError,
-)
+from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
 
@@ -102,7 +98,7 @@ class CharacterService:
         # If the character is already claimed by another user, raise a CharacterClaimedError
         if any(char_key == claim for claim in self.claim_cache.values()):
             logger.debug(f"CLAIM: Character {char_id} is already claimed")
-            raise CharacterClaimedError
+            raise errors.CharacterClaimedError
 
         # Add the claim to the claims dictionary
         self.claim_cache[claim_key] = char_key
@@ -296,7 +292,7 @@ class CharacterService:
         try:
             char_key = self.claim_cache[claim_key]
         except KeyError as e:
-            raise NoClaimError from e
+            raise errors.NoClaimError from e
 
         if self.is_cached_character(key=char_key):
             character = self.character_cache[char_key]
@@ -445,7 +441,9 @@ class CharacterService:
         try:
             character = Character.get_by_id(char_id)
         except DoesNotExist as e:
-            raise CharacterNotFoundError(e=e) from e
+            raise errors.DatabaseError(
+                f"No character found in the database matching id `{char_id}`"
+            ) from e
 
         # Update the character in the database
         Character.update(modified=time_now(), **kwargs).where(

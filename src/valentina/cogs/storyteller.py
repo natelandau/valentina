@@ -3,7 +3,6 @@
 import discord
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 from peewee import fn
 
 from valentina.models.bot import Valentina
@@ -35,35 +34,6 @@ class StoryTeller(commands.Cog):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
-
-    async def cog_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
-    ) -> None:
-        """Handle exceptions and errors from the cog."""
-        exceptions_to_ignore = [
-            discord.ext.commands.errors.MissingAnyRole,
-            discord.ext.commands.errors.MissingRole,
-        ]
-
-        if hasattr(error, "original"):
-            error = error.original
-
-        if type(error) not in exceptions_to_ignore:
-            logger.exception(error)
-
-        command_name = ""
-        if ctx.command.parent and ctx.command.parent.name:
-            command_name = f"{ctx.command.parent.name} "
-        command_name += ctx.command.name
-
-        await present_embed(
-            ctx,
-            title=f"Error running `{command_name}` command",
-            description=str(error),
-            level="error",
-            ephemeral=True,
-            delete_after=15,
-        )
 
     async def _perform_roll(
         self,
@@ -221,7 +191,7 @@ class StoryTeller(commands.Cog):
                 color=discord.Color.green(),
             ),
         )
-        await self.bot.guild_svc.send_to_log(
+        await self.bot.guild_svc.send_to_audit_log(
             ctx,
             discord.Embed(
                 title="Storyteller character created", description=f"Created {character.full_name}"
@@ -317,7 +287,7 @@ class StoryTeller(commands.Cog):
                 color=discord.Color.green(),
             ),
         )
-        await self.bot.guild_svc.send_to_log(
+        await self.bot.guild_svc.send_to_audit_log(
             ctx,
             discord.Embed(
                 title="Storyteller character deleted",

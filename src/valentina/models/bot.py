@@ -19,6 +19,7 @@ from valentina.models import (
     UserService,
 )
 from valentina.models.db_tables import DATABASE
+from valentina.models.errors import reporter
 from valentina.utils import Context
 
 
@@ -184,6 +185,7 @@ class Valentina(commands.Bot):
                 # ############################
 
                 self.guild_svc.update_or_add(guild)
+                self.guild_svc.verify_guild_defaults(guild)
                 self.char_svc.fetch_all_characters(guild.id)
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
@@ -209,6 +211,13 @@ class Valentina(commands.Bot):
     def http_session(self) -> ClientSession:
         """Return the aiohttp session."""
         return self.http._HTTPClient__session  # type: ignore # it exists, I promise
+
+    @staticmethod
+    async def on_application_command_error(
+        ctx: discord.ApplicationContext, error: discord.DiscordException
+    ) -> None:
+        """Use centralized reporter to handle errors."""
+        await reporter.report_error(ctx, error)
 
 
 @tasks.loop(time=time(0, tzinfo=timezone.utc))

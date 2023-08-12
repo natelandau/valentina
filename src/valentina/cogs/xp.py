@@ -26,29 +26,6 @@ class Xp(commands.Cog, name="XP"):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    async def cog_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
-    ) -> None:
-        """Handle exceptions and errors from the cog."""
-        if hasattr(error, "original"):
-            error = error.original
-
-        logger.exception(error)
-
-        command_name = ""
-        if ctx.command.parent.name:
-            command_name = f"{ctx.command.parent.name} "
-        command_name += ctx.command.name
-
-        await present_embed(
-            ctx,
-            title=f"Error running `{command_name}` command",
-            description=str(error),
-            level="error",
-            ephemeral=True,
-            delete_after=15,
-        )
-
     xp = discord.SlashCommandGroup("xp", "Add or spend xp")
 
     @xp.command(name="spend", description="Spend experience points to upgrade a trait")

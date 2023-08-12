@@ -6,17 +6,12 @@ import pytest
 from valentina.models import CharacterService
 from valentina.models.db_tables import (
     Character,
-    CustomSection,
     CustomTrait,
     Trait,
     TraitCategory,
     TraitValue,
 )
-from valentina.utils.errors import (
-    CharacterClaimedError,
-    CharacterNotFoundError,
-    NoClaimError,
-)
+from valentina.utils import errors
 
 
 @pytest.mark.usefixtures("mock_db")
@@ -97,7 +92,7 @@ class TestCharacterService:
 
         # WHEN the add_claim method is called
         # THEN check the method raises a CharacterClaimedError
-        with pytest.raises(CharacterClaimedError):
+        with pytest.raises(errors.CharacterClaimedError):
             self.char_svc.add_claim(guild_id, char_id, user_id)
 
     def test_add_custom_section(self):
@@ -229,7 +224,7 @@ class TestCharacterService:
         # GIVEN a context object for a user with no claim
         # WHEN the fetch_claim method is called
         # THEN check the method raises a NoClaimError
-        with pytest.raises(NoClaimError):
+        with pytest.raises(errors.NoClaimError):
             self.char_svc.fetch_claim(mock_ctx)
 
         # GIVEN a character object and a context object for a user with a claim
@@ -454,7 +449,7 @@ class TestCharacterService:
         # WHEN the update_character method is called
         # THEN check the method raises a CharacterNotFoundError
         with pytest.raises(
-            CharacterNotFoundError, match="The requested character could not be found"
+            errors.DatabaseError, match="No character found in the database matching id"
         ):
             self.char_svc.update_character(mock_ctx, char_id)
 

@@ -4,6 +4,7 @@ import discord
 from numpy.random import default_rng
 
 from valentina.models.constants import DiceType, RollResultType
+from valentina.utils import errors
 from valentina.utils.helpers import diceroll_thumbnail, pluralize
 
 _rng = default_rng()
@@ -60,20 +61,20 @@ class DiceRoll:
         self.ctx = ctx
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
-            raise ValueError(f"Invalid dice size `{dice_size}`.")
+            raise errors.ValidationError(f"Invalid dice size `{dice_size}`.")
 
         self.dice_type = DiceType(dice_size)
 
         if difficulty < 0:
-            raise ValueError(f"Difficulty cannot be less than 0. (Got `{difficulty}`.)")
+            raise errors.ValidationError(f"Difficulty cannot be less than 0. (Got `{difficulty}`.)")
         if difficulty > self.dice_type.value:
-            raise ValueError(
+            raise errors.ValidationError(
                 f"Difficulty cannot exceed the size of the dice. (Got `{difficulty}` for `{self.dice_type.name}`.)"
             )
         if pool < 0:
-            raise ValueError(f"Pool cannot be less than 0. (Got `{pool}`.)")
+            raise errors.ValidationError(f"Pool cannot be less than 0. (Got `{pool}`.)")
         if pool > _max_pool_size:
-            raise ValueError(f"Pool cannot exceed {_max_pool_size}. (Got `{pool}`.)")
+            raise errors.ValidationError(f"Pool cannot exceed {_max_pool_size}. (Got `{pool}`.)")
 
         self.difficulty = difficulty
         self.pool = pool

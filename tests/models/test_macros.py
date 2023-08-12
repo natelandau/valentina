@@ -4,6 +4,7 @@ import pytest
 
 from valentina.models import MacroService
 from valentina.models.db_tables import Macro, Trait
+from valentina.utils import errors
 
 
 @pytest.mark.usefixtures("mock_db")
@@ -80,7 +81,7 @@ class TestMacroService:
 
         GIVEN a macro service
         WHEN a macro already exists with the same name
-        THEN raise a ValueError
+        THEN raise a ValidationError
         """
         # Mock the MacroTrait.create_from_trait_name method
         mocker.patch(
@@ -91,7 +92,10 @@ class TestMacroService:
         trait = Trait.get_by_id(1)
 
         # Create the new macro
-        with pytest.raises(ValueError, match="Macro already exists"):
+        with pytest.raises(
+            errors.ValidationError,
+            match=r"Macro named `test_macro` or with the same abbreviation already exists",
+        ):
             self.macro_svc.create_macro(mock_ctx, "test_macro", trait, trait, "nm", "new macro")
 
     def test_create_macro_three(self, mocker, mock_ctx):
@@ -99,7 +103,7 @@ class TestMacroService:
 
         GIVEN a macro service
         WHEN a macro already exists with the same abbreviation
-        THEN raise a ValueError
+        THEN raise a ValidationError
         """
         # Mock the MacroTrait.create_from_trait_name method
         mocker.patch(
@@ -110,7 +114,10 @@ class TestMacroService:
         trait = Trait.get_by_id(1)
 
         # Create the new macro
-        with pytest.raises(ValueError, match="Macro already exists"):
+        with pytest.raises(
+            errors.ValidationError,
+            match="Macro named `new_macro` or with the same abbreviation already exists",
+        ):
             self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "tm", "new macro")
 
     def test_delete_macro_one(self, mock_ctx, caplog):

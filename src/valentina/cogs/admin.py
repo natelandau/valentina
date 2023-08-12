@@ -12,7 +12,7 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import ChannelPermission, TraitPermissions, XPPermissions
-from valentina.utils import Context
+from valentina.utils import Context, errors
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import pluralize
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -23,32 +23,6 @@ class Admin(commands.Cog):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
-
-    async def cog_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
-    ) -> None:
-        """Handle exceptions and errors from the cog."""
-        from discord.ext.commands.errors import MissingAnyRole
-
-        if hasattr(error, "original"):
-            error = error.original
-
-        if not isinstance(error, MissingAnyRole):
-            logger.exception(error)
-
-        command_name = ""
-        if ctx.command.parent.name:
-            command_name = f"{ctx.command.parent.name} "
-        command_name += ctx.command.name
-
-        await present_embed(
-            ctx,
-            title=f"Error running `{command_name}` command",
-            description=str(error),
-            level="error",
-            ephemeral=True,
-            delete_after=15,
-        )
 
     ### BOT ADMINISTRATION COMMANDS ################################################################
 
@@ -69,7 +43,7 @@ class Admin(commands.Cog):
         reason: Option(str, description="Reason for adding role", default="No reason provided"),
     ) -> None:
         """Add user to role."""
-        await member.add_roles(role, reason=reason)  # type: ignore [arg-type]
+        await member.add_roles(role, reason=reason)
         await present_embed(
             ctx,
             title="Role Added",
@@ -191,9 +165,18 @@ class Admin(commands.Cog):
     @admin.command(description="Manage settings")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def settings(
+    async def settings(  # noqa: C901, PLR0912
         self,
         ctx: discord.ApplicationContext,
+        trait_permissions: Option(
+            str,
+            "Whether users should be allowed to edit their traits.",
+            choices=[
+                OptionChoice(x.name.title().replace("_", " "), str(x.value))
+                for x in TraitPermissions
+            ],
+            required=False,
+        ),
         xp_permissions: Option(
             str,
             "Whether users should be allowed to edit their XP totals.",
@@ -211,31 +194,35 @@ class Admin(commands.Cog):
         ),
         audit_log_channel_name: Option(
             ValidChannelName,
-            "Log to this channel",
+            "Audit command usage to this channel",
+            required=False,
+            default=None,
+        ),
+        use_error_log_channel: Option(
+            bool,
+            "Log errors to a specified channel",
+            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
+            required=False,
+            default=None,
+        ),
+        error_log_channel_name: Option(
+            ValidChannelName,
+            "Name for the error log channel",
             required=False,
             default=None,
         ),
         use_storyteller_channel: Option(
             bool,
-            "Use a storyteller channel",
+            "Use a private storyteller channel",
             choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
             required=False,
             default=None,
         ),
         storyteller_channel_name: Option(
             ValidChannelName,
-            "Name for the storyteller channel",
+            "Name the private storyteller channel",
             required=False,
             default=None,
-        ),
-        trait_permissions: Option(
-            str,
-            "Whether users should be allowed to edit their traits.",
-            choices=[
-                OptionChoice(x.name.title().replace("_", " "), str(x.value))
-                for x in TraitPermissions
-            ],
-            required=False,
         ),
     ) -> None:
         """Manage settings."""
@@ -275,7 +262,7 @@ class Admin(commands.Cog):
                 audit_log_channel_name,
                 topic="Audit logs",
                 position=100,
-                database_column_for_id="log_channel_id",
+                database_key="log_channel_id",
                 default_role=ChannelPermission.HIDDEN,
                 player=ChannelPermission.HIDDEN,
                 storyteller=ChannelPermission.READ_ONLY,
@@ -308,7 +295,7 @@ class Admin(commands.Cog):
                 storyteller_channel_name,
                 topic="Storyteller channel",
                 position=90,
-                database_column_for_id="storyteller_channel_id",
+                database_key="storyteller_channel_id",
                 default_role=ChannelPermission.HIDDEN,
                 player=ChannelPermission.HIDDEN,
                 storyteller=ChannelPermission.POST,
@@ -316,6 +303,38 @@ class Admin(commands.Cog):
 
             fields.append(("Storyteller Channel", channel.mention))
             update_data["storyteller_channel_id"] = channel.id
+
+        if use_error_log_channel is not None:
+            if (
+                use_error_log_channel
+                and not current_settings["error_log_channel_id"]
+                and not error_log_channel_name
+            ):
+                await present_embed(
+                    ctx,
+                    title="No Error Log channel",
+                    description="Please rerun the command and enter a name for the Error Log channel",
+                    level="error",
+                    ephemeral=True,
+                )
+                return
+            fields.append(("Error Log Channel", "Enabled" if use_error_log_channel else "Disabled"))
+            update_data["use_error_log_channel"] = use_error_log_channel
+
+        if error_log_channel_name is not None:
+            channel = await self.bot.guild_svc.create_channel(
+                ctx,
+                error_log_channel_name,
+                topic="Error log channel",
+                position=90,
+                database_key="error_log_channel_id",
+                default_role=ChannelPermission.HIDDEN,
+                player=ChannelPermission.HIDDEN,
+                storyteller=ChannelPermission.HIDDEN,
+            )
+
+            fields.append(("Error Log Channel", channel.mention))
+            update_data["error_log_channel_id"] = channel.id
         # Show results
         if len(fields) > 0:
             self.bot.guild_svc.update_or_add(ctx.guild, update_data)
@@ -336,44 +355,8 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def show_settings(self, ctx: discord.ApplicationContext) -> None:
         """Show server settings."""
-        settings = self.bot.guild_svc.fetch_guild_settings(ctx)
-
-        audit_log_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=settings["log_channel_id"])
-            if settings["log_channel_id"]
-            else None
-        )
-        storyteller_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=settings["storyteller_channel_id"])
-            if settings["storyteller_channel_id"]
-            else None
-        )
-
-        fields = [
-            ("XP Permissions", XPPermissions(settings["xp_permissions"]).name.title()),
-            ("Trait Permissions", TraitPermissions(settings["trait_permissions"]).name.title()),
-            ("Audit Logging", "Enabled" if settings["use_audit_log"] else "Disabled"),
-            (
-                "Audit Log Channel",
-                audit_log_channel.mention if audit_log_channel else "Not set",
-            ),
-            (
-                "Use Storyteller Channel",
-                "Enabled" if settings["use_storyteller_channel"] else "Disabled",
-            ),
-            (
-                "Storyteller Channel",
-                storyteller_channel.mention if storyteller_channel else "Not set",
-            ),
-        ]
-        await present_embed(
-            ctx,
-            title="Server Settings",
-            fields=fields,
-            inline_fields=True,
-            level="info",
-            ephemeral=True,
-        )
+        embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
+        await ctx.respond(embed=embed, ephemeral=True)
 
     ### MODERATION COMMANDS ################################################################
 
@@ -391,10 +374,10 @@ class Admin(commands.Cog):
     ) -> None:
         """Kick a target member, by ID or mention."""
         if member.id == ctx.author.id:
-            raise ValueError("You cannot kick yourself.")
+            raise errors.ValidationError("You cannot kick yourself.")
 
         if member.top_role >= ctx.author.top_role:
-            raise ValueError("You cannot kick this member.")
+            raise errors.ValidationError("You cannot kick this member.")
 
         await member.kick(reason=reason)
 
@@ -417,10 +400,10 @@ class Admin(commands.Cog):
         """Ban a target member, by ID or mention."""
         if user := discord.utils.get(ctx.guild.members, id=user.id):
             if user.id == ctx.author.id:
-                raise ValueError("You cannot ban yourself.")
+                raise errors.ValidationError("You cannot ban yourself.")
 
             if user.top_role >= ctx.author.top_role:
-                raise ValueError("You cannot ban this member.")
+                raise errors.ValidationError("You cannot ban this member.")
 
         await ctx.guild.ban(
             discord.Object(id=user.id), reason=f"{ctx.author} ({ctx.author.id}): {reason}"
@@ -490,10 +473,10 @@ class Admin(commands.Cog):
         for user in converted_members:
             if user := discord.utils.get(ctx.guild.members, id=user.id):
                 if user.id == ctx.author.id:
-                    raise ValueError("You cannot ban yourself.")
+                    raise errors.ValidationError("You cannot ban yourself.")
 
                 if user.top_role >= ctx.author.top_role:
-                    raise ValueError("You cannot ban this member.")
+                    raise errors.ValidationError("You cannot ban this member.")
             await ctx.guild.ban(user, reason=f"{ctx.author} ({ctx.author.id}): {reason}")
 
         await present_embed(

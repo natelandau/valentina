@@ -5,7 +5,6 @@ import random
 import discord
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
@@ -21,29 +20,6 @@ class Roll(commands.Cog):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
-
-    async def cog_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
-    ) -> None:
-        """Handle exceptions and errors from the cog."""
-        if hasattr(error, "original"):
-            error = error.original
-
-        logger.exception(error)
-
-        command_name = ""
-        if ctx.command.parent.name:
-            command_name = f"{ctx.command.parent.name} "
-        command_name += ctx.command.name
-
-        await present_embed(
-            ctx,
-            title=f"Error running `{command_name}` command",
-            description=str(error),
-            level="error",
-            ephemeral=True,
-            delete_after=15,
-        )
 
     roll = discord.SlashCommandGroup("roll", "Roll dice")
 

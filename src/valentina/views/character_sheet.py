@@ -6,6 +6,7 @@ import discord
 from discord.ext import pages
 
 from valentina.models.db_tables import Character
+from valentina.utils import errors
 
 MAX_DOT_DISPLAY = 6
 
@@ -74,7 +75,7 @@ def __embed1(
         if chronicle.current_date and character.date_of_birth:
             age = arrow.get(chronicle.current_date) - arrow.get(character.date_of_birth)
             embed.add_field(name="Age", value=f"`{age.days // 365}`", inline=True)
-    except ValueError:
+    except errors.NoActiveChronicleError:
         pass
 
     embed.add_field(name="Class", value=character.class_name, inline=True)

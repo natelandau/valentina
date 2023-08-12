@@ -10,6 +10,7 @@ from valentina.character.traits import add_trait
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import CustomTrait, TraitValue
+from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
@@ -21,7 +22,6 @@ from valentina.utils.converters import (
     ValidTraitCategory,
     ValidYYYYMMDD,
 )
-from valentina.utils.errors import SectionExistsError
 from valentina.utils.helpers import time_now
 from valentina.utils.options import (
     select_char_class,
@@ -49,29 +49,6 @@ class Characters(commands.Cog, name="Character"):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
-
-    async def cog_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.ApplicationCommandError | Exception
-    ) -> None:
-        """Handle exceptions and errors from the cog."""
-        if hasattr(error, "original"):
-            error = error.original
-
-        logger.exception(error)
-
-        command_name = ""
-        if ctx.command.parent.name:
-            command_name = f"{ctx.command.parent.name} "
-        command_name += ctx.command.name
-
-        await present_embed(
-            ctx,
-            title=f"Error running `{command_name}` command",
-            description=str(error),
-            level="error",
-            ephemeral=True,
-            delete_after=15,
-        )
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
     update = chars.create_subgroup("update", "Update existing characters")
@@ -323,7 +300,7 @@ class Characters(commands.Cog, name="Character"):
         if section_title.replace("-", "_").replace(" ", "_").lower() in [
             x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
         ]:
-            raise SectionExistsError
+            raise errors.ValidationError("Custom section already exists")
         self.bot.char_svc.add_custom_section(character, section_title, section_description)
         await present_embed(
             ctx,

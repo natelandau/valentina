@@ -9,7 +9,7 @@ from loguru import logger
 from peewee import DoesNotExist, fn
 
 from valentina.models.constants import TraitCategoryOrder
-from valentina.utils.errors import TraitNotFoundError
+from valentina.utils import errors
 
 from .db_tables import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass
 
@@ -93,8 +93,7 @@ class TraitService:
         """Fetch the ID of a trait from the database using the trait's name.
 
         Use case-insensitive search to find the trait by its name.
-        If the trait is found, the trait's ID is returned. If the trait is not found,
-        a `TraitNotFoundError` is raised.
+        If the trait is found, the trait's ID is returned.
 
         Args:
             trait_name (str): Name of the trait to fetch the ID for.
@@ -103,7 +102,7 @@ class TraitService:
             int: The ID of the trait if found.
 
         Raises:
-            TraitNotFoundError: If the trait with the given name does not exist.
+            NoMatchingItemsError: If the trait with the given name does not exist.
         """
         logger.debug(f"DATABASE: Fetch trait ID for `{trait_name}`")
 
@@ -111,14 +110,13 @@ class TraitService:
             trait = Trait.get(fn.lower(Trait.name) == trait_name.lower())
             return trait.id
         except DoesNotExist as e:
-            raise TraitNotFoundError(f"Trait `{trait_name}` not found") from e
+            raise errors.NoMatchingItemsError(f"Trait `{trait_name}` not found") from e
 
     def fetch_trait_from_name(self, trait_name: str) -> Trait:
         """Retrieve a trait from the database based on the provided trait name.
 
         Perform a case-insensitive search for the trait using its name.
         If the trait is found, return the corresponding trait object.
-        If the trait is not found, raise a `TraitNotFoundError` with a clear error message.
 
         Args:
             trait_name (str): The name of the trait to retrieve.
@@ -127,14 +125,14 @@ class TraitService:
             Trait: The trait object corresponding to the provided name.
 
         Raises:
-            TraitNotFoundError: If a trait with the given name does not exist in the database.
+            NoMatchingItemsError: If a trait with the given name does not exist in the database.
         """
         logger.debug(f"DATABASE: Fetch trait `{trait_name}`")
 
         try:
             return Trait.get(fn.lower(Trait.name) == trait_name.lower())
         except DoesNotExist as e:
-            raise TraitNotFoundError(f"Trait `{trait_name}` not found") from e
+            raise errors.NoMatchingItemsError(f"Trait `{trait_name}` not found") from e
 
     @staticmethod
     def fetch_trait_category(query: str | int) -> str:
@@ -150,7 +148,7 @@ class TraitService:
             str: Return the category of the retrieved trait.
 
         Raises:
-            TraitNotFoundError: Raise this error if the trait with the given ID or
+            NoMatchingItemsError: Raise this error if the trait with the given ID or
                                 name does not exist in the database.
         """
         # Map query types to the corresponding actions as callable lambda functions
@@ -163,7 +161,7 @@ class TraitService:
             # Call the function related to the type of query
             return query_mapping[type(query)](query)
         except DoesNotExist as e:
-            raise TraitNotFoundError(f"Trait `{query}` not found") from e
+            raise errors.NoMatchingItemsError(f"Trait `{query}` not found") from e
 
     def purge(self) -> None:
         """Purge the cache."""

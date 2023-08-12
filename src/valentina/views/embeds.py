@@ -8,6 +8,28 @@ import discord
 from valentina.models.constants import EmbedColor
 
 
+def user_error_embed(ctx: discord.ApplicationContext, msg: str, error: str) -> discord.Embed:
+    """Create an embed for user errors.
+
+    Args:
+        ctx (discord.ApplicationContext): The context of the command.
+        msg (str): The message to display in the embed.
+        error (str): The error to display in the embed.
+
+    Returns:
+        discord.Embed: The embed to send.
+    """
+    description = "" if error == msg else error
+
+    embed = discord.Embed(title=msg, description=description, color=EmbedColor.ERROR.value)
+    embed.timestamp = datetime.now()
+
+    if hasattr(ctx, "command"):
+        embed.set_footer(text=f"Command: /{ctx.command}")
+
+    return embed
+
+
 async def present_embed(  # noqa: C901
     ctx: discord.ApplicationContext,
     title: str = "",
@@ -94,13 +116,13 @@ async def log_to_channel(
     log: str | bool,
     embed: discord.Embed | None = None,
 ) -> None:
-    """Log an event to the guild log channel."""
+    """Log an event to the guild audit log channel."""
     if embed is not None:
         log_embed = embed.copy()
         log_embed.timestamp = datetime.now()
         log_embed.set_footer(
             text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
         )
-        await ctx.bot.guild_svc.send_to_log(ctx, log_embed)  # type: ignore [attr-defined]
+        await ctx.bot.guild_svc.send_to_audit_log(ctx, log_embed)  # type: ignore [attr-defined]
     else:
-        await ctx.bot.guild_svc.send_to_log(ctx, log)  # type: ignore [attr-defined]
+        await ctx.bot.guild_svc.send_to_audit_log(ctx, log)  # type: ignore [attr-defined]
