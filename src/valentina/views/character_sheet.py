@@ -6,6 +6,7 @@ import discord
 from discord.ext import pages
 
 from valentina.models.db_tables import Character
+from valentina.models.statistics import Statistics
 from valentina.utils import errors
 
 MAX_DOT_DISPLAY = 6
@@ -124,6 +125,7 @@ def __embed1(
 
 
 def __embed2(
+    ctx: discord.ApplicationContext,
     character: Character,
     claimed_by: discord.User | None = None,
     title: str | None = None,
@@ -164,6 +166,11 @@ def __embed2(
                 name=f"__**{section.title.upper()}**__", value=section.description, inline=True
             )
 
+    stats = Statistics(ctx, character=character)
+    embed.add_field(
+        name="\u200b", value=f"**ROLL STATISTICS**{stats.get_text(with_title=False)}", inline=False
+    )
+
     return embed
 
 
@@ -174,10 +181,11 @@ async def show_sheet(
     ephemeral: Any = False,
 ) -> Any:
     """Show a character sheet."""
-    embed1 = __embed1(ctx, character, claimed_by)
-    embed2 = __embed2(character, claimed_by)
+    embeds = []
+    embeds.append(__embed1(ctx, character, claimed_by))
+    embeds.append(__embed2(ctx, character, claimed_by))
 
-    paginator = pages.Paginator(pages=[embed1, embed2])  # type: ignore [arg-type]
+    paginator = pages.Paginator(pages=embeds)  # type: ignore [arg-type]
     paginator.remove_button("first")
     paginator.remove_button("last")
     await paginator.respond(ctx.interaction, ephemeral=ephemeral)
