@@ -1,9 +1,12 @@
 """Model for error handling."""
+import traceback
+
 import discord
 from discord.ext import commands
 from loguru import logger
 from peewee import DoesNotExist
 
+from valentina.models.constants import EmbedColor
 from valentina.utils import errors
 from valentina.views.embeds import user_error_embed
 
@@ -128,10 +131,48 @@ class ErrorReporter:
         if log_msg:
             log_method = logger.opt(exception=error).error if show_traceback else logger.warning
             log_method(log_msg)
-            await ctx.bot.guild_svc.send_to_error_log(ctx, log_msg, error)  # type: ignore [attr-defined] # It exists, really
+            embed = await self.error_log_embed(ctx, log_msg, error)
+            await ctx.bot.guild_svc.send_to_error_log(ctx, embed, error)  # type: ignore [attr-defined] # It exists, really
 
         if show_traceback:
             logger.opt(exception=error).error(f"ERROR: {error}")
+
+    @staticmethod
+    async def error_log_embed(
+        ctx: discord.ApplicationContext | discord.Interaction, msg: str, error: Exception
+    ) -> discord.Embed:
+        """Create an embed for errors."""
+        description = f"{msg}\n"
+        description += "```"
+        description += "\n".join(traceback.format_exception(error))
+        description += "```"
+
+        # If we can, we use the command name to try to pinpoint where the error
+        # took place. The stack trace usually makes this clear, but not always!
+        if isinstance(ctx, discord.ApplicationContext):
+            command_name = ctx.command.qualified_name.upper()
+        else:
+            command_name = "INTERACTION"
+
+        error_name = type(error).__name__
+
+        embed = discord.Embed(
+            title=f"{command_name}: {error_name}",
+            description=description,
+            color=EmbedColor.INFO.value,
+            timestamp=discord.utils.utcnow(),
+        )
+
+        if ctx.guild is not None:
+            guild_name = ctx.guild.name
+            guild_icon = ctx.guild.icon or ""
+        else:
+            guild_name = "DM"
+            guild_icon = ""
+
+        embed.set_author(name=f"{ctx.user.name} on {guild_name}", icon_url=guild_icon)
+
+        return embed
 
 
 reporter = ErrorReporter()

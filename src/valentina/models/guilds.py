@@ -294,8 +294,9 @@ class GuildService:
             except discord.HTTPException:
                 embed = discord.Embed(
                     title=f"A {error.__class__.__name__} exception was raised",
-                    description="The error was too long to fit! Check the logs",
+                    description="The error was too long to fit! Check the logs for full traceback",
                     color=EmbedColor.ERROR.value,
+                    timestamp=discord.utils.utcnow(),
                 )
                 await error_log_channel.send(embed=embed)
 
@@ -316,7 +317,7 @@ class GuildService:
 
         footer = ""
         if hasattr(ctx, "command"):
-            footer += f"Command: /{ctx.command}"
+            footer += f"Command: /{ctx.command.qualified_name}"
         else:
             footer += "Command: Unknown"
 
@@ -362,6 +363,8 @@ class GuildService:
 
         if updated:
             instance.save()
+        else:
+            logger.info(f"DATABASE: Guild '{guild.name}' defaults are up to date")
 
     def update_or_add(
         self,

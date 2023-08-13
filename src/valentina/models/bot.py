@@ -18,7 +18,7 @@ from valentina.models import (
     TraitService,
     UserService,
 )
-from valentina.models.db_tables import DATABASE
+from valentina.models.db_tables import DATABASE, Guild
 from valentina.models.errors import reporter
 from valentina.utils import Context
 
@@ -218,6 +218,13 @@ class Valentina(commands.Bot):
     ) -> None:
         """Use centralized reporter to handle errors."""
         await reporter.report_error(ctx, error)
+
+    @staticmethod
+    async def on_guild_update(before: discord.Guild, after: discord.Guild) -> None:
+        """Log guild name changes and update the database."""
+        if before.name != after.name:
+            logger.info(f"BOT: Rename guild `{before.name}` => `{after.name}`")
+            Guild.update(name=after.name).where(Guild.id == after.id).execute()
 
 
 @tasks.loop(time=time(0, tzinfo=timezone.utc))
