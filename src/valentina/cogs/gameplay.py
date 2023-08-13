@@ -34,6 +34,7 @@ class Roll(commands.Cog):
         trait_one_value: int | None = None,
         trait_two_name: str | None = None,
         trait_two_value: int | None = None,
+        character_id: int | None = None,
     ) -> None:
         """Perform a dice roll and display the result.
 
@@ -47,10 +48,24 @@ class Roll(commands.Cog):
             trait_one_value (int, optional): The value of the first trait. Defaults to None.
             trait_two_name (str, optional): The name of the second trait. Defaults to None.
             trait_two_value (int, optional): The value of the second trait. Defaults to None.
+            character_id (int, optional): The ID of the character to log the roll for. Defaults to None.
         """
         roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
 
         while True:
+            # Log the roll
+            if dice_size == DiceType.D10.value:
+                fields_to_log = {
+                    "guild": ctx.guild.id,
+                    "user": ctx.author.id,
+                    "character": character_id,
+                    "result": roll.takeaway_type,
+                    "pool": roll.pool,
+                    "difficulty": roll.difficulty,
+                }
+                self.bot.db_svc.log_diceroll(fields_to_log)
+
+            # Display the roll
             view = ReRollButton(ctx.author)
             embed = await RollDisplay(
                 ctx,
@@ -62,6 +77,8 @@ class Roll(commands.Cog):
                 trait_two_value,
             ).get_embed()
             await ctx.respond(embed=embed, view=view)
+
+            # Wait for a re-roll
             await view.wait()
             if view.confirmed:
                 roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
@@ -132,6 +149,7 @@ class Roll(commands.Cog):
             trait_one_value=trait_one_value,
             trait_two_name=trait_two.name,
             trait_two_value=trait_two_value,
+            character_id=character.id,
         )
 
     @roll.command(description="Simple dice roll of any size.")
@@ -192,6 +210,7 @@ class Roll(commands.Cog):
             trait_one_value=trait_one_value,
             trait_two_name=trait_two.name,
             trait_two_value=trait_two_value,
+            character_id=character.id,
         )
 
     @roll.command(description="Add images to roll result embeds")

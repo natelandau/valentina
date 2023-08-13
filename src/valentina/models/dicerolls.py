@@ -39,12 +39,12 @@ class DiceRoll:
         is_critical (bool): Whether the roll is a critical success.
         is_failure (bool): Whether the roll is a failure.
         is_success (bool): Whether the roll is a success.
-        takeaway (str): The roll's main takeaway - i.e. "SUCCESS", "FAILURE", etc.
+        takeaway (str): The roll's main takeaway for printing to the user - i.e. "SUCCESS", "FAILURE", etc.
+        takeaway_type (str): The roll's takeaway type for logging statistics
         pool (int): The pool's total size, including hunger.
         result (int): The number of successes after accounting for botches and cancelling ones and tens.
         roll (list[int]): A list of the result all rolled dice.
         successes (int): The number of successful dice not including criticals.
-
     """
 
     def __init__(
@@ -223,3 +223,18 @@ class DiceRoll:
 
         # Return a failure as for all other cases
         return f"{self.result} {pluralize(self.result, 'Success')}"
+
+    @property
+    def takeaway_type(self) -> str:
+        """The roll's takeaway type for logging statistics."""
+        if self.dice_type != DiceType.D10:
+            return "n/a"
+        if self.is_botch:
+            return "botch"
+        if self.is_critical:
+            return "critical"
+        if self.is_success:
+            return "success"
+
+        # Return a failure as for all other cases
+        return "failure"
