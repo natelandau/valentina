@@ -61,9 +61,9 @@ class Roll(commands.Cog):
                 ctx,
                 roll,
                 comment,
-                trait_one.name,
+                trait_one.name if trait_one else None,
                 trait_one_value,
-                trait_two.name,
+                trait_two.name if trait_two else None,
                 trait_two_value,
             ).get_embed()
             await ctx.respond(embed=embed, view=view)

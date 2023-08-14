@@ -1,11 +1,9 @@
 # type: ignore
 """Tests for the dicerolls module."""
-from unittest.mock import MagicMock
-
 import pytest
 
 from valentina.models.db_tables import RollStatistic
-from valentina.models.dicerolls import DiceRoll
+from valentina.models.dicerolls import DiceRoll, ResultType
 from valentina.utils import errors
 
 
@@ -92,25 +90,22 @@ class TestDiceRolls:
             "failures",
             "successes",
             "result",
-            "is_botch",
-            "is_failure",
-            "is_success",
-            "is_critical",
+            "result_type",
         ),
         [
-            ([1, 2, 3], 1, 0, 2, 0, -2, True, False, False, False),
-            ([10, 10, 10], 0, 3, 0, 0, 6, False, False, True, True),
-            ([2, 3, 2], 0, 0, 3, 0, 0, False, True, False, False),
-            ([6, 7, 8], 0, 0, 0, 3, 3, False, False, True, False),
-            ([2, 2, 7, 7], 0, 0, 2, 2, 2, False, False, True, False),
-            ([1, 2, 7, 7], 1, 0, 1, 2, 0, False, True, False, False),
-            ([1, 1, 7, 7], 2, 0, 0, 2, -2, True, False, False, False),
-            ([2, 7, 10], 0, 1, 1, 1, 3, False, False, True, False),
-            ([2, 10, 10], 0, 2, 1, 0, 4, False, False, True, True),
-            ([1, 2, 3, 10], 1, 1, 2, 0, 0, False, True, False, False),
-            ([1, 1, 3, 10], 2, 1, 1, 0, -2, True, False, False, False),
-            ([1, 1, 3, 7, 8, 10], 2, 1, 1, 2, 0, False, True, False, False),
-            ([1, 1, 3, 7, 7, 8, 10], 2, 1, 1, 3, 1, False, False, True, False),
+            ([1, 2, 3], 1, 0, 2, 0, -2, ResultType.BOTCH),
+            ([10, 10, 10], 0, 3, 0, 0, 6, ResultType.CRITICAL),
+            ([2, 3, 2], 0, 0, 3, 0, 0, ResultType.FAILURE),
+            ([6, 7, 8], 0, 0, 0, 3, 3, ResultType.SUCCESS),
+            ([2, 2, 7, 7], 0, 0, 2, 2, 2, ResultType.SUCCESS),
+            ([1, 2, 7, 7], 1, 0, 1, 2, 0, ResultType.FAILURE),
+            ([1, 1, 7, 7], 2, 0, 0, 2, -2, ResultType.BOTCH),
+            ([2, 7, 10], 0, 1, 1, 1, 3, ResultType.SUCCESS),
+            ([2, 10, 10], 0, 2, 1, 0, 4, ResultType.CRITICAL),
+            ([1, 2, 3, 10], 1, 1, 2, 0, 0, ResultType.FAILURE),
+            ([1, 1, 3, 10], 2, 1, 1, 0, -2, ResultType.BOTCH),
+            ([1, 1, 3, 7, 8, 10], 2, 1, 1, 2, 0, ResultType.FAILURE),
+            ([1, 1, 3, 7, 7, 8, 10], 2, 1, 1, 3, 1, ResultType.SUCCESS),
         ],
     )
     def test_roll_successes(
@@ -121,12 +116,9 @@ class TestDiceRolls:
         botches,
         criticals,
         failures,
-        result,
         successes,
-        is_botch,
-        is_failure,
-        is_success,
-        is_critical,
+        result,
+        result_type,
     ) -> None:
         """Ensure that successes are calculated correctly.
 
@@ -142,7 +134,10 @@ class TestDiceRolls:
         assert roll.failures == failures
         assert roll.successes == successes
         assert roll.result == result
-        assert roll.is_botch == is_botch
-        assert roll.is_failure == is_failure
-        assert roll.is_success == is_success
-        assert roll.is_critical == is_critical
+        assert roll.result_type == result_type
+
+    def test_not_d10(self, mock_ctx):
+        """Ensure that customizations for non-d10 dice are applied correctly."""
+        # GIVEN a roll with a non-d10 dice
+        roll = DiceRoll(mock_ctx, pool=3, dice_size=6, difficulty=6, log_roll=True)
+        assert roll.result_type == ResultType.OTHER
