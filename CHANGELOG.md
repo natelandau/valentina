@@ -1,3 +1,16 @@
+## v1.3.0 (2023-08-14)
+
+### Feat
+
+- **gameplay**: calculate roll probabilities (#35)
+- **gameplay**: calculate and display roll statistics (#34)
+- **misc**: view bot changelog with `/changelog`
+
+### Fix
+
+- **gameplay**: write user to db before logging roll (#36)
+- **errors**: include traceback in error logs
+
 ## v1.2.1 (2023-08-12)
 
 ### Fix
