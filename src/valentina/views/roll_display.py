@@ -84,9 +84,11 @@ class RollDisplay:
 
     async def get_embed(self) -> discord.Embed:
         """The graphical representation of the roll."""
-        title = self.roll.takeaway
-
-        embed = discord.Embed(title=title, colour=self.roll.embed_color)
+        embed = discord.Embed(
+            title=self.roll.embed_title,
+            description=self.roll.embed_description,
+            color=self.roll.embed_color,
+        )
 
         # Thumbnail
         embed.set_thumbnail(url=self.roll.thumbnail_url)

@@ -42,7 +42,8 @@ class DiceRoll:
         is_critical (bool): Whether the roll is a critical success.
         is_failure (bool): Whether the roll is a failure.
         is_success (bool): Whether the roll is a success.
-        takeaway (str): The roll's main takeaway for printing to the user - i.e. "SUCCESS", "FAILURE", etc.
+        embed_title (str): The title of the roll response embed.
+        embed_description (str): The description of the roll response embed.
         takeaway_type (str): The roll's takeaway type for logging statistics
         pool (int): The pool's total size, including hunger.
         result (int): The number of successes after accounting for botches and cancelling ones and tens.
@@ -121,11 +122,15 @@ class DiceRoll:
 
     def _log_roll(self) -> None:
         """Log the roll to the database."""
+        # Ensure the user in the database to avoid foreign key errors
+        user = self.ctx.bot.user_svc.fetch_user(self.ctx)  # type: ignore [attr-defined]
+
+        # Log the roll to the database
         if self.dice_type == DiceType.D10:
             fields_to_log = {
                 "guild": self.ctx.guild.id,
-                "user": self.ctx.author.id,
-                "character": self.character,
+                "user": user,
+                "character": self.character if self.character else None,
                 "result": self.takeaway_type,
                 "pool": self.pool,
                 "difficulty": self.difficulty,
@@ -220,14 +225,26 @@ class DiceRoll:
         return color_map[self.result_type].value
 
     @property
-    def takeaway(self) -> str:  # pragma: no cover
+    def embed_title(self) -> str:  # pragma: no cover
         """The title of the roll response embed."""
         title_map = {
             RollResultType.OTHER: "Dice roll",
-            RollResultType.BOTCH: f"__**BOTCH!**__\n{self.result} {pluralize(self.result, 'Success')}",
-            RollResultType.CRITICAL: f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.BOTCH: "__**BOTCH!**__",
+            RollResultType.CRITICAL: "__**CRITICAL SUCCESS!**__",
             RollResultType.SUCCESS: f"{self.result} {pluralize(self.result, 'Success')}",
             RollResultType.FAILURE: f"{self.result} {pluralize(self.result, 'Success')}",
+        }
+        return title_map[self.result_type]
+
+    @property
+    def embed_description(self) -> str:
+        """The description of the roll response embed."""
+        title_map = {
+            RollResultType.OTHER: "",
+            RollResultType.BOTCH: f"{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.CRITICAL: f"{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.SUCCESS: "",
+            RollResultType.FAILURE: "",
         }
         return title_map[self.result_type]
 
