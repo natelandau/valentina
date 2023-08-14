@@ -33,6 +33,7 @@ from valentina.models.db_tables import (
     GuildUser,
     Macro,
     MacroTrait,
+    RollProbability,
     RollStatistic,
     RollThumbnail,
     Trait,
@@ -69,6 +70,7 @@ MODELS = [
     TraitCategoryClass,
     MacroTrait,
     RollStatistic,
+    RollProbability,
 ]
 
 databaseversion = {"version": "1.0.0"}

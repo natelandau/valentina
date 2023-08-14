@@ -540,6 +540,16 @@ class RollStatistic(BaseModel):
         """
 
 
+class RollProbability(BaseModel):
+    """Track proability of roll results."""
+
+    pool = IntegerField()
+    difficulty = IntegerField()
+    dice_size = IntegerField()
+    created = DateTimeField(default=time_now)
+    data = JSONField(null=True)
+
+
 ###### Lookup Tables ######
 
 

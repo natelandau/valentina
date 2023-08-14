@@ -12,6 +12,7 @@ from valentina.models.dicerolls import DiceRoll
 from valentina.utils import errors
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
+from valentina.utils.probability import Probability
 from valentina.views import ConfirmCancelButtons, ReRollButton, present_embed
 from valentina.views.roll_display import RollDisplay
 
@@ -107,6 +108,36 @@ class Roll(commands.Cog):
         await self._perform_roll(
             ctx, pool, difficulty, DiceType.D10.value, comment, character=character
         )
+
+    @roll.command(name="probability", description="Calculate the probability of a roll")
+    async def probability(
+        self,
+        ctx: discord.ApplicationContext,
+        pool: discord.Option(int, "The number of dice to roll", required=True),
+        difficulty: Option(
+            int,
+            "The difficulty of the roll",
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the probability only visible to you (default True).",
+            default=True,
+        ),
+    ) -> None:
+        """Roll the dice.
+
+        Args:
+            hidden (bool, optional): Make the statistics only visible to you (default true). Defaults to True.
+            ctx (discord.ApplicationContext): The context of the command
+            difficulty (int): The difficulty of the roll
+            pool (int): The number of dice to roll
+        """
+        probabilities = Probability(
+            ctx, pool=pool, difficulty=difficulty, dice_size=DiceType.D10.value
+        )
+        embed = await probabilities.get_embed()
+        await ctx.respond(embed=embed, ephemeral=hidden)
 
     @roll.command(name="traits", description="Throw a roll based on trait names")
     async def traits(

@@ -10,6 +10,8 @@ MAX_BUTTONS_PER_ROW = 5
 
 
 ### ENUMS ###
+
+
 class MaxTraitValue(Enum):
     """Maximum value for a trait.
 
@@ -141,7 +143,7 @@ class RollResultType(Enum):
     FAILURE = "Failure"
     BOTCH = "Botch"
     CRITICAL = "Critical Success"
-    OTHER = "Other"
+    OTHER = "n/a"
 
 
 class ChannelPermission(Enum):

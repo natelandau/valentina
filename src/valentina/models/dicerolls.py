@@ -1,6 +1,5 @@
 """Models for dice rolls."""
 
-from enum import Enum
 
 import discord
 from loguru import logger
@@ -13,16 +12,6 @@ from valentina.utils.helpers import diceroll_thumbnail, pluralize
 
 _rng = default_rng()
 _max_pool_size = 100
-
-
-class ResultType(Enum):
-    """Possible result of a roll. Values are used for logging statistics."""
-
-    BOTCH = "botch"
-    CRITICAL = "critical"
-    SUCCESS = "success"
-    FAILURE = "failure"
-    OTHER = "n/a"
 
 
 class DiceRoll:
@@ -109,26 +98,26 @@ class DiceRoll:
         self._failures: int = None
         self._successes: int = None
         self._result: int = None
-        self._result_type: ResultType = None
+        self._result_type: RollResultType = None
 
         # Log the roll to the database
         if self.log_roll:
             self._log_roll()
 
-    def _calculate_result(self) -> ResultType:
+    def _calculate_result(self) -> RollResultType:
         if self.dice_type != DiceType.D10:
-            return ResultType.OTHER
+            return RollResultType.OTHER
 
         if self.result < 0:
-            return ResultType.BOTCH
+            return RollResultType.BOTCH
 
         if self.result == 0:
-            return ResultType.FAILURE
+            return RollResultType.FAILURE
 
         if self.result > self.pool:
-            return ResultType.CRITICAL
+            return RollResultType.CRITICAL
 
-        return ResultType.SUCCESS
+        return RollResultType.SUCCESS
 
     def _log_roll(self) -> None:
         """Log the roll to the database."""
@@ -145,7 +134,7 @@ class DiceRoll:
             logger.debug(f"DATABASE: Log diceroll {fields_to_log}")
 
     @property
-    def result_type(self) -> ResultType:
+    def result_type(self) -> RollResultType:
         """Retrieve the result type of the roll."""
         if not self._result_type:
             self._result_type = self._calculate_result()
@@ -216,25 +205,17 @@ class DiceRoll:
     @property
     def thumbnail_url(self) -> str:  # pragma: no cover
         """Determine the thumbnail to use for the Discord embed."""
-        # Create mapping between ResultType and RollResultType Enums
-        thumbnail_map = {
-            ResultType.OTHER: RollResultType.OTHER,
-            ResultType.BOTCH: RollResultType.BOTCH,
-            ResultType.CRITICAL: RollResultType.CRITICAL,
-            ResultType.SUCCESS: RollResultType.SUCCESS,
-            ResultType.FAILURE: RollResultType.FAILURE,
-        }
-        return diceroll_thumbnail(self.ctx, thumbnail_map[self.result_type])
+        return diceroll_thumbnail(self.ctx, self.result_type)
 
     @property
     def embed_color(self) -> int:  # pragma: no cover
         """Determine the Discord embed color based on the result of the roll."""
         color_map = {
-            ResultType.OTHER: EmbedColor.INFO,
-            ResultType.BOTCH: EmbedColor.ERROR,
-            ResultType.CRITICAL: EmbedColor.SUCCESS,
-            ResultType.SUCCESS: EmbedColor.SUCCESS,
-            ResultType.FAILURE: EmbedColor.WARNING,
+            RollResultType.OTHER: EmbedColor.INFO,
+            RollResultType.BOTCH: EmbedColor.ERROR,
+            RollResultType.CRITICAL: EmbedColor.SUCCESS,
+            RollResultType.SUCCESS: EmbedColor.SUCCESS,
+            RollResultType.FAILURE: EmbedColor.WARNING,
         }
         return color_map[self.result_type].value
 
@@ -242,11 +223,11 @@ class DiceRoll:
     def takeaway(self) -> str:  # pragma: no cover
         """The title of the roll response embed."""
         title_map = {
-            ResultType.OTHER: "Dice roll",
-            ResultType.BOTCH: f"__**BOTCH!**__\n{self.result} {pluralize(self.result, 'Success')}",
-            ResultType.CRITICAL: f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'Success')}",
-            ResultType.SUCCESS: f"{self.result} {pluralize(self.result, 'Success')}",
-            ResultType.FAILURE: f"{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.OTHER: "Dice roll",
+            RollResultType.BOTCH: f"__**BOTCH!**__\n{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.CRITICAL: f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.SUCCESS: f"{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.FAILURE: f"{self.result} {pluralize(self.result, 'Success')}",
         }
         return title_map[self.result_type]
 
