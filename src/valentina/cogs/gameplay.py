@@ -7,7 +7,7 @@ from discord.ext import commands
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
-from valentina.models.db_tables import Character
+from valentina.models.db_tables import Character, CustomTrait, Trait
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils import errors
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
@@ -31,9 +31,9 @@ class Roll(commands.Cog):
         difficulty: int,
         dice_size: int,
         comment: str | None = None,
-        trait_one_name: str | None = None,
+        trait_one: Trait | CustomTrait | None = None,
         trait_one_value: int | None = None,
-        trait_two_name: str | None = None,
+        trait_two: Trait | CustomTrait | None = None,
         trait_two_value: int | None = None,
         character: Character | None = None,
     ) -> None:
@@ -45,36 +45,25 @@ class Roll(commands.Cog):
             difficulty (int): The difficulty of the roll.
             dice_size (int): The size of the dice.
             comment (str, optional): A comment to display with the roll. Defaults to None.
-            trait_one_name (str, optional): The name of the first trait. Defaults to None.
+            trait_one (CustomTrait, Trait, optional): The name of the first trait. Defaults to None.
             trait_one_value (int, optional): The value of the first trait. Defaults to None.
-            trait_two_name (str, optional): The name of the second trait. Defaults to None.
+            trait_two (CustomTrait, Trait, optional): The name of the second trait. Defaults to None.
             trait_two_value (int, optional): The value of the second trait. Defaults to None.
             character (Character, optional): The ID of the character to log the roll for. Defaults to None.
         """
-        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
+        roll = DiceRoll(
+            ctx, pool=pool, difficulty=difficulty, dice_size=dice_size, character=character
+        )
 
         while True:
-            # Log the roll
-            if dice_size == DiceType.D10.value:
-                fields_to_log = {
-                    "guild": ctx.guild.id,
-                    "user": ctx.author.id,
-                    "character": character,
-                    "result": roll.takeaway_type,
-                    "pool": roll.pool,
-                    "difficulty": roll.difficulty,
-                }
-                self.bot.db_svc.log_diceroll(fields_to_log)
-
-            # Display the roll
             view = ReRollButton(ctx.author)
             embed = await RollDisplay(
                 ctx,
                 roll,
                 comment,
-                trait_one_name,
+                trait_one.name,
                 trait_one_value,
-                trait_two_name,
+                trait_two.name,
                 trait_two_value,
             ).get_embed()
             await ctx.respond(embed=embed, view=view)
@@ -82,7 +71,9 @@ class Roll(commands.Cog):
             # Wait for a re-roll
             await view.wait()
             if view.confirmed:
-                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
+                roll = DiceRoll(
+                    ctx, pool=pool, difficulty=difficulty, dice_size=dice_size, character=character
+                )
             else:
                 break
 
@@ -154,9 +145,9 @@ class Roll(commands.Cog):
             difficulty,
             DiceType.D10.value,
             comment,
-            trait_one_name=trait_one.name,
+            trait_one=trait_one,
             trait_one_value=trait_one_value,
-            trait_two_name=trait_two.name,
+            trait_two=trait_two,
             trait_two_value=trait_two_value,
             character=character,
         )
@@ -215,9 +206,9 @@ class Roll(commands.Cog):
             difficulty,
             DiceType.D10.value,
             comment,
-            trait_one_name=trait_one.name,
+            trait_one=trait_one,
             trait_one_value=trait_one_value,
-            trait_two_name=trait_two.name,
+            trait_two=trait_two,
             trait_two_value=trait_two_value,
             character=character,
         )

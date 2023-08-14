@@ -124,11 +124,6 @@ class DatabaseService:
         # Log the new version of the database
         logger.info(f"DATABASE: Database is v{bot_version}")
 
-    def log_diceroll(self, fields: dict[str, str | int]) -> None:
-        """Log a diceroll to the database."""
-        RollStatistic.create(**fields)
-        logger.debug(f"DATABASE: Create roll statistic: {fields}")
-
 
 class DBBackup:
     """A class that manages backups of the bot database.

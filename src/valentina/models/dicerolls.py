@@ -1,9 +1,11 @@
 """Models for dice rolls."""
 
 import discord
+from loguru import logger
 from numpy.random import default_rng
 
 from valentina.models.constants import DiceType, RollResultType
+from valentina.models.db_tables import Character, RollStatistic
 from valentina.utils import errors
 from valentina.utils.helpers import diceroll_thumbnail, pluralize
 
@@ -12,7 +14,7 @@ _max_pool_size = 100
 
 
 class DiceRoll:
-    """A container class that determines the result of a roll.
+    """A container class that determines the result of a roll and logs dicerolls to the database.
 
     Dice rolling mechanics are based on our unique system, which is loosely based on the Storyteller system. The following rules apply only to throws of 10 sided dice.
 
@@ -48,7 +50,13 @@ class DiceRoll:
     """
 
     def __init__(
-        self, ctx: discord.ApplicationContext, pool: int, difficulty: int = 6, dice_size: int = 10
+        self,
+        ctx: discord.ApplicationContext,
+        pool: int,
+        difficulty: int = 6,
+        dice_size: int = 10,
+        character: Character = None,
+        log_roll: bool = True,
     ) -> None:
         """A container class that determines the result of a roll.
 
@@ -57,8 +65,13 @@ class DiceRoll:
             dice_size (int, optional): The size of the dice. Defaults to 10.
             difficulty (int, optional): The difficulty of the roll. Defaults to 6.
             pool (int): The pool's total size, including hunger
+            character (Character, optional): The character to log the roll for. Defaults to None.
+            log_roll (bool, optional): Whether to log the roll to the database. Defaults to True.
         """
         self.ctx = ctx
+        self.character = character
+        self.log_roll = log_roll
+
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
             raise errors.ValidationError(f"Invalid dice size `{dice_size}`.")
@@ -84,6 +97,24 @@ class DiceRoll:
         self._failures: int = None
         self._successes: int = None
         self._result: int = None
+
+        # Log the roll to the database
+        if self.log_roll:
+            self._log_roll()
+
+    def _log_roll(self) -> None:
+        """Log the roll to the database."""
+        if self.dice_type == DiceType.D10:
+            fields_to_log = {
+                "guild": self.ctx.guild.id,
+                "user": self.ctx.author.id,
+                "character": self.character,
+                "result": self.takeaway_type,
+                "pool": self.pool,
+                "difficulty": self.difficulty,
+            }
+            RollStatistic.create(**fields_to_log)
+            logger.debug(f"DATABASE: Log diceroll {fields_to_log}")
 
     @property
     def roll(self) -> list[int]:
@@ -180,7 +211,7 @@ class DiceRoll:
         return False
 
     @property
-    def thumbnail_url(self) -> str:
+    def thumbnail_url(self) -> str:  # pragma: no cover
         """Determine the thumbnail to use for the Discord embed."""
         if self.dice_type != DiceType.D10:
             return diceroll_thumbnail(self.ctx, RollResultType.OTHER)
@@ -195,7 +226,7 @@ class DiceRoll:
         return diceroll_thumbnail(self.ctx, RollResultType.FAILURE)
 
     @property
-    def embed_color(self) -> int:
+    def embed_color(self) -> int:  # pragma: no cover
         """Determine the Discord embed color based on the result of the roll."""
         if self.dice_type != DiceType.D10:
             return 0xEA3323
@@ -210,7 +241,7 @@ class DiceRoll:
         return 0x808080
 
     @property
-    def takeaway(self) -> str:
+    def takeaway(self) -> str:  # pragma: no cover
         """The roll's main takeaway--i.e. "SUCCESS", "FAILURE", etc."""
         if self.dice_type != DiceType.D10:
             return "Dice roll"
@@ -225,7 +256,7 @@ class DiceRoll:
         return f"{self.result} {pluralize(self.result, 'Success')}"
 
     @property
-    def takeaway_type(self) -> str:
+    def takeaway_type(self) -> str:  # pragma: no cover
         """The roll's takeaway type for logging statistics."""
         if self.dice_type != DiceType.D10:
             return "n/a"

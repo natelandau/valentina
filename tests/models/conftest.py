@@ -33,6 +33,7 @@ from valentina.models.db_tables import (
     GuildUser,
     Macro,
     MacroTrait,
+    RollStatistic,
     RollThumbnail,
     Trait,
     TraitCategory,
@@ -44,7 +45,7 @@ from valentina.models.db_tables import (
 )
 from valentina.utils.db_initialize import PopulateDatabase
 
-# IMPORTANT: This list must be kept in sync with all the models defined in src/valentina/models/database.py
+# IMPORTANT: This list must be kept in sync with all the models defined in src/valentina/models/database.py otherwise tests will write to the wrong database.
 MODELS = [
     Character,
     CharacterClass,
@@ -67,6 +68,7 @@ MODELS = [
     GuildUser,
     TraitCategoryClass,
     MacroTrait,
+    RollStatistic,
 ]
 
 databaseversion = {"version": "1.0.0"}
