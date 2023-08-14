@@ -22,6 +22,7 @@ from valentina.models.db_tables import (
     GuildUser,
     Macro,
     MacroTrait,
+    RollProbability,
     RollStatistic,
     RollThumbnail,
     Trait,
@@ -77,6 +78,7 @@ class DatabaseService:
                     TraitCategoryClass,
                     MacroTrait,
                     RollStatistic,
+                    RollProbability,
                 ]
             )
         logger.info("DATABASE: Create Tables")

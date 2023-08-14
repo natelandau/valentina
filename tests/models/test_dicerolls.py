@@ -3,7 +3,7 @@
 import pytest
 
 from valentina.models.db_tables import RollStatistic
-from valentina.models.dicerolls import DiceRoll, ResultType
+from valentina.models.dicerolls import DiceRoll, RollResultType
 from valentina.utils import errors
 
 
@@ -93,19 +93,19 @@ class TestDiceRolls:
             "result_type",
         ),
         [
-            ([1, 2, 3], 1, 0, 2, 0, -2, ResultType.BOTCH),
-            ([10, 10, 10], 0, 3, 0, 0, 6, ResultType.CRITICAL),
-            ([2, 3, 2], 0, 0, 3, 0, 0, ResultType.FAILURE),
-            ([6, 7, 8], 0, 0, 0, 3, 3, ResultType.SUCCESS),
-            ([2, 2, 7, 7], 0, 0, 2, 2, 2, ResultType.SUCCESS),
-            ([1, 2, 7, 7], 1, 0, 1, 2, 0, ResultType.FAILURE),
-            ([1, 1, 7, 7], 2, 0, 0, 2, -2, ResultType.BOTCH),
-            ([2, 7, 10], 0, 1, 1, 1, 3, ResultType.SUCCESS),
-            ([2, 10, 10], 0, 2, 1, 0, 4, ResultType.CRITICAL),
-            ([1, 2, 3, 10], 1, 1, 2, 0, 0, ResultType.FAILURE),
-            ([1, 1, 3, 10], 2, 1, 1, 0, -2, ResultType.BOTCH),
-            ([1, 1, 3, 7, 8, 10], 2, 1, 1, 2, 0, ResultType.FAILURE),
-            ([1, 1, 3, 7, 7, 8, 10], 2, 1, 1, 3, 1, ResultType.SUCCESS),
+            ([1, 2, 3], 1, 0, 2, 0, -2, RollResultType.BOTCH),
+            ([10, 10, 10], 0, 3, 0, 0, 6, RollResultType.CRITICAL),
+            ([2, 3, 2], 0, 0, 3, 0, 0, RollResultType.FAILURE),
+            ([6, 7, 8], 0, 0, 0, 3, 3, RollResultType.SUCCESS),
+            ([2, 2, 7, 7], 0, 0, 2, 2, 2, RollResultType.SUCCESS),
+            ([1, 2, 7, 7], 1, 0, 1, 2, 0, RollResultType.FAILURE),
+            ([1, 1, 7, 7], 2, 0, 0, 2, -2, RollResultType.BOTCH),
+            ([2, 7, 10], 0, 1, 1, 1, 3, RollResultType.SUCCESS),
+            ([2, 10, 10], 0, 2, 1, 0, 4, RollResultType.CRITICAL),
+            ([1, 2, 3, 10], 1, 1, 2, 0, 0, RollResultType.FAILURE),
+            ([1, 1, 3, 10], 2, 1, 1, 0, -2, RollResultType.BOTCH),
+            ([1, 1, 3, 7, 8, 10], 2, 1, 1, 2, 0, RollResultType.FAILURE),
+            ([1, 1, 3, 7, 7, 8, 10], 2, 1, 1, 3, 1, RollResultType.SUCCESS),
         ],
     )
     def test_roll_successes(
@@ -140,4 +140,4 @@ class TestDiceRolls:
         """Ensure that customizations for non-d10 dice are applied correctly."""
         # GIVEN a roll with a non-d10 dice
         roll = DiceRoll(mock_ctx, pool=3, dice_size=6, difficulty=6, log_roll=True)
-        assert roll.result_type == ResultType.OTHER
+        assert roll.result_type == RollResultType.OTHER
