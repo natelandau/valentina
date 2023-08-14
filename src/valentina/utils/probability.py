@@ -34,7 +34,7 @@ class Probability:
         )
 
         if db_result:
-            logger.debug("DATABASE: Return probability results from the database")
+            logger.debug("DATABASE: Return probability results")
             return db_result.data
 
         # Calculate the probabilities
@@ -74,6 +74,7 @@ class Probability:
             probabilities[outcome] = (frequency / self.trials) * 100
 
         # Save the results to the database
+        logger.debug("DATABASE: Save probability results")
         RollProbability.create(
             pool=self.pool,
             difficulty=self.difficulty,
