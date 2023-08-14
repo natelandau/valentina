@@ -1,6 +1,5 @@
 # mypy: disable-error-code="valid-type"
 """Gameplay cog for Valentina."""
-import random
 
 import discord
 from discord.commands import Option
@@ -8,7 +7,9 @@ from discord.ext import commands
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
+from valentina.models.db_tables import Character
 from valentina.models.dicerolls import DiceRoll
+from valentina.utils import errors
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
 from valentina.views import ConfirmCancelButtons, ReRollButton, present_embed
@@ -34,7 +35,7 @@ class Roll(commands.Cog):
         trait_one_value: int | None = None,
         trait_two_name: str | None = None,
         trait_two_value: int | None = None,
-        character_id: int | None = None,
+        character: Character | None = None,
     ) -> None:
         """Perform a dice roll and display the result.
 
@@ -48,7 +49,7 @@ class Roll(commands.Cog):
             trait_one_value (int, optional): The value of the first trait. Defaults to None.
             trait_two_name (str, optional): The name of the second trait. Defaults to None.
             trait_two_value (int, optional): The value of the second trait. Defaults to None.
-            character_id (int, optional): The ID of the character to log the roll for. Defaults to None.
+            character (Character, optional): The ID of the character to log the roll for. Defaults to None.
         """
         roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
 
@@ -58,7 +59,7 @@ class Roll(commands.Cog):
                 fields_to_log = {
                     "guild": ctx.guild.id,
                     "user": ctx.author.id,
-                    "character": character_id,
+                    "character": character,
                     "result": roll.takeaway_type,
                     "pool": roll.pool,
                     "difficulty": roll.difficulty,
@@ -106,7 +107,15 @@ class Roll(commands.Cog):
             difficulty (int): The difficulty of the roll
             pool (int): The number of dice to roll
         """
-        await self._perform_roll(ctx, pool, difficulty, DiceType.D10.value, comment)
+        # Grab the claimed character for statistic logging purposes
+        try:
+            character = self.bot.char_svc.fetch_claim(ctx)
+        except errors.NoClaimError:
+            character = None
+
+        await self._perform_roll(
+            ctx, pool, difficulty, DiceType.D10.value, comment, character=character
+        )
 
     @roll.command(name="traits", description="Throw a roll based on trait names")
     async def traits(
@@ -149,7 +158,7 @@ class Roll(commands.Cog):
             trait_one_value=trait_one_value,
             trait_two_name=trait_two.name,
             trait_two_value=trait_two_value,
-            character_id=character.id,
+            character=character,
         )
 
     @roll.command(description="Simple dice roll of any size.")
@@ -210,7 +219,7 @@ class Roll(commands.Cog):
             trait_one_value=trait_one_value,
             trait_two_name=trait_two.name,
             trait_two_value=trait_two_value,
-            character_id=character.id,
+            character=character,
         )
 
     @roll.command(description="Add images to roll result embeds")
@@ -255,14 +264,6 @@ class Roll(commands.Cog):
                 ephemeral=True,
                 log=True,
             )
-
-    @roll.command(name="coinflip", help="Flip a coin")
-    async def coinflip(self, ctx: discord.ApplicationContext) -> None:
-        """Coinflip!"""
-        coinsides = ["Heads", "Tails"]
-        await ctx.respond(
-            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coinsides)}**!"
-        )
 
 
 def setup(bot: Valentina) -> None:

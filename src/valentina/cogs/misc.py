@@ -1,6 +1,7 @@
 # mypy: disable-error-code="valid-type"
 """Miscellaneous commands."""
 
+import random
 from pathlib import Path
 
 import discord
@@ -55,6 +56,14 @@ class Misc(commands.Cog):
             show_indicator=show_buttons,
         )
         await paginator.respond(ctx.interaction, ephemeral=hidden)  # type: ignore [attr-defined]
+
+    @commands.slash_command(name="coinflip", help="Flip a coin")
+    async def coinflip(self, ctx: discord.ApplicationContext) -> None:
+        """Coinflip!"""
+        coinsides = ["Heads", "Tails"]
+        await ctx.respond(
+            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coinsides)}**!"
+        )
 
 
 def setup(bot: Valentina) -> None:
