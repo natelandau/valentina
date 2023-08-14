@@ -22,6 +22,7 @@ from valentina.models.db_tables import (
     GuildUser,
     Macro,
     MacroTrait,
+    RollStatistic,
     RollThumbnail,
     Trait,
     TraitCategory,
@@ -36,7 +37,7 @@ from valentina.utils.helpers import pluralize
 
 
 class DatabaseService:
-    """Representation of the database."""
+    """Services for managing the database and working with miscellaneous data."""
 
     def __init__(self, database: CSqliteExtDatabase) -> None:
         """Initialize the DatabaseService."""
@@ -75,6 +76,7 @@ class DatabaseService:
                     GuildUser,
                     TraitCategoryClass,
                     MacroTrait,
+                    RollStatistic,
                 ]
             )
         logger.info("DATABASE: Create Tables")

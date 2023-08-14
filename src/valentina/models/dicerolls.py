@@ -1,9 +1,13 @@
 """Models for dice rolls."""
 
+from enum import Enum
+
 import discord
+from loguru import logger
 from numpy.random import default_rng
 
-from valentina.models.constants import DiceType, RollResultType
+from valentina.models.constants import DiceType, EmbedColor, RollResultType
+from valentina.models.db_tables import Character, RollStatistic
 from valentina.utils import errors
 from valentina.utils.helpers import diceroll_thumbnail, pluralize
 
@@ -11,8 +15,18 @@ _rng = default_rng()
 _max_pool_size = 100
 
 
+class ResultType(Enum):
+    """Possible result of a roll. Values are used for logging statistics."""
+
+    BOTCH = "botch"
+    CRITICAL = "critical"
+    SUCCESS = "success"
+    FAILURE = "failure"
+    OTHER = "n/a"
+
+
 class DiceRoll:
-    """A container class that determines the result of a roll.
+    """A container class that determines the result of a roll and logs dicerolls to the database.
 
     Dice rolling mechanics are based on our unique system, which is loosely based on the Storyteller system. The following rules apply only to throws of 10 sided dice.
 
@@ -39,16 +53,22 @@ class DiceRoll:
         is_critical (bool): Whether the roll is a critical success.
         is_failure (bool): Whether the roll is a failure.
         is_success (bool): Whether the roll is a success.
-        takeaway (str): The roll's main takeaway - i.e. "SUCCESS", "FAILURE", etc.
+        takeaway (str): The roll's main takeaway for printing to the user - i.e. "SUCCESS", "FAILURE", etc.
+        takeaway_type (str): The roll's takeaway type for logging statistics
         pool (int): The pool's total size, including hunger.
         result (int): The number of successes after accounting for botches and cancelling ones and tens.
         roll (list[int]): A list of the result all rolled dice.
         successes (int): The number of successful dice not including criticals.
-
     """
 
     def __init__(
-        self, ctx: discord.ApplicationContext, pool: int, difficulty: int = 6, dice_size: int = 10
+        self,
+        ctx: discord.ApplicationContext,
+        pool: int,
+        difficulty: int = 6,
+        dice_size: int = 10,
+        character: Character = None,
+        log_roll: bool = True,
     ) -> None:
         """A container class that determines the result of a roll.
 
@@ -57,8 +77,13 @@ class DiceRoll:
             dice_size (int, optional): The size of the dice. Defaults to 10.
             difficulty (int, optional): The difficulty of the roll. Defaults to 6.
             pool (int): The pool's total size, including hunger
+            character (Character, optional): The character to log the roll for. Defaults to None.
+            log_roll (bool, optional): Whether to log the roll to the database. Defaults to True.
         """
         self.ctx = ctx
+        self.character = character
+        self.log_roll = log_roll
+
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
             raise errors.ValidationError(f"Invalid dice size `{dice_size}`.")
@@ -84,6 +109,48 @@ class DiceRoll:
         self._failures: int = None
         self._successes: int = None
         self._result: int = None
+        self._result_type: ResultType = None
+
+        # Log the roll to the database
+        if self.log_roll:
+            self._log_roll()
+
+    def _calculate_result(self) -> ResultType:
+        if self.dice_type != DiceType.D10:
+            return ResultType.OTHER
+
+        if self.result < 0:
+            return ResultType.BOTCH
+
+        if self.result == 0:
+            return ResultType.FAILURE
+
+        if self.result > self.pool:
+            return ResultType.CRITICAL
+
+        return ResultType.SUCCESS
+
+    def _log_roll(self) -> None:
+        """Log the roll to the database."""
+        if self.dice_type == DiceType.D10:
+            fields_to_log = {
+                "guild": self.ctx.guild.id,
+                "user": self.ctx.author.id,
+                "character": self.character,
+                "result": self.takeaway_type,
+                "pool": self.pool,
+                "difficulty": self.difficulty,
+            }
+            RollStatistic.create(**fields_to_log)
+            logger.debug(f"DATABASE: Log diceroll {fields_to_log}")
+
+    @property
+    def result_type(self) -> ResultType:
+        """Retrieve the result type of the roll."""
+        if not self._result_type:
+            self._result_type = self._calculate_result()
+
+        return self._result_type
 
     @property
     def roll(self) -> list[int]:
@@ -98,6 +165,7 @@ class DiceRoll:
         """Retrieve the number of ones in the dice."""
         if not self._botches:
             self._botches = self.roll.count(1)
+
         return self._botches
 
     @property
@@ -146,80 +214,43 @@ class DiceRoll:
         return self._result
 
     @property
-    def is_botch(self) -> bool:
-        """Determine if the roll is a botch."""
-        if self.result >= 0:
-            return False
-
-        return True
-
-    @property
-    def is_failure(self) -> bool:
-        """Determine if the roll is a failure (i.e. no successes, not a botch)."""
-        if self.result == 0:
-            return True
-
-        return False
-
-    @property
-    def is_success(self) -> bool:
-        """Determine if the roll is a success."""
-        if self.result > 0:
-            return True
-        return False
-
-    @property
-    def is_critical(self) -> bool:
-        """Determine if the roll is a critical success (greater than half the pool are 10s)."""
-        if (
-            not self.is_botch
-            and self.criticals >= (self.pool / 2)
-            and self.pool > 2  # noqa: PLR2004
-        ):
-            return True
-        return False
-
-    @property
-    def thumbnail_url(self) -> str:
+    def thumbnail_url(self) -> str:  # pragma: no cover
         """Determine the thumbnail to use for the Discord embed."""
-        if self.dice_type != DiceType.D10:
-            return diceroll_thumbnail(self.ctx, RollResultType.OTHER)
-        if self.is_botch:
-            return diceroll_thumbnail(self.ctx, RollResultType.BOTCH)
-        if self.is_critical:
-            return diceroll_thumbnail(self.ctx, RollResultType.CRITICAL)
-        if self.is_success:
-            return diceroll_thumbnail(self.ctx, RollResultType.SUCCESS)
-
-        # Return a failure as for all other cases
-        return diceroll_thumbnail(self.ctx, RollResultType.FAILURE)
+        # Create mapping between ResultType and RollResultType Enums
+        thumbnail_map = {
+            ResultType.OTHER: RollResultType.OTHER,
+            ResultType.BOTCH: RollResultType.BOTCH,
+            ResultType.CRITICAL: RollResultType.CRITICAL,
+            ResultType.SUCCESS: RollResultType.SUCCESS,
+            ResultType.FAILURE: RollResultType.FAILURE,
+        }
+        return diceroll_thumbnail(self.ctx, thumbnail_map[self.result_type])
 
     @property
-    def embed_color(self) -> int:
+    def embed_color(self) -> int:  # pragma: no cover
         """Determine the Discord embed color based on the result of the roll."""
-        if self.dice_type != DiceType.D10:
-            return 0xEA3323
-        if self.is_botch:
-            return 0xFF2400
-        if self.is_critical:
-            return 0x37FD12
-        if self.is_success:
-            return 0x4FC978
-
-        # Return a failure as for all other cases
-        return 0x808080
+        color_map = {
+            ResultType.OTHER: EmbedColor.INFO,
+            ResultType.BOTCH: EmbedColor.ERROR,
+            ResultType.CRITICAL: EmbedColor.SUCCESS,
+            ResultType.SUCCESS: EmbedColor.SUCCESS,
+            ResultType.FAILURE: EmbedColor.WARNING,
+        }
+        return color_map[self.result_type].value
 
     @property
-    def takeaway(self) -> str:
-        """The roll's main takeaway--i.e. "SUCCESS", "FAILURE", etc."""
-        if self.dice_type != DiceType.D10:
-            return "Dice roll"
-        if self.is_botch:
-            return f"__**BOTCH!**__\n{self.result} {pluralize(self.result, 'Success')}"
-        if self.is_critical:
-            return f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'Success')}"
-        if self.is_success:
-            return f"{self.result} {pluralize(self.result, 'Success')}"
+    def takeaway(self) -> str:  # pragma: no cover
+        """The title of the roll response embed."""
+        title_map = {
+            ResultType.OTHER: "Dice roll",
+            ResultType.BOTCH: f"__**BOTCH!**__\n{self.result} {pluralize(self.result, 'Success')}",
+            ResultType.CRITICAL: f"__**CRITICAL SUCCESS!**__\n{self.result} {pluralize(self.result, 'Success')}",
+            ResultType.SUCCESS: f"{self.result} {pluralize(self.result, 'Success')}",
+            ResultType.FAILURE: f"{self.result} {pluralize(self.result, 'Success')}",
+        }
+        return title_map[self.result_type]
 
-        # Return a failure as for all other cases
-        return f"{self.result} {pluralize(self.result, 'Success')}"
+    @property
+    def takeaway_type(self) -> str:  # pragma: no cover
+        """The roll's takeaway type for logging statistics."""
+        return self.result_type.value

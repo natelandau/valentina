@@ -1,12 +1,15 @@
+# mypy: disable-error-code="valid-type"
 """Game information cog for Valentina."""
 
 from textwrap import dedent
 
 import discord
+from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina
+from valentina.models.statistics import Statistics
 from valentina.views import present_embed
 
 
@@ -17,6 +20,22 @@ class Reference(commands.Cog):
         self.bot = bot
 
     reference = discord.SlashCommandGroup("reference", "Get information about the game")
+
+    @reference.command(description="View roll statistics")
+    async def statistics(
+        self,
+        ctx: discord.ApplicationContext,
+        member: Option(discord.Member, required=False),
+        hidden: Option(
+            bool,
+            description="Make the statistics only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Display roll statistics for the guild or a specific user."""
+        stats = Statistics(ctx) if not member else Statistics(ctx, user=member)
+        embed = await stats.get_embed()
+        await ctx.respond(embed=embed, ephemeral=hidden)
 
     @reference.command(description="See health levels")
     async def health(self, ctx: discord.ApplicationContext) -> None:

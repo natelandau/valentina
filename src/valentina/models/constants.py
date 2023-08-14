@@ -96,12 +96,14 @@ class XPMultiplier(Enum):
 class EmbedColor(Enum):
     """Enum for colors of embeds."""
 
-    SUCCESS = 0x00FF00
-    ERROR = 0xFF0000
-    WARNING = 0xFFFF00
-    INFO = 0x00FFFF
-    DEBUG = 0x0000FF
-    DEFAULT = 0x6082B6
+    SUCCESS = 0x00FF00  # GREEN
+    ERROR = 0xFF0000  # RED
+    WARNING = 0xFF5F00  # ORANGE
+    INFO = 0x00FFFF  # CYAN
+    DEBUG = 0x0000FF  # BLUE
+    DEFAULT = 0x6082B6  # GRAY
+    GRAY = 0x808080
+    YELLOW = 0xFFFF00
 
 
 class XPPermissions(Enum):

@@ -119,6 +119,9 @@ class VampireClan(BaseModel):
         table_name = "vampire_clans"
 
 
+###### Traits ######
+
+
 class TraitCategory(BaseModel):
     """Trait Category model for the database."""
 
@@ -160,6 +163,9 @@ class Trait(BaseModel):
         table_name = "traits"
 
 
+###### Characters ######
+
+
 class CustomSection(BaseModel):
     """Custom sections added to a character sheet."""
 
@@ -173,21 +179,6 @@ class CustomSection(BaseModel):
         """Meta class for the model."""
 
         table_name = "custom_sections"
-
-
-class RollThumbnail(BaseModel):
-    """Thumbnail for a roll."""
-
-    url = TextField()
-    roll_type = TextField()
-    created = DateTimeField(default=time_now)
-    guild = ForeignKeyField(Guild, backref="roll_thumbnails")
-    user = ForeignKeyField(User, backref="roll_thumbnails")
-
-    class Meta:
-        """Meta class for the model."""
-
-        table_name = "roll_thumbnails"
 
 
 class Character(BaseModel):
@@ -506,7 +497,50 @@ class ChronicleNote(BaseModel):
         return display
 
 
-# Lookup tables
+###### Dice Rolls ######
+
+
+class RollThumbnail(BaseModel):
+    """Thumbnail for a roll."""
+
+    url = TextField()
+    roll_type = TextField()
+    created = DateTimeField(default=time_now)
+    guild = ForeignKeyField(Guild, backref="roll_thumbnails")
+    user = ForeignKeyField(User, backref="roll_thumbnails")
+
+    class Meta:
+        """Meta class for the model."""
+
+        table_name = "roll_thumbnails"
+
+
+class RollStatistic(BaseModel):
+    """Track roll results for statistics."""
+
+    user = ForeignKeyField(User, backref="roll_statistics")
+    guild = ForeignKeyField(Guild, backref="roll_statistics")
+    character = ForeignKeyField(Character, backref="roll_statistics", null=True)
+    result = TextField()
+    pool = IntegerField()
+    difficulty = IntegerField()
+    date_rolled = DateTimeField(default=time_now)
+
+    # TODO: Create these indexes if the query is slow
+    """
+    class Meta:
+        indexes = (
+            (("user",), False),
+            (("guild",), False),
+            (("character",), False),
+            (("user", "date_rolled"), False),
+            (("guild", "date_rolled"), False),
+            (("character", "date_rolled"), False),
+        )
+        """
+
+
+###### Lookup Tables ######
 
 
 class GuildUser(BaseModel):

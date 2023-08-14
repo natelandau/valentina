@@ -25,7 +25,7 @@ class _Trait:
 class RollDisplay:
     """Display and manipulate roll outcomes.
 
-    This class is responsible for creating an embedded message representing a roll.
+    This class is responsible for creating an embed message representing a roll.
     """
 
     def __init__(
