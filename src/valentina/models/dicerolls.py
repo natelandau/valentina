@@ -131,7 +131,7 @@ class DiceRoll:
                 "guild": self.ctx.guild.id,
                 "user": user,
                 "character": self.character if self.character else None,
-                "result": self.takeaway_type,
+                "result": self.result_type.name,
                 "pool": self.pool,
                 "difficulty": self.difficulty,
             }

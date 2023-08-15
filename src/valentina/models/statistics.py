@@ -4,7 +4,7 @@ import discord
 from loguru import logger
 from peewee import fn
 
-from valentina.models.constants import EmbedColor
+from valentina.models.constants import EmbedColor, RollResultType
 from valentina.models.db_tables import Character, RollStatistic
 
 
@@ -46,12 +46,10 @@ class Statistics:
     def _pull_statistics(self, field_name: str, value: int) -> None:
         """Pull statistics from the database based on the given field and value."""
         # Initialize counts
-        statistics = {
-            "botch": 0,
-            "success": 0,
-            "failure": 0,
-            "critical": 0,
-        }
+        statistics = {}
+
+        for result_type in RollResultType:
+            statistics[result_type.name] = 0
 
         # Determine the field to filter on
         filter_field = getattr(RollStatistic, field_name)
@@ -62,6 +60,7 @@ class Statistics:
             return
 
         # Query for all statistics for the specific field and value
+        logger.debug(f"Pulling statistics for `{field_name}: {value}`")
         query = (
             RollStatistic.select(
                 RollStatistic.result, fn.COUNT(RollStatistic.result).alias("count")
@@ -74,10 +73,11 @@ class Statistics:
         for stat in query:
             statistics[stat.result] = stat.count
 
-        self.botches = statistics["botch"]
-        self.successes = statistics["success"]
-        self.failures = statistics["failure"]
-        self.criticals = statistics["critical"]
+        self.botches = statistics[RollResultType.BOTCH.name]
+        self.successes = statistics[RollResultType.SUCCESS.name]
+        self.failures = statistics[RollResultType.FAILURE.name]
+        self.criticals = statistics[RollResultType.CRITICAL.name]
+        self.other = statistics[RollResultType.OTHER.name]
 
         # Query for average difficulty and pool
         self.average_difficulty = round(
@@ -92,60 +92,42 @@ class Statistics:
         )
 
         # Calculate total rolls
-        self.total_rolls = self.botches + self.successes + self.failures + self.criticals
+        self.total_rolls = (
+            self.botches + self.successes + self.failures + self.criticals + self.other
+        )
+        logger.debug(f"Total rolls: {self.total_rolls}")
         return
 
     def get_text(self, with_title: bool = True) -> str:
         """Return a string with the statistics."""
         msg = "\n"
         if with_title:
-            msg += f"**{self.title}**\n"
+            msg += f"## {self.title}\n"
 
         if self.total_rolls == 0:
             msg += "No statistics found"
             return msg
 
-        msg += f"Total Rolls: `{self.total_rolls}`\n"
-        msg += f"Successes: `{self.successes}`\n"
-        msg += f"Failures: `{self.failures}`\n"
-        msg += f"Botches: `{self.botches}`\n"
-        msg += f"Critical Successes: `{self.criticals}`\n"
-        msg += f"Average Difficulty: `{self.average_difficulty}`\n"
-        msg += f"Average Pool Size: `{self.average_pool}`\n"
+        msg += "```json\n"
+        msg += f"Total Rolls: {'.':.<{22 - 12}} {self.total_rolls}\n"
+        msg += f"Successes: {'.':.<{22 - 10}} {self.successes}\n"
+        msg += f"Failures: {'.':.<{22 - 9}} {self.failures}\n"
+        msg += f"Botches: {'.':.<{22 - 8}} {self.botches}\n"
+        msg += f"Critical Successes: {'.':.<{22 -19}} {self.criticals}\n"
+        msg += f"Average Difficulty: {'.':.<{22 -19}} {self.average_difficulty}\n"
+        msg += f"Average Pool Size: {'.':.<{22 -18}} {self.average_pool}\n"
+        msg += "```"
 
         return msg
 
     async def get_embed(self) -> discord.Embed:
         """Return an embed with the statistics."""
         embed = discord.Embed(
-            title=self.title, color=EmbedColor.INFO.value, timestamp=discord.utils.utcnow()
+            title="",
+            description=self.get_text(),
+            color=EmbedColor.INFO.value,
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=self.thumbnail)
 
-        if self.total_rolls == 0:
-            embed.description = "No statistics found."
-            return embed
-
-        embed.add_field(name="Total Rolls", value=str(self.total_rolls))
-        embed.add_field(name="Successes", value=str(self.successes))
-        embed.add_field(name="Failures", value=str(self.failures))
-        embed.add_field(name="Botches", value=str(self.botches))
-        embed.add_field(name="Critical Successes", value=str(self.criticals))
-        embed.add_field(name="Average Difficulty", value=str(self.average_difficulty))
-        embed.add_field(name="Average Pool size", value=str(self.average_pool))
         return embed
-
-    def run(self) -> None:
-        """Run the statistics engine."""
-        from rich.console import Console
-
-        c = Console()
-        c.rule("Statistics")
-        c.print(f"Total Rolls: {self.total_rolls}")
-        c.print(f"Successes: {self.successes}")
-        c.print(f"Failures: {self.failures}")
-        c.print(f"Botches: {self.botches}")
-        c.print(f"Criticals: {self.criticals}")
-        c.print(f"Average Difficulty: {self.average_difficulty}")
-        c.print(f"Average Pool: {self.average_pool}")
-        c.rule()
