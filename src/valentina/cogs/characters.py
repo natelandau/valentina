@@ -376,6 +376,8 @@ class Characters(commands.Cog, name="Character"):
         )
         await ctx.send_modal(modal)
         await modal.wait()
+
+        # TODO: Refactor into char_svc
         section_title = modal.section_title.strip().title()
         section_description = modal.section_description.strip()
 
@@ -407,6 +409,7 @@ class Characters(commands.Cog, name="Character"):
         await ctx.send_modal(modal)
         await modal.wait()
         if modal.confirmed:
+            # TODO: Refactor into char_svc
             for k, v in modal.results.items():
                 if v:
                     character.__setattr__(k, v)
@@ -477,6 +480,7 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
+        # TODO: Refactor into trait_svc
         if isinstance(trait, CustomTrait):
             trait.value = new_value
             trait.modified = time_now()
@@ -535,7 +539,7 @@ class Characters(commands.Cog, name="Character"):
 
         if view.confirmed:
             saved_trait_name = trait.name
-            trait.delete_instance()
+            trait.delete_instance()  # TODO: Refactor into trait_svc
             await msg.delete_original_response()
             await present_embed(
                 ctx=ctx,
@@ -581,7 +585,7 @@ class Characters(commands.Cog, name="Character"):
             return
 
         saved_section_title = custom_section.title
-        custom_section.delete_instance()
+        custom_section.delete_instance()  # TODO: Refactor into char_svc
 
         await present_embed(
             ctx=ctx,

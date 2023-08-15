@@ -120,7 +120,6 @@ class GuildService:
 
     def add_roll_result_thumb(self, ctx: ApplicationContext, roll_type: str, url: str) -> None:
         """Add a roll result thumbnail to the database."""
-        # TODO: Move this to Dicerolls
         ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         self.roll_result_thumbs.pop(ctx.guild.id, None)
@@ -203,16 +202,20 @@ class GuildService:
 
     def fetch_roll_result_thumbs(self, ctx: ApplicationContext) -> dict[str, list[str]]:
         """Get all roll result thumbnails for a guild."""
-        # TODO: Move this to Dicerolls
-        if ctx.guild.id not in self.roll_result_thumbs:
-            self.roll_result_thumbs[ctx.guild.id] = {}
+        # Fetch from cache if it exists
+        if ctx.guild.id in self.roll_result_thumbs:
+            logger.debug(f"CACHE: Fetch roll result thumbnails for '{ctx.guild.name}'")
+            return self.roll_result_thumbs[ctx.guild.id]
 
-            logger.debug(f"DATABASE: Fetch roll result thumbnails for '{ctx.guild.name}'")
-            for thumb in RollThumbnail.select().where(RollThumbnail.guild == ctx.guild.id):
-                if thumb.roll_type not in self.roll_result_thumbs[ctx.guild.id]:
-                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type] = [thumb.url]
-                else:
-                    self.roll_result_thumbs[ctx.guild.id][thumb.roll_type].append(thumb.url)
+        # Fetch from database
+        logger.debug(f"DATABASE: Fetch roll result thumbnails for '{ctx.guild.name}'")
+        self.roll_result_thumbs[ctx.guild.id] = {}
+
+        for thumb in RollThumbnail.select().where(RollThumbnail.guild == ctx.guild.id):
+            if thumb.roll_type not in self.roll_result_thumbs[ctx.guild.id]:
+                self.roll_result_thumbs[ctx.guild.id][thumb.roll_type] = [thumb.url]
+            else:
+                self.roll_result_thumbs[ctx.guild.id][thumb.roll_type].append(thumb.url)
 
         return self.roll_result_thumbs[ctx.guild.id]
 

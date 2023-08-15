@@ -8,15 +8,13 @@ from discord import OptionChoice
 from discord.commands import Option
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
-from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import ChannelPermission, TraitPermissions, XPPermissions
-from valentina.models.db_tables import RollProbability
 from valentina.utils import Context, errors
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import pluralize
-from valentina.views import ConfirmCancelButtons, present_embed
+from valentina.views import present_embed
 
 
 class Admin(commands.Cog):
@@ -105,62 +103,6 @@ class Admin(commands.Cog):
             footer=f"Requested by {ctx.author}",
             ephemeral=True,
             level="info",
-        )
-
-    @admin.command()
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def purge_cache(
-        self,
-        ctx: discord.ApplicationContext,
-        all_guilds: Option(bool, choices=[True, False], default=False, required=False),
-    ) -> None:
-        """Purge the bot's cache and reload all data from the database."""
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title="Purge all caches?" if all_guilds else "Purge this guild's cache?",
-            description="This will purge all caches and reload all data from the database"
-            if all_guilds
-            else "This will purge this guild's cache and reload all data from the database",
-            level="info",
-            ephemeral=True,
-            view=view,
-        )
-        await view.wait()
-
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title="Cache Purge Cancelled",
-                    color=discord.Color.red(),
-                )
-            )
-            return
-
-        if not all_guilds:
-            self.bot.guild_svc.purge_cache(ctx.guild)
-            self.bot.user_svc.purge_cache(ctx.guild)
-            self.bot.char_svc.purge_cache(ctx.guild, with_claims=True)
-            self.bot.chron_svc.purge_cache(ctx.guild)
-            self.bot.macro_svc.purge()
-            logger.info(f"ADMIN: Purge cache for {ctx.guild.name}")
-
-        if all_guilds:
-            self.bot.guild_svc.purge_cache()
-            self.bot.user_svc.purge_cache()
-            self.bot.char_svc.purge_cache(with_claims=True)
-            self.bot.chron_svc.purge_cache()
-            self.bot.macro_svc.purge()
-            logger.info("ADMIN: Purge cache for all guilds")
-
-        await msg.delete_original_response()
-        await present_embed(
-            ctx,
-            title="All caches purged" if all_guilds else "Guild caches purged",
-            level="success",
-            ephemeral=True,
-            log=True,
         )
 
     @admin.command()
@@ -358,23 +300,6 @@ class Admin(commands.Cog):
         """Show server settings for this guild."""
         embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
         await ctx.respond(embed=embed, ephemeral=True)
-
-    @admin.command(description="Clear probability data from the database")
-    @commands.has_permissions(administrator=True)
-    async def clear_probability_data(self, ctx: discord.ApplicationContext) -> None:
-        """Clear probability data from the database."""
-        cached_results = RollProbability.select()
-
-        for result in cached_results:
-            result.delete_instance()
-
-        await present_embed(
-            ctx,
-            title="Probability data cleared",
-            description=f"Cleared {len(cached_results)} probability results cleared from the database",
-            ephemeral=True,
-            level="success",
-        )
 
     ### MODERATION COMMANDS ################################################################
 
