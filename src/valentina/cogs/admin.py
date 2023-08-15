@@ -12,6 +12,7 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import ChannelPermission, TraitPermissions, XPPermissions
+from valentina.models.db_tables import RollProbability
 from valentina.utils import Context, errors
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import pluralize
@@ -357,6 +358,23 @@ class Admin(commands.Cog):
         """Show server settings."""
         embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
         await ctx.respond(embed=embed, ephemeral=True)
+
+    @admin.command(description="Clear probability data from the database")
+    @commands.has_permissions(administrator=True)
+    async def clear_probability_data(self, ctx: discord.ApplicationContext) -> None:
+        """Clear probability data from the database."""
+        cached_results = RollProbability.select()
+
+        for result in cached_results:
+            result.delete_instance()
+
+        await present_embed(
+            ctx,
+            title="Probability data cleared",
+            description=f"Cleared {len(cached_results)} probability results cleared from the database",
+            ephemeral=True,
+            level="success",
+        )
 
     ### MODERATION COMMANDS ################################################################
 

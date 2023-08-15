@@ -7,7 +7,6 @@ from loguru import logger
 from valentina.models.constants import EmbedColor, RollResultType
 from valentina.models.db_tables import RollProbability
 from valentina.models.dicerolls import DiceRoll
-from valentina.utils.helpers import diceroll_thumbnail
 
 
 class Probability:
@@ -62,16 +61,21 @@ class Probability:
                 outcomes["total_failures"] += 1
 
         probabilities: dict[str, float] = defaultdict(int)
-        probabilities["total_results"] = totals["total_results"] / self.trials
-        probabilities["botch_dice"] = totals["botch_dice"] / self.trials
-        probabilities["success_dice"] = totals["success_dice"] / self.trials
-        probabilities["failure_dice"] = totals["failure_dice"] / self.trials
-        probabilities["critical_dice"] = totals["critical_dice"] / self.trials
-        probabilities["total_successes"] = outcomes["total_successes"] / self.trials
-        probabilities["total_failures"] = outcomes["total_failures"] / self.trials
+        probabilities["total_results"] = totals["total_results"] / self.trials * 100
+        probabilities["botch_dice"] = totals["botch_dice"] / self.trials / self.pool * 100
+        probabilities["success_dice"] = totals["success_dice"] / self.trials / self.pool * 100
+        probabilities["failure_dice"] = totals["failure_dice"] / self.trials / self.pool * 100
+        probabilities["critical_dice"] = totals["critical_dice"] / self.trials / self.pool * 100
+        probabilities["total_successes"] = outcomes["total_successes"] / self.trials * 100
+        probabilities["total_failures"] = outcomes["total_failures"] / self.trials * 100
 
         for outcome, frequency in outcomes.items():
             probabilities[outcome] = (frequency / self.trials) * 100
+
+        # Ensure every value exists in the dictionary to prevent bugs in the embed
+        for result in RollResultType:
+            if result.value not in probabilities:
+                probabilities[result.value] = 0
 
         # Save the results to the database
         logger.debug("DATABASE: Save probability results")
@@ -87,79 +91,43 @@ class Probability:
     async def get_embed(self) -> discord.Embed:
         """Return the probability embed."""
         embed = discord.Embed(
-            title="Roll Probability",
+            title="",
             description=f"Rolling `{self.pool}d{self.dice_size}` against difficulty `{self.difficulty}`",
             color=EmbedColor.INFO.value,
         )
         embed.set_footer(text=f"Based on {self.trials:,} trials")
 
         if self.probabilities["total_successes"] >= 90:  # noqa: PLR2004
-            embed.set_thumbnail(url=diceroll_thumbnail(self.ctx, RollResultType.CRITICAL))
             emoji = "🚀"
         elif self.probabilities["total_successes"] >= 50:  # noqa: PLR2004
-            embed.set_thumbnail(url=diceroll_thumbnail(self.ctx, RollResultType.SUCCESS))
             emoji = "👍"
-        elif self.probabilities["total_failures"] <= 10:  # noqa: PLR2004
-            embed.set_thumbnail(url=diceroll_thumbnail(self.ctx, RollResultType.BOTCH))
+        elif self.probabilities["total_successes"] <= 20:  # noqa: PLR2004
             emoji = "💀"
         else:
-            embed.set_thumbnail(url=diceroll_thumbnail(self.ctx, RollResultType.FAILURE))
             emoji = "👎"
 
-        # Add Fields
-        embed.add_field(
-            name="\u200b",
-            value=f"**OVERALL SUCCESS PROBABILITY: {self.probabilities['total_successes']:.2f}% {emoji}**\nAverage successes per roll: `{self.probabilities['total_results']:.1f}`",
-            inline=False,
-        )
+        print(self.probabilities)
 
-        embed.add_field(
-            name="\u200b",
-            value="**Detailed Results**\n(Chance that any specific roll will come up with the specified result)",
-            inline=False,
-        )
-        embed.add_field(
-            name="Critical Success",
-            value=f"{self.probabilities[RollResultType.CRITICAL.value]:.2f}%",
-            inline=True,
-        )
-        embed.add_field(
-            name="Success",
-            value=f"{self.probabilities[RollResultType.SUCCESS.value]:.2f}%",
-            inline=True,
-        )
-        embed.add_field(name="\u200b", value="**\u200b**", inline=True)  # Spacer
-        embed.add_field(
-            name="Failure",
-            value=f"{self.probabilities[RollResultType.FAILURE.value]:.2f}%",
-            inline=True,
-        )
-        embed.add_field(
-            name="Botch",
-            value=f"{self.probabilities[RollResultType.BOTCH.value]:.2f}%",
-            inline=True,
-        )
-        embed.add_field(name="\u200b", value="**\u200b**", inline=True)  # Spacer
+        description = f"""\
+## Overall success probability: {self.probabilities['total_successes']:.2f}% {emoji}
 
-        embed.add_field(
-            name="\u200b",
-            value="**Detailed Results**\n(Chance that any specific die will come up with the specified value)",
-            inline=False,
-        )
-        embed.add_field(
-            name="Critical Success Dice",
-            value=f"{self.probabilities['critical_dice']:.2f}%",
-            inline=True,
-        )
-        embed.add_field(
-            name="Success Dice", value=f"{self.probabilities['success_dice']:.2f}%", inline=True
-        )
-        embed.add_field(name="\u200b", value="**\u200b**", inline=True)  # Spacer
-        embed.add_field(
-            name="Botch Dice", value=f"{self.probabilities['botch_dice']:.2f}%", inline=True
-        )
-        embed.add_field(
-            name="Failure Dice", value=f"{self.probabilities['failure_dice']:.2f}%", inline=True
-        )
-        embed.add_field(name="\u200b", value="**\u200b**", inline=True)  # Spacer
+### Roll Result Probabilities
+*(Chance that any specific roll will come up with the specified result)*
+```python
+Critical Success:  {self.probabilities[RollResultType.CRITICAL.value]:.2f}%
+Success:           {self.probabilities[RollResultType.SUCCESS.value]:.2f}%
+Failure:           {self.probabilities[RollResultType.FAILURE.value]:.2f}%
+Botch:             {self.probabilities[RollResultType.BOTCH.value]:.2f}%
+```
+### Dice Value Probabilities
+*(Chance that any specific die will come up with the specified value)*
+```python
+Critical Success (10):  {self.probabilities['critical_dice']:.2f}%
+Success (>= {self.pool}):         {self.probabilities['success_dice']:.2f}%
+Failure (< {self.pool}):          {self.probabilities['failure_dice']:.2f}%
+Botch (1):              {self.probabilities['botch_dice']:.2f}%
+```
+"""
+
+        embed.description = description
         return embed
