@@ -51,9 +51,9 @@ class Characters(commands.Cog, name="Character"):
         self.bot = bot
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
-    update = chars.create_subgroup("update", "Update existing characters")
-    add = chars.create_subgroup("add", "Add custom information to existing characters")
-    delete = chars.create_subgroup("delete", "Delete information from existing characters")
+    update = chars.create_subgroup("update", "Make edits to character information")
+    add = chars.create_subgroup("add", "Add new information to characters")
+    delete = chars.create_subgroup("delete", "Delete information from characters")
 
     @chars.command(name="create", description="Create a new character")
     async def create_character(
@@ -135,6 +135,11 @@ class Characters(commands.Cog, name="Character"):
             autocomplete=select_character,
             required=True,
         ),
+        hidden: Option(
+            bool,
+            description="Make the sheet only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Displays a character sheet in the channel."""
         if self.bot.char_svc.is_char_claimed(ctx.guild.id, character.id):
@@ -143,9 +148,9 @@ class Characters(commands.Cog, name="Character"):
         else:
             claimed_by = None
 
-        await show_sheet(ctx, character=character, claimed_by=claimed_by)
+        await show_sheet(ctx, character=character, claimed_by=claimed_by, ephemeral=hidden)
 
-    @chars.command(name="claim", description="Claim a character")
+    @chars.command(name="claim")
     async def claim_character(
         self,
         ctx: discord.ApplicationContext,
@@ -157,7 +162,7 @@ class Characters(commands.Cog, name="Character"):
             name="character",
         ),
     ) -> None:
-        """Claim a character to your user. This will allow you to roll without specifying traits, edit the character, and more."""
+        """Claim a character to your user. Allows rolling with traits, editing the character, etc."""
         self.bot.char_svc.add_claim(ctx.guild.id, character.id, ctx.user.id)
 
         logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}")
@@ -168,12 +173,12 @@ class Characters(commands.Cog, name="Character"):
             level="success",
         )
 
-    @chars.command(name="unclaim", description="Unclaim a character")
+    @chars.command(name="unclaim")
     async def unclaim_character(
         self,
         ctx: discord.ApplicationContext,
     ) -> None:
-        """Unclaim currently claimed character. This will allow you to claim a new character."""
+        """Unclaim currently claimed character. Allows claiming a new character."""
         if self.bot.char_svc.user_has_claim(ctx):
             character = self.bot.char_svc.fetch_claim(ctx)
             self.bot.char_svc.remove_claim(ctx.guild.id, ctx.author.id)
@@ -196,8 +201,13 @@ class Characters(commands.Cog, name="Character"):
     async def list_characters(
         self,
         ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the list only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
-        """List all player characters."""
+        """List all player characters in this guild."""
         characters = self.bot.char_svc.fetch_all_characters(ctx.guild.id)
         if len(characters) == 0:
             await present_embed(
@@ -205,6 +215,7 @@ class Characters(commands.Cog, name="Character"):
                 title="No Characters",
                 description="There are no characters.\nCreate one with `/character create`",
                 level="error",
+                ephemeral=hidden,
             )
             return
 
@@ -230,13 +241,13 @@ class Characters(commands.Cog, name="Character"):
 
     ### ADD COMMANDS ####################################################################
 
-    @add.command(name="date_of_birth", description="Set the DOB of a character")
+    @add.command(name="date_of_birth")
     async def date_of_birth(
         self,
         ctx: discord.ApplicationContext,
         dob: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
     ) -> None:
-        """Set the age of a character."""
+        """Set the DOB of a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
         self.bot.char_svc.update_character(ctx, character.id, date_of_birth=dob)
@@ -301,7 +312,9 @@ class Characters(commands.Cog, name="Character"):
             x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
         ]:
             raise errors.ValidationError("Custom section already exists")
+
         self.bot.char_svc.add_custom_section(character, section_title, section_description)
+
         await present_embed(
             ctx,
             title="Custom Section Added",

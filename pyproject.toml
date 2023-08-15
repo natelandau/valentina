@@ -21,7 +21,7 @@
         arrow         = "^1.2.3"
         loguru        = "^0.7.0"
         numpy         = "^1.25.2"
-        peewee        = "^3.16.2"
+        peewee        = "^3.16.3"
         py-cord       = "^2.4.1"
         python        = "^3.11"
         python-dotenv = "^1.0.0"

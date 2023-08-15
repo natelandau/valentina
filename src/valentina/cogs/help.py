@@ -23,11 +23,36 @@ class Help(commands.Cog):
                 for cmd in self.bot.get_cog(cog).get_commands():
                     unsorted_commands.append(cmd)
 
+        """
+        # NOTE: Uncomment this to show all unsorted commands
         for c in self.bot.walk_commands():
             if c.name != "help":
                 unsorted_commands.append(c)
+        """
 
         return sorted(unsorted_commands, key=lambda x: x.name)
+
+    def __build_help_text(self, cmd: commands.Command) -> str:
+        """Build the help text for a command."""
+        description = (
+            f"## `/{cmd.name} [subcommand]`\n"
+            if hasattr(cmd, "subcommands")
+            else f"## `/{cmd.name}`\n"
+        )
+        description += f"{cmd.description}\n"
+        if not hasattr(cmd, "subcommands"):
+            return description
+
+        description += "### Subcommands\n"
+
+        for c in sorted(cmd.subcommands, key=lambda x: x.name):
+            if hasattr(c, "subcommands"):
+                description += f"**{c.name} `[subcommand]`**\n"
+            else:
+                description += f"**{c.name}**\n"
+            description += f"└ {c.description}\n\n"
+
+        return description
 
     help = discord.SlashCommandGroup("help", "Help with Valentina")  # noqa: A003
 
@@ -36,36 +61,47 @@ class Help(commands.Cog):
         self, ctx: discord.ApplicationContext, command: Option(str, required=False)  # type: ignore
     ) -> None:
         """Provide help information."""
-        fields = []
-
         commands = self.__build_command_list()
 
         if not command:
-            fields.append(("\u200b", "**COMMANDS**"))
-            fields.extend([(f"**/{x.name}**", x.description) for x in commands])
+            description = "**Usage:** Type `/<command> <subcommand>`\n"
+
+            description += "### All Commands\n"
+            for cmd in commands:
+                description += f"**{cmd.name}**\n"
+                description += f"└ {cmd.description}\n\n"
+            description += "\u23AF" * 33 + "\n"
+            description += (
+                "> Use `/help <command>` for detailed help information on each command.\n"
+            )
+
             await present_embed(
                 ctx,
                 title="Valentina Noir Help",
-                description="Use Valentina's commands by typing `/<command> <subcommand>`\n\nUse `/help <command>` for detailed help information on each command below.\n\n",
-                fields=fields,
+                description=description,
                 level="info",
                 ephemeral=True,
             )
         else:
             found_command = False
+            arg_command = command.split(" ")
+
             for cmd in commands:
-                if cmd.name == command:
+                if cmd.name == arg_command[0] and not arg_command[1:]:
                     found_command = True
-                    fields.append(("\u200b", "**COMMAND**"))
-                    fields.append((f"**/{cmd.name} [subcommand]**", cmd.description))
-                    fields.append(("\u200b", "**SUBCOMMANDS**"))
-                    for c in sorted(cmd.subcommands, key=lambda x: x.name):
-                        if not hasattr(c, "subcommands"):
-                            fields.append((f"**{c.name}**", c.description))
-                        if hasattr(c, "subcommands"):
-                            for x in sorted(c.subcommands, key=lambda x: x.name):
-                                fields.append((f"**{c.name} {x.name}**", x.description))
+                    description = self.__build_help_text(cmd)
+                    description += "\u23AF" * 33 + "\n"
+                    description += "> Use `/help <command> <command>` for information on subcommands with subcommands.\n"
+
                     break
+
+                if cmd.name == arg_command[0] and hasattr(cmd, "subcommands") and arg_command[1:]:
+                    for c in cmd.subcommands:
+                        if c.name == arg_command[1]:
+                            found_command = True
+                            description = description = self.__build_help_text(c)
+
+                            break
 
             if not found_command:
                 await present_embed(
@@ -81,8 +117,7 @@ class Help(commands.Cog):
             await present_embed(
                 ctx,
                 title="Valentina Noir Help",
-                description="Use Valentina's commands by typing `/<command> <subcommand>`\n\nUse `/help <command>` for detailed help information on each command below.\n\n",
-                fields=fields,
+                description=description,
                 level="info",
                 ephemeral=True,
             )

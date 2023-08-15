@@ -18,7 +18,7 @@ class Misc(commands.Cog):
         self.bot = bot
 
     @commands.slash_command()
-    async def changlog(
+    async def changelog(
         self,
         ctx: commands.Context,
         hidden: Option(
@@ -55,7 +55,7 @@ class Misc(commands.Cog):
             show_disabled=show_buttons,
             show_indicator=show_buttons,
         )
-        await paginator.respond(ctx.interaction, ephemeral=hidden)  # type: ignore [attr-defined]
+        await paginator.respond(ctx.interaction, ephemeral=hidden)  # type: ignore
 
     @commands.slash_command(name="coinflip", help="Flip a coin")
     async def coinflip(self, ctx: discord.ApplicationContext) -> None:

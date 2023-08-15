@@ -16,15 +16,15 @@ from valentina.utils.options import (
 from valentina.views import ConfirmCancelButtons, MacroCreateModal, present_embed
 
 
-class Macros(commands.Cog):
+class Macro(commands.Cog):
     """Manage macros for quick rolls."""
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    macros = discord.SlashCommandGroup("macros", "Manage macros for quick rolls")
+    macro = discord.SlashCommandGroup("macro", "Create & manage macros for quick rolling traits")
 
-    @macros.command(name="create", description="Create a new macro")
+    @macro.command(name="create", description="Create a new macro")
     async def create(
         self,
         ctx: discord.ApplicationContext,
@@ -74,10 +74,15 @@ class Macros(commands.Cog):
             log=True,
         )
 
-    @macros.command(name="list", description="List macros associated with your account")
+    @macro.command(name="list", description="List macros associated with your account")
     async def list_macros(
         self,
         ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the list only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """List all macros associated with a user account."""
         macros = self.bot.macro_svc.fetch_macros(ctx.guild.id, ctx.author.id)
@@ -100,7 +105,7 @@ class Macros(commands.Cog):
                 description="You have the following macros associated with your account.",
                 fields=fields,
                 level="info",
-                ephemeral=True,
+                ephemeral=hidden,
             )
         else:
             await present_embed(
@@ -108,10 +113,10 @@ class Macros(commands.Cog):
                 title="No Macros",
                 description="You do not have any macros associated with your account.",
                 level="info",
-                ephemeral=True,
+                ephemeral=hidden,
             )
 
-    @macros.command(name="delete", description="Delete a macro")
+    @macro.command(name="delete", description="Delete a macro")
     async def delete_macro(
         self,
         ctx: discord.ApplicationContext,
@@ -154,4 +159,4 @@ class Macros(commands.Cog):
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
-    bot.add_cog(Macros(bot))
+    bot.add_cog(Macro(bot))

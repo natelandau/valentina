@@ -33,7 +33,7 @@ class Admin(commands.Cog):
         default_member_permissions=discord.Permissions(administrator=True),
     )
 
-    @admin.command(description="Add user to role")
+    @admin.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def add_role(
@@ -107,15 +107,15 @@ class Admin(commands.Cog):
             level="info",
         )
 
-    @admin.command(description="Purge the bot's cache and reload data from DB")
+    @admin.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def puge_cache(
+    async def purge_cache(
         self,
         ctx: discord.ApplicationContext,
         all_guilds: Option(bool, choices=[True, False], default=False, required=False),
     ) -> None:
-        """Purge the bot's cache and reload all data from DB."""
+        """Purge the bot's cache and reload all data from the database."""
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
@@ -163,7 +163,7 @@ class Admin(commands.Cog):
             log=True,
         )
 
-    @admin.command(description="Manage settings")
+    @admin.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def settings(  # noqa: C901, PLR0912
@@ -226,7 +226,7 @@ class Admin(commands.Cog):
             default=None,
         ),
     ) -> None:
-        """Manage settings."""
+        """Manage Valentina's settings for this guild."""
         current_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
         fields = []
         update_data: dict[str, str | int | bool] = {}
@@ -351,11 +351,11 @@ class Admin(commands.Cog):
         else:
             await present_embed(ctx, title="No settings updated", level="info", ephemeral=True)
 
-    @admin.command(description="Show server settings")
+    @admin.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def show_settings(self, ctx: discord.ApplicationContext) -> None:
-        """Show server settings."""
+        """Show server settings for this guild."""
         embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
         await ctx.respond(embed=embed, ephemeral=True)
 
@@ -554,7 +554,7 @@ class Admin(commands.Cog):
             default="No reason provided",
         ),
     ) -> None:
-        """Disable the Send Messages permission for the default role."""
+        """Disable the `Send Message` permission for the default role."""
         await ctx.assert_permissions(manage_roles=True)
 
         if not isinstance(ctx.channel, discord.TextChannel):
@@ -591,7 +591,7 @@ class Admin(commands.Cog):
             default="No reason provided",
         ),
     ) -> None:
-        """Set the Send Messages permission to the default state for the default role."""
+        """Set the `Send Message` permission to the default state for the default role."""
         await ctx.assert_permissions(manage_roles=True)
         if not isinstance(ctx.channel, discord.TextChannel):
             raise commands.BadArgument("Only text channels can be locked or unlocked")
@@ -774,7 +774,7 @@ class Admin(commands.Cog):
 
     emoji = discord.SlashCommandGroup(
         "emoji",
-        "Add/remove custom emojis to this guild",
+        "Add/remove custom emojis",
         default_member_permissions=discord.Permissions(manage_emojis=True),
     )
 
