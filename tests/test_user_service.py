@@ -64,10 +64,11 @@ class TestUserService:
         When one user is purged
         Then the cache contains only the other user
         """
-        # Confirm two users in cache
+        # Confirm three users in cache
         assert self.user_svc.fetch_user(mock_ctx) == User(id=1, name="Test User")
         assert self.user_svc.fetch_user(ctx_new_user) == User(id=2, name="Test User 2")
-        assert len(self.user_svc.user_cache) == 2
+        self.user_svc.user_cache["2_1"] = User(id=1, name="Test User")
+        assert len(self.user_svc.user_cache) == 3
 
         # Purge one user
         self.user_svc.purge_cache(mock_ctx)
@@ -75,7 +76,8 @@ class TestUserService:
         # Confirm one user in cache
         assert len(self.user_svc.user_cache) == 1
         assert "1_1" not in self.user_svc.user_cache
-        assert "1_2" in self.user_svc.user_cache
+        assert "1_2" not in self.user_svc.user_cache
+        assert "2_1" in self.user_svc.user_cache
 
     @pytest.mark.parametrize(
         ("xp_permissions_value", "is_admin", "is_char_owner", "hours_since_creation", "expected"),

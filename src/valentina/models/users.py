@@ -52,9 +52,10 @@ class UserService:
             ctx (ApplicationContext | None, optional): The application context. Defaults to None.
         """
         if ctx:
-            key = self.__get_user_key(ctx.guild.id, ctx.author.id)
-            self.user_cache.pop(key, None)
-            logger.debug(f"CACHE: Purge user cache: {key}")
+            for key in list(self.user_cache.keys()):
+                if key.startswith(f"{ctx.guild.id}"):
+                    self.user_cache.pop(key, None)
+                    logger.debug(f"CACHE: Purge user cache: {key}")
         else:
             self.user_cache = {}
             logger.debug("CACHE: Purge all user caches")
