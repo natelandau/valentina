@@ -12,6 +12,7 @@ from valentina.models.db_tables import (
     Trait,
     TraitCategory,
     TraitValue,
+    VampireClan,
 )
 from valentina.utils import errors
 
@@ -152,8 +153,8 @@ class TestCharacterService:
         assert character.custom_traits[0].value == 1
         assert character.custom_traits[0].max_value == 5
 
-    def test_fetch_all_characters(self, caplog):
-        """Test fetch_all_characters()."""
+    def test_fetch_all_player_characters(self, caplog):
+        """Test fetch_all_player_characters()."""
         # GIVEN two characters for a guild, with one in the cache
         guild_id = 123321
         character1 = Character.create(
@@ -182,8 +183,8 @@ class TestCharacterService:
         )
         self.char_svc.character_cache[f"{guild_id}_{character1.id}"] = character1
 
-        # WHEN the fetch_all_characters method is called
-        result = self.char_svc.fetch_all_characters(guild_id)
+        # WHEN the fetch_all_player_characters method is called
+        result = self.char_svc.fetch_all_player_characters(guild_id)
         returned = caplog.text
 
         # THEN check the method returns the correct characters from the cache and the database and updates the cache
@@ -205,8 +206,8 @@ class TestCharacterService:
         character1 = Character.create(
             data={
                 "first_name": str(uuid4()).split("-")[0],
-                "last_name": "character",
-                "nickname": "testy",
+                "last_name": "storyteller",
+                "nickname": "1",
                 "storyteller_character": True,
             },
             char_class=1,
@@ -217,8 +218,8 @@ class TestCharacterService:
         character2 = Character.create(
             data={
                 "first_name": str(uuid4()).split("-")[0],
-                "last_name": "character",
-                "nickname": "testy",
+                "last_name": "storyteller",
+                "nickname": "2",
                 "storyteller_character": True,
             },
             char_class=1,
@@ -463,12 +464,13 @@ class TestCharacterService:
 
         # WHEN the update_or_add method is called
         updates = {"first_name": "updated", "last_name": "updated", "nickname": "updated"}
-        result = self.char_svc.update_or_add(mock_ctx, character=character, data=updates)
+        result = self.char_svc.update_or_add(mock_ctx, character=character, data=updates, clan=2)
 
         # THEN check the character is updated correctly
         assert result.data["first_name"] == "updated"
         assert result.data["last_name"] == "updated"
         assert result.data["nickname"] == "updated"
+        assert result.clan == VampireClan.get_by_id(2)
         assert mock_ctx.guild.id not in self.char_svc.storyteller_character_cache
 
     def test_update_or_add_three(self, mock_ctx):

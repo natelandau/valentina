@@ -212,7 +212,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """List all player characters in this guild."""
-        characters = self.bot.char_svc.fetch_all_characters(ctx.guild.id)
+        characters = self.bot.char_svc.fetch_all_player_characters(ctx.guild.id)
         if len(characters) == 0:
             await present_embed(
                 ctx,

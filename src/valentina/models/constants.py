@@ -9,6 +9,30 @@ MAX_PAGE_CHARACTER_COUNT = 1950
 MAX_BUTTONS_PER_ROW = 5
 
 
+### Database Default Values ###
+CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
+    "alive": True,
+    "auspice": None,
+    "bio": None,
+    "breed": None,
+    "cool_points_total": 0,
+    "date_of_birth": None,
+    "debug_character": False,
+    "demeanor": None,
+    "essence": None,
+    "first_name": None,
+    "generation": None,
+    "last_name": None,
+    "nature": None,
+    "nickname": None,
+    "sire": None,
+    "storyteller_character": False,
+    "tradition": None,
+    "tribe": None,
+    "experience_total": 0,
+    "experience": 0,
+}
+
 ### ENUMS ###
 
 

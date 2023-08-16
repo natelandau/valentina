@@ -70,52 +70,6 @@ class CharacterService:
         # Generate a unique key for the claim by joining the guild ID and user ID with an underscore
         return f"{guild_id}_{user_id}"
 
-    def __get_default_values(self) -> dict[str, str | int | bool]:
-        """Get the default values for a character."""
-        return {
-            "alive": True,
-            "auspice": None,
-            "bio": None,
-            "breed": None,
-            "cool_points_total": 0,
-            "date_of_birth": None,
-            "debug_character": False,
-            "demeanor": None,
-            "essence": None,
-            "first_name": None,
-            "generation": None,
-            "last_name": None,
-            "modified": str(time_now()),
-            "nature": None,
-            "nickname": None,
-            "sire": None,
-            "storyteller_character": False,
-            "tradition": None,
-            "tribe": None,
-            "experience_total": 0,
-            "experience": 0,
-        }
-
-    def __verify_character_defaults(self, character: Character) -> Character:
-        """Verify that the character JSONField defaults are set.  If any keys are missing, they are added to the guild's data with default values."""
-        default_values = self.__get_default_values()
-        updated = False
-        for default_key, default_value in default_values.items():
-            if default_key not in character.data:
-                logger.debug(
-                    f"DATABASE: Update '{character}' with '{default_key}: {default_value}'"
-                )
-                character.data[default_key] = default_value
-                updated = True
-
-        if updated:
-            character.save()
-            logger.debug(f"DATABASE: Complete defaults update for {character}'")
-        else:
-            logger.debug(f"DATABASE:{character}' defaults are up to date")
-
-        return character
-
     def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
         """Claim a character for a user.
 
@@ -212,7 +166,7 @@ class CharacterService:
 
         logger.debug(f"CHARACTER: Add trait '{name}' to {character}")
 
-    def fetch_all_characters(self, guild_id: int) -> list[Character]:
+    def fetch_all_player_characters(self, guild_id: int) -> list[Character]:
         """Fetch all characters for a specific guild, checking the cache first and then the database.
 
         Args:
@@ -242,8 +196,9 @@ class CharacterService:
             else "DATABASE: No characters to fetch"
         )
 
-        # Add characters from database to cache
-        for character in characters:
+        # Verify default values and add characters from database to cache
+        for c in characters:
+            character = c.verify_character_defaults()
             key = self.__get_char_key(guild_id, character.id)
             self.character_cache[key] = character
 
@@ -286,8 +241,10 @@ class CharacterService:
         # Log the number of characters fetched from the database
         logger.debug(f"DATABASE: Fetch {len(characters)} StoryTeller characters")
 
-        # Update the cache with the fetched characters
-        self.storyteller_character_cache[guild_id] += list(characters)
+        # Verify default values and add characters from database to cache
+        for c in characters:
+            character = c.verify_character_defaults()
+            self.storyteller_character_cache[guild_id].append(character)
 
         return self.storyteller_character_cache[guild_id]
 
@@ -442,10 +399,21 @@ class CharacterService:
         character: Character | None = None,
         **kwargs: str | int,
     ) -> Character:
-        """Update or add a character."""
+        """Update or add a character.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            data (dict[str, str | int | bool] | None): The character data.
+            character (Character | None): The character to update, or None to create.
+            **kwargs: Additional fields for the character.
+
+        Returns:
+            Character: The updated or created character.
+        """
+        # Purge the cache to ensure that stale data is not being used.
         self.purge_cache(ctx)
 
-        # Always add the modified timestamp
+        # Always add the modified timestamp if data is provided.
         if data:
             data["modified"] = str(time_now())
 
@@ -455,25 +423,26 @@ class CharacterService:
             new_character = Character.create(
                 guild_id=ctx.guild.id,
                 created_by=user,
-                data=data or self.__get_default_values(),
+                data=data or {},
                 **kwargs,
             )
-            character = self.__verify_character_defaults(new_character)
+            character = new_character.verify_character_defaults()
 
             logger.info(f"DATABASE: Create {character} for {ctx.author.display_name}")
 
             return character
 
-        # Update the data dictionary in the JSON field
-        data_dict = data or {}
+        if data:
+            # DEBUG: Log each key and value being updated.
+            for key, value in data.items():
+                logger.debug(f"DATABASE: Update {character} `{key}:{value}`")
 
-        # TODO: Remove this when this method is fully debugged
-        for key, value in data_dict.items():
-            logger.debug(f"DATABASE: Update {character} `{key}:{value}`")
+            Character.update(data=Character.data.update(data)).where(
+                Character.id == character.id
+            ).execute()
 
-        Character.update(data=Character.data.update(data_dict)).where(
-            Character.id == character.id
-        ).execute()
+        if kwargs:
+            Character.update(**kwargs).where(Character.id == character.id).execute()
 
         logger.debug(f"DATABASE: Updated Character '{character}'")
 
