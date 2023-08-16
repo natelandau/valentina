@@ -6,16 +6,18 @@ This module contains shared fixtures that are used by multiple database tests.
 Fixtures:
     mock_db: A mock database with test data for use in tests.
     empty_db: A database with no data for use in tests.
-    ctx: A context object with an existing user.
-    ctx_new_user: A context object with a new user.
-    ctx_new_user_guild: A context object with a new user and a new guild.
-    existing_character: A character object that exists in the mock database.
+    mock_ctx: A context object with existing user(1)  and existing guild(1).
+    mock_ctx2: A context object with existing user(1) and existing guild(2).
+    mock_ctx3: A context object with a new user  and existing guild(1).
+    mock_ctx4: A context object with a new user and a new guild.
     caplog: Overwrite the built-in caplog fixture to capture loguru logs.
 """
 import logging
+from unittest.mock import MagicMock
 
 import discord
 import pytest
+from discord.ext import commands
 from loguru import logger
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
@@ -73,54 +75,36 @@ MODELS = [
     RollProbability,
 ]
 
-databaseversion = {"version": "1.0.0"}
-guild = {"id": 1, "name": "test_guild", "data": {"key": "value"}}
-guild2 = {"id": 2, "name": "test_guild2", "data": {"key": "value"}}
-user1 = {"id": 1, "username": "test_user", "name": "Test User"}
-user22 = {"id": 22, "username": "test_user22", "name": "Test User22"}
-character1 = {
-    "first_name": "test",
-    "last_name": "character",
-    "nickname": "testy",
-    "char_class": 1,
-    "guild": 1,
-    "created_by": 1,
-    "clan": 1,
-    "strength": 5,
-    "willpower": 5,
-}
-character2 = {
-    "first_name": "test2",
-    "last_name": "character2",
-    "nickname": "testy2",
-    "char_class": 1,
-    "guild": 1,
-    "created_by": 1,
-    "clan": 1,
-    "strength": 5,
-    "willpower": 5,
-}
 
-custom_section = {
-    "character": 1,
-    "title": "test_section",
-    "description": "test_description",
-}
-guilduser = {"guild": 1, "user": 1}
-macro = {
-    "guild": 1,
-    "user": 1,
-    "name": "test_macro",
-    "abbreviation": "tm",
-    "description": "test description",
-    "content": "test_content",
-    "trait_one": "test_trait_one",
-    "trait_two": "test_trait_two",
-}
-trait_values1 = {"character_id": 1, "trait_id": 1, "value": 1}
-trait_values2 = {"character_id": 1, "trait_id": 2, "value": 2}
-trait_values3 = {"character_id": 1, "trait_id": 3, "value": 3}
-trait_category = {"name": 1}
+def _create_test_database_data():
+    """Create test data for use in tests."""
+    DatabaseVersion.create(version="1.0.0")
+    Guild.create(id=1, name="test_guild", data={"key": "value"})
+    Guild.create(id=2, name="test_guild2", data={"key": "value"})
+    User.create(id=1, username="test_user", name="Test User")
+    GuildUser.create(guild=1, user=1)
+    Character.create(
+        guild=1,
+        created_by=1,
+        clan=1,
+        char_class=1,
+        data={
+            "first_name": "test",
+            "last_name": "character",
+            "nickname": "testy",
+        },
+    )
+    TraitValue.create(character=1, trait=1, value=1)
+    TraitValue.create(character=1, trait=2, value=2)
+    TraitValue.create(character=1, trait=3, value=3)
+    CustomTrait.create(
+        character=1,
+        guild=1,
+        name="Test_Trait",
+        category=13,
+        value=2,
+        max_value=5,
+    )
 
 
 @pytest.fixture(scope="class")
@@ -139,43 +123,20 @@ def mock_db() -> CSqliteExtDatabase:
     test_db.create_tables(MODELS)
     PopulateDatabase(test_db).populate()
 
-    # Create test data
-
-    DatabaseVersion.create(**databaseversion)
-    Guild.create(**guild)
-    Guild.create(**guild2)
-    User.create(**user1)
-    User.create(**user22)
-    Character.create(**character1)
-    Character.create(**character2)
-
-    customtrait = {
-        "character": 1,
-        "guild": 1,
-        "name": "Test_Trait",
-        "category": TraitCategory.get(name="Skills"),
-        "value": 2,
-        "max_value": 5,
-    }
-    CustomTrait.create(**customtrait)
-    CustomSection.create(**custom_section)
-    GuildUser.create(**guilduser)
-    Macro.create(**macro)
-    TraitCategory.create(**trait_category)
-    TraitValue.create(**trait_values1)
-    TraitValue.create(**trait_values2)
-    TraitValue.create(**trait_values3)
+    _create_test_database_data()  # Create test data
 
     # Confirm test data was created
     assert Guild.get_by_id(1).name == "test_guild"
     assert User.get_by_id(1).username == "test_user"
     assert CharacterClass.get_by_id(1).name == "Mortal"
     assert VampireClan.get_by_id(1).name == "Assamite"
-    assert Character.get_by_id(1).first_name == "test"
+    assert Character.get_by_id(1).data["first_name"] == "test"
     assert CustomTrait.get_by_id(1).name == "Test_Trait"
-    assert CustomSection.get_by_id(1).title == "test_section"
+    # assert CustomSection.get_by_id(1).title == "test_section"
     assert GuildUser.get_by_id(1).guild.name == "test_guild"
-    assert Macro.get_by_id(1).name == "test_macro"
+    # assert Macro.get_by_id(1).name == "test_macro"
+    assert TraitValue.get_by_id(1).value == 1
+    assert TraitValue.get_by_id(2).value == 2
     assert TraitValue.get_by_id(3).value == 3
 
     yield test_db
@@ -202,105 +163,139 @@ def empty_db() -> CSqliteExtDatabase:
 
 
 ### Mock Objects ################################
-class MockGuild(discord.Guild):
-    """Mock guild object."""
-
-    def __init__(self, id, name: str | None = None):
-        self.id = id
-        self.name = name
-        self.data = {"key": "value"}
-
-
-class MockUser:
-    """Mock user object."""
-
-    def __init__(self, id, display_name, name, mention):
-        self.id = id
-        self.display_name = display_name
-        self.name = name
-        self.mention = mention
-
-
-class MockCTX(discord.ApplicationContext):
-    """Mock context object."""
-
-    def __init__(self, guild, author):
-        self.guild = guild
-        self.author = author
-
-
-class MockCharacter:
-    """Mock character object."""
-
-    def __init__(self, id, first_name, last_name):
-        self.id = id
-        self.first_name = first_name
-        self.last_name = last_name
-        self.name = f"{first_name} {last_name}"
-        self.guild = 1
-        self.created_by = 1
-        self.class_name = "test_class"
-
-
-class MockTrait:
-    """Mock trait object."""
-
-    def __init__(self, id, name):
-        self.id = id
-        self.name = name
-        self.category = 1
-
-
 @pytest.fixture()
 def mock_ctx():
-    """Create a mock context object containing object in the mock database."""
-    mock_guild = MockGuild(1, "Test Guild")
-    mock_user = MockUser(1, "Test User", "testuser", "<@1>")
-    return MockCTX(mock_guild, mock_user)
+    """Create a mock context object with user 1."""
+    # Mock the ctx.author object to match the mock database
+    mock_author = MagicMock()
+    mock_author.id = 1
+    mock_author.display_name = "Test User"
+    mock_author.name = "testuser"
+    mock_author.mention = "<@1>"
+    mock_author.__class__ = discord.Member
+
+    # Mock the ctx.bot object
+    mock_bot = MagicMock()
+    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
+    mock_bot.__class__ = commands.Bot
+
+    # Mock the ctx.guild object matches the mock database
+    mock_guild = MagicMock()
+    mock_guild.id = 1
+    mock_guild.name = "Test Guild"
+    mock_guild.data = {"key": "value"}
+    mock_guild.__class__ = discord.Guild
+
+    # Mock the ctx object
+    mock_ctx = MagicMock()
+    mock_ctx.author = mock_author
+    mock_ctx.bot = mock_bot
+    mock_ctx.guild = mock_guild
+    mock_ctx.__class__ = discord.ApplicationContext
+
+    return mock_ctx
 
 
 @pytest.fixture()
 def mock_ctx2():
-    """Create a mock context object containing object in the mock database."""
-    mock_guild = MockGuild(2, "Test Guild2")
-    mock_user = MockUser(1, "Test User", "testuser", "<@1>")
-    return MockCTX(mock_guild, mock_user)
+    """Create a mock context object with guild 2."""
+    # Mock the ctx.author object to match the mock database
+    mock_author = MagicMock()
+    mock_author.id = 1
+    mock_author.display_name = "Test User"
+    mock_author.name = "testuser"
+    mock_author.mention = "<@1>"
+    mock_author.__class__ = discord.Member
+
+    # Mock the ctx.bot object
+    mock_bot = MagicMock()
+    mock_bot.__class__ = commands.Bot
+    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
+
+    # Mock the ctx.guild object matches the mock database
+    mock_guild = MagicMock()
+    mock_guild.id = 2
+    mock_guild.name = "Test Guild2"
+    mock_guild.data = {"key": "value"}
+    mock_guild.__class__ = discord.Guild
+
+    # Mock the ctx object
+    mock_ctx = MagicMock()
+    mock_ctx.author = mock_author
+    mock_ctx.bot = mock_bot
+    mock_ctx.guild = mock_guild
+    mock_ctx.__class__ = discord.ApplicationContext
+
+    return mock_ctx
 
 
 @pytest.fixture()
-def existing_user():
-    """Create a mock user object."""
-    return MockUser(1, "Test User 1", "testuser 1", "<@1>")
+def mock_ctx3():
+    """Create a mock context object with user not in the database."""
+    # Mock the ctx.author object to match the mock database
+    mock_author = MagicMock()
+    mock_author.id = 600
+    mock_author.display_name = "Test User 600"
+    mock_author.name = "testuser 600"
+    mock_author.mention = "<@600>"
+    mock_author.__class__ = discord.Member
+
+    # Mock the ctx.bot object
+    mock_bot = MagicMock()
+    mock_bot.__class__ = commands.Bot
+    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
+
+    # Mock the ctx.guild object matches the mock database
+    mock_guild = MagicMock()
+    mock_guild.id = 1
+    mock_guild.name = "Test Guild"
+    mock_guild.data = {"key": "value"}
+    mock_guild.__class__ = discord.Guild
+
+    # Mock the ctx object
+    mock_ctx = MagicMock()
+    mock_ctx.author = mock_author
+    mock_ctx.bot = mock_bot
+    mock_ctx.guild = mock_guild
+    mock_ctx.__class__ = discord.ApplicationContext
+
+    return mock_ctx
 
 
 @pytest.fixture()
-def ctx_new_user():
-    """Create a mock context object that has a user not in the mock database."""
-    mock_guild = MockGuild(1, "Test Guild")
-    mock_user = MockUser(2, "Test User 2", "testuser 2", "<@2>")
-    return MockCTX(mock_guild, mock_user)
+def mock_ctx4():
+    """Create a mock context object with user AND a guild not in the database."""
+    # Mock the ctx.author object
+    mock_author = MagicMock()
+    mock_author.id = 500
+    mock_author.display_name = "Test User 500"
+    mock_author.name = "testuser 500"
+    mock_author.mention = "<@500>"
+    mock_author.__class__ = discord.Member
+
+    # Mock the ctx.bot object
+    mock_bot = MagicMock()
+    mock_bot.__class__ = commands.Bot
+    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
+
+    # Mock the ctx.guild object
+    mock_guild = MagicMock()
+    mock_guild.id = 500
+    mock_guild.name = "Test Guild 500"
+    mock_guild.data = {"key": "value"}
+    mock_guild.__class__ = discord.Guild
+
+    # Mock the ctx object
+    mock_ctx = MagicMock()
+    mock_ctx.author = mock_author
+    mock_ctx.bot = mock_bot
+    mock_ctx.guild = mock_guild
+    mock_ctx.__class__ = discord.ApplicationContext
+
+    return mock_ctx
 
 
-@pytest.fixture()
-def ctx_new_user_guild():
-    """Create a mock context object that has a user and a guild not in the mock database."""
-    mock_guild = MockGuild(500, "Test Guild 500")
-    mock_user = MockUser(500, "Test User 500", "testuser 500", "<@500>")
-    return MockCTX(mock_guild, mock_user)
-
-
-@pytest.fixture()
-def existing_character():
-    """Create a mock character object that is in the mock database."""
-    return MockCharacter(1, "first", "last")
-
-
-@pytest.fixture()
-def existing_trait():
-    """Create a mock trait object that is in the mock database."""
-    return MockTrait(1, "test_trait")
-
-
+### OTHER FIXTURES ################################
 @pytest.fixture()
 def caplog(caplog):
     """Override and wrap the caplog fixture with one of our own. This fixes a problem where loguru logs could not be captured by caplog."""

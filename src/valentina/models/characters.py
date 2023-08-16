@@ -4,7 +4,6 @@ import re
 
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
-from peewee import DoesNotExist
 
 from valentina.models.constants import MaxTraitValue
 from valentina.models.db_tables import (
@@ -70,6 +69,52 @@ class CharacterService:
         """
         # Generate a unique key for the claim by joining the guild ID and user ID with an underscore
         return f"{guild_id}_{user_id}"
+
+    def __get_default_values(self) -> dict[str, str | int | bool]:
+        """Get the default values for a character."""
+        return {
+            "alive": True,
+            "auspice": None,
+            "bio": None,
+            "breed": None,
+            "cool_points_total": 0,
+            "date_of_birth": None,
+            "debug_character": False,
+            "demeanor": None,
+            "essence": None,
+            "first_name": None,
+            "generation": None,
+            "last_name": None,
+            "modified": str(time_now()),
+            "nature": None,
+            "nickname": None,
+            "sire": None,
+            "storyteller_character": False,
+            "tradition": None,
+            "tribe": None,
+            "experience_total": 0,
+            "experience": 0,
+        }
+
+    def __verify_character_defaults(self, character: Character) -> Character:
+        """Verify that the character JSONField defaults are set.  If any keys are missing, they are added to the guild's data with default values."""
+        default_values = self.__get_default_values()
+        updated = False
+        for default_key, default_value in default_values.items():
+            if default_key not in character.data:
+                logger.debug(
+                    f"DATABASE: Update '{character}' with '{default_key}: {default_value}'"
+                )
+                character.data[default_key] = default_value
+                updated = True
+
+        if updated:
+            character.save()
+            logger.debug(f"DATABASE: Complete defaults update for {character}'")
+        else:
+            logger.debug(f"DATABASE:{character}' defaults are up to date")
+
+        return character
 
     def add_claim(self, guild_id: int, char_id: int, user_id: int) -> bool:
         """Claim a character for a user.
@@ -167,27 +212,6 @@ class CharacterService:
 
         logger.debug(f"CHARACTER: Add trait '{name}' to {character}")
 
-    def create_character(self, ctx: ApplicationContext, **kwargs: str | int) -> Character:
-        """Create a character in the cache and database."""
-        # Normalize kwargs keys to database column names
-
-        user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
-
-        character = Character.create(
-            guild_id=ctx.guild.id,
-            created_by=user.id,
-            **kwargs,
-        )
-
-        # Add storyteller characters to the cache
-        if character.storyteller_character:
-            self.storyteller_character_cache.setdefault(ctx.guild.id, [])
-            self.storyteller_character_cache[ctx.guild.id].append(character)
-
-        logger.info(f"DATABASE: Create character: {character}] for {ctx.author.display_name}")
-
-        return character
-
     def fetch_all_characters(self, guild_id: int) -> list[Character]:
         """Fetch all characters for a specific guild, checking the cache first and then the database.
 
@@ -209,7 +233,7 @@ class CharacterService:
         # Fetch characters from database not in cache
         characters = Character.select().where(
             (Character.guild_id == guild_id)
-            & (Character.storyteller_character == False)  # noqa: E712
+            & (Character.data["storyteller_character"] == False)  # noqa: E712
             & (Character.id.not_in(cached_ids))
         )
         logger.debug(
@@ -255,7 +279,7 @@ class CharacterService:
         # Query the database for StoryTeller characters not in cache
         characters = Character.select().where(
             (Character.guild_id == guild_id)
-            & (Character.storyteller_character == True)  # noqa: E712
+            & (Character.data["storyteller_character"] == True)  # noqa: E712
             & (Character.id.not_in(cached_ids))
         )
 
@@ -411,56 +435,49 @@ class CharacterService:
         # If the claim doesn't exist, return False
         return False
 
-    def user_has_claim(self, ctx: ApplicationContext) -> bool:
-        """Check if a user has a claim.
-
-        Args:
-            ctx (ApplicationContext): Context object containing guild and author information.
-
-        Returns:
-            bool: True if the user has a claim, False otherwise.
-        """
-        claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
-        return claim_key in self.claim_cache
-
-    def update_character(
-        self, ctx: ApplicationContext, char_id: int, **kwargs: str | int
+    def update_or_add(
+        self,
+        ctx: ApplicationContext,
+        data: dict[str, str | int | bool] | None = None,
+        character: Character | None = None,
+        **kwargs: str | int,
     ) -> Character:
-        """Update a character in the cache and database.
+        """Update or add a character."""
+        self.purge_cache(ctx)
 
-        Args:
-            ctx (ApplicationContext): Context object containing guild information.
-            char_id (int): The character ID to update.
-            **kwargs (str | int): Additional keyword arguments to update the character attributes.
+        # Always add the modified timestamp
+        if data:
+            data["modified"] = str(time_now())
 
-        Returns:
-            Character: The updated character object.
-        """
-        key = self.__get_char_key(ctx.guild.id, char_id)
+        if not character:
+            user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
-        try:
-            character = Character.get_by_id(char_id)
-        except DoesNotExist as e:
-            raise errors.DatabaseError(
-                f"No character found in the database matching id `{char_id}`"
-            ) from e
+            new_character = Character.create(
+                guild_id=ctx.guild.id,
+                created_by=user,
+                data=data or self.__get_default_values(),
+                **kwargs,
+            )
+            character = self.__verify_character_defaults(new_character)
 
-        # Update the character in the database
-        Character.update(modified=time_now(), **kwargs).where(
+            logger.info(f"DATABASE: Create {character} for {ctx.author.display_name}")
+
+            return character
+
+        # Update the data dictionary in the JSON field
+        data_dict = data or {}
+
+        # TODO: Remove this when this method is fully debugged
+        for key, value in data_dict.items():
+            logger.debug(f"DATABASE: Update {character} `{key}:{value}`")
+
+        Character.update(data=Character.data.update(data_dict)).where(
             Character.id == character.id
         ).execute()
 
-        # Re-query the character object to reflect the changes
-        character = Character.get_by_id(char_id)
+        logger.debug(f"DATABASE: Updated Character '{character}'")
 
-        # Clear caches based on character type
-        if character.storyteller_character:
-            self.storyteller_character_cache.pop(ctx.guild.id, None)
-        else:
-            self.character_cache.pop(key, None)
-
-        logger.debug(f"DATABASE: Update character: {character}")
-        return character
+        return Character.get_by_id(character.id)  # Have to query db again to get updated data ???
 
     def update_traits_by_id(
         self, ctx: ApplicationContext, character: Character, trait_values_dict: dict[int, int]
@@ -490,3 +507,15 @@ class CharacterService:
                 found_trait.save()
 
         logger.debug(f"DATABASE: Update traits for character {character}")
+
+    def user_has_claim(self, ctx: ApplicationContext) -> bool:
+        """Check if a user has a claim.
+
+        Args:
+            ctx (ApplicationContext): Context object containing guild and author information.
+
+        Returns:
+            bool: True if the user has a claim, False otherwise.
+        """
+        claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
+        return claim_key in self.claim_cache

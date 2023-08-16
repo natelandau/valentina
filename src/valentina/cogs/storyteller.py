@@ -6,7 +6,7 @@ from discord.ext import commands
 from peewee import fn
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType
+from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.db_tables import VampireClan
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import (
@@ -86,7 +86,7 @@ class StoryTeller(commands.Cog):
         checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
     )
 
-    @storyteller.command(name="new_character", description="Create a new character")
+    @storyteller.command(name="new_character")
     async def create_story_char(
         self,
         ctx: discord.ApplicationContext,
@@ -140,20 +140,24 @@ class StoryTeller(commands.Cog):
             default=None,
         ),
     ) -> None:
-        """Test command."""
+        """Create a new storyteller character."""
         first_name, last_name = await fetch_random_name(gender=gender, country=name_type)
 
         if char_class.name.lower() == "vampire" and not vampire_clan:
             vampire_clan = VampireClan.select().order_by(fn.Random()).limit(1)[0]
 
-        character = self.bot.char_svc.create_character(
+        data = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "nickname": char_class.name,
+            "storyteller_character": True,
+        }
+
+        character = self.bot.char_svc.update_or_add(
             ctx,
-            first_name=first_name,
-            last_name=last_name,
-            nickname=char_class.name,
+            data=data,
             char_class=char_class,
             clan=vampire_clan,
-            storyteller_character=True,
         )
 
         fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
@@ -180,7 +184,7 @@ class StoryTeller(commands.Cog):
             await msg.edit_original_response(  # type: ignore [union-attr]
                 embed=discord.Embed(
                     title=f"{character.full_name} discarded",
-                    color=discord.Color.red(),
+                    color=EmbedColor.WARNING.value,
                 ),
             )
             return
@@ -188,7 +192,7 @@ class StoryTeller(commands.Cog):
         await msg.edit_original_response(  # type: ignore [union-attr]
             embed=discord.Embed(
                 title=f"{character.full_name} saved",
-                color=discord.Color.green(),
+                color=EmbedColor.SUCCESS.value,
             ),
         )
         await self.bot.guild_svc.send_to_audit_log(
@@ -274,7 +278,7 @@ class StoryTeller(commands.Cog):
             await msg.edit_original_response(  # type: ignore [union-attr]
                 embed=discord.Embed(
                     title=f"{character.full_name} not deleted",
-                    color=discord.Color.red(),
+                    color=EmbedColor.WARNING.value,
                 ),
             )
             return
@@ -284,7 +288,7 @@ class StoryTeller(commands.Cog):
         await msg.edit_original_response(  # type: ignore [union-attr]
             embed=discord.Embed(
                 title=f"{character.full_name} deleted",
-                color=discord.Color.green(),
+                color=EmbedColor.SUCCESS.value,
             ),
         )
         await self.bot.guild_svc.send_to_audit_log(
@@ -292,7 +296,7 @@ class StoryTeller(commands.Cog):
             discord.Embed(
                 title="Storyteller character deleted",
                 description=f"Deleted {character.full_name}",
-                color=discord.Color.green(),
+                color=EmbedColor.SUCCESS.value,
             ),
         )
 

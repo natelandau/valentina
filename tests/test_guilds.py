@@ -31,14 +31,14 @@ class TestGuildService:
         assert Guild.get_by_id(1).id == 1
         assert "modified" in Guild.get_by_id(1).data
 
-    def test_update_or_add_two(self, ctx_new_user_guild):
+    def test_update_or_add_two(self, mock_ctx4):
         """Test GuildService.update_or_add().
 
         GIVEN GuildService.update_or_add()
         WHEN called with a new guild
         THEN the guild is created in the db with default json data
         """
-        self.guild_svc.update_or_add(ctx_new_user_guild.guild)
+        self.guild_svc.update_or_add(mock_ctx4.guild)
         assert Guild.get_by_id(500).name == "Test Guild 500"
         assert Guild.get_by_id(500).id == 500
         assert "modified" in Guild.get_by_id(500).data

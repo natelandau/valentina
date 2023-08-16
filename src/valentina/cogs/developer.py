@@ -103,11 +103,15 @@ class Developer(commands.Cog):
             first_name, last_name = await fetch_random_name()
 
             # Create the character
-            character = self.bot.char_svc.create_character(
+            data: dict[str, str | int | bool] = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "nickname": char_class.name,
+            }
+
+            character = self.bot.char_svc.update_or_add(
                 ctx,
-                first_name=first_name,
-                last_name=last_name,
-                nickname=char_class.name,
+                data=data,
                 char_class=char_class,
                 clan=vampire_clan,
             )

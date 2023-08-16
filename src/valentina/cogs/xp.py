@@ -57,12 +57,12 @@ class Xp(commands.Cog, name="XP"):
         if old_value == 0:
             upgrade_cost = get_trait_new_value(trait.name, category)
 
-        remaining_xp = character.experience - upgrade_cost
+        remaining_xp = character.data["experience"] - upgrade_cost
         if remaining_xp < 0:
             await present_embed(
                 ctx,
                 title="Error: Not enough XP",
-                description=f"**{trait.name}** upgrade cost is **{upgrade_cost} XP**. You have **{character.experience} XP**.",
+                description=f"**{trait.name}** upgrade cost is **{upgrade_cost} XP**. You have **{character.data['experience']} XP**.",
                 level="error",
                 ephemeral=True,
             )
@@ -84,9 +84,9 @@ class Xp(commands.Cog, name="XP"):
             title=f"Upgrade {trait.name}?",
             description=f"Upgrading **{trait.name}** from **{old_value}** to **{old_value + 1}** dots will cost **{upgrade_cost} XP**",
             fields=[
-                ("Current XP", character.experience),
+                ("Current XP", character.data["experience"]),
                 ("XP Cost", str(upgrade_cost)),
-                ("Remaining XP", character.experience - upgrade_cost),
+                ("Remaining XP", character.data["experience"] - upgrade_cost),
             ],
             inline_fields=True,
             ephemeral=True,
@@ -100,7 +100,7 @@ class Xp(commands.Cog, name="XP"):
             return
 
         new_value = old_value + 1
-        new_experience = character.experience - upgrade_cost
+        new_experience = character.data["experience"] - upgrade_cost
         if isinstance(trait, CustomTrait):
             trait.value = new_value
             trait.modified = time_now()
@@ -110,10 +110,10 @@ class Xp(commands.Cog, name="XP"):
                 TraitValue.character == character, TraitValue.trait == trait
             ).execute()
 
-        self.bot.char_svc.update_character(
+        self.bot.char_svc.update_or_add(
             ctx,
-            character.id,
-            experience=new_experience,
+            character=character,
+            data={"experience": new_experience},
         )
 
         logger.debug(f"XP: {character.name} {trait.name} upgraded by {ctx.author.name}")
@@ -155,14 +155,18 @@ class Xp(commands.Cog, name="XP"):
             return
 
         exp = int(exp)
-        new_exp = character.experience + exp
-        new_total = character.experience_total + exp
+        new_exp = character.data["experience"] + exp if character.data.get("experience") else exp
+        new_total = (
+            character.data["experience_total"] + exp if character.data.get("experience") else exp
+        )
 
-        self.bot.char_svc.update_character(
+        self.bot.char_svc.update_or_add(
             ctx,
-            character.id,
-            experience=new_exp,
-            experience_total=new_total,
+            character=character,
+            data={
+                "experience": new_exp,
+                "experience_total": new_total,
+            },
         )
         logger.info(f"XP: {character} xp updated by {ctx.author.name}")
         await present_embed(
@@ -199,19 +203,31 @@ class Xp(commands.Cog, name="XP"):
             return
 
         cp = int(cp)
-        new_cp = character.cool_points + cp
-        new_total = character.cool_points_total + cp
+        new_total = (
+            character.data["cool_points_total"] + cp
+            if character.data.get("cool_points_total")
+            else cp
+        )
 
-        new_xp = character.experience + (cp * COOL_POINT_VALUE)
-        new_xp_total = character.experience_total + new_xp
+        new_xp = (
+            character.data["experience"] + (cp * COOL_POINT_VALUE)
+            if character.data.get("experience")
+            else cp * COOL_POINT_VALUE
+        )
+        new_xp_total = (
+            character.data["experience_total"] + new_xp
+            if character.data.get("experience_total")
+            else new_xp
+        )
 
-        self.bot.char_svc.update_character(
+        self.bot.char_svc.update_or_add(
             ctx,
-            character.id,
-            cool_points=new_cp,
-            cool_points_total=new_total,
-            experience=new_xp_total,
-            experience_total=new_xp_total,
+            character=character,
+            data={
+                "cool_points_total": new_total,
+                "experience": new_xp_total,
+                "experience_total": new_xp_total,
+            },
         )
         logger.info(f"CP: {character} cool points updated by {ctx.author.name}")
         await present_embed(

@@ -27,6 +27,20 @@ class GuildService:
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
 
+    def __get_default_values(self) -> dict[str, str | int | bool]:
+        """Get the default values for a guild."""
+        return {
+            "error_log_channel_id": None,
+            "log_channel_id": None,
+            "modified": str(time_now()),
+            "storyteller_channel_id": None,
+            "trait_permissions": TraitPermissions.WITHIN_24_HOURS.value,
+            "use_audit_log": False,
+            "use_error_log_channel": False,
+            "use_storyteller_channel": False,
+            "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
+        }
+
     async def get_setting_review_embed(self, ctx: ApplicationContext) -> discord.Embed:
         """Get an embed of all guild settings."""
         # Confirm channels exist in discord
@@ -341,16 +355,7 @@ class GuildService:
 
 
         """
-        default_values = {
-            "log_channel_id": None,
-            "use_audit_log": False,
-            "trait_permissions": TraitPermissions.WITHIN_24_HOURS.value,
-            "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
-            "use_storyteller_channel": False,
-            "storyteller_channel_id": None,
-            "use_error_log_channel": False,
-            "error_log_channel_id": None,
-        }
+        default_values = self.__get_default_values()
 
         instance = Guild.get_by_id(guild.id)
         instance.data = instance.data or {}  # Ensure data is not None
@@ -382,17 +387,7 @@ class GuildService:
             defaults={
                 "name": guild.name,
                 "created": time_now(),
-                "data": {
-                    "modified": str(time_now()),
-                    "log_channel_id": None,
-                    "use_audit_log": False,
-                    "trait_permissions": TraitPermissions.WITHIN_24_HOURS.value,
-                    "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
-                    "use_storyteller_channel": False,
-                    "storyteller_channel_id": None,
-                    "use_error_log_channel": False,
-                    "error_log_channel_id": None,
-                },
+                "data": self.__get_default_values(),
             },
         )
 

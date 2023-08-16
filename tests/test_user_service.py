@@ -30,21 +30,21 @@ class TestUserService:
         user_one = User(id=1)
         assert self.user_svc.user_cache["1_1"] == user_one
 
-    def test_fetch_user_two(self, ctx_new_user):
+    def test_fetch_user_two(self, mock_ctx3):
         """Test creating a user that is not in the cache or db.
 
         Given a context object with a user not in the database
         When that user is fetched
         Then the user is added to the cache and database
         """
-        assert self.user_svc.fetch_user(ctx_new_user) == User(id=2, name="Test User 2")
+        assert self.user_svc.fetch_user(mock_ctx3) == User(id=600, name="Test User 600")
 
         # Confirm added to cache
-        assert "1_2" in self.user_svc.user_cache
+        assert "1_600" in self.user_svc.user_cache
 
         # Confirm added to database
-        assert User.get_by_id(2).name == "Test User 2"
-        assert GuildUser.get_by_id(2).user.name == "Test User 2"
+        assert User.get_by_id(600).name == "Test User 600"
+        assert GuildUser.get_by_id(2).user.name == "Test User 600"
 
     def test_purge_all(self):
         """Test purging all users from the cache.
@@ -53,11 +53,11 @@ class TestUserService:
         When the cache is purged
         Then the cache is empty
         """
-        assert "1_1" in self.user_svc.user_cache
+        self.user_svc.user_cache = {"1_1": "a", "2_2": "b"}
         self.user_svc.purge_cache()
         assert self.user_svc.user_cache == {}
 
-    def test_purge_by_id(self, mock_ctx, ctx_new_user):
+    def test_purge_by_id(self, mock_ctx, mock_ctx3):
         """Test purging a user from the cache.
 
         Given a cache with two users
@@ -66,8 +66,8 @@ class TestUserService:
         """
         # Confirm three users in cache
         assert self.user_svc.fetch_user(mock_ctx) == User(id=1, name="Test User")
-        assert self.user_svc.fetch_user(ctx_new_user) == User(id=2, name="Test User 2")
-        self.user_svc.user_cache["2_1"] = User(id=1, name="Test User")
+        assert self.user_svc.fetch_user(mock_ctx3) == User(id=600, name="Test User 600")
+        self.user_svc.user_cache["100_1"] = User(id=1, name="Test User")
         assert len(self.user_svc.user_cache) == 3
 
         # Purge one user
@@ -76,8 +76,8 @@ class TestUserService:
         # Confirm one user in cache
         assert len(self.user_svc.user_cache) == 1
         assert "1_1" not in self.user_svc.user_cache
-        assert "1_2" not in self.user_svc.user_cache
-        assert "2_1" in self.user_svc.user_cache
+        assert "1_600" not in self.user_svc.user_cache
+        assert "100_1" in self.user_svc.user_cache
 
     @pytest.mark.parametrize(
         ("xp_permissions_value", "is_admin", "is_char_owner", "hours_since_creation", "expected"),

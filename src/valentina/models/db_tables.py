@@ -185,12 +185,9 @@ class Character(BaseModel):
     """Character model for the database."""
 
     # GENERAL ####################################
-    first_name = TextField()
-    last_name = TextField(null=True)
-    nickname = TextField(null=True)
     created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    storyteller_character = BooleanField(default=False)
+    data = JSONField(null=True)
+
     # Foreign Keys ###############################
     char_class = ForeignKeyField(CharacterClass, backref="characters")
     guild = ForeignKeyField(Guild, backref="characters")
@@ -198,41 +195,28 @@ class Character(BaseModel):
     created_by = ForeignKeyField(User, backref="created_characters")
     owned_by = ForeignKeyField(User, backref="owned_characters", null=True)
     clan = ForeignKeyField(VampireClan, backref="characters", null=True)
-    # Character Sheet ############################
-    alive = BooleanField(default=True)
-    age = IntegerField(null=True)
-    archived = BooleanField(default=False)
-    bio = TextField(null=True)
-    concept = TextField(null=True)
-    cool_points = IntegerField(default=0)
-    cool_points_total = IntegerField(default=0)
-    experience = IntegerField(default=0)
-    experience_total = IntegerField(default=0)
-    # Profile ############################
-    nature = TextField(null=True)
-    demeanor = TextField(null=True)
-    generation = TextField(null=True)  # Vampire
-    sire = TextField(null=True)  # Vampire
-    breed = TextField(null=True)  # Werewolf
-    tribe = TextField(null=True)  # Werewolf
-    auspice = TextField(null=True)  # Werewolf
-    essence = TextField(null=True)  # Mage
-    tradition = TextField(null=True)  # Mage
-    date_of_birth = DateTimeField(null=True, formats=["%Y-%m-%d"])
 
     @property
     def name(self) -> str:
         """Return the name of the character."""
-        display_name = f"{self.first_name.title()}"
-        display_name += f" ({self.nickname.title()})" if self.nickname else ""
-        display_name += f" {self.last_name.title() }" if self.last_name else ""
+        first_name = self.data.get("first_name", "")
+        last_name = self.data.get("last_name", "")
+        nickname = self.data.get("nickname", "")
+
+        display_name = f"{first_name.title()}"
+        display_name += f" ({nickname.title()})" if nickname else ""
+        display_name += f" {last_name.title()}" if last_name else ""
+
         return display_name
 
     @property
     def full_name(self) -> str:
         """Return the first and last name of the character."""
-        display_name = f"{self.first_name.title()}"
-        display_name += f" {self.last_name.title() }" if self.last_name else ""
+        first_name = self.data.get("first_name", "")
+        last_name = self.data.get("last_name", "")
+
+        display_name = f"{first_name.title()}"
+        display_name += f" {last_name.title()}" if last_name else ""
         return display_name
 
     @property
