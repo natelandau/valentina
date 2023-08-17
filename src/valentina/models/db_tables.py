@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 from dotenv import dotenv_values
+from loguru import logger
 from peewee import (
     BooleanField,
     DateTimeField,
@@ -17,6 +18,7 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
+from valentina.models.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS
 from valentina.utils.helpers import time_now
 
 # Import configuration from environment variables
@@ -73,6 +75,29 @@ class Guild(BaseModel):
     def __str__(self) -> str:
         """Return the string representation of the model."""
         return f"[{self.id}] {self.name}"
+
+    def set_default_data_values(self) -> Guild:
+        """Verify that the guild's JSONField defaults are set.  If any keys are missing, they are added to the character's data with default values.
+
+        Returns:
+            Guild: The guild object with defaults verified and potentially updated.
+        """
+        updated = False
+        default_values = GUILD_DEFAULTS.copy()
+        default_values["modified"] = str(time_now())
+
+        for default_key, default_value in default_values.items():
+            if default_key not in self.data:
+                self.data[default_key] = default_value
+                updated = True
+
+        if updated:
+            self.save()
+            logger.info(f"DATABASE: Update defaults for {self}")
+        else:
+            logger.debug(f"DATABASE: {self}'s defaults are up to date")
+
+        return self
 
     class Meta:
         """Meta class for the model."""
@@ -185,12 +210,9 @@ class Character(BaseModel):
     """Character model for the database."""
 
     # GENERAL ####################################
-    first_name = TextField()
-    last_name = TextField(null=True)
-    nickname = TextField(null=True)
     created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    storyteller_character = BooleanField(default=False)
+    data = JSONField(null=True)
+
     # Foreign Keys ###############################
     char_class = ForeignKeyField(CharacterClass, backref="characters")
     guild = ForeignKeyField(Guild, backref="characters")
@@ -198,41 +220,28 @@ class Character(BaseModel):
     created_by = ForeignKeyField(User, backref="created_characters")
     owned_by = ForeignKeyField(User, backref="owned_characters", null=True)
     clan = ForeignKeyField(VampireClan, backref="characters", null=True)
-    # Character Sheet ############################
-    alive = BooleanField(default=True)
-    age = IntegerField(null=True)
-    archived = BooleanField(default=False)
-    bio = TextField(null=True)
-    concept = TextField(null=True)
-    cool_points = IntegerField(default=0)
-    cool_points_total = IntegerField(default=0)
-    experience = IntegerField(default=0)
-    experience_total = IntegerField(default=0)
-    # Profile ############################
-    nature = TextField(null=True)
-    demeanor = TextField(null=True)
-    generation = TextField(null=True)  # Vampire
-    sire = TextField(null=True)  # Vampire
-    breed = TextField(null=True)  # Werewolf
-    tribe = TextField(null=True)  # Werewolf
-    auspice = TextField(null=True)  # Werewolf
-    essence = TextField(null=True)  # Mage
-    tradition = TextField(null=True)  # Mage
-    date_of_birth = DateTimeField(null=True, formats=["%Y-%m-%d"])
 
     @property
     def name(self) -> str:
         """Return the name of the character."""
-        display_name = f"{self.first_name.title()}"
-        display_name += f" ({self.nickname.title()})" if self.nickname else ""
-        display_name += f" {self.last_name.title() }" if self.last_name else ""
+        first_name = self.data.get("first_name", "")
+        last_name = self.data.get("last_name", "")
+        nickname = self.data.get("nickname", "")
+
+        display_name = f"{first_name.title()}"
+        display_name += f" ({nickname.title()})" if nickname else ""
+        display_name += f" {last_name.title()}" if last_name else ""
+
         return display_name
 
     @property
     def full_name(self) -> str:
         """Return the first and last name of the character."""
-        display_name = f"{self.first_name.title()}"
-        display_name += f" {self.last_name.title() }" if self.last_name else ""
+        first_name = self.data.get("first_name", "")
+        last_name = self.data.get("last_name", "")
+
+        display_name = f"{first_name.title()}"
+        display_name += f" {last_name.title()}" if last_name else ""
         return display_name
 
     @property
@@ -326,6 +335,29 @@ class Character(BaseModel):
             return trait.value  # custom traits
         except TraitValue.DoesNotExist:
             return 0
+
+    def set_default_data_values(self) -> Character:
+        """Verify that the character JSONField defaults are set.  If any keys are missing, they are added to the character's data with default values.
+
+        Returns:
+            Character: The character with defaults verified and potentially updated.
+        """
+        updated = False
+        default_values = CHARACTER_DEFAULTS.copy()
+        default_values["modified"] = str(time_now())
+
+        for default_key, default_value in default_values.items():
+            if default_key not in self.data:
+                self.data[default_key] = default_value
+                updated = True
+
+        if updated:
+            self.save()
+            logger.info(f"DATABASE: Update defaults for {self}")
+        else:
+            logger.debug(f"DATABASE: {self}'s defaults are up to date")
+
+        return self
 
     def __str__(self) -> str:
         """Return the string representation of the model."""

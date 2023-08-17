@@ -4,6 +4,7 @@
 from io import BytesIO
 
 import discord
+import inflect
 from discord import OptionChoice
 from discord.commands import Option
 from discord.ext import commands
@@ -13,8 +14,9 @@ from valentina.models.bot import Valentina
 from valentina.models.constants import ChannelPermission, TraitPermissions, XPPermissions
 from valentina.utils import Context, errors
 from valentina.utils.converters import ValidChannelName
-from valentina.utils.helpers import pluralize
 from valentina.views import present_embed
+
+p = inflect.engine()
 
 
 class Admin(commands.Cog):
@@ -425,7 +427,7 @@ class Admin(commands.Cog):
         await present_embed(
             ctx,
             title="Mass Ban Successful",
-            description=f"Banned **{count}** {pluralize(count, 'member')}",
+            description=f"Banned **{count}** {p.plural_noun('member', count)}",
             level="success",
             ephemeral=True,
             log=True,
@@ -458,7 +460,7 @@ class Admin(commands.Cog):
         await present_embed(
             ctx,
             title="Slowmode set",
-            description=f"The slowmode cooldown is now `{seconds}` {pluralize(seconds, 'second')}"
+            description=f"The slowmode cooldown is now `{seconds}` {p.plural_noun('second', seconds)}"
             if seconds > 0
             else "Slowmode is now disabled",
             level="success",
@@ -564,7 +566,7 @@ class Admin(commands.Cog):
             await present_embed(
                 ctx,
                 title="Channel Purged",
-                description=f"Purged **{count}** {pluralize(count, 'message')} from this channel",
+                description=f"Purged **{count}** {p.plural_noun('message', count)} from this channel",
                 level="success",
                 ephemeral=True,
             )
@@ -607,7 +609,7 @@ class Admin(commands.Cog):
             await present_embed(
                 ctx,
                 title="Channel Purged",
-                description=f"Purged **{count}** {pluralize(count, 'message')} from **{member.display_name}** in this channel",
+                description=f"Purged **{count}** {p.plural_noun('message', count)} from **{member.display_name}** in this channel",
                 level="success",
                 ephemeral=True,
             )
@@ -643,7 +645,7 @@ class Admin(commands.Cog):
             await present_embed(
                 ctx,
                 title="Channel Purged",
-                description=f"Purged **{count}** {pluralize(count, 'message')} from bots in this channel",
+                description=f"Purged **{count}** {p.plural_noun('message',count)} from bots in this channel",
                 level="success",
                 ephemeral=True,
             )
@@ -686,7 +688,7 @@ class Admin(commands.Cog):
             await present_embed(
                 ctx,
                 title="Channel Purged",
-                description=f"Purged **{count}** {pluralize(count, 'message')} containing `{phrase}` in this channel",
+                description=f"Purged **{count}** {p.plural_noun('message',count)} containing `{phrase}` in this channel",
                 level="success",
                 ephemeral=True,
             )

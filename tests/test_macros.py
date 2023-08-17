@@ -1,5 +1,7 @@
 # type: ignore
 """Test the MacroService class."""
+from uuid import uuid4
+
 import pytest
 
 from valentina.models import MacroService
@@ -20,32 +22,42 @@ class TestMacroService:
         WHEN the macro cache is empty
         THEN the database is queried
         """
-        macro = Macro.get_by_id(1)
-        assert self.macro_svc._macro_cache == {}
+        # Given an empty cache and no macros for a user
+        self.macro_svc._macro_cache = {}
+        for m in Macro.select():
+            m.delete_instance()
 
+        macro = Macro.create(
+            guild=1,
+            user=1,
+            name=str(uuid4()).split("-")[0],
+            abbreviation="tm",
+            description="test description",
+            content="test_content",
+            trait_one="test_trait_one",
+            trait_two="test_trait_two",
+        )
+
+        # WHEN the macros are fetched
         result = self.macro_svc.fetch_macros(1, 1)
 
+        # THEN the database is queried and the cache is updated
         captured = caplog.text
-        assert "DATABASE: Fetch macros for 1" in captured
-        assert result == [macro]
-        assert self.macro_svc._macro_cache == {"1_1": [macro]}
+        assert "DATABASE: Fetch macros" in captured
+        assert "CACHE: Fetch macros" not in captured
+        assert macro in result
+        assert isinstance(result, list)
+        assert macro in self.macro_svc._macro_cache["1_1"]
 
-    def test_fetch_macros_two(self, caplog):
-        """Test fetching macros.
-
-        GIVEN a macro service
-        WHEN the macro cache is full
-        THEN pull from the cache, not the database
-        """
-        macro = Macro.get_by_id(1)
-        assert self.macro_svc._macro_cache == {"1_1": [macro]}
-
+        # WHEN the macros are fetched again
         result = self.macro_svc.fetch_macros(1, 1)
-
         captured = caplog.text
-        assert "CACHE: Fetch macros for 1" in captured
-        assert result == [macro]
-        assert self.macro_svc._macro_cache == {"1_1": [macro]}
+
+        # THEN the cache is used
+        assert "CACHE: Fetch macros" in captured
+        assert macro in result
+        assert isinstance(result, list)
+        assert macro in self.macro_svc._macro_cache["1_1"]
 
     def test_create_macro_one(self, mocker, mock_ctx, caplog):
         """Test creating a macro.
@@ -94,9 +106,9 @@ class TestMacroService:
         # Create the new macro
         with pytest.raises(
             errors.ValidationError,
-            match=r"Macro named `test_macro` or with the same abbreviation already exists",
+            match=r"Macro named `new_macro` or with the same abbreviation already exists",
         ):
-            self.macro_svc.create_macro(mock_ctx, "test_macro", trait, trait, "nm", "new macro")
+            self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "nm", "new macro")
 
     def test_create_macro_three(self, mocker, mock_ctx):
         """Test creating a macro.
@@ -118,7 +130,7 @@ class TestMacroService:
             errors.ValidationError,
             match="Macro named `new_macro` or with the same abbreviation already exists",
         ):
-            self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "tm", "new macro")
+            self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "nm", "new macro")
 
     def test_delete_macro_one(self, mock_ctx, caplog):
         """Test deleting a macro.

@@ -4,7 +4,6 @@ import re
 
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
-from peewee import DoesNotExist
 
 from valentina.models.constants import MaxTraitValue
 from valentina.models.db_tables import (
@@ -167,28 +166,7 @@ class CharacterService:
 
         logger.debug(f"CHARACTER: Add trait '{name}' to {character}")
 
-    def create_character(self, ctx: ApplicationContext, **kwargs: str | int) -> Character:
-        """Create a character in the cache and database."""
-        # Normalize kwargs keys to database column names
-
-        user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
-
-        character = Character.create(
-            guild_id=ctx.guild.id,
-            created_by=user.id,
-            **kwargs,
-        )
-
-        # Add storyteller characters to the cache
-        if character.storyteller_character:
-            self.storyteller_character_cache.setdefault(ctx.guild.id, [])
-            self.storyteller_character_cache[ctx.guild.id].append(character)
-
-        logger.info(f"DATABASE: Create character: {character}] for {ctx.author.display_name}")
-
-        return character
-
-    def fetch_all_characters(self, guild_id: int) -> list[Character]:
+    def fetch_all_player_characters(self, guild_id: int) -> list[Character]:
         """Fetch all characters for a specific guild, checking the cache first and then the database.
 
         Args:
@@ -201,7 +179,7 @@ class CharacterService:
         cached_chars = [
             character
             for key, character in self.character_cache.items()
-            if key.startswith(str(guild_id))
+            if key.startswith(f"{guild_id!s}_")
         ]
         cached_ids = [character.id for character in cached_chars]
         logger.debug(f"CACHE: Fetch {len(cached_chars)} characters")
@@ -209,7 +187,7 @@ class CharacterService:
         # Fetch characters from database not in cache
         characters = Character.select().where(
             (Character.guild_id == guild_id)
-            & (Character.storyteller_character == False)  # noqa: E712
+            & (Character.data["storyteller_character"] == False)  # noqa: E712
             & (Character.id.not_in(cached_ids))
         )
         logger.debug(
@@ -218,8 +196,9 @@ class CharacterService:
             else "DATABASE: No characters to fetch"
         )
 
-        # Add characters from database to cache
-        for character in characters:
+        # Verify default values and add characters from database to cache
+        for c in characters:
+            character = c.set_default_data_values()
             key = self.__get_char_key(guild_id, character.id)
             self.character_cache[key] = character
 
@@ -255,15 +234,17 @@ class CharacterService:
         # Query the database for StoryTeller characters not in cache
         characters = Character.select().where(
             (Character.guild_id == guild_id)
-            & (Character.storyteller_character == True)  # noqa: E712
+            & (Character.data["storyteller_character"] == True)  # noqa: E712
             & (Character.id.not_in(cached_ids))
         )
 
         # Log the number of characters fetched from the database
         logger.debug(f"DATABASE: Fetch {len(characters)} StoryTeller characters")
 
-        # Update the cache with the fetched characters
-        self.storyteller_character_cache[guild_id] += list(characters)
+        # Verify default values and add characters from database to cache
+        for c in characters:
+            character = c.set_default_data_values()
+            self.storyteller_character_cache[guild_id].append(character)
 
         return self.storyteller_character_cache[guild_id]
 
@@ -376,7 +357,7 @@ class CharacterService:
             # Purge caches for the specific guild
             self.storyteller_character_cache.pop(ctx.guild.id, None)
             for cache in caches.values():
-                keys_to_remove = [key for key in cache if key.startswith(str(ctx.guild.id))]
+                keys_to_remove = [key for key in cache if key.startswith(f"{ctx.guild.id!s}_")]
                 for key in keys_to_remove:
                     cache.pop(key, None)
             logger.debug(f"CACHE: Purge character caches for guild {ctx.guild}")
@@ -411,56 +392,61 @@ class CharacterService:
         # If the claim doesn't exist, return False
         return False
 
-    def user_has_claim(self, ctx: ApplicationContext) -> bool:
-        """Check if a user has a claim.
-
-        Args:
-            ctx (ApplicationContext): Context object containing guild and author information.
-
-        Returns:
-            bool: True if the user has a claim, False otherwise.
-        """
-        claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
-        return claim_key in self.claim_cache
-
-    def update_character(
-        self, ctx: ApplicationContext, char_id: int, **kwargs: str | int
+    def update_or_add(
+        self,
+        ctx: ApplicationContext,
+        data: dict[str, str | int | bool] | None = None,
+        character: Character | None = None,
+        **kwargs: str | int,
     ) -> Character:
-        """Update a character in the cache and database.
+        """Update or add a character.
 
         Args:
-            ctx (ApplicationContext): Context object containing guild information.
-            char_id (int): The character ID to update.
-            **kwargs (str | int): Additional keyword arguments to update the character attributes.
+            ctx (ApplicationContext): The application context.
+            data (dict[str, str | int | bool] | None): The character data.
+            character (Character | None): The character to update, or None to create.
+            **kwargs: Additional fields for the character.
 
         Returns:
-            Character: The updated character object.
+            Character: The updated or created character.
         """
-        key = self.__get_char_key(ctx.guild.id, char_id)
+        # Purge the cache to ensure that stale data is not being used.
+        self.purge_cache(ctx)
 
-        try:
-            character = Character.get_by_id(char_id)
-        except DoesNotExist as e:
-            raise errors.DatabaseError(
-                f"No character found in the database matching id `{char_id}`"
-            ) from e
+        # Always add the modified timestamp if data is provided.
+        if data:
+            data["modified"] = str(time_now())
 
-        # Update the character in the database
-        Character.update(modified=time_now(), **kwargs).where(
-            Character.id == character.id
-        ).execute()
+        if not character:
+            user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
-        # Re-query the character object to reflect the changes
-        character = Character.get_by_id(char_id)
+            new_character = Character.create(
+                guild_id=ctx.guild.id,
+                created_by=user,
+                data=data or {},
+                **kwargs,
+            )
+            character = new_character.set_default_data_values()
 
-        # Clear caches based on character type
-        if character.storyteller_character:
-            self.storyteller_character_cache.pop(ctx.guild.id, None)
-        else:
-            self.character_cache.pop(key, None)
+            logger.info(f"DATABASE: Create {character} for {ctx.author.display_name}")
 
-        logger.debug(f"DATABASE: Update character: {character}")
-        return character
+            return character
+
+        if data:
+            # DEBUG: Log each key and value being updated.
+            for key, value in data.items():
+                logger.debug(f"DATABASE: Update {character} `{key}:{value}`")
+
+            Character.update(data=Character.data.update(data)).where(
+                Character.id == character.id
+            ).execute()
+
+        if kwargs:
+            Character.update(**kwargs).where(Character.id == character.id).execute()
+
+        logger.debug(f"DATABASE: Updated Character '{character}'")
+
+        return Character.get_by_id(character.id)  # Have to query db again to get updated data ???
 
     def update_traits_by_id(
         self, ctx: ApplicationContext, character: Character, trait_values_dict: dict[int, int]
@@ -490,3 +476,15 @@ class CharacterService:
                 found_trait.save()
 
         logger.debug(f"DATABASE: Update traits for character {character}")
+
+    def user_has_claim(self, ctx: ApplicationContext) -> bool:
+        """Check if a user has a claim.
+
+        Args:
+            ctx (ApplicationContext): Context object containing guild and author information.
+
+        Returns:
+            bool: True if the user has a claim, False otherwise.
+        """
+        claim_key = self.__get_claim_key(ctx.guild.id, ctx.author.id)
+        return claim_key in self.claim_cache

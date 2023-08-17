@@ -2,14 +2,16 @@
 
 
 import discord
+import inflect
 from loguru import logger
 from numpy.random import default_rng
 
 from valentina.models.constants import DiceType, EmbedColor, RollResultType
 from valentina.models.db_tables import Character, RollStatistic
 from valentina.utils import errors
-from valentina.utils.helpers import diceroll_thumbnail, pluralize
+from valentina.utils.helpers import diceroll_thumbnail
 
+p = inflect.engine()
 _rng = default_rng()
 _max_pool_size = 100
 
@@ -231,8 +233,8 @@ class DiceRoll:
             RollResultType.OTHER: "Dice roll",
             RollResultType.BOTCH: "__**BOTCH!**__",
             RollResultType.CRITICAL: "__**CRITICAL SUCCESS!**__",
-            RollResultType.SUCCESS: f"{self.result} {pluralize(self.result, 'Success')}",
-            RollResultType.FAILURE: f"{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.SUCCESS: f"**{self.result} {p.plural_noun('SUCCESS', self.result)}**",
+            RollResultType.FAILURE: f"**{self.result} {p.plural_noun('SUCCESS', self.result)}**",
         }
         return title_map[self.result_type]
 
@@ -241,8 +243,8 @@ class DiceRoll:
         """The description of the roll response embed."""
         title_map = {
             RollResultType.OTHER: "",
-            RollResultType.BOTCH: f"{self.result} {pluralize(self.result, 'Success')}",
-            RollResultType.CRITICAL: f"{self.result} {pluralize(self.result, 'Success')}",
+            RollResultType.BOTCH: f"{self.result} {p.plural_noun('Success', self.result)}",
+            RollResultType.CRITICAL: f"{self.result} {p.plural_noun('Success', self.result)}",
             RollResultType.SUCCESS: "",
             RollResultType.FAILURE: "",
         }

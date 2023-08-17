@@ -6,6 +6,7 @@ from random import randrange
 
 import aiofiles
 import discord
+import inflect
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
@@ -16,9 +17,11 @@ from valentina.models.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.db_tables import CharacterClass, RollProbability, VampireClan
 from valentina.utils import Context
 from valentina.utils.converters import ValidCharacterClass
-from valentina.utils.helpers import fetch_random_name, pluralize
+from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import select_char_class
 from valentina.views import ConfirmCancelButtons, present_embed
+
+p = inflect.engine()
 
 
 class Developer(commands.Cog):
@@ -103,11 +106,15 @@ class Developer(commands.Cog):
             first_name, last_name = await fetch_random_name()
 
             # Create the character
-            character = self.bot.char_svc.create_character(
+            data: dict[str, str | int | bool] = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "nickname": char_class.name,
+            }
+
+            character = self.bot.char_svc.update_or_add(
                 ctx,
-                first_name=first_name,
-                last_name=last_name,
-                nickname=char_class.name,
+                data=data,
                 char_class=char_class,
                 clan=vampire_clan,
             )
@@ -285,7 +292,7 @@ class Developer(commands.Cog):
         await present_embed(
             ctx,
             title="Connected guilds",
-            description=f"Connected to {len(servers)} {pluralize(len(servers), 'guild')}",
+            description=f"Connected to {p.no('guild'), len(servers)}",
             level="info",
             fields=fields,
             ephemeral=hidden,

@@ -1,17 +1,16 @@
 """Constants for Valentina models."""
 from enum import Enum, IntEnum
 
-# maximum number of options in a discord select menu
-MAX_OPTION_LIST_SIZE = 25
-MAX_CHARACTER_COUNT = 1990
-MAX_FIELD_COUNT = 1010
-MAX_PAGE_CHARACTER_COUNT = 1950
+COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
+DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
 MAX_BUTTONS_PER_ROW = 5
+MAX_CHARACTER_COUNT = 1990  # truncate text to fit in embeds
+MAX_FIELD_COUNT = 1010
+MAX_OPTION_LIST_SIZE = 25  # maximum number of options in a discord select menu
+MAX_PAGE_CHARACTER_COUNT = 1950
 
 
 ### ENUMS ###
-
-
 class MaxTraitValue(Enum):
     """Maximum value for a trait.
 
@@ -180,8 +179,43 @@ class TraitCategoryOrder(IntEnum):
     Other = 21
 
 
-COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
-DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
+### Database Default Values ###
+CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
+    "alive": True,
+    "auspice": None,
+    "bio": None,
+    "breed": None,
+    "cool_points_total": 0,
+    "date_of_birth": None,
+    "debug_character": False,
+    "demeanor": None,
+    "essence": None,
+    "first_name": None,
+    "generation": None,
+    "last_name": None,
+    "nature": None,
+    "nickname": None,
+    "sire": None,
+    "storyteller_character": False,
+    "tradition": None,
+    "tribe": None,
+    "experience_total": 0,
+    "experience": 0,
+}
+
+GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
+    "error_log_channel_id": None,
+    "log_channel_id": None,
+    "storyteller_channel_id": None,
+    "trait_permissions": TraitPermissions.WITHIN_24_HOURS.value,
+    "use_audit_log": False,
+    "use_error_log_channel": False,
+    "use_storyteller_channel": False,
+    "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
+}
+
+### More Constants ###
+
 
 CLAN_DISCIPLINES = {
     "Assamite": ["Celerity", "Obfuscate", "Quietus"],

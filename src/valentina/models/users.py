@@ -53,7 +53,7 @@ class UserService:
         """
         if ctx:
             for key in list(self.user_cache.keys()):
-                if key.startswith(f"{ctx.guild.id}"):
+                if key.startswith(f"{ctx.guild.id}_"):
                     self.user_cache.pop(key, None)
                     logger.debug(f"CACHE: Purge user cache: {key}")
         else:

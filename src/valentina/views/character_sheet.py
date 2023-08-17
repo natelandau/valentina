@@ -59,7 +59,7 @@ def __embed1(
     title: str | None = None,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
-    modified = arrow.get(character.modified).humanize()
+    modified = arrow.get(character.data["modified"]).humanize()
 
     if title is None:
         title = character.name
@@ -73,29 +73,37 @@ def __embed1(
 
     try:
         chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined] # it exists
-        if chronicle.current_date and character.date_of_birth:
-            age = arrow.get(chronicle.current_date) - arrow.get(character.date_of_birth)
+        if chronicle.current_date and character.data.get("date_of_birth"):
+            age = arrow.get(chronicle.current_date) - arrow.get(character.data["date_of_birth"])
             embed.add_field(name="Age", value=f"`{age.days // 365}`", inline=True)
     except errors.NoActiveChronicleError:
         pass
 
     embed.add_field(name="Class", value=character.class_name, inline=True)
-    embed.add_field(name="Demeanor", value=character.demeanor, inline=True)
-    embed.add_field(name="Nature", value=character.nature, inline=True)
+    embed.add_field(
+        name="Demeanor",
+        value=character.data["demeanor"] if character.data.get("demeanor") else "",
+        inline=True,
+    )
+    embed.add_field(
+        name="Nature",
+        value=character.data["nature"] if character.data.get("nature") else "",
+        inline=True,
+    )
 
     if character.class_name.lower() == "vampire":
         embed.add_field(name="Clan", value=f"{character.clan.name}", inline=True)
-        embed.add_field(name="Generation", value=f"{character.generation}", inline=True)
-        embed.add_field(name="Sire", value=f"{character.sire}", inline=True)
+        embed.add_field(name="Generation", value=f"{character.data['generation']}", inline=True)
+        embed.add_field(name="Sire", value=f"{character.data['sire']}", inline=True)
 
     if character.class_name.lower() == "mage":
-        embed.add_field(name="Tradition", value=f"{character.tradition}", inline=True)
-        embed.add_field(name="Essence", value=f"{character.essence}", inline=True)
+        embed.add_field(name="Tradition", value=f"{character.data['tradition']}", inline=True)
+        embed.add_field(name="Essence", value=f"{character.data['essence']}", inline=True)
 
     if character.class_name.lower() == "werewolf":
-        embed.add_field(name="Tribe", value=f"{character.tribe}", inline=True)
-        embed.add_field(name="Auspice", value=f"{character.auspice}", inline=True)
-        embed.add_field(name="Breed", value=f"{character.breed}", inline=True)
+        embed.add_field(name="Tribe", value=f"{character.data['tribe']}", inline=True)
+        embed.add_field(name="Auspice", value=f"{character.data['auspice']}", inline=True)
+        embed.add_field(name="Breed", value=f"{character.data['breed']}", inline=True)
 
     embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
     for category, traits in __build_trait_display(char_traits, ["physical", "social", "mental"]):
@@ -132,7 +140,7 @@ def __embed2(
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     custom_sections = character.custom_sections
-    modified = arrow.get(character.modified).humanize()
+    modified = arrow.get(character.data["modified"]).humanize()
 
     if title is None:
         title = f"{character.name} - Page 2"
@@ -150,14 +158,18 @@ def __embed2(
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
 
     embed.add_field(name="\u200b", value="**EXPERIENCE**", inline=False)
-    embed.add_field(name="Experience", value=f"`{character.experience}`", inline=True)
+    embed.add_field(name="Experience", value=f"`{character.data['experience']}`", inline=True)
     embed.add_field(
-        name="Lifetime Experience", value=f"`{character.experience_total}`", inline=True
+        name="Lifetime Experience", value=f"`{character.data['experience_total']}`", inline=True
     )
-    embed.add_field(name="Lifetime Cool Points", value=f"`{character.cool_points}`", inline=True)
+    embed.add_field(
+        name="Lifetime Cool Points", value=f"`{character.data['cool_points_total']}`", inline=True
+    )
 
-    if character.bio:
-        embed.add_field(name=f"**About {character.name}**", value=character.bio, inline=False)
+    if character.data.get("bio"):
+        embed.add_field(
+            name=f"**About {character.name}**", value=character.data["bio"], inline=False
+        )
 
     if len(custom_sections) > 0:
         embed.add_field(name="\u200b", value="**CUSTOM SECTIONS**", inline=False)

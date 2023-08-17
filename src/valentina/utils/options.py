@@ -33,7 +33,7 @@ async def select_character(ctx: discord.AutocompleteContext) -> list[OptionChoic
         return []
 
     # TODO: Check for chars associated with a user
-    characters = ctx.bot.char_svc.fetch_all_characters(guild.id)  # type: ignore [attr-defined]
+    characters = ctx.bot.char_svc.fetch_all_player_characters(guild.id)  # type: ignore [attr-defined]
     all_chars = []
     for character in characters:
         char_id = character.id

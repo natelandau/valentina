@@ -11,7 +11,7 @@ import json
 from loguru import logger
 from peewee import TextField
 from playhouse.migrate import SqliteMigrator, migrate
-from playhouse.sqlite_ext import CSqliteExtDatabase
+from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 from semver import Version
 
 from valentina.models.db_tables import (
@@ -161,6 +161,10 @@ class MigrateDatabase:
         if Version.parse(self.db_version) <= Version.parse("1.1.5"):
             logger.info("DATABASE: Migrate database from v1.1.5")
             self.__1_1_5()
+
+        if Version.parse(self.db_version) <= Version.parse("1.3.0"):
+            logger.info("DATABASE: Migrate database from v1.3.0")
+            self.__1_3_0()
 
     def _column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.
@@ -452,6 +456,91 @@ class MigrateDatabase:
                     "UPDATE guilds SET data = ? WHERE id = ?;", (json_object, guild)
                 )
             logger.debug("DATABASE: complete Guild data migration")
+
+    def __1_3_0(self) -> None:
+        """Migrate from version 1.3.0."""
+        if not self._column_exists(Character._meta.table_name, "data"):
+            logger.info("DATABASE: Migrate Character class data to JSON")
+
+            # Grab the old data and add it to a dictionary to be migrated
+            logger.debug("DATABASE: Grab old Character data")
+            saved_data = self.db.execute_sql("SELECT * FROM characters;").fetchall()
+
+            migration_dict: dict = {}
+            for c in saved_data:
+                migration_dict[c[0]] = {}
+                migration_dict[c[0]]["first_name"] = c[1]
+                migration_dict[c[0]]["last_name"] = c[2]
+                migration_dict[c[0]]["nickname"] = c[3]
+                migration_dict[c[0]]["modified"] = str(c[5])
+                migration_dict[c[0]]["alive"] = bool(c[12])
+                migration_dict[c[0]]["age"] = c[13]
+                migration_dict[c[0]]["bio"] = c[15]
+                migration_dict[c[0]]["cool_points_total"] = c[17]
+                migration_dict[c[0]]["demeanor"] = c[19]
+                migration_dict[c[0]]["experience"] = c[20]
+                migration_dict[c[0]]["experience_total"] = c[21]
+                migration_dict[c[0]]["nature"] = c[23]
+                migration_dict[c[0]]["generation"] = c[24]
+                migration_dict[c[0]]["sire"] = c[25]
+                migration_dict[c[0]]["breed"] = c[26]
+                migration_dict[c[0]]["tribe"] = c[27]
+                migration_dict[c[0]]["auspice"] = c[28]
+                migration_dict[c[0]]["essence"] = c[29]
+                migration_dict[c[0]]["tradition"] = c[30]
+                migration_dict[c[0]]["date_of_birth"] = c[31]
+                migration_dict[c[0]]["storyteller_character"] = bool(c[32])
+
+            # Disable foreign keys
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+
+            #### Perform Migration ####
+            migrator = SqliteMigrator(self.db)
+
+            # Create the new column
+            logger.debug("DATABASE: Add new data column and drop old columns")
+            data_column = JSONField(null=True)
+            migrate(
+                migrator.add_column("characters", "data", data_column),
+                migrator.drop_column("characters", "first_name"),
+                migrator.drop_column("characters", "last_name"),
+                migrator.drop_column("characters", "nickname"),
+                migrator.drop_column("characters", "modified"),
+                migrator.drop_column("characters", "storyteller_character"),
+                migrator.drop_column("characters", "alive"),
+                migrator.drop_column("characters", "age"),
+                migrator.drop_column("characters", "archived"),
+                migrator.drop_column("characters", "bio"),
+                migrator.drop_column("characters", "concept"),
+                migrator.drop_column("characters", "cool_points"),
+                migrator.drop_column("characters", "cool_points_total"),
+                migrator.drop_column("characters", "experience"),
+                migrator.drop_column("characters", "experience_total"),
+                migrator.drop_column("characters", "nature"),
+                migrator.drop_column("characters", "demeanor"),
+                migrator.drop_column("characters", "generation"),
+                migrator.drop_column("characters", "sire"),
+                migrator.drop_column("characters", "breed"),
+                migrator.drop_column("characters", "tribe"),
+                migrator.drop_column("characters", "auspice"),
+                migrator.drop_column("characters", "essence"),
+                migrator.drop_column("characters", "tradition"),
+                migrator.drop_column("characters", "date_of_birth"),
+                migrator.drop_column("characters", "gender"),
+            )
+
+            # Add saved data into the JSON column
+            logger.debug("DATABASE: Add saved data to new column")
+            for character, data in migration_dict.items():
+                json_object = json.dumps(data)
+                self.db.execute_sql(
+                    "UPDATE characters SET data = ? WHERE id = ?;", (json_object, character)
+                )
+
+            #### End Migration ####
+
+            # Re-enable foreign keys
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
 
 
 class PopulateDatabase:

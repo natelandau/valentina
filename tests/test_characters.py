@@ -1,7 +1,10 @@
 # type: ignore
 """Test the CharacterService class."""
 
+from uuid import uuid4
+
 import pytest
+from dirty_equals import IsPartialDict
 
 from valentina.models import CharacterService
 from valentina.models.db_tables import (
@@ -10,6 +13,7 @@ from valentina.models.db_tables import (
     Trait,
     TraitCategory,
     TraitValue,
+    VampireClan,
 )
 from valentina.utils import errors
 
@@ -98,10 +102,14 @@ class TestCharacterService:
     def test_add_custom_section(self):
         """Test add_custom_section()."""
         # GIVEN a character object with no custom sections
+
         character = Character.create(
-            first_name="add_custom_section",
-            last_name="character",
-            nickname="testy",
+            data={
+                "first_name": "add_custom_section",
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
             char_class=1,
             guild=1,
             created_by=1,
@@ -121,9 +129,12 @@ class TestCharacterService:
         """Test add_custom_trait()."""
         # GIVEN a Character object and a TraitCategory object
         character = Character.create(
-            first_name="add_custom_trait",
-            last_name="character",
-            nickname="testy",
+            data={
+                "first_name": "add_custom_trait",
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
             char_class=1,
             guild=1,
             created_by=1,
@@ -143,23 +154,29 @@ class TestCharacterService:
         assert character.custom_traits[0].value == 1
         assert character.custom_traits[0].max_value == 5
 
-    def test_fetch_all_characters(self, caplog):
-        """Test fetch_all_characters()."""
+    def test_fetch_all_player_characters(self, caplog):
+        """Test fetch_all_player_characters()."""
         # GIVEN two characters for a guild, with one in the cache
         guild_id = 123321
         character1 = Character.create(
-            first_name="fetch_all_characters1",
-            last_name="character1",
-            nickname="testy",
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
             char_class=1,
             guild=guild_id,
             created_by=1,
             clan=1,
         )
         character2 = Character.create(
-            first_name="fetch_all_characters2",
-            last_name="character2",
-            nickname="testy",
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
             char_class=1,
             guild=guild_id,
             created_by=1,
@@ -167,8 +184,8 @@ class TestCharacterService:
         )
         self.char_svc.character_cache[f"{guild_id}_{character1.id}"] = character1
 
-        # WHEN the fetch_all_characters method is called
-        result = self.char_svc.fetch_all_characters(guild_id)
+        # WHEN the fetch_all_player_characters method is called
+        result = self.char_svc.fetch_all_player_characters(guild_id)
         returned = caplog.text
 
         # THEN check the method returns the correct characters from the cache and the database and updates the cache
@@ -180,7 +197,7 @@ class TestCharacterService:
         assert [
             character
             for key, character in self.char_svc.character_cache.items()
-            if key.startswith(str(guild_id))
+            if key.startswith(str(guild_id) + "_")
         ] == [character1, character2]
 
     def test_fetch_all_storyteller_characters(self, caplog):
@@ -188,24 +205,28 @@ class TestCharacterService:
         # GIVEN two storyteller characters for a guild, with one in the cache
         guild_id = 123321
         character1 = Character.create(
-            first_name="fetch_all_storyteller_characters1",
-            last_name="character1",
-            nickname="testy",
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "storyteller",
+                "nickname": "1",
+                "storyteller_character": True,
+            },
             char_class=1,
             guild=guild_id,
             created_by=1,
             clan=1,
-            storyteller_character=True,
         )
         character2 = Character.create(
-            first_name="fetch_all_storyteller_characters2",
-            last_name="character2",
-            nickname="testy",
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "storyteller",
+                "nickname": "2",
+                "storyteller_character": True,
+            },
             char_class=1,
             guild=guild_id,
             created_by=1,
             clan=1,
-            storyteller_character=True,
         )
         self.char_svc.storyteller_character_cache[guild_id] = [character1]
 
@@ -241,9 +262,12 @@ class TestCharacterService:
         guild_id = 12333111222
         user_id = 1
         character = Character.create(
-            first_name="fetch_user_of_character",
-            last_name="character",
-            nickname="testy",
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
             char_class=1,
             guild=guild_id,
             created_by=user_id,
@@ -370,12 +394,15 @@ class TestCharacterService:
         """Test user_has_claim()."""
         # GIVEN a context object for a user with a character claim
         character = Character.create(
-            first_name="user_has_claim",
-            last_name="character",
-            nickname="testy",
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
             char_class=1,
-            guild=1,
-            created_by=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
             clan=1,
         )
         self.char_svc.claim_cache[
@@ -392,13 +419,16 @@ class TestCharacterService:
         self.char_svc.claim_cache = {}
         assert self.char_svc.user_has_claim(mock_ctx) is False
 
-    def test_update_character_one(self, mock_ctx):
+    def test_update_or_add_one(self, mock_ctx):
         """Test update_character()."""
         # GIVEN a character object that is in the cache
         character = Character.create(
-            first_name="update_character",
-            last_name="character",
-            nickname="testy",
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
             char_class=1,
             guild=mock_ctx.guild.id,
             created_by=mock_ctx.author.id,
@@ -406,60 +436,85 @@ class TestCharacterService:
         )
         self.char_svc.character_cache[f"{mock_ctx.guild.id}_{character.id}"] = character
 
-        # WHEN the update_character method is called
+        # WHEN the update_or_add method is called
         updates = {"first_name": "updated", "last_name": "updated", "nickname": "updated"}
-        result = self.char_svc.update_character(mock_ctx, character.id, **updates)
+        result = self.char_svc.update_or_add(mock_ctx, character=character, data=updates)
 
         # THEN check the character is updated correctly
-        assert result.first_name == "updated"
-        assert result.last_name == "updated"
-        assert result.nickname == "updated"
+        assert result.data == IsPartialDict(
+            first_name="updated",
+            last_name="updated",
+            nickname="updated",
+            storyteller_character=False,
+        )
         assert f"{mock_ctx.guild.id}_{character.id}" not in self.char_svc.character_cache
 
-    def test_update_character_two(self, mock_ctx):
-        """Test update_character()."""
+    def test_update_or_add_two(self, mock_ctx):
+        """Test update_or_add()."""
         # GIVEN a storyteller character object that is in the cache
         character = Character.create(
-            first_name="update_character_two",
-            last_name="character",
-            nickname="testy",
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": True,
+            },
             char_class=1,
             guild=mock_ctx.guild.id,
             created_by=mock_ctx.author.id,
             clan=1,
-            storyteller_character=True,
         )
         self.char_svc.storyteller_character_cache[mock_ctx.guild.id] = [character]
 
-        # WHEN the update_character method is called
+        # WHEN the update_or_add method is called
         updates = {"first_name": "updated", "last_name": "updated", "nickname": "updated"}
-        result = self.char_svc.update_character(mock_ctx, character.id, **updates)
+        result = self.char_svc.update_or_add(mock_ctx, character=character, data=updates, clan=2)
 
         # THEN check the character is updated correctly
-        assert result.first_name == "updated"
-        assert result.last_name == "updated"
-        assert result.nickname == "updated"
+        assert result.data == IsPartialDict(
+            first_name="updated",
+            last_name="updated",
+            nickname="updated",
+            storyteller_character=True,
+        )
+        assert result.clan == VampireClan.get_by_id(2)
         assert mock_ctx.guild.id not in self.char_svc.storyteller_character_cache
 
-    def test_update_character_three(self, mock_ctx):
-        """Test update_character()."""
-        # GIVEN a character ID that does not exist in the database
-        char_id = 99999912345
+    def test_update_or_add_three(self, mock_ctx):
+        """Test update_or_add()."""
+        # GIVEN a character that is not created and items in the cache
+        self.char_svc.character_cache[f"{mock_ctx.guild.id}_999"] = "test"
+        name = str(uuid4()).split("-")[0]
+        data = {
+            "first_name": name,
+            "new_key": "new_value",
+        }
 
-        # WHEN the update_character method is called
-        # THEN check the method raises a CharacterNotFoundError
-        with pytest.raises(
-            errors.DatabaseError, match="No character found in the database matching id"
-        ):
-            self.char_svc.update_character(mock_ctx, char_id)
+        # WHEN the update_or_add method is called
+        result = self.char_svc.update_or_add(mock_ctx, data=data, char_class=1, clan=1)
+
+        # THEN check the character is created correctly with default values and the cache is cleared
+        assert self.char_svc.character_cache == {}
+        assert result.data == IsPartialDict(
+            first_name=name,
+            storyteller_character=False,
+            experience=0,
+            experience_total=0,
+            new_key="new_value",
+        )
+        assert not result.data["last_name"]
+        assert not result.data["nickname"]
 
     def test_update_traits_by_id(self, mock_ctx):
         """Test update_traits_by_id()."""
         # GIVEN a character object and traits and a single trait value lookup
         character = Character.create(
-            first_name="update_traits_by_id",
-            last_name="character",
-            nickname="testy",
+            data={
+                "first_name": "add_custom_trait",
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
             char_class=1,
             guild=mock_ctx.guild.id,
             created_by=mock_ctx.author.id,

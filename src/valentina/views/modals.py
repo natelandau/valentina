@@ -29,7 +29,7 @@ class ProfileModal(Modal):
         self.add_item(
             InputText(
                 label="demeanor",
-                value=self.character.demeanor if self.character.demeanor else None,
+                value=self.character.data["demeanor"] if character.data.get("demeanor") else None,
                 placeholder="Enter a demeanor",
                 required=False,
                 style=discord.InputTextStyle.short,
@@ -39,7 +39,7 @@ class ProfileModal(Modal):
         self.add_item(
             InputText(
                 label="nature",
-                value=self.character.nature if self.character.nature else None,
+                value=self.character.data["nature"] if character.data.get("nature") else None,
                 placeholder="Enter a nature",
                 required=False,
                 style=discord.InputTextStyle.short,
@@ -51,7 +51,9 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="generation",
-                    value=self.character.generation if self.character.generation else None,
+                    value=self.character.data["generation"]
+                    if character.data.get("generation")
+                    else None,
                     placeholder="Enter a generation (integer, e.g. 13 or 3)",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -62,7 +64,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="sire",
-                    value=self.character.generation if self.character.generation else None,
+                    value=self.character.data["sire"] if character.data.get("sire") else None,
                     placeholder="Name of your sire",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -74,7 +76,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="essence",
-                    value=self.character.generation if self.character.generation else None,
+                    value=self.character.data["essence"] if character.data.get("essence") else None,
                     placeholder="Your essence",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -84,7 +86,9 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="tradition",
-                    value=self.character.generation if self.character.generation else None,
+                    value=self.character.data["tradition"]
+                    if character.data.get("tradition")
+                    else None,
                     placeholder="Your tradition",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -96,7 +100,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="breed",
-                    value=self.character.generation if self.character.generation else None,
+                    value=self.character.data["breed"] if character.data.get("breed") else None,
                     placeholder="Your breed",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -106,7 +110,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="tribe",
-                    value=self.character.generation if self.character.generation else None,
+                    value=self.character.data["tribe"] if character.data.get("tribe") else None,
                     placeholder="Your tribe",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -116,7 +120,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="auspice",
-                    value=self.character.generation if self.character.generation else None,
+                    value=self.character.data["auspice"] if character.data.get("auspice") else None,
                     placeholder="Your auspice",
                     required=False,
                     style=discord.InputTextStyle.short,

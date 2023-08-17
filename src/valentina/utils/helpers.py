@@ -1,6 +1,5 @@
 """Helper functions for Valentina."""
 import random
-import re
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -234,76 +233,6 @@ def num_to_circles(num: int = 0, maximum: int = 5) -> str:
         maximum = num
 
     return "●" * num + "○" * (maximum - num)
-
-
-def pluralize(value: int, noun: str) -> str:
-    """Pluralize a noun.
-
-    Args:
-        value (int): The number of the noun.
-        noun (str): The noun to pluralize.
-
-    >>> pluralize(1, "die")
-    'die'
-
-    >>> pluralize(2, "die")
-    'dice'
-
-    >>> pluralize(2, "Die")
-    'Dice'
-
-    >>> pluralize(3, "DIE")
-    'DICE'
-
-    >>> pluralize(1, "mess")
-    'mess'
-
-    >>> pluralize(2, "specialty")
-    'specialties'
-
-    >>> pluralize(2, "fry")
-    'fries'
-
-    >>> pluralize(2, "botch")
-    'botches'
-
-    >>> pluralize(2, "critical")
-    'criticals'
-    """
-    nouns = {
-        "success": "successes",
-        "die": "dice",
-        "failure": "failures",
-    }
-
-    if value != 1:
-        is_title_case = False
-        is_all_caps = False
-        if re.search("^[A-Z][a-z]+$", noun):
-            is_title_case = True
-
-        if re.search("^[A-Z]+$", noun):
-            is_all_caps = True
-
-        if noun.lower() in nouns:
-            plural = nouns[noun.lower()]
-
-        elif re.search("[sxz]$", noun) or re.search("[^aeioudgkprt]h$", noun):
-            plural = re.sub("$", "es", noun)
-
-        elif re.search("[^aeiou]y$", noun):
-            plural = re.sub("y$", "ies", noun)
-        else:
-            plural = noun + "s"
-
-        if is_title_case:
-            return plural.title()
-        if is_all_caps:
-            return plural.upper()
-
-        return plural
-
-    return noun
 
 
 def round_trait_value(value: int, max_value: int) -> int:

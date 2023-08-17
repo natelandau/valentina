@@ -3,9 +3,11 @@
 from dataclasses import dataclass
 
 import discord
+import inflect
 
 from valentina.models.dicerolls import DiceRoll
-from valentina.utils.helpers import pluralize
+
+p = inflect.engine()
 
 
 @dataclass
@@ -76,7 +78,7 @@ class RollDisplay:
         if self.trait_one.name:
             embed.add_field(
                 name="**Rolled Traits**",
-                value=f"{self.trait_one.name}: `{self.trait_one.value} {pluralize(self.trait_one.value, 'die')}`\n{self.trait_two.name}: `{self.trait_two.value} {pluralize(self.trait_two.value, 'die')}`",
+                value=f"{self.trait_one.name}: `{self.trait_one.value} {p.plural_noun('die',self.trait_one.value)}`\n{self.trait_two.name}: `{self.trait_two.value} {p.plural_noun('die',self.trait_two.value)}`",
                 inline=False,
             )
 

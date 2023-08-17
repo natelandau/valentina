@@ -114,11 +114,15 @@ class Characters(commands.Cog, name="Character"):
         trait_values_from_chargen = await wizard.wait_until_done()
 
         # Create the character and traits in the db
-        character = self.bot.char_svc.create_character(
+        data: dict[str, str | int | bool] = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "nickname": nickname,
+        }
+
+        character = self.bot.char_svc.update_or_add(
             ctx,
-            first_name=first_name,
-            last_name=last_name,
-            nickname=nickname,
+            data=data,
             char_class=char_class,
             clan=vampire_clan,
         )
@@ -208,7 +212,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """List all player characters in this guild."""
-        characters = self.bot.char_svc.fetch_all_characters(ctx.guild.id)
+        characters = self.bot.char_svc.fetch_all_player_characters(ctx.guild.id)
         if len(characters) == 0:
             await present_embed(
                 ctx,
@@ -250,7 +254,7 @@ class Characters(commands.Cog, name="Character"):
         """Set the DOB of a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
-        self.bot.char_svc.update_character(ctx, character.id, date_of_birth=dob)
+        self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
         logger.debug(f"CHARACTER: {character} dob updated by {ctx.author.name}.")
 
         await present_embed(
@@ -342,7 +346,7 @@ class Characters(commands.Cog, name="Character"):
         await modal.wait()
         biography = modal.bio.strip()
 
-        self.bot.char_svc.update_character(ctx, character.id, bio=biography)
+        self.bot.char_svc.update_or_add(ctx, character=character, data={"bio": biography})
         logger.info(f"BIO: {character} bio updated by {ctx.author.name}.")
 
         await present_embed(
@@ -384,7 +388,7 @@ class Characters(commands.Cog, name="Character"):
         custom_section.title = section_title
         custom_section.description = section_description
         custom_section.save()
-        self.bot.char_service.purge_cache(ctx)
+        self.bot.char_svc.purge_cache(ctx)
 
         await present_embed(
             ctx,
@@ -409,13 +413,12 @@ class Characters(commands.Cog, name="Character"):
         await ctx.send_modal(modal)
         await modal.wait()
         if modal.confirmed:
-            # TODO: Refactor into char_svc
+            update_data: dict = {}
             for k, v in modal.results.items():
                 if v:
-                    character.__setattr__(k, v)
+                    update_data[k] = v
 
-            character.save()
-            self.bot.char_svc.purge_cache(ctx)
+            self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
 
             await present_embed(
                 ctx,
