@@ -108,7 +108,7 @@ class GuildService:
             peewee.DoesNotExist: If the guild does not exist in the database.
         """
         if ctx.guild.id not in self.settings_cache:
-            guild = Guild.get_by_id(ctx.guild.id)
+            guild = Guild.get_by_id(ctx.guild.id).set_default_data_values()
 
             # Store all guild settings in the cache
             self.settings_cache[ctx.guild.id] = guild.data

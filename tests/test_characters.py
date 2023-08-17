@@ -4,6 +4,7 @@
 from uuid import uuid4
 
 import pytest
+from dirty_equals import IsPartialDict
 
 from valentina.models import CharacterService
 from valentina.models.db_tables import (
@@ -440,9 +441,12 @@ class TestCharacterService:
         result = self.char_svc.update_or_add(mock_ctx, character=character, data=updates)
 
         # THEN check the character is updated correctly
-        assert result.data["first_name"] == "updated"
-        assert result.data["last_name"] == "updated"
-        assert result.data["nickname"] == "updated"
+        assert result.data == IsPartialDict(
+            first_name="updated",
+            last_name="updated",
+            nickname="updated",
+            storyteller_character=False,
+        )
         assert f"{mock_ctx.guild.id}_{character.id}" not in self.char_svc.character_cache
 
     def test_update_or_add_two(self, mock_ctx):
@@ -467,9 +471,12 @@ class TestCharacterService:
         result = self.char_svc.update_or_add(mock_ctx, character=character, data=updates, clan=2)
 
         # THEN check the character is updated correctly
-        assert result.data["first_name"] == "updated"
-        assert result.data["last_name"] == "updated"
-        assert result.data["nickname"] == "updated"
+        assert result.data == IsPartialDict(
+            first_name="updated",
+            last_name="updated",
+            nickname="updated",
+            storyteller_character=True,
+        )
         assert result.clan == VampireClan.get_by_id(2)
         assert mock_ctx.guild.id not in self.char_svc.storyteller_character_cache
 
@@ -486,15 +493,17 @@ class TestCharacterService:
         # WHEN the update_or_add method is called
         result = self.char_svc.update_or_add(mock_ctx, data=data, char_class=1, clan=1)
 
-        # THEN check the character is created correctly and the cache is cleared
+        # THEN check the character is created correctly with default values and the cache is cleared
         assert self.char_svc.character_cache == {}
-        assert result.data["first_name"] == name
+        assert result.data == IsPartialDict(
+            first_name=name,
+            storyteller_character=False,
+            experience=0,
+            experience_total=0,
+            new_key="new_value",
+        )
         assert not result.data["last_name"]
         assert not result.data["nickname"]
-        assert result.data["storyteller_character"] is False
-        assert result.data["experience"] == 0
-        assert result.data["experience_total"] == 0
-        assert result.data["new_key"] == "new_value"
 
     def test_update_traits_by_id(self, mock_ctx):
         """Test update_traits_by_id()."""

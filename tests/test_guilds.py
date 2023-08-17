@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import discord
 import pytest
+from dirty_equals import IsPartialDict
 from rich.console import Console
 
 from valentina.models import GuildService
@@ -37,7 +38,7 @@ class TestGuildService:
         assert self.guild_svc.settings_cache == {1: {"a": "b"}, 2: {"c": "d"}}
         result = Guild.get_by_id(1002002002)
         assert result.name == "Test Guild"
-        assert result.data["key"] == "value"
+        assert result.data == IsPartialDict(key="value", use_audit_log=False)
         assert result.data.get("modified")
         for k, v in GUILD_DEFAULTS.items():
             assert result.data[k] == v
@@ -49,8 +50,9 @@ class TestGuildService:
         # THEN the guild is updated with the new data
         result = Guild.get_by_id(1002002002)
         assert result.name == "Test Guild"
-        assert result.data["key"] == "new_value"
-        assert result.data["new_key"] == "new_value"
+        assert result.data == IsPartialDict(
+            key="new_value", new_key="new_value", use_audit_log=False
+        )
 
     def test_fetch_guild_settings(self, mock_ctx, caplog):
         """Test GuildService.fetch_guild_settings().
@@ -71,16 +73,14 @@ class TestGuildService:
         caplog_text = caplog.text
         assert isinstance(returned, dict)
         assert "DATABASE:" in caplog_text  # confirm the database was queried b/c cache was empty
-        assert returned["a"] == "b"
-        assert returned["c"] == "d"
+        assert returned == IsPartialDict(a="b", c="d", key="value", use_audit_log=False)
 
         # Fetch the guild settings again
         returned = self.guild_svc.fetch_guild_settings(mock_ctx)
         caplog_text = caplog.text
         assert isinstance(returned, dict)
         assert "CACHE:" in caplog_text  # confirm the cache was used
-        assert returned["a"] == "b"
-        assert returned["c"] == "d"
+        assert returned == IsPartialDict(a="b", c="d", key="value", use_audit_log=False)
 
     def test_purge_cache_one(self, mock_ctx):
         """Test GuildService.purge_cache().
