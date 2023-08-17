@@ -1,3 +1,19 @@
+## v1.4.0 (2023-08-17)
+
+### Feat
+
+- **admin**: clear probability results from database
+
+### Fix
+
+- **gameplay**: improve roll statistics display
+- **developer**: migrate dev commands from admin cog (#37)
+- **help**: improve interactive command help
+
+### Refactor
+
+- **database**: store character data in json (#38)
+
 ## v1.3.0 (2023-08-14)
 
 ### Feat
