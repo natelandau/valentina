@@ -179,7 +179,7 @@ class CharacterService:
         cached_chars = [
             character
             for key, character in self.character_cache.items()
-            if key.startswith(str(guild_id))
+            if key.startswith(f"{guild_id!s}_")
         ]
         cached_ids = [character.id for character in cached_chars]
         logger.debug(f"CACHE: Fetch {len(cached_chars)} characters")
@@ -357,7 +357,7 @@ class CharacterService:
             # Purge caches for the specific guild
             self.storyteller_character_cache.pop(ctx.guild.id, None)
             for cache in caches.values():
-                keys_to_remove = [key for key in cache if key.startswith(str(ctx.guild.id))]
+                keys_to_remove = [key for key in cache if key.startswith(f"{ctx.guild.id!s}_")]
                 for key in keys_to_remove:
                     cache.pop(key, None)
             logger.debug(f"CACHE: Purge character caches for guild {ctx.guild}")

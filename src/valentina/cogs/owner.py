@@ -4,13 +4,15 @@ from pathlib import Path
 
 import aiofiles
 import discord
+import inflect
 from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_CHARACTER_COUNT
 from valentina.utils import Context
-from valentina.utils.helpers import pluralize
+
+p = inflect.engine()
 
 
 class Owner(commands.Cog):
@@ -44,7 +46,7 @@ class Owner(commands.Cog):
 
         embed = discord.Embed(
             title="Connected guilds",
-            description=f"Connected to {len(servers)} {pluralize(len(servers), 'guild')}",
+            description=f"Connected to {p.no('guild'), len(servers)}",
             color=0x20BEFF,
         )
         for n, i in enumerate(servers):

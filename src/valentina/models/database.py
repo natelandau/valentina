@@ -4,6 +4,7 @@ from pathlib import Path
 
 import aiofiles.os
 import arrow
+import inflect
 from loguru import logger
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
@@ -34,7 +35,8 @@ from valentina.models.db_tables import (
     VampireClan,
 )
 from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
-from valentina.utils.helpers import pluralize
+
+p = inflect.engine()
 
 
 class DatabaseService:
@@ -243,5 +245,5 @@ class DBBackup:
                     await aiofiles.os.remove(backup)
                     deleted += 1
 
-        logger.info(f"BACKUP: Delete {deleted} old db {pluralize(deleted, 'backup')}")
+        logger.info(f"BACKUP: Delete {deleted} old db {p.plural_noun('backup', deleted)}")
         return deleted

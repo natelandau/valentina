@@ -196,7 +196,7 @@ class TestCharacterService:
         assert [
             character
             for key, character in self.char_svc.character_cache.items()
-            if key.startswith(str(guild_id))
+            if key.startswith(str(guild_id) + "_")
         ] == [character1, character2]
 
     def test_fetch_all_storyteller_characters(self, caplog):
