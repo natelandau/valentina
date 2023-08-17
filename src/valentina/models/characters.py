@@ -198,7 +198,7 @@ class CharacterService:
 
         # Verify default values and add characters from database to cache
         for c in characters:
-            character = c.verify_character_defaults()
+            character = c.set_default_data_values()
             key = self.__get_char_key(guild_id, character.id)
             self.character_cache[key] = character
 
@@ -243,7 +243,7 @@ class CharacterService:
 
         # Verify default values and add characters from database to cache
         for c in characters:
-            character = c.verify_character_defaults()
+            character = c.set_default_data_values()
             self.storyteller_character_cache[guild_id].append(character)
 
         return self.storyteller_character_cache[guild_id]
@@ -426,7 +426,7 @@ class CharacterService:
                 data=data or {},
                 **kwargs,
             )
-            character = new_character.verify_character_defaults()
+            character = new_character.set_default_data_values()
 
             logger.info(f"DATABASE: Create {character} for {ctx.author.display_name}")
 

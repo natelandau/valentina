@@ -9,6 +9,7 @@ from discord import ApplicationContext
 from loguru import logger
 
 from valentina.models.constants import (
+    GUILD_DEFAULTS,
     ChannelPermission,
     EmbedColor,
     TraitPermissions,
@@ -26,20 +27,6 @@ class GuildService:
     def __init__(self) -> None:
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
-
-    def __get_default_values(self) -> dict[str, str | int | bool]:
-        """Get the default values for a guild."""
-        return {
-            "error_log_channel_id": None,
-            "log_channel_id": None,
-            "modified": str(time_now()),
-            "storyteller_channel_id": None,
-            "trait_permissions": TraitPermissions.WITHIN_24_HOURS.value,
-            "use_audit_log": False,
-            "use_error_log_channel": False,
-            "use_storyteller_channel": False,
-            "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
-        }
 
     async def get_setting_review_embed(self, ctx: ApplicationContext) -> discord.Embed:
         """Get an embed of all guild settings."""
@@ -347,58 +334,42 @@ class GuildService:
 
         return embed
 
-    def verify_guild_defaults(self, guild: discord.Guild) -> None:
-        """Verify that the guild defaults are set.  If any keys are missing, they are added to the guild's data with default values.
-
-        Args:
-            guild (discord.Guild): The guild to verify.
-
-
-        """
-        default_values = self.__get_default_values()
-
-        instance = Guild.get_by_id(guild.id)
-        instance.data = instance.data or {}  # Ensure data is not None
-
-        updated = False
-        for default_key, default_value in default_values.items():
-            if default_key not in instance.data:
-                logger.info(
-                    f"DATABASE: Updated guild '{guild.name}' with default '{default_key}: {default_value}'"
-                )
-                instance.data[default_key] = default_value
-                updated = True
-
-        if updated:
-            instance.save()
-        else:
-            logger.info(f"DATABASE: Guild '{guild.name}' defaults are up to date")
-
     def update_or_add(
         self,
         guild: discord.Guild,
         updates: dict[str, str | int | bool] | None = None,
-    ) -> None:
+    ) -> Guild:
         """Add a guild to the database or update it if it already exists."""
+        # TODO: Write more extensive tests
+
+        # Purge the guild from the cache
         self.purge_cache(guild)
+
+        # Create initialization data
+        initial_data = GUILD_DEFAULTS.copy() | {"modified": str(time_now())} | (updates or {})
 
         db_guild, is_created = Guild.get_or_create(
             id=guild.id,
             defaults={
                 "name": guild.name,
                 "created": time_now(),
-                "data": self.__get_default_values(),
+                "data": initial_data,
             },
         )
-
+        print(Guild.get_by_id(guild.id).data)
         if is_created:
             logger.info(f"DATABASE: Created guild {db_guild.name}")
-        else:
-            data_dict = updates or {}
-            data_dict["modified"] = str(time_now())
+        elif updates:
+            logger.debug(f"DATABASE: Updated guild '{db_guild.name}'")
+            updates["modified"] = str(time_now())
 
-            for key, value in data_dict.items():
+            for key, value in updates.items():
                 logger.debug(f"DATABASE: Update guild {db_guild.name}: {key} to {value}")
 
-            Guild.update(data=Guild.data.update(data_dict)).where(Guild.id == guild.id).execute()
-            logger.debug(f"DATABASE: Updated guild '{db_guild.name}'")
+            # Make requested updates to the guild
+            Guild.update(data=Guild.data.update(updates)).where(Guild.id == guild.id).execute()
+
+            # Ensure default data values are set
+            Guild.get_by_id(guild.id).set_default_data_values()
+
+        return Guild.get_by_id(guild.id)

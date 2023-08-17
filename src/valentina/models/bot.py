@@ -185,7 +185,6 @@ class Valentina(commands.Bot):
                 # ############################
 
                 self.guild_svc.update_or_add(guild)
-                self.guild_svc.verify_guild_defaults(guild)
                 self.char_svc.fetch_all_player_characters(guild.id)
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 

@@ -18,7 +18,7 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
-from valentina.models.constants import CHARACTER_DEFAULTS
+from valentina.models.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS
 from valentina.utils.helpers import time_now
 
 # Import configuration from environment variables
@@ -75,6 +75,29 @@ class Guild(BaseModel):
     def __str__(self) -> str:
         """Return the string representation of the model."""
         return f"[{self.id}] {self.name}"
+
+    def set_default_data_values(self) -> Guild:
+        """Verify that the guild's JSONField defaults are set.  If any keys are missing, they are added to the character's data with default values.
+
+        Returns:
+            Guild: The guild object with defaults verified and potentially updated.
+        """
+        updated = False
+        default_values = GUILD_DEFAULTS.copy()
+        default_values["modified"] = str(time_now())
+
+        for default_key, default_value in default_values.items():
+            if default_key not in self.data:
+                self.data[default_key] = default_value
+                updated = True
+
+        if updated:
+            self.save()
+            logger.info(f"DATABASE: Update defaults for {self}")
+        else:
+            logger.debug(f"DATABASE: {self}'s defaults are up to date")
+
+        return self
 
     class Meta:
         """Meta class for the model."""
@@ -313,7 +336,7 @@ class Character(BaseModel):
         except TraitValue.DoesNotExist:
             return 0
 
-    def verify_character_defaults(self) -> Character:
+    def set_default_data_values(self) -> Character:
         """Verify that the character JSONField defaults are set.  If any keys are missing, they are added to the character's data with default values.
 
         Returns:
