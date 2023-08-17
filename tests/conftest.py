@@ -10,6 +10,7 @@ Fixtures:
     mock_ctx2: A context object with existing user(1) and existing guild(2).
     mock_ctx3: A context object with a new user  and existing guild(1).
     mock_ctx4: A context object with a new user and a new guild.
+    mock_member: A mock of a discord.Member object.
     caplog: Overwrite the built-in caplog fixture to capture loguru logs.
 """
 import logging
@@ -163,6 +164,19 @@ def empty_db() -> CSqliteExtDatabase:
 
 
 ### Mock Objects ################################
+@pytest.fixture()
+def mock_member():
+    """A mock of a discord.Member object."""
+    mock_member = MagicMock()
+    mock_member.id = 1
+    mock_member.display_name = "Test User"
+    mock_member.name = "testuser"
+    mock_member.mention = "<@1>"
+    mock_member.__class__ = discord.Member
+
+    return mock_member
+
+
 @pytest.fixture()
 def mock_ctx():
     """Create a mock context object with user 1."""

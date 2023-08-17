@@ -1,8 +1,8 @@
 # type: ignore
 """Tests for helper utilities."""
-
 import discord
 import pytest
+from dirty_equals import IsStr
 
 from valentina.models.db_tables import RollProbability
 from valentina.utils.probability import Probability
@@ -33,17 +33,23 @@ class TestProbability:
         assert instance.probabilities == RollProbability.get_by_id(1).data
         assert RollProbability.select().count() == 1
 
-    # @pytest.mark.asyncio()
-    # async def test_get_embed(self, mock_ctx):
-    #     """Test the get_embed method."""
-    #     # GIVEN a probability instance
-    #     pool = 5
-    #     difficulty = 6
-    #     instance = Probability(mock_ctx, pool=pool, difficulty=difficulty, dice_size=10)
+    @pytest.mark.asyncio()
+    async def test_get_embed(self, mock_ctx):
+        """Test the get_embed method."""
+        # GIVEN a probability instance
+        pool = 5
+        difficulty = 6
+        instance = Probability(mock_ctx, pool=pool, difficulty=difficulty, dice_size=10)
 
-    #     # WHEN getting the embed
-    #     embed = await instance.get_embed()
+        # WHEN getting the embed
+        embed = await instance.get_embed()
 
-    #     # THEN confirm the embed is correct
-    #     assert embed.title == "Roll Probability"
-    #     assert isinstance(embed, discord.Embed)
+        # THEN confirm the embed is correct
+        assert isinstance(embed, discord.Embed)
+        result = embed.to_dict()
+        from rich import print
+
+        print(embed.to_dict())
+        assert result["footer"]["text"] == IsStr(regex=r"Based on [0-9,]+ trials")
+        assert result["description"] == IsStr()
+        assert isinstance(result["fields"], list)
