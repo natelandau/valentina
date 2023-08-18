@@ -41,7 +41,15 @@ class Developer(commands.Cog):
     @developer.command()
     @commands.is_owner()
     @logger.catch
-    async def backupdb(self, ctx: Context) -> None:
+    async def backupdb(
+        self,
+        ctx: Context,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Create a backup of the database."""
         logger.info("ADMIN: Manually create database backup")
         db_file = await self.bot.db_svc.backup_database(self.bot.config)
@@ -49,7 +57,7 @@ class Developer(commands.Cog):
             ctx,
             title="Database backup created",
             description=f"`{db_file}`",
-            ephemeral=True,
+            ephemeral=hidden,
             level="success",
         )
 
@@ -86,6 +94,11 @@ class Developer(commands.Cog):
             description="The character's class",
             autocomplete=select_char_class,
             required=False,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
         ),
     ) -> None:
         """Create test characters in the database for the current guild."""
@@ -136,7 +149,7 @@ class Developer(commands.Cog):
                     ("Owner", f"[{ctx.user.id}] {ctx.user.display_name}"),
                 ],
                 level="success",
-                ephemeral=True,
+                ephemeral=hidden,
             )
 
     @developer.command()
@@ -146,7 +159,7 @@ class Developer(commands.Cog):
         ctx: Context,
         hidden: Option(
             bool,
-            description="Make the server log only visible to you (default True)",
+            description="Make the response only visible to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -193,6 +206,11 @@ class Developer(commands.Cog):
             default=False,
             required=False,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Purge the bot's cache and reload all data from the database."""
         view = ConfirmCancelButtons(ctx.author)
@@ -238,7 +256,7 @@ class Developer(commands.Cog):
             ctx,
             title="All caches purged" if all_guilds else "Guild caches purged",
             level="success",
-            ephemeral=True,
+            ephemeral=hidden,
         )
 
     @developer.command(name="bot_reload")

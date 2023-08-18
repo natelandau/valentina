@@ -38,6 +38,11 @@ class Xp(commands.Cog, name="XP"):
             required=True,
             autocomplete=select_char_trait,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Spend experience points."""
         character = self.bot.char_svc.fetch_claim(ctx)
@@ -64,7 +69,7 @@ class Xp(commands.Cog, name="XP"):
                 title="Error: Not enough XP",
                 description=f"**{trait.name}** upgrade cost is **{upgrade_cost} XP**. You have **{character.data['experience']} XP**.",
                 level="error",
-                ephemeral=True,
+                ephemeral=hidden,
             )
             return
 
@@ -74,6 +79,7 @@ class Xp(commands.Cog, name="XP"):
                 title=f"Error: {trait.name} at max value",
                 description=f"**{trait.name}** is already at max value of {old_value}.",
                 level="error",
+                ephemeral=hidden,
             )
             return
 
@@ -132,6 +138,7 @@ class Xp(commands.Cog, name="XP"):
             ],
             inline_fields=True,
             log=True,
+            ephemeral=hidden,
         )
 
     @xp.command(name="add", description="Add experience to a character")
@@ -139,6 +146,11 @@ class Xp(commands.Cog, name="XP"):
         self,
         ctx: discord.ApplicationContext,
         exp: Option(int, description="The amount of experience to add", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Add experience to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
@@ -180,6 +192,7 @@ class Xp(commands.Cog, name="XP"):
             inline_fields=True,
             level="success",
             log=True,
+            ephemeral=hidden,
         )
 
     @xp.command(name="add_cp", description="Add cool points to a character")
@@ -187,6 +200,11 @@ class Xp(commands.Cog, name="XP"):
         self,
         ctx: discord.ApplicationContext,
         cp: Option(int, description="The number of cool points to add", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Add cool points to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
@@ -241,6 +259,7 @@ class Xp(commands.Cog, name="XP"):
             ],
             level="success",
             log=True,
+            ephemeral=hidden,
         )
 
 

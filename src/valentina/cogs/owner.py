@@ -21,12 +21,6 @@ class Owner(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    @commands.command(name="ping")
-    @commands.is_owner()
-    async def ping(self, ctx: Context) -> None:
-        """Ping the bot."""
-        await ctx.send("pong")
-
     @commands.command(name="db_backup")
     @commands.is_owner()
     @logger.catch

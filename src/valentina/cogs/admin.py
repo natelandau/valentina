@@ -12,6 +12,7 @@ from discord.ext.commands import MemberConverter
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import ChannelPermission, TraitPermissions, XPPermissions
+from valentina.models.statistics import Statistics
 from valentina.utils import Context, errors
 from valentina.utils.converters import ValidChannelName
 from valentina.views import present_embed
@@ -64,9 +65,15 @@ class Admin(commands.Cog):
             description="The user to view information for",
             required=True,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """View information about a user."""
         target = user or ctx.author
+
         creation = ((target.id >> 22) + 1420070400000) // 1000
 
         fields = [("Account Created", f"<t:{creation}:R> on <t:{creation}:D>")]
@@ -94,6 +101,9 @@ class Admin(commands.Cog):
             else:
                 fields.append(("Boosting Server?", "No"))
 
+            roll_stats = Statistics(ctx, user=target)
+            fields.append(("Roll Statistics", roll_stats.get_text(with_title=False)))
+
         await present_embed(
             ctx,
             title=f"{target.display_name}",
@@ -103,7 +113,7 @@ class Admin(commands.Cog):
             author=str(target),
             author_avatar=target.display_avatar.url,
             footer=f"Requested by {ctx.author}",
-            ephemeral=True,
+            ephemeral=hidden,
             level="info",
         )
 
@@ -298,10 +308,18 @@ class Admin(commands.Cog):
     @admin.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def show_settings(self, ctx: discord.ApplicationContext) -> None:
+    async def show_settings(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Show server settings for this guild."""
         embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
-        await ctx.respond(embed=embed, ephemeral=True)
+        await ctx.respond(embed=embed, ephemeral=hidden)
 
     ### MODERATION COMMANDS ################################################################
 
@@ -440,6 +458,11 @@ class Admin(commands.Cog):
         self,
         ctx: Context,
         seconds: Option(int, description="The slowmode cooldown in seconds, 0 to disable slowmode"),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Set slowmode for the current channel."""
         if not isinstance(ctx.channel, discord.TextChannel):
@@ -452,7 +475,7 @@ class Admin(commands.Cog):
                 title="Error setting slowmode",
                 description="Slowmode should be between `21600` and `0` seconds",
                 level="error",
-                ephemeral=True,
+                ephemeral=hidden,
             )
             return
 
@@ -480,6 +503,11 @@ class Admin(commands.Cog):
             description="The reason for locking this channel",
             default="No reason provided",
         ),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default false).",
+            default=False,
+        ),
     ) -> None:
         """Disable the `Send Message` permission for the default role."""
         await ctx.assert_permissions(manage_roles=True)
@@ -501,6 +529,7 @@ class Admin(commands.Cog):
             description=f"{ctx.author.display_name} locked this channel",
             fields=[("Reason", reason)],
             level="warning",
+            ephemeral=hidden,
         )
 
         return
@@ -516,6 +545,11 @@ class Admin(commands.Cog):
             str,
             description="The reason for unlocking this channel",
             default="No reason provided",
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default false).",
+            default=False,
         ),
     ) -> None:
         """Set the `Send Message` permission to the default state for the default role."""
@@ -537,6 +571,7 @@ class Admin(commands.Cog):
             description=f"{ctx.author.display_name} unlocked this channel",
             fields=[("Reason", reason)],
             level="info",
+            ephemeral=hidden,
         )
 
     @moderate.command()
