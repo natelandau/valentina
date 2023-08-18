@@ -15,11 +15,23 @@ class Help(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    def __build_command_list(self) -> list:
+    def __build_command_list(self, ctx: discord.ApplicationContext) -> list:
         """Build a list of commands for the help command."""
         unsorted_commands: list = []
+
+        # build user specific list of commands to hide
+        hidden_commands = ["Owner"]  # Always hide the "Owner" cog
+
+        if self.bot.config["VALENTINA_OWNER_IDS"]:
+            owners = [int(x) for x in self.bot.config["VALENTINA_OWNER_IDS"].split(",")]
+            if ctx.author.id not in owners:
+                hidden_commands.append("Developer")
+
+            if ctx.author.guild_permissions.administrator is False:
+                hidden_commands.append("Admin")
+
         for cog in self.bot.cogs:
-            if cog != "Owner":
+            if cog not in hidden_commands:
                 for cmd in self.bot.get_cog(cog).get_commands():
                     unsorted_commands.append(cmd)
 
@@ -61,7 +73,7 @@ class Help(commands.Cog):
         self, ctx: discord.ApplicationContext, command: Option(str, required=False)  # type: ignore
     ) -> None:
         """Provide help information."""
-        commands = self.__build_command_list()
+        commands = self.__build_command_list(ctx)
 
         if not command:
             description = "**Usage:** Type `/<command> <subcommand>`\n"
