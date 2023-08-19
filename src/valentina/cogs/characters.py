@@ -9,7 +9,6 @@ from loguru import logger
 from valentina.character.traits import add_trait
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import CustomTrait, TraitValue
 from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterClass,
@@ -22,7 +21,6 @@ from valentina.utils.converters import (
     ValidTraitCategory,
     ValidYYYYMMDD,
 )
-from valentina.utils.helpers import time_now
 from valentina.utils.options import (
     select_char_class,
     select_char_trait,
@@ -118,6 +116,7 @@ class Characters(commands.Cog, name="Character"):
             "first_name": first_name,
             "last_name": last_name,
             "nickname": nickname,
+            "player_character": True,
         }
 
         character = self.bot.char_svc.update_or_add(
@@ -126,7 +125,10 @@ class Characters(commands.Cog, name="Character"):
             char_class=char_class,
             clan=vampire_clan,
         )
-        self.bot.char_svc.update_traits_by_id(ctx, character, trait_values_from_chargen)
+
+        for trait, value in trait_values_from_chargen:
+            character.set_trait_value(trait, value)
+
         logger.info(f"CHARACTER: Create character [{character.id}] {character.name}")
 
     @chars.command(name="sheet", description="View a character sheet")
@@ -317,7 +319,9 @@ class Characters(commands.Cog, name="Character"):
         ]:
             raise errors.ValidationError("Custom section already exists")
 
-        self.bot.char_svc.add_custom_section(character, section_title, section_description)
+        self.bot.char_svc.custom_section_update_or_add(
+            ctx, character, section_title, section_description
+        )
 
         await present_embed(
             ctx,
@@ -381,14 +385,15 @@ class Characters(commands.Cog, name="Character"):
         await ctx.send_modal(modal)
         await modal.wait()
 
-        # TODO: Refactor into char_svc
         section_title = modal.section_title.strip().title()
         section_description = modal.section_description.strip()
 
-        custom_section.title = section_title
-        custom_section.description = section_description
-        custom_section.save()
-        self.bot.char_svc.purge_cache(ctx)
+        self.bot.char_service.custom_section_update_or_add(
+            ctx,
+            character,
+            section_title=section_description,
+            section_description=section_description,
+        )
 
         await present_embed(
             ctx,
@@ -456,7 +461,7 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        old_value = character.trait_value(trait)
+        old_value = character.get_trait_value(trait)
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
@@ -483,18 +488,7 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        # TODO: Refactor into trait_svc
-        if isinstance(trait, CustomTrait):
-            trait.value = new_value
-            trait.modified = time_now()
-            trait.save()
-        else:
-            TraitValue.update(value=new_value, modified=time_now()).where(
-                TraitValue.character == character, TraitValue.trait == trait
-            ).execute()
-
-        character.modified = time_now()
-        character.save()
+        character.set_trait_value(trait, new_value)
 
         await msg.delete_original_response()
         await present_embed(
@@ -542,7 +536,7 @@ class Characters(commands.Cog, name="Character"):
 
         if view.confirmed:
             saved_trait_name = trait.name
-            trait.delete_instance()  # TODO: Refactor into trait_svc
+            trait.delete_instance()
             await msg.delete_original_response()
             await present_embed(
                 ctx=ctx,
@@ -588,7 +582,7 @@ class Characters(commands.Cog, name="Character"):
             return
 
         saved_section_title = custom_section.title
-        custom_section.delete_instance()  # TODO: Refactor into char_svc
+        custom_section.delete_instance()
 
         await present_embed(
             ctx=ctx,

@@ -4,7 +4,7 @@
 from uuid import uuid4
 
 import pytest
-from dirty_equals import IsPartialDict
+from dirty_equals import IsList, IsPartialDict, IsStr
 
 from valentina.models import CharacterService
 from valentina.models.db_tables import (
@@ -99,16 +99,16 @@ class TestCharacterService:
         with pytest.raises(errors.CharacterClaimedError):
             self.char_svc.add_claim(guild_id, char_id, user_id)
 
-    def test_add_custom_section(self):
-        """Test add_custom_section()."""
+    def test_custom_section_update_or_add(self, mock_ctx):
+        """Test custom_section_update_or_add()."""
         # GIVEN a character object with no custom sections
-
         character = Character.create(
             data={
                 "first_name": "add_custom_section",
                 "last_name": "character",
                 "nickname": "testy",
                 "storyteller_character": False,
+                "player_character": True,
             },
             char_class=1,
             guild=1,
@@ -117,13 +117,25 @@ class TestCharacterService:
         )
         assert character.custom_sections == []
 
-        # WHEN the add_custom_section method is called
-        assert self.char_svc.add_custom_section(character, "new", "new description") is True
+        # WHEN the custom_section_update_or_add method is called
+        result = self.char_svc.custom_section_update_or_add(
+            mock_ctx, character, "new", "new description"
+        )
 
         # THEN check the custom section is added correctly
-        assert len(character.custom_sections) == 1
-        assert character.custom_sections[0].title == "new"
-        assert character.custom_sections[0].description == "new description"
+        assert character.custom_sections == IsList(length=1)
+        assert result.title == "new"
+        assert result.description == "new description"
+
+        # WHEN the custom_section_update_or_add method is called again
+        result = self.char_svc.custom_section_update_or_add(
+            mock_ctx, character, "new2", "new description2"
+        )
+
+        # THEN check the custom section is updated correctly
+        assert character.custom_sections == IsList(length=1)
+        assert result.title == "new2"
+        assert result.description == "new description2"
 
     def test_add_custom_trait(self):
         """Test add_custom_trait()."""
@@ -134,6 +146,7 @@ class TestCharacterService:
                 "last_name": "character",
                 "nickname": "testy",
                 "storyteller_character": False,
+                "player_character": True,
             },
             char_class=1,
             guild=1,
@@ -164,6 +177,7 @@ class TestCharacterService:
                 "last_name": "character",
                 "nickname": "testy",
                 "storyteller_character": False,
+                "player_character": True,
             },
             char_class=1,
             guild=guild_id,
@@ -176,6 +190,7 @@ class TestCharacterService:
                 "last_name": "character",
                 "nickname": "testy",
                 "storyteller_character": False,
+                "player_character": True,
             },
             char_class=1,
             guild=guild_id,
@@ -210,6 +225,7 @@ class TestCharacterService:
                 "last_name": "storyteller",
                 "nickname": "1",
                 "storyteller_character": True,
+                "player_character": False,
             },
             char_class=1,
             guild=guild_id,
@@ -267,6 +283,7 @@ class TestCharacterService:
                 "last_name": "character",
                 "nickname": "testy",
                 "storyteller_character": False,
+                "player_character": True,
             },
             char_class=1,
             guild=guild_id,
@@ -399,6 +416,7 @@ class TestCharacterService:
                 "last_name": "character",
                 "nickname": "testy",
                 "storyteller_character": False,
+                "player_character": True,
             },
             char_class=1,
             guild=mock_ctx.guild.id,
@@ -428,6 +446,7 @@ class TestCharacterService:
                 "last_name": "character",
                 "nickname": "testy",
                 "storyteller_character": False,
+                "player_character": True,
             },
             char_class=1,
             guild=mock_ctx.guild.id,
@@ -458,6 +477,7 @@ class TestCharacterService:
                 "last_name": "character",
                 "nickname": "testy",
                 "storyteller_character": True,
+                "player_character": False,
             },
             char_class=1,
             guild=mock_ctx.guild.id,
@@ -504,33 +524,6 @@ class TestCharacterService:
         )
         assert not result.data["last_name"]
         assert not result.data["nickname"]
-
-    def test_update_traits_by_id(self, mock_ctx):
-        """Test update_traits_by_id()."""
-        # GIVEN a character object and traits and a single trait value lookup
-        character = Character.create(
-            data={
-                "first_name": "add_custom_trait",
-                "last_name": "character",
-                "nickname": "testy",
-                "storyteller_character": False,
-            },
-            char_class=1,
-            guild=mock_ctx.guild.id,
-            created_by=mock_ctx.author.id,
-            clan=1,
-        )
-        trait1 = Trait.create(name="test_trait1", category=1)
-        trait2 = Trait.create(name="test_trait2", category=1)
-        TraitValue.create(character=character, trait=trait1, value=1)
-
-        # WHEN the update_traits_by_id method is called
-        updates = {trait1.id: 2, trait2.id: 3}
-        self.char_svc.update_traits_by_id(mock_ctx, character, updates)
-
-        # THEN check the trait values are updated correctly
-        assert character.trait_values[0].value == 2
-        assert character.trait_values[1].value == 3
 
     def test_character_traits_dict(self):
         """Test character.traits_dict.
@@ -587,3 +580,93 @@ class TestCharacterService:
         returned = Character.get_by_id(1).custom_traits
         assert len(returned) == 1
         assert returned[0].name == "Test_Trait"
+
+    def test_character_set_trait_value(self, mock_ctx):
+        """Test character.set_trait_value()."""
+        # GIVEN a character with custom traits
+        character = Character.create(
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+                "player_character": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            clan=1,
+        )
+        custom_trait = CustomTrait.create(
+            name="test_trait",
+            description="test_description",
+            category=1,
+            value=0,
+            max_value=5,
+            character=character,
+        )
+        trait = Trait.get_by_id(1)
+
+        # WHEN the set_trait_value method is called with a CustomTrait
+        character.set_trait_value(custom_trait, 3)
+
+        # THEN check the trait value is updated correctly
+        assert custom_trait.value == 3
+
+        # WHEN the set_trait_value method is called with a Trait
+        character.set_trait_value(trait, 3)
+
+        # THEN check the trait value is created correctly
+        assert (
+            TraitValue.select()
+            .where((TraitValue.trait == trait) & (TraitValue.character == character))
+            .get()
+            .value
+            == 3
+        )
+
+        # WHEN the set_trait_value method is called with a Trait
+        character.set_trait_value(trait, 1)
+
+        # THEN check the trait value is updated correctly
+        assert (
+            TraitValue.select()
+            .where((TraitValue.trait == trait) & (TraitValue.character == character))
+            .get()
+            .value
+            == 1
+        )
+
+    def test_character_get_trait_value(self, mock_ctx):
+        """Test character.get_trait_value()."""
+        # GIVEN a character with a custom trait and a trait value
+        character = Character.create(
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            clan=1,
+        )
+        custom_trait = CustomTrait.create(
+            name="test_trait",
+            description="test_description",
+            category=1,
+            value=4,
+            max_value=5,
+            character=character,
+        )
+        trait = Trait.get_by_id(1)
+        TraitValue.create(character=character, trait=trait, value=2)
+
+        # WHEN the get_trait_value method is called with a CustomTrait
+        # THEN check the trait value is returned correctly
+        assert character.get_trait_value(custom_trait) == 4
+
+        # WHEN the get_trait_value method is called with a Trait
+        # THEN check the trait value is returned correctly
+        assert character.get_trait_value(trait) == 2

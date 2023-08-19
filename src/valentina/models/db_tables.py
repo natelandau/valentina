@@ -312,13 +312,7 @@ class Character(BaseModel):
             all_traits.setdefault(category, [])
 
             for trait in traits:
-                if isinstance(trait, Trait):
-                    value = TraitValue.get(
-                        TraitValue.character == self, TraitValue.trait == trait
-                    ).value
-
-                if isinstance(trait, CustomTrait):
-                    value = trait.value
+                value = self.get_trait_value(trait)
 
                 max_value = get_max_trait_value(trait=trait.name, category=category)
                 dots = num_to_circles(value, max_value)
@@ -326,15 +320,32 @@ class Character(BaseModel):
 
         return all_traits
 
-    def trait_value(self, trait: Trait | CustomTrait) -> int:
+    def get_trait_value(self, trait: Trait | CustomTrait) -> int:
         """Return the character's value of a trait."""
-        try:
-            if isinstance(trait, Trait):
-                return TraitValue.get(TraitValue.character == self, TraitValue.trait == trait).value
+        if isinstance(trait, Trait):
+            return TraitValue.get(TraitValue.character == self, TraitValue.trait == trait).value
 
-            return trait.value  # custom traits
-        except TraitValue.DoesNotExist:
-            return 0
+        return trait.value  # custom traits
+
+    def set_trait_value(self, trait: Trait | CustomTrait, value: int) -> None:
+        """Set the character's value of a trait."""
+        if isinstance(trait, CustomTrait):
+            trait.value = value
+            trait.modified = time_now()
+            trait.save()
+
+        elif isinstance(trait, Trait):
+            trait_value, created = TraitValue.get_or_create(
+                character=self, trait=trait, defaults={"value": value, "modified": time_now()}
+            )
+
+            if not created:
+                trait_value.value = value
+                trait_value.modified = time_now()
+                trait_value.save()
+
+        self.data["modified"] = str(time_now())
+        self.save()
 
     def set_default_data_values(self) -> Character:
         """Verify that the character JSONField defaults are set.  If any keys are missing, they are added to the character's data with default values.
