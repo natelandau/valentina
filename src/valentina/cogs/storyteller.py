@@ -1,6 +1,7 @@
 # mypy: disable-error-code="valid-type"
 """Commands for the storyteller."""
 import discord
+import inflect
 from discord.commands import Option
 from discord.ext import commands
 from peewee import fn
@@ -28,6 +29,8 @@ from valentina.utils.storyteller import storyteller_character_traits
 from valentina.views import ConfirmCancelButtons, ReRollButton, present_embed
 from valentina.views.character_sheet import sheet_embed, show_sheet
 from valentina.views.roll_display import RollDisplay
+
+p = inflect.engine()
 
 
 class StoryTeller(commands.Cog):
@@ -382,7 +385,7 @@ class StoryTeller(commands.Cog):
             ctx,
             title=f"Confirm granting {xp} xp to {character.name}",
             fields=[
-                ("Points Added", str(xp)),
+                ("XP Added", str(xp)),
                 ("Current XP", str(current_xp)),
                 ("New XP", str(new_xp)),
                 ("All time XP", str(new_xp_total)),
@@ -417,7 +420,87 @@ class StoryTeller(commands.Cog):
             ctx=ctx,
             title=f"{character.name} was granted {xp} experience",
             fields=[
-                ("Points Added", str(xp)),
+                ("XP Added", str(xp)),
+                ("Current XP", str(new_xp)),
+                ("All time XP", str(new_xp_total)),
+            ],
+            inline_fields=True,
+            level="success",
+            log=True,
+            ephemeral=hidden,
+        )
+
+    @storyteller.command(name="cp_grant", description="Grant a cool point to a character")
+    async def cp_grant(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to grant a cp to",
+            autocomplete=select_player_character,
+            required=True,
+        ),
+        cp: Option(int, description="The number of cool points to grant", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Grant a cool point to a player character."""
+        current_cp = character.data.get("cool_points_total", 0)
+        new_cp = current_cp + cp
+        xp = cp * 10  # Each cool point is worth 10 xp
+
+        current_xp = character.data.get("experience", 0)
+        current_xp_total = character.data.get("experience_total", 0)
+        new_xp = current_xp + xp
+        new_xp_total = current_xp_total + xp
+
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title=f"Confirm granting {cp} cool {p.plural_noun('member', cp)} to {character.name}",
+            fields=[
+                ("CP Added", str(cp)),
+                ("XP Added", str(xp)),
+                ("Current XP", str(current_xp)),
+                ("New XP", str(new_xp)),
+                ("All time XP", str(new_xp_total)),
+            ],
+            inline_fields=True,
+            ephemeral=True,
+            level="info",
+            view=view,
+        )
+        await view.wait()
+
+        if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(
+                    title="Cool Point Grant Cancelled",
+                    description="",
+                    color=EmbedColor.WARNING.value,
+                )
+            )
+            return
+
+        self.bot.char_svc.update_or_add(
+            ctx,
+            character=character,
+            data={
+                "experience": new_xp,
+                "experience_total": new_xp_total,
+                "cool_points_total": new_cp,
+            },
+        )
+        await msg.delete_original_response()
+        await present_embed(
+            ctx=ctx,
+            title=f"{character.name} was granted {xp} experience",
+            fields=[
+                ("Cool Points Added", str(cp)),
+                ("XP Added", str(xp)),
                 ("Current XP", str(new_xp)),
                 ("All time XP", str(new_xp_total)),
             ],

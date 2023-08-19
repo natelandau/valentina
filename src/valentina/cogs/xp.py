@@ -177,7 +177,7 @@ class Xp(commands.Cog, name="XP"):
             ctx=ctx,
             title=f"{character.name} gained experience",
             fields=[
-                ("Points Added", str(exp)),
+                ("XP Added", str(exp)),
                 ("Current XP", new_exp),
                 ("All time XP", f"{new_total}"),
             ],
@@ -205,7 +205,7 @@ class Xp(commands.Cog, name="XP"):
             await present_embed(
                 ctx,
                 title="Permission error",
-                description="You do not have permissions to add experience on this character\nSpeak to an administrator",
+                description="You do not have permissions to add cool points on this character\nSpeak to an administrator",
                 level="error",
                 ephemeral=True,
                 delete_after=30,
@@ -246,7 +246,7 @@ class Xp(commands.Cog, name="XP"):
             fields=[
                 ("Cool Points Added", str(cp)),
                 ("All time Cool Points", f"{new_total}"),
-                ("Experience Added", str(new_xp)),
+                ("XP Added", str(new_xp)),
                 ("Current XP", f"{new_xp_total}"),
             ],
             level="success",

@@ -110,6 +110,7 @@ Storytellers can use the following commands to manage the game.
 -   **Create Characters**: Use `/storyteller character create` to create an NPC.
 -   **Roll Dice:** Use `/storyteller roll_traits` to quickly roll dice for NPCs.
 -   **Grant Characters XP**: Use `/storyteller xp_grant` to grant XP to a character.
+-   **Grant Characters Cool Points**: Use `/storyteller cp_grant` to grant cool points to a character.
 
 ## 7. ROLES IN VALENTINA NOIR
 
