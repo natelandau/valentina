@@ -5,13 +5,7 @@ import re
 from discord import ApplicationContext, AutocompleteContext
 from loguru import logger
 
-from valentina.models.constants import MaxTraitValue
-from valentina.models.db_tables import (
-    Character,
-    CustomSection,
-    CustomTrait,
-    TraitCategory,
-)
+from valentina.models.db_tables import Character, CustomSection
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
@@ -139,42 +133,6 @@ class CharacterService:
             logger.debug(f"DATABASE: Add custom section to {character}")
 
         return section
-
-    def add_custom_trait(
-        self,
-        character: Character,
-        name: str,
-        description: str,
-        category: TraitCategory,
-        value: int,
-        max_value: int = MaxTraitValue.DEFAULT.value,
-    ) -> None:
-        """Create and add a custom trait to a specified character.
-
-        Args:
-            character (Character): Character receiving the trait.
-            name (str): Trait name.
-            description (str): Trait description.
-            category (TraitCategory): Trait category.
-            value (int): Trait value.
-            max_value (int, optional): Trait's maximum value. Defaults to MaxTraitValue.DEFAULT.value.
-
-        Returns:
-            None
-        """
-        name = name.strip().title()
-        description = description.strip().title() if description else None
-
-        CustomTrait.create(
-            name=name,
-            description=description,
-            category=category,
-            value=value,
-            character=character.id,
-            max_value=max_value,
-        )
-
-        logger.debug(f"CHARACTER: Add trait '{name}' to {character}")
 
     def set_character_default_values(self) -> None:
         """Set default values for all characters in the database."""

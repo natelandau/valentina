@@ -1,7 +1,5 @@
 # type: ignore
 """Tests for the dicerolls module."""
-from unittest.mock import MagicMock
-
 import pytest
 
 from valentina.models.db_tables import Guild, RollStatistic, User
@@ -13,21 +11,21 @@ from valentina.utils import errors
 class TestDiceRolls:
     """Test Dice Rolling."""
 
-    def test_log_roll_to_db(self, mock_ctx):
+    def test_log_roll_to_db(self, mock_ctx, mocker):
         """Test diceroll logging."""
         # SETUP the test with mock objects
         # Create a mock user object
         mock_user = User.get_by_id(1)
-        mock_bot = MagicMock()
-        mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_user)
+        mock_bot = mocker.MagicMock()
+        mock_bot.user_svc.fetch_user = mocker.MagicMock(return_value=mock_user)
 
         # create a mock guild object
         mock_guild_object = Guild.get_by_id(1)
-        mock_guild = MagicMock()
+        mock_guild = mocker.MagicMock()
         mock_guild.id = mock_guild_object.id
 
         # Create a local mock object for ctx
-        mock_ctx_local = MagicMock()
+        mock_ctx_local = mocker.MagicMock()
         mock_ctx_local.bot = mock_bot
         mock_ctx_local.guild = mock_guild
 
@@ -154,21 +152,21 @@ class TestDiceRolls:
         assert roll.result == result
         assert roll.result_type == result_type
 
-    def test_not_d10(self):
+    def test_not_d10(self, mocker):
         """Ensure that customizations for non-d10 dice are applied correctly."""
         # SETUP the test with mock objects
         # Create a mock user object
         mock_user = User.get_by_id(1)
-        mock_bot = MagicMock()
-        mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_user)
+        mock_bot = mocker.MagicMock()
+        mock_bot.user_svc.fetch_user = mocker.MagicMock(return_value=mock_user)
 
         # create a mock guild object
         mock_guild_object = Guild.get_by_id(1)
-        mock_guild = MagicMock()
+        mock_guild = mocker.MagicMock()
         mock_guild.id = mock_guild_object.id
 
         # Create a local mock object for ctx
-        mock_ctx_local = MagicMock()
+        mock_ctx_local = mocker.MagicMock()
         mock_ctx_local.bot = mock_bot
         mock_ctx_local.guild = mock_guild
 

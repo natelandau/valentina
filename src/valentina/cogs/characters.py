@@ -6,7 +6,6 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.character.traits import add_trait
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
 from valentina.models.constants import EmbedColor
@@ -273,7 +272,7 @@ class Characters(commands.Cog, name="Character"):
     async def add_custom_trait(
         self,
         ctx: discord.ApplicationContext,
-        trait: Option(str, "The new trait to add.", required=True),
+        name: Option(str, "Name of of trait to add.", required=True),
         category: Option(
             ValidTraitCategory,
             name="category",
@@ -294,14 +293,48 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Add a custom trait to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        await add_trait(
-            ctx=ctx,
-            character=character,
-            trait_name=trait,
+
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title=f"Create {name}",
+            description=f"Confirm creating custom trait: **{name.title()}**",
+            fields=[
+                ("Trait", f"**{name.title()}**"),
+                ("Category", category.name),
+                ("Value", f"`{value!s}`"),
+                ("Max Value", f"`{max_value!s}`"),
+                ("Description", description or "_no description_"),
+            ],
+            inline_fields=False,
+            ephemeral=True,
+            level="info",
+            view=view,
+        )
+        await view.wait()
+        if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(
+                    title="Cancelled creating custom trait",
+                    description="",
+                    color=EmbedColor.WARNING.value,
+                )
+            )
+            return
+
+        character.add_custom_trait(
+            name=name,
             category=category,
-            trait_value=value,
+            value=value,
             max_value=max_value,
-            trait_description=description,
+            description=description,
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"Custom trait added to {character.name}",
+                description="",
+                color=EmbedColor.SUCCESS.value,
+            )
         )
 
     @add.command(name="custom_section", description="Add a custom section to the character sheet")
