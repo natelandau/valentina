@@ -525,34 +525,6 @@ class TestCharacterService:
         assert not result.data["last_name"]
         assert not result.data["nickname"]
 
-    def test_update_traits_by_id(self, mock_ctx):
-        """Test update_traits_by_id()."""
-        # GIVEN a character object and traits and a single trait value lookup
-        character = Character.create(
-            data={
-                "first_name": "add_custom_trait",
-                "last_name": "character",
-                "nickname": "testy",
-                "storyteller_character": False,
-                "player_character": True,
-            },
-            char_class=1,
-            guild=mock_ctx.guild.id,
-            created_by=mock_ctx.author.id,
-            clan=1,
-        )
-        trait1 = Trait.create(name="test_trait1", category=1)
-        trait2 = Trait.create(name="test_trait2", category=1)
-        TraitValue.create(character=character, trait=trait1, value=1)
-
-        # WHEN the update_traits_by_id method is called
-        updates = {trait1.id: 2, trait2.id: 3}
-        self.char_svc.update_traits_by_id(mock_ctx, character, updates)
-
-        # THEN check the trait values are updated correctly
-        assert character.trait_values[0].value == 2
-        assert character.trait_values[1].value == 3
-
     def test_character_traits_dict(self):
         """Test character.traits_dict.
 

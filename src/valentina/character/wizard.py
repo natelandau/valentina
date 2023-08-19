@@ -79,7 +79,7 @@ class CharGenWizard:
         self.ctx = ctx
         self.msg = None
         self.all_traits = all_traits
-        self.assigned_traits: dict[int, int] = {}
+        self.assigned_traits: list[tuple[Trait, int]] = []
         self.view: discord.ui.View = None
 
         self.name = first_name.title()
@@ -90,16 +90,17 @@ class CharGenWizard:
         """Start the chargen wizard."""
         await self.__send_messages()
 
-    async def wait_until_done(self) -> dict[int, int]:
+    async def wait_until_done(self) -> list[tuple[Trait, int]]:
         """Wait until the wizard is done."""
         while self.all_traits:
             await asyncio.sleep(1)  # Wait a bit then check again
+
         return self.assigned_traits
 
     async def __view_callback(self, rating: int, interaction: discord.Interaction) -> None:
         """Assign the next trait.
 
-        Assign the next trait in the list and display the next trait or finish creating the character if finished.
+        Assign a value to the previously rated trait and display the next trait or finish creating the character if finished.
 
         Args:
             rating (int): The value for the next rating in the list.
@@ -107,7 +108,7 @@ class CharGenWizard:
         """
         # Remove the first trait from the list and assign it
         previously_rated_trait = self.all_traits.pop(0)
-        self.assigned_traits[previously_rated_trait.id] = rating
+        self.assigned_traits.append((previously_rated_trait, rating))
 
         if not self.all_traits:
             # We're finished; create the character

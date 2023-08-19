@@ -26,7 +26,7 @@ _doer_traits = [
 
 def __storyteller_attributes(
     attributes: dict[str, list[Trait]], level: str, specialty: str
-) -> dict[int, int]:
+) -> list[tuple[Trait, int]]:
     """Set attribute values for storyteller characters.  Characters begin with 7/5/3 dots per attribute category.  The storyteller character's level determines the number of dots added to each attribute category.  The storyteller character's specialty determines which attribute category gets the most dots.  The remaining dots are randomly distributed to the other attribute categories.
 
     Args:
@@ -35,10 +35,9 @@ def __storyteller_attributes(
         specialty (str): The storyteller character's specialty.
 
     Returns:
-        dict[int, int]: A dictionary of trait values.
-
+        list[tuple[Trait, int]]: A list of tuples containing the trait and its value.
     """
-    trait_values: dict[int, int] = {}
+    trait_values: list[tuple[Trait, int]] = []
 
     # Attribute adjustment based on level
     attribute_adjustment_map = {"Weakling": 0, "Average": 0, "Strong": 1, "Super": 2}
@@ -65,7 +64,7 @@ def __storyteller_attributes(
 
         for t in attributes[cat]:
             value = attribute_values[vals].pop(0)
-            trait_values[t.id] = round_trait_value(value + attribute_adjustment, 5)
+            trait_values.append((t, round_trait_value(value + attribute_adjustment, 5)))
             if len(attribute_values[vals]) == 0:
                 del attribute_values[vals]
 
@@ -76,7 +75,7 @@ def __storyteller_attributes(
 
 def __storyteller_disciplines(
     discipline_list: list[Trait], level: str, clan: str
-) -> dict[int, int]:
+) -> list[tuple[Trait, int]]:
     """Set discipline values for storyteller vampire characters.  Each clan has three associated disciplines. For each clan discipline, the character gets a minimum.  The remaining disciplines are randomly selected from the list of all disciplines.  The number of disciplines and their values are determined by the character's level.
 
     Args:
@@ -85,7 +84,7 @@ def __storyteller_disciplines(
         clan (str): The storyteller character's clan.
 
     Returns:
-        dict[int, int]: A dictionary of trait values.
+        list[tuple[Trait, int]]: A list of tuples containing the trait and its value.
     """
 
     def __adjust_value(value: int, level: str) -> int:
@@ -101,7 +100,7 @@ def __storyteller_disciplines(
 
         return round_trait_value(value, 5)
 
-    trait_values: dict[int, int] = {}
+    trait_values: list[tuple[Trait, int]] = []
 
     level_discipline_count_map = {"Weakling": 0, "Average": 0, "Strong": 1, "Super": 3}
     clan_disciplines = [x for x in discipline_list if x.name in fetch_clan_disciplines(clan)]
@@ -127,7 +126,7 @@ def __storyteller_disciplines(
         if value == 0:
             value = 1
 
-        trait_values[discipline.id] = value
+        trait_values.append((discipline, value))
 
     return trait_values
 
@@ -166,7 +165,7 @@ def __normal_distribution_values(level: str) -> tuple[float, float]:
 
 def storyteller_character_traits(
     traits: list[Trait], level: str, specialty: str, clan: str | None = None
-) -> dict[int, int]:
+) -> list[tuple[Trait, int]]:
     """Create a storyteller character by generating trait values based on the provided traits, level, specialty, and clan.
 
     The function generates trait values following a normal distribution, where the mean and standard deviation of the distribution depend on the character's level. The mean and standard deviation for each level are determined by the __normal_distribution_values helper function.
@@ -180,7 +179,7 @@ def storyteller_character_traits(
         clan (str | None): The storyteller character's clan. Defaults to None. Some traits (disciplines) are specific to certain clans.
 
     Returns:
-        dict[int, int]: A dictionary mapping trait ids to their corresponding values.
+        list[tuple[Trait, int]]: A list of tuples containing the trait and its value.
     """
 
     def __specialty_traits_match(specialty: str, trait_name: str) -> bool:
@@ -212,8 +211,9 @@ def storyteller_character_traits(
         if cat in ["Physical", "Social", "Mental"]
     }
     trait_values = __storyteller_attributes(attributes, level, specialty)
+
     if "Disciplines" in traits_by_category:
-        trait_values.update(
+        trait_values.extend(
             __storyteller_disciplines(traits_by_category["Disciplines"], level, clan)
         )
 
@@ -234,6 +234,6 @@ def storyteller_character_traits(
             value = values.pop(0)
             if level in ["Strong", "Super"] and __specialty_traits_match(specialty, trait.name):
                 value = round_trait_value(value + 1, get_max_trait_value(trait.name, category))
-            trait_values[trait.id] = value
+            trait_values.append((trait, value))
 
     return trait_values

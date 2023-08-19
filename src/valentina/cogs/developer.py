@@ -137,11 +137,8 @@ class Developer(commands.Cog):
             # Fetch all traits and set them
             fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
 
-            trait_values: dict[int, int] = {}
             for trait in fetched_traits:
-                trait_values[trait.id] = randrange(0, 5)
-
-            self.bot.char_svc.update_traits_by_id(ctx, character, trait_values)
+                character.set_trait_value(trait, randrange(0, 5))
 
             await present_embed(
                 ctx,

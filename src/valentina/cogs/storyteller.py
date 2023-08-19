@@ -169,7 +169,8 @@ class StoryTeller(commands.Cog):
             clan=vampire_clan.name if vampire_clan else None,
         )
 
-        self.bot.char_svc.update_traits_by_id(ctx, character, trait_values)
+        for trait, value in trait_values:
+            character.set_trait_value(trait, value)
 
         # Confirm character creation
         view = ConfirmCancelButtons(ctx.author)

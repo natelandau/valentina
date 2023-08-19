@@ -11,7 +11,6 @@ from valentina.models.db_tables import (
     CustomSection,
     CustomTrait,
     TraitCategory,
-    TraitValue,
 )
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
@@ -464,35 +463,6 @@ class CharacterService:
         logger.debug(f"DATABASE: Updated Character '{character}'")
 
         return Character.get_by_id(character.id)  # Have to query db again to get updated data ???
-
-    def update_traits_by_id(
-        self, ctx: ApplicationContext, character: Character, trait_values_dict: dict[int, int]
-    ) -> None:
-        """Update traits for a character by ID.
-
-        Args:
-            ctx (ApplicationContext): The context of the command.
-            character (Character): The character to update.
-            trait_values_dict (dict[int, int]): A dictionary of trait IDs and their new values.
-        """
-        # Clear character from cache but keep claims intact
-        self.purge_cache(ctx)
-
-        modified = time_now()
-
-        for trait_id, value in trait_values_dict.items():
-            found_trait, created = TraitValue.get_or_create(
-                character=character.id,
-                trait=trait_id,
-                defaults={"value": value, "modified": modified},
-            )
-
-            if not created:
-                found_trait.value = value
-                found_trait.modified = modified
-                found_trait.save()
-
-        logger.debug(f"DATABASE: Update traits for character {character}")
 
     def user_has_claim(self, ctx: ApplicationContext) -> bool:
         """Check if a user has a claim.

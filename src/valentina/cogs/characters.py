@@ -125,7 +125,10 @@ class Characters(commands.Cog, name="Character"):
             char_class=char_class,
             clan=vampire_clan,
         )
-        self.bot.char_svc.update_traits_by_id(ctx, character, trait_values_from_chargen)
+
+        for trait, value in trait_values_from_chargen:
+            character.set_trait_value(trait, value)
+
         logger.info(f"CHARACTER: Create character [{character.id}] {character.name}")
 
     @chars.command(name="sheet", description="View a character sheet")
