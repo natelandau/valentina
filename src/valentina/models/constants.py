@@ -189,18 +189,20 @@ CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
     "date_of_birth": None,
     "debug_character": False,
     "demeanor": None,
+    "developer_character": False,
     "essence": None,
+    "experience_total": 0,
+    "experience": 0,
     "first_name": None,
     "generation": None,
     "last_name": None,
     "nature": None,
     "nickname": None,
+    "player_character": False,
     "sire": None,
     "storyteller_character": False,
     "tradition": None,
     "tribe": None,
-    "experience_total": 0,
-    "experience": 0,
 }
 
 GUILD_DEFAULTS: dict[str, int | bool | None | str] = {

@@ -185,10 +185,10 @@ class Valentina(commands.Bot):
                 # ############################
 
                 self.guild_svc.update_or_add(guild)
-                self.char_svc.fetch_all_player_characters(guild.id)
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
-        logger.info("BOT: In-memory caches created")
+            # Update all character default values in case something changed
+            self.char_svc.set_character_default_values()
 
         self.welcomed = True
         logger.info(f"{self.user} is ready")

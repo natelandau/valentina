@@ -165,8 +165,8 @@ class Roll(commands.Cog):
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        trait_one_value = character.trait_value(trait_one)
-        trait_two_value = character.trait_value(trait_two)
+        trait_one_value = character.get_trait_value(trait_one)
+        trait_two_value = character.get_trait_value(trait_two)
 
         pool = trait_one_value + trait_two_value
 
@@ -226,8 +226,8 @@ class Roll(commands.Cog):
         trait_one = traits[0]
         trait_two = traits[1]
 
-        trait_one_value = character.trait_value(trait_one)
-        trait_two_value = character.trait_value(trait_two)
+        trait_one_value = character.get_trait_value(trait_one)
+        trait_two_value = character.get_trait_value(trait_two)
 
         pool = trait_one_value + trait_two_value
 

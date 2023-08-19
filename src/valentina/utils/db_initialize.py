@@ -166,6 +166,10 @@ class MigrateDatabase:
             logger.info("DATABASE: Migrate database from v1.3.0")
             self.__1_3_0()
 
+        if Version.parse(self.db_version) <= Version.parse("1.4.0"):
+            logger.info("DATABASE: Migrate database from v1.4.0")
+            self.__1_4_0()
+
     def _column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.
 
@@ -541,6 +545,15 @@ class MigrateDatabase:
 
             # Re-enable foreign keys
             self.db.execute_sql("PRAGMA foreign_keys=ON;")
+
+    def __1_4_0(self) -> None:
+        """Migrate from version 1.4.0."""
+        for character in Character.select().where(
+            Character.data["storyteller_character"] != True  # noqa: E712
+        ):
+            logger.debug(f"DATABASE: Set {character} as a player character")
+            character.data["player_character"] = True
+            character.save()
 
 
 class PopulateDatabase:

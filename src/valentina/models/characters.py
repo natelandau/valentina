@@ -103,32 +103,43 @@ class CharacterService:
         self.claim_cache[claim_key] = char_key
         return True
 
-    def add_custom_section(
+    def custom_section_update_or_add(
         self,
+        ctx: ApplicationContext,
         character: Character,
         section_title: str | None = None,
         section_description: str | None = None,
-    ) -> bool:
-        """Add or update a custom section to a character.
-
-        This method creates a new custom section with the given title and description and associates it with the specified character.
+    ) -> CustomSection:
+        """Update or add a custom section to a character.
 
         Args:
+            ctx (ApplicationContext): The application context.
             character (Character): The character object to which the custom section will be added.
             section_title (str | None): The title of the custom section. Defaults to None.
             section_description (str | None): The description of the custom section. Defaults to None.
 
         Returns:
-            bool: True if the custom section was successfully added, False otherwise.
+            CustomSection: The updated or created custom section.
         """
-        CustomSection.create(
+        # Purge the cache to ensure that stale data is not being used.
+        self.purge_cache(ctx)
+
+        section, created = CustomSection.get_or_create(
             title=section_title,
             description=section_description,
-            character=character.id,
+            character=character,
         )
 
-        logger.debug(f"DATABASE: Add custom section to {character}")
-        return True
+        if not created:
+            section.title = section_title
+            section.description = section_description
+            section.save()
+
+            logger.debug(f"DATABASE: Update custom section for {character}")
+        else:
+            logger.debug(f"DATABASE: Add custom section to {character}")
+
+        return section
 
     def add_custom_trait(
         self,
@@ -166,6 +177,12 @@ class CharacterService:
 
         logger.debug(f"CHARACTER: Add trait '{name}' to {character}")
 
+    def set_character_default_values(self) -> None:
+        """Set default values for all characters in the database."""
+        characters = Character.select()
+        for character in characters:
+            character.set_default_data_values()
+
     def fetch_all_player_characters(self, guild_id: int) -> list[Character]:
         """Fetch all characters for a specific guild, checking the cache first and then the database.
 
@@ -187,7 +204,7 @@ class CharacterService:
         # Fetch characters from database not in cache
         characters = Character.select().where(
             (Character.guild_id == guild_id)
-            & (Character.data["storyteller_character"] == False)  # noqa: E712
+            & (Character.data["player_character"] == True)  # noqa: E712
             & (Character.id.not_in(cached_ids))
         )
         logger.debug(

@@ -14,7 +14,7 @@ from peewee import fn
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_CHARACTER_COUNT, EmbedColor
-from valentina.models.db_tables import CharacterClass, RollProbability, VampireClan
+from valentina.models.db_tables import Character, CharacterClass, RollProbability, VampireClan
 from valentina.utils import Context
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
@@ -82,7 +82,7 @@ class Developer(commands.Cog):
     @developer.command()
     @commands.guild_only()
     @commands.is_owner()
-    async def create_test_character(
+    async def create_test_characters(
         self,
         ctx: discord.ApplicationContext,
         number: Option(
@@ -123,6 +123,8 @@ class Developer(commands.Cog):
                 "first_name": first_name,
                 "last_name": last_name,
                 "nickname": char_class.name,
+                "developer_character": True,
+                "player_character": True,
             }
 
             character = self.bot.char_svc.update_or_add(
@@ -151,6 +153,34 @@ class Developer(commands.Cog):
                 level="success",
                 ephemeral=hidden,
             )
+
+    @developer.command()
+    @commands.is_owner()
+    @commands.guild_only()
+    async def delete_developer_characters(
+        self,
+        ctx: Context,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Delete all developer characters from the database."""
+        i = 0
+        for character in Character.select().where(
+            Character.data["developer_character"] == True  # noqa: E712
+        ):
+            character.delete_instance(recursive=True, delete_nullable=True)
+            i += 1
+
+        await present_embed(
+            ctx,
+            title="Developer characters deleted",
+            description=f"Deleted {i} {p.plural_noun('character', i)}",
+            level="success",
+            ephemeral=hidden,
+        )
 
     @developer.command()
     @commands.is_owner()

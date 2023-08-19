@@ -7,14 +7,12 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import COOL_POINT_VALUE, EmbedColor, XPMultiplier
-from valentina.models.db_tables import CustomTrait, TraitValue
 from valentina.utils.converters import ValidCharTrait
 from valentina.utils.helpers import (
     fetch_clan_disciplines,
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
-    time_now,
 )
 from valentina.utils.options import select_char_trait
 from valentina.views import ConfirmCancelButtons, present_embed
@@ -46,7 +44,7 @@ class Xp(commands.Cog, name="XP"):
     ) -> None:
         """Spend experience points."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        old_value = character.trait_value(trait)
+        old_value = character.get_trait_value(trait)
         category = trait.category.name
 
         if character.char_class.name == "Vampire" and trait.name in fetch_clan_disciplines(
@@ -107,14 +105,8 @@ class Xp(commands.Cog, name="XP"):
 
         new_value = old_value + 1
         new_experience = character.data["experience"] - upgrade_cost
-        if isinstance(trait, CustomTrait):
-            trait.value = new_value
-            trait.modified = time_now()
-            trait.save()
-        else:
-            TraitValue.update(value=new_value, modified=time_now()).where(
-                TraitValue.character == character, TraitValue.trait == trait
-            ).execute()
+
+        character.set_trait_value(trait, new_value)
 
         self.bot.char_svc.update_or_add(
             ctx,

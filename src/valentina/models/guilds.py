@@ -340,8 +340,6 @@ class GuildService:
         updates: dict[str, str | int | bool] | None = None,
     ) -> Guild:
         """Add a guild to the database or update it if it already exists."""
-        # TODO: Write more extensive tests
-
         # Purge the guild from the cache
         self.purge_cache(guild)
 

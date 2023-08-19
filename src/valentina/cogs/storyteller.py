@@ -86,7 +86,7 @@ class StoryTeller(commands.Cog):
         checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
     )
 
-    @storyteller.command(name="new_character")
+    @storyteller.command(name="create_character", description="Create a new npc character")
     async def create_story_char(
         self,
         ctx: discord.ApplicationContext,
@@ -151,6 +151,7 @@ class StoryTeller(commands.Cog):
             "last_name": last_name,
             "nickname": char_class.name,
             "storyteller_character": True,
+            "player_character": False,
         }
 
         character = self.bot.char_svc.update_or_add(
@@ -334,8 +335,8 @@ class StoryTeller(commands.Cog):
         trait_one = self.bot.trait_svc.fetch_trait_from_name(trait_one)
         trait_two = self.bot.trait_svc.fetch_trait_from_name(trait_two)
 
-        trait_one_value = character.trait_value(trait_one)
-        trait_two_value = character.trait_value(trait_two)
+        trait_one_value = character.get_trait_value(trait_one)
+        trait_two_value = character.get_trait_value(trait_two)
 
         pool = trait_one_value + trait_two_value
 
