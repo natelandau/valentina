@@ -284,7 +284,15 @@ An overview of {chronicle.name}.
             )
 
     @chronicle.command(name="list", description="List all chronicles")
-    async def chronicle_list(self, ctx: discord.ApplicationContext) -> None:
+    async def chronicle_list(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """List all chronicles."""
         chronicles = self.bot.chron_svc.fetch_all(ctx)
         if len(chronicles) == 0:
@@ -293,6 +301,7 @@ An overview of {chronicle.name}.
                 title="No chronicles",
                 description="There are no chronicles\nCreate one with `/chronicle create`",
                 level="info",
+                ephemeral=hidden,
             )
             return
 
@@ -344,7 +353,15 @@ An overview of {chronicle.name}.
         )
 
     @npc.command(name="list", description="List all NPCs")
-    async def list_npcs(self, ctx: discord.ApplicationContext) -> None:
+    async def list_npcs(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """List all NPCs."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
         npcs = self.bot.chron_svc.fetch_all_npcs(chronicle)
@@ -354,6 +371,7 @@ An overview of {chronicle.name}.
                 title="No NPCs",
                 description="There are no NPCs\nCreate one with `/chronicle create_npc`",
                 level="info",
+                ephemeral=hidden,
             )
             return
 
@@ -489,7 +507,15 @@ An overview of {chronicle.name}.
         )
 
     @chapter.command(name="list", description="List all chapters")
-    async def list_chapters(self, ctx: discord.ApplicationContext) -> None:
+    async def list_chapters(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """List all chapters."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
         chapters = self.bot.chron_svc.fetch_all_chapters(chronicle)
@@ -499,6 +525,7 @@ An overview of {chronicle.name}.
                 title="No Chapters",
                 description="There are no chapters\nCreate one with `/chronicle create_chapter`",
                 level="info",
+                ephemeral=hidden,
             )
             return
 
@@ -660,7 +687,15 @@ An overview of {chronicle.name}.
         )
 
     @notes.command(name="list", description="List all notes")
-    async def list_notes(self, ctx: discord.ApplicationContext) -> None:
+    async def list_notes(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """List all notes."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
         notes = self.bot.chron_svc.fetch_all_notes(chronicle)
@@ -670,6 +705,7 @@ An overview of {chronicle.name}.
                 title="No Notes",
                 description="There are no notes\nCreate one with `/chronicle create_note`",
                 level="info",
+                ephemeral=hidden,
             )
             return
 

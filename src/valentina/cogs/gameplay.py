@@ -121,8 +121,8 @@ class Roll(commands.Cog):
         ),
         hidden: Option(
             bool,
-            description="Make the probability only visible to you (default True).",
-            default=True,
+            description="Make the probability only visible to you (default False).",
+            default=False,
         ),
     ) -> None:
         """Roll the dice.
@@ -255,6 +255,11 @@ class Roll(commands.Cog):
             choices=[roll_type.value for roll_type in RollResultType],
         ),
         url: Option(ValidThumbnailURL, description="URL of the thumbnail", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Add a roll result thumbnail to the bot."""
         view = ConfirmCancelButtons(ctx.author)
@@ -283,7 +288,7 @@ class Roll(commands.Cog):
                 description=f"Added thumbnail for `{roll_type}` roll results",
                 image=url,
                 level="success",
-                ephemeral=True,
+                ephemeral=hidden,
                 log=True,
             )
 

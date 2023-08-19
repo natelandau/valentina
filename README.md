@@ -2,22 +2,22 @@
 
 # Valentina
 
-A Discord bot used to help manage playing Vampire the Masquerade with a highly customized ruleset. Major differences from the published game are:
+A discord bot to manage roll playing sessions for a highly customized version of Vampire the Masquerade. Major differences from the published game are:
 
-1. Rolled ones count as `-1` success
-2. Rolled tens count as `2` successes
-3. `Cool points` are additional rewards worth `10xp` each
+1. Dice a rolled as a single pool of D10s with a set difficulty. The number of success determines the outcome of the roll.
 
-If you want to play with traditional rules I strongly recommend you use [Inconnu](https://docs.inconnu.app/) which has significantly more features and provided inspiration for Valentina.
+> `< 0` successes: Botch
+> `0` successes: Failure
+> `> 0` successes: Success
+> `> dice pool` successes: Critical success
 
-Valentina provides the following functionality:
+2. Rolled ones count as `-1` success
+3. Rolled tens count as `2` successes
+4. `Cool points` are additional rewards worth `10xp` each
 
--   Character management
-    -   Create and update characters
-    -   Manage and spend experience
--   Dicerolling
-    -   Roll any number of arbitrary dice
-    -   Roll any number `d10s` with a set difficulty
+To play with traditional rules I strongly recommend you use [Inconnu Bot](https://docs.inconnu.app/) instead.
+
+**For more information on the features and functionality, see the [User Guide](user_guide.md)**
 
 ## Install and run
 

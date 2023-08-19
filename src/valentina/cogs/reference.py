@@ -38,7 +38,15 @@ class Reference(commands.Cog):
         await ctx.respond(embed=embed, ephemeral=hidden)
 
     @reference.command(description="See health levels")
-    async def health(self, ctx: discord.ApplicationContext) -> None:
+    async def health(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Display health levels."""
         description = dedent(
             """
@@ -59,11 +67,20 @@ class Reference(commands.Cog):
             title="Health Levels",
             description=description,
             level="info",
+            ephemeral=hidden,
         )
         logger.debug(f"INFO: {ctx.author.display_name} requested health levels")
 
     @reference.command(description="See health levels")
-    async def xp(self, ctx: discord.ApplicationContext) -> None:
+    async def xp(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Display experience costs."""
         description = dedent(
             """
@@ -92,10 +109,19 @@ class Reference(commands.Cog):
             title="Experience Costs",
             description=description,
             level="info",
+            ephemeral=hidden,
         )
 
     @reference.command(description="Disciplines")
-    async def disciplines(self, ctx: discord.ApplicationContext) -> None:
+    async def disciplines(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Display discipline information."""
         await present_embed(
             ctx,
@@ -168,10 +194,19 @@ class Reference(commands.Cog):
             ],
             level="info",
             inline_fields=True,
+            ephemeral=hidden,
         )
 
     @reference.command(description="Spheres")
-    async def magic(self, ctx: discord.ApplicationContext) -> None:
+    async def magic(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Magic reference information."""
         await present_embed(
             ctx,
@@ -188,10 +223,19 @@ class Reference(commands.Cog):
             ],
             level="info",
             inline_fields=True,
+            ephemeral=hidden,
         )
 
     @reference.command(name="thaumaturgy", description="Thaumaturgy")
-    async def thaumaturgy(self, ctx: discord.ApplicationContext) -> None:
+    async def thaumaturgy(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Reference information for Thaumaturgy Paths."""
         page1 = dedent(
             """
@@ -207,7 +251,9 @@ class Reference(commands.Cog):
             """
         )
 
-        await present_embed(ctx, title="Thaumaturgy", description=page1, level="info")
+        await present_embed(
+            ctx, title="Thaumaturgy", description=page1, level="info", ephemeral=hidden
+        )
 
 
 def setup(bot: Valentina) -> None:
