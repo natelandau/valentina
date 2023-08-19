@@ -187,6 +187,7 @@ def mock_ctx():
     mock_author.name = "testuser"
     mock_author.mention = "<@1>"
     mock_author.__class__ = discord.Member
+    mock_author.roles = ["@everyone", "Player"]
 
     # Mock the ctx.bot object
     mock_bot = MagicMock()

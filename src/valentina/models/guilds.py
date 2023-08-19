@@ -354,7 +354,7 @@ class GuildService:
                 "data": initial_data,
             },
         )
-        print(Guild.get_by_id(guild.id).data)
+
         if is_created:
             logger.info(f"DATABASE: Created guild {db_guild.name}")
         elif updates:

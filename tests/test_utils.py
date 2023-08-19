@@ -49,7 +49,6 @@ class TestProbability:
         result = embed.to_dict()
         from rich import print
 
-        print(embed.to_dict())
         assert result["footer"]["text"] == IsStr(regex=r"Based on [0-9,]+ trials")
         assert result["description"] == IsStr()
         assert isinstance(result["fields"], list)

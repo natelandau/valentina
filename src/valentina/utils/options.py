@@ -27,34 +27,6 @@ async def select_chapter(ctx: discord.ApplicationContext) -> list[str]:
     return chapters
 
 
-async def select_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of the user's available characters."""
-    if (guild := ctx.interaction.guild) is None:
-        return []
-
-    # TODO: Check for chars associated with a user
-    characters = ctx.bot.char_svc.fetch_all_player_characters(guild.id)  # type: ignore [attr-defined]
-    all_chars = []
-    for character in characters:
-        char_id = character.id
-        name = f"{character.name}"
-        all_chars.append((name, char_id))
-
-    name_search = ctx.value.casefold()
-
-    options = [
-        OptionChoice(name, str(char_id))
-        for name, char_id in sorted(all_chars)
-        if name.casefold().startswith(name_search or "")
-    ]
-
-    if len(options) > MAX_OPTION_LIST_SIZE:
-        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
-        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
-
-    return options
-
-
 async def select_char_class(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available character classes."""
     classes = []
@@ -230,6 +202,34 @@ async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
             break
 
     return npcs
+
+
+async def select_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of the user's available characters."""
+    if (guild := ctx.interaction.guild) is None:
+        return []
+
+    # TODO: Check for chars associated with a user
+    characters = ctx.bot.char_svc.fetch_all_player_characters(guild.id)  # type: ignore [attr-defined]
+    all_chars = []
+    for character in characters:
+        char_id = character.id
+        name = f"{character.name}"
+        all_chars.append((name, char_id))
+
+    name_search = ctx.value.casefold()
+
+    options = [
+        OptionChoice(name, str(char_id))
+        for name, char_id in sorted(all_chars)
+        if name.casefold().startswith(name_search or "")
+    ]
+
+    if len(options) > MAX_OPTION_LIST_SIZE:
+        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
+        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
+
+    return options
 
 
 async def select_storyteller_character(ctx: discord.ApplicationContext) -> list[OptionChoice]:

@@ -9,6 +9,7 @@ from loguru import logger
 from valentina.character.traits import add_trait
 from valentina.character.wizard import CharGenWizard
 from valentina.models.bot import Valentina
+from valentina.models.constants import EmbedColor
 from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterClass,
@@ -24,9 +25,9 @@ from valentina.utils.converters import (
 from valentina.utils.options import (
     select_char_class,
     select_char_trait,
-    select_character,
     select_custom_section,
     select_custom_trait,
+    select_player_character,
     select_trait_category,
     select_vampire_clan,
 )
@@ -138,7 +139,7 @@ class Characters(commands.Cog, name="Character"):
         character: Option(
             ValidCharacterObject,
             description="The character to view",
-            autocomplete=select_character,
+            autocomplete=select_player_character,
             required=True,
         ),
         hidden: Option(
@@ -163,7 +164,7 @@ class Characters(commands.Cog, name="Character"):
         character: Option(
             ValidCharacterObject,
             description="The character to claim",
-            autocomplete=select_character,
+            autocomplete=select_player_character,
             required=True,
             name="character",
         ),
@@ -483,7 +484,7 @@ class Characters(commands.Cog, name="Character"):
                 embed=discord.Embed(
                     title="Update Cancelled",
                     description=f"**{trait.name}** will not be updated.",
-                    color=discord.Color.red(),
+                    color=EmbedColor.WARNING.value,
                 )
             )
             return
@@ -529,7 +530,7 @@ class Characters(commands.Cog, name="Character"):
                 embed=discord.Embed(
                     title="Delete Cancelled",
                     description=f"**{trait.name}** will not be deleted.",
-                    color=discord.Color.red(),
+                    color=EmbedColor.WARNING.value,
                 )
             )
             return
@@ -576,7 +577,7 @@ class Characters(commands.Cog, name="Character"):
                 embed=discord.Embed(
                     title="Delete Cancelled",
                     description=f"**{custom_section.title}** will not be deleted.",
-                    color=discord.Color.red(),
+                    color=EmbedColor.WARNING.value,
                 )
             )
             return

@@ -113,7 +113,7 @@ class XPPermissions(Enum):
     UNRESTRICTED = 0
     WITHIN_24_HOURS = 1  # Default
     CHARACTER_OWNER_ONLY = 2
-    ADMIN_ONLY = 3
+    STORYTELLER_ONLY = 3
 
 
 class TraitPermissions(Enum):
@@ -122,7 +122,7 @@ class TraitPermissions(Enum):
     UNRESTRICTED = 0
     WITHIN_24_HOURS = 1  # Default
     CHARACTER_OWNER_ONLY = 2
-    ADMIN_ONLY = 3
+    STORYTELLER_ONLY = 3
 
 
 class DiceType(Enum):

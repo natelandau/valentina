@@ -123,7 +123,8 @@ class UserService:
             XPPermissions.WITHIN_24_HOURS: lambda ctx, character: character
             and character.created_by.id == ctx.author.id
             and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            XPPermissions.ADMIN_ONLY: lambda ctx, character: ctx.author.guild_permissions.administrator,  # noqa: ARG005
+            XPPermissions.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            in [x.name for x in ctx.author.roles],
         }
 
         if ctx.author.guild_permissions.administrator:
@@ -164,7 +165,8 @@ class UserService:
             TraitPermissions.WITHIN_24_HOURS: lambda ctx, character: character
             and character.created_by.id == ctx.author.id
             and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            TraitPermissions.ADMIN_ONLY: lambda ctx, character: ctx.author.guild_permissions.administrator,  # noqa: ARG005
+            TraitPermissions.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            in [x.name for x in ctx.author.roles],
         }
 
         if ctx.author.guild_permissions.administrator:

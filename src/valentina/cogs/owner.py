@@ -9,7 +9,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import MAX_CHARACTER_COUNT
+from valentina.models.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.utils import Context
 
 p = inflect.engine()
@@ -28,7 +28,10 @@ class Owner(commands.Cog):
         """Create a backup of the database."""
         logger.info("ADMIN: Manually create database backup")
         db_file = await self.bot.db_svc.backup_database(self.bot.config)
-        embed = discord.Embed(title="Database backup created", color=discord.Color.green())
+        embed = discord.Embed(
+            title="Database backup created",
+            color=EmbedColor.SUCCESS.value,
+        )
         embed.add_field(name="File", value=f"`{db_file}`")
         await ctx.send(embed=embed)
 
@@ -56,7 +59,7 @@ class Owner(commands.Cog):
     async def shutdown(self, ctx: discord.ApplicationContext) -> None:
         """Shutdown the bot."""
         logger.warning(f"ADMIN: {ctx.author.display_name} has shut down the bot")
-        embed = discord.Embed(title="Shutting down Valentina...", color=discord.Color.red())
+        embed = discord.Embed(title="Shutting down Valentina...", color=EmbedColor.WARNING.value)
         await ctx.send(embed=embed)
         await self.bot.close()
 
@@ -95,7 +98,10 @@ class Owner(commands.Cog):
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
 
-        embed = discord.Embed(title="Connection Information", color=discord.Color.blurple())
+        embed = discord.Embed(
+            title="Connection Information",
+            color=EmbedColor.INFO.value,
+        )
         embed.add_field(name="Status", value=str(self.bot.status))
         embed.add_field(name="Uptime", value=f"`{days}d, {hours}h, {minutes}m, {seconds}s`")
         embed.add_field(name="Latency", value=f"`{self.bot.latency!s}`")
@@ -120,7 +126,10 @@ class Owner(commands.Cog):
                 logger.info(f"COGS: Reloading - {cog.stem}")
                 self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
 
-        embed = discord.Embed(title="Reload Bot", color=discord.Color.green())
+        embed = discord.Embed(
+            title="Reload Bot",
+            color=EmbedColor.SUCCESS.value,
+        )
         embed.add_field(name="Status", value="Success")
 
         await ctx.send(embed=embed)

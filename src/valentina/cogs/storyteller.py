@@ -18,6 +18,7 @@ from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
     select_char_class,
     select_country,
+    select_player_character,
     select_storyteller_character,
     select_trait,
     select_trait_two,
@@ -351,6 +352,79 @@ class StoryTeller(commands.Cog):
             trait_one_value=trait_one_value,
             trait_two_name=trait_two.name,
             trait_two_value=trait_two_value,
+        )
+
+    @storyteller.command(name="xp_grant", description="Grant xp to a character")
+    async def xp_grant(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to grant xp to",
+            autocomplete=select_player_character,
+            required=True,
+        ),
+        xp: Option(int, description="The amount of xp to grant", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Grant xp to a player character."""
+        current_xp = character.data.get("experience", 0)
+        current_xp_total = character.data.get("experience_total", 0)
+        new_xp = current_xp + xp
+        new_xp_total = current_xp_total + xp
+
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title=f"Confirm granting {xp} xp to {character.name}",
+            fields=[
+                ("Points Added", str(xp)),
+                ("Current XP", str(current_xp)),
+                ("New XP", str(new_xp)),
+                ("All time XP", str(new_xp_total)),
+            ],
+            inline_fields=True,
+            ephemeral=True,
+            level="info",
+            view=view,
+        )
+        await view.wait()
+
+        if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(
+                    title="XP Grant Cancelled",
+                    description="",
+                    color=EmbedColor.WARNING.value,
+                )
+            )
+            return
+
+        self.bot.char_svc.update_or_add(
+            ctx,
+            character=character,
+            data={
+                "experience": new_xp,
+                "experience_total": new_xp_total,
+            },
+        )
+        await msg.delete_original_response()
+        await present_embed(
+            ctx=ctx,
+            title=f"{character.name} was granted {xp} experience",
+            fields=[
+                ("Points Added", str(xp)),
+                ("Current XP", str(new_xp)),
+                ("All time XP", str(new_xp_total)),
+            ],
+            inline_fields=True,
+            level="success",
+            log=True,
+            ephemeral=hidden,
         )
 
 

@@ -3,7 +3,7 @@
 
 import arrow
 import pytest
-from discord import ApplicationContext
+from discord import ApplicationContext, Role
 
 from valentina.models import UserService
 from valentina.models.constants import XPPermissions
@@ -91,9 +91,9 @@ class TestUserService:
             (XPPermissions.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
             (XPPermissions.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
             (XPPermissions.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
-            (XPPermissions.ADMIN_ONLY.value, False, True, 1, False),
-            (XPPermissions.ADMIN_ONLY.value, False, False, 1, False),
-            (XPPermissions.ADMIN_ONLY.value, True, False, 1, True),
+            (XPPermissions.STORYTELLER_ONLY.value, False, True, 1, False),
+            (XPPermissions.STORYTELLER_ONLY.value, False, False, 1, False),
+            (XPPermissions.STORYTELLER_ONLY.value, True, False, 1, True),
         ],
     )
     def test_has_xp_permissions(
@@ -106,8 +106,13 @@ class TestUserService:
         THEN the correct result is returned
         """
         # GIVEN a mock ApplicationContext and Character
+        mock_role1 = mocker.Mock(spec=Role)
+        mock_role1.name = "Player"
+
         mock_ctx = mocker.Mock(spec=ApplicationContext)
         mock_ctx.author.guild_permissions.administrator = is_admin
+        mock_ctx.author.roles = [mock_role1]
+
         mock_character = mocker.Mock(spec=Character)
         mock_character.created_by.id = 1 if is_char_owner else 2
         mock_character.created = arrow.utcnow().shift(hours=-hours_since_creation).datetime
@@ -148,9 +153,9 @@ class TestUserService:
             (XPPermissions.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
             (XPPermissions.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
             (XPPermissions.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
-            (XPPermissions.ADMIN_ONLY.value, False, True, 1, False),
-            (XPPermissions.ADMIN_ONLY.value, False, False, 1, False),
-            (XPPermissions.ADMIN_ONLY.value, True, False, 1, True),
+            (XPPermissions.STORYTELLER_ONLY.value, False, True, 1, False),
+            (XPPermissions.STORYTELLER_ONLY.value, False, False, 1, False),
+            (XPPermissions.STORYTELLER_ONLY.value, True, False, 1, True),
         ],
     )
     def test_has_update_trait_permissions(
@@ -169,12 +174,21 @@ class TestUserService:
         THEN the correct result is returned
         """
         # GIVEN a mock ApplicationContext and Character
-        mocker_ctx = mocker.Mock(spec=ApplicationContext)
-        mocker_ctx.author.guild_permissions.administrator = is_admin
+        mock_role1 = mocker.Mock(spec=Role)
+        mock_role1.name = "Player"
+
+        mock_role2 = mocker.Mock(spec=Role)
+        mock_role2.name = "@everyone"
+
+        mock_ctx = mocker.Mock(spec=ApplicationContext)
+        mock_ctx.author.guild_permissions.administrator = is_admin
+        mock_ctx.author.roles = [mock_role1]
+        mock_ctx.author.id = 1
+
         mock_character = mocker.Mock(spec=Character)
         mock_character.created_by.id = 1 if is_char_owner else 2
         mock_character.created = arrow.utcnow().shift(hours=-hours_since_creation).datetime
-        mocker_ctx.author.id = 1  # the author is the creator of the character
+        # the author is the creator of the character
 
         # Create mock bot and guild_svc and set them on mock_ctx
         mock_bot = mocker.Mock()
@@ -185,10 +199,10 @@ class TestUserService:
         mock_guild_svc.fetch_guild_settings = mocker.Mock(return_value=mock_settings)
 
         mock_bot.guild_svc = mock_guild_svc
-        mocker_ctx.bot = mock_bot
+        mock_ctx.bot = mock_bot
 
         # WHEN calling the method with the mock context and character
-        result = self.user_svc.has_trait_permissions(mocker_ctx, mock_character)
+        result = self.user_svc.has_trait_permissions(mock_ctx, mock_character)
 
         # THEN return the correct result
         assert result is expected

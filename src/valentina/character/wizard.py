@@ -7,7 +7,7 @@ import discord
 from discord.ui import Button
 from loguru import logger
 
-from valentina.models.constants import MAX_BUTTONS_PER_ROW
+from valentina.models.constants import MAX_BUTTONS_PER_ROW, EmbedColor
 from valentina.models.db_tables import Trait
 from valentina.utils.helpers import get_max_trait_value
 
@@ -126,7 +126,7 @@ class CharGenWizard:
         embed = discord.Embed(
             title="Success!",
             description=f"{self.name} has been created",
-            colour=discord.Color.blue(),
+            color=EmbedColor.INFO.value,
         )
         embed.set_author(
             name=f"Valentina on {self.ctx.guild.name}", icon_url=self.ctx.guild.icon or ""
