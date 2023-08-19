@@ -1,3 +1,13 @@
+## v1.4.1 (2023-08-18)
+
+### Fix
+
+- **help**: improve user guide (#39)
+
+### Refactor
+
+- **character**: all trait values set within character object (#40)
+
 ## v1.4.0 (2023-08-17)
 
 ### Feat
