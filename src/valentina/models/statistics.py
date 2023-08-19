@@ -9,7 +9,10 @@ from valentina.models.db_tables import Character, RollStatistic
 
 
 class Statistics:
-    """Compute and display statistics."""
+    """Compute and display statistics.
+
+    # TODO: Add support for pulling statistics for a specific time period.
+    """
 
     def __init__(
         self,
@@ -110,10 +113,10 @@ class Statistics:
 
         msg += "```json\n"
         msg += f"Total Rolls: {'.':.<{22 - 12}} {self.total_rolls}\n"
-        msg += f"Successes: {'.':.<{22 - 10}} {self.successes}\n"
-        msg += f"Failures: {'.':.<{22 - 9}} {self.failures}\n"
-        msg += f"Botches: {'.':.<{22 - 8}} {self.botches}\n"
-        msg += f"Critical Successes: {'.':.<{22 -19}} {self.criticals}\n"
+        msg += f"Successes: {'.':.<{22 - 10}} {self.successes:<3} ({self.successes / self.total_rolls * 100:.2f}%)\n"
+        msg += f"Failures: {'.':.<{22 - 9}} {self.failures:<3} ({self.failures / self.total_rolls * 100:.2f}%)\n"
+        msg += f"Botches: {'.':.<{22 - 8}} {self.botches:<3} ({self.botches / self.total_rolls * 100:.2f}%)\n"
+        msg += f"Critical Successes: {'.':.<{22 -19}} {self.criticals:<3} ({self.criticals / self.total_rolls * 100:.2f}%)\n"
         msg += f"Average Difficulty: {'.':.<{22 -19}} {self.average_difficulty}\n"
         msg += f"Average Pool Size: {'.':.<{22 -18}} {self.average_pool}\n"
         msg += "```"

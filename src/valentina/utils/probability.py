@@ -92,7 +92,6 @@ class Probability:
         """Return the probability embed."""
         embed = discord.Embed(
             title="",
-            description=f"Rolling `{self.pool}d{self.dice_size}` against difficulty `{self.difficulty}`",
             color=EmbedColor.INFO.value,
         )
         embed.set_footer(text=f"Based on {self.trials:,} trials")
@@ -106,10 +105,10 @@ class Probability:
         else:
             emoji = "👎"
 
-        print(self.probabilities)
-
         description = f"""\
 ## Overall success probability: {self.probabilities['total_successes']:.2f}% {emoji}
+
+Rolling `{self.pool}d{self.dice_size}` against difficulty `{self.difficulty}`
 
 ### Roll Result Probabilities
 *(Chance that any specific roll will come up with the specified result)*
