@@ -342,9 +342,16 @@ class Character(BaseModel):
         )
 
     def get_trait_value(self, trait: Trait | CustomTrait) -> int:
-        """Return the character's value of a trait."""
-        if isinstance(trait, Trait):
-            return TraitValue.get(TraitValue.character == self, TraitValue.trait == trait).value
+        """Return the character's value of a trait. If the trait is not found, return 0.
+
+        Returns:
+            int: The character's value of the trait.
+        """
+        try:
+            if isinstance(trait, Trait):
+                return TraitValue.get(TraitValue.character == self, TraitValue.trait == trait).value
+        except DoesNotExist:
+            return 0
 
         return trait.value  # custom traits
 

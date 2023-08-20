@@ -21,40 +21,6 @@ from valentina.models.db_tables import (
 from valentina.utils import errors
 
 
-class ValidCharacterClass(Converter):
-    """A converter that ensures a requested character class name is valid."""
-
-    async def convert(self, ctx: Context, argument: str) -> CharacterClass:  # noqa: ARG002
-        """Validate and normalize character classes."""
-        for c in CharacterClass.select().order_by(CharacterClass.name.asc()):
-            if argument.lower() == c.name.lower():
-                return c
-
-        raise BadArgument(f"`{argument}` is not a valid character class")
-
-
-class ValidCharacterName(Converter):
-    """A converter that ensures character names are valid."""
-
-    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
-        """Validate and normalize character names."""
-        errors = []
-        max_len = 30
-
-        if (name_len := len(argument)) > max_len:
-            errors.append(f"`{argument}` is too long by {name_len - max_len} characters.")
-
-        if not re.match(r"^[a-zA-Z0-9àèìòñùçëïüÁÉÖÜÑ_ -]+$", argument):
-            errors.append(
-                "`Character names may only contain letters, numbers, spaces, hyphens, and underscores."
-            )
-
-        if len(errors) > 0:
-            raise BadArgument("\n".join(errors))
-
-        return re.sub(r"\s+", " ", argument).strip().title()
-
-
 class ValidChannelName(Converter):
     """A converter that ensures a requested channel name is valid."""
 
@@ -94,18 +60,38 @@ class ValidChannelName(Converter):
         return argument
 
 
-class ValidChronicle(Converter):
-    """A converter to grab a chronicle object from it's name."""
+class ValidCharacterClass(Converter):
+    """A converter that ensures a requested character class name is valid."""
 
-    async def convert(self, ctx: Context, argument: str) -> Chronicle:
-        """Convert from name to chronicle object."""
-        chronicle = Chronicle.get_or_none(
-            (fn.lower(Chronicle.name) == argument.lower()) & (Chronicle.guild_id == ctx.guild.id)
-        )
-        if chronicle:
-            return chronicle
+    async def convert(self, ctx: Context, argument: str) -> CharacterClass:  # noqa: ARG002
+        """Validate and normalize character classes."""
+        for c in CharacterClass.select().order_by(CharacterClass.name.asc()):
+            if argument.lower() == c.name.lower():
+                return c
 
-        raise (BadArgument(f"Chronicle {argument} not found"))
+        raise BadArgument(f"`{argument}` is not a valid character class")
+
+
+class ValidCharacterName(Converter):
+    """A converter that ensures character names are valid."""
+
+    async def convert(self, ctx: Context, argument: str) -> str:  # noqa: ARG002
+        """Validate and normalize character names."""
+        errors = []
+        max_len = 30
+
+        if (name_len := len(argument)) > max_len:
+            errors.append(f"`{argument}` is too long by {name_len - max_len} characters.")
+
+        if not re.match(r"^[a-zA-Z0-9àèìòñùçëïüÁÉÖÜÑ_ -]+$", argument):
+            errors.append(
+                "`Character names may only contain letters, numbers, spaces, hyphens, and underscores."
+            )
+
+        if len(errors) > 0:
+            raise BadArgument("\n".join(errors))
+
+        return re.sub(r"\s+", " ", argument).strip().title()
 
 
 class ValidCharacterObject(Converter):
@@ -119,6 +105,33 @@ class ValidCharacterObject(Converter):
             raise errors.DatabaseError(
                 f"No character found in database with id `{argument}`"
             ) from e
+
+
+class ValidCharTrait(Converter):
+    """A converter that ensures a requested trait is a valid character trait or custom trait."""
+
+    async def convert(self, ctx: Context, argument: str) -> Trait | CustomTrait:
+        """Validate and normalize traits."""
+        character = ctx.bot.char_svc.fetch_claim(ctx)
+        for trait in character.traits_list:
+            if argument.lower() == trait.name.lower():
+                return trait
+
+        raise BadArgument(f"`{argument}` is not a valid trait")
+
+
+class ValidChronicle(Converter):
+    """A converter to grab a chronicle object from it's name."""
+
+    async def convert(self, ctx: Context, argument: str) -> Chronicle:
+        """Convert from name to chronicle object."""
+        chronicle = Chronicle.get_or_none(
+            (fn.lower(Chronicle.name) == argument.lower()) & (Chronicle.guild_id == ctx.guild.id)
+        )
+        if chronicle:
+            return chronicle
+
+        raise (BadArgument(f"Chronicle {argument} not found"))
 
 
 class ValidClan(Converter):
@@ -191,19 +204,6 @@ class ValidTraitCategory(Converter):
                 return c
 
         raise BadArgument(f"`{argument}` is not a valid trait category")
-
-
-class ValidCharTrait(Converter):
-    """A converter that ensures a requested trait is a valid character trait or custom trait."""
-
-    async def convert(self, ctx: Context, argument: str) -> Trait | CustomTrait:
-        """Validate and normalize traits."""
-        character = ctx.bot.char_svc.fetch_claim(ctx)
-        for trait in character.traits_list:
-            if argument.lower() == trait.name.lower():
-                return trait
-
-        raise BadArgument(f"`{argument}` is not a valid trait")
 
 
 class ValidYYYYMMDD(Converter):
