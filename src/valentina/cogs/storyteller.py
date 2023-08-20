@@ -7,7 +7,7 @@ from discord.ext import commands
 from peewee import fn
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor
+from valentina.models.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.db_tables import VampireClan
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import (
@@ -383,14 +383,7 @@ class StoryTeller(commands.Cog):
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Confirm granting {xp} xp to {character.name}",
-            fields=[
-                ("XP Added", str(xp)),
-                ("Current XP", str(current_xp)),
-                ("New XP", str(new_xp)),
-                ("All time XP", str(new_xp_total)),
-            ],
-            inline_fields=True,
+            title=f"Grant `{xp}` xp to `{character.name}`?",
             ephemeral=hidden,
             level="info",
             view=view,
@@ -416,10 +409,10 @@ class StoryTeller(commands.Cog):
             },
         )
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"`{character.name}` was granted `{xp}` XP")
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"`{character.name}` granted `{xp}` xp")
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"`{character.name}` was granted `{xp}` XP",
+                title=f"`{character.name}` granted `{xp}` xp",
                 description="",
                 color=EmbedColor.SUCCESS.value,
             )
@@ -444,25 +437,19 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Grant a cool point to a player character."""
         current_cp = character.data.get("cool_points_total", 0)
-        new_cp = current_cp + cp
-        xp = cp * 10  # Each cool point is worth 10 xp
-
         current_xp = character.data.get("experience", 0)
         current_xp_total = character.data.get("experience_total", 0)
-        new_xp = current_xp + xp
-        new_xp_total = current_xp_total + xp
+
+        xp_amount = cp * COOL_POINT_VALUE
+
+        new_xp = current_xp + xp_amount
+        new_xp_total = current_xp_total + xp_amount
+        new_cp_total = current_cp + cp
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Confirm granting {cp} cool {p.plural_noun('member', cp)} to {character.name}",
-            fields=[
-                ("CP Added", str(cp)),
-                ("XP Added", str(xp)),
-                ("Current XP", str(current_xp)),
-                ("New XP", str(new_xp)),
-                ("All time XP", str(new_xp_total)),
-            ],
+            title=f"Grant `{cp}` cool {p.plural_noun('member', cp)} (`{xp_amount}` xp) to `{character.name}`?",
             inline_fields=True,
             ephemeral=hidden,
             level="info",
@@ -473,7 +460,7 @@ class StoryTeller(commands.Cog):
         if not view.confirmed:
             await msg.edit_original_response(
                 embed=discord.Embed(
-                    title="Cool Point Grant Cancelled",
+                    title="Cool point grant cancelled",
                     description="",
                     color=EmbedColor.WARNING.value,
                 )
@@ -486,17 +473,17 @@ class StoryTeller(commands.Cog):
             data={
                 "experience": new_xp,
                 "experience_total": new_xp_total,
-                "cool_points_total": new_cp,
+                "cool_points_total": new_cp_total,
             },
         )
 
         await self.bot.guild_svc.send_to_audit_log(
             ctx,
-            f"`{character.name}` was granted `{cp}` cool {p.plural_noun('point', cp)} (`{xp}` XP)",
+            f"Grant `{cp}` cool {p.plural_noun('point', cp)} (`{xp_amount}` xp) to `{character.name}`",
         )
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"`{character.name}` was granted `{cp}` cool {p.plural_noun('point', cp)} (`{xp}` XP)",
+                title=f"Granted `{cp}` cool {p.plural_noun('point', cp)} (`{xp_amount}` xp) to `{character.name}`",
                 description="",
                 color=EmbedColor.SUCCESS.value,
             )
