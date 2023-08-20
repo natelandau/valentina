@@ -7,14 +7,12 @@ from discord.ext import commands
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
-from valentina.models.db_tables import Character, CustomTrait, Trait
-from valentina.models.dicerolls import DiceRoll
 from valentina.utils import errors
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
+from valentina.utils.perform_roll import perform_roll
 from valentina.utils.probability import Probability
-from valentina.views import ConfirmCancelButtons, ReRollButton, present_embed
-from valentina.views.roll_display import RollDisplay
+from valentina.views import ConfirmCancelButtons, present_embed
 
 
 class Roll(commands.Cog):
@@ -24,59 +22,6 @@ class Roll(commands.Cog):
         self.bot = bot
 
     roll = discord.SlashCommandGroup("roll", "Roll dice")
-
-    async def _perform_roll(
-        self,
-        ctx: discord.ApplicationContext,
-        pool: int,
-        difficulty: int,
-        dice_size: int,
-        comment: str | None = None,
-        trait_one: Trait | CustomTrait | None = None,
-        trait_one_value: int | None = None,
-        trait_two: Trait | CustomTrait | None = None,
-        trait_two_value: int | None = None,
-        character: Character | None = None,
-    ) -> None:
-        """Perform a dice roll and display the result.
-
-        Args:
-            ctx (discord.ApplicationContext): The context of the command.
-            pool (int): The number of dice to roll.
-            difficulty (int): The difficulty of the roll.
-            dice_size (int): The size of the dice.
-            comment (str, optional): A comment to display with the roll. Defaults to None.
-            trait_one (CustomTrait, Trait, optional): The name of the first trait. Defaults to None.
-            trait_one_value (int, optional): The value of the first trait. Defaults to None.
-            trait_two (CustomTrait, Trait, optional): The name of the second trait. Defaults to None.
-            trait_two_value (int, optional): The value of the second trait. Defaults to None.
-            character (Character, optional): The ID of the character to log the roll for. Defaults to None.
-        """
-        roll = DiceRoll(
-            ctx, pool=pool, difficulty=difficulty, dice_size=dice_size, character=character
-        )
-
-        while True:
-            view = ReRollButton(ctx.author)
-            embed = await RollDisplay(
-                ctx,
-                roll,
-                comment,
-                trait_one.name if trait_one else None,
-                trait_one_value,
-                trait_two.name if trait_two else None,
-                trait_two_value,
-            ).get_embed()
-            await ctx.respond(embed=embed, view=view)
-
-            # Wait for a re-roll
-            await view.wait()
-            if view.confirmed:
-                roll = DiceRoll(
-                    ctx, pool=pool, difficulty=difficulty, dice_size=dice_size, character=character
-                )
-            else:
-                break
 
     @roll.command(description="Throw a roll of d10s")
     async def throw(
@@ -105,9 +50,7 @@ class Roll(commands.Cog):
         except errors.NoClaimError:
             character = None
 
-        await self._perform_roll(
-            ctx, pool, difficulty, DiceType.D10.value, comment, character=character
-        )
+        await perform_roll(ctx, pool, difficulty, DiceType.D10.value, comment, character=character)
 
     @roll.command(name="probability", description="Calculate the probability of a roll")
     async def probability(
@@ -170,7 +113,7 @@ class Roll(commands.Cog):
 
         pool = trait_one_value + trait_two_value
 
-        await self._perform_roll(
+        await perform_roll(
             ctx,
             pool,
             difficulty,
@@ -199,7 +142,7 @@ class Roll(commands.Cog):
             dice_size (int): The number of sides on the dice
             pool (int): The number of dice to roll
         """
-        await self._perform_roll(ctx, pool, 0, dice_size, comment)
+        await perform_roll(ctx, pool, 0, dice_size, comment)
 
     @roll.command(name="macro", description="Roll a macro")
     async def roll_macro(
@@ -231,7 +174,7 @@ class Roll(commands.Cog):
 
         pool = trait_one_value + trait_two_value
 
-        await self._perform_roll(
+        await perform_roll(
             ctx,
             pool,
             difficulty,

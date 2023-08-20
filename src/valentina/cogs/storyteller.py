@@ -9,11 +9,11 @@ from peewee import fn
 from valentina.models.bot import Valentina
 from valentina.models.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.db_tables import VampireClan
-from valentina.models.dicerolls import DiceRoll
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterObject,
     ValidClan,
+    ValidTrait,
 )
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
@@ -25,10 +25,10 @@ from valentina.utils.options import (
     select_trait_two,
     select_vampire_clan,
 )
+from valentina.utils.perform_roll import perform_roll
 from valentina.utils.storyteller import storyteller_character_traits
-from valentina.views import ConfirmCancelButtons, ReRollButton, present_embed
+from valentina.views import ConfirmCancelButtons, present_embed
 from valentina.views.character_sheet import sheet_embed, show_sheet
-from valentina.views.roll_display import RollDisplay
 
 p = inflect.engine()
 
@@ -38,51 +38,6 @@ class StoryTeller(commands.Cog):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
-
-    async def _perform_roll(
-        self,
-        ctx: discord.ApplicationContext,
-        pool: int,
-        difficulty: int,
-        dice_size: int,
-        comment: str | None = None,
-        trait_one_name: str | None = None,
-        trait_one_value: int | None = None,
-        trait_two_name: str | None = None,
-        trait_two_value: int | None = None,
-    ) -> None:
-        """Perform a dice roll and display the result.
-
-        Args:
-            ctx (discord.ApplicationContext): The context of the command.
-            pool (int): The number of dice to roll.
-            difficulty (int): The difficulty of the roll.
-            dice_size (int): The size of the dice.
-            comment (str, optional): A comment to display with the roll. Defaults to None.
-            trait_one_name (str, optional): The name of the first trait. Defaults to None.
-            trait_one_value (int, optional): The value of the first trait. Defaults to None.
-            trait_two_name (str, optional): The name of the second trait. Defaults to None.
-            trait_two_value (int, optional): The value of the second trait. Defaults to None.
-        """
-        roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
-
-        while True:
-            view = ReRollButton(ctx.author)
-            embed = await RollDisplay(
-                ctx,
-                roll,
-                comment,
-                trait_one_name,
-                trait_one_value,
-                trait_two_name,
-                trait_two_value,
-            ).get_embed()
-            await ctx.respond(embed=embed, view=view)
-            await view.wait()
-            if view.confirmed:
-                roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size)
-            else:
-                break
 
     storyteller = discord.SlashCommandGroup(
         "storyteller",
@@ -317,13 +272,13 @@ class StoryTeller(commands.Cog):
             required=True,
         ),
         trait_one: Option(
-            str,
+            ValidTrait,
             description="First trait to roll",
             required=True,
             autocomplete=select_trait,
         ),
         trait_two: Option(
-            str,
+            ValidTrait,
             description="Second trait to roll",
             required=True,
             autocomplete=select_trait_two,
@@ -335,26 +290,30 @@ class StoryTeller(commands.Cog):
             default=DEFAULT_DIFFICULTY,
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Roll traits for a storyteller character."""
-        trait_one = self.bot.trait_svc.fetch_trait_from_name(trait_one)
-        trait_two = self.bot.trait_svc.fetch_trait_from_name(trait_two)
-
         trait_one_value = character.get_trait_value(trait_one)
         trait_two_value = character.get_trait_value(trait_two)
 
         pool = trait_one_value + trait_two_value
 
-        await self._perform_roll(
+        await perform_roll(
             ctx,
             pool,
             difficulty,
             DiceType.D10.value,
             comment,
-            trait_one_name=trait_one.name,
+            hidden=hidden,
+            trait_one=trait_one,
             trait_one_value=trait_one_value,
-            trait_two_name=trait_two.name,
+            trait_two=trait_two,
             trait_two_value=trait_two_value,
+            character=character,
         )
 
     @storyteller.command(name="xp_grant", description="Grant xp to a character")
