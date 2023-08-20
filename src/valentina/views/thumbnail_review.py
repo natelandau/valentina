@@ -38,6 +38,7 @@ class DeleteOrCategorize(discord.ui.View):
 
         # Delete from database
         RollThumbnail.delete_by_id(self.thumbnail_id)
+        self.ctx.bot.guild_svc.purge_cache(self.ctx)  # type: ignore [attr-defined]
 
         # Log to audit log
         await self.ctx.bot.guild_svc.send_to_audit_log(  # type: ignore [attr-defined]
@@ -75,6 +76,7 @@ class DeleteOrCategorize(discord.ui.View):
         """Callback for the select menu."""
         # Update the thumbnail in the database
         RollThumbnail.set_by_id(self.thumbnail_id, {"roll_type": select.values[0]})
+        self.ctx.bot.guild_svc.purge_cache(self.ctx)  # type: ignore [attr-defined]
 
         # Log to audit log
         await self.ctx.bot.guild_svc.send_to_audit_log(  # type: ignore [attr-defined]
