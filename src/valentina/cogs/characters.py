@@ -252,20 +252,26 @@ class Characters(commands.Cog, name="Character"):
         self,
         ctx: discord.ApplicationContext,
         dob: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Set the DOB of a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
         self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
-        logger.debug(f"CHARACTER: {character} dob updated by {ctx.author.name}.")
 
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`"
+        )
         await present_embed(
             ctx,
             title="Date of Birth Updated",
-            description=f"{character} born on {dob:%Y-%m-%d}",
+            description=f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`",
             level="success",
-            ephemeral=True,
-            log=True,
+            ephemeral=hidden,
         )
 
     @add.command(name="trait", description="Add a custom trait to a character")
@@ -290,6 +296,11 @@ class Characters(commands.Cog, name="Character"):
             default=5,
         ),
         description: Option(str, "A description of the trait", required=False),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Add a custom trait to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
@@ -297,17 +308,15 @@ class Characters(commands.Cog, name="Character"):
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Create {name}",
-            description=f"Confirm creating custom trait: **{name.title()}**",
+            description=f"Create custom trait: `{name.title()}`?",
             fields=[
-                ("Trait", f"**{name.title()}**"),
                 ("Category", category.name),
                 ("Value", f"`{value!s}`"),
                 ("Max Value", f"`{max_value!s}`"),
                 ("Description", description or "_no description_"),
             ],
-            inline_fields=False,
-            ephemeral=True,
+            inline_fields=True,
+            ephemeral=hidden,
             level="info",
             view=view,
         )
@@ -318,7 +327,8 @@ class Characters(commands.Cog, name="Character"):
                     title="Cancelled creating custom trait",
                     description="",
                     color=EmbedColor.WARNING.value,
-                )
+                ),
+                view=None,
             )
             return
 
@@ -329,21 +339,35 @@ class Characters(commands.Cog, name="Character"):
             max_value=max_value,
             description=description,
         )
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Custom trait `{name}` added to `{character.name}` with value `{value}`"
+        )
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"Custom trait added to {character.name}",
-                description="",
+                title=f"Custom trait `{name}` added to `{character.name}` with value `{value}`",
                 color=EmbedColor.SUCCESS.value,
-            )
+            ),
+            view=None,
         )
 
     @add.command(name="custom_section", description="Add a custom section to the character sheet")
-    async def add_custom_section(self, ctx: discord.ApplicationContext) -> None:
+    async def add_custom_section(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Add a custom section to the character sheet."""
         character = self.bot.char_svc.fetch_claim(ctx)
+
         modal = CustomSectionModal(title=f"Custom section for {character.name}")
         await ctx.send_modal(modal)
         await modal.wait()
+
         section_title = modal.section_title.strip().title()
         section_description = modal.section_description.strip()
 
@@ -357,23 +381,29 @@ class Characters(commands.Cog, name="Character"):
             ctx, character, section_title, section_description
         )
 
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Add section `{section_title}` to `{character.name}`"
+        )
+
         await present_embed(
             ctx,
-            title="Custom Section Added",
-            fields=[
-                ("Character", character.name),
-                ("Section", section_title),
-                ("Content", section_description),
-            ],
-            ephemeral=True,
-            inline_fields=True,
+            f"Add section `{section_title}` to `{character.name}`",
+            description=f"**{section_title}**\n{section_description}",
+            ephemeral=hidden,
             level="success",
-            log=True,
         )
 
     ### UPDATE COMMANDS ####################################################################
     @update.command(name="bio", description="Add or update a character's bio")
-    async def update_bio(self, ctx: discord.ApplicationContext) -> None:
+    async def update_bio(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Update a character's bio."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
@@ -385,16 +415,15 @@ class Characters(commands.Cog, name="Character"):
         biography = modal.bio.strip()
 
         self.bot.char_svc.update_or_add(ctx, character=character, data={"bio": biography})
-        logger.info(f"BIO: {character} bio updated by {ctx.author.name}.")
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Update biography for `{character.name}`")
 
         await present_embed(
             ctx,
-            title="Biography Updated",
+            title=f"Update biography for `{character.name}`",
+            description=f"**Biography**\n{biography}",
             level="success",
-            ephemeral=True,
-            log=True,
-            inline_fields=True,
-            fields=[("Character", character.name), ("Biography", biography)],
+            ephemeral=hidden,
         )
 
     @update.command(name="custom_section", description="Update a custom section")
@@ -406,6 +435,11 @@ class Characters(commands.Cog, name="Character"):
             description="Custom section to update",
             required=True,
             autocomplete=select_custom_section,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
         ),
     ) -> None:
         """Update a custom section."""
@@ -429,22 +463,28 @@ class Characters(commands.Cog, name="Character"):
             section_description=section_description,
         )
 
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Update section `{section_title}` for `{character.name}`"
+        )
+
         await present_embed(
             ctx,
-            title="Custom Section Updated",
-            fields=[
-                ("Character", character.name),
-                ("Section", section_title),
-                ("Content", section_description),
-            ],
-            ephemeral=True,
-            inline_fields=True,
+            title=f"Update section `{section_title}` for `{character.name}`",
+            description=f"**{section_title}**\n{section_description}",
+            ephemeral=hidden,
             level="success",
-            log=True,
         )
 
     @chars.command(name="profile", description="Update a character's profile")
-    async def update_profile(self, ctx: discord.ApplicationContext) -> None:
+    async def update_profile(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Update a character's profile."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
@@ -459,12 +499,15 @@ class Characters(commands.Cog, name="Character"):
 
             self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
 
+            await self.bot.guild_svc.send_to_audit_log(
+                ctx, f"Update profile for `{character.name}`"
+            )
+
             await present_embed(
                 ctx,
-                title="Profile Updated",
-                log=True,
+                title=f"Update profile for `{character.name}`",
                 level="success",
-                ephemeral=True,
+                ephemeral=hidden,
             )
 
     @update.command(name="trait", description="Update the value of a trait for a character")
@@ -479,6 +522,11 @@ class Characters(commands.Cog, name="Character"):
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
         ),
     ) -> None:
         """Update the value of a trait."""
@@ -500,13 +548,13 @@ class Characters(commands.Cog, name="Character"):
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Update {trait.name}",
+            title=f"Update `{trait.name}?`",
             fields=[
                 ("Old Value", str(old_value)),
                 ("New Value", new_value),
             ],
             inline_fields=True,
-            ephemeral=True,
+            ephemeral=hidden,
             level="info",
             view=view,
         )
@@ -515,23 +563,25 @@ class Characters(commands.Cog, name="Character"):
         if not view.confirmed:
             await msg.edit_original_response(
                 embed=discord.Embed(
-                    title="Update Cancelled",
-                    description=f"**{trait.name}** will not be updated.",
+                    title=f"**{trait.name}** will not be updated.",
                     color=EmbedColor.WARNING.value,
-                )
+                ),
+                view=None,
             )
             return
 
         character.set_trait_value(trait, new_value)
 
-        await msg.delete_original_response()
-        await present_embed(
-            ctx=ctx,
-            title="Trait value updated",
-            description=f"**{trait.name}** updated from **{old_value}** to **{new_value}** on **{character.name}**",
-            level="success",
-            ephemeral=True,
-            log=True,
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx,
+            f"Update trait `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`",
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"**{trait.name}** updated from `{old_value}` to `{new_value}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
         )
 
     ### DELETE COMMANDS ####################################################################
@@ -545,6 +595,11 @@ class Characters(commands.Cog, name="Character"):
             required=True,
             autocomplete=select_custom_trait,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete a custom trait from a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
@@ -553,7 +608,7 @@ class Characters(commands.Cog, name="Character"):
             ctx,
             title="Delete Trait",
             description=f"Confirm deleting {trait.name}",
-            ephemeral=True,
+            ephemeral=hidden,
             view=view,
             level="info",
         )
@@ -561,26 +616,25 @@ class Characters(commands.Cog, name="Character"):
         if not view.confirmed:
             await msg.edit_original_response(
                 embed=discord.Embed(
-                    title="Delete Cancelled",
-                    description=f"**{trait.name}** will not be deleted.",
+                    title=f"**{trait.name}** will not be deleted.",
                     color=EmbedColor.WARNING.value,
-                )
+                ),
+                view=None,
             )
             return
 
-        if view.confirmed:
-            saved_trait_name = trait.name
-            trait.delete_instance()
-            await msg.delete_original_response()
-            await present_embed(
-                ctx=ctx,
-                title="Deleted Trait",
-                fields=[("Character", character.name), ("Trait", saved_trait_name)],
-                inline_fields=True,
-                level="success",
-                log=True,
-                ephemeral=True,
-            )
+        trait.delete_instance()
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Delete custom trait `{trait.name}` from `{character.name}`"
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"Deleted custom trait `{trait.name}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
+        )
 
     @delete.command(name="custom_section", description="Delete a custom section from a character")
     async def delete_custom_section(
@@ -592,15 +646,19 @@ class Characters(commands.Cog, name="Character"):
             required=True,
             autocomplete=select_custom_section,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete a custom trait from a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title="Delete Custom Section",
-            description=f"Confirm deleting {custom_section.title}",
-            ephemeral=True,
+            title=f"Delete `{custom_section.title}`?",
+            ephemeral=hidden,
             view=view,
             level="info",
         )
@@ -608,23 +666,24 @@ class Characters(commands.Cog, name="Character"):
         if not view.confirmed:
             await msg.edit_original_response(
                 embed=discord.Embed(
-                    title="Delete Cancelled",
-                    description=f"**{custom_section.title}** will not be deleted.",
+                    title=f"`{custom_section.title}` will not be deleted.",
                     color=EmbedColor.WARNING.value,
-                )
+                ),
+                view=None,
             )
             return
 
-        saved_section_title = custom_section.title
         custom_section.delete_instance()
 
-        await present_embed(
-            ctx=ctx,
-            title="Deleted Custom Section",
-            fields=[("Character", character.name), ("Section", saved_section_title)],
-            level="success",
-            log=True,
-            ephemeral=True,
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Delete custom section `{custom_section.title}` from `{character.name}`"
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"Deleted custom section `{custom_section.title}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
         )
 
 

@@ -370,7 +370,7 @@ class StoryTeller(commands.Cog):
         xp: Option(int, description="The amount of xp to grant", required=True),
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -391,7 +391,7 @@ class StoryTeller(commands.Cog):
                 ("All time XP", str(new_xp_total)),
             ],
             inline_fields=True,
-            ephemeral=True,
+            ephemeral=hidden,
             level="info",
             view=view,
         )
@@ -415,19 +415,14 @@ class StoryTeller(commands.Cog):
                 "experience_total": new_xp_total,
             },
         )
-        await msg.delete_original_response()
-        await present_embed(
-            ctx=ctx,
-            title=f"{character.name} was granted {xp} experience",
-            fields=[
-                ("XP Added", str(xp)),
-                ("Current XP", str(new_xp)),
-                ("All time XP", str(new_xp_total)),
-            ],
-            inline_fields=True,
-            level="success",
-            log=True,
-            ephemeral=hidden,
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"`{character.name}` was granted `{xp}` XP")
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"`{character.name}` was granted `{xp}` XP",
+                description="",
+                color=EmbedColor.SUCCESS.value,
+            )
         )
 
     @storyteller.command(name="cp_grant", description="Grant a cool point to a character")
@@ -443,7 +438,7 @@ class StoryTeller(commands.Cog):
         cp: Option(int, description="The number of cool points to grant", required=True),
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -469,7 +464,7 @@ class StoryTeller(commands.Cog):
                 ("All time XP", str(new_xp_total)),
             ],
             inline_fields=True,
-            ephemeral=True,
+            ephemeral=hidden,
             level="info",
             view=view,
         )
@@ -494,20 +489,17 @@ class StoryTeller(commands.Cog):
                 "cool_points_total": new_cp,
             },
         )
-        await msg.delete_original_response()
-        await present_embed(
-            ctx=ctx,
-            title=f"{character.name} was granted {xp} experience",
-            fields=[
-                ("Cool Points Added", str(cp)),
-                ("XP Added", str(xp)),
-                ("Current XP", str(new_xp)),
-                ("All time XP", str(new_xp_total)),
-            ],
-            inline_fields=True,
-            level="success",
-            log=True,
-            ephemeral=hidden,
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx,
+            f"`{character.name}` was granted `{cp}` cool {p.plural_noun('point', cp)} (`{xp}` XP)",
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"`{character.name}` was granted `{cp}` cool {p.plural_noun('point', cp)} (`{xp}` XP)",
+                description="",
+                color=EmbedColor.SUCCESS.value,
+            )
         )
 
 

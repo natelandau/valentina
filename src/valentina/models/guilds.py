@@ -316,7 +316,23 @@ class GuildService:
         Returns:
             discord.Embed: The created embed.
         """
-        embed = discord.Embed(title=message, color=EmbedColor.INFO.value)
+        # Set color based on command
+        if hasattr(ctx, "command") and (
+            ctx.command.qualified_name.startswith("admin")
+            or ctx.command.qualified_name.startswith("owner")
+            or ctx.command.qualified_name.startswith("developer")
+        ):
+            color = EmbedColor.WARNING.value
+        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("storyteller"):
+            color = EmbedColor.SUCCESS.value
+        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("gameplay"):
+            color = EmbedColor.GRAY.value
+        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("chronicle"):
+            color = EmbedColor.DEFAULT.value
+        else:
+            color = EmbedColor.INFO.value
+
+        embed = discord.Embed(title=message, color=color)
         embed.timestamp = datetime.now()
 
         footer = ""

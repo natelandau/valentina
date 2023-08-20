@@ -34,56 +34,65 @@ class Chronicle(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         name: Option(str, description="Name of the chronicle", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Create a new chronicle."""
         # TODO: Migrate to modal to allow setting chronicle description
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title="Create new chronicle?",
-            description=f"Create new chronicle named: **{name}**",
+            title=f"Create new chronicle named: `{name}`?",
             view=view,
-            ephemeral=True,
+            ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled",
-                description="Cancelled creating chronicle",
-                color=EmbedColor.INFO.value,
+                title="Cancelled creating chronicle",
+                color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        if view.confirmed:
-            chronicle = self.bot.chron_svc.create_chronicle(ctx, name=name)
-            await msg.delete_original_response()
-            await present_embed(
-                ctx,
-                title=f"Created new chronicle: {chronicle.name}",
-                ephemeral=True,
-                log=True,
-                level="success",
-            )
+        chronicle = self.bot.chron_svc.create_chronicle(ctx, name=name)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Create new chronicle: {chronicle.name}")
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"Create new chronicle: {chronicle.name}",
+                description="",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
+        )
 
     @chronicle.command(name="current_date", description="Set the current date of a campaign")
     async def current_date(
         self,
         ctx: discord.ApplicationContext,
         date: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
-        """Set the age of a character."""
+        """Set current date of a campaign."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
 
         self.bot.chron_svc.update_chronicle(ctx, chronicle, current_date=date)
-
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Set date of chronicle `{chronicle.name}` to `{date:%Y-%m-%d}`"
+        )
         await present_embed(
             ctx,
-            title="Current Date Set",
-            description=f"{date:%Y-%m-%d}",
+            title=f"Set date of chronicle `{chronicle.name}` to `{date:%Y-%m-%d}`",
             level="success",
-            ephemeral=True,
-            log=True,
+            ephemeral=hidden,
         )
 
     @chronicle.command(name="delete", description="Delete a chronicle")
@@ -97,36 +106,39 @@ class Chronicle(commands.Cog):
             required=True,
             autocomplete=select_chronicle,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete a chronicle."""
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title="Delete chronicle?",
-            description=f"Delete chronicle: **{chronicle.name}** and all associated data (NPCs, notes, chapters)?",
+            title=f"Delete chronicle `{chronicle.name}` and all associated data (NPCs, notes, chapters)?",
             view=view,
-            ephemeral=True,
+            ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled",
-                description="Cancelled deleting chronicle",
-                color=EmbedColor.INFO.value,
+                title="Cancelled deleting chronicle",
+                color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        if view.confirmed:
-            self.bot.chron_svc.delete_chronicle(ctx, chronicle)
-            await msg.delete_original_response()
-            await present_embed(
-                ctx,
+        self.bot.chron_svc.delete_chronicle(ctx, chronicle)
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Delete chronicle: {chronicle.name}")
+        await msg.edit_original_response(
+            embed=discord.Embed(
                 title=f"Deleted chronicle: {chronicle.name}",
-                ephemeral=True,
-                log=True,
-                level="success",
-            )
+                description="",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
+        )
 
     @chronicle.command(name="view", description="View a chronicle")
     async def view_chronicle(self, ctx: discord.ApplicationContext) -> None:
@@ -218,70 +230,83 @@ An overview of {chronicle.name}.
             required=True,
             autocomplete=select_chronicle,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Set a chronicle as active."""
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title="Set chronicle as active?",
-            description=f"Set chronicle **{chronicle.name}** as active",
+            title=f"Set chronicle `{chronicle.name}` as active?",
             view=view,
-            ephemeral=True,
+            ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled",
-                description="Cancelled setting chronicle as active",
-                color=EmbedColor.INFO.value,
+                title="Cancelled setting chronicle as active",
+                color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        if view.confirmed:
-            self.bot.chron_svc.set_active(ctx, chronicle)
-            await msg.delete_original_response()
-            await present_embed(
-                ctx,
+        self.bot.chron_svc.set_active(ctx, chronicle)
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Set chronicle as active: {chronicle.name}"
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
                 title=f"Set chronicle as active: {chronicle.name}",
-                ephemeral=True,
-                log=True,
-                level="success",
-            )
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
+        )
 
     @chronicle.command(name="set_inactive", description="Set a chronicle as inactive")
     @commands.has_permissions(administrator=True)
-    async def chronicle_set_inactive(self, ctx: discord.ApplicationContext) -> None:
+    async def chronicle_set_inactive(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Set the active chronicle as inactive."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title="Set chronicle as inactive?",
-            description=f"Set chronicle **{chronicle.name}** as inactive",
+            title=f"Set chronicle **{chronicle.name}** as inactive",
             view=view,
-            ephemeral=True,
+            ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
                 title="Cancelled",
                 description="Cancelled setting chronicle as inactive",
-                color=EmbedColor.INFO.value,
+                color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        if view.confirmed:
-            self.bot.chron_svc.set_inactive(ctx)
-            await msg.delete_original_response()
-            await present_embed(
-                ctx,
+        self.bot.chron_svc.set_inactive(ctx)
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Set chronicle as inactive: {chronicle.name}"
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
                 title=f"Set chronicle as inactive: {chronicle.name}",
-                ephemeral=True,
-                log=True,
-                level="success",
-            )
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
+        )
 
     @chronicle.command(name="list", description="List all chronicles")
     async def chronicle_list(
@@ -289,7 +314,7 @@ An overview of {chronicle.name}.
         ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -315,7 +340,15 @@ An overview of {chronicle.name}.
     ### NPC COMMANDS ####################################################################
 
     @npc.command(name="create", description="Create a new NPC")
-    async def create_npc(self, ctx: discord.ApplicationContext) -> None:
+    async def create_npc(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Create a new NPC."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
 
@@ -333,13 +366,14 @@ An overview of {chronicle.name}.
             ctx, chronicle=chronicle, name=name, npc_class=npc_class, description=description
         )
 
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Create NPC: `{name}` in `{chronicle.name}`"
+        )
         await present_embed(
             ctx,
-            title=f"Created NPC in {chronicle.name}",
+            title=f"Create NPC: `{name}` in `{chronicle.name}`",
             level="success",
-            log=True,
             fields=[
-                ("Name", name),
                 ("Class", npc_class),
                 (
                     "Description",
@@ -348,7 +382,7 @@ An overview of {chronicle.name}.
                     else description,
                 ),
             ],
-            ephemeral=True,
+            ephemeral=hidden,
             inline_fields=True,
         )
 
@@ -358,7 +392,7 @@ An overview of {chronicle.name}.
         ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -384,13 +418,18 @@ An overview of {chronicle.name}.
                 )
             )
 
-        await present_embed(ctx, title="NPCs", fields=fields, level="info")
+        await present_embed(ctx, title="NPCs", fields=fields, level="info", ephemeral=hidden)
 
     @npc.command(name="edit", description="Edit an NPC")
     async def edit_npc(
         self,
         ctx: discord.ApplicationContext,
         npc: Option(str, description="NPC to edit", required=True, autocomplete=select_npc),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Edit an NPC."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
@@ -409,13 +448,14 @@ An overview of {chronicle.name}.
         }
         self.bot.chron_svc.update_npc(ctx, npc, **updates)
 
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Update NPC: `{updates['name']}` in `{chronicle.name}`"
+        )
         await present_embed(
             ctx,
-            title=f"Updated NPC in {chronicle.name}",
+            title=f"Update NPC: `{updates['name']}` in `{chronicle.name}`",
             level="success",
-            log=True,
             fields=[
-                ("Name", updates["name"]),
                 ("Class", updates["npc_class"]),
                 (
                     "Description",
@@ -424,7 +464,7 @@ An overview of {chronicle.name}.
                     else modal.description.strip(),
                 ),
             ],
-            ephemeral=True,
+            ephemeral=hidden,
             inline_fields=True,
         )
 
@@ -434,6 +474,11 @@ An overview of {chronicle.name}.
         self,
         ctx: discord.ApplicationContext,
         npc: Option(str, description="NPC to edit", required=True, autocomplete=select_npc),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete an NPC."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
@@ -442,35 +487,44 @@ An overview of {chronicle.name}.
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title="Delete NPC?",
-            description=f"Delete NPC **{npc.name}**",
+            title=f"Delete NPC `{npc.name}`?",
             view=view,
-            ephemeral=True,
+            ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled",
-                description="Cancelled deleting NPC",
-                color=EmbedColor.INFO.value,
+                title="Cancelled deleting NPC",
+                color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
         self.bot.chron_svc.delete_npc(ctx, npc)
-        await msg.delete_original_response()
-        await present_embed(
-            ctx,
-            title=f"Delete NPC: {npc.name}",
-            ephemeral=True,
-            log=True,
-            level="success",
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Delete NPC: `{npc.name}` in `{chronicle.name}`"
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"Delete NPC: `{npc.name}` in `{chronicle.name}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
         )
 
     ### CHAPTER COMMANDS ####################################################################
 
     @chapter.command(name="create", description="Create a new chapter")
-    async def create_chapter(self, ctx: discord.ApplicationContext) -> None:
+    async def create_chapter(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Create a new chapter."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
 
@@ -492,18 +546,16 @@ An overview of {chronicle.name}.
             description=description,
         )
 
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx,
+            f"Create chapter: `{chapter.chapter}. {chapter.name}` in `{chronicle.name}`",
+        )
         await present_embed(
             ctx,
-            title=f"Created chapter in {chronicle.name}",
+            f"Create chapter: `{chapter.chapter}. {chapter.name}` in `{chronicle.name}`",
             level="success",
-            log=True,
-            fields=[
-                ("Name", name),
-                ("Chapter Number", chapter.chapter),
-                ("Short Description", short_description),
-            ],
-            ephemeral=True,
-            inline_fields=True,
+            description=short_description,
+            ephemeral=hidden,
         )
 
     @chapter.command(name="list", description="List all chapters")
@@ -512,7 +564,7 @@ An overview of {chronicle.name}.
         ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -552,6 +604,11 @@ An overview of {chronicle.name}.
             required=True,
             autocomplete=select_chapter,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Edit a chapter."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
@@ -569,18 +626,17 @@ An overview of {chronicle.name}.
             "description": modal.description.strip(),
         }
         self.bot.chron_svc.update_chapter(ctx, chapter, **updates)
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Update chapter: `{updates['name']}` in `{chronicle.name}`"
+        )
+
         await present_embed(
             ctx,
-            title=f"Updated chapter in {chronicle.name}",
+            title=f"Update chapter: `{updates['name']}` in `{chronicle.name}`",
             level="success",
-            log=True,
-            fields=[
-                ("Name", updates["name"]),
-                ("Chapter Number", chapter.chapter),
-                ("Short Description", updates["short_description"]),
-            ],
-            ephemeral=True,
-            inline_fields=True,
+            description=updates["short_description"],
+            ephemeral=hidden,
         )
 
     @chapter.command(name="delete", description="Delete a chapter")
@@ -595,6 +651,11 @@ An overview of {chronicle.name}.
             required=True,
             autocomplete=select_chapter,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete a chapter."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
@@ -603,29 +664,30 @@ An overview of {chronicle.name}.
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title="Delete Chapter?",
-            description=f"Delete Chapter **{chapter.chapter}. {chapter.name}** from **{chronicle.name}**",
+            title=f"Delete Chapter `{chapter.chapter}. {chapter.name}` from `{chronicle.name}`",
             view=view,
-            ephemeral=True,
+            ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled",
-                description="Cancelled deleting chapter",
-                color=EmbedColor.INFO.value,
+                title="Cancelled deleting chapter",
+                color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
         self.bot.chron_svc.delete_chapter(ctx, chapter)
-        await msg.delete_original_response()
-        await present_embed(
-            ctx,
-            title=f"Delete Chapter: {chapter.chapter}. {chapter.name}",
-            ephemeral=True,
-            log=True,
-            level="success",
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Delete chapter: `{chapter.chapter}. {chapter.name}` in `{chronicle.name}`"
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"Delete chapter: `{chapter.chapter}. {chapter.name}` in `{chronicle.name}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
         )
 
     ### NOTE COMMANDS ####################################################################
@@ -641,6 +703,11 @@ An overview of {chronicle.name}.
             required=False,
             autocomplete=select_chapter,
             default=None,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
         ),
     ) -> None:
         """Create a new note."""
@@ -668,22 +735,18 @@ An overview of {chronicle.name}.
             chapter=chapter,
         )
 
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Create note: `{name}` in `{chronicle.name}`"
+        )
+
         await present_embed(
             ctx,
-            title=f"Created note in {chronicle.name}",
+            title=f"Create note: `{name}` in `{chronicle.name}`",
             level="success",
-            log=True,
-            fields=[
-                ("Name", name),
-                (
-                    "Description",
-                    (description[:MAX_FIELD_COUNT] + " ...")
-                    if len(description) > MAX_FIELD_COUNT
-                    else description,
-                ),
-            ],
-            ephemeral=True,
-            inline_fields=True,
+            description=(description[:MAX_FIELD_COUNT] + " ...")
+            if len(description) > MAX_FIELD_COUNT
+            else description,
+            ephemeral=hidden,
         )
 
     @notes.command(name="list", description="List all notes")
@@ -692,7 +755,7 @@ An overview of {chronicle.name}.
         ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -735,6 +798,11 @@ An overview of {chronicle.name}.
             required=True,
             autocomplete=select_note,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Edit a note."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
@@ -751,22 +819,19 @@ An overview of {chronicle.name}.
             "description": modal.description.strip(),
         }
         self.bot.chron_svc.update_note(ctx, note, **updates)
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Update note: `{updates['name']}` in `{chronicle.name}`"
+        )
+
         await present_embed(
             ctx,
-            title=f"Updated note in {chronicle.name}",
+            title=f"Update note: `{updates['name']}` in `{chronicle.name}`",
             level="success",
-            log=True,
-            fields=[
-                ("Name", updates["name"]),
-                (
-                    "Description",
-                    (modal.description.strip()[:MAX_FIELD_COUNT] + " ...")
-                    if len(modal.description.strip()) > MAX_FIELD_COUNT
-                    else modal.description.strip(),
-                ),
-            ],
-            ephemeral=True,
-            inline_fields=True,
+            description=(modal.description.strip()[:MAX_FIELD_COUNT] + " ...")
+            if len(modal.description.strip()) > MAX_FIELD_COUNT
+            else modal.description.strip(),
+            ephemeral=hidden,
         )
 
     @notes.command(name="delete", description="Delete a note")
@@ -780,6 +845,11 @@ An overview of {chronicle.name}.
             required=True,
             autocomplete=select_note,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete a note."""
         chronicle = self.bot.chron_svc.fetch_active(ctx)
@@ -788,30 +858,31 @@ An overview of {chronicle.name}.
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title="Delete Note?",
-            description=f"Delete Note **{note.name}** from **{chronicle.name}**",
+            title=f"Delete note `{note.name}` from `{chronicle.name}`?",
             view=view,
-            ephemeral=True,
+            ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled",
-                description="Cancelled deleting note",
-                color=EmbedColor.INFO.value,
+                title="Cancelled deleting note",
+                color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
         self.bot.chron_svc.delete_note(ctx, note)
-        await msg.delete_original_response()
-        await present_embed(
-            ctx,
-            title="Delete Note",
-            description=f"**{note.name}** deleted from **{chronicle.name}**",
-            ephemeral=True,
-            log=True,
-            level="success",
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Delete note: `{note.name}` in `{chronicle.name}`"
+        )
+
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"Delete note: `{note.name}` in `{chronicle.name}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
         )
 
 

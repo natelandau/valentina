@@ -1,6 +1,7 @@
 # mypy: disable-error-code="valid-type"
 """A cog for handling XP and leveling up."""
 import discord
+import inflect
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
@@ -16,6 +17,8 @@ from valentina.utils.helpers import (
 )
 from valentina.utils.options import select_char_trait
 from valentina.views import ConfirmCancelButtons, present_embed
+
+p = inflect.engine()
 
 
 class Xp(commands.Cog, name="XP"):
@@ -38,7 +41,7 @@ class Xp(commands.Cog, name="XP"):
         ),
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -117,6 +120,10 @@ class Xp(commands.Cog, name="XP"):
         logger.debug(f"XP: {character.name} {trait.name} upgraded by {ctx.author.name}")
 
         await msg.delete_original_response()
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx,
+            f"`{trait.name}` upgraded from `{old_value}` to `{new_value}` for `{character.name}`",
+        )
         await present_embed(
             ctx=ctx,
             title=f"{character.name} upgraded",
@@ -129,7 +136,6 @@ class Xp(commands.Cog, name="XP"):
                 ("Remaining XP", str(new_experience)),
             ],
             inline_fields=True,
-            log=True,
             ephemeral=hidden,
         )
 
@@ -140,7 +146,7 @@ class Xp(commands.Cog, name="XP"):
         exp: Option(int, description="The amount of experience to add", required=True),
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -172,7 +178,7 @@ class Xp(commands.Cog, name="XP"):
                 "experience_total": new_total,
             },
         )
-        logger.info(f"XP: {character} xp updated by {ctx.author.name}")
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"`{exp}` XP added to `{character.name}`")
         await present_embed(
             ctx=ctx,
             title=f"{character.name} gained experience",
@@ -183,7 +189,6 @@ class Xp(commands.Cog, name="XP"):
             ],
             inline_fields=True,
             level="success",
-            log=True,
             ephemeral=hidden,
         )
 
@@ -194,7 +199,7 @@ class Xp(commands.Cog, name="XP"):
         cp: Option(int, description="The number of cool points to add", required=True),
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -240,6 +245,10 @@ class Xp(commands.Cog, name="XP"):
             },
         )
         logger.info(f"CP: {character} cool points updated by {ctx.author.name}")
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx,
+            f"`{cp}` cool {p.plural_noun('point', cp)} ({cp * COOL_POINT_VALUE} XP) added to `{character.name}`",
+        )
         await present_embed(
             ctx=ctx,
             title=f"{character.name} gained cool points",
@@ -250,7 +259,6 @@ class Xp(commands.Cog, name="XP"):
                 ("Current XP", f"{new_xp_total}"),
             ],
             level="success",
-            log=True,
             ephemeral=hidden,
         )
 
