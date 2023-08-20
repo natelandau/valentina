@@ -165,45 +165,45 @@ def empty_db() -> CSqliteExtDatabase:
 
 ### Mock Objects ################################
 @pytest.fixture()
-def mock_member():
+def mock_member(mocker):
     """A mock of a discord.Member object."""
-    mock_member = MagicMock()
+    mock_role_one = mocker.MagicMock()
+    mock_role_one.id = 1
+    mock_role_one.name = "@everyone"
+
+    mock_role_two = mocker.MagicMock()
+    mock_role_two.id = 2
+    mock_role_two.name = "Player"
+
+    mock_member = mocker.MagicMock()
     mock_member.id = 1
     mock_member.display_name = "Test User"
     mock_member.name = "testuser"
     mock_member.mention = "<@1>"
     mock_member.__class__ = discord.Member
+    mock_member.roles = [mock_role_one, mock_role_two]
 
     return mock_member
 
 
 @pytest.fixture()
-def mock_ctx():
+def mock_ctx(mocker, mock_member):
     """Create a mock context object with user 1."""
-    # Mock the ctx.author object to match the mock database
-    mock_author = MagicMock()
-    mock_author.id = 1
-    mock_author.display_name = "Test User"
-    mock_author.name = "testuser"
-    mock_author.mention = "<@1>"
-    mock_author.__class__ = discord.Member
-    mock_author.roles = ["@everyone", "Player"]
-
     # Mock the ctx.bot object
-    mock_bot = MagicMock()
-    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
+    mock_bot = mocker.MagicMock()
+    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_member)
     mock_bot.__class__ = commands.Bot
 
     # Mock the ctx.guild object matches the mock database
-    mock_guild = MagicMock()
+    mock_guild = mocker.MagicMock()
     mock_guild.id = 1
     mock_guild.name = "Test Guild"
     mock_guild.data = {"key": "value"}
     mock_guild.__class__ = discord.Guild
 
     # Mock the ctx object
-    mock_ctx = MagicMock()
-    mock_ctx.author = mock_author
+    mock_ctx = mocker.MagicMock()
+    mock_ctx.author = mock_member
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild
     mock_ctx.__class__ = discord.ApplicationContext
@@ -212,31 +212,23 @@ def mock_ctx():
 
 
 @pytest.fixture()
-def mock_ctx2():
+def mock_ctx2(mocker, mock_member):
     """Create a mock context object with guild 2."""
-    # Mock the ctx.author object to match the mock database
-    mock_author = MagicMock()
-    mock_author.id = 1
-    mock_author.display_name = "Test User"
-    mock_author.name = "testuser"
-    mock_author.mention = "<@1>"
-    mock_author.__class__ = discord.Member
-
     # Mock the ctx.bot object
-    mock_bot = MagicMock()
+    mock_bot = mocker.MagicMock()
     mock_bot.__class__ = commands.Bot
-    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
+    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_member)
 
     # Mock the ctx.guild object matches the mock database
-    mock_guild = MagicMock()
+    mock_guild = mocker.MagicMock()
     mock_guild.id = 2
     mock_guild.name = "Test Guild2"
     mock_guild.data = {"key": "value"}
     mock_guild.__class__ = discord.Guild
 
     # Mock the ctx object
-    mock_ctx = MagicMock()
-    mock_ctx.author = mock_author
+    mock_ctx = mocker.MagicMock()
+    mock_ctx.author = mock_member
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild
     mock_ctx.__class__ = discord.ApplicationContext
@@ -245,10 +237,10 @@ def mock_ctx2():
 
 
 @pytest.fixture()
-def mock_ctx3():
+def mock_ctx3(mocker):
     """Create a mock context object with user not in the database."""
     # Mock the ctx.author object to match the mock database
-    mock_author = MagicMock()
+    mock_author = mocker.MagicMock()
     mock_author.id = 600
     mock_author.display_name = "Test User 600"
     mock_author.name = "testuser 600"
@@ -256,19 +248,19 @@ def mock_ctx3():
     mock_author.__class__ = discord.Member
 
     # Mock the ctx.bot object
-    mock_bot = MagicMock()
+    mock_bot = mocker.MagicMock()
     mock_bot.__class__ = commands.Bot
     mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
 
     # Mock the ctx.guild object matches the mock database
-    mock_guild = MagicMock()
+    mock_guild = mocker.MagicMock()
     mock_guild.id = 1
     mock_guild.name = "Test Guild"
     mock_guild.data = {"key": "value"}
     mock_guild.__class__ = discord.Guild
 
     # Mock the ctx object
-    mock_ctx = MagicMock()
+    mock_ctx = mocker.MagicMock()
     mock_ctx.author = mock_author
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild
@@ -278,10 +270,10 @@ def mock_ctx3():
 
 
 @pytest.fixture()
-def mock_ctx4():
+def mock_ctx4(mocker):
     """Create a mock context object with user AND a guild not in the database."""
     # Mock the ctx.author object
-    mock_author = MagicMock()
+    mock_author = mocker.MagicMock()
     mock_author.id = 500
     mock_author.display_name = "Test User 500"
     mock_author.name = "testuser 500"
@@ -289,19 +281,19 @@ def mock_ctx4():
     mock_author.__class__ = discord.Member
 
     # Mock the ctx.bot object
-    mock_bot = MagicMock()
+    mock_bot = mocker.MagicMock()
     mock_bot.__class__ = commands.Bot
     mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
 
     # Mock the ctx.guild object
-    mock_guild = MagicMock()
+    mock_guild = mocker.MagicMock()
     mock_guild.id = 500
     mock_guild.name = "Test Guild 500"
     mock_guild.data = {"key": "value"}
     mock_guild.__class__ = discord.Guild
 
     # Mock the ctx object
-    mock_ctx = MagicMock()
+    mock_ctx = mocker.MagicMock()
     mock_ctx.author = mock_author
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild

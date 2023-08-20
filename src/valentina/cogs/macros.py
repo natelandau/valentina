@@ -40,6 +40,11 @@ class Macro(commands.Cog):
             required=True,
             autocomplete=select_char_trait_two,
         ),
+        hidden: Option(
+            bool,
+            description="Make the result only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Create a new macro."""
         self.bot.user_svc.fetch_user(ctx)
@@ -60,18 +65,20 @@ class Macro(commands.Cog):
 
         self.bot.macro_svc.create_macro(ctx, name, trait_one, trait_two, abbreviation, description)
 
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Create macro: `{name}`(`{trait_one.name}` + `{trait_two.name}`)"
+        )
         await present_embed(
             ctx,
             title=f"Created Macro: {name}",
-            description=f"Created a macro that combines **{trait_one.name}** and **{trait_two.name}**.",
+            description=f"Create macro: `{name}`(`{trait_one.name}` + `{trait_two.name}`)",
             fields=[
                 ("Abbreviation", abbreviation),
                 ("Description", description),
             ],
             inline_fields=True,
             level="success",
-            ephemeral=True,
-            log=True,
+            ephemeral=hidden,
         )
 
     @macro.command(name="list", description="List macros associated with your account")
@@ -80,7 +87,7 @@ class Macro(commands.Cog):
         ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
-            description="Make the list only visible to you (default true).",
+            description="Make the list only visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -129,6 +136,7 @@ class Macro(commands.Cog):
     ) -> None:
         """Delete a macro from a user."""
         view = ConfirmCancelButtons(ctx.author)
+
         msg = await present_embed(
             ctx,
             title=f"Confirm deletion of macro: {macro.name}",
@@ -144,16 +152,15 @@ class Macro(commands.Cog):
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        saved_macro_name = macro.name
         self.bot.macro_svc.delete_macro(ctx, macro)
 
-        await msg.delete_original_response()
-        await present_embed(
-            ctx,
-            title=f"Deleted Macro: {saved_macro_name}",
-            level="success",
-            log=True,
-            ephemeral=True,
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Delete macro: `{macro.name}`")
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"Delete macro: `{macro.name}`",
+                description="",
+                color=EmbedColor.SUCCESS.value,
+            )
         )
 
 

@@ -17,7 +17,7 @@ class ReRollButton(View):
         """Callback for the re-roll button."""
         button.label += " ✅"
         button.disabled = True
-        await interaction.response.edit_message(view=None)
+        await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = True
         self.stop()
 
@@ -29,7 +29,7 @@ class ReRollButton(View):
         for child in self.children:
             if type(child) == Button:
                 child.disabled = True
-        await interaction.response.edit_message(view=None)
+        await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = False
         self.stop()
 
@@ -53,15 +53,14 @@ class ConfirmCancelButtons(View):
         self.confirmed: bool = None
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, custom_id="confirm")
-    async def submit_callback(self, button: Button, interaction: Interaction) -> None:
+    async def confirm_callback(self, button: Button, interaction: Interaction) -> None:
         """Callback for the confirm button."""
         button.label += " ✅"
         button.disabled = True
         for child in self.children:
-            if type(child) == Button and child.custom_id == "cancel":
+            if type(child) == Button:
                 child.disabled = True
-                break
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = True
         self.stop()
 
@@ -71,10 +70,9 @@ class ConfirmCancelButtons(View):
         button.label += " ✅"
         button.disabled = True
         for child in self.children:
-            if type(child) == Button and child.custom_id == "confirm":
+            if type(child) == Button:
                 child.disabled = True
-                break
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = False
         self.stop()
 

@@ -257,7 +257,7 @@ class Roll(commands.Cog):
         url: Option(ValidThumbnailURL, description="URL of the thumbnail", required=True),
         hidden: Option(
             bool,
-            description="Make the response only visible to you (default true).",
+            description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
@@ -269,28 +269,27 @@ class Roll(commands.Cog):
             description=f"Your image may be seen when for **{roll_type}** rolls. Are you sure you want to upload it?",
             image=url,
             level="info",
-            ephemeral=True,
+            ephemeral=hidden,
             view=view,
         )
         await view.wait()
 
         if not view.confirmed:
-            embed = discord.Embed(title="Upload cancelled", color=EmbedColor.INFO.value)
+            embed = discord.Embed(title="Upload cancelled", color=EmbedColor.WARNING.value)
             await msg.edit_original_response(embed=embed, view=None)
             return
-        if view.confirmed:
-            self.bot.guild_svc.add_roll_result_thumb(ctx, roll_type, url)
-            await msg.delete_original_response()
 
-            await present_embed(
-                ctx,
-                title="Roll Result Thumbnail Added",
-                description=f"Added thumbnail for `{roll_type}` roll results",
-                image=url,
-                level="success",
-                ephemeral=hidden,
-                log=True,
-            )
+        self.bot.guild_svc.add_roll_result_thumb(ctx, roll_type, url)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Roll result thumbnail added\n{url}")
+
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title="Roll result thumbnail added",
+                description="",
+                color=EmbedColor.SUCCESS.value,
+            ).set_image(url=url)
+        )
 
 
 def setup(bot: Valentina) -> None:

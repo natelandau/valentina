@@ -293,12 +293,16 @@ class Admin(commands.Cog):
         # Show results
         if len(fields) > 0:
             self.bot.guild_svc.update_or_add(ctx.guild, update_data)
+
+            updates = ", ".join(f"`{k}={v}`" for k, v in update_data.items() if k != "modified")
+
+            await self.bot.guild_svc.send_to_audit_log(ctx, f"Settings updated: {updates}")
+
             await present_embed(
                 ctx,
                 title="Settings Updated",
                 fields=fields,
                 level="success",
-                log=True,
                 ephemeral=True,
             )
 
@@ -333,7 +337,16 @@ class Admin(commands.Cog):
     @discord.guild_only()
     @commands.has_permissions(administrator=True)
     async def kick(
-        self, ctx: Context, member: discord.Member, *, reason: str = "No reason given"
+        self,
+        ctx: Context,
+        member: discord.Member,
+        *,
+        reason: str = "No reason given",
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Kick a target member, by ID or mention."""
         if member.id == ctx.author.id:
@@ -346,11 +359,10 @@ class Admin(commands.Cog):
 
         await present_embed(
             ctx,
-            title="Kick Successful",
-            description=f"Kicked {member.mention} ({member})",
-            fields=[("Reason", reason)] if reason else [],
-            level="success",
-            ephemeral=True,
+            title=f"{member.mention} ({member.id}) kicked from guild",
+            description=reason,
+            level="warning",
+            ephemeral=hidden,
             log=True,
         )
 
@@ -358,7 +370,16 @@ class Admin(commands.Cog):
     @discord.guild_only()
     @commands.has_permissions(ban_members=True)
     async def ban(
-        self, ctx: Context, user: discord.User, *, reason: str = "No reason given"
+        self,
+        ctx: Context,
+        user: discord.User,
+        *,
+        reason: str = "No reason given",
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Ban a target member, by ID or mention."""
         if user := discord.utils.get(ctx.guild.members, id=user.id):
@@ -374,30 +395,43 @@ class Admin(commands.Cog):
 
         await present_embed(
             ctx,
-            title="Ban Successful",
-            description=f"Banned {user.mention} ({user})",
-            fields=[("Reason", reason)] if reason else [],
-            level="success",
-            ephemeral=True,
+            title=f"{user.mention} ({user.id}) banned from guild",
+            description=reason,
+            level="warning",
+            ephemeral=hidden,
             log=True,
         )
 
     @moderate.command()
     @discord.guild_only()
     @commands.has_permissions(administrator=True)
-    async def unban(self, ctx: Context, user: discord.User) -> None:
+    async def unban(
+        self,
+        ctx: Context,
+        user: discord.User,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Revoke ban from a banned user."""
         try:
             await ctx.guild.unban(user)
-        except discord.HTTPException as e:
-            raise Exception("This user has not been banned.") from e
+        except discord.HTTPException:
+            await present_embed(
+                ctx,
+                title=f"{user.display_name} ({user.id}) was not banned",
+                level="info",
+                ephemeral=True,
+            )
+            return
 
         await present_embed(
             ctx,
-            title="Unban Successful",
-            description=f"Unbanned `{user} ({user.id})`.",
-            level="success",
-            ephemeral=True,
+            description=f"Unban `{user.display_name} ({user.id})`.",
+            level="warning",
+            ephemeral=hidden,
             log=True,
         )
 
@@ -415,6 +449,11 @@ class Admin(commands.Cog):
             str,
             description="The reason for the ban",
             default="No reason provided",
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
         ),
     ) -> None:
         """Ban the supplied members from the guild. Limited to 10 at a time."""
@@ -446,8 +485,8 @@ class Admin(commands.Cog):
             ctx,
             title="Mass Ban Successful",
             description=f"Banned **{count}** {p.plural_noun('member', count)}",
-            level="success",
-            ephemeral=True,
+            level="warning",
+            ephemeral=hidden,
             log=True,
         )
 
@@ -486,7 +525,7 @@ class Admin(commands.Cog):
             description=f"The slowmode cooldown is now `{seconds}` {p.plural_noun('second', seconds)}"
             if seconds > 0
             else "Slowmode is now disabled",
-            level="success",
+            level="warning",
         )
 
         return
@@ -525,9 +564,8 @@ class Admin(commands.Cog):
         )
         await present_embed(
             ctx,
-            title="Channel Locked",
-            description=f"{ctx.author.display_name} locked this channel",
-            fields=[("Reason", reason)],
+            title=f"{ctx.author.display_name} locked this channel",
+            description=reason,
             level="warning",
             ephemeral=hidden,
         )
@@ -567,10 +605,9 @@ class Admin(commands.Cog):
         )
         await present_embed(
             ctx,
-            title="Channel Unlocked",
-            description=f"{ctx.author.display_name} unlocked this channel",
-            fields=[("Reason", reason)],
-            level="info",
+            title=f"{ctx.author.display_name} unlocked this channel",
+            description=reason,
+            level="warning",
             ephemeral=hidden,
         )
 
@@ -600,9 +637,8 @@ class Admin(commands.Cog):
             count = len(await purge(limit=limit, reason=reason))
             await present_embed(
                 ctx,
-                title="Channel Purged",
-                description=f"Purged **{count}** {p.plural_noun('message', count)} from this channel",
-                level="success",
+                title=f"Purged `{count}` {p.plural_noun('message', count)} from this channel",
+                level="warning",
                 ephemeral=True,
             )
             return
@@ -643,9 +679,8 @@ class Admin(commands.Cog):
             )
             await present_embed(
                 ctx,
-                title="Channel Purged",
-                description=f"Purged **{count}** {p.plural_noun('message', count)} from **{member.display_name}** in this channel",
-                level="success",
+                title=f"Purged `{count}` {p.plural_noun('message', count)} from `{member.display_name}` in this channel",
+                level="warning",
                 ephemeral=True,
             )
             return
@@ -679,9 +714,8 @@ class Admin(commands.Cog):
             count = len(await purge(limit=limit, reason=reason, check=lambda m: m.author.bot))
             await present_embed(
                 ctx,
-                title="Channel Purged",
-                description=f"Purged **{count}** {p.plural_noun('message',count)} from bots in this channel",
-                level="success",
+                title=f"Purged `{count}` bot {p.plural_noun('message',count)} in this channel",
+                level="warning",
                 ephemeral=True,
             )
             return
@@ -722,9 +756,8 @@ class Admin(commands.Cog):
             )
             await present_embed(
                 ctx,
-                title="Channel Purged",
-                description=f"Purged **{count}** {p.plural_noun('message',count)} containing `{phrase}` in this channel",
-                level="success",
+                title=f"Purged `{count}` {p.plural_noun('message',count)} containing `{phrase}` in this channel",
+                level="warning",
                 ephemeral=True,
             )
             return
@@ -743,7 +776,17 @@ class Admin(commands.Cog):
     @emoji.command(name="add")
     @discord.option("name", description="The name of the emoji.")
     @discord.option("url", description="The image url of the emoji.")
-    async def emoji_add(self, ctx: Context, name: str, url: str) -> None:
+    async def emoji_add(
+        self,
+        ctx: Context,
+        name: str,
+        url: str,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Add a custom emoji to this guild."""
         await ctx.assert_permissions(manage_emojis=True)
         async with self.bot.http_session.get(url) as res:
@@ -752,14 +795,16 @@ class Admin(commands.Cog):
                     name=name, image=BytesIO(await res.read()).getvalue()
                 )
 
+                await self.bot.guild_svc.send_to_audit_log(
+                    ctx, f"Add emoji to guild: `:{name}:`\n{url}"
+                )
+
                 await present_embed(
                     ctx,
-                    title="Emoji Created",
-                    description=f"Custom emoji `:{name}:` added",
+                    title=f"Custom emoji `:{name}:` added",
                     image=url,
-                    log=True,
                     level="success",
-                    ephemeral=True,
+                    ephemeral=hidden,
                 )
 
             else:
@@ -767,7 +812,6 @@ class Admin(commands.Cog):
                     ctx,
                     title="Emoji Creation Failed",
                     description=f"An HTTP error ocurred while fetching the image: {res.status} {res.reason}",
-                    log=True,
                     level="error",
                     ephemeral=True,
                 )
@@ -783,6 +827,11 @@ class Admin(commands.Cog):
             description="The reason for deleting this emoji",
             default="No reason provided",
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete a custom emoji from this guild."""
         await ctx.assert_permissions(manage_emojis=True)
@@ -790,14 +839,16 @@ class Admin(commands.Cog):
             if emoji.name == name:
                 await emoji.delete(reason=reason)
 
+                await self.bot.guild_svc.send_to_audit_log(
+                    ctx, f"Delete emoji from guild: `:{name}:`"
+                )
+
                 await present_embed(
                     ctx,
-                    title="Emoji Deleted",
-                    description=f"`:{name}:` deleted",
-                    fields=[("Reason", reason)] if reason else [],
-                    log=True,
+                    title=f"Emoji `:{name}:` deleted",
+                    description=reason,
                     level="success",
-                    ephemeral=True,
+                    ephemeral=hidden,
                 )
                 return
 

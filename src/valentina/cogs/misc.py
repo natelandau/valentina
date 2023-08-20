@@ -50,7 +50,7 @@ class Misc(commands.Cog):
 
         show_buttons = len(embeds) > 1
         paginator = discord.ext.pages.Paginator(  # type: ignore
-            embeds,
+            list(embeds),
             author_check=False,
             show_disabled=show_buttons,
             show_indicator=show_buttons,

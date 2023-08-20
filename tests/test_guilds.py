@@ -1,7 +1,5 @@
 # type: ignore
 """Test the GuildService class."""
-from unittest.mock import MagicMock
-
 import discord
 import pytest
 from dirty_equals import IsPartialDict
@@ -22,11 +20,11 @@ class TestGuildService:
 
     guild_svc = GuildService()
 
-    def test_update_or_add(self):
+    def test_update_or_add(self, mocker):
         """Test GuildService.update_or_add()."""
         # GIVEN a guild that is not in the database and items in the cache
         self.guild_svc.settings_cache = {1002002002: {"a": "b"}, 1: {"a": "b"}, 2: {"c": "d"}}
-        mock_guild = MagicMock()
+        mock_guild = mocker.MagicMock()
         mock_guild.id = 1002002002
         mock_guild.name = "Test Guild"
         mock_guild.__class__ = discord.Guild

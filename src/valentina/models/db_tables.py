@@ -15,10 +15,12 @@ from peewee import (
     IntegerField,
     Model,
     TextField,
+    fn,
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
 from valentina.models.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS
+from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
 # Import configuration from environment variables
@@ -319,6 +321,25 @@ class Character(BaseModel):
                 all_traits[category].append((trait.name, value, max_value, dots))
 
         return all_traits
+
+    def add_custom_trait(
+        self, name: str, description: str, category: TraitCategory, value: int, max_value: int
+    ) -> None:
+        """Add a custom trait to the character."""
+        # Confirm the custom trait name is unique for this character
+        if CustomTrait.get_or_none(
+            (CustomTrait.character == self) & (fn.lower(CustomTrait.name) == name.lower())
+        ):
+            raise errors.ValidationError(f"Trait name `{name}` already exists.")
+
+        CustomTrait.create(
+            character=self,
+            name=name,
+            description=description,
+            category=category,
+            value=value,
+            max_value=max_value,
+        )
 
     def get_trait_value(self, trait: Trait | CustomTrait) -> int:
         """Return the character's value of a trait."""
