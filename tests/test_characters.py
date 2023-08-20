@@ -118,6 +118,10 @@ class TestCharacterModel:
         # THEN check the trait value is returned correctly
         assert character.get_trait_value(trait) == 2
 
+        # WHEN the get_trait_value method is called with a TraitValue that does not exist
+        # THEN return 0 for the value
+        assert character.get_trait_value(TraitValue(trait=Trait.get_by_id(2))) == 0
+
     def test_character_set_trait_value(self, mock_ctx):
         """Test character.set_trait_value()."""
         # GIVEN a character with custom traits
