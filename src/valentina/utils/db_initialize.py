@@ -21,6 +21,7 @@ from valentina.models.db_tables import (
     CustomTrait,
     Guild,
     Macro,
+    RollThumbnail,
     Trait,
     TraitCategory,
     TraitCategoryClass,
@@ -169,6 +170,10 @@ class MigrateDatabase:
         if Version.parse(self.db_version) <= Version.parse("1.4.0"):
             logger.info("DATABASE: Migrate database from v1.4.0")
             self.__1_4_0()
+
+        if Version.parse(self.db_version) <= Version.parse("1.4.1"):
+            logger.info("DATABASE: Migrate database from v1.4.1")
+            self.__1_4_1()
 
     def _column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.
@@ -554,6 +559,23 @@ class MigrateDatabase:
             logger.debug(f"DATABASE: Set {character} as a player character")
             character.data["player_character"] = True
             character.save()
+
+    def __1_4_1(self) -> None:
+        """Migrate from version 1.4.1."""
+        logger.debug("DATABASE: Roll result thumbs to RollResultType enum name")
+        for thumb in RollThumbnail.select():
+            if thumb.roll_type.lower() == "botch":
+                thumb.roll_type = "BOTCH"
+            elif thumb.roll_type.lower() == "failure":
+                thumb.roll_type = "FAILURE"
+            elif thumb.roll_type.lower() == "success":
+                thumb.roll_type = "SUCCESS"
+            elif thumb.roll_type.lower() == "critical success":
+                thumb.roll_type = "CRITICAL"
+            elif thumb.roll_type.lower() in ["other", "n/a"]:
+                thumb.roll_type = "OTHER"
+
+            thumb.save()
 
 
 class PopulateDatabase:

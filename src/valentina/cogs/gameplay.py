@@ -195,7 +195,7 @@ class Roll(commands.Cog):
             str,
             description="Type of roll to add the thumbnail to",
             required=True,
-            choices=[roll_type.value for roll_type in RollResultType],
+            choices=[roll_type.name for roll_type in RollResultType],
         ),
         url: Option(ValidThumbnailURL, description="URL of the thumbnail", required=True),
         hidden: Option(
