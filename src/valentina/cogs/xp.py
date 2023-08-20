@@ -50,6 +50,7 @@ class Xp(commands.Cog, name="XP"):
         old_value = character.get_trait_value(trait)
         category = trait.category.name
 
+        # Compute the cost of the upgrade
         if character.char_class.name == "Vampire" and trait.name in fetch_clan_disciplines(
             character.clan_name
         ):
@@ -63,44 +64,42 @@ class Xp(commands.Cog, name="XP"):
         if old_value == 0:
             upgrade_cost = get_trait_new_value(trait.name, category)
 
-        remaining_xp = character.data["experience"] - upgrade_cost
-        if remaining_xp < 0:
-            await present_embed(
-                ctx,
-                title="Error: Not enough XP",
-                description=f"**{trait.name}** upgrade cost is **{upgrade_cost} XP**. You have **{character.data['experience']} XP**.",
-                level="error",
-                ephemeral=hidden,
-            )
-            return
-
         if old_value >= get_max_trait_value(trait.name, category):
             await present_embed(
                 ctx,
                 title=f"Error: {trait.name} at max value",
-                description=f"**{trait.name}** is already at max value of {old_value}.",
+                description=f"**{trait.name}** is already at max value of `{old_value}`",
                 level="error",
-                ephemeral=hidden,
+                ephemeral=True,
             )
             return
 
-        view = ConfirmCancelButtons(ctx.author)
+        # Compute if the character has enough xp to upgrade
+        current_xp = character.data.get("experience", 0)
+        remaining_xp = current_xp - upgrade_cost
 
+        if remaining_xp < 0:
+            await present_embed(
+                ctx,
+                title="Error: Not enough XP",
+                description=f"**{trait.name}** upgrade cost is `{upgrade_cost}` xp.  You only have `{current_xp}` xp.",
+                level="error",
+                ephemeral=True,
+            )
+            return
+
+        # Present the confirmation message
+        view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Upgrade {trait.name}?",
-            description=f"Upgrading **{trait.name}** from **{old_value}** to **{old_value + 1}** dots will cost **{upgrade_cost} XP**",
-            fields=[
-                ("Current XP", character.data["experience"]),
-                ("XP Cost", str(upgrade_cost)),
-                ("Remaining XP", character.data["experience"] - upgrade_cost),
-            ],
-            inline_fields=True,
-            ephemeral=True,
+            title=f"Upgrade `{trait.name}` from `{old_value}` {p.plural_noun('dot', old_value)} to `{old_value + 1}` {p.plural_noun('dot', old_value + 1)} for `{upgrade_cost}` xp?",
+            description=f"After making this upgrade you will have `{remaining_xp}` xp remaining",
+            ephemeral=hidden,
             level="info",
             view=view,
         )
         await view.wait()
+
         if not view.confirmed:
             embed = discord.Embed(title="Upgrade cancelled", color=EmbedColor.INFO.value)
             await msg.edit_original_response(embed=embed, view=None)
@@ -119,31 +118,24 @@ class Xp(commands.Cog, name="XP"):
 
         logger.debug(f"XP: {character.name} {trait.name} upgraded by {ctx.author.name}")
 
-        await msg.delete_original_response()
         await self.bot.guild_svc.send_to_audit_log(
             ctx,
             f"`{trait.name}` upgraded from `{old_value}` to `{new_value}` for `{character.name}`",
         )
-        await present_embed(
-            ctx=ctx,
-            title=f"{character.name} upgraded",
-            level="success",
-            fields=[
-                ("Trait", trait.name),
-                ("Original Value", str(old_value)),
-                ("New Value", str(new_value)),
-                ("XP Cost", str(upgrade_cost)),
-                ("Remaining XP", str(new_experience)),
-            ],
-            inline_fields=True,
-            ephemeral=hidden,
+
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"`{trait.name}` upgraded from `{old_value}` to `{new_value}` for `{character.name}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
         )
 
     @xp.command(name="add", description="Add experience to a character")
     async def add_xp(
         self,
         ctx: discord.ApplicationContext,
-        exp: Option(int, description="The amount of experience to add", required=True),
+        xp: Option(int, description="The amount of experience to add", required=True),
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",
@@ -164,27 +156,26 @@ class Xp(commands.Cog, name="XP"):
             )
             return
 
-        exp = int(exp)
-        new_exp = character.data["experience"] + exp if character.data.get("experience") else exp
-        new_total = (
-            character.data["experience_total"] + exp if character.data.get("experience") else exp
-        )
+        current_xp = character.data.get("experience", 0)
+        current_total = character.data.get("experience_total", 0)
+        new_xp = current_xp + xp
+        new_total = current_total + xp
 
         self.bot.char_svc.update_or_add(
             ctx,
             character=character,
             data={
-                "experience": new_exp,
+                "experience": new_xp,
                 "experience_total": new_total,
             },
         )
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"`{exp}` XP added to `{character.name}`")
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"`{xp}` xp added to `{character.name}`")
         await present_embed(
             ctx=ctx,
             title=f"{character.name} gained experience",
             fields=[
-                ("XP Added", str(exp)),
-                ("Current XP", new_exp),
+                ("XP Added", str(xp)),
+                ("Current XP", new_xp),
                 ("All time XP", f"{new_total}"),
             ],
             inline_fields=True,
@@ -217,45 +208,37 @@ class Xp(commands.Cog, name="XP"):
             )
             return
 
-        cp = int(cp)
-        new_total = (
-            character.data["cool_points_total"] + cp
-            if character.data.get("cool_points_total")
-            else cp
-        )
+        current_cp = character.data.get("cool_points_total", 0)
+        current_xp = character.data.get("experience", 0)
+        current_xp_total = character.data.get("experience_total", 0)
 
-        new_xp = (
-            character.data["experience"] + (cp * COOL_POINT_VALUE)
-            if character.data.get("experience")
-            else cp * COOL_POINT_VALUE
-        )
-        new_xp_total = (
-            character.data["experience_total"] + new_xp
-            if character.data.get("experience_total")
-            else new_xp
-        )
+        xp_amount = cp * COOL_POINT_VALUE
+
+        new_xp = current_xp + xp_amount
+        new_xp_total = current_xp_total + xp_amount
+        new_cp_total = current_cp + cp
 
         self.bot.char_svc.update_or_add(
             ctx,
             character=character,
             data={
-                "cool_points_total": new_total,
-                "experience": new_xp_total,
+                "cool_points_total": new_cp_total,
+                "experience": new_xp,
                 "experience_total": new_xp_total,
             },
         )
         logger.info(f"CP: {character} cool points updated by {ctx.author.name}")
         await self.bot.guild_svc.send_to_audit_log(
             ctx,
-            f"`{cp}` cool {p.plural_noun('point', cp)} ({cp * COOL_POINT_VALUE} XP) added to `{character.name}`",
+            f"`{cp}` cool {p.plural_noun('point', cp)} ({xp_amount} xp) added to `{character.name}`",
         )
         await present_embed(
             ctx=ctx,
             title=f"{character.name} gained cool points",
             fields=[
                 ("Cool Points Added", str(cp)),
-                ("All time Cool Points", f"{new_total}"),
-                ("XP Added", str(new_xp)),
+                ("All time Cool Points", f"{new_cp_total}"),
+                ("XP Added", str(xp_amount)),
                 ("Current XP", f"{new_xp_total}"),
             ],
             level="success",
