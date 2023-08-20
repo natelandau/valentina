@@ -156,7 +156,7 @@ class Help(commands.Cog):
         for line in changelog.split("\n"):
             paginator.add_line(line)
 
-        pages: list[discord.Embed] = []
+        pages_to_send: list[discord.Embed] = []
         for page in paginator.pages:
             embed = discord.Embed(
                 title="Valentina Changelog",
@@ -164,11 +164,11 @@ class Help(commands.Cog):
                 url="https://github.com/natelandau/valentina/releases",
             )
             embed.set_thumbnail(url=ctx.bot.user.display_avatar)
-            pages.append(embed)
+            pages_to_send.append(embed)
 
-        show_buttons = len(pages) > 1
+        show_buttons = len(pages_to_send) > 1
         paginator = discord.ext.pages.Paginator(  # type: ignore
-            pages=pages,
+            pages=pages_to_send,  # type: ignore [arg-type]
             author_check=False,
             show_disabled=show_buttons,
             show_indicator=show_buttons,

@@ -11,6 +11,7 @@ from .modals import (
     NPCModal,
     ProfileModal,
 )
+from .thumbnail_review import ThumbnailReview
 
 __all__ = [
     "BioModal",
@@ -23,4 +24,5 @@ __all__ = [
     "present_embed",
     "ProfileModal",
     "ReRollButton",
+    "ThumbnailReview",
 ]

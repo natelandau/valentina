@@ -11,11 +11,16 @@ from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
 from valentina.models.bot import Valentina
-from valentina.models.constants import ChannelPermission, TraitPermissions, XPPermissions
+from valentina.models.constants import (
+    ChannelPermission,
+    RollResultType,
+    TraitPermissions,
+    XPPermissions,
+)
 from valentina.models.statistics import Statistics
 from valentina.utils import Context, errors
 from valentina.utils.converters import ValidChannelName
-from valentina.views import present_embed
+from valentina.views import ThumbnailReview, present_embed
 
 p = inflect.engine()
 
@@ -324,6 +329,15 @@ class Admin(commands.Cog):
         """Show server settings for this guild."""
         embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
         await ctx.respond(embed=embed, ephemeral=hidden)
+
+    @admin.command()
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def review_result_thumbnails(
+        self, ctx: discord.ApplicationContext, roll_type: Option(RollResultType, required=True)
+    ) -> None:
+        """Review all result thumbnails for this guild."""
+        await ThumbnailReview(ctx, roll_type).send(ctx)
 
     ### MODERATION COMMANDS ################################################################
 
@@ -859,8 +873,6 @@ class Admin(commands.Cog):
             level="error",
             ephemeral=True,
         )
-
-    ##################################################
 
 
 def setup(bot: Valentina) -> None:
