@@ -87,6 +87,7 @@ class Characters(commands.Cog, name="Character"):
         # Ensure the user is in the database
         self.bot.user_svc.fetch_user(ctx)
 
+        # Require a clan for vampires
         if char_class.name.lower() == "vampire" and not vampire_clan:
             await present_embed(
                 ctx,
@@ -127,7 +128,10 @@ class Characters(commands.Cog, name="Character"):
         for trait, value in trait_values_from_chargen:
             character.set_trait_value(trait, value)
 
-        logger.info(f"CHARACTER: Create character [{character.id}] {character.name}")
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Created player character: `{character.full_name}` as a `{char_class.name}`"
+        )
+        logger.info(f"CHARACTER: Create character {character}")
 
     @chars.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
