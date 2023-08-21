@@ -67,7 +67,7 @@ repos:
             exclude: tests/
 
     - repo: "https://github.com/jendrikseipp/vulture"
-      rev: "v2.8"
+      rev: "v2.9"
       hooks:
           - id: vulture
 

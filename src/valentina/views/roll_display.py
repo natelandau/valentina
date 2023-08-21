@@ -1,7 +1,4 @@
 """Display and manipulate roll outcomes."""
-
-from dataclasses import dataclass
-
 import discord
 import inflect
 
@@ -11,20 +8,6 @@ from valentina.models.dicerolls import DiceRoll
 p = inflect.engine()
 
 
-@dataclass
-class _Trait:
-    """Class to store Trait information.
-
-    Attributes:
-        name (str): The name of the trait.
-        value (int): The value of the trait.
-    """
-
-    name: str | None
-    value: int
-
-
-#############################################################################
 class RollDisplay:
     """Display and manipulate roll outcomes.
 

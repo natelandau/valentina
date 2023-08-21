@@ -50,7 +50,7 @@
         ruff          = "^0.0.280"
         sh            = "^2.0.6"
         shellcheck-py = "^0.9.0.5"
-        vulture       = "^2.8"
+        vulture       = "^2.9"
 
 [tool.black]
     line-length = 100
@@ -79,7 +79,7 @@
         'raise Exit',
         'raise typer\.Exit',
     ]
-    fail_under = 25
+    fail_under = 50
     precision = 1
     show_missing = true
     skip_covered = true
@@ -243,12 +243,22 @@
 [tool.vulture] # https://pypi.org/project/vulture/
     exclude = ["test_cog.py"]
     # ignore_decorators = ["@app.route", "@require_*"]
-    ignore_names = ["args", "kwargs", "request", "version"]
-    # make_whitelist = true
+    ignore_names = [
+        "*callback",
+        "*interaction*",
+        "Meta",
+        "args",
+        "kwargs",
+        "on_*",
+        "request",
+        "setup",
+        "version",
+    ]
+    make_whitelist = false
     min_confidence = 80
-    paths          = ["src", "tests"]
-    sort_by_size   = true
-    verbose        = false
+    paths = ["src", "tests"]
+    sort_by_size = true
+    verbose = false
 
 [tool.poe.tasks]
 

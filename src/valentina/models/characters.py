@@ -413,7 +413,7 @@ class CharacterService:
             return character
 
         if data:
-            # DEBUG: Log each key and value being updated.
+            # FIXME: Log each key and value being updated.
             for key, value in data.items():
                 logger.debug(f"DATABASE: Update {character} `{key}:{value}`")
 
