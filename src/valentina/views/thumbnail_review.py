@@ -7,8 +7,6 @@ from discord.ui import Button
 from valentina.models.constants import ChannelPermission, EmbedColor, RollResultType
 from valentina.models.db_tables import RollThumbnail
 
-# TODO: Make the paginator work with multiple interactions. Currently, a single interaction disables the paginator.
-
 
 class DeleteOrCategorize(discord.ui.View):
     """A view for deleting or categorizing a thumbnail."""

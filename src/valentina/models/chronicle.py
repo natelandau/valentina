@@ -18,8 +18,6 @@ from valentina.utils.helpers import time_now
 class ChronicleService:
     """Chronicle Manager cache/in-memory database."""
 
-    # TODO: Ability renumber chapters
-
     def __init__(self) -> None:
         """Initialize the ChronicleService."""
         # Caches to avoid database queries

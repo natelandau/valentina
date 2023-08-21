@@ -143,8 +143,6 @@ class Chronicle(commands.Cog):
     @chronicle.command(name="view", description="View a chronicle")
     async def view_chronicle(self, ctx: discord.ApplicationContext) -> None:
         """View a chronicle."""
-        # TODO: Allow viewing any chronicle
-
         chronicle = self.bot.chron_svc.fetch_active(ctx)
         npcs = self.bot.chron_svc.fetch_all_npcs(chronicle)
         chapters = self.bot.chron_svc.fetch_all_chapters(chronicle)

@@ -209,7 +209,6 @@ async def select_player_character(ctx: discord.AutocompleteContext) -> list[Opti
     if (guild := ctx.interaction.guild) is None:
         return []
 
-    # TODO: Check for chars associated with a user
     characters = ctx.bot.char_svc.fetch_all_player_characters(guild.id)  # type: ignore [attr-defined]
     all_chars = []
     for character in characters:

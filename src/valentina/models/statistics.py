@@ -9,10 +9,7 @@ from valentina.models.db_tables import Character, RollStatistic
 
 
 class Statistics:
-    """Compute and display statistics.
-
-    # TODO: Add support for pulling statistics for a specific time period.
-    """
+    """Compute and display statistics."""
 
     def __init__(
         self,

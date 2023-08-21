@@ -39,8 +39,6 @@ from valentina.views import (
 )
 from valentina.views.character_sheet import show_sheet
 
-# TODO: Add a way to mark a character as dead
-
 
 class Characters(commands.Cog, name="Character"):
     """Create, manage, update, and claim characters."""
