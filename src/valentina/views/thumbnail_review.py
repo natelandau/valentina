@@ -54,10 +54,13 @@ class DeleteOrCategorize(discord.ui.View):
         )  # view=None removes all buttons
         self.stop()
 
-    @discord.ui.button(label="Done", style=discord.ButtonStyle.secondary, custom_id="done", row=1)
-    async def done_callback(self, button: Button, interaction: discord.Interaction) -> None:
+    @discord.ui.button(
+        label="✅ Complete Review", style=discord.ButtonStyle.primary, custom_id="done", row=1
+    )
+    async def done_callback(
+        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+    ) -> None:
         """Callback for the re-roll button."""
-        button.label += " ✅"
         await interaction.response.edit_message(
             embed=discord.Embed(title="Done reviewing thumbnails", color=EmbedColor.INFO.value),
             view=None,
