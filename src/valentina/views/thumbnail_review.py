@@ -4,7 +4,7 @@ import discord
 from discord.ext import pages
 from discord.ui import Button
 
-from valentina.models.constants import ChannelPermission, EmbedColor, RollResultType
+from valentina.constants import ChannelPermission, EmbedColor, RollResultType
 from valentina.models.db_tables import RollThumbnail
 
 

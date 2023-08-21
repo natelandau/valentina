@@ -5,7 +5,7 @@ from typing import Any
 
 import discord
 
-from valentina.models.constants import EmbedColor
+from valentina.constants import EmbedColor
 
 
 async def error_log_embed(

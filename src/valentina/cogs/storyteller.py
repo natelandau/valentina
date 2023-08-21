@@ -4,13 +4,15 @@ import discord
 import inflect
 from discord.commands import Option
 from discord.ext import commands
+from loguru import logger
 from peewee import fn
 
+from valentina.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.db_tables import VampireClan
 from valentina.utils.converters import (
     ValidCharacterClass,
+    ValidCharacterName,
     ValidCharacterObject,
     ValidClan,
     ValidTrait,
@@ -27,8 +29,13 @@ from valentina.utils.options import (
 )
 from valentina.utils.perform_roll import perform_roll
 from valentina.utils.storyteller import storyteller_character_traits
-from valentina.views import ConfirmCancelButtons, present_embed
-from valentina.views.character_sheet import sheet_embed, show_sheet
+from valentina.views import (
+    CharGenWizard,
+    ConfirmCancelButtons,
+    present_embed,
+    sheet_embed,
+    show_sheet,
+)
 
 p = inflect.engine()
 
@@ -45,8 +52,83 @@ class StoryTeller(commands.Cog):
         checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
     )
 
-    @storyteller.command(name="create_character", description="Create a new npc character")
+    @storyteller.command(name="create_full_character", description="Create a full npc character")
     async def create_story_char(
+        self,
+        ctx: discord.ApplicationContext,
+        char_class: Option(
+            ValidCharacterClass,
+            name="char_class",
+            description="The character's class",
+            autocomplete=select_char_class,
+            required=True,
+        ),
+        first_name: Option(ValidCharacterName, "Character's name", required=True),
+        last_name: Option(ValidCharacterName, "Character's last name", required=True),
+        nickname: Option(ValidCharacterName, "Character's nickname", required=False, default=None),
+        vampire_clan: Option(
+            ValidClan,
+            name="vampire_clan",
+            description="The character's clan (only for vampires)",
+            autocomplete=select_vampire_clan,
+            required=False,
+            default=None,
+        ),
+    ) -> None:
+        """Create a new storyteller character."""
+        # Ensure the user is in the database
+        self.bot.user_svc.fetch_user(ctx)
+
+        # Require a clan for vampires
+        if char_class.name.lower() == "vampire" and not vampire_clan:
+            await present_embed(
+                ctx,
+                title="Vampire clan required",
+                description="Please select a vampire clan",
+                level="error",
+            )
+            return
+
+        # Fetch all traits and set them
+        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
+
+        wizard = CharGenWizard(
+            ctx,
+            fetched_traits,
+            first_name=first_name,
+            last_name=last_name,
+            nickname=nickname,
+        )
+        await wizard.begin_chargen()
+        trait_values_from_chargen = await wizard.wait_until_done()
+
+        # Create the character and traits in the db
+        data: dict[str, str | int | bool] = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "nickname": nickname,
+            "storyteller_character": True,
+        }
+
+        character = self.bot.char_svc.update_or_add(
+            ctx,
+            data=data,
+            char_class=char_class,
+            clan=vampire_clan,
+        )
+
+        for trait, value in trait_values_from_chargen:
+            character.set_trait_value(trait, value)
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Created storyteller character: `{character.full_name}` as a `{char_class.name}`"
+        )
+        logger.info(f"CHARACTER: Create character {character}")
+
+    @storyteller.command(
+        name="create_rng_character", description="Create a random new npc character"
+    )
+    async def create_rnd_char(
         self,
         ctx: discord.ApplicationContext,
         gender: Option(

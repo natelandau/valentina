@@ -4,7 +4,7 @@ import discord
 from loguru import logger
 from peewee import fn
 
-from valentina.models.constants import EmbedColor, RollResultType
+from valentina.constants import EmbedColor, RollResultType
 from valentina.models.db_tables import Character, RollStatistic
 
 

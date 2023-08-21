@@ -6,9 +6,9 @@ from discord.ext import commands
 from loguru import logger
 from peewee import DoesNotExist
 
-from valentina.models.constants import EmbedColor
+from valentina.constants import EmbedColor
 from valentina.utils import errors
-from valentina.views.embeds import user_error_embed
+from valentina.views import user_error_embed
 
 
 class ErrorReporter:

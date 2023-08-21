@@ -1,7 +1,9 @@
 """Views for Valentina."""
 
 from .buttons import ConfirmCancelButtons, ReRollButton  # isort:skip
-from .embeds import present_embed
+from .character_sheet import sheet_embed, show_sheet
+from .chargen_wizard import CharGenWizard
+from .embeds import present_embed, user_error_embed
 from .modals import (
     BioModal,
     ChapterModal,
@@ -11,11 +13,13 @@ from .modals import (
     NPCModal,
     ProfileModal,
 )
+from .roll_display import RollDisplay
 from .thumbnail_review import ThumbnailReview
 
 __all__ = [
     "BioModal",
     "ChapterModal",
+    "CharGenWizard",
     "ConfirmCancelButtons",
     "CustomSectionModal",
     "MacroCreateModal",
@@ -24,5 +28,9 @@ __all__ = [
     "present_embed",
     "ProfileModal",
     "ReRollButton",
+    "RollDisplay",
+    "sheet_embed",
+    "show_sheet",
     "ThumbnailReview",
+    "user_error_embed",
 ]

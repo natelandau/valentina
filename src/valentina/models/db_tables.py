@@ -19,7 +19,7 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
-from valentina.models.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS
+from valentina.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 

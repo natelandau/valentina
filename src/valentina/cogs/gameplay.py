@@ -5,8 +5,8 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
+from valentina.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
 from valentina.models.bot import Valentina
-from valentina.models.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
 from valentina.utils import errors
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro

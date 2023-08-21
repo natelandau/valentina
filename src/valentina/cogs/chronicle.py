@@ -6,8 +6,8 @@ from discord.commands import Option
 from discord.ext import commands, pages
 from loguru import logger
 
+from valentina.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT, EmbedColor
 from valentina.utils.converters import ValidChronicle, ValidYYYYMMDD
 from valentina.utils.options import select_chapter, select_chronicle, select_note, select_npc
 from valentina.views import ChapterModal, ConfirmCancelButtons, NoteModal, NPCModal, present_embed

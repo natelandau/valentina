@@ -5,8 +5,8 @@ import arrow
 import pytest
 from discord import ApplicationContext, Role
 
+from valentina.constants import XPPermissions
 from valentina.models import UserService
-from valentina.models.constants import XPPermissions
 from valentina.models.db_tables import Character, GuildUser, User
 
 

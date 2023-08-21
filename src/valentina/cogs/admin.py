@@ -10,14 +10,14 @@ from discord.commands import Option
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
-from valentina.models.bot import Valentina
-from valentina.models.constants import (
+from valentina.constants import (
     ChannelPermission,
     RollResultType,
     TraitPermissions,
     XPPermissions,
 )
-from valentina.models.statistics import Statistics
+from valentina.models import Statistics
+from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import assert_permissions

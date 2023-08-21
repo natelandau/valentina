@@ -5,8 +5,8 @@ import pytest
 from dirty_equals import IsPartialDict
 from rich.console import Console
 
+from valentina.constants import GUILD_DEFAULTS
 from valentina.models import GuildService
-from valentina.models.constants import GUILD_DEFAULTS
 from valentina.models.db_tables import Guild
 
 # ARG001

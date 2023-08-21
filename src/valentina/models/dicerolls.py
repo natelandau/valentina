@@ -6,7 +6,7 @@ import inflect
 from loguru import logger
 from numpy.random import default_rng
 
-from valentina.models.constants import DiceType, EmbedColor, RollResultType
+from valentina.constants import DiceType, EmbedColor, RollResultType
 from valentina.models.db_tables import Character, RollStatistic
 from valentina.utils import errors
 from valentina.utils.helpers import diceroll_thumbnail

@@ -4,6 +4,7 @@ from .chronicle import ChronicleService
 from .database import DatabaseService, DBBackup
 from .guilds import GuildService
 from .macros import MacroService
+from .statistics import Statistics
 from .traits import TraitService
 from .users import UserService
 
@@ -16,4 +17,5 @@ __all__ = [
     "MacroService",
     "TraitService",
     "UserService",
+    "Statistics",
 ]

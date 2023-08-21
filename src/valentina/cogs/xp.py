@@ -6,8 +6,8 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
+from valentina.constants import COOL_POINT_VALUE, EmbedColor, XPMultiplier
 from valentina.models.bot import Valentina
-from valentina.models.constants import COOL_POINT_VALUE, EmbedColor, XPMultiplier
 from valentina.utils.converters import ValidCharTrait
 from valentina.utils.helpers import (
     fetch_clan_disciplines,
