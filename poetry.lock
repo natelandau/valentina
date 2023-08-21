@@ -1814,14 +1814,14 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "vulture"
-version = "2.8"
+version = "2.9"
 description = "Find dead code"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "vulture-2.8-py2.py3-none-any.whl", hash = "sha256:78bd44972b71d914ac382e64cacd4f56682017dcfa5929d3110ad09453796133"},
-    {file = "vulture-2.8.tar.gz", hash = "sha256:393293f183508064294b0feb4c8579e7f1f27e5bf74c9def6a3d52f38b29b599"},
+    {file = "vulture-2.9-py2.py3-none-any.whl", hash = "sha256:08247d2fc3fe75e710ccd9bd244942e6fab34e77beb564486dad80d58a2aac58"},
+    {file = "vulture-2.9.tar.gz", hash = "sha256:0f4d86ba515e67db2860539894edb4e387b25696f831234826dd72c636f0331f"},
 ]
 
 [package.dependencies]
@@ -1961,4 +1961,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
         python-versions = "^3.11"
-content-hash = "99b0341a579c10fcd9a81e72a0aca1bc412c27017fce246a2bf84309b528977e"
+content-hash = "b04355dafacdb48c6ba4fd6b8471f68953e363bffda054070e74ae7fe771012b"

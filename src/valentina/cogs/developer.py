@@ -15,7 +15,6 @@ from peewee import fn
 from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.db_tables import Character, CharacterClass, RollProbability, VampireClan
-from valentina.utils import Context
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import select_char_class
@@ -43,7 +42,7 @@ class Developer(commands.Cog):
     @logger.catch
     async def backupdb(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
             description="Make the response only visible to you (default true).",
@@ -156,7 +155,7 @@ class Developer(commands.Cog):
     @commands.guild_only()
     async def delete_developer_characters(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
             description="Make the response only visible to you (default true).",
@@ -183,7 +182,7 @@ class Developer(commands.Cog):
     @commands.is_owner()
     async def debug_send_log(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
             description="Make the response only visible to you (default true).",
@@ -290,7 +289,7 @@ class Developer(commands.Cog):
     @commands.is_owner()
     async def reload(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
             description="Make the confirmation only visible to you (default True)",
@@ -315,7 +314,7 @@ class Developer(commands.Cog):
     @commands.is_owner()
     async def servers(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         hidden: Option(
             bool,
             description="Make the server list only visible to you (default True)",

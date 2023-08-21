@@ -316,8 +316,8 @@ class StoryTeller(commands.Cog):
             character=character,
         )
 
-    @storyteller.command(name="xp_grant", description="Grant xp to a character")
-    async def xp_grant(
+    @storyteller.command(name="grant_xp", description="Grant xp to a player character")
+    async def grant_xp(
         self,
         ctx: discord.ApplicationContext,
         character: Option(
@@ -377,8 +377,8 @@ class StoryTeller(commands.Cog):
             )
         )
 
-    @storyteller.command(name="cp_grant", description="Grant a cool point to a character")
-    async def cp_grant(
+    @storyteller.command(name="grant_cp", description="Grant a cool point to a player character")
+    async def grant_cp(
         self,
         ctx: discord.ApplicationContext,
         character: Option(

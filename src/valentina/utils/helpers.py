@@ -16,6 +16,16 @@ from valentina.models.constants import (
     XPNew,
 )
 
+from .errors import BotMissingPermissionsError
+
+
+async def assert_permissions(ctx: discord.ApplicationContext, **permissions: bool) -> None:
+    """Check if the bot has the required permissions to run the command.""."""
+    if missing := [
+        perm for perm, value in permissions.items() if getattr(ctx.app_permissions, perm) != value
+    ]:
+        raise BotMissingPermissionsError(missing)
+
 
 async def fetch_random_name(gender: str | None = None, country: str = "us") -> tuple[str, str]:
     """Fetch a random name from the randomuser.me API."""

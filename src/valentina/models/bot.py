@@ -20,7 +20,6 @@ from valentina.models import (
 )
 from valentina.models.db_tables import DATABASE, Guild
 from valentina.models.errors import reporter
-from valentina.utils import Context
 
 
 class Valentina(commands.Bot):
@@ -201,10 +200,6 @@ class Valentina(commands.Bot):
         # This line allows using prefixed commands
         if message.channel.id in self.owner_channels:
             await self.process_commands(message)
-
-    async def get_application_context(self, interaction: discord.Interaction) -> Context:  # type: ignore [override]
-        """Return a custom application context."""
-        return Context(self, interaction)
 
     @property
     def http_session(self) -> ClientSession:

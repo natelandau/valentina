@@ -18,8 +18,9 @@ from valentina.models.constants import (
     XPPermissions,
 )
 from valentina.models.statistics import Statistics
-from valentina.utils import Context, errors
+from valentina.utils import errors
 from valentina.utils.converters import ValidChannelName
+from valentina.utils.helpers import assert_permissions
 from valentina.views import ThumbnailReview, present_embed
 
 p = inflect.engine()
@@ -352,7 +353,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def kick(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         member: discord.Member,
         *,
         reason: str = "No reason given",
@@ -385,7 +386,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(ban_members=True)
     async def ban(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         user: discord.User,
         *,
         reason: str = "No reason given",
@@ -421,7 +422,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def unban(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         user: discord.User,
         hidden: Option(
             bool,
@@ -454,7 +455,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def massban(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         members: Option(
             str, "The mentions, usernames, or IDs of the members to ban. Seperated by spaces"
         ),
@@ -471,7 +472,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Ban the supplied members from the guild. Limited to 10 at a time."""
-        await ctx.assert_permissions(ban_members=True)
+        await assert_permissions(ctx, ban_members=True)
         converter = MemberConverter()
         converted_members = [
             await converter.convert(ctx, member) for member in members.split()  # type: ignore # mismatching context type
@@ -509,7 +510,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def slowmode(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         seconds: Option(int, description="The slowmode cooldown in seconds, 0 to disable slowmode"),
         hidden: Option(
             bool,
@@ -521,7 +522,7 @@ class Admin(commands.Cog):
         if not isinstance(ctx.channel, discord.TextChannel):
             raise commands.BadArgument("Slowmode can only be set in text channels.")
 
-        await ctx.assert_permissions(manage_channels=True)
+        await assert_permissions(ctx, manage_channels=True)
         if not 21600 >= seconds >= 0:  # noqa: PLR2004
             await present_embed(
                 ctx,
@@ -549,7 +550,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def lock(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         *,
         reason: Option(
             str,
@@ -563,7 +564,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Disable the `Send Message` permission for the default role."""
-        await ctx.assert_permissions(manage_roles=True)
+        await assert_permissions(ctx, manage_roles=True)
 
         if not isinstance(ctx.channel, discord.TextChannel):
             raise commands.BadArgument("Only text channels can be locked")
@@ -591,7 +592,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def unlock(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         *,
         reason: Option(
             str,
@@ -605,7 +606,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Set the `Send Message` permission to the default state for the default role."""
-        await ctx.assert_permissions(manage_roles=True)
+        await assert_permissions(ctx, manage_roles=True)
         if not isinstance(ctx.channel, discord.TextChannel):
             raise commands.BadArgument("Only text channels can be locked or unlocked")
 
@@ -635,7 +636,7 @@ class Admin(commands.Cog):
     )
     async def purge_old_messages(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         limit: int,
         *,
         reason: Option(
@@ -645,7 +646,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Delete messages from this channel."""
-        await ctx.assert_permissions(read_message_history=True, manage_messages=True)
+        await assert_permissions(ctx, read_message_history=True, manage_messages=True)
 
         if purge := getattr(ctx.channel, "purge", None):
             count = len(await purge(limit=limit, reason=reason))
@@ -674,7 +675,7 @@ class Admin(commands.Cog):
     )
     async def purge_by_member(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         member: discord.Member,
         limit: int,
         *,
@@ -685,7 +686,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Purge a member's messages from this channel."""
-        await ctx.assert_permissions(read_message_history=True, manage_messages=True)
+        await assert_permissions(ctx, read_message_history=True, manage_messages=True)
 
         if purge := getattr(ctx.channel, "purge", None):
             count = len(
@@ -712,7 +713,7 @@ class Admin(commands.Cog):
     )
     async def purge_bot_messages(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         limit: int,
         *,
         reason: Option(
@@ -722,7 +723,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Purge bot messages from this channel."""
-        await ctx.assert_permissions(read_message_history=True, manage_messages=True)
+        await assert_permissions(ctx, read_message_history=True, manage_messages=True)
 
         if purge := getattr(ctx.channel, "purge", None):
             count = len(await purge(limit=limit, reason=reason, check=lambda m: m.author.bot))
@@ -751,7 +752,7 @@ class Admin(commands.Cog):
     )
     async def purge_containing(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         phrase: str,
         limit: int,
         *,
@@ -762,7 +763,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Purge messages containing a specific phrase from this channel."""
-        await ctx.assert_permissions(read_message_history=True, manage_messages=True)
+        await assert_permissions(ctx, read_message_history=True, manage_messages=True)
 
         if purge := getattr(ctx.channel, "purge", None):
             count = len(
@@ -792,7 +793,7 @@ class Admin(commands.Cog):
     @discord.option("url", description="The image url of the emoji.")
     async def emoji_add(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         name: str,
         url: str,
         hidden: Option(
@@ -802,7 +803,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Add a custom emoji to this guild."""
-        await ctx.assert_permissions(manage_emojis=True)
+        await assert_permissions(ctx, manage_emojis=True)
         async with self.bot.http_session.get(url) as res:
             if 300 > res.status >= 200:  # noqa: PLR2004
                 await ctx.guild.create_custom_emoji(
@@ -834,7 +835,7 @@ class Admin(commands.Cog):
     @discord.option("name", description="The name of the emoji to delete.")
     async def emoji_delete(
         self,
-        ctx: Context,
+        ctx: discord.ApplicationContext,
         name: str,
         reason: Option(
             str,
@@ -848,7 +849,7 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Delete a custom emoji from this guild."""
-        await ctx.assert_permissions(manage_emojis=True)
+        await assert_permissions(ctx, manage_emojis=True)
         for emoji in ctx.guild.emojis:
             if emoji.name == name:
                 await emoji.delete(reason=reason)

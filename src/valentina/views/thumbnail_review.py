@@ -7,8 +7,6 @@ from discord.ui import Button
 from valentina.models.constants import ChannelPermission, EmbedColor, RollResultType
 from valentina.models.db_tables import RollThumbnail
 
-# TODO: Make the paginator work with multiple interactions. Currently, a single interaction disables the paginator.
-
 
 class DeleteOrCategorize(discord.ui.View):
     """A view for deleting or categorizing a thumbnail."""
@@ -38,6 +36,7 @@ class DeleteOrCategorize(discord.ui.View):
 
         # Delete from database
         RollThumbnail.delete_by_id(self.thumbnail_id)
+        self.ctx.bot.guild_svc.purge_cache(self.ctx)  # type: ignore [attr-defined]
 
         # Log to audit log
         await self.ctx.bot.guild_svc.send_to_audit_log(  # type: ignore [attr-defined]
@@ -53,10 +52,13 @@ class DeleteOrCategorize(discord.ui.View):
         )  # view=None removes all buttons
         self.stop()
 
-    @discord.ui.button(label="Done", style=discord.ButtonStyle.secondary, custom_id="done", row=1)
-    async def done_callback(self, button: Button, interaction: discord.Interaction) -> None:
+    @discord.ui.button(
+        label="✅ Complete Review", style=discord.ButtonStyle.primary, custom_id="done", row=1
+    )
+    async def done_callback(
+        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+    ) -> None:
         """Callback for the re-roll button."""
-        button.label += " ✅"
         await interaction.response.edit_message(
             embed=discord.Embed(title="Done reviewing thumbnails", color=EmbedColor.INFO.value),
             view=None,
@@ -75,6 +77,7 @@ class DeleteOrCategorize(discord.ui.View):
         """Callback for the select menu."""
         # Update the thumbnail in the database
         RollThumbnail.set_by_id(self.thumbnail_id, {"roll_type": select.values[0]})
+        self.ctx.bot.guild_svc.purge_cache(self.ctx)  # type: ignore [attr-defined]
 
         # Log to audit log
         await self.ctx.bot.guild_svc.send_to_audit_log(  # type: ignore [attr-defined]

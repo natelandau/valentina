@@ -7,7 +7,6 @@ from datetime import timedelta
 
 import arrow
 import discord
-from discord import ApplicationContext
 from loguru import logger
 
 from valentina.models.constants import TraitPermissions, XPPermissions
@@ -42,7 +41,7 @@ class UserService:
 
         return f"{guild_id}_{user_id}"
 
-    def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
         """Purge the user service cache.
 
             If 'ctx' is provided, purge the cache for the specific user. If 'ctx' is None,
@@ -60,7 +59,7 @@ class UserService:
             self.user_cache = {}
             logger.debug("CACHE: Purge all user caches")
 
-    def fetch_user(self, ctx: ApplicationContext) -> User:
+    def fetch_user(self, ctx: discord.ApplicationContext) -> User:
         """Retrieve a User object from the cache or the database.
 
         Use the application context 'ctx' to fetch a User. If the User isn't present
@@ -101,7 +100,9 @@ class UserService:
 
         return user
 
-    def has_xp_permissions(self, ctx: ApplicationContext, character: Character = None) -> bool:
+    def has_xp_permissions(
+        self, ctx: discord.ApplicationContext, character: Character = None
+    ) -> bool:
         """Check if the user has permissions to add experience points.
 
         The function checks the following conditions in order:
@@ -116,7 +117,9 @@ class UserService:
         Returns:
             bool: True if the user has permissions to add xp, False otherwise.
         """
-        permissions_dict: dict[XPPermissions, Callable[[ApplicationContext, Character], bool]] = {
+        permissions_dict: dict[
+            XPPermissions, Callable[[discord.ApplicationContext, Character], bool]
+        ] = {
             XPPermissions.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
             XPPermissions.CHARACTER_OWNER_ONLY: lambda ctx, character: character
             and character.created_by.id == ctx.author.id,
@@ -141,7 +144,9 @@ class UserService:
 
         return False
 
-    def has_trait_permissions(self, ctx: ApplicationContext, character: Character = None) -> bool:
+    def has_trait_permissions(
+        self, ctx: discord.ApplicationContext, character: Character = None
+    ) -> bool:
         """Check if the user has permissions to update character trait values.
 
         The function checks the following conditions in order:
@@ -157,7 +162,7 @@ class UserService:
             bool: True if the user has permissions to update traits, False otherwise.
         """
         permissions_dict: dict[
-            TraitPermissions, Callable[[ApplicationContext, Character], bool]
+            TraitPermissions, Callable[[discord.ApplicationContext, Character], bool]
         ] = {
             TraitPermissions.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
             TraitPermissions.CHARACTER_OWNER_ONLY: lambda ctx, character: character

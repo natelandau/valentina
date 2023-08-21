@@ -104,13 +104,15 @@ Chronicles are the backbone of your role-playing adventure in Valentina Noir. Th
 
 ## 6. STORYTELLER COMMANDS
 
+Storytellers can create a private channel that is not viewable by players. This allows them to manage the game without revealing information to the players. Within this channel, they can create randomized NPCs, roll traits for those NPCs, and make updates to player characters.
+
 Storytellers can use the following commands to manage the game.
 
 -   **Use a private channel:** Use a private channel to manage the game. This will prevent other users from seeing your commands. To create a private channel, use `/admin settings`
 -   **Create Characters**: Use `/storyteller character create` to create an NPC.
 -   **Roll Dice:** Use `/storyteller roll_traits` to quickly roll dice for NPCs.
--   **Grant Characters XP**: Use `/storyteller xp_grant` to grant XP to a character.
--   **Grant Characters Cool Points**: Use `/storyteller cp_grant` to grant cool points to a character.
+-   **Grant Characters XP**: Use `/storyteller grant_xp` to grant XP to a player character.
+-   **Grant Characters Cool Points**: Use `/storyteller grant_cp` to grant cool points to a player character.
 
 ## 7. ROLES IN VALENTINA NOIR
 

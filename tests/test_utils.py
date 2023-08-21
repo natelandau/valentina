@@ -47,7 +47,6 @@ class TestProbability:
         # THEN confirm the embed is correct
         assert isinstance(embed, discord.Embed)
         result = embed.to_dict()
-        from rich import print
 
         assert result["footer"]["text"] == IsStr(regex=r"Based on [0-9,]+ trials")
         assert result["description"] == IsStr()
