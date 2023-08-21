@@ -19,6 +19,7 @@ from valentina.utils.converters import (
 )
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
+    select_any_character,
     select_char_class,
     select_country,
     select_player_character,
@@ -128,7 +129,7 @@ class StoryTeller(commands.Cog):
     @storyteller.command(
         name="create_rng_character", description="Create a random new npc character"
     )
-    async def create_rnd_char(
+    async def create_rng_char(
         self,
         ctx: discord.ApplicationContext,
         gender: Option(
@@ -284,6 +285,74 @@ class StoryTeller(commands.Cog):
             level="info",
         )
 
+    @storyteller.command()
+    async def update_character(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to delete",
+            autocomplete=select_any_character,
+            required=True,
+        ),
+        # FIXME: This does not pull custom traits
+        trait: Option(
+            ValidTrait,
+            description="Trait to update",
+            required=True,
+            autocomplete=select_trait,
+        ),
+        new_value: Option(
+            int, description="New value for the trait", required=True, min_value=0, max_value=20
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Update the value of a trait for a storyteller or player character."""
+        old_value = character.get_trait_value(trait)
+
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title=f"Update `{trait.name}`?",
+            fields=[
+                ("Old Value", str(old_value)),
+                ("New Value", new_value),
+            ],
+            inline_fields=True,
+            ephemeral=hidden,
+            level="info",
+            view=view,
+        )
+        await view.wait()
+
+        if not view.confirmed:
+            await msg.edit_original_response(
+                embed=discord.Embed(
+                    title=f"**{trait.name}** will not be updated.",
+                    color=EmbedColor.WARNING.value,
+                ),
+                view=None,
+            )
+            return
+
+        character.set_trait_value(trait, new_value)
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx,
+            f"Update trait `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`",
+        )
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=f"**{trait.name}** updated from `{old_value}` to `{new_value}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
+        )
+
     @storyteller.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
         self,
@@ -298,8 +367,8 @@ class StoryTeller(commands.Cog):
         """View a character sheet for a storyteller character."""
         await show_sheet(ctx, character=character, claimed_by=None)
 
-    @storyteller.command(name="delete_character", description="Delete a character")
-    async def delete_character(
+    @storyteller.command(name="delete_character", description="Delete a storyteller character")
+    async def delete_storyteller_character(
         self,
         ctx: discord.ApplicationContext,
         character: Option(

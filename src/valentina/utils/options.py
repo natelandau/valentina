@@ -259,6 +259,54 @@ async def select_storyteller_character(ctx: discord.ApplicationContext) -> list[
     return options
 
 
+async def select_any_character(ctx: discord.ApplicationContext) -> list[OptionChoice]:
+    """Generate a list of the user's available storyteller characters."""
+    if (guild := ctx.interaction.guild) is None:
+        return []
+
+    # Build list of storyteller characters
+    characters = ctx.bot.char_svc.fetch_all_storyteller_characters(guild_id=guild.id)  # type: ignore [attr-defined]
+
+    all_chars = []
+    for character in characters:
+        char_id = character.id
+        name = f"{character.full_name} ({character.char_class.name})"
+        all_chars.append((name, char_id))
+
+    name_search = ctx.value.casefold()
+
+    options = [
+        OptionChoice(f"{name} [Storyteller]", str(char_id))
+        for name, char_id in sorted(all_chars)
+        if name.casefold().startswith(name_search or "")
+    ]
+
+    # Build list of player characters
+    characters = ctx.bot.char_svc.fetch_all_player_characters(guild.id)  # type: ignore [attr-defined]
+    all_chars = []
+    for character in characters:
+        char_id = character.id
+        name = f"{character.name}"
+        all_chars.append((name, char_id))
+
+    name_search = ctx.value.casefold()
+
+    options.extend(
+        [
+            OptionChoice(f"{name} [Player]", str(char_id))
+            for name, char_id in sorted(all_chars)
+            if name.casefold().startswith(name_search or "")
+        ]
+    )
+
+    # Allow for winnowing down the list of characters by typing
+    if len(options) > MAX_OPTION_LIST_SIZE:
+        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
+        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
+
+    return options
+
+
 async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available common traits."""
     # Discord option can be either "trait" or "trait_one"
