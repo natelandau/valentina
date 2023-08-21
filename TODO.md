@@ -12,6 +12,6 @@
 -   [ ] Chronicle: View any chronicle, not just active one
 -   [ ] Statistics: Pull stats based on timeframe
 -   [ ] Storyteller: Add notes
--   [ ] Storyteller: Allow creating storyteller NPCs with the chargen wizard
+-   [x] Storyteller: Allow creating storyteller NPCs with the chargen wizard
 -   [ ] Storyteller: Allow updating player characters
 -   [ ] Storyteller: Allow updating storyteller characters
