@@ -10,7 +10,6 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.models.constants import MAX_CHARACTER_COUNT, EmbedColor
-from valentina.utils import Context
 
 p = inflect.engine()
 
@@ -24,7 +23,7 @@ class Owner(commands.Cog):
     @commands.command(name="db_backup")
     @commands.is_owner()
     @logger.catch
-    async def db_backup(self, ctx: Context) -> None:
+    async def db_backup(self, ctx: discord.ApplicationContext) -> None:
         """Create a backup of the database."""
         logger.info("ADMIN: Manually create database backup")
         db_file = await self.bot.db_svc.backup_database(self.bot.config)
@@ -37,7 +36,7 @@ class Owner(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def serverlist(self, ctx: Context) -> None:
+    async def serverlist(self, ctx: discord.ApplicationContext) -> None:
         """List the servers the bot is connected to."""
         servers = list(self.bot.guilds)
 
@@ -82,7 +81,7 @@ class Owner(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def send_log(self, ctx: Context) -> None:
+    async def send_log(self, ctx: discord.ApplicationContext) -> None:
         """Send the bot's logs to the user."""
         file = discord.File(self.bot.config["VALENTINA_LOG_FILE"])
         await ctx.author.send(file=file)
@@ -116,7 +115,7 @@ class Owner(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def reload(self, ctx: Context) -> None:
+    async def reload(self, ctx: discord.ApplicationContext) -> None:
         """Reloads all cogs."""
         logger.debug("Admin: Reload the bot")
         count = 0

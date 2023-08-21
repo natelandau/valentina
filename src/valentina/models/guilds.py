@@ -5,7 +5,6 @@ Note, due to ForeignKey constraints, the Guild database model is defined in data
 from datetime import datetime
 
 import discord
-from discord import ApplicationContext
 from loguru import logger
 
 from valentina.models.constants import (
@@ -28,7 +27,7 @@ class GuildService:
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
 
-    async def get_setting_review_embed(self, ctx: ApplicationContext) -> discord.Embed:
+    async def get_setting_review_embed(self, ctx: discord.ApplicationContext) -> discord.Embed:
         """Get an embed of all guild settings."""
         # Confirm channels exist in discord
         current_settings = self.fetch_guild_settings(ctx)
@@ -92,7 +91,7 @@ class GuildService:
 
         return embed
 
-    def fetch_guild_settings(self, ctx: ApplicationContext) -> dict[str, str | int | bool]:
+    def fetch_guild_settings(self, ctx: discord.ApplicationContext) -> dict[str, str | int | bool]:
         """Fetch all guild settings.
 
         This method fetches the settings for a guild, either from a cache or from the database.
@@ -119,7 +118,9 @@ class GuildService:
 
         return self.settings_cache[ctx.guild.id]
 
-    def add_roll_result_thumb(self, ctx: ApplicationContext, roll_type: str, url: str) -> None:
+    def add_roll_result_thumb(
+        self, ctx: discord.ApplicationContext, roll_type: str, url: str
+    ) -> None:
         """Add a roll result thumbnail to the database."""
         ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
@@ -134,7 +135,7 @@ class GuildService:
 
     async def create_channel(
         self,
-        ctx: ApplicationContext,
+        ctx: discord.ApplicationContext,
         channel_name: str,
         topic: str,
         position: int,
@@ -201,7 +202,7 @@ class GuildService:
         logger.debug(f"GUILD: Created or updated channel '{channel_name}' for '{ctx.guild.name}'")
         return channel
 
-    def fetch_roll_result_thumbs(self, ctx: ApplicationContext) -> dict[str, list[str]]:
+    def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
         """Get all roll result thumbnails for a guild."""
         # Fetch from cache if it exists
         if ctx.guild.id in self.roll_result_thumbs:
@@ -236,7 +237,7 @@ class GuildService:
             logger.debug("CACHE: Purge all guild caches")
 
     async def send_to_audit_log(
-        self, ctx: ApplicationContext, message: str | discord.Embed
+        self, ctx: discord.ApplicationContext, message: str | discord.Embed
     ) -> None:  # pragma: no cover
         """Send a message to the audit log channel for a guild.
 
@@ -270,7 +271,7 @@ class GuildService:
                 raise errors.MessageTooLongError from e
 
     async def send_to_error_log(
-        self, ctx: ApplicationContext, message: str | discord.Embed, error: Exception
+        self, ctx: discord.ApplicationContext, message: str | discord.Embed, error: Exception
     ) -> None:  # pragma: no cover
         """Send a message to the error log channel for a guild.
 

@@ -1,6 +1,7 @@
 """Manage chronicle data."""
 
-from discord import ApplicationContext, AutocompleteContext
+import discord
+from discord import AutocompleteContext
 from loguru import logger
 from peewee import DoesNotExist, IntegrityError
 
@@ -30,7 +31,7 @@ class ChronicleService:
         self.npc_cache: dict[int, list[ChronicleNPC]] = {}  # ch # chronicle_id. npcs
 
     def create_chronicle(
-        self, ctx: ApplicationContext, name: str, description: str | None = None
+        self, ctx: discord.ApplicationContext, name: str, description: str | None = None
     ) -> Chronicle:
         """Create and return a new chronicle in the database.
 
@@ -66,7 +67,7 @@ class ChronicleService:
 
     def create_chapter(
         self,
-        ctx: ApplicationContext,
+        ctx: discord.ApplicationContext,
         chronicle: Chronicle,
         name: str,
         short_description: str,
@@ -108,7 +109,7 @@ class ChronicleService:
 
     def create_note(
         self,
-        ctx: ApplicationContext,
+        ctx: discord.ApplicationContext,
         chronicle: Chronicle,
         name: str,
         description: str,
@@ -148,7 +149,7 @@ class ChronicleService:
 
     def create_npc(
         self,
-        ctx: ApplicationContext,
+        ctx: discord.ApplicationContext,
         chronicle: Chronicle,
         name: str,
         npc_class: str,
@@ -181,7 +182,7 @@ class ChronicleService:
 
         return npc
 
-    def delete_chronicle(self, ctx: ApplicationContext, chronicle: Chronicle) -> None:
+    def delete_chronicle(self, ctx: discord.ApplicationContext, chronicle: Chronicle) -> None:
         """Delete a chronicle and all its associated contents, also clear associated cache.
 
         Args:
@@ -205,7 +206,7 @@ class ChronicleService:
             )
             raise
 
-    def delete_chapter(self, ctx: ApplicationContext, chapter: ChronicleChapter) -> None:
+    def delete_chapter(self, ctx: discord.ApplicationContext, chapter: ChronicleChapter) -> None:
         """Delete a specified chapter and clear the chapter cache for the guild.
 
         Args:
@@ -219,7 +220,7 @@ class ChronicleService:
 
         logger.info(f"CHRONICLE: Delete Chapter {chapter.name} for guild {ctx.guild.id}")
 
-    def delete_note(self, ctx: ApplicationContext, note: ChronicleNote) -> None:
+    def delete_note(self, ctx: discord.ApplicationContext, note: ChronicleNote) -> None:
         """Delete a specified note from the chronicle and refresh the note cache for the guild.
 
         Args:
@@ -233,7 +234,7 @@ class ChronicleService:
 
         logger.info(f"CHRONICLE: Deleted Note '{note.name}' from guild ID: {ctx.guild.id}")
 
-    def delete_npc(self, ctx: ApplicationContext, npc: ChronicleNPC) -> None:
+    def delete_npc(self, ctx: discord.ApplicationContext, npc: ChronicleNPC) -> None:
         """Delete a specific NPC from the chronicle and clear the NPC cache for the guild.
 
         Args:
@@ -248,7 +249,7 @@ class ChronicleService:
 
         logger.info(f"CHRONICLE: Delete NPC '{npc.name}' from guild ID: {ctx.guild.id}")
 
-    def fetch_active(self, ctx: ApplicationContext | AutocompleteContext) -> Chronicle:
+    def fetch_active(self, ctx: discord.ApplicationContext | AutocompleteContext) -> Chronicle:
         """Fetch the active chronicle for the guild.
 
         Args:
@@ -261,7 +262,11 @@ class ChronicleService:
             NoActiveChronicleError: If no active chronicle is found.
         """
         # Determine the guild ID from the context
-        guild_id = ctx.guild.id if isinstance(ctx, ApplicationContext) else ctx.interaction.guild.id
+        guild_id = (
+            ctx.guild.id
+            if isinstance(ctx, discord.ApplicationContext)
+            else ctx.interaction.guild.id
+        )
 
         # Fetch active chronicle from the cache or database
         if guild_id in self.active_chronicle_cache and self.active_chronicle_cache[guild_id]:
@@ -280,7 +285,7 @@ class ChronicleService:
 
         return active_chronicle
 
-    def fetch_all(self, ctx: ApplicationContext | AutocompleteContext) -> list[Chronicle]:
+    def fetch_all(self, ctx: discord.ApplicationContext | AutocompleteContext) -> list[Chronicle]:
         """Fetch all chronicles for a guild.
 
         This method first checks if the guild's chronicles are present in the cache. If not, it fetches all chronicles for the guild from the database and updates the cache.
@@ -296,7 +301,11 @@ class ChronicleService:
             ValidationError: If no chronicles are found for the guild.
         """
         # Determine the guild ID from the context
-        guild_id = ctx.guild.id if isinstance(ctx, ApplicationContext) else ctx.interaction.guild.id
+        guild_id = (
+            ctx.guild.id
+            if isinstance(ctx, discord.ApplicationContext)
+            else ctx.interaction.guild.id
+        )
 
         # If the guild's chronicles are already in the cache, return them
         if guild_id in self.chronicle_cache and self.chronicle_cache[guild_id]:
@@ -481,7 +490,7 @@ class ChronicleService:
         return self.npc_cache[chronicle.id]
 
     def fetch_npc_by_name(
-        self, ctx: ApplicationContext, chronicle: Chronicle, name: str
+        self, ctx: discord.ApplicationContext, chronicle: Chronicle, name: str
     ) -> ChronicleNPC:
         """Fetch an NPC by its name.
 
@@ -511,7 +520,7 @@ class ChronicleService:
 
         return npc
 
-    def set_active(self, ctx: ApplicationContext, chronicle: Chronicle) -> None:
+    def set_active(self, ctx: discord.ApplicationContext, chronicle: Chronicle) -> None:
         """Set a chronicle as active.
 
         This method deactivates all other chronicles and sets the specified one as active.  It first fetches all chronicles for the guild, either from the cache or the database.
@@ -536,7 +545,7 @@ class ChronicleService:
         self.purge_cache(ctx)
         logger.info(f"CHRONICLE: Set {chronicle.name} as active")
 
-    def set_inactive(self, ctx: ApplicationContext) -> None:
+    def set_inactive(self, ctx: discord.ApplicationContext) -> None:
         """Set the active chronicle to inactive.
 
         This method fetches the active chronicle and sets its `is_active` status to `False`.
@@ -559,7 +568,7 @@ class ChronicleService:
 
         logger.debug(f"CHRONICLE: Set {chronicle.name} as inactive")
 
-    def purge_cache(self, ctx: ApplicationContext | None = None) -> None:
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
         """Purge the cache.
 
         This method purges the cache by either removing all entries associated with a specific guild or clearing all entries if no specific guild is provided. It uses the guild ID as the key for each cache dictionary.
@@ -589,7 +598,7 @@ class ChronicleService:
             logger.info("CHRONICLE: Purge cache")
 
     def update_chapter(
-        self, ctx: ApplicationContext, chapter: ChronicleChapter, **kwargs: str
+        self, ctx: discord.ApplicationContext, chapter: ChronicleChapter, **kwargs: str
     ) -> None:
         """Update a chapter.
 
@@ -622,7 +631,7 @@ class ChronicleService:
             raise e
 
     def update_chronicle(
-        self, ctx: ApplicationContext, chronicle: Chronicle, **kwargs: str
+        self, ctx: discord.ApplicationContext, chronicle: Chronicle, **kwargs: str
     ) -> None:
         """Update a chronicle.
 
@@ -651,7 +660,9 @@ class ChronicleService:
             )
             raise e
 
-    def update_note(self, ctx: ApplicationContext, note: ChronicleNote, **kwargs: str) -> None:
+    def update_note(
+        self, ctx: discord.ApplicationContext, note: ChronicleNote, **kwargs: str
+    ) -> None:
         """Update a note.
 
         This method updates the provided note with the values supplied through kwargs, then updates the modified timestamp, and removes the note's guild from the cache.
@@ -680,7 +691,7 @@ class ChronicleService:
             )
             raise e
 
-    def update_npc(self, ctx: ApplicationContext, npc: ChronicleNPC, **kwargs: str) -> None:
+    def update_npc(self, ctx: discord.ApplicationContext, npc: ChronicleNPC, **kwargs: str) -> None:
         """Update an NPC.
 
         This method updates the provided NPC with the values supplied through kwargs, then updates the modified timestamp, and removes the NPC's guild from the cache.

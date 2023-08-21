@@ -2,7 +2,7 @@
 
 import re
 
-from discord import ApplicationContext, AutocompleteContext
+import discord
 from loguru import logger
 
 from valentina.models.db_tables import Character, CustomSection
@@ -98,7 +98,7 @@ class CharacterService:
 
     def custom_section_update_or_add(
         self,
-        ctx: ApplicationContext,
+        ctx: discord.ApplicationContext,
         character: Character,
         section_title: str | None = None,
         section_description: str | None = None,
@@ -179,12 +179,14 @@ class CharacterService:
         return cached_chars + list(characters)
 
     def fetch_all_storyteller_characters(
-        self, ctx: ApplicationContext | AutocompleteContext = None, guild_id: int | None = None
+        self,
+        ctx: discord.ApplicationContext | discord.AutocompleteContext = None,
+        guild_id: int | None = None,
     ) -> list[Character]:
         """Fetch all StoryTeller characters for a guild, checking the cache first and then the database.
 
         Args:
-            ctx (ApplicationContext | AutocompleteContext, optional): Context object containing guild information.
+            ctx (ApplicationContext | discord.AutocompleteContext, optional): Context object containing guild information.
             guild_id (int, optional): The Discord guild ID to fetch characters for. If not provided, it will be extracted from ctx.
 
         Returns:
@@ -192,9 +194,9 @@ class CharacterService:
         """
         # Determine guild_id from the context if not provided
         if guild_id is None:
-            if isinstance(ctx, ApplicationContext):
+            if isinstance(ctx, discord.ApplicationContext):
                 guild_id = ctx.guild.id
-            elif isinstance(ctx, AutocompleteContext):
+            elif isinstance(ctx, discord.AutocompleteContext):
                 guild_id = ctx.interaction.guild.id
 
         # Initialize cache for guild_id if not present
@@ -222,14 +224,16 @@ class CharacterService:
 
         return self.storyteller_character_cache[guild_id]
 
-    def fetch_claim(self, ctx: ApplicationContext | AutocompleteContext) -> Character:
+    def fetch_claim(
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+    ) -> Character:
         """Fetch the character claimed by a user based on the context provided.
 
         This method tries to fetch the character claimed by a user from cache if available,
         otherwise, it fetches the character from the database using the character ID.
 
         Args:
-            ctx (ApplicationContext | AutocompleteContext): The context which contains the author and guild information.
+            ctx (ApplicationContext | discord.AutocompleteContext): The context which contains the author and guild information.
 
         Returns:
             Character: The claimed character.
@@ -237,7 +241,7 @@ class CharacterService:
         Raises:
             NoClaimError: If no claim is found for the given context.
         """
-        if isinstance(ctx, ApplicationContext):
+        if isinstance(ctx, discord.ApplicationContext):
             author, guild = ctx.author, ctx.guild
         else:
             author, guild = ctx.interaction.user, ctx.interaction.guild
@@ -312,7 +316,9 @@ class CharacterService:
         char_key = self.__get_char_key(guild_id, char_id)
         return any(char_key == claim for claim in self.claim_cache.values())
 
-    def purge_cache(self, ctx: ApplicationContext | None = None, with_claims: bool = False) -> None:
+    def purge_cache(
+        self, ctx: discord.ApplicationContext | None = None, with_claims: bool = False
+    ) -> None:
         """Purge all character caches. If ctx is provided, only purge the caches for that guild.
 
         Args:
@@ -368,7 +374,7 @@ class CharacterService:
 
     def update_or_add(
         self,
-        ctx: ApplicationContext,
+        ctx: discord.ApplicationContext,
         data: dict[str, str | int | bool] | None = None,
         character: Character | None = None,
         **kwargs: str | int,
@@ -422,7 +428,7 @@ class CharacterService:
 
         return Character.get_by_id(character.id)  # Have to query db again to get updated data ???
 
-    def user_has_claim(self, ctx: ApplicationContext) -> bool:
+    def user_has_claim(self, ctx: discord.ApplicationContext) -> bool:
         """Check if a user has a claim.
 
         Args:
