@@ -13,5 +13,5 @@
 -   [ ] Statistics: Pull stats based on timeframe
 -   [ ] Storyteller: Add notes
 -   [x] Storyteller: Allow creating storyteller NPCs with the chargen wizard
--   [ ] Storyteller: Allow updating player characters
--   [ ] Storyteller: Allow updating storyteller characters
+-   [x] Storyteller: Allow updating player characters
+-   [x] Storyteller: Allow updating storyteller characters

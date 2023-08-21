@@ -149,8 +149,8 @@ Players are the participants in the game, controlling individual characters and 
 
 This section provides solutions to common problems and answers to frequently asked questions. If you encounter an issue not covered here, please refer to the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina) for support.
 
-**Q: My dice rolls are not working. What's wrong?**
-**A:** Verify that you are using the correct syntax for the roll command, such as `/roll traits <stat1> <stat2>`. If the issue continues, try unclaiming and reclaiming your character.
+**Q: How do I update the value of a trait after my character is created?**
+**A:** Use `/character update` to update the value of an existing trait. However, depending on your guild settings you may not have permissions to do so. If this occurs, please contact your storyteller or an admin.
 
 **Q: I found a bug. How do I report it?**
 **A:** Please report any bugs or issues on the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina). Provide as much detail as possible to help with troubleshooting.

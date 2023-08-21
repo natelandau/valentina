@@ -550,7 +550,7 @@ class Characters(commands.Cog, name="Character"):
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Update `{trait.name}?`",
+            title=f"Update `{trait.name}`?",
             fields=[
                 ("Old Value", str(old_value)),
                 ("New Value", new_value),
