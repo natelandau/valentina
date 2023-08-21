@@ -8,8 +8,8 @@ import inflect
 from discord.ext import commands
 from loguru import logger
 
+from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.constants import MAX_CHARACTER_COUNT, EmbedColor
 
 p = inflect.engine()
 

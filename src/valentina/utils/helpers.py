@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 import discord
 from aiohttp import ClientSession
 
-from valentina.models.constants import (
+from valentina.constants import (
     CLAN_DISCIPLINES,
     DICEROLL_THUBMS,
     ChannelPermission,

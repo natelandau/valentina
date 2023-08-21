@@ -5,8 +5,8 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
+from valentina.constants import EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.constants import EmbedColor
 from valentina.utils.converters import ValidMacroFromID, ValidTraitOrCustomTrait
 from valentina.utils.options import (
     select_char_trait,

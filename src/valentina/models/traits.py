@@ -8,7 +8,7 @@ from itertools import chain
 from loguru import logger
 from peewee import DoesNotExist, fn
 
-from valentina.models.constants import TraitCategoryOrder
+from valentina.constants import TraitCategoryOrder
 from valentina.utils import errors
 
 from .db_tables import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass

@@ -7,9 +7,8 @@ from discord.ext import commands
 from loguru import logger
 from peewee import fn
 
-from valentina.character.wizard import CharGenWizard
+from valentina.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.db_tables import VampireClan
 from valentina.utils.converters import (
     ValidCharacterClass,
@@ -30,8 +29,13 @@ from valentina.utils.options import (
 )
 from valentina.utils.perform_roll import perform_roll
 from valentina.utils.storyteller import storyteller_character_traits
-from valentina.views import ConfirmCancelButtons, present_embed
-from valentina.views.character_sheet import sheet_embed, show_sheet
+from valentina.views import (
+    CharGenWizard,
+    ConfirmCancelButtons,
+    present_embed,
+    sheet_embed,
+    show_sheet,
+)
 
 p = inflect.engine()
 

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from valentina.models.constants import ChannelPermission, RollResultType
+from valentina.constants import ChannelPermission, RollResultType
 from valentina.utils.helpers import diceroll_thumbnail, num_to_circles, set_channel_perms
 
 

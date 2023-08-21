@@ -7,7 +7,7 @@ from datetime import datetime
 import discord
 from loguru import logger
 
-from valentina.models.constants import (
+from valentina.constants import (
     GUILD_DEFAULTS,
     ChannelPermission,
     EmbedColor,

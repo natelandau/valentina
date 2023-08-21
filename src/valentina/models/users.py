@@ -9,7 +9,7 @@ import arrow
 import discord
 from loguru import logger
 
-from valentina.models.constants import TraitPermissions, XPPermissions
+from valentina.constants import TraitPermissions, XPPermissions
 from valentina.models.db_tables import Character, GuildUser, User
 from valentina.utils.helpers import time_now
 

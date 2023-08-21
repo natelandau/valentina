@@ -6,9 +6,9 @@ import discord
 import pytest
 from dirty_equals import IsInstance, IsStr
 
-from valentina.models.constants import RollResultType
+from valentina.constants import RollResultType
+from valentina.models import Statistics
 from valentina.models.db_tables import Character, RollStatistic
-from valentina.models.statistics import Statistics
 
 
 @pytest.mark.usefixtures("mock_db")

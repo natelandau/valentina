@@ -3,8 +3,7 @@ import discord
 
 from valentina.models.db_tables import Character, CustomTrait, Trait
 from valentina.models.dicerolls import DiceRoll
-from valentina.views import ReRollButton
-from valentina.views.roll_display import RollDisplay
+from valentina.views import ReRollButton, RollDisplay
 
 
 async def perform_roll(

@@ -6,9 +6,8 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.character.wizard import CharGenWizard
+from valentina.constants import EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.constants import EmbedColor
 from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterClass,
@@ -32,12 +31,13 @@ from valentina.utils.options import (
 )
 from valentina.views import (
     BioModal,
+    CharGenWizard,
     ConfirmCancelButtons,
     CustomSectionModal,
     ProfileModal,
     present_embed,
+    show_sheet,
 )
-from valentina.views.character_sheet import show_sheet
 
 
 class Characters(commands.Cog, name="Character"):

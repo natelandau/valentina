@@ -4,7 +4,7 @@ from collections import defaultdict
 import discord
 from loguru import logger
 
-from valentina.models.constants import EmbedColor, RollResultType
+from valentina.constants import EmbedColor, RollResultType
 from valentina.models.db_tables import RollProbability
 from valentina.models.dicerolls import DiceRoll
 

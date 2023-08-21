@@ -12,8 +12,8 @@ from discord.ext import commands
 from loguru import logger
 from peewee import fn
 
+from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.db_tables import Character, CharacterClass, RollProbability, VampireClan
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
