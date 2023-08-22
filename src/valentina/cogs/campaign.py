@@ -1,5 +1,5 @@
 # mypy: disable-error-code="valid-type"
-"""Cog for the Chronicle commands."""
+"""Cog for the Campaign commands."""
 
 import discord
 from discord.commands import Option
@@ -8,69 +8,69 @@ from loguru import logger
 
 from valentina.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
-from valentina.utils.converters import ValidChronicle, ValidYYYYMMDD
-from valentina.utils.options import select_chapter, select_chronicle, select_note, select_npc
+from valentina.utils.converters import ValidCampaign, ValidYYYYMMDD
+from valentina.utils.options import select_campaign, select_chapter, select_note, select_npc
 from valentina.views import ChapterModal, ConfirmCancelButtons, NoteModal, NPCModal, present_embed
 
 
-class Chronicle(commands.Cog):
-    """Commands used for updating chronicles."""
+class Campaign(commands.Cog):
+    """Commands used for updating campaigns."""
 
-    # TODO: Add paginator to long embeds (e.g. chronicle list, chronicle chapters, etc.)
+    # TODO: Add paginator to long embeds (e.g. campaign list, campaign chapters, etc.)
 
     def __init__(self, bot: Valentina) -> None:
         self.bot = bot
 
-    chronicle = discord.SlashCommandGroup("chronicle", "Manage chronicles")
-    chapter = chronicle.create_subgroup(name="chapter", description="Manage chronicle chapters")
-    npc = chronicle.create_subgroup(name="npc", description="Manage chronicle NPCs")
-    notes = chronicle.create_subgroup(name="notes", description="Manage chronicle notes")
+    campaign = discord.SlashCommandGroup("campaign", "Manage campaigns")
+    chapter = campaign.create_subgroup(name="chapter", description="Manage campaign chapters")
+    npc = campaign.create_subgroup(name="npc", description="Manage campaign NPCs")
+    notes = campaign.create_subgroup(name="notes", description="Manage campaign notes")
 
-    ### CHRONICLE COMMANDS ####################################################################
+    ### CAMPAIGN COMMANDS ####################################################################
 
-    @chronicle.command(name="create", description="Create a new chronicle")
+    @campaign.command(name="create", description="Create a new campaign")
     @commands.has_permissions(administrator=True)
-    async def create_chronicle(
+    async def create_campaign(
         self,
         ctx: discord.ApplicationContext,
-        name: Option(str, description="Name of the chronicle", required=True),
+        name: Option(str, description="Name of the campaign", required=True),
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",
             default=True,
         ),
     ) -> None:
-        """Create a new chronicle."""
-        # TODO: Migrate to modal to allow setting chronicle description
+        """Create a new campaign."""
+        # TODO: Migrate to modal to allow setting campaign description
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Create new chronicle named: `{name}`?",
+            title=f"Create new campaign named: `{name}`?",
             view=view,
             ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled creating chronicle",
+                title="Cancelled creating campaign",
                 color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        chronicle = self.bot.chron_svc.create_chronicle(ctx, name=name)
+        campaign = self.bot.campaign_svc.create_campaign(ctx, name=name)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Create new chronicle: {chronicle.name}")
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Create new campaign: {campaign.name}")
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"Create new chronicle: {chronicle.name}",
+                title=f"Create new campaign: {campaign.name}",
                 description="",
                 color=EmbedColor.SUCCESS.value,
             ),
             view=None,
         )
 
-    @chronicle.command(name="current_date", description="Set the current date of a campaign")
+    @campaign.command(name="current_date", description="Set the current date of a campaign")
     async def current_date(
         self,
         ctx: discord.ApplicationContext,
@@ -82,29 +82,29 @@ class Chronicle(commands.Cog):
         ),
     ) -> None:
         """Set current date of a campaign."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
 
-        self.bot.chron_svc.update_chronicle(ctx, chronicle, current_date=date)
+        self.bot.campaign_svc.update_campaign(ctx, campaign, current_date=date)
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Set date of chronicle `{chronicle.name}` to `{date:%Y-%m-%d}`"
+            ctx, f"Set date of campaign `{campaign.name}` to `{date:%Y-%m-%d}`"
         )
         await present_embed(
             ctx,
-            title=f"Set date of chronicle `{chronicle.name}` to `{date:%Y-%m-%d}`",
+            title=f"Set date of campaign `{campaign.name}` to `{date:%Y-%m-%d}`",
             level="success",
             ephemeral=hidden,
         )
 
-    @chronicle.command(name="delete", description="Delete a chronicle")
+    @campaign.command(name="delete", description="Delete a campaign")
     @commands.has_permissions(administrator=True)
-    async def delete_chronicle(
+    async def delete_campaign(
         self,
         ctx: discord.ApplicationContext,
-        chronicle: Option(
-            ValidChronicle,
-            description="Name of the chronicle",
+        campaign: Option(
+            ValidCampaign,
+            description="Name of the campaign",
             required=True,
-            autocomplete=select_chronicle,
+            autocomplete=select_campaign,
         ),
         hidden: Option(
             bool,
@@ -112,51 +112,52 @@ class Chronicle(commands.Cog):
             default=True,
         ),
     ) -> None:
-        """Delete a chronicle."""
+        """Delete a campaign."""
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Delete chronicle `{chronicle.name}` and all associated data (NPCs, notes, chapters)?",
+            title=f"Delete campaign `{campaign.name}` and all associated data (NPCs, notes, chapters)?",
             view=view,
             ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled deleting chronicle",
+                title="Cancelled deleting campaign",
                 color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        self.bot.chron_svc.delete_chronicle(ctx, chronicle)
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Delete chronicle: {chronicle.name}")
+        self.bot.campaign_svc.delete_campaign(ctx, campaign)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Delete campaign: {campaign.name}")
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"Deleted chronicle: {chronicle.name}",
+                title=f"Deleted campaign: {campaign.name}",
                 description="",
                 color=EmbedColor.SUCCESS.value,
             ),
             view=None,
         )
 
-    @chronicle.command(name="view", description="View a chronicle")
-    async def view_chronicle(self, ctx: discord.ApplicationContext) -> None:
-        """View a chronicle."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        npcs = self.bot.chron_svc.fetch_all_npcs(chronicle)
-        chapters = self.bot.chron_svc.fetch_all_chapters(chronicle)
-        notes = self.bot.chron_svc.fetch_all_notes(chronicle)
+    @campaign.command(name="view", description="View a campaign")
+    async def view_campaign(self, ctx: discord.ApplicationContext) -> None:
+        """View a campaign."""
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        npcs = self.bot.campaign_svc.fetch_all_npcs(campaign)
+        chapters = self.bot.campaign_svc.fetch_all_chapters(campaign)
+        notes = self.bot.campaign_svc.fetch_all_notes(campaign)
 
-        chapter_list = sorted([c for c in chapters], key=lambda c: c.chapter)
+        chapter_list = sorted([c for c in chapters], key=lambda c: c.chapter_number)
         npc_list = sorted([n for n in npcs], key=lambda n: n.name)
         note_list = sorted([n for n in notes], key=lambda n: n.name)
 
-        chapter_listing = "\n".join([f"{c.chapter}. {c.name}" for c in chapter_list])
+        chapter_listing = "\n".join([f"{c.chapter_number}. {c.name}" for c in chapter_list])
 
         intro = f"""
-\u200b\n**__{chronicle.name.upper()}__**
-An overview of {chronicle.name}.
+\u200b\n**__{campaign.name.upper()}__**
+An overview of {campaign.name}.
 
 **{len(chapters)} Chapters**
 {chapter_listing}
@@ -172,37 +173,37 @@ An overview of {chronicle.name}.
         chapter_pages = []
         current_string = ""
         for chapter in chapter_list:
-            if len(current_string) + len(chapter.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
-                chapter_pages.append(f"\u200b\nChapters in **{chronicle.name}**" + current_string)
+            if len(current_string) + len(chapter.campaign_display()) > MAX_PAGE_CHARACTER_COUNT:
+                chapter_pages.append(f"\u200b\nChapters in **{campaign.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n\n{chapter.chronicle_display()}"
+            current_string += f"\n\n{chapter.campaign_display()}"
 
         if current_string:
-            chapter_pages.append(f"\u200b\nChapters in **{chronicle.name}**" + current_string)
+            chapter_pages.append(f"\u200b\nChapters in **{campaign.name}**" + current_string)
 
         ## NPCS ##
         npc_pages = []
         current_string = ""
         for npc in npc_list:
-            if len(current_string) + len(npc.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
-                npc_pages.append(f"\u200b\nNPCs in **{chronicle.name}**" + current_string)
+            if len(current_string) + len(npc.campaign_display()) > MAX_PAGE_CHARACTER_COUNT:
+                npc_pages.append(f"\u200b\nNPCs in **{campaign.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n\n{npc.chronicle_display()}"
+            current_string += f"\n\n{npc.campaign_display()}"
 
         if current_string:
-            npc_pages.append(f"\u200b\nNPCs in **{chronicle.name}**" + current_string)
+            npc_pages.append(f"\u200b\nNPCs in **{campaign.name}**" + current_string)
 
         ## NOTES ##
         note_pages = []
         current_string = ""
         for note in note_list:
-            if len(current_string) + len(note.chronicle_display()) > MAX_PAGE_CHARACTER_COUNT:
-                note_pages.append(f"\u200b\nNotes in **{chronicle.name}**" + current_string)
+            if len(current_string) + len(note.campaign_display()) > MAX_PAGE_CHARACTER_COUNT:
+                note_pages.append(f"\u200b\nNotes in **{campaign.name}**" + current_string)
                 current_string = ""
-            current_string += f"\n\n{note.chronicle_display()}"
+            current_string += f"\n\n{note.campaign_display()}"
 
         if current_string:
-            note_pages.append(f"\u200b\nNotes in **{chronicle.name}**" + current_string)
+            note_pages.append(f"\u200b\nNotes in **{campaign.name}**" + current_string)
 
         # Create a paginator with the intro page
         paginator = pages.Paginator(pages=[intro, *chapter_pages, *npc_pages, *note_pages])
@@ -214,19 +215,19 @@ An overview of {chronicle.name}.
             ctx.interaction,
             target=ctx.author,
             ephemeral=True,
-            target_message=f"Please check your DMs! The chronicle **{chronicle.name}** has been sent to you.",
+            target_message=f"Please check your DMs! The campaign **{campaign.name}** has been sent to you.",
         )
 
-    @chronicle.command(name="set_active", description="Set a chronicle as active")
+    @campaign.command(name="set_active", description="Set a campaign as active")
     @commands.has_permissions(administrator=True)
-    async def chronicle_set_active(
+    async def campaign_set_active(
         self,
         ctx: discord.ApplicationContext,
-        chronicle: Option(
-            ValidChronicle,
-            description="Name of the chronicle",
+        campaign: Option(
+            ValidCampaign,
+            description="Name of the campaign",
             required=True,
-            autocomplete=select_chronicle,
+            autocomplete=select_campaign,
         ),
         hidden: Option(
             bool,
@@ -234,38 +235,36 @@ An overview of {chronicle.name}.
             default=True,
         ),
     ) -> None:
-        """Set a chronicle as active."""
+        """Set a campaign as active."""
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Set chronicle `{chronicle.name}` as active?",
+            title=f"Set campaign `{campaign.name}` as active?",
             view=view,
             ephemeral=hidden,
         )
         await view.wait()
         if not view.confirmed:
             embed = discord.Embed(
-                title="Cancelled setting chronicle as active",
+                title="Cancelled setting campaign as active",
                 color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        self.bot.chron_svc.set_active(ctx, chronicle)
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Set chronicle as active: {chronicle.name}"
-        )
+        self.bot.campaign_svc.set_active(ctx, campaign)
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Set campaign as active: {campaign.name}")
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"Set chronicle as active: {chronicle.name}",
+                title=f"Set campaign as active: {campaign.name}",
                 color=EmbedColor.SUCCESS.value,
             ),
             view=None,
         )
 
-    @chronicle.command(name="set_inactive", description="Set a chronicle as inactive")
+    @campaign.command(name="set_inactive", description="Set a campaign as inactive")
     @commands.has_permissions(administrator=True)
-    async def chronicle_set_inactive(
+    async def campaign_set_inactive(
         self,
         ctx: discord.ApplicationContext,
         hidden: Option(
@@ -274,12 +273,12 @@ An overview of {chronicle.name}.
             default=True,
         ),
     ) -> None:
-        """Set the active chronicle as inactive."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
+        """Set the active campaign as inactive."""
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Set chronicle **{chronicle.name}** as inactive",
+            title=f"Set campaign **{campaign.name}** as inactive",
             view=view,
             ephemeral=hidden,
         )
@@ -287,27 +286,27 @@ An overview of {chronicle.name}.
         if not view.confirmed:
             embed = discord.Embed(
                 title="Cancelled",
-                description="Cancelled setting chronicle as inactive",
+                description="Cancelled setting campaign as inactive",
                 color=EmbedColor.WARNING.value,
             )
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        self.bot.chron_svc.set_inactive(ctx)
+        self.bot.campaign_svc.set_inactive(ctx)
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Set chronicle as inactive: {chronicle.name}"
+            ctx, f"Set campaign as inactive: {campaign.name}"
         )
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"Set chronicle as inactive: {chronicle.name}",
+                title=f"Set campaign as inactive: {campaign.name}",
                 color=EmbedColor.SUCCESS.value,
             ),
             view=None,
         )
 
-    @chronicle.command(name="list", description="List all chronicles")
-    async def chronicle_list(
+    @campaign.command(name="list", description="List all campaigns")
+    async def campaign_list(
         self,
         ctx: discord.ApplicationContext,
         hidden: Option(
@@ -316,24 +315,24 @@ An overview of {chronicle.name}.
             default=True,
         ),
     ) -> None:
-        """List all chronicles."""
-        chronicles = self.bot.chron_svc.fetch_all(ctx)
-        if len(chronicles) == 0:
+        """List all campaigns."""
+        campaigns = self.bot.campaign_svc.fetch_all(ctx)
+        if len(campaigns) == 0:
             await present_embed(
                 ctx,
-                title="No chronicles",
-                description="There are no chronicles\nCreate one with `/chronicle create`",
+                title="No campaigns",
+                description="There are no campaigns\nCreate one with `/campaign create`",
                 level="info",
                 ephemeral=hidden,
             )
             return
 
         fields = []
-        for c in sorted(chronicles, key=lambda x: x.name):
+        for c in sorted(campaigns, key=lambda x: x.name):
             fields.append((f"**{c.name}** (Active)" if c.is_active else f"**{c.name}**", ""))
 
-        await present_embed(ctx, title="Chronicles", fields=fields, level="info")
-        logger.debug("CHRONICLE: List all chronicles")
+        await present_embed(ctx, title="Campaigns", fields=fields, level="info")
+        logger.debug("CAMPAIGN: List all campaigns")
 
     ### NPC COMMANDS ####################################################################
 
@@ -348,7 +347,7 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Create a new NPC."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
 
         modal = NPCModal(title="Create new NPC")
         await ctx.send_modal(modal)
@@ -360,16 +359,16 @@ An overview of {chronicle.name}.
         npc_class = modal.npc_class.strip().title()
         description = modal.description.strip()
 
-        self.bot.chron_svc.create_npc(
-            ctx, chronicle=chronicle, name=name, npc_class=npc_class, description=description
+        self.bot.campaign_svc.create_npc(
+            ctx, campaign=campaign, name=name, npc_class=npc_class, description=description
         )
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Create NPC: `{name}` in `{chronicle.name}`"
+            ctx, f"Create NPC: `{name}` in `{campaign.name}`"
         )
         await present_embed(
             ctx,
-            title=f"Create NPC: `{name}` in `{chronicle.name}`",
+            title=f"Create NPC: `{name}` in `{campaign.name}`",
             level="success",
             fields=[
                 ("Class", npc_class),
@@ -395,13 +394,13 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """List all NPCs."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        npcs = self.bot.chron_svc.fetch_all_npcs(chronicle)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        npcs = self.bot.campaign_svc.fetch_all_npcs(campaign)
         if len(npcs) == 0:
             await present_embed(
                 ctx,
                 title="No NPCs",
-                description="There are no NPCs\nCreate one with `/chronicle create_npc`",
+                description="There are no NPCs\nCreate one with `/campaign create_npc`",
                 level="info",
                 ephemeral=hidden,
             )
@@ -430,8 +429,8 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Edit an NPC."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        npc = self.bot.chron_svc.fetch_npc_by_name(ctx, chronicle, npc)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        npc = self.bot.campaign_svc.fetch_npc_by_name(ctx, campaign, npc)
 
         modal = NPCModal(title="Edit NPC", npc=npc)
         await ctx.send_modal(modal)
@@ -444,14 +443,14 @@ An overview of {chronicle.name}.
             "npc_class": modal.npc_class.strip().title(),
             "description": modal.description.strip(),
         }
-        self.bot.chron_svc.update_npc(ctx, npc, **updates)
+        self.bot.campaign_svc.update_npc(ctx, npc, **updates)
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Update NPC: `{updates['name']}` in `{chronicle.name}`"
+            ctx, f"Update NPC: `{updates['name']}` in `{campaign.name}`"
         )
         await present_embed(
             ctx,
-            title=f"Update NPC: `{updates['name']}` in `{chronicle.name}`",
+            title=f"Update NPC: `{updates['name']}` in `{campaign.name}`",
             level="success",
             fields=[
                 ("Class", updates["npc_class"]),
@@ -479,8 +478,8 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Delete an NPC."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        npc = self.bot.chron_svc.fetch_npc_by_name(ctx, chronicle, npc)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        npc = self.bot.campaign_svc.fetch_npc_by_name(ctx, campaign, npc)
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
@@ -498,14 +497,14 @@ An overview of {chronicle.name}.
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        self.bot.chron_svc.delete_npc(ctx, npc)
+        self.bot.campaign_svc.delete_npc(ctx, npc)
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Delete NPC: `{npc.name}` in `{chronicle.name}`"
+            ctx, f"Delete NPC: `{npc.name}` in `{campaign.name}`"
         )
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"Delete NPC: `{npc.name}` in `{chronicle.name}`",
+                title=f"Delete NPC: `{npc.name}` in `{campaign.name}`",
                 color=EmbedColor.SUCCESS.value,
             ),
             view=None,
@@ -524,7 +523,7 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Create a new chapter."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
 
         modal = ChapterModal(title="Create new chapter")
         await ctx.send_modal(modal)
@@ -536,9 +535,9 @@ An overview of {chronicle.name}.
         short_description = modal.short_description.strip()
         description = modal.description.strip()
 
-        chapter = self.bot.chron_svc.create_chapter(
+        chapter = self.bot.campaign_svc.create_chapter(
             ctx,
-            chronicle=chronicle,
+            campaign=campaign,
             name=name,
             short_description=short_description,
             description=description,
@@ -546,11 +545,11 @@ An overview of {chronicle.name}.
 
         await self.bot.guild_svc.send_to_audit_log(
             ctx,
-            f"Create chapter: `{chapter.chapter}. {chapter.name}` in `{chronicle.name}`",
+            f"Create chapter: `{chapter.chapter_number}. {chapter.name}` in `{campaign.name}`",
         )
         await present_embed(
             ctx,
-            f"Create chapter: `{chapter.chapter}. {chapter.name}` in `{chronicle.name}`",
+            f"Create chapter: `{chapter.chapter_number}. {chapter.name}` in `{campaign.name}`",
             level="success",
             description=short_description,
             ephemeral=hidden,
@@ -567,23 +566,23 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """List all chapters."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        chapters = self.bot.chron_svc.fetch_all_chapters(chronicle)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        chapters = self.bot.campaign_svc.fetch_all_chapters(campaign)
         if len(chapters) == 0:
             await present_embed(
                 ctx,
                 title="No Chapters",
-                description="There are no chapters\nCreate one with `/chronicle create_chapter`",
+                description="There are no chapters\nCreate one with `/campaign create_chapter`",
                 level="info",
                 ephemeral=hidden,
             )
             return
 
         fields = []
-        for chapter in sorted(chapters, key=lambda x: x.chapter):
+        for chapter in sorted(chapters, key=lambda x: x.chapter_nnumber):
             fields.append(
                 (
-                    f"**{chapter.chapter}.** **__{chapter.name}__**",
+                    f"**{chapter.chapter_number}.** **__{chapter.name}__**",
                     f"{chapter.short_description}",
                 )
             )
@@ -609,8 +608,10 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Edit a chapter."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        chapter = self.bot.chron_svc.fetch_chapter_by_name(chronicle, chapter_select.split(":")[1])
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        chapter = self.bot.campaign_svc.fetch_chapter_by_name(
+            campaign, chapter_select.split(":")[1]
+        )
 
         modal = ChapterModal(title="Edit chapter", chapter=chapter)
         await ctx.send_modal(modal)
@@ -623,15 +624,15 @@ An overview of {chronicle.name}.
             "short_description": modal.short_description.strip(),
             "description": modal.description.strip(),
         }
-        self.bot.chron_svc.update_chapter(ctx, chapter, **updates)
+        self.bot.campaign_svc.update_chapter(ctx, chapter, **updates)
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Update chapter: `{updates['name']}` in `{chronicle.name}`"
+            ctx, f"Update chapter: `{updates['name']}` in `{campaign.name}`"
         )
 
         await present_embed(
             ctx,
-            title=f"Update chapter: `{updates['name']}` in `{chronicle.name}`",
+            title=f"Update chapter: `{updates['name']}` in `{campaign.name}`",
             level="success",
             description=updates["short_description"],
             ephemeral=hidden,
@@ -656,13 +657,15 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Delete a chapter."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        chapter = self.bot.chron_svc.fetch_chapter_by_name(chronicle, chapter_select.split(":")[1])
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        chapter = self.bot.campaign_svc.fetch_chapter_by_name(
+            campaign, chapter_select.split(":")[1]
+        )
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Delete Chapter `{chapter.chapter}. {chapter.name}` from `{chronicle.name}`",
+            title=f"Delete Chapter `{chapter.chapter_number}. {chapter.name}` from `{campaign.name}`",
             view=view,
             ephemeral=hidden,
         )
@@ -675,14 +678,14 @@ An overview of {chronicle.name}.
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        self.bot.chron_svc.delete_chapter(ctx, chapter)
+        self.bot.campaign_svc.delete_chapter(ctx, chapter)
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Delete chapter: `{chapter.chapter}. {chapter.name}` in `{chronicle.name}`"
+            ctx, f"Delete chapter: `{chapter.chapter_number}. {chapter.name}` in `{campaign.name}`"
         )
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"Delete chapter: `{chapter.chapter}. {chapter.name}` in `{chronicle.name}`",
+                title=f"Delete chapter: `{chapter.chapter_number}. {chapter.name}` in `{campaign.name}`",
                 color=EmbedColor.SUCCESS.value,
             ),
             view=None,
@@ -709,9 +712,9 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Create a new note."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
         chapter = (
-            self.bot.chron_svc.fetch_chapter_by_name(chronicle, chapter_select.split(":")[1])
+            self.bot.campaign_svc.fetch_chapter_by_name(campaign, chapter_select.split(":")[1])
             if chapter_select
             else None
         )
@@ -725,21 +728,21 @@ An overview of {chronicle.name}.
         name = modal.name.strip().title()
         description = modal.description.strip()
 
-        self.bot.chron_svc.create_note(
+        self.bot.campaign_svc.create_note(
             ctx,
-            chronicle=chronicle,
+            campaign=campaign,
             name=name,
             description=description,
             chapter=chapter,
         )
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Create note: `{name}` in `{chronicle.name}`"
+            ctx, f"Create note: `{name}` in `{campaign.name}`"
         )
 
         await present_embed(
             ctx,
-            title=f"Create note: `{name}` in `{chronicle.name}`",
+            title=f"Create note: `{name}` in `{campaign.name}`",
             level="success",
             description=(description[:MAX_FIELD_COUNT] + " ...")
             if len(description) > MAX_FIELD_COUNT
@@ -758,13 +761,13 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """List all notes."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        notes = self.bot.chron_svc.fetch_all_notes(chronicle)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        notes = self.bot.campaign_svc.fetch_all_notes(campaign)
         if len(notes) == 0:
             await present_embed(
                 ctx,
                 title="No Notes",
-                description="There are no notes\nCreate one with `/chronicle create_note`",
+                description="There are no notes\nCreate one with `/campaign create_note`",
                 level="info",
                 ephemeral=hidden,
             )
@@ -775,14 +778,14 @@ An overview of {chronicle.name}.
             fields.append(
                 (
                     f"**__{note.name}__**",
-                    f"**Chapter:** {note.chapter.chapter}\n{note.description}"
-                    if note.chapter
+                    f"**Chapter:** {note.chapter.chapter_number}\n{note.description}"
+                    if note.chapter_number
                     else f"{note.description}",
                 )
             )
 
         await present_embed(
-            ctx, title=f"Notes for **{chronicle.name}**", fields=fields, level="info"
+            ctx, title=f"Notes for **{campaign.name}**", fields=fields, level="info"
         )
 
     @notes.command(name="edit", description="Edit a note")
@@ -803,8 +806,8 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Edit a note."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        note = self.bot.chron_svc.fetch_note_by_id(note_select.split(":")[0])
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        note = self.bot.campaign_svc.fetch_note_by_id(note_select.split(":")[0])
 
         modal = NoteModal(title="Edit note", note=note)
         await ctx.send_modal(modal)
@@ -816,15 +819,15 @@ An overview of {chronicle.name}.
             "name": modal.name.strip().title(),
             "description": modal.description.strip(),
         }
-        self.bot.chron_svc.update_note(ctx, note, **updates)
+        self.bot.campaign_svc.update_note(ctx, note, **updates)
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Update note: `{updates['name']}` in `{chronicle.name}`"
+            ctx, f"Update note: `{updates['name']}` in `{campaign.name}`"
         )
 
         await present_embed(
             ctx,
-            title=f"Update note: `{updates['name']}` in `{chronicle.name}`",
+            title=f"Update note: `{updates['name']}` in `{campaign.name}`",
             level="success",
             description=(modal.description.strip()[:MAX_FIELD_COUNT] + " ...")
             if len(modal.description.strip()) > MAX_FIELD_COUNT
@@ -850,13 +853,13 @@ An overview of {chronicle.name}.
         ),
     ) -> None:
         """Delete a note."""
-        chronicle = self.bot.chron_svc.fetch_active(ctx)
-        note = self.bot.chron_svc.fetch_note_by_id(note_select.split(":")[0])
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        note = self.bot.campaign_svc.fetch_note_by_id(note_select.split(":")[0])
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
-            title=f"Delete note `{note.name}` from `{chronicle.name}`?",
+            title=f"Delete note `{note.name}` from `{campaign.name}`?",
             view=view,
             ephemeral=hidden,
         )
@@ -869,15 +872,15 @@ An overview of {chronicle.name}.
             await msg.edit_original_response(embed=embed, view=None)
             return
 
-        self.bot.chron_svc.delete_note(ctx, note)
+        self.bot.campaign_svc.delete_note(ctx, note)
 
         await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Delete note: `{note.name}` in `{chronicle.name}`"
+            ctx, f"Delete note: `{note.name}` in `{campaign.name}`"
         )
 
         await msg.edit_original_response(
             embed=discord.Embed(
-                title=f"Delete note: `{note.name}` in `{chronicle.name}`",
+                title=f"Delete note: `{note.name}` in `{campaign.name}`",
                 color=EmbedColor.SUCCESS.value,
             ),
             view=None,
@@ -886,4 +889,4 @@ An overview of {chronicle.name}.
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
-    bot.add_cog(Chronicle(bot))
+    bot.add_cog(Campaign(bot))

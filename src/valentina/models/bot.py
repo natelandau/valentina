@@ -10,8 +10,8 @@ from discord.ext import commands, tasks
 from loguru import logger
 
 from valentina.models import (
+    CampaignService,
     CharacterService,
-    ChronicleService,
     DatabaseService,
     GuildService,
     MacroService,
@@ -39,7 +39,7 @@ class Valentina(commands.Bot):
         self.db_svc = DatabaseService(DATABASE)
         self.guild_svc = GuildService()
         self.char_svc = CharacterService()
-        self.chron_svc = ChronicleService()
+        self.campaign_svc = CampaignService()
         self.trait_svc = TraitService()
         self.user_svc = UserService()
         self.macro_svc = MacroService()

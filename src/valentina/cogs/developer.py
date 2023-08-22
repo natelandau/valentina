@@ -265,7 +265,7 @@ class Developer(commands.Cog):
             self.bot.guild_svc.purge_cache(ctx.guild)
             self.bot.user_svc.purge_cache(ctx)
             self.bot.char_svc.purge_cache(ctx, with_claims=with_claims)
-            self.bot.chron_svc.purge_cache(ctx)
+            self.bot.campaign_svc.purge_cache(ctx)
             self.bot.macro_svc.purge(ctx)
             logger.info(f"DEVELOPER: Purge cache for {ctx.guild.name}")
 
@@ -273,7 +273,7 @@ class Developer(commands.Cog):
             self.bot.guild_svc.purge_cache()
             self.bot.user_svc.purge_cache()
             self.bot.char_svc.purge_cache(with_claims=with_claims)
-            self.bot.chron_svc.purge_cache()
+            self.bot.campaign_svc.purge_cache()
             self.bot.macro_svc.purge()
             logger.info("DEVELOPER: Purge cache for all guilds")
 

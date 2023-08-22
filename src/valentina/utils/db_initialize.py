@@ -560,8 +560,9 @@ class MigrateDatabase:
             character.data["player_character"] = True
             character.save()
 
-    def __1_4_1(self) -> None:
+    def __1_4_1(self) -> None:  # noqa: C901
         """Migrate from version 1.4.1."""
+        # Micrate roll result thumbnails
         logger.debug("DATABASE: Roll result thumbs to RollResultType enum name")
         for thumb in RollThumbnail.select():
             if thumb.roll_type.lower() == "botch":
@@ -576,6 +577,93 @@ class MigrateDatabase:
                 thumb.roll_type = "OTHER"
 
             thumb.save()
+
+        # Rename "chronicle" to "campaign"
+        if "chronicles" in self.get_tables():
+            logger.info("DATABASE: Migrate `Chronicles` to `Campaigns`")
+
+            # Collect data to migrate
+            saved_chronicles = self.db.execute_sql("SELECT * FROM chronicles;").fetchall()
+            saved_npcs = self.db.execute_sql("SELECT * FROM chronicle_npcs;").fetchall()
+            saved_notes = self.db.execute_sql("SELECT * FROM chronicle_notes;").fetchall()
+            saved_chapters = self.db.execute_sql("SELECT * FROM chronicle_chapters;").fetchall()
+
+            # MIGRATE DATA
+            # #################
+
+            # Create new tables
+            from valentina.models.db_tables import (
+                Campaign,
+                CampaignChapter,
+                CampaignNote,
+                CampaignNPC,
+            )
+
+            logger.debug("DATABASE: Create campaign tables")
+            self.db.create_tables([Campaign, CampaignChapter, CampaignNote, CampaignNPC])
+
+            logger.debug("DATABASE: Migrate campaign data")
+            for c in saved_chronicles:
+                Campaign.create(
+                    name=c[1],
+                    description=c[2],
+                    created=c[3],
+                    modified=c[4],
+                    guild=c[5],
+                    is_active=c[6],
+                    current_date=c[7],
+                )
+
+            logger.debug("DATABASE: Migrate chapter data")
+            for c in saved_chapters:
+                CampaignChapter.create(
+                    chapter_number=c[1],
+                    name=c[2],
+                    date=c[3],
+                    short_description=c[4],
+                    description=c[5],
+                    created=c[6],
+                    modified=c[7],
+                    campaign=c[8],
+                )
+
+            logger.debug("DATABASE: Migrate NPC data")
+            for n in saved_npcs:
+                CampaignNPC.create(
+                    name=n[1],
+                    description=n[2],
+                    npc_class=n[3],
+                    alive=n[4],
+                    created=n[5],
+                    modified=n[6],
+                    campaign=n[7],
+                )
+
+            logger.debug("DATABASE: Migrate note data")
+            for n in saved_notes:
+                CampaignNote.create(
+                    name=n[1],
+                    description=n[2],
+                    created=n[3],
+                    modified=n[4],
+                    campaign=n[5],
+                    user=n[6],
+                    chapter=n[7],
+                    private=n[8],
+                )
+
+            logger.debug("DATABASE: Drop old tables")
+            # Disable foreign keys
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+
+            # Drop old tables
+            self.db.execute_sql("DROP TABLE chronicles;")
+            self.db.execute_sql("DROP TABLE chronicle_npcs;")
+            self.db.execute_sql("DROP TABLE chronicle_notes;")
+            self.db.execute_sql("DROP TABLE chronicle_chapters;")
+
+            # Re-enable foreign keys
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
 
 
 class PopulateDatabase:

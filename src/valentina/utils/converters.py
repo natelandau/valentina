@@ -9,9 +9,9 @@ from discord.ext.commands import BadArgument, Converter
 from peewee import DoesNotExist, fn
 
 from valentina.models.db_tables import (
+    Campaign,
     Character,
     CharacterClass,
-    Chronicle,
     CustomSection,
     CustomTrait,
     Macro,
@@ -122,18 +122,18 @@ class ValidCharTrait(Converter):
         raise BadArgument(f"`{argument}` is not a valid trait")
 
 
-class ValidChronicle(Converter):
-    """A converter to grab a chronicle object from it's name."""
+class ValidCampaign(Converter):
+    """A converter to grab a campaign object from it's name."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> Chronicle:
-        """Convert from name to chronicle object."""
-        chronicle = Chronicle.get_or_none(
-            (fn.lower(Chronicle.name) == argument.lower()) & (Chronicle.guild_id == ctx.guild.id)
+    async def convert(self, ctx: commands.Context, argument: str) -> Campaign:
+        """Convert from name to campaign object."""
+        campaign = Campaign.get_or_none(
+            (fn.lower(Campaign.name) == argument.lower()) & (Campaign.guild_id == ctx.guild.id)
         )
-        if chronicle:
-            return chronicle
+        if campaign:
+            return campaign
 
-        raise (BadArgument(f"Chronicle {argument} not found"))
+        raise (BadArgument(f"Campaign {argument} not found"))
 
 
 class ValidClan(Converter):

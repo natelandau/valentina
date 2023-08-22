@@ -8,8 +8,8 @@
     -   transfer characters between players
         -   player can transfer their own
         -   storyteller/admin can transfer any
--   [ ] Chronicle: Renumber chapters
--   [ ] Chronicle: View any chronicle, not just active one
+-   [ ] Campaign: Renumber chapters
+-   [ ] Campaign: View any campaign, not just active one
 -   [ ] Statistics: Pull stats based on timeframe
 -   [ ] Storyteller: Add notes
 -   [x] Storyteller: Allow creating storyteller NPCs with the chargen wizard

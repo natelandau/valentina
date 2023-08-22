@@ -462,55 +462,47 @@ class MacroTrait(BaseModel):
         )
 
 
-###### Chronicle Models ######
-class Chronicle(BaseModel):
-    """Chronicle model for the database."""
+###### Campaign Models ######
 
-    name = TextField(unique=True)
-    description = TextField(null=True)
+
+class Campaign(BaseModel):
+    """Campaign model for the database."""
+
+    guild = ForeignKeyField(Guild, backref="campaigns")
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
-    guild = ForeignKeyField(Guild, backref="chronicles")
+    name = TextField(unique=True)
+    description = TextField(null=True)
     current_date = DateTimeField(null=True, formats=["%Y-%m-%d"])
     is_active = BooleanField(default=False)
-
-    def remove(self) -> None:
-        """Delete the macro and associated macro traits."""
-        for npc in self.npcs:
-            npc.delete_instance()
-
-        for note in self.notes:
-            note.delete_instance()
-
-        for chap in self.chapters:
-            chap.delete_instance()
-
-        super().delete_instance()
+    data = JSONField(null=True)
 
     class Meta:
         """Meta class for the model."""
 
-        table_name = "chronicles"
+        table_name = "campaigns"
 
 
-class ChronicleNPC(BaseModel):
+class CampaignNPC(BaseModel):
     """NPC model for the database."""
+
+    campaign = ForeignKeyField(Campaign, backref="npcs")
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
 
     name = TextField()
     description = TextField(null=True)
     npc_class = TextField(null=True)
     alive = BooleanField(default=True)
-    created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    chronicle = ForeignKeyField(Chronicle, backref="npcs")
+    data = JSONField(null=True)
 
     class Meta:
         """Meta class for the model."""
 
-        table_name = "chronicle_npcs"
+        table_name = "campaign_npcs"
 
-    def chronicle_display(self) -> str:
-        """Return the display for chronicle overview."""
+    def campaign_display(self) -> str:
+        """Return the display for campaign overview."""
         display = f"**{self.name}**"
         display += f" ({self.npc_class})" if self.npc_class else ""
         display += f"\n{self.description}" if self.description else ""
@@ -518,50 +510,54 @@ class ChronicleNPC(BaseModel):
         return display
 
 
-class ChronicleChapter(BaseModel):
-    """Chronicle Chapter model for the database."""
+class CampaignChapter(BaseModel):
+    """Campaign Chapter model for the database."""
 
-    chapter = IntegerField()
+    campaign = ForeignKeyField(Campaign, backref="chapters")
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
+    chapter_number = IntegerField()
     name = TextField(null=True)
     date = DateTimeField(null=True)
     short_description = TextField(null=True)
     description = TextField(null=True)
-    created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    chronicle = ForeignKeyField(Chronicle, backref="chapters")
+
+    data = JSONField(null=True)
 
     class Meta:
         """Meta class for the model."""
 
-        table_name = "chronicle_chapters"
+        table_name = "campaign_chapters"
 
-    def chronicle_display(self) -> str:
-        """Return the display for chronicle overview."""
-        display = f"**{self.chapter}: __{self.name}__**"
+    def campaign_display(self) -> str:
+        """Return the display for campaign overview."""
+        display = f"**{self.chapter_number}: __{self.name}__**"
         display += f"\n{self.description}" if self.description else ""
 
         return display
 
 
-class ChronicleNote(BaseModel):
-    """Notes for a chronicle."""
+class CampaignNote(BaseModel):
+    """Notes for a campaign."""
+
+    campaign = ForeignKeyField(Campaign, backref="notes")
+    chapter = ForeignKeyField(CampaignChapter, backref="notes", null=True)
+    user = ForeignKeyField(User, backref="campaign_notes")
+    created = DateTimeField(default=time_now)
+    modified = DateTimeField(default=time_now)
 
     name = TextField()
     description = TextField(null=True)
-    created = DateTimeField(default=time_now)
-    modified = DateTimeField(default=time_now)
-    chronicle = ForeignKeyField(Chronicle, backref="notes")
-    user = ForeignKeyField(User, backref="chronicle_notes")
-    chapter = ForeignKeyField(ChronicleChapter, backref="notes", null=True)
     private = BooleanField(default=False)
+    data = JSONField(null=True)
 
     class Meta:
         """Meta class for the model."""
 
-        table_name = "chronicle_notes"
+        table_name = "campaign_notes"
 
-    def chronicle_display(self) -> str:
-        """Return the display for chronicle overview."""
+    def campaign_display(self) -> str:
+        """Return the display for campaign overview."""
         display = f"**{self.name}**\n"
         display += f"{self.description}" if self.description else ""
 

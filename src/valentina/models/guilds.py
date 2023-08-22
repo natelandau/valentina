@@ -328,7 +328,7 @@ class GuildService:
             color = EmbedColor.SUCCESS.value
         elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("gameplay"):
             color = EmbedColor.GRAY.value
-        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("chronicle"):
+        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("campaign"):
             color = EmbedColor.DEFAULT.value
         else:
             color = EmbedColor.INFO.value
