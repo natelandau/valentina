@@ -5,7 +5,7 @@ This guide will help you understand and use Valentina Noir, a tool that manages 
 2. Core Concepts
 3. Character Creation & Management
 4. Gameplay
-5. Chronicles
+5. Campaigns
 6. Storyteller Commands
 7. Roles in Valentina Noir
 8. Troubleshooting & FAQ
@@ -31,7 +31,7 @@ For interactive help, run `/help` commands to see a list of available commands.
 Valentina Noir revolves around three core concepts:
 
 -   **Characters**: The main focus, with stats, traits, and abilities. They can be claimed by users for gameplay.
--   **Chronicles**: Storylines with multiple chapters, NPCs, and notes, spanning multiple gaming sessions.
+-   **Campaigns**: Storylines with multiple chapters, NPCs, and notes, spanning multiple gaming sessions.
 -   **Gameplay**: The actual game, where you roll dice and play using your character.
 -   **Storyteller Commands**: Commands for the Storyteller to manage the game.
 
@@ -75,32 +75,32 @@ Macros are a powerful tool to enhance your gaming experience, allowing for quick
 ### During Gameplay
 
 -   **Roll Dice**: Use `/roll` for various types of rolls, including stats, traits, macros, D10s, or arbitrary dice.
--   **Create Chronicle NPCs**: As you meet an important NPC, take a note of them with `/chronicle npc create`.
--   **Add Chronicle Notes**: Keep track of important information by creating notes during gameplay with `/chronicle note create`.
+-   **Create Campaign NPCs**: As you meet an important NPC, take a note of them with `/campaign npc create`.
+-   **Add Campaign Notes**: Keep track of important information by creating notes during gameplay with `/campaign note create`.
 
 ### After Gameplay
 
 -   Add or spend experience points using `/xp`.
 -   Unclaim your character using `/character unclaim`.
 
-## 5. CHRONICLES
+## 5. CAMPAIGNS
 
-Chronicles are the backbone of your role-playing adventure in Valentina Noir. They span across multiple gaming sessions and help in organizing the story, keeping track of characters and events, and providing a cohesive narrative structure. Regularly updating chapters and making use of NPCs and notes ensures that information is not lost in between gaming sessions.
+Campaigns are the backbone of your role-playing adventure in Valentina Noir. They span across multiple gaming sessions and help in organizing the story, keeping track of characters and events, and providing a cohesive narrative structure. Regularly updating chapters and making use of NPCs and notes ensures that information is not lost in between gaming sessions.
 
-### Creating and Managing Chronicles
+### Creating and Managing Campaigns
 
--   **Creating**: Use `/chronicle create` to create a new chronicle, setting the foundation for your campaign.
--   **Setting Active**: Use `/chronicle set_active` to set a chronicle as active, allowing you to add chapters, NPCs, and notes to it.
+-   **Creating**: Use `/campaign create` to create a new campaign, setting the foundation for your campaign.
+-   **Setting Active**: Use `/campaign set_active` to set a campaign as active, allowing you to add chapters, NPCs, and notes to it.
 
 ### During Gameplay
 
--   **Creating NPCs**: NPCs are vital to enriching the story. Create them during gameplay using `/chronicle npc create`.
--   **Adding Notes**: Keep track of important information by creating notes during gameplay with `/chronicle note create`.
+-   **Creating NPCs**: NPCs are vital to enriching the story. Create them during gameplay using `/campaign npc create`.
+-   **Adding Notes**: Keep track of important information by creating notes during gameplay with `/campaign note create`.
 
 ### After Gameplay
 
--   **Updating Chapters**: After each gameplay session, update the chapters using `/chronicle chapter create`. This helps in maintaining the continuity and progression of the story.
--   **Viewing**: Use commands like `/chronicle list`, `/chronicle view`, `/chronicle chapter list`, and `/chronicle npc list` to view and manage the chronicles, chapters, NPCs, and notes.
+-   **Updating Chapters**: After each gameplay session, update the chapters using `/campaign chapter create`. This helps in maintaining the continuity and progression of the story.
+-   **Viewing**: Use commands like `/campaign list`, `/campaign view`, `/campaign chapter list`, and `/campaign npc list` to view and manage the campaigns, chapters, NPCs, and notes.
 
 ## 6. STORYTELLER COMMANDS
 
@@ -131,7 +131,7 @@ The Admin is responsible for overall management and configuration of the Valenti
 
 The Storyteller is the game master, guiding the narrative and controlling non-player characters (NPCs), events, and the overall direction of the game. Responsibilities include:
 
--   **Narrative Control**: Creating and managing Chronicles, chapters, NPCs, and notes.
+-   **Narrative Control**: Creating and managing Campaigns, chapters, NPCs, and notes.
 -   **Game Management**: Rolling dice for NPCs, controlling game flow, and ensuring fair play.
 -   **Player Interaction**: Engaging with players, managing in-game events, and making judgment calls.
 -   **Commands**: Various commands like `/storyteller character create` and `/storyteller roll_traits` are available to manage the game.

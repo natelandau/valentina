@@ -3,7 +3,7 @@ import discord
 from discord.ui import InputText, Modal
 
 from valentina.constants import MAX_FIELD_COUNT, EmbedColor
-from valentina.models.db_tables import Character, ChronicleChapter, ChronicleNote, ChronicleNPC
+from valentina.models.db_tables import CampaignChapter, CampaignNote, CampaignNPC, Character
 from valentina.views import ConfirmCancelButtons
 
 
@@ -156,7 +156,7 @@ class ProfileModal(Modal):
 class NoteModal(Modal):
     """A modal for adding chapters."""
 
-    def __init__(self, note: ChronicleNote | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, note: CampaignNote | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
         self.name: str = ""
@@ -214,7 +214,7 @@ class NoteModal(Modal):
 class ChapterModal(Modal):
     """A modal for adding chapters."""
 
-    def __init__(self, chapter: ChronicleChapter | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, chapter: CampaignChapter | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
         self.name: str = ""
@@ -286,7 +286,7 @@ class ChapterModal(Modal):
 class NPCModal(Modal):
     """A modal for adding NPCs."""
 
-    def __init__(self, npc: ChronicleNPC | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, npc: CampaignNPC | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.name: str = ""
         self.description: str = ""

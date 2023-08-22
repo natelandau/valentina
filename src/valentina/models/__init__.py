@@ -1,6 +1,6 @@
 """Models for Valentina."""
+from .campaign import CampaignService
 from .characters import CharacterService
-from .chronicle import ChronicleService
 from .database import DatabaseService, DBBackup
 from .guilds import GuildService
 from .macros import MacroService
@@ -10,7 +10,7 @@ from .users import UserService
 
 __all__ = [
     "CharacterService",
-    "ChronicleService",
+    "CampaignService",
     "DatabaseService",
     "DBBackup",
     "GuildService",

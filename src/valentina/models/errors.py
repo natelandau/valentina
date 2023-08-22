@@ -40,7 +40,7 @@ class ErrorReporter:
         if isinstance(
             error,
             errors.CharacterClaimedError
-            | errors.NoActiveChronicleError
+            | errors.NoActiveCampaignError
             | errors.NoClaimError
             | errors.ValidationError
             | errors.NoMatchingItemsError,

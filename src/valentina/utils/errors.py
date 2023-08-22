@@ -68,8 +68,8 @@ class MessageTooLongError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
-class NoActiveChronicleError(Exception):
-    """Raised when a no active chronicle is found."""
+class NoActiveCampaignError(Exception):
+    """Raised when a no active campaign is found."""
 
     def __init__(
         self,
@@ -79,7 +79,7 @@ class NoActiveChronicleError(Exception):
         **kwargs: int | str | bool,
     ):
         if not msg:
-            msg = "No active chronicle found\nUse `/chronicle set_active`"
+            msg = "No active campaign found\nUse `/campaign set_active`"
         if e:
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 

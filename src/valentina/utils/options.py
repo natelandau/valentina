@@ -11,16 +11,16 @@ from valentina.utils import errors
 async def select_chapter(ctx: discord.ApplicationContext) -> list[str]:
     """Populates the autocomplete for the chapter option."""
     try:
-        chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined]
-    except errors.NoActiveChronicleError:
-        return ["No active chronicle"]
+        campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
+    except errors.NoActiveCampaignError:
+        return ["No active campaign"]
 
     chapters = []
     for chapter in sorted(
-        ctx.bot.chron_svc.fetch_all_chapters(chronicle=chronicle), key=lambda c: c.chapter  # type: ignore [attr-defined]
+        ctx.bot.campaign_svc.fetch_all_chapters(campaign=campaign), key=lambda c: c.chapter_number  # type: ignore [attr-defined]
     ):
         if chapter.name.lower().startswith(ctx.options["chapter"].lower()):
-            chapters.append(f"{chapter.chapter}: {chapter.name}")
+            chapters.append(f"{chapter.chapter_number}: {chapter.name}")
         if len(chapters) >= MAX_OPTION_LIST_SIZE:
             break
 
@@ -81,16 +81,16 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     return traits
 
 
-async def select_chronicle(ctx: discord.ApplicationContext) -> list[str]:
-    """Generate a list of available chronicles."""
-    chronicles = []
-    for c in ctx.bot.chron_svc.fetch_all(ctx):  # type: ignore [attr-defined]
-        if c.name.lower().startswith(ctx.options["chronicle"].lower()):
-            chronicles.append(c.name)
-        if len(chronicles) >= MAX_OPTION_LIST_SIZE:
+async def select_campaign(ctx: discord.ApplicationContext) -> list[str]:
+    """Generate a list of available campaigns."""
+    campaigns = []
+    for c in ctx.bot.campaign_svc.fetch_all(ctx):  # type: ignore [attr-defined]
+        if c.name.lower().startswith(ctx.options["campaign"].lower()):
+            campaigns.append(c.name)
+        if len(campaigns) >= MAX_OPTION_LIST_SIZE:
             break
 
-    return chronicles
+    return campaigns
 
 
 async def select_custom_section(ctx: discord.AutocompleteContext) -> list[str]:
@@ -173,12 +173,12 @@ async def select_macro(ctx: discord.ApplicationContext) -> list[OptionChoice]:
 async def select_note(ctx: discord.ApplicationContext) -> list[str]:
     """Populates the autocomplete for the note option."""
     try:
-        chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined]
-    except errors.NoActiveChronicleError:
-        return ["No active chronicle"]
+        campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
+    except errors.NoActiveCampaignError:
+        return ["No active campaign"]
 
     notes = []
-    for note in ctx.bot.chron_svc.fetch_all_notes(chronicle):  # type: ignore [attr-defined]
+    for note in ctx.bot.campaign_svc.fetch_all_notes(campaign):  # type: ignore [attr-defined]
         if note.name.lower().startswith(ctx.options["note"].lower()):
             notes.append(f"{note.id}: {note.name}")
         if len(notes) >= MAX_OPTION_LIST_SIZE:
@@ -190,12 +190,12 @@ async def select_note(ctx: discord.ApplicationContext) -> list[str]:
 async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
     """Populates the autocomplete for the npc option."""
     try:
-        chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined]
-    except errors.NoActiveChronicleError:
-        return ["No active chronicle"]
+        campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
+    except errors.NoActiveCampaignError:
+        return ["No active campaign"]
 
     npcs = []
-    for npc in ctx.bot.chron_svc.fetch_all_npcs(chronicle=chronicle):  # type: ignore [attr-defined]
+    for npc in ctx.bot.campaign_svc.fetch_all_npcs(campaign=campaign):  # type: ignore [attr-defined]
         if npc.name.lower().startswith(ctx.options["npc"].lower()):
             npcs.append(npc.name)
         if len(npcs) >= MAX_OPTION_LIST_SIZE:

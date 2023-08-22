@@ -72,11 +72,11 @@ def __embed1(
     embed.set_footer(text=footer)
 
     try:
-        chronicle = ctx.bot.chron_svc.fetch_active(ctx)  # type: ignore [attr-defined] # it exists
-        if chronicle.current_date and character.data.get("date_of_birth"):
-            age = arrow.get(chronicle.current_date) - arrow.get(character.data["date_of_birth"])
+        campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined] # it exists
+        if campaign.current_date and character.data.get("date_of_birth"):
+            age = arrow.get(campaign.current_date) - arrow.get(character.data["date_of_birth"])
             embed.add_field(name="Age", value=f"`{age.days // 365}`", inline=True)
-    except errors.NoActiveChronicleError:
+    except errors.NoActiveCampaignError:
         pass
 
     embed.add_field(name="Class", value=character.class_name, inline=True)
