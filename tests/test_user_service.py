@@ -5,7 +5,7 @@ import arrow
 import pytest
 from discord import ApplicationContext, Role
 
-from valentina.constants import XPPermissions
+from valentina.constants import PermissionsEditXP
 from valentina.models import UserService
 from valentina.models.db_tables import Character, GuildUser, User
 
@@ -82,18 +82,18 @@ class TestUserService:
     @pytest.mark.parametrize(
         ("xp_permissions_value", "is_admin", "is_char_owner", "hours_since_creation", "expected"),
         [
-            (XPPermissions.UNRESTRICTED.value, False, True, 38, True),
-            (XPPermissions.UNRESTRICTED.value, False, True, 38, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, True, 1, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, True, 38, False),
-            (XPPermissions.WITHIN_24_HOURS.value, True, True, 38, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, False, 1, False),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
-            (XPPermissions.STORYTELLER_ONLY.value, False, True, 1, False),
-            (XPPermissions.STORYTELLER_ONLY.value, False, False, 1, False),
-            (XPPermissions.STORYTELLER_ONLY.value, True, False, 1, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 1, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 38, False),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, True, True, 38, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, False, 1, False),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, True, 1, False),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, False, 1, False),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, True, False, 1, True),
         ],
     )
     def test_has_xp_permissions(
@@ -144,18 +144,18 @@ class TestUserService:
             "expected",
         ),
         [
-            (XPPermissions.UNRESTRICTED.value, False, True, 38, True),
-            (XPPermissions.UNRESTRICTED.value, False, True, 38, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, True, 1, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, True, 38, False),
-            (XPPermissions.WITHIN_24_HOURS.value, True, True, 38, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, False, 1, False),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
-            (XPPermissions.STORYTELLER_ONLY.value, False, True, 1, False),
-            (XPPermissions.STORYTELLER_ONLY.value, False, False, 1, False),
-            (XPPermissions.STORYTELLER_ONLY.value, True, False, 1, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 1, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 38, False),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, True, True, 38, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, False, 1, False),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, True, 1, False),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, False, 1, False),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, True, False, 1, True),
         ],
     )
     def test_has_update_trait_permissions(

@@ -12,9 +12,9 @@ from discord.ext.commands import MemberConverter
 
 from valentina.constants import (
     ChannelPermission,
+    PermissionsEditTrait,
+    PermissionsEditXP,
     RollResultType,
-    TraitPermissions,
-    XPPermissions,
 )
 from valentina.models import Statistics
 from valentina.models.bot import Valentina
@@ -134,7 +134,7 @@ class Admin(commands.Cog):
             "Whether users should be allowed to edit their traits.",
             choices=[
                 OptionChoice(x.name.title().replace("_", " "), str(x.value))
-                for x in TraitPermissions
+                for x in PermissionsEditTrait
             ],
             required=False,
         ),
@@ -142,7 +142,8 @@ class Admin(commands.Cog):
             str,
             "Whether users should be allowed to edit their XP totals.",
             choices=[
-                OptionChoice(x.name.title().replace("_", " "), str(x.value)) for x in XPPermissions
+                OptionChoice(x.name.title().replace("_", " "), str(x.value))
+                for x in PermissionsEditXP
             ],
             required=False,
         ),
@@ -191,12 +192,12 @@ class Admin(commands.Cog):
         fields = []
         update_data: dict[str, str | int | bool] = {}
         if xp_permissions is not None:
-            fields.append(("XP Permissions", XPPermissions(int(xp_permissions)).name.title()))
+            fields.append(("XP Permissions", PermissionsEditXP(int(xp_permissions)).name.title()))
             update_data["xp_permissions"] = int(xp_permissions)
 
         if trait_permissions is not None:
             fields.append(
-                ("Trait Permissions", TraitPermissions(int(trait_permissions)).name.title())
+                ("Trait Permissions", PermissionsEditTrait(int(trait_permissions)).name.title())
             )
             update_data["trait_permissions"] = int(trait_permissions)
 

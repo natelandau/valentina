@@ -9,7 +9,7 @@ import arrow
 import discord
 from loguru import logger
 
-from valentina.constants import TraitPermissions, XPPermissions
+from valentina.constants import PermissionsEditTrait, PermissionsEditXP
 from valentina.models.db_tables import Character, GuildUser, User
 from valentina.utils.helpers import time_now
 
@@ -118,15 +118,15 @@ class UserService:
             bool: True if the user has permissions to add xp, False otherwise.
         """
         permissions_dict: dict[
-            XPPermissions, Callable[[discord.ApplicationContext, Character], bool]
+            PermissionsEditXP, Callable[[discord.ApplicationContext, Character], bool]
         ] = {
-            XPPermissions.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
-            XPPermissions.CHARACTER_OWNER_ONLY: lambda ctx, character: character
+            PermissionsEditXP.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
+            PermissionsEditXP.CHARACTER_OWNER_ONLY: lambda ctx, character: character
             and character.created_by.id == ctx.author.id,
-            XPPermissions.WITHIN_24_HOURS: lambda ctx, character: character
+            PermissionsEditXP.WITHIN_24_HOURS: lambda ctx, character: character
             and character.created_by.id == ctx.author.id
             and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            XPPermissions.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            PermissionsEditXP.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
             in [x.name for x in ctx.author.roles],
         }
 
@@ -137,7 +137,7 @@ class UserService:
         if not settings:
             return False
 
-        permission = XPPermissions(settings["xp_permissions"])
+        permission = PermissionsEditXP(settings["xp_permissions"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
             return check_permission(ctx, character)
@@ -162,15 +162,15 @@ class UserService:
             bool: True if the user has permissions to update traits, False otherwise.
         """
         permissions_dict: dict[
-            TraitPermissions, Callable[[discord.ApplicationContext, Character], bool]
+            PermissionsEditTrait, Callable[[discord.ApplicationContext, Character], bool]
         ] = {
-            TraitPermissions.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
-            TraitPermissions.CHARACTER_OWNER_ONLY: lambda ctx, character: character
+            PermissionsEditTrait.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
+            PermissionsEditTrait.CHARACTER_OWNER_ONLY: lambda ctx, character: character
             and character.created_by.id == ctx.author.id,
-            TraitPermissions.WITHIN_24_HOURS: lambda ctx, character: character
+            PermissionsEditTrait.WITHIN_24_HOURS: lambda ctx, character: character
             and character.created_by.id == ctx.author.id
             and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            TraitPermissions.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            PermissionsEditTrait.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
             in [x.name for x in ctx.author.roles],
         }
 
@@ -181,7 +181,7 @@ class UserService:
         if not settings:
             return False
 
-        permission = TraitPermissions(settings["trait_permissions"])
+        permission = PermissionsEditTrait(settings["trait_permissions"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
             return check_permission(ctx, character)
