@@ -123,7 +123,7 @@ class TestUserService:
         mock_guild_svc = mocker.Mock()
 
         # Set up the mock fetch_guild_settings function
-        mock_settings = {"xp_permissions": xp_permissions_value}
+        mock_settings = {"permissions_edit_xp": xp_permissions_value}
         mock_guild_svc.fetch_guild_settings = mocker.Mock(return_value=mock_settings)
 
         mock_bot.guild_svc = mock_guild_svc
@@ -195,7 +195,7 @@ class TestUserService:
         mock_guild_svc = mocker.Mock()
 
         # Set up the mock fetch_guild_settings function
-        mock_settings = {"trait_permissions": trait_permissions_value}
+        mock_settings = {"permissions_edit_trait": trait_permissions_value}
         mock_guild_svc.fetch_guild_settings = mocker.Mock(return_value=mock_settings)
 
         mock_bot.guild_svc = mock_guild_svc

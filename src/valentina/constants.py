@@ -99,6 +99,13 @@ class PermissionsEditTrait(Enum):
     STORYTELLER_ONLY = 3
 
 
+class PermissionManageCampaign(Enum):
+    """Permissions for managing a campaign."""
+
+    UNRESTRICTED = 0
+    STORYTELLER_ONLY = 1  # Default
+
+
 class RollResultType(Enum):
     """Enum for results of a roll."""
 
@@ -210,12 +217,12 @@ CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
 GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "error_log_channel_id": None,
     "log_channel_id": None,
+    "permissions_edit_trait": PermissionsEditTrait.WITHIN_24_HOURS.value,
+    "permissions_edit_xp": PermissionsEditXP.WITHIN_24_HOURS.value,
     "storyteller_channel_id": None,
-    "trait_permissions": PermissionsEditTrait.WITHIN_24_HOURS.value,
     "use_audit_log": False,
     "use_error_log_channel": False,
     "use_storyteller_channel": False,
-    "xp_permissions": PermissionsEditXP.WITHIN_24_HOURS.value,
 }
 
 ### More Constants ###

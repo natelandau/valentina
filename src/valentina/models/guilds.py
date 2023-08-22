@@ -59,12 +59,12 @@ class GuildService:
         embed.add_field(name="\u200b", value="**CHARACTER  PERMISSIONS**", inline=False)
         embed.add_field(
             name="Editing XP",
-            value=PermissionsEditXP(current_settings["xp_permissions"]).name.title(),
+            value=PermissionsEditXP(current_settings["permissions_edit_xp"]).name.title(),
             inline=True,
         )
         embed.add_field(
             name="Editing Traits",
-            value=PermissionsEditTrait(current_settings["trait_permissions"]).name.title(),
+            value=PermissionsEditTrait(current_settings["permissions_edit_trait"]).name.title(),
             inline=True,
         )
 

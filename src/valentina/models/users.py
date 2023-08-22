@@ -137,7 +137,7 @@ class UserService:
         if not settings:
             return False
 
-        permission = PermissionsEditXP(settings["xp_permissions"])
+        permission = PermissionsEditXP(settings["permissions_edit_xp"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
             return check_permission(ctx, character)
@@ -181,7 +181,7 @@ class UserService:
         if not settings:
             return False
 
-        permission = PermissionsEditTrait(settings["trait_permissions"])
+        permission = PermissionsEditTrait(settings["permissions_edit_trait"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
             return check_permission(ctx, character)

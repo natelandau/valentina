@@ -193,13 +193,13 @@ class Admin(commands.Cog):
         update_data: dict[str, str | int | bool] = {}
         if xp_permissions is not None:
             fields.append(("XP Permissions", PermissionsEditXP(int(xp_permissions)).name.title()))
-            update_data["xp_permissions"] = int(xp_permissions)
+            update_data["permissions_edit_xp"] = int(xp_permissions)
 
         if trait_permissions is not None:
             fields.append(
                 ("Trait Permissions", PermissionsEditTrait(int(trait_permissions)).name.title())
             )
-            update_data["trait_permissions"] = int(trait_permissions)
+            update_data["permissions_edit_trait"] = int(trait_permissions)
 
         if use_audit_log is not None:
             if (
