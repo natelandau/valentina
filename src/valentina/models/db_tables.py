@@ -493,7 +493,6 @@ class CampaignNPC(BaseModel):
     name = TextField()
     description = TextField(null=True)
     npc_class = TextField(null=True)
-    alive = BooleanField(default=True)
     data = JSONField(null=True)
 
     class Meta:
@@ -518,10 +517,8 @@ class CampaignChapter(BaseModel):
     modified = DateTimeField(default=time_now)
     chapter_number = IntegerField()
     name = TextField(null=True)
-    date = DateTimeField(null=True)
     short_description = TextField(null=True)
     description = TextField(null=True)
-
     data = JSONField(null=True)
 
     class Meta:
@@ -545,10 +542,8 @@ class CampaignNote(BaseModel):
     user = ForeignKeyField(User, backref="campaign_notes")
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
-
     name = TextField()
     description = TextField(null=True)
-    private = BooleanField(default=False)
     data = JSONField(null=True)
 
     class Meta:

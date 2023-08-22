@@ -619,7 +619,6 @@ class MigrateDatabase:
                 CampaignChapter.create(
                     chapter_number=c[1],
                     name=c[2],
-                    date=c[3],
                     short_description=c[4],
                     description=c[5],
                     created=c[6],
@@ -633,7 +632,6 @@ class MigrateDatabase:
                     name=n[1],
                     description=n[2],
                     npc_class=n[3],
-                    alive=n[4],
                     created=n[5],
                     modified=n[6],
                     campaign=n[7],
@@ -649,7 +647,6 @@ class MigrateDatabase:
                     campaign=n[5],
                     user=n[6],
                     chapter=n[7],
-                    private=n[8],
                 )
 
             logger.debug("DATABASE: Drop old tables")
