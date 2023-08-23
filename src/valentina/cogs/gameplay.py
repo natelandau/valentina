@@ -6,12 +6,12 @@ from discord.commands import Option
 from discord.ext import commands
 
 from valentina.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
+from valentina.models import Probability
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
 from valentina.utils.perform_roll import perform_roll
-from valentina.utils.probability import Probability
 from valentina.views import ConfirmCancelButtons, present_embed
 
 

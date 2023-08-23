@@ -4,8 +4,8 @@ import discord
 import pytest
 from dirty_equals import IsStr
 
+from valentina.models import Probability
 from valentina.models.db_tables import RollProbability
-from valentina.utils.probability import Probability
 
 
 @pytest.mark.usefixtures("mock_db")

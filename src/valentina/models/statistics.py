@@ -99,7 +99,14 @@ class Statistics:
         return
 
     def get_text(self, with_title: bool = True) -> str:
-        """Return a string with the statistics."""
+        """Return a string with the statistics.
+
+        Args:
+            with_title (bool, optional): Whether to include the title. Defaults to True.
+
+        Returns:
+            str: String with the statistics.
+        """
         msg = "\n"
         if with_title:
             msg += f"## {self.title}\n"
@@ -121,7 +128,11 @@ class Statistics:
         return msg
 
     async def get_embed(self) -> discord.Embed:
-        """Return an embed with the statistics."""
+        """Return an embed with the statistics.
+
+        Returns:
+            discord.Embed: Embed with the statistics.
+        """
         embed = discord.Embed(
             title="",
             description=self.get_text(),
