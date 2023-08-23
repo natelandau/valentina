@@ -9,6 +9,7 @@ from loguru import logger
 from valentina.constants import EmbedColor
 from valentina.models.bot import Valentina
 from valentina.utils import errors
+from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
@@ -32,7 +33,6 @@ from valentina.utils.options import (
 from valentina.views import (
     BioModal,
     CharGenWizard,
-    ConfirmCancelButtons,
     CustomSectionModal,
     ProfileModal,
     present_embed,
@@ -307,32 +307,13 @@ class Characters(commands.Cog, name="Character"):
         """Add a custom trait to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            description=f"Create custom trait: `{name.title()}`?",
-            fields=[
-                ("Category", category.name),
-                ("Value", f"`{value!s}`"),
-                ("Max Value", f"`{max_value!s}`"),
-                ("Description", description or "_no description_"),
-            ],
-            inline_fields=True,
-            ephemeral=hidden,
-            level="info",
-            view=view,
-        )
-        await view.wait()
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title="Cancelled creating custom trait",
-                    description="",
-                    color=EmbedColor.WARNING.value,
-                ),
-                view=None,
-            )
+        title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
+
+        ###############################################33
 
         character.add_custom_trait(
             name=name,
@@ -342,15 +323,9 @@ class Characters(commands.Cog, name="Character"):
             description=description,
         )
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Custom trait `{name}` added to `{character.name}` with value `{value}`"
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Custom trait `{name}` added to `{character.name}` with value `{value}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @add.command(name="custom_section", description="Add a custom section to the character sheet")
@@ -547,43 +522,19 @@ class Characters(commands.Cog, name="Character"):
 
         old_value = character.get_trait_value(trait)
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Update `{trait.name}`?",
-            fields=[
-                ("Old Value", str(old_value)),
-                ("New Value", new_value),
-            ],
-            inline_fields=True,
-            ephemeral=hidden,
-            level="info",
-            view=view,
+        title = (
+            f"Update `{trait.name}` from `{old_value}` to `{new_value}` for `{character.full_name}`"
         )
-        await view.wait()
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title=f"**{trait.name}** will not be updated.",
-                    color=EmbedColor.WARNING.value,
-                ),
-                view=None,
-            )
+        if not confirmed:
             return
 
         character.set_trait_value(trait, new_value)
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx,
-            f"Update trait `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`",
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"**{trait.name}** updated from `{old_value}` to `{new_value}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     ### DELETE COMMANDS ####################################################################
@@ -605,37 +556,18 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Delete a custom trait from a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title="Delete Trait",
-            description=f"Confirm deleting {trait.name}",
-            ephemeral=hidden,
-            view=view,
-            level="info",
-        )
-        await view.wait()
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title=f"**{trait.name}** will not be deleted.",
-                    color=EmbedColor.WARNING.value,
-                ),
-                view=None,
-            )
+
+        title = f"Delete custom trait `{trait.name}` from `{character.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
 
         trait.delete_instance()
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Delete custom trait `{trait.name}` from `{character.name}`"
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Deleted custom trait `{trait.name}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @delete.command(name="custom_section", description="Delete a custom section from a character")
@@ -656,36 +588,17 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Delete a custom trait from a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Delete `{custom_section.title}`?",
-            ephemeral=hidden,
-            view=view,
-            level="info",
-        )
-        await view.wait()
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title=f"`{custom_section.title}` will not be deleted.",
-                    color=EmbedColor.WARNING.value,
-                ),
-                view=None,
-            )
+
+        title = f"Delete section `{custom_section.title}` from `{character.full_name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
 
         custom_section.delete_instance()
-
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Delete custom section `{custom_section.title}` from `{character.name}`"
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Deleted custom section `{custom_section.title}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
 

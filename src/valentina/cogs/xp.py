@@ -4,10 +4,10 @@ import discord
 import inflect
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 
 from valentina.constants import COOL_POINT_VALUE, EmbedColor, XPMultiplier
 from valentina.models.bot import Valentina
+from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidCharTrait
 from valentina.utils.helpers import (
     fetch_clan_disciplines,
@@ -16,7 +16,7 @@ from valentina.utils.helpers import (
     get_trait_new_value,
 )
 from valentina.utils.options import select_char_trait
-from valentina.views import ConfirmCancelButtons, present_embed
+from valentina.views import present_embed
 
 p = inflect.engine()
 
@@ -77,6 +77,8 @@ class Xp(commands.Cog, name="XP"):
         # Compute if the character has enough xp to upgrade
         current_xp = character.data.get("experience", 0)
         remaining_xp = current_xp - upgrade_cost
+        new_value = old_value + 1
+        new_experience = character.data["experience"] - upgrade_cost
 
         if remaining_xp < 0:
             await present_embed(
@@ -88,47 +90,22 @@ class Xp(commands.Cog, name="XP"):
             )
             return
 
-        # Present the confirmation message
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Upgrade `{trait.name}` from `{old_value}` {p.plural_noun('dot', old_value)} to `{old_value + 1}` {p.plural_noun('dot', old_value + 1)} for `{upgrade_cost}` xp?",
-            description=f"After making this upgrade you will have `{remaining_xp}` xp remaining",
-            ephemeral=hidden,
-            level="info",
-            view=view,
-        )
-        await view.wait()
+        title = f"Upgrade `{trait.name}` from `{old_value}` {p.plural_noun('dot', old_value)} to `{new_value}` {p.plural_noun('dot', new_value)} for `{upgrade_cost}` xp"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not view.confirmed:
-            embed = discord.Embed(title="Upgrade cancelled", color=EmbedColor.INFO.value)
-            await msg.edit_original_response(embed=embed, view=None)
+        if not confirmed:
             return
 
-        new_value = old_value + 1
-        new_experience = character.data["experience"] - upgrade_cost
-
         character.set_trait_value(trait, new_value)
-
         self.bot.char_svc.update_or_add(
             ctx,
             character=character,
             data={"experience": new_experience},
         )
 
-        logger.debug(f"XP: {character.name} {trait.name} upgraded by {ctx.author.name}")
-
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx,
-            f"`{trait.name}` upgraded from `{old_value}` to `{new_value}` for `{character.name}`",
-        )
-
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"`{trait.name}` upgraded from `{old_value}` to `{new_value}` for `{character.name}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @xp.command(name="add", description="Add experience to a character")
@@ -161,6 +138,12 @@ class Xp(commands.Cog, name="XP"):
         new_xp = current_xp + xp
         new_total = current_total + xp
 
+        title = f"Add `{xp}` xp to `{character.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
+            return
+
         self.bot.char_svc.update_or_add(
             ctx,
             character=character,
@@ -169,18 +152,10 @@ class Xp(commands.Cog, name="XP"):
                 "experience_total": new_total,
             },
         )
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"`{xp}` xp added to `{character.name}`")
-        await present_embed(
-            ctx=ctx,
-            title=f"{character.name} gained experience",
-            fields=[
-                ("XP Added", str(xp)),
-                ("Current XP", new_xp),
-                ("All time XP", f"{new_total}"),
-            ],
-            inline_fields=True,
-            level="success",
-            ephemeral=hidden,
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @xp.command(name="add_cp", description="Add cool points to a character")
@@ -218,6 +193,14 @@ class Xp(commands.Cog, name="XP"):
         new_xp_total = current_xp_total + xp_amount
         new_cp_total = current_cp + cp
 
+        title = (
+            f"Add `{cp}` cool {p.plural_noun('point', cp)} ({xp_amount} xp) to `{character.name}`"
+        )
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
+            return
+
         self.bot.char_svc.update_or_add(
             ctx,
             character=character,
@@ -227,22 +210,10 @@ class Xp(commands.Cog, name="XP"):
                 "experience_total": new_xp_total,
             },
         )
-        logger.info(f"CP: {character} cool points updated by {ctx.author.name}")
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx,
-            f"`{cp}` cool {p.plural_noun('point', cp)} ({xp_amount} xp) added to `{character.name}`",
-        )
-        await present_embed(
-            ctx=ctx,
-            title=f"{character.name} gained cool points",
-            fields=[
-                ("Cool Points Added", str(cp)),
-                ("All time Cool Points", f"{new_cp_total}"),
-                ("XP Added", str(xp_amount)),
-                ("Current XP", f"{new_xp_total}"),
-            ],
-            level="success",
-            ephemeral=hidden,
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
 

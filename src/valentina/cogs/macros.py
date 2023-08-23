@@ -7,13 +7,14 @@ from discord.ext import commands
 
 from valentina.constants import EmbedColor
 from valentina.models.bot import Valentina
+from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidMacroFromID, ValidTraitOrCustomTrait
 from valentina.utils.options import (
     select_char_trait,
     select_char_trait_two,
     select_macro,
 )
-from valentina.views import ConfirmCancelButtons, MacroCreateModal, present_embed
+from valentina.views import MacroCreateModal, present_embed
 
 
 class Macro(commands.Cog):
@@ -133,34 +134,25 @@ class Macro(commands.Cog):
             required=True,
             autocomplete=select_macro,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete a macro from a user."""
-        view = ConfirmCancelButtons(ctx.author)
+        title = "Delete macro `{macro.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        msg = await present_embed(
-            ctx,
-            title=f"Confirm deletion of macro: {macro.name}",
-            description=f"Are you sure you want to delete the macro **{macro.name}**?",
-            inline_fields=False,
-            ephemeral=True,
-            level="info",
-            view=view,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(title="Macro deletion cancelled", color=EmbedColor.INFO.value)
-            await msg.edit_original_response(embed=embed, view=None)
+        if not confirmed:
             return
 
         self.bot.macro_svc.delete_macro(ctx, macro)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Delete macro: `{macro.name}`")
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Delete macro: `{macro.name}`",
-                description="",
-                color=EmbedColor.SUCCESS.value,
-            )
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value),
+            view=None,
         )
 
 
