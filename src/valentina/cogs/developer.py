@@ -15,10 +15,11 @@ from peewee import fn
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, CharacterClass, RollProbability, VampireClan
+from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import select_char_class
-from valentina.views import ConfirmCancelButtons, present_embed
+from valentina.views import present_embed
 
 p = inflect.engine()
 
@@ -239,26 +240,10 @@ class Developer(commands.Cog):
         ),
     ) -> None:
         """Purge the bot's cache and reload all data from the database."""
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title="Purge all caches?" if all_guilds else "Purge this guild's cache?",
-            description="This will purge all caches and reload all data from the database"
-            if all_guilds
-            else "This will purge this guild's cache and reload all data from the database",
-            level="info",
-            ephemeral=True,
-            view=view,
-        )
-        await view.wait()
+        title = "Purge all caches" if all_guilds else "Purge this guild's cache"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title="Cache Purge Cancelled",
-                    color=EmbedColor.ERROR.value,
-                )
-            )
+        if not confirmed:
             return
 
         if not all_guilds:
@@ -277,12 +262,9 @@ class Developer(commands.Cog):
             self.bot.macro_svc.purge()
             logger.info("DEVELOPER: Purge cache for all guilds")
 
-        await msg.delete_original_response()
-        await present_embed(
-            ctx,
-            title="All caches purged" if all_guilds else "Guild caches purged",
-            level="success",
-            ephemeral=hidden,
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @developer.command(name="bot_reload")

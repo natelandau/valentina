@@ -11,6 +11,41 @@ MAX_PAGE_CHARACTER_COUNT = 1950
 
 
 ### ENUMS ###
+
+
+class ChannelPermission(Enum):
+    """Enum for permissions when creating a character. Default is UNRESTRICTED."""
+
+    DEFAULT = 0  # Default
+    HIDDEN = 1
+    READ_ONLY = 2
+    POST = 3
+    MANAGE = 4
+
+
+class DiceType(Enum):
+    """Enum for types of dice."""
+
+    D4 = 4
+    D6 = 6
+    D8 = 8
+    D10 = 10
+    D100 = 100
+
+
+class EmbedColor(Enum):
+    """Enum for colors of embeds."""
+
+    SUCCESS = 0x00FF00  # GREEN
+    ERROR = 0xFF0000  # RED
+    WARNING = 0xFF5F00  # ORANGE
+    INFO = 0x00FFFF  # CYAN
+    DEBUG = 0x0000FF  # BLUE
+    DEFAULT = 0x6082B6  # GRAY
+    GRAY = 0x808080
+    YELLOW = 0xFFFF00
+
+
 class MaxTraitValue(Enum):
     """Maximum value for a trait.
 
@@ -44,6 +79,65 @@ class MaxTraitValue(Enum):
     BACKGROUNDS = 5
     VIRTUES = 5
     RENOWN = 5
+
+
+class PermissionsEditXP(Enum):
+    """Permissions for adding xp to a character."""
+
+    UNRESTRICTED = 0
+    WITHIN_24_HOURS = 1  # Default
+    CHARACTER_OWNER_ONLY = 2
+    STORYTELLER_ONLY = 3
+
+
+class PermissionsEditTrait(Enum):
+    """Permissions for updating character trait values."""
+
+    UNRESTRICTED = 0
+    WITHIN_24_HOURS = 1  # Default
+    CHARACTER_OWNER_ONLY = 2
+    STORYTELLER_ONLY = 3
+
+
+class PermissionManageCampaign(Enum):
+    """Permissions for managing a campaign."""
+
+    UNRESTRICTED = 0
+    STORYTELLER_ONLY = 1  # Default
+
+
+class RollResultType(Enum):
+    """Enum for results of a roll."""
+
+    SUCCESS = "Success"
+    FAILURE = "Failure"
+    BOTCH = "Botch"
+    CRITICAL = "Critical Success"
+    OTHER = "n/a"
+
+
+class TraitCategoryOrder(IntEnum):
+    """The order of trait categories to mimic character sheets."""
+
+    Physical = 1
+    Social = 2
+    Mental = 3
+    Talents = 4
+    Skills = 5
+    Knowledges = 6
+    Spheres = 7
+    Disciplines = 8
+    Numina = 9
+    Backgrounds = 10
+    Merits = 12
+    Flaws = 13
+    Virtues = 14
+    Resonance = 16
+    Gifts = 17
+    Renown = 18
+    Paths = 19
+    Edges = 20
+    Other = 21
 
 
 class XPNew(Enum):
@@ -94,91 +188,6 @@ class XPMultiplier(Enum):
     CONVICTION = 2  # TODO: Get the actual number for this
 
 
-class EmbedColor(Enum):
-    """Enum for colors of embeds."""
-
-    SUCCESS = 0x00FF00  # GREEN
-    ERROR = 0xFF0000  # RED
-    WARNING = 0xFF5F00  # ORANGE
-    INFO = 0x00FFFF  # CYAN
-    DEBUG = 0x0000FF  # BLUE
-    DEFAULT = 0x6082B6  # GRAY
-    GRAY = 0x808080
-    YELLOW = 0xFFFF00
-
-
-class XPPermissions(Enum):
-    """Permissions for adding xp to a character."""
-
-    UNRESTRICTED = 0
-    WITHIN_24_HOURS = 1  # Default
-    CHARACTER_OWNER_ONLY = 2
-    STORYTELLER_ONLY = 3
-
-
-class TraitPermissions(Enum):
-    """Permissions for updating character trait values."""
-
-    UNRESTRICTED = 0
-    WITHIN_24_HOURS = 1  # Default
-    CHARACTER_OWNER_ONLY = 2
-    STORYTELLER_ONLY = 3
-
-
-class DiceType(Enum):
-    """Enum for types of dice."""
-
-    D4 = 4
-    D6 = 6
-    D8 = 8
-    D10 = 10
-    D100 = 100
-
-
-class RollResultType(Enum):
-    """Enum for results of a roll."""
-
-    SUCCESS = "Success"
-    FAILURE = "Failure"
-    BOTCH = "Botch"
-    CRITICAL = "Critical Success"
-    OTHER = "n/a"
-
-
-class ChannelPermission(Enum):
-    """Enum for permissions when creating a character. Default is UNRESTRICTED."""
-
-    DEFAULT = 0  # Default
-    HIDDEN = 1
-    READ_ONLY = 2
-    POST = 3
-    MANAGE = 4
-
-
-class TraitCategoryOrder(IntEnum):
-    """The order of trait categories to mimic character sheets."""
-
-    Physical = 1
-    Social = 2
-    Mental = 3
-    Talents = 4
-    Skills = 5
-    Knowledges = 6
-    Spheres = 7
-    Disciplines = 8
-    Numina = 9
-    Backgrounds = 10
-    Merits = 12
-    Flaws = 13
-    Virtues = 14
-    Resonance = 16
-    Gifts = 17
-    Renown = 18
-    Paths = 19
-    Edges = 20
-    Other = 21
-
-
 ### Database Default Values ###
 CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
     "alive": True,
@@ -208,12 +217,13 @@ CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
 GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "error_log_channel_id": None,
     "log_channel_id": None,
+    "permissions_edit_trait": PermissionsEditTrait.WITHIN_24_HOURS.value,
+    "permissions_edit_xp": PermissionsEditXP.WITHIN_24_HOURS.value,
+    "permissions_manage_campaigns": PermissionManageCampaign.STORYTELLER_ONLY.value,
     "storyteller_channel_id": None,
-    "trait_permissions": TraitPermissions.WITHIN_24_HOURS.value,
     "use_audit_log": False,
     "use_error_log_channel": False,
     "use_storyteller_channel": False,
-    "xp_permissions": XPPermissions.WITHIN_24_HOURS.value,
 }
 
 ### More Constants ###

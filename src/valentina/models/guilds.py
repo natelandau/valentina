@@ -11,8 +11,9 @@ from valentina.constants import (
     GUILD_DEFAULTS,
     ChannelPermission,
     EmbedColor,
-    TraitPermissions,
-    XPPermissions,
+    PermissionManageCampaign,
+    PermissionsEditTrait,
+    PermissionsEditXP,
 )
 from valentina.utils import errors
 from valentina.utils.helpers import set_channel_perms, time_now
@@ -56,15 +57,22 @@ class GuildService:
             color=EmbedColor.INFO.value,
         )
 
-        embed.add_field(name="\u200b", value="**CHARACTER  PERMISSIONS**", inline=False)
+        embed.add_field(name="\u200b", value="**PERMISSIONS**", inline=False)
         embed.add_field(
             name="Editing XP",
-            value=XPPermissions(current_settings["xp_permissions"]).name.title(),
+            value=PermissionsEditXP(current_settings["permissions_edit_xp"]).name.title(),
             inline=True,
         )
         embed.add_field(
             name="Editing Traits",
-            value=TraitPermissions(current_settings["trait_permissions"]).name.title(),
+            value=PermissionsEditTrait(current_settings["permissions_edit_trait"]).name.title(),
+            inline=True,
+        )
+        embed.add_field(
+            name="Campaign Management",
+            value=PermissionManageCampaign(
+                current_settings["permissions_manage_campaigns"]
+            ).name.title(),
             inline=True,
         )
 

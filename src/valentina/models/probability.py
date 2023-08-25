@@ -8,6 +8,12 @@ from valentina.constants import EmbedColor, RollResultType
 from valentina.models.db_tables import RollProbability
 from valentina.models.dicerolls import DiceRoll
 
+# Constants for emoji thresholds
+SUCCESS_HIGHEST_THRESHOLD = 90
+SUCCESS_HIGH_THRESHOLD = 65
+SUCCESS_MEDIUM_THRESHOLD = 45
+SUCCESS_LOW_THRESHOLD = 15
+
 
 class Probability:
     """Probability utility class used for generating probabilities of success for different dice rolls."""
@@ -15,7 +21,14 @@ class Probability:
     def __init__(
         self, ctx: discord.ApplicationContext, pool: int, difficulty: int, dice_size: int
     ) -> None:
-        """Initialize the Probability class."""
+        """Initialize the Probability class.
+
+        Args:
+            ctx (discord.ApplicationContext): Context for the discord app.
+            pool (int): Pool of dice.
+            difficulty (int): Difficulty level.
+            dice_size (int): Size of the dice.
+        """
         self.ctx = ctx
         self.pool = pool
         self.difficulty = difficulty
@@ -24,7 +37,11 @@ class Probability:
         self.probabilities = self._calculate()
 
     def _calculate(self) -> dict[str, float]:
-        """Calculate the probability of a given dice roll."""
+        """Calculate the probability of a given dice roll.
+
+        Returns:
+            dict[str, float]: Dictionary containing the calculated probabilities.
+        """
         # Return results from the database if they exist
         db_result = RollProbability.get_or_none(
             (RollProbability.pool == self.pool)
@@ -88,24 +105,24 @@ class Probability:
 
         return probabilities
 
-    async def get_embed(self) -> discord.Embed:
-        """Return the probability embed."""
-        embed = discord.Embed(
-            title="",
-            color=EmbedColor.INFO.value,
-        )
-        embed.set_footer(text=f"Based on {self.trials:,} trials")
+    def _get_description(self) -> str:
+        """Return the probability description.
 
-        if self.probabilities["total_successes"] >= 90:  # noqa: PLR2004
-            emoji = "🚀"
-        elif self.probabilities["total_successes"] >= 50:  # noqa: PLR2004
+        Returns:
+            str: Probability description for use in the embed.
+        """
+        if self.probabilities["total_successes"] >= SUCCESS_HIGHEST_THRESHOLD:
+            emoji = "🎉🎊"
+        elif self.probabilities["total_successes"] >= SUCCESS_HIGH_THRESHOLD:
             emoji = "👍"
-        elif self.probabilities["total_successes"] <= 20:  # noqa: PLR2004
+        elif self.probabilities["total_successes"] >= SUCCESS_MEDIUM_THRESHOLD:
+            emoji = "🤷‍♂️"
+        elif self.probabilities["total_successes"] <= SUCCESS_LOW_THRESHOLD:
             emoji = "💀"
         else:
             emoji = "👎"
 
-        description = f"""\
+        return f"""\
 ## Overall success probability: {self.probabilities['total_successes']:.2f}% {emoji}
 
 Rolling `{self.pool}d{self.dice_size}` against difficulty `{self.difficulty}`
@@ -126,7 +143,19 @@ Success (>= {self.pool}):         {self.probabilities['success_dice']:.2f}%
 Failure (< {self.pool}):          {self.probabilities['failure_dice']:.2f}%
 Botch (1):              {self.probabilities['botch_dice']:.2f}%
 ```
-"""
+        """
 
-        embed.description = description
+    async def get_embed(self) -> discord.Embed:
+        """Return the probability embed.
+
+        Returns:
+            discord.Embed: Embed object containing the probability statistics.
+        """
+        embed = discord.Embed(
+            title="",
+            color=EmbedColor.INFO.value,
+        )
+        embed.description = self._get_description()
+        embed.set_footer(text=f"Based on {self.trials:,} trials")
+
         return embed

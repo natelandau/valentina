@@ -8,9 +8,10 @@ from loguru import logger
 
 from valentina.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
+from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidCampaign, ValidYYYYMMDD
 from valentina.utils.options import select_campaign, select_chapter, select_note, select_npc
-from valentina.views import ChapterModal, ConfirmCancelButtons, NoteModal, NPCModal, present_embed
+from valentina.views import ChapterModal, NoteModal, NPCModal, present_embed
 
 
 class Campaign(commands.Cog):
@@ -29,7 +30,6 @@ class Campaign(commands.Cog):
     ### CAMPAIGN COMMANDS ####################################################################
 
     @campaign.command(name="create", description="Create a new campaign")
-    @commands.has_permissions(administrator=True)
     async def create_campaign(
         self,
         ctx: discord.ApplicationContext,
@@ -42,32 +42,29 @@ class Campaign(commands.Cog):
     ) -> None:
         """Create a new campaign."""
         # TODO: Migrate to modal to allow setting campaign description
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Create new campaign named: `{name}`?",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title="Cancelled creating campaign",
-                color=EmbedColor.WARNING.value,
+
+        if not self.bot.user_svc.can_manage_campaign(ctx):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
             )
-            await msg.edit_original_response(embed=embed, view=None)
             return
 
-        campaign = self.bot.campaign_svc.create_campaign(ctx, name=name)
+        title = f"Create new campaign: `{name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Create new campaign: {campaign.name}")
+        if not confirmed:
+            return
+
+        self.bot.campaign_svc.create_campaign(ctx, name=name)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Create new campaign: {campaign.name}",
-                description="",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @campaign.command(name="current_date", description="Set the current date of a campaign")
@@ -113,32 +110,28 @@ class Campaign(commands.Cog):
         ),
     ) -> None:
         """Delete a campaign."""
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Delete campaign `{campaign.name}` and all associated data (NPCs, notes, chapters)?",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title="Cancelled deleting campaign",
-                color=EmbedColor.WARNING.value,
+        if not self.bot.user_svc.can_manage_campaign(ctx):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
             )
-            await msg.edit_original_response(embed=embed, view=None)
+            return
+
+        title = f"Delete campaign: {campaign.name}"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
 
         self.bot.campaign_svc.delete_campaign(ctx, campaign)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Delete campaign: {campaign.name}")
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Deleted campaign: {campaign.name}",
-                description="",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @campaign.command(name="view", description="View a campaign")
@@ -236,30 +229,28 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Set a campaign as active."""
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Set campaign `{campaign.name}` as active?",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title="Cancelled setting campaign as active",
-                color=EmbedColor.WARNING.value,
+        if not self.bot.user_svc.can_manage_campaign(ctx):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
             )
-            await msg.edit_original_response(embed=embed, view=None)
+            return
+
+        title = f"Set campaign `{campaign.name}` as active"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
 
         self.bot.campaign_svc.set_active(ctx, campaign)
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Set campaign as active: {campaign.name}")
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Set campaign as active: {campaign.name}",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @campaign.command(name="set_inactive", description="Set a campaign as inactive")
@@ -274,35 +265,30 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Set the active campaign as inactive."""
-        campaign = self.bot.campaign_svc.fetch_active(ctx)
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Set campaign **{campaign.name}** as inactive",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title="Cancelled",
-                description="Cancelled setting campaign as inactive",
-                color=EmbedColor.WARNING.value,
+        if not self.bot.user_svc.can_manage_campaign(ctx):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
             )
-            await msg.edit_original_response(embed=embed, view=None)
+            return
+
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+
+        title = f"Set campaign `{campaign.name}` as inactive"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
 
         self.bot.campaign_svc.set_inactive(ctx)
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Set campaign as inactive: {campaign.name}"
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Set campaign as inactive: {campaign.name}",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @campaign.command(name="list", description="List all campaigns")
@@ -478,35 +464,30 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete an NPC."""
+        if not self.bot.user_svc.can_manage_campaign(ctx):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         npc = self.bot.campaign_svc.fetch_npc_by_name(ctx, campaign, npc)
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Delete NPC `{npc.name}`?",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title="Cancelled deleting NPC",
-                color=EmbedColor.WARNING.value,
-            )
-            await msg.edit_original_response(embed=embed, view=None)
+        title = f"Delete NPC: `{npc.name}` in `{campaign.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
 
         self.bot.campaign_svc.delete_npc(ctx, npc)
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Delete NPC: `{npc.name}` in `{campaign.name}`"
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Delete NPC: `{npc.name}` in `{campaign.name}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value),
             view=None,
         )
 
@@ -657,37 +638,32 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete a chapter."""
+        if not self.bot.user_svc.can_manage_campaign(ctx):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         chapter = self.bot.campaign_svc.fetch_chapter_by_name(
             campaign, chapter_select.split(":")[1]
         )
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Delete Chapter `{chapter.chapter_number}. {chapter.name}` from `{campaign.name}`",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title="Cancelled deleting chapter",
-                color=EmbedColor.WARNING.value,
-            )
-            await msg.edit_original_response(embed=embed, view=None)
+        title = f"Delete Chapter `{chapter.chapter_number}. {chapter.name}` from `{campaign.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
 
         self.bot.campaign_svc.delete_chapter(ctx, chapter)
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Delete chapter: `{chapter.chapter_number}. {chapter.name}` in `{campaign.name}`"
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Delete chapter: `{chapter.chapter_number}. {chapter.name}` in `{campaign.name}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value),
             view=None,
         )
 
@@ -853,37 +829,31 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete a note."""
+        if not self.bot.user_svc.can_manage_campaign(ctx):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
+
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         note = self.bot.campaign_svc.fetch_note_by_id(note_select.split(":")[0])
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Delete note `{note.name}` from `{campaign.name}`?",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title="Cancelled deleting note",
-                color=EmbedColor.WARNING.value,
-            )
-            await msg.edit_original_response(embed=embed, view=None)
+        title = f"Delete note: `{note.name}` from `{campaign.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
             return
 
         self.bot.campaign_svc.delete_note(ctx, note)
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Delete note: `{note.name}` in `{campaign.name}`"
-        )
-
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Delete note: `{note.name}` in `{campaign.name}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
 

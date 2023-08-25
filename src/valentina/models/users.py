@@ -9,7 +9,7 @@ import arrow
 import discord
 from loguru import logger
 
-from valentina.constants import TraitPermissions, XPPermissions
+from valentina.constants import PermissionManageCampaign, PermissionsEditTrait, PermissionsEditXP
 from valentina.models.db_tables import Character, GuildUser, User
 from valentina.utils.helpers import time_now
 
@@ -100,9 +100,7 @@ class UserService:
 
         return user
 
-    def has_xp_permissions(
-        self, ctx: discord.ApplicationContext, character: Character = None
-    ) -> bool:
+    def can_update_xp(self, ctx: discord.ApplicationContext, character: Character = None) -> bool:
         """Check if the user has permissions to add experience points.
 
         The function checks the following conditions in order:
@@ -118,15 +116,15 @@ class UserService:
             bool: True if the user has permissions to add xp, False otherwise.
         """
         permissions_dict: dict[
-            XPPermissions, Callable[[discord.ApplicationContext, Character], bool]
+            PermissionsEditXP, Callable[[discord.ApplicationContext, Character], bool]
         ] = {
-            XPPermissions.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
-            XPPermissions.CHARACTER_OWNER_ONLY: lambda ctx, character: character
+            PermissionsEditXP.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
+            PermissionsEditXP.CHARACTER_OWNER_ONLY: lambda ctx, character: character
             and character.created_by.id == ctx.author.id,
-            XPPermissions.WITHIN_24_HOURS: lambda ctx, character: character
+            PermissionsEditXP.WITHIN_24_HOURS: lambda ctx, character: character
             and character.created_by.id == ctx.author.id
             and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            XPPermissions.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            PermissionsEditXP.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
             in [x.name for x in ctx.author.roles],
         }
 
@@ -137,14 +135,14 @@ class UserService:
         if not settings:
             return False
 
-        permission = XPPermissions(settings["xp_permissions"])
+        permission = PermissionsEditXP(settings["permissions_edit_xp"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
             return check_permission(ctx, character)
 
         return False
 
-    def has_trait_permissions(
+    def can_update_traits(
         self, ctx: discord.ApplicationContext, character: Character = None
     ) -> bool:
         """Check if the user has permissions to update character trait values.
@@ -162,15 +160,15 @@ class UserService:
             bool: True if the user has permissions to update traits, False otherwise.
         """
         permissions_dict: dict[
-            TraitPermissions, Callable[[discord.ApplicationContext, Character], bool]
+            PermissionsEditTrait, Callable[[discord.ApplicationContext, Character], bool]
         ] = {
-            TraitPermissions.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
-            TraitPermissions.CHARACTER_OWNER_ONLY: lambda ctx, character: character
+            PermissionsEditTrait.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
+            PermissionsEditTrait.CHARACTER_OWNER_ONLY: lambda ctx, character: character
             and character.created_by.id == ctx.author.id,
-            TraitPermissions.WITHIN_24_HOURS: lambda ctx, character: character
+            PermissionsEditTrait.WITHIN_24_HOURS: lambda ctx, character: character
             and character.created_by.id == ctx.author.id
             and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            TraitPermissions.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            PermissionsEditTrait.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
             in [x.name for x in ctx.author.roles],
         }
 
@@ -181,9 +179,46 @@ class UserService:
         if not settings:
             return False
 
-        permission = TraitPermissions(settings["trait_permissions"])
+        permission = PermissionsEditTrait(settings["permissions_edit_trait"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
             return check_permission(ctx, character)
+
+        return False
+
+    def can_manage_campaign(self, ctx: discord.ApplicationContext) -> bool:
+        """Check if the user has permissions to manage campaigns.
+
+        The function checks the following conditions in order:
+        - If the author is an administrator, return True.
+        - Fetch the guild settings. If they cannot be fetched, return False.
+        - Use a mapping from trait permissions to functions to check the corresponding permission type and return the result.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+
+
+        Returns:
+            bool: True if the user has permissions to update traits, False otherwise.
+        """
+        permissions_dict: dict[
+            PermissionManageCampaign, Callable[[discord.ApplicationContext], bool]
+        ] = {
+            PermissionManageCampaign.UNRESTRICTED: lambda x: True,  # noqa: ARG005
+            PermissionManageCampaign.STORYTELLER_ONLY: lambda ctx: "Storyteller"
+            in [x.name for x in ctx.author.roles],
+        }
+
+        if ctx.author.guild_permissions.administrator:
+            return True
+
+        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
+        if not settings:
+            return False
+
+        permission = PermissionManageCampaign(settings["permissions_manage_campaigns"])
+        check_permission = permissions_dict.get(permission)
+        if check_permission:
+            return check_permission(ctx)
 
         return False

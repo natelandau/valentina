@@ -5,7 +5,7 @@ import arrow
 import pytest
 from discord import ApplicationContext, Role
 
-from valentina.constants import XPPermissions
+from valentina.constants import PermissionManageCampaign, PermissionsEditTrait, PermissionsEditXP
 from valentina.models import UserService
 from valentina.models.db_tables import Character, GuildUser, User
 
@@ -82,21 +82,21 @@ class TestUserService:
     @pytest.mark.parametrize(
         ("xp_permissions_value", "is_admin", "is_char_owner", "hours_since_creation", "expected"),
         [
-            (XPPermissions.UNRESTRICTED.value, False, True, 38, True),
-            (XPPermissions.UNRESTRICTED.value, False, True, 38, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, True, 1, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, True, 38, False),
-            (XPPermissions.WITHIN_24_HOURS.value, True, True, 38, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, False, 1, False),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
-            (XPPermissions.STORYTELLER_ONLY.value, False, True, 1, False),
-            (XPPermissions.STORYTELLER_ONLY.value, False, False, 1, False),
-            (XPPermissions.STORYTELLER_ONLY.value, True, False, 1, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 1, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 38, False),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, True, True, 38, True),
+            (PermissionsEditXP.WITHIN_24_HOURS.value, False, False, 1, False),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
+            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, True, 1, False),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, False, 1, False),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, True, False, 1, True),
         ],
     )
-    def test_has_xp_permissions(
+    def test_can_update_xp(
         self, mocker, xp_permissions_value, is_admin, is_char_owner, hours_since_creation, expected
     ):
         """Test checking if a user has xp permissions.
@@ -123,14 +123,14 @@ class TestUserService:
         mock_guild_svc = mocker.Mock()
 
         # Set up the mock fetch_guild_settings function
-        mock_settings = {"xp_permissions": xp_permissions_value}
+        mock_settings = {"permissions_edit_xp": xp_permissions_value}
         mock_guild_svc.fetch_guild_settings = mocker.Mock(return_value=mock_settings)
 
         mock_bot.guild_svc = mock_guild_svc
         mock_ctx.bot = mock_bot
 
         # WHEN calling the method with the mock context and character
-        result = self.user_svc.has_xp_permissions(mock_ctx, mock_character)
+        result = self.user_svc.can_update_xp(mock_ctx, mock_character)
 
         # THEN return the correct result
         assert result is expected
@@ -144,18 +144,18 @@ class TestUserService:
             "expected",
         ),
         [
-            (XPPermissions.UNRESTRICTED.value, False, True, 38, True),
-            (XPPermissions.UNRESTRICTED.value, False, True, 38, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, True, 1, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, True, 38, False),
-            (XPPermissions.WITHIN_24_HOURS.value, True, True, 38, True),
-            (XPPermissions.WITHIN_24_HOURS.value, False, False, 1, False),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
-            (XPPermissions.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
-            (XPPermissions.STORYTELLER_ONLY.value, False, True, 1, False),
-            (XPPermissions.STORYTELLER_ONLY.value, False, False, 1, False),
-            (XPPermissions.STORYTELLER_ONLY.value, True, False, 1, True),
+            (PermissionsEditTrait.UNRESTRICTED.value, False, True, 38, True),
+            (PermissionsEditTrait.UNRESTRICTED.value, False, True, 38, True),
+            (PermissionsEditTrait.WITHIN_24_HOURS.value, False, True, 1, True),
+            (PermissionsEditTrait.WITHIN_24_HOURS.value, False, True, 38, False),
+            (PermissionsEditTrait.WITHIN_24_HOURS.value, True, True, 38, True),
+            (PermissionsEditTrait.WITHIN_24_HOURS.value, False, False, 1, False),
+            (PermissionsEditTrait.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
+            (PermissionsEditTrait.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
+            (PermissionsEditTrait.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
+            (PermissionsEditTrait.STORYTELLER_ONLY.value, False, True, 1, False),
+            (PermissionsEditTrait.STORYTELLER_ONLY.value, False, False, 1, False),
+            (PermissionsEditTrait.STORYTELLER_ONLY.value, True, False, 1, True),
         ],
     )
     def test_has_update_trait_permissions(
@@ -195,14 +195,73 @@ class TestUserService:
         mock_guild_svc = mocker.Mock()
 
         # Set up the mock fetch_guild_settings function
-        mock_settings = {"trait_permissions": trait_permissions_value}
+        mock_settings = {"permissions_edit_trait": trait_permissions_value}
         mock_guild_svc.fetch_guild_settings = mocker.Mock(return_value=mock_settings)
 
         mock_bot.guild_svc = mock_guild_svc
         mock_ctx.bot = mock_bot
 
         # WHEN calling the method with the mock context and character
-        result = self.user_svc.has_trait_permissions(mock_ctx, mock_character)
+        result = self.user_svc.can_update_traits(mock_ctx, mock_character)
+
+        # THEN return the correct result
+        assert result is expected
+
+    @pytest.mark.parametrize(
+        (
+            "permission_value",
+            "is_admin",
+            "is_storyteller",
+            "expected",
+        ),
+        [
+            (PermissionManageCampaign.UNRESTRICTED.value, True, False, True),
+            (PermissionManageCampaign.UNRESTRICTED.value, False, False, True),
+            (PermissionManageCampaign.UNRESTRICTED.value, False, True, True),
+            (PermissionManageCampaign.STORYTELLER_ONLY.value, True, False, True),
+            (PermissionManageCampaign.STORYTELLER_ONLY.value, False, False, False),
+            (PermissionManageCampaign.STORYTELLER_ONLY.value, False, True, True),
+        ],
+    )
+    def test_can_manage_campaigns(
+        self, mocker, permission_value, is_admin, is_storyteller, expected
+    ):
+        """Test checking if a user has campaign management permissions.
+
+        GIVEN a user
+        WHEN the user is checked
+        THEN the correct result is returned
+        """
+        # GIVEN mock ApplicationContexts
+        mock_role1 = mocker.Mock(spec=Role)
+        mock_role1.name = "Player"
+
+        mock_role2 = mocker.Mock(spec=Role)
+        mock_role2.name = "Storyteller"
+
+        mock_ctx = mocker.Mock(spec=ApplicationContext)
+        mock_ctx.author.guild_permissions.administrator = is_admin
+
+        if is_storyteller:
+            mock_ctx.author.roles = [mock_role1, mock_role2]
+        else:
+            mock_ctx.author.roles = [mock_role1]
+
+        mock_ctx.author.id = 1
+
+        # Create mock bot and guild_svc and set them on mock_ctx
+        mock_bot = mocker.Mock()
+        mock_guild_svc = mocker.Mock()
+
+        # Set up the mock fetch_guild_settings function
+        mock_settings = {"permissions_manage_campaigns": permission_value}
+        mock_guild_svc.fetch_guild_settings = mocker.Mock(return_value=mock_settings)
+
+        mock_bot.guild_svc = mock_guild_svc
+        mock_ctx.bot = mock_bot
+
+        # WHEN calling the method with the mock context and character
+        result = self.user_svc.can_manage_campaign(mock_ctx)
 
         # THEN return the correct result
         assert result is expected

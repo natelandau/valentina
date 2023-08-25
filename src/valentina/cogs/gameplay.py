@@ -6,13 +6,13 @@ from discord.commands import Option
 from discord.ext import commands
 
 from valentina.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
+from valentina.models import Probability
 from valentina.models.bot import Valentina
 from valentina.utils import errors
+from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
 from valentina.utils.perform_roll import perform_roll
-from valentina.utils.probability import Probability
-from valentina.views import ConfirmCancelButtons, present_embed
 
 
 class Roll(commands.Cog):
@@ -205,31 +205,18 @@ class Roll(commands.Cog):
         ),
     ) -> None:
         """Add a roll result thumbnail to the bot."""
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title="Upload image?",
-            description=f"Your image may be seen when for **{roll_type}** rolls. Are you sure you want to upload it?",
-            image=url,
-            level="info",
-            ephemeral=hidden,
-            view=view,
-        )
-        await view.wait()
+        title = "Upload roll result thumbnail"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not view.confirmed:
-            embed = discord.Embed(title="Upload cancelled", color=EmbedColor.WARNING.value)
-            await msg.edit_original_response(embed=embed, view=None)
+        if not confirmed:
             return
 
         self.bot.guild_svc.add_roll_result_thumb(ctx, roll_type, url)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Roll result thumbnail added\n{url}")
-
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
             embed=discord.Embed(
-                title="Roll result thumbnail added",
-                description="",
+                title=title,
                 color=EmbedColor.SUCCESS.value,
             ).set_image(url=url)
         )

@@ -10,6 +10,7 @@ from peewee import fn
 from valentina.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import VampireClan
+from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
@@ -314,43 +315,17 @@ class StoryTeller(commands.Cog):
         """Update the value of a trait for a storyteller or player character."""
         old_value = character.get_trait_value(trait)
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Update `{trait.name}`?",
-            fields=[
-                ("Old Value", str(old_value)),
-                ("New Value", new_value),
-            ],
-            inline_fields=True,
-            ephemeral=hidden,
-            level="info",
-            view=view,
-        )
-        await view.wait()
+        title = f"Update `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title=f"**{trait.name}** will not be updated.",
-                    color=EmbedColor.WARNING.value,
-                ),
-                view=None,
-            )
+        if not confirmed:
             return
 
         character.set_trait_value(trait, new_value)
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx,
-            f"Update trait `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`",
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"**{trait.name}** updated from `{old_value}` to `{new_value}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @storyteller.command(name="sheet", description="View a character sheet")
@@ -377,39 +352,25 @@ class StoryTeller(commands.Cog):
             autocomplete=select_storyteller_character,
             required=True,
         ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
     ) -> None:
         """Delete a storyteller character."""
-        view = ConfirmCancelButtons(ctx.author)
-        embed = await sheet_embed(
-            ctx, character, title=f"Confirm deletion of {character.full_name}"
-        )
-        msg = await ctx.respond(embed=embed, view=view, ephemeral=True)
+        title = f"Delete storyteller character `{character.full_name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        await view.wait()
-        if not view.confirmed:
-            await msg.edit_original_response(  # type: ignore [union-attr]
-                embed=discord.Embed(
-                    title=f"{character.full_name} not deleted",
-                    color=EmbedColor.WARNING.value,
-                ),
-            )
+        if not confirmed:
             return
 
         character.delete_instance(delete_nullable=True, recursive=True)
         self.bot.char_svc.purge_cache(ctx)
-        await msg.edit_original_response(  # type: ignore [union-attr]
-            embed=discord.Embed(
-                title=f"{character.full_name} deleted",
-                color=EmbedColor.SUCCESS.value,
-            ),
-        )
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx,
-            discord.Embed(
-                title="Storyteller character deleted",
-                description=f"Deleted {character.full_name}",
-                color=EmbedColor.SUCCESS.value,
-            ),
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @storyteller.command(name="roll_traits", description="Roll traits for a character")
@@ -490,24 +451,10 @@ class StoryTeller(commands.Cog):
         new_xp = current_xp + xp
         new_xp_total = current_xp_total + xp
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Grant `{xp}` xp to `{character.name}`?",
-            ephemeral=hidden,
-            level="info",
-            view=view,
-        )
-        await view.wait()
+        title = f"Grant `{xp}` xp to `{character.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title="XP Grant Cancelled",
-                    description="",
-                    color=EmbedColor.WARNING.value,
-                )
-            )
+        if not confirmed:
             return
 
         self.bot.char_svc.update_or_add(
@@ -519,13 +466,9 @@ class StoryTeller(commands.Cog):
             },
         )
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"`{character.name}` granted `{xp}` xp")
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"`{character.name}` granted `{xp}` xp",
-                description="",
-                color=EmbedColor.SUCCESS.value,
-            )
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
     @storyteller.command(name="grant_cp", description="Grant a cool point to a player character")
@@ -556,25 +499,10 @@ class StoryTeller(commands.Cog):
         new_xp_total = current_xp_total + xp_amount
         new_cp_total = current_cp + cp
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title=f"Grant `{cp}` cool {p.plural_noun('member', cp)} (`{xp_amount}` xp) to `{character.name}`?",
-            inline_fields=True,
-            ephemeral=hidden,
-            level="info",
-            view=view,
-        )
-        await view.wait()
+        title = f"Grant `{cp}` cool {p.plural_noun('member', cp)} (`{xp_amount}` xp) to `{character.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not view.confirmed:
-            await msg.edit_original_response(
-                embed=discord.Embed(
-                    title="Cool point grant cancelled",
-                    description="",
-                    color=EmbedColor.WARNING.value,
-                )
-            )
+        if not confirmed:
             return
 
         self.bot.char_svc.update_or_add(
@@ -587,16 +515,9 @@ class StoryTeller(commands.Cog):
             },
         )
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx,
-            f"Grant `{cp}` cool {p.plural_noun('point', cp)} (`{xp_amount}` xp) to `{character.name}`",
-        )
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
-            embed=discord.Embed(
-                title=f"Granted `{cp}` cool {p.plural_noun('point', cp)} (`{xp_amount}` xp) to `{character.name}`",
-                description="",
-                color=EmbedColor.SUCCESS.value,
-            )
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
 
