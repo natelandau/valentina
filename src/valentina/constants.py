@@ -219,6 +219,7 @@ GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "log_channel_id": None,
     "permissions_edit_trait": PermissionsEditTrait.WITHIN_24_HOURS.value,
     "permissions_edit_xp": PermissionsEditXP.WITHIN_24_HOURS.value,
+    "permissions_manage_campaigns": PermissionManageCampaign.STORYTELLER_ONLY.value,
     "storyteller_channel_id": None,
     "use_audit_log": False,
     "use_error_log_channel": False,

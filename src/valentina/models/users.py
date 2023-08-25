@@ -9,7 +9,7 @@ import arrow
 import discord
 from loguru import logger
 
-from valentina.constants import PermissionsEditTrait, PermissionsEditXP
+from valentina.constants import PermissionManageCampaign, PermissionsEditTrait, PermissionsEditXP
 from valentina.models.db_tables import Character, GuildUser, User
 from valentina.utils.helpers import time_now
 
@@ -100,9 +100,7 @@ class UserService:
 
         return user
 
-    def has_xp_permissions(
-        self, ctx: discord.ApplicationContext, character: Character = None
-    ) -> bool:
+    def can_update_xp(self, ctx: discord.ApplicationContext, character: Character = None) -> bool:
         """Check if the user has permissions to add experience points.
 
         The function checks the following conditions in order:
@@ -144,7 +142,7 @@ class UserService:
 
         return False
 
-    def has_trait_permissions(
+    def can_update_traits(
         self, ctx: discord.ApplicationContext, character: Character = None
     ) -> bool:
         """Check if the user has permissions to update character trait values.
@@ -185,5 +183,42 @@ class UserService:
         check_permission = permissions_dict.get(permission)
         if check_permission:
             return check_permission(ctx, character)
+
+        return False
+
+    def can_manage_campaign(self, ctx: discord.ApplicationContext) -> bool:
+        """Check if the user has permissions to manage campaigns.
+
+        The function checks the following conditions in order:
+        - If the author is an administrator, return True.
+        - Fetch the guild settings. If they cannot be fetched, return False.
+        - Use a mapping from trait permissions to functions to check the corresponding permission type and return the result.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+
+
+        Returns:
+            bool: True if the user has permissions to update traits, False otherwise.
+        """
+        permissions_dict: dict[
+            PermissionManageCampaign, Callable[[discord.ApplicationContext], bool]
+        ] = {
+            PermissionManageCampaign.UNRESTRICTED: lambda x: True,  # noqa: ARG005
+            PermissionManageCampaign.STORYTELLER_ONLY: lambda ctx: "Storyteller"
+            in [x.name for x in ctx.author.roles],
+        }
+
+        if ctx.author.guild_permissions.administrator:
+            return True
+
+        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
+        if not settings:
+            return False
+
+        permission = PermissionManageCampaign(settings["permissions_manage_campaigns"])
+        check_permission = permissions_dict.get(permission)
+        if check_permission:
+            return check_permission(ctx)
 
         return False

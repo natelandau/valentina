@@ -12,6 +12,7 @@ from discord.ext.commands import MemberConverter
 
 from valentina.constants import (
     ChannelPermission,
+    PermissionManageCampaign,
     PermissionsEditTrait,
     PermissionsEditXP,
     RollResultType,
@@ -147,6 +148,15 @@ class Admin(commands.Cog):
             ],
             required=False,
         ),
+        manage_campaigns: Option(
+            str,
+            "Which roles can manage campaigns.",
+            choices=[
+                OptionChoice(x.name.title().replace("_", " "), str(x.value))
+                for x in PermissionManageCampaign
+            ],
+            required=False,
+        ),
         use_audit_log: Option(
             bool,
             "Send audit logs to channel",
@@ -191,6 +201,7 @@ class Admin(commands.Cog):
         current_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
         fields = []
         update_data: dict[str, str | int | bool] = {}
+
         if xp_permissions is not None:
             fields.append(("XP Permissions", PermissionsEditXP(int(xp_permissions)).name.title()))
             update_data["permissions_edit_xp"] = int(xp_permissions)
@@ -200,6 +211,12 @@ class Admin(commands.Cog):
                 ("Trait Permissions", PermissionsEditTrait(int(trait_permissions)).name.title())
             )
             update_data["permissions_edit_trait"] = int(trait_permissions)
+
+        if manage_campaigns is not None:
+            fields.append(
+                ("Manage Campaigns", PermissionManageCampaign(int(manage_campaigns)).name.title())
+            )
+            update_data["permissions_manage_campaigns"] = int(manage_campaigns)
 
         if use_audit_log is not None:
             if (

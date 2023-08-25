@@ -122,7 +122,7 @@ class Xp(commands.Cog, name="XP"):
         """Add experience to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
-        if not self.bot.user_svc.has_xp_permissions(ctx, character):
+        if not self.bot.user_svc.can_update_xp(ctx, character):
             await present_embed(
                 ctx,
                 title="Permission error",
@@ -172,7 +172,7 @@ class Xp(commands.Cog, name="XP"):
         """Add cool points to a character."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
-        if not self.bot.user_svc.has_xp_permissions(ctx, character):
+        if not self.bot.user_svc.can_update_xp(ctx, character):
             await present_embed(
                 ctx,
                 title="Permission error",

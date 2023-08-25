@@ -509,7 +509,7 @@ class Characters(commands.Cog, name="Character"):
         """Update the value of a trait."""
         character = self.bot.char_svc.fetch_claim(ctx)
 
-        if not self.bot.user_svc.has_trait_permissions(ctx, character):
+        if not self.bot.user_svc.can_update_traits(ctx, character):
             await present_embed(
                 ctx,
                 title="Permission error",
