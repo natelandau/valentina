@@ -19,10 +19,18 @@ class ErrorReporter:
         self.bot: commands.Bot = None
         self.channel: discord.TextChannel = None
 
-    def _handle_known_exceptions(
+    def _handle_known_exceptions(  # noqa: C901
         self, ctx: discord.ApplicationContext, error: Exception
     ) -> tuple[str | None, str | None, bool]:
-        """Handle known exceptions and return user message, log message, and traceback flag."""
+        """Handle known exceptions and return user message, log message, and traceback flag.
+
+        Args:
+            ctx (discord.ApplicationContext): The context in which the command was called.
+            error (Exception): The exception that was raised.
+
+        Returns:
+            tuple[str | None, str | None, bool]: The user message, log message, and a boolean to show traceback.
+        """
         user_msg = None
         log_msg = None
         show_traceback = False
@@ -46,6 +54,13 @@ class ErrorReporter:
             | errors.NoMatchingItemsError,
         ):
             user_msg = str(error)
+
+        if isinstance(error, FileNotFoundError):
+            user_msg = (
+                "Sorry, I couldn't find that file. This is likely a bug and has been reported."
+            )
+            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a file was not found"
+            show_traceback = True
 
         if isinstance(error, errors.DatabaseError):
             user_msg = (
