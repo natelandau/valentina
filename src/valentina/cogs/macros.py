@@ -47,7 +47,14 @@ class Macro(commands.Cog):
             default=True,
         ),
     ) -> None:
-        """Create a new macro."""
+        """Create a new macro.
+
+        Args:
+            ctx (discord.ApplicationContext): The context of the application.
+            trait_one (Option[ValidTraitOrCustomTrait]): The first trait to roll.
+            trait_two (Option[ValidTraitOrCustomTrait]): The second trait to roll.
+            hidden (Option[bool]): Whether to make the result only to you (default true).
+        """
         self.bot.user_svc.fetch_user(ctx)
 
         modal = MacroCreateModal(
@@ -96,17 +103,15 @@ class Macro(commands.Cog):
         macros = self.bot.macro_svc.fetch_macros(ctx.guild.id, ctx.author.id)
 
         if len(macros) > 0:
-            fields = []
-            for macro in macros:
-                traits = self.bot.macro_svc.fetch_macro_traits(macro)
-                trait_one = traits[0]
-                trait_two = traits[1]
-                fields.append(
-                    (
-                        f"{macro.name} ({macro.abbreviation}): `{trait_one.name}` + `{trait_two.name}`",
-                        f"{macro.description}",
-                    )
+            fields = [
+                (
+                    f"{macro.name} ({macro.abbreviation}): `{trait_one.name}` + `{trait_two.name}`",
+                    f"{macro.description}",
                 )
+                for macro in macros
+                for trait_one, trait_two in [self.bot.macro_svc.fetch_macro_traits(macro)]
+            ]
+
             await present_embed(
                 ctx,
                 title=f"Macros for {ctx.author.display_name}",
