@@ -27,6 +27,21 @@ class Campaign(commands.Cog):
     npc = campaign.create_subgroup(name="npc", description="Manage campaign NPCs")
     notes = campaign.create_subgroup(name="notes", description="Manage campaign notes")
 
+    async def check_permissions(self, ctx: discord.ApplicationContext) -> bool:
+        """Check if the user has permissions to run the command."""
+        if not self.bot.user_svc.can_manage_campaign(ctx):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return False
+
+        return True
+
     ### CAMPAIGN COMMANDS ####################################################################
 
     @campaign.command(name="create", description="Create a new campaign")
@@ -43,15 +58,7 @@ class Campaign(commands.Cog):
         """Create a new campaign."""
         # TODO: Migrate to modal to allow setting campaign description
 
-        if not self.bot.user_svc.can_manage_campaign(ctx):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to run this command\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not self.check_permissions(ctx):
             return
 
         title = f"Create new campaign: `{name}`"
@@ -93,7 +100,6 @@ class Campaign(commands.Cog):
         )
 
     @campaign.command(name="delete", description="Delete a campaign")
-    @commands.has_permissions(administrator=True)
     async def delete_campaign(
         self,
         ctx: discord.ApplicationContext,
@@ -110,15 +116,7 @@ class Campaign(commands.Cog):
         ),
     ) -> None:
         """Delete a campaign."""
-        if not self.bot.user_svc.can_manage_campaign(ctx):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to run this command\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not self.check_permissions(ctx):
             return
 
         title = f"Delete campaign: {campaign.name}"
@@ -142,9 +140,9 @@ class Campaign(commands.Cog):
         chapters = self.bot.campaign_svc.fetch_all_chapters(campaign)
         notes = self.bot.campaign_svc.fetch_all_notes(campaign)
 
-        chapter_list = sorted([c for c in chapters], key=lambda c: c.chapter_number)
-        npc_list = sorted([n for n in npcs], key=lambda n: n.name)
-        note_list = sorted([n for n in notes], key=lambda n: n.name)
+        chapter_list = sorted(chapters, key=lambda c: c.chapter_number)
+        npc_list = sorted(npcs, key=lambda n: n.name)
+        note_list = sorted(notes, key=lambda n: n.name)
 
         chapter_listing = "\n".join([f"{c.chapter_number}. {c.name}" for c in chapter_list])
 
@@ -212,7 +210,6 @@ An overview of {campaign.name}.
         )
 
     @campaign.command(name="set_active", description="Set a campaign as active")
-    @commands.has_permissions(administrator=True)
     async def campaign_set_active(
         self,
         ctx: discord.ApplicationContext,
@@ -229,15 +226,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Set a campaign as active."""
-        if not self.bot.user_svc.can_manage_campaign(ctx):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to run this command\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not self.check_permissions(ctx):
             return
 
         title = f"Set campaign `{campaign.name}` as active"
@@ -254,7 +243,6 @@ An overview of {campaign.name}.
         )
 
     @campaign.command(name="set_inactive", description="Set a campaign as inactive")
-    @commands.has_permissions(administrator=True)
     async def campaign_set_inactive(
         self,
         ctx: discord.ApplicationContext,
@@ -265,15 +253,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Set the active campaign as inactive."""
-        if not self.bot.user_svc.can_manage_campaign(ctx):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to run this command\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not self.check_permissions(ctx):
             return
 
         campaign = self.bot.campaign_svc.fetch_active(ctx)
@@ -452,7 +432,6 @@ An overview of {campaign.name}.
         )
 
     @npc.command(name="delete", description="Delete an NPC")
-    @commands.has_permissions(administrator=True)
     async def delete_npc(
         self,
         ctx: discord.ApplicationContext,
@@ -464,16 +443,9 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete an NPC."""
-        if not self.bot.user_svc.can_manage_campaign(ctx):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to run this command\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not self.check_permissions(ctx):
             return
+
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         npc = self.bot.campaign_svc.fetch_npc_by_name(ctx, campaign, npc)
 
@@ -620,7 +592,6 @@ An overview of {campaign.name}.
         )
 
     @chapter.command(name="delete", description="Delete a chapter")
-    @commands.has_permissions(administrator=True)
     async def delete_chapter(
         self,
         ctx: discord.ApplicationContext,
@@ -638,16 +609,9 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete a chapter."""
-        if not self.bot.user_svc.can_manage_campaign(ctx):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to run this command\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not self.check_permissions(ctx):
             return
+
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         chapter = self.bot.campaign_svc.fetch_chapter_by_name(
             campaign, chapter_select.split(":")[1]
@@ -829,15 +793,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete a note."""
-        if not self.bot.user_svc.can_manage_campaign(ctx):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to run this command\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not self.check_permissions(ctx):
             return
 
         campaign = self.bot.campaign_svc.fetch_active(ctx)
