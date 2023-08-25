@@ -205,8 +205,8 @@ class Roll(commands.Cog):
         ),
     ) -> None:
         """Add a roll result thumbnail to the bot."""
-        title = "Upload roll result thumbnail"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        title = f"Upload roll result thumbnail\n{url}"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden, url=url)
 
         if not confirmed:
             return

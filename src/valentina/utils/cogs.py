@@ -10,6 +10,7 @@ async def confirm_action(
     title: str,
     description: str | None = None,
     hidden: bool = False,
+    url: str | None = None,
 ) -> tuple[bool, discord.Interaction]:
     """Prompt the user for confirmation.
 
@@ -18,6 +19,7 @@ async def confirm_action(
         title (str): The title for the confirmation embed.
         description (str, optional): The description for the confirmation embed. Defaults to None.
         hidden (bool): Whether to make the response visible only to the user.
+        url (str, optional): The URL for the confirmation embed. Defaults to None.
 
     Returns:
         tuple(bool, discord.Message): A tuple containing the user's response and the message object.
@@ -26,7 +28,7 @@ async def confirm_action(
 
     view = ConfirmCancelButtons(ctx.author)
     msg = await present_embed(
-        ctx, title=title, description=description, view=view, ephemeral=hidden
+        ctx, title=title, description=description, view=view, ephemeral=hidden, image=url
     )
     await view.wait()
     if not view.confirmed:
