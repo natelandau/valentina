@@ -1,3 +1,24 @@
+## v1.5.0 (2023-08-25)
+
+### Feat
+
+- **campaign**: setting to restrict campaign management to storytellers (#49)
+- **storyteller**: update trait values for any character (#47)
+- **storyteller**: create standard character via chargen wizard (#46)
+- **admin**: review roll thumbnails and delete or recategorize (#44)
+- **storyteller**: grant character cool points
+- **storyteller**: grant character experience
+
+### Fix
+
+- **campaign**: rename `chronicles` to `campaigns` (#48)
+- **admin**: add emoji to thumbnail review buttons (#45)
+- **storyteller**: do not throw exception when rolling traits with no value (#43)
+- **character**: fix error computing experience points (#42)
+- **xp**: fix error computing experience points
+- **bot**: improve audit logging (#41)
+- improve display of probabilities and statistics
+
 ## v1.4.1 (2023-08-18)
 
 ### Fix
