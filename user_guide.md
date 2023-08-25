@@ -1,4 +1,5 @@
-#Welcome to the Valentina Noir Guide!
+# Welcome to the Valentina Noir Guide!
+
 This guide will help you understand and use Valentina Noir, a tool that manages characters and gameplay for a highly customized version of Vampire the Masquerade. Here's what you'll find inside:
 
 1. Introduction

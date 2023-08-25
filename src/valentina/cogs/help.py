@@ -5,6 +5,7 @@ from pathlib import Path
 import discord
 from discord.commands import Option
 from discord.ext import commands
+from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.views import present_embed
@@ -147,21 +148,25 @@ class Help(commands.Cog):
     ) -> None:
         """A walkthrough of Valentina Noir."""
         path = Path(__file__).parent / "../../../user_guide.md"
-        changelog = path.read_text()
+        if not path.exists():
+            logger.error(f"User Guide file not found at {path}")
+            raise FileNotFoundError
+
+        user_guide = path.read_text()
 
         # Embeds can take 4000 characters in the description field, but we keep
         # it at ~1200 for the sake of not scrolling forever.
         paginator = discord.ext.commands.Paginator(prefix="", suffix="", max_size=1200)
 
-        for line in changelog.split("\n"):
+        for line in user_guide.split("\n"):
             paginator.add_line(line)
 
         pages_to_send: list[discord.Embed] = []
         for page in paginator.pages:
             embed = discord.Embed(
-                title="Valentina Changelog",
+                title="Valentina User Guide",
                 description=page,
-                url="https://github.com/natelandau/valentina/releases",
+                url="https://github.com/natelandau/valentina/blob/main/user_guide.md",
             )
             embed.set_thumbnail(url=ctx.bot.user.display_avatar)
             pages_to_send.append(embed)
