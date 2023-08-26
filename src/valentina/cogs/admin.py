@@ -124,10 +124,10 @@ class Admin(commands.Cog):
             level="info",
         )
 
-    @admin.command()
+    @admin.command(description="Configure the settings for this guild")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def settings(  # noqa: C901, PLR0912
+    async def settings(
         self,
         ctx: discord.ApplicationContext,
         trait_permissions: Option(
@@ -197,139 +197,120 @@ class Admin(commands.Cog):
             default=None,
         ),
     ) -> None:
-        """Manage Valentina's settings for this guild."""
+        """Manage Valentina's settings for this guild.
+
+        Args:
+            ctx (discord.ApplicationContext): The command context.
+            trait_permissions (str, optional): Whether users should be allowed to edit their traits.
+            xp_permissions (str, optional): Whether users should be allowed to edit their XP totals.
+            manage_campaigns (str, optional): Which roles can manage campaigns.
+            use_audit_log (bool, optional): Send audit logs to channel.
+            audit_log_channel_name (str, optional): Audit command usage to this channel.
+            use_error_log_channel (bool, optional): Log errors to a specified channel.
+            error_log_channel_name (str, optional): Name for the error log channel.
+            use_storyteller_channel (bool, optional): Use a private storyteller channel.
+            storyteller_channel_name (str, optional): Name the private storyteller channel.
+
+        Returns:
+            None
+        """
         current_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
         fields = []
         update_data: dict[str, str | int | bool] = {}
 
-        if xp_permissions is not None:
-            fields.append(("XP Permissions", PermissionsEditXP(int(xp_permissions)).name.title()))
-            update_data["permissions_edit_xp"] = int(xp_permissions)
+        # Handle permissions
+        permission_mapping = {
+            "xp_permissions": (PermissionsEditXP, "permissions_edit_xp"),
+            "trait_permissions": (PermissionsEditTrait, "permissions_edit_trait"),
+            "manage_campaigns": (PermissionManageCampaign, "permissions_manage_campaigns"),
+        }
 
-        if trait_permissions is not None:
-            fields.append(
-                ("Trait Permissions", PermissionsEditTrait(int(trait_permissions)).name.title())
-            )
-            update_data["permissions_edit_trait"] = int(trait_permissions)
-
-        if manage_campaigns is not None:
-            fields.append(
-                ("Manage Campaigns", PermissionManageCampaign(int(manage_campaigns)).name.title())
-            )
-            update_data["permissions_manage_campaigns"] = int(manage_campaigns)
-
-        if use_audit_log is not None:
-            if (
-                use_audit_log
-                and not current_settings["log_channel_id"]
-                and not audit_log_channel_name
-            ):
-                await present_embed(
-                    ctx,
-                    title="No audit log channel",
-                    description="Please rerun the command and enter a channel name for audit logging",
-                    level="error",
-                    ephemeral=True,
+        for option, (enum_class, db_key) in permission_mapping.items():
+            value = locals()[option]
+            if value is not None:
+                fields.append(
+                    (option.replace("_", " ").title(), enum_class(int(value)).name.title())
                 )
-                return
-            fields.append(("Audit Logging", "Enabled" if use_audit_log else "Disabled"))
-            update_data["use_audit_log"] = use_audit_log
+                update_data[db_key] = int(value)
 
-        if audit_log_channel_name is not None:
-            channel = await self.bot.guild_svc.create_channel(
-                ctx,
-                audit_log_channel_name,
-                topic="Audit logs",
-                position=100,
-                database_key="log_channel_id",
-                default_role=ChannelPermission.HIDDEN,
-                player=ChannelPermission.HIDDEN,
-                storyteller=ChannelPermission.READ_ONLY,
-            )
-            fields.append(("Audit Log Channel", channel.mention))
-            update_data["log_channel_id"] = channel.id
+        # Handle channel-related settings with specific permissions
+        channel_settings = [
+            (
+                "use_audit_log",
+                "log_channel_id",
+                "audit_log_channel_name",
+                "Audit logs",
+                100,
+                ChannelPermission.HIDDEN,
+                ChannelPermission.HIDDEN,
+                ChannelPermission.READ_ONLY,
+            ),
+            (
+                "use_storyteller_channel",
+                "storyteller_channel_id",
+                "storyteller_channel_name",
+                "Storyteller channel",
+                90,
+                ChannelPermission.HIDDEN,
+                ChannelPermission.HIDDEN,
+                ChannelPermission.POST,
+            ),
+            (
+                "use_error_log_channel",
+                "error_log_channel_id",
+                "error_log_channel_name",
+                "Error log channel",
+                90,
+                ChannelPermission.HIDDEN,
+                ChannelPermission.HIDDEN,
+                ChannelPermission.HIDDEN,
+            ),
+        ]
 
-        if use_storyteller_channel is not None:
-            if (
-                use_storyteller_channel
-                and not current_settings["storyteller_channel_id"]
-                and not storyteller_channel_name
-            ):
-                await present_embed(
-                    ctx,
-                    title="No storyteller log channel",
-                    description="Please rerun the command and enter a name for the storyteller channel",
-                    level="error",
-                    ephemeral=True,
+        for (
+            setting,
+            db_key,
+            channel_name_key,
+            topic,
+            position,
+            default_role,
+            player,
+            storyteller,
+        ) in channel_settings:
+            use_setting = locals()[setting]
+            channel_name = locals()[channel_name_key]
+
+            if use_setting is not None:
+                if use_setting and not current_settings[db_key] and not channel_name:
+                    await present_embed(
+                        ctx,
+                        title=f"No {setting.replace('_', ' ').title()} Channel",
+                        description=f"Please rerun the command and enter a name for the {setting.replace('_', ' ').title()} channel",
+                        level="error",
+                        ephemeral=True,
+                    )
+                    return
+
+                fields.append(
+                    (setting.replace("_", " ").title(), "Enabled" if use_setting else "Disabled")
                 )
-                return
-            fields.append(
-                ("Storyteller Channel", "Enabled" if use_storyteller_channel else "Disabled")
-            )
-            update_data["use_storyteller_channel"] = use_storyteller_channel
+                update_data[setting] = use_setting
 
-        if storyteller_channel_name is not None:
-            channel = await self.bot.guild_svc.create_channel(
-                ctx,
-                storyteller_channel_name,
-                topic="Storyteller channel",
-                position=90,
-                database_key="storyteller_channel_id",
-                default_role=ChannelPermission.HIDDEN,
-                player=ChannelPermission.HIDDEN,
-                storyteller=ChannelPermission.POST,
-            )
-
-            fields.append(("Storyteller Channel", channel.mention))
-            update_data["storyteller_channel_id"] = channel.id
-
-        if use_error_log_channel is not None:
-            if (
-                use_error_log_channel
-                and not current_settings["error_log_channel_id"]
-                and not error_log_channel_name
-            ):
-                await present_embed(
-                    ctx,
-                    title="No Error Log channel",
-                    description="Please rerun the command and enter a name for the Error Log channel",
-                    level="error",
-                    ephemeral=True,
+            if channel_name is not None:
+                created_channel = await self.bot.guild_svc.create_channel(
+                    ctx, channel_name, topic, position, db_key, default_role, player, storyteller
                 )
-                return
-            fields.append(("Error Log Channel", "Enabled" if use_error_log_channel else "Disabled"))
-            update_data["use_error_log_channel"] = use_error_log_channel
+                fields.append((setting.replace("_", " ").title(), created_channel.mention))
+                update_data[db_key] = created_channel.id
 
-        if error_log_channel_name is not None:
-            channel = await self.bot.guild_svc.create_channel(
-                ctx,
-                error_log_channel_name,
-                topic="Error log channel",
-                position=90,
-                database_key="error_log_channel_id",
-                default_role=ChannelPermission.HIDDEN,
-                player=ChannelPermission.HIDDEN,
-                storyteller=ChannelPermission.HIDDEN,
-            )
-
-            fields.append(("Error Log Channel", channel.mention))
-            update_data["error_log_channel_id"] = channel.id
         # Show results
-        if len(fields) > 0:
+        if fields:
             self.bot.guild_svc.update_or_add(ctx.guild, update_data)
-
             updates = ", ".join(f"`{k}={v}`" for k, v in update_data.items() if k != "modified")
-
             await self.bot.guild_svc.send_to_audit_log(ctx, f"Settings updated: {updates}")
-
             await present_embed(
-                ctx,
-                title="Settings Updated",
-                fields=fields,
-                level="success",
-                ephemeral=True,
+                ctx, title="Settings Updated", fields=fields, level="success", ephemeral=True
             )
-
         else:
             await present_embed(ctx, title="No settings updated", level="info", ephemeral=True)
 
