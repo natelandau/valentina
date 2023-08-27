@@ -47,11 +47,10 @@ class ErrorReporter:
 
         if isinstance(
             error,
-            errors.CharacterClaimedError
-            | errors.NoActiveCampaignError
-            | errors.NoClaimError
+            errors.NoActiveCampaignError
             | errors.ValidationError
-            | errors.NoMatchingItemsError,
+            | errors.NoMatchingItemsError
+            | errors.NoActiveCharacterError,
         ):
             user_msg = str(error)
 

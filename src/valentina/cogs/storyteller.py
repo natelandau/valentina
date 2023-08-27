@@ -21,6 +21,7 @@ from valentina.utils.converters import (
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
     select_any_character,
+    select_any_player_character,
     select_char_class,
     select_country,
     select_player_character,
@@ -253,7 +254,7 @@ class StoryTeller(commands.Cog):
         ctx: discord.ApplicationContext,
     ) -> None:
         """List all storyteller characters."""
-        characters = self.bot.char_svc.fetch_all_storyteller_characters(ctx=ctx)
+        characters = self.bot.char_svc.fetch_all_storyteller_characters(ctx)
 
         if len(characters) == 0:
             await present_embed(
@@ -328,6 +329,37 @@ class StoryTeller(commands.Cog):
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
+    @storyteller.command(description="Transfer a character from one owner to another.")
+    async def transfer_character(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to transfer",
+            autocomplete=select_any_player_character,
+            required=True,
+        ),
+        new_owner: Option(discord.User, description="The user to transfer the character to"),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Update the value of a trait for a storyteller or player character."""
+        title = f"Transfer `{character.full_name}` from `{character.owned_by.username}` to `{new_owner.display_name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
+            return
+
+        self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
+        )
+
     @storyteller.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
         self,
@@ -340,7 +372,7 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """View a character sheet for a storyteller character."""
-        await show_sheet(ctx, character=character, claimed_by=None)
+        await show_sheet(ctx, character=character)
 
     @storyteller.command(name="delete_character", description="Delete a storyteller character")
     async def delete_storyteller_character(
@@ -366,7 +398,6 @@ class StoryTeller(commands.Cog):
             return
 
         character.delete_instance(delete_nullable=True, recursive=True)
-        self.bot.char_svc.purge_cache(ctx)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(

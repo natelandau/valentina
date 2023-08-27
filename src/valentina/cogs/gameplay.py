@@ -44,10 +44,10 @@ class Roll(commands.Cog):
             difficulty (int): The difficulty of the roll
             pool (int): The number of dice to roll
         """
-        # Grab the claimed character for statistic logging purposes
+        # Grab the player's active character for statistic logging purposes
         try:
-            character = self.bot.char_svc.fetch_claim(ctx)
-        except errors.NoClaimError:
+            character = self.bot.user_svc.fetch_active_character(ctx)
+        except errors.NoActiveCharacterError:
             character = None
 
         await perform_roll(ctx, pool, difficulty, DiceType.D10.value, comment, character=character)
@@ -107,7 +107,7 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
         trait_one_value = character.get_trait_value(trait_one)
         trait_two_value = character.get_trait_value(trait_two)
 
@@ -127,7 +127,7 @@ class Roll(commands.Cog):
         )
 
     @roll.command(description="Simple dice roll of any size.")
-    async def simple(
+    async def dice(
         self,
         ctx: discord.ApplicationContext,
         pool: discord.Option(int, "The number of dice to roll", required=True),
@@ -163,7 +163,7 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll a macro."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         traits = self.bot.macro_svc.fetch_macro_traits(macro)
         trait_one = traits[0]

@@ -19,6 +19,28 @@ from valentina.constants import (
 from .errors import BotMissingPermissionsError
 
 
+def truncate_string(text: str, max_length: int = 1000) -> str:
+    """Truncate a string to a maximum length.
+
+    Args:
+        text (str): The string to truncate.
+        max_length (int, optional): The maximum length of the string. Defaults to 1000.
+
+    Returns:
+        str: The truncated string.
+
+    Examples:
+        >>> truncate_string("This is a test", 10)
+        'This is...'
+
+        >>> truncate_string("This is a test", 100)
+        'This is a test'
+    """
+    if len(text) > max_length:
+        return text[: max_length - 3] + "..."
+    return text
+
+
 async def assert_permissions(ctx: discord.ApplicationContext, **permissions: bool) -> None:
     """Check if the bot has the required permissions to run the command.""."""
     if missing := [

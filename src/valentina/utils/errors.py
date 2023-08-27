@@ -14,24 +14,6 @@ class BotMissingPermissionsError(DiscordException):
         super().__init__(f"I require {sub} permissions to run this command.")
 
 
-class CharacterClaimedError(Exception):
-    """Raised when a character is claimed by another user."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "The requested character is already claimed by another user."
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
 class DatabaseError(Exception):
     """Raised when a database error occurs or when items are not found."""
 
@@ -68,6 +50,24 @@ class MessageTooLongError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class NoActiveCharacterError(Exception):
+    """Raised when a no active campaign is found."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "No active character found\nUse `/character set_active`"
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class NoActiveCampaignError(Exception):
     """Raised when a no active campaign is found."""
 
@@ -80,24 +80,6 @@ class NoActiveCampaignError(Exception):
     ):
         if not msg:
             msg = "No active campaign found\nUse `/campaign set_active`"
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
-class NoClaimError(Exception):
-    """Raised when a user has no claim on a character."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "You have no character claimed.\nUse `/claim` to claim a character."
         if e:
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 

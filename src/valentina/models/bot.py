@@ -29,7 +29,6 @@ class Valentina(commands.Bot):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
-        self.char_service: Any = None
         self.parent_dir = parent_dir
         self.config = config
         self.version = version
@@ -183,7 +182,7 @@ class Valentina(commands.Bot):
                 # Add guild to database
                 # ############################
 
-                self.guild_svc.update_or_add(guild)
+                self.guild_svc.update_or_add(guild=guild)
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
             # Update all character default values in case something changed

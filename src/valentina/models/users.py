@@ -8,9 +8,11 @@ from datetime import timedelta
 import arrow
 import discord
 from loguru import logger
+from peewee import DoesNotExist
 
 from valentina.constants import PermissionManageCampaign, PermissionsEditTrait, PermissionsEditXP
 from valentina.models.db_tables import Character, GuildUser, User
+from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
 
@@ -20,6 +22,7 @@ class UserService:
     def __init__(self) -> None:
         """Initialize the UserService."""
         self.user_cache: dict[str, User] = {}  # {user_key: User, ...}
+        self.active_character_cache: dict[int, Character] = {}  # {user.id: Character, ...}
 
     @staticmethod
     def __get_user_key(guild: discord.Guild | int, user: discord.User | int) -> str:
@@ -40,65 +43,6 @@ class UserService:
         user_id = user.id if isinstance(user, discord.User) else user
 
         return f"{guild_id}_{user_id}"
-
-    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
-        """Purge the user service cache.
-
-            If 'ctx' is provided, purge the cache for the specific user. If 'ctx' is None,
-        purge all user caches.
-
-        Args:
-            ctx (ApplicationContext | None, optional): The application context. Defaults to None.
-        """
-        if ctx:
-            for key in list(self.user_cache.keys()):
-                if key.startswith(f"{ctx.guild.id}_"):
-                    self.user_cache.pop(key, None)
-                    logger.debug(f"CACHE: Purge user cache: {key}")
-        else:
-            self.user_cache = {}
-            logger.debug("CACHE: Purge all user caches")
-
-    def fetch_user(self, ctx: discord.ApplicationContext) -> User:
-        """Retrieve a User object from the cache or the database.
-
-        Use the application context 'ctx' to fetch a User. If the User isn't present
-        in the cache or the database, create a new User in the database and the cache.
-
-        Args:
-            ctx (ApplicationContext): Application context used to fetch the user.
-
-        Returns:
-            User: User model instance
-        """
-        key = self.__get_user_key(ctx.guild.id, ctx.author.id)
-        if key in self.user_cache:
-            logger.info(f"CACHE: Return user with ID {ctx.author.id}")
-            return self.user_cache[key]
-
-        user, created = User.get_or_create(
-            id=ctx.author.id,
-            defaults={
-                "name": ctx.author.display_name,
-                "username": ctx.author.name,
-                "mention": ctx.author.mention,
-                "first_seen": time_now(),
-                "last_seen": time_now(),
-            },
-        )
-
-        if created:
-            GuildUser.get_or_create(user=ctx.author.id, guild=ctx.guild.id)
-            logger.info(f"DATABASE: Create user '{ctx.author.display_name}'")
-        else:
-            user.last_seen = time_now()
-            user.save()
-            logger.debug(f"DATABASE: Update last_seen for user '{ctx.author.display_name}'")
-
-        self.user_cache[key] = user
-        logger.debug(f"CACHE: Add user '{ctx.author.display_name}'")
-
-        return user
 
     def can_update_xp(self, ctx: discord.ApplicationContext, character: Character = None) -> bool:
         """Check if the user has permissions to add experience points.
@@ -222,3 +166,170 @@ class UserService:
             return check_permission(ctx)
 
         return False
+
+    def fetch_alive_characters(
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+    ) -> list[Character]:
+        """Retrieve a list of active characters for the user."""
+        user = self.fetch_user(ctx=ctx)
+
+        guild = ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
+
+        return [
+            x
+            for x in Character.select().where(
+                Character.owned_by == user,
+                Character.guild == guild.id,
+                Character.data["player_character"] == True,  # noqa: E712
+                Character.data["alive"] == True,  # noqa: E712
+            )
+        ]
+
+    def fetch_active_character(
+        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+    ) -> Character:
+        """Fetch the active character for the user.
+
+        Args:
+            ctx (ApplicationContext | discord.AutocompleteContext): The context which contains the author and guild information.
+
+        Returns:
+            Character: The active character for the user.
+
+        Raises:
+            errors.NoActiveCharacterError: Raised if the user has no active character.
+        """
+        user = self.fetch_user(ctx=ctx)
+
+        if user.id in self.active_character_cache:
+            logger.debug(
+                f"CACHE: Return active character '{self.active_character_cache[user.id].id}'"
+            )
+            return self.active_character_cache[user.id]
+
+        guild = ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
+
+        try:
+            character = Character.get(
+                Character.owned_by == user,
+                Character.guild == guild.id,
+                Character.data["player_character"] == True,  # noqa: E712
+                Character.data["is_active"] == True,  # noqa: E712
+            )
+        except DoesNotExist as e:
+            raise errors.NoActiveCharacterError from e
+
+        logger.debug(f"DATABASE: Fetch active character '{character.id}'")
+        self.active_character_cache[user.id] = character
+
+        return character
+
+    def fetch_user(
+        self,
+        ctx: discord.ApplicationContext | discord.AutocompleteContext = None,
+        user: discord.User | discord.Member = None,
+    ) -> User:
+        """Retrieve and/or add a User object from the cache or the database.
+
+        Use the application context 'ctx' to fetch a User. If the User isn't present
+        in the cache or the database, create a new User in the database and the cache.
+
+        Args:
+            ctx (ApplicationContext | discord.AutocompleteContext): The context which contains the author and guild information.
+            user (discord.User | discord.Member, optional): A specific user to fetch. Defaults to None.
+
+        Returns:
+            User: User database model instance
+        """
+        if isinstance(ctx, discord.ApplicationContext):
+            member, guild = ctx.author, ctx.guild
+        else:
+            member, guild = ctx.interaction.user, ctx.interaction.guild
+
+        if user:
+            member = user
+
+        key = self.__get_user_key(guild.id, member.id)
+        if key in self.user_cache:
+            logger.debug(f"CACHE: Return user with ID {member.id}")
+            return self.user_cache[key]
+
+        db_user, created = User.get_or_create(
+            id=member.id,
+            defaults={
+                "name": member.display_name,
+                "username": member.name,
+                "mention": member.mention,
+                "first_seen": time_now(),
+                "last_seen": time_now(),
+            },
+        )
+
+        if created:
+            logger.info(f"DATABASE: Create user '{member.display_name}'")
+        else:
+            db_user.last_seen = time_now()
+            db_user.save()
+            logger.debug(f"DATABASE: Update last_seen for user '{member.display_name}'")
+
+        GuildUser.get_or_create(user=member.id, guild=guild.id)  # Add to guild lookup table
+
+        self.user_cache[key] = db_user
+        logger.debug(f"CACHE: Add user '{member.display_name}'")
+
+        return db_user
+
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
+        """Purge the user service cache.
+
+            If 'ctx' is provided, purge the cache for the specific user. If 'ctx' is None,
+        purge all user caches.
+
+        Args:
+            ctx (ApplicationContext | None, optional): The application context. Defaults to None.
+        """
+        if ctx:
+            for key in list(self.user_cache.keys()):
+                if key.startswith(f"{ctx.guild.id}_"):
+                    self.user_cache.pop(key, None)
+                    logger.debug(f"CACHE: Purge user cache for user `{ctx.author.id}`")
+            self.active_character_cache.pop(ctx.author.id, None)
+        else:
+            self.user_cache = {}
+            self.active_character_cache = {}
+            logger.debug("CACHE: Purge all user caches")
+
+    def set_active_character(self, ctx: discord.ApplicationContext, character: Character) -> None:
+        """Switch the active character for the user."""
+        user = self.fetch_user(ctx=ctx)
+
+        for c in Character.select().where(
+            Character.owned_by == user,
+            Character.guild == ctx.guild.id,
+            Character.data["player_character"] == True,  # noqa: E712
+        ):
+            if c.id == character.id:
+                c.data["is_active"] = True
+                c.save()
+            else:
+                c.data["is_active"] = False
+                c.save()
+
+        self.active_character_cache[user.id] = character
+
+        logger.debug(f"DATABASE: Set active character for {user.username} to '{character.id}'")
+
+    def transfer_character_owner(
+        self, ctx: discord.ApplicationContext, character: Character, new_owner: User
+    ) -> None:
+        """Transfer ownership of a character to another user."""
+        current_user = self.fetch_user(ctx)
+        new_user = self.fetch_user(ctx, new_owner)
+
+        character.owned_by = new_user
+        character.save()
+
+        self.purge_cache()
+        logger.debug(
+            f"DATABASE: '{current_user.username}' transferred ownership of '{character.id}' to '{new_user.username}'"
+        )
