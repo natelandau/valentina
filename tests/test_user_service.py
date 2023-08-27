@@ -8,6 +8,7 @@ from discord import ApplicationContext, Role
 from valentina.constants import PermissionManageCampaign, PermissionsEditTrait, PermissionsEditXP
 from valentina.models import UserService
 from valentina.models.db_tables import Character, GuildUser, User
+from valentina.utils import errors
 
 
 @pytest.mark.usefixtures("mock_db")
@@ -54,8 +55,10 @@ class TestUserService:
         Then the cache is empty
         """
         self.user_svc.user_cache = {"1_1": "a", "2_2": "b"}
+        self.user_svc.active_character_cache = {"1": "a", "2": "b"}
         self.user_svc.purge_cache()
         assert self.user_svc.user_cache == {}
+        assert self.user_svc.active_character_cache == {}
 
     def test_purge_by_id(self, mock_ctx, mock_ctx3):
         """Test purging a user from the cache.
@@ -64,11 +67,13 @@ class TestUserService:
         When one user is purged
         Then the cache contains only the other user
         """
-        # Confirm three users in cache
+        # Confirm the caches are populated with data
         assert self.user_svc.fetch_user(mock_ctx) == User(id=1, name="Test User")
         assert self.user_svc.fetch_user(mock_ctx3) == User(id=600, name="Test User 600")
         self.user_svc.user_cache["100_1"] = User(id=1, name="Test User")
         assert len(self.user_svc.user_cache) == 3
+        self.user_svc.active_character_cache[1] = "one"
+        self.user_svc.active_character_cache[2] = "two"
 
         # Purge one user
         self.user_svc.purge_cache(mock_ctx)
@@ -78,11 +83,12 @@ class TestUserService:
         assert "1_1" not in self.user_svc.user_cache
         assert "1_600" not in self.user_svc.user_cache
         assert "100_1" in self.user_svc.user_cache
+        assert 1 not in self.user_svc.active_character_cache
+        assert 2 in self.user_svc.active_character_cache
 
     @pytest.mark.parametrize(
         ("xp_permissions_value", "is_admin", "is_char_owner", "hours_since_creation", "expected"),
         [
-            (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
             (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
             (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 1, True),
             (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 38, False),
@@ -144,7 +150,6 @@ class TestUserService:
             "expected",
         ),
         [
-            (PermissionsEditTrait.UNRESTRICTED.value, False, True, 38, True),
             (PermissionsEditTrait.UNRESTRICTED.value, False, True, 38, True),
             (PermissionsEditTrait.WITHIN_24_HOURS.value, False, True, 1, True),
             (PermissionsEditTrait.WITHIN_24_HOURS.value, False, True, 38, False),
@@ -265,3 +270,115 @@ class TestUserService:
 
         # THEN return the correct result
         assert result is expected
+
+    def test_fetch_alive_characters(self, mock_ctx) -> None:
+        """Test fetching active characters."""
+        # GIVEN a character
+        character = Character.create(
+            data={
+                "first_name": "char1",
+                "last_name": "character",
+                "storyteller_character": False,
+                "player_character": True,
+                "alive": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            owned_by=mock_ctx.author.id,
+            clan=1,
+        )
+        character2 = Character.create(
+            data={
+                "first_name": "char2",
+                "last_name": "character",
+                "storyteller_character": False,
+                "player_character": True,
+                "alive": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            owned_by=mock_ctx.author.id,
+            clan=1,
+        )
+        # Do not return dead or non-player characters
+        Character.create(
+            data={
+                "first_name": "char3",
+                "last_name": "character",
+                "storyteller_character": False,
+                "player_character": True,
+                "alive": False,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            owned_by=mock_ctx.author.id,
+            clan=1,
+        )
+        Character.create(
+            data={
+                "first_name": "char4",
+                "last_name": "character",
+                "storyteller_character": True,
+                "player_character": False,
+                "alive": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            owned_by=mock_ctx.author.id,
+            clan=1,
+        )
+        Character.create(
+            data={
+                "first_name": "char15",
+                "last_name": "character",
+                "storyteller_character": False,
+                "player_character": True,
+                "alive": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id + 1,
+            created_by=mock_ctx.author.id,
+            owned_by=mock_ctx.author.id,
+            clan=1,
+        )
+
+        # WHEN fetch_active_characters is called
+        result = self.user_svc.fetch_alive_characters(mock_ctx)
+
+        # THEN return the correct result
+        assert result == [character, character2]
+
+    def test_fetch_active_character(self, mock_ctx, caplog) -> None:
+        """Test fetching an active character."""
+        # GIVEN no active characters
+        # WHEN fetch_active_character is called
+        # THEN raise NoActiveCharacterError
+        with pytest.raises(errors.NoActiveCharacterError):
+            self.user_svc.fetch_active_character(mock_ctx)
+
+        # GIVEN an active character and an empty cache
+        character = Character.get_by_id(2)
+        character.data["is_active"] = True
+        character.save()
+        self.user_svc.character_cache = {}
+
+        # WHEN fetch_active_character is called
+        result = self.user_svc.fetch_active_character(mock_ctx)
+        logged = caplog.text
+
+        # THEN return the correct result from the database
+        assert result == character
+        assert "DATABASE: Fetch active character" in logged
+        assert "CACHE: Return active character" not in logged
+
+        # WHEN fetch_active_character is called again
+        result = self.user_svc.fetch_active_character(mock_ctx)
+        logged = caplog.text
+
+        # THEN return the correct result from the cache
+        assert result == character
+        assert "CACHE: Return active character" in logged

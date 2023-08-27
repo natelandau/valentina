@@ -68,6 +68,24 @@ class MessageTooLongError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class NoActiveCharacterError(Exception):
+    """Raised when a no active campaign is found."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "No active character found\nUse `/character set_active`"
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class NoActiveCampaignError(Exception):
     """Raised when a no active campaign is found."""
 

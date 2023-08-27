@@ -51,7 +51,8 @@ class ErrorReporter:
             | errors.NoActiveCampaignError
             | errors.NoClaimError
             | errors.ValidationError
-            | errors.NoMatchingItemsError,
+            | errors.NoMatchingItemsError
+            | errors.NoActiveCharacterError,
         ):
             user_msg = str(error)
 
