@@ -127,7 +127,7 @@ class Roll(commands.Cog):
         )
 
     @roll.command(description="Simple dice roll of any size.")
-    async def simple(
+    async def dice(
         self,
         ctx: discord.ApplicationContext,
         pool: discord.Option(int, "The number of dice to roll", required=True),

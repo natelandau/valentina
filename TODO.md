@@ -2,10 +2,7 @@
 
 -   [x] Admin: Settings for managing campaigns (ie, who can create, who can edit, etc)
 -   [ ] Character: Mark characters as dead
--   [ ] Character: Migrate to "owned" characters
-    -   transfer characters between players
-        -   player can transfer their own
-        -   storyteller/admin can transfer any
+-   [x] Character: Migrate to "owned" characters
 -   [ ] Campaign: Renumber chapters
 -   [ ] Campaign: View any campaign, not just active one
 -   [ ] Campaign: If only one campaign, always set it as active

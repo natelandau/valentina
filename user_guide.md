@@ -7,9 +7,10 @@ This guide will help you understand and use Valentina Noir, a tool that manages 
 3. Character Creation & Management
 4. Gameplay
 5. Campaigns
-6. Storyteller Commands
-7. Roles in Valentina Noir
-8. Troubleshooting & FAQ
+6. Storyteller Features
+7. Other Features
+8. Roles in Valentina Noir
+9. Troubleshooting & FAQ
 
 ## 1. INTRODUCTION
 
@@ -23,18 +24,17 @@ Valentina Noir assists in managing role-playing sessions, providing easy access 
 -   **Special Rolls:** Rolled ones count as -1 success, and rolled tens count as 2 successes.
 -   **Cool Points**: Additional rewards worth 10xp each.
 
-Valentina uses Discord "slash" commands to manage characters and gameplay. to type any command type `/` into a the Discord message field.
+Valentina uses Discord "slash" commands to manage characters and gameplay. To type any command, type `/` into a the Discord message field.
 
-For interactive help, run `/help` commands to see a list of available commands.
+For interactive help, run `/help commands` to see a list of available commands.
 
 ## 2. CORE CONCEPTS
 
 Valentina Noir revolves around three core concepts:
 
--   **Characters**: The main focus, with stats, traits, and abilities. They can be claimed by users for gameplay.
+-   **Characters**: Player characters managed in Valentina allow for quick dice rolling, XP spending, and character updates.
 -   **Campaigns**: Storylines with multiple chapters, NPCs, and notes, spanning multiple gaming sessions.
 -   **Gameplay**: The actual game, where you roll dice and play using your character.
--   **Storyteller Commands**: Commands for the Storyteller to manage the game.
 
 ## 3. CHARACTER CREATION & MANAGEMENT
 
@@ -44,12 +44,16 @@ Valentina Noir revolves around three core concepts:
 -   **IMPORTANT**: Create your character on paper before entering it into Valentina.
 -   **Post creation:** Don't worry if you make a mistake or the section on your sheet doesn't appear during character generation.You can easily add/update traits, abilities, custom sections, and a biography as needed.
 
+### Active Characters
+
+You may only have a single character active at a time. To set a character as active, use `/character set_active` and specify the character name. This will allow you to manage and roll dice for that character.
+
+In some circumstances, you may want to transfer ownership of a character to another user. To do so, use `/character transfer` and specify the character name and the user to transfer to.
+
 ### Managing Your Character
 
--   **Claiming**: Use `/character claim` to claim a character for rolling dice and making updates.
--   **Unclaiming**: Use `/character unclaim` to allow another user to claim the character.
--   **Adding new information**: Use `/character add` to add new traits, abilities, custom sections, and a biography.
--   **Updating information**: Use `/character update` to update existing traits, abilities, custom sections, and a biography.
+-   **Adding new information**: Use `/character add ...` to add new traits, abilities, custom sections, and a biography.
+-   **Updating information**: Use `/character update ...` to update existing traits, abilities, custom sections, and a biography.
 -   **Spending XP**: Use `/xp` to spend XP and increase your character's stats.
 
 ## 4. GAMEPLAY
@@ -57,13 +61,13 @@ Valentina Noir revolves around three core concepts:
 ### Before Gameplay
 
 -   Create characters using `/character create`.
--   Claim a character using `/character claim`.
+-   Set a character as active using `/character set_active`.
 -   Create macros for diceroll shortcuts using `/macro create`.
 
 **What is a Macro?**
-In Valentina Noir, a macro is a custom shortcut that you can create to simplify complex dice rolls or frequently used commands. Macros are tied to users, not characters, meaning you can use the same macro across different characters.
+In Valentina Noir, a macro is a custom shortcut that you can create to simplify complex dice rolls. Macros are tied to users, not characters, meaning you can use the same macro regardless of which character is active.
 
-For example, if you often need to roll for perception and alertness, you can create a macro called `pa` that combines these stats into a single roll. Instead of typing out the full command each time, you can simply use `/roll macro pa`, and Valentina Noir will execute the roll for you.
+For example, if you often need to roll for _perception_ and _alertness_, you can create a macro called `pa` that combines these stats into a single roll. Instead of typing computing the number of dice yourself, you can simply use `/roll macro pa`, and Valentina Noir will execute the roll for you.
 
 Here's how you can work with macros:
 
@@ -79,10 +83,19 @@ Macros are a powerful tool to enhance your gaming experience, allowing for quick
 -   **Create Campaign NPCs**: As you meet an important NPC, take a note of them with `/campaign npc create`.
 -   **Add Campaign Notes**: Keep track of important information by creating notes during gameplay with `/campaign note create`.
 
+### Dice Rolling
+
+Rolling dice is a core part of gameplay. Valentina Noir provides the following commands to roll dice:
+
+-   **Rolling D10s**: Use `/roll throw` to roll any number of D10s against an optional difficulty (default is 6).
+-   **Rolling Traits**: Use `/roll traits <trait_name> <trait_name>` to roll a trait. For example, `/roll traits strength brawl` will compute the correct dice to roll based on your character.
+-   **Rolling a Macro**: Use `/roll macro <macro_name>` to roll a macro. For example, `/roll macro pa` will roll the macro `pa` that you created earlier.
+-   **Rolling Arbitrary Dice**: Use `/roll <dice>` to roll arbitrary dice. For example, `/roll 3d6` will roll 3 six-sided dice.
+
 ### After Gameplay
 
 -   Add or spend experience points using `/xp`.
--   Unclaim your character using `/character unclaim`.
+-   Remember to update the chapter of your campaign using `/campaign chapter`.
 
 ## 5. CAMPAIGNS
 
@@ -103,25 +116,36 @@ Campaigns are the backbone of your role-playing adventure in Valentina Noir. The
 -   **Updating Chapters**: After each gameplay session, update the chapters using `/campaign chapter create`. This helps in maintaining the continuity and progression of the story.
 -   **Viewing**: Use commands like `/campaign list`, `/campaign view`, `/campaign chapter list`, and `/campaign npc list` to view and manage the campaigns, chapters, NPCs, and notes.
 
-## 6. STORYTELLER COMMANDS
+## 6. STORYTELLER FEATURES
 
-Storytellers can create a private channel that is not viewable by players. This allows them to manage the game without revealing information to the players. Within this channel, they can create randomized NPCs, roll traits for those NPCs, and make updates to player characters.
+Storytellers have access to many features that help in managing the game. These include:
 
-Storytellers can use the following commands to manage the game.
-
--   **Use a private channel:** Use a private channel to manage the game. This will prevent other users from seeing your commands. To create a private channel, use `/admin settings`
--   **Create Characters**: Use `/storyteller character create` to create an NPC.
--   **Roll Dice:** Use `/storyteller roll_traits` to quickly roll dice for NPCs.
+-   **Private Channels**: Storytellers can create a private channel that is not viewable by players. This allows them to manage the game without revealing information to the players.
+-   **NPCs**: Storytellers can create NPCs and then quickly roll dice for their traits
+    -   `/storyteller create_story_char` to create an NPC with full control over trait values
+    -   `/storyteller create_rng_char` to quickly create an NPC with randomized trait values
 -   **Grant Characters XP**: Use `/storyteller grant_xp` to grant XP to a player character.
 -   **Grant Characters Cool Points**: Use `/storyteller grant_cp` to grant cool points to a player character.
+-   **Transfer Characters**: Use `/storyteller transfer_character` to transfer a character from one user to another.
 
-## 7. ROLES IN VALENTINA NOIR
+## 7. OTHER FEATURES
+
+The core features of Valentina Noir are covered in the previous sections. These additional features are also available:
+
+-   **Help**: Use `/help` to get help on various topics, including commands, traits, and macros.
+-   **Coinflip**: Use `/coinflip` to flip a coin.
+-   **Roll Probabilities**: Use `/roll probability` to see the probability of rolling a certain number of successes.
+-   **Roll Statistics**: Use `/reference statistics` to see the diceroll statistics for a guild, user, or character.
+-   **Reference Information**: Use `/reference` for information on various topics such as health, magic, disciplines, and more.
+-   **Adding Roll Result Images**: Use `/roll upload_thumbnail` to add an image or animated gif to a roll result.
+
+## 8. ROLES IN VALENTINA NOIR
 
 In Valentina Noir, users can have one of three distinct roles, each with its own responsibilities and capabilities. Understanding these roles helps in managing and participating in the game effectively.
 
 ### Admin
 
-The Admin is responsible for overall management and configuration of the Valentina Noir system within the Discord server. This role typically includes:
+The `Admin` is responsible for overall management and configuration of the Valentina Noir system within the Discord server. This role typically includes:
 
 -   **Setting Up**: Configuring the system, managing permissions, and ensuring that everything is running smoothly.
 -   **User Management**: Assigning roles to users, such as designating Storytellers or managing player access.
@@ -130,7 +154,7 @@ The Admin is responsible for overall management and configuration of the Valenti
 
 ### Storyteller
 
-The Storyteller is the game master, guiding the narrative and controlling non-player characters (NPCs), events, and the overall direction of the game. Responsibilities include:
+The `Storyteller` is the game master, guiding the narrative and controlling non-player characters (NPCs), events, and the overall direction of the game. Responsibilities include:
 
 -   **Narrative Control**: Creating and managing Campaigns, chapters, NPCs, and notes.
 -   **Game Management**: Rolling dice for NPCs, controlling game flow, and ensuring fair play.
@@ -139,14 +163,14 @@ The Storyteller is the game master, guiding the narrative and controlling non-pl
 
 ### Player
 
-Players are the participants in the game, controlling individual characters and interacting with the story as it unfolds. As a player, you will:
+`Players` are the participants in the game, controlling individual characters and interacting with the story as it unfolds. As a player, you will:
 
 -   **Character Management**: Create, claim, and manage your character, including stats, traits, and abilities.
 -   **Gameplay Participation**: Engage in gameplay by rolling dice, using macros, and making decisions for your character.
 -   **Collaboration**: Work with other players and the Storyteller to create an engaging and immersive story.
 -   **Commands**: Utilize commands like `/character create`, `/roll`, and `/xp` to interact with the game.
 
-## 8. TROUBLESHOOTING & FAQ
+## 9. TROUBLESHOOTING & FAQ
 
 This section provides solutions to common problems and answers to frequently asked questions. If you encounter an issue not covered here, please refer to the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina) for support.
 
@@ -160,7 +184,7 @@ This section provides solutions to common problems and answers to frequently ask
 **A:** Please file an issue on the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina). Provide as much detail as possible on the feature you would like to see.
 
 **Q: Can I play multiple characters at once?**
-**A:** You can create multiple characters, but you can only claim and play one character at a time.
+**A:** You can create multiple characters, but you may only have a single character active at a time. To set a character as active, use `/character set_active` and specify the character name.
 
 **Q: How do I become a Storyteller or Admin?**
 **A:** Roles like Storyteller and Admin are typically assigned by the server owner or existing Admins. Speak with them if you are interested in taking on one of these roles.
