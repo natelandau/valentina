@@ -36,7 +36,7 @@ class TestCampaignService:
         captured = caplog.text
 
         # Verify the campaign was created
-        assert "Purge cache for guild 1" in captured
+        assert "Purge campaign cache for guild 1" in captured
         assert result.name == "new_campaign"
         assert result.is_active is False
         assert Campaign.select().count() == current_count + 1
@@ -200,7 +200,7 @@ class TestCampaignService:
         captured = caplog.text
 
         # Verify the campaign and all associated content was deleted
-        assert "Purge cache for guild 1" in captured
+        assert "Purge campaign cache for guild 1" in captured
         assert Campaign.select().count() == campaign_count - 1
         assert CampaignChapter.select().count() == chapter_count - 1
         assert CampaignNote.select().count() == note_count - 2

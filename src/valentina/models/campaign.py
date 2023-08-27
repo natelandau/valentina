@@ -571,7 +571,7 @@ class CampaignService:
             ctx (ApplicationContext | None, optional): Context which provides information about the guild.
         """
         if ctx:
-            logger.info(f"CAMPAIGN: Purge cache for guild {ctx.guild.id}")
+            logger.debug(f"CACHE: Purge campaign cache for guild {ctx.guild.id}")
             ids = Campaign.select(Campaign.id).where(Campaign.guild == ctx.guild.id)
             for i in ids:
                 self.chapter_cache.pop(i.id, None)
@@ -589,7 +589,7 @@ class CampaignService:
             ]
             for cache in caches:
                 cache.clear()
-            logger.info("CAMPAIGN: Purge cache")
+            logger.info("CACHE: Purge campaign cache for all guilds")
 
     def update_chapter(
         self, ctx: discord.ApplicationContext, chapter: CampaignChapter, **kwargs: str

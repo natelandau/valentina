@@ -182,7 +182,7 @@ class Valentina(commands.Bot):
                 # Add guild to database
                 # ############################
 
-                self.guild_svc.update_or_add(guild)
+                self.guild_svc.update_or_add(guild=guild)
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
             # Update all character default values in case something changed

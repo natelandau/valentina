@@ -229,13 +229,23 @@ class GuildService:
 
         return self.roll_result_thumbs[ctx.guild.id]
 
-    def purge_cache(self, guild: discord.Guild | None = None) -> None:
+    def purge_cache(
+        self,
+        ctx: discord.ApplicationContext | discord.AutocompleteContext | None = None,
+        guild: discord.Guild | None = None,
+    ) -> None:
         """Purge the cache for a guild or all guilds.
 
         Args:
-            guild (discord.Guild, optional): The guild to purge the cache for. Defaults to None.
+            ctx (optional, ApplicationContext | AutocompleteContext): The application context.
+            guild (optional, discord.Guild): The guild to purge the cache for.
         """
-        if guild:
+        if ctx and not guild:
+            guild = (
+                ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
+            )
+
+        if ctx or guild:
             self.settings_cache.pop(guild.id, None)
             self.roll_result_thumbs.pop(guild.id, None)
             logger.debug(f"CACHE: Purge guild cache for '{guild.name}'")
@@ -361,12 +371,21 @@ class GuildService:
 
     def update_or_add(
         self,
-        guild: discord.Guild,
+        guild: discord.Guild | None = None,
+        ctx: discord.ApplicationContext | None = None,
         updates: dict[str, str | int | bool] | None = None,
     ) -> Guild:
         """Add a guild to the database or update it if it already exists."""
+        if ctx and guild:
+            raise ValueError("Cannot pass both guild and ctx")
+
         # Purge the guild from the cache
-        self.purge_cache(guild)
+        if ctx:
+            self.purge_cache(ctx)
+            guild = ctx.guild
+
+        if guild:
+            self.purge_cache(guild=guild)
 
         # Create initialization data
         initial_data = GUILD_DEFAULTS.copy() | {"modified": str(time_now())} | (updates or {})

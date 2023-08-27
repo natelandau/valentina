@@ -64,7 +64,7 @@ class MacroService:
         )
         MacroTrait.create_from_trait_name(macro, trait_one.name)
         MacroTrait.create_from_trait_name(macro, trait_two.name)
-        self.purge(ctx)
+        self.purge_cache(ctx)
 
         return macro
 
@@ -72,7 +72,7 @@ class MacroService:
         """Delete the macro and associated macro traits."""
         logger.debug(f"DATABASE: Delete macro {macro.name} for {ctx.author.display_name}")
         macro.delete_instance(recursive=True, delete_nullable=True)
-        self.purge(ctx)
+        self.purge_cache(ctx)
 
     def fetch_macros(self, guild_id: int, user_id: int) -> list[Macro]:
         """Fetch the macros for the given guild and user.
@@ -114,7 +114,7 @@ class MacroService:
 
         return self._trait_cache[macro.id]
 
-    def purge(self, ctx: discord.ApplicationContext | None = None) -> None:
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:
         """Purge the macro cache."""
         if ctx:
             logger.debug(f"CACHE: Purge macros for {ctx.author.display_name}")

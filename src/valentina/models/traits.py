@@ -5,6 +5,7 @@ Note, due to ForeignKey constraints, the trait database models are defined in da
 
 from itertools import chain
 
+import discord
 from loguru import logger
 from peewee import DoesNotExist, fn
 
@@ -163,7 +164,7 @@ class TraitService:
         except DoesNotExist as e:
             raise errors.NoMatchingItemsError(f"Trait `{query}` not found") from e
 
-    def purge(self) -> None:
+    def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:  # noqa: ARG002
         """Purge the cache."""
-        logger.info("TRAITS: Purge cache")
+        logger.debug("CACHE: Purge traits cache")
         self.class_traits = {}

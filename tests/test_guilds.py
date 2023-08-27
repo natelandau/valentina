@@ -30,7 +30,7 @@ class TestGuildService:
         mock_guild.__class__ = discord.Guild
 
         # WHEN update_or_add is called
-        self.guild_svc.update_or_add(mock_guild, updates={"key": "value"})
+        self.guild_svc.update_or_add(guild=mock_guild, updates={"key": "value"})
 
         # THEN the guild is added to the database with the correct default values and the cache for that guild is purged
         assert self.guild_svc.settings_cache == {1: {"a": "b"}, 2: {"c": "d"}}
@@ -43,7 +43,7 @@ class TestGuildService:
 
         # WHEN update_or_add is called again with new data
         updates = {"key": "new_value", "new_key": "new_value"}
-        self.guild_svc.update_or_add(mock_guild, updates=updates)
+        self.guild_svc.update_or_add(guild=mock_guild, updates=updates)
 
         # THEN the guild is updated with the new data
         result = Guild.get_by_id(1002002002)
@@ -91,7 +91,7 @@ class TestGuildService:
         self.guild_svc.settings_cache = {1: {"a": "b"}, 2: {"c": "d"}}
 
         # Purge the cache
-        self.guild_svc.purge_cache(mock_ctx.guild)
+        self.guild_svc.purge_cache(mock_ctx)
 
         # Confirm the cache was purged
         assert self.guild_svc.settings_cache == {2: {"c": "d"}}

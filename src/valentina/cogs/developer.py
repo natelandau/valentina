@@ -236,25 +236,31 @@ class Developer(commands.Cog):
         """Purge the bot's cache and reload all data from the database."""
         title = "Purge all caches" if all_guilds else "Purge this guild's cache"
         confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-
         if not confirmed:
             return
 
-        if not all_guilds:
-            self.bot.guild_svc.purge_cache(ctx.guild)
-            self.bot.user_svc.purge_cache(ctx)
-            self.bot.char_svc.purge_cache(ctx)
-            self.bot.campaign_svc.purge_cache(ctx)
-            self.bot.macro_svc.purge(ctx)
-            logger.info(f"DEVELOPER: Purge cache for {ctx.guild.name}")
+        services = {
+            "guild_svc": self.bot.guild_svc,
+            "user_svc": self.bot.user_svc,
+            "char_svc": self.bot.char_svc,
+            "campaign_svc": self.bot.campaign_svc,
+            "macro_svc": self.bot.macro_svc,
+            "trait_svc": self.bot.trait_svc,
+        }
 
         if all_guilds:
-            self.bot.guild_svc.purge_cache()
-            self.bot.user_svc.purge_cache()
-            self.bot.char_svc.purge_cache()
-            self.bot.campaign_svc.purge_cache()
-            self.bot.macro_svc.purge()
-            logger.info("DEVELOPER: Purge cache for all guilds")
+            logger.info("DEVELOPER: Purge all caches for all guilds")
+        else:
+            logger.info(f"DEVELOPER: Purge all caches for {ctx.guild.name}")
+
+        for service_name, service in services.items():
+            if hasattr(service, "purge_cache"):
+                if all_guilds:
+                    service.purge_cache()
+                else:
+                    service.purge_cache(ctx=ctx)
+            else:
+                logger.debug(f"{service_name} does not have a purge_cache method.")
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(

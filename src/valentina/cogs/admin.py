@@ -305,7 +305,7 @@ class Admin(commands.Cog):
 
         # Show results
         if fields:
-            self.bot.guild_svc.update_or_add(ctx.guild, update_data)
+            self.bot.guild_svc.update_or_add(ctx=ctx, updates=update_data)
             updates = ", ".join(f"`{k}={v}`" for k, v in update_data.items() if k != "modified")
             await self.bot.guild_svc.send_to_audit_log(ctx, f"Settings updated: {updates}")
             await present_embed(

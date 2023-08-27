@@ -63,15 +63,15 @@ class TestTraitService:
         with pytest.raises(errors.NoMatchingItemsError, match=r"Trait `\w+` not found"):
             self.trait_svc.fetch_trait_category(999999)
 
-    def test_purge(self) -> None:
-        """Test purge().
+    def test_purge_cache(self) -> None:
+        """Test purge_cache().
 
         GIVEN a trait name
         WHEN purging that trait
         THEN purge the cache
         """
         assert len(self.trait_svc.class_traits) > 0
-        self.trait_svc.purge()
+        self.trait_svc.purge_cache()
         assert len(self.trait_svc.class_traits) == 0
 
     def test_fetch_all_traits_one(self):
