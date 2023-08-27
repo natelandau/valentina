@@ -46,7 +46,7 @@ class Xp(commands.Cog, name="XP"):
         ),
     ) -> None:
         """Spend experience points."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
         old_value = character.get_trait_value(trait)
         category = trait.category.name
 
@@ -120,7 +120,7 @@ class Xp(commands.Cog, name="XP"):
         ),
     ) -> None:
         """Add experience to a character."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         if not self.bot.user_svc.can_update_xp(ctx, character):
             await present_embed(
@@ -170,7 +170,7 @@ class Xp(commands.Cog, name="XP"):
         ),
     ) -> None:
         """Add cool points to a character."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         if not self.bot.user_svc.can_update_xp(ctx, character):
             await present_embed(

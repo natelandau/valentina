@@ -2,6 +2,7 @@
 """Gameplay cog for Valentina."""
 
 import discord
+import inflect
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
@@ -39,12 +40,14 @@ from valentina.views import (
     show_sheet,
 )
 
+p = inflect.engine()
+
 
 class Characters(commands.Cog, name="Character"):
-    """Create, manage, update, and claim characters."""
+    """Create, manage, and update characters."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
     update = chars.create_subgroup("update", "Make edits to character information")
@@ -118,6 +121,12 @@ class Characters(commands.Cog, name="Character"):
             "player_character": True,
         }
 
+        # Make character active if user does not have an active character
+        try:
+            self.bot.user_svc.fetch_active_character(ctx)
+        except errors.NoActiveCharacterError:
+            data["is_active"] = True
+
         character = self.bot.char_svc.update_or_add(
             ctx,
             data=data,
@@ -132,6 +141,35 @@ class Characters(commands.Cog, name="Character"):
             ctx, f"Created player character: `{character.full_name}` as a `{char_class.name}`"
         )
         logger.info(f"CHARACTER: Create character {character}")
+
+    @chars.command(name="set_active", description="Select a character as your active character")
+    async def set_active_character(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to view",
+            autocomplete=select_player_character,
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Select a character as your active character."""
+        title = f"Set `{character.name}` as active character for `{ctx.author.display_name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        if not confirmed:
+            return
+
+        self.bot.user_svc.set_active_character(ctx, character)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
+        )
 
     @chars.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
@@ -150,60 +188,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Displays a character sheet in the channel."""
-        if self.bot.char_svc.is_char_claimed(ctx.guild.id, character.id):
-            user_id_num = self.bot.char_svc.fetch_user_of_character(ctx.guild.id, character.id)
-            claimed_by = self.bot.get_user(user_id_num)
-        else:
-            claimed_by = None
-
-        await show_sheet(ctx, character=character, claimed_by=claimed_by, ephemeral=hidden)
-
-    @chars.command(name="claim")
-    async def claim_character(
-        self,
-        ctx: discord.ApplicationContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to claim",
-            autocomplete=select_player_character,
-            required=True,
-            name="character",
-        ),
-    ) -> None:
-        """Claim a character to your user. Allows rolling with traits, editing the character, etc."""
-        self.bot.char_svc.add_claim(ctx.guild.id, character.id, ctx.user.id)
-
-        logger.info(f"CLAIM: {character.name} claimed by {ctx.author.name}")
-        await present_embed(
-            ctx=ctx,
-            title="Character Claimed",
-            description=f"**{character.name}** has been claimed by **{ctx.author.display_name}**",
-            level="success",
-        )
-
-    @chars.command(name="unclaim")
-    async def unclaim_character(
-        self,
-        ctx: discord.ApplicationContext,
-    ) -> None:
-        """Unclaim currently claimed character. Allows claiming a new character."""
-        if self.bot.char_svc.user_has_claim(ctx):
-            character = self.bot.char_svc.fetch_claim(ctx)
-            self.bot.char_svc.remove_claim(ctx.guild.id, ctx.author.id)
-            await present_embed(
-                ctx=ctx,
-                title="Character Unclaimed",
-                description=f"**{character.name}** unclaimed by **{ctx.author.display_name}**",
-                level="success",
-            )
-        else:
-            await present_embed(
-                ctx=ctx,
-                title="You have no character claimed",
-                description="To claim a character, use `/character claim`.",
-                level="error",
-                ephemeral=True,
-            )
+        await show_sheet(ctx, character=character, ephemeral=hidden)
 
     @chars.command(name="list", description="List all characters")
     async def list_characters(
@@ -217,35 +202,25 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """List all player characters in this guild."""
         characters = self.bot.char_svc.fetch_all_player_characters(ctx.guild.id)
+
         if len(characters) == 0:
             await present_embed(
                 ctx,
                 title="No Characters",
                 description="There are no characters.\nCreate one with `/character create`",
-                level="error",
+                level="warning",
                 ephemeral=hidden,
             )
             return
 
-        fields = []
-        plural = "s" if len(characters) > 1 else ""
-        description = f"**{len(characters)}** character{plural} on this server\n\u200b"
-
+        text = f"## All player {p.plural_noun('character', len(characters))} on {ctx.guild.name}\n"
         for character in sorted(characters, key=lambda x: x.name):
-            user_id = self.bot.char_svc.fetch_user_of_character(ctx.guild.id, character.id)
-            user = self.bot.get_user(user_id).display_name if user_id else ""
-            fields.append(
-                (character.name, f"Class: {character.char_class.name}\nClaimed by: {user}")
-            )
+            text += f"### {character.name}\n"
+            text += f"Class: {character.char_class.name}\n"
+            text += f"Owner: {self.bot.get_user(character.owned_by.id).display_name}\n"
 
-        await present_embed(
-            ctx=ctx,
-            title="List of characters",
-            description=description,
-            fields=fields,
-            inline_fields=False,
-            level="info",
-        )
+        embed = discord.Embed(description=text, color=EmbedColor.INFO.value)
+        await ctx.respond(embed=embed, ephemeral=hidden)
 
     ### ADD COMMANDS ####################################################################
 
@@ -261,7 +236,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Set the DOB of a character."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
 
@@ -305,7 +280,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom trait to a character."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
         confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
@@ -339,7 +314,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom section to the character sheet."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         modal = CustomSectionModal(title=f"Custom section for {character.name}")
         await ctx.send_modal(modal)
@@ -382,7 +357,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's bio."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         modal = BioModal(
             title=f"Enter the biography for {character.name}", current_bio=character.bio
@@ -420,7 +395,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a custom section."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         modal = CustomSectionModal(
             section_title=custom_section.title,
@@ -433,7 +408,7 @@ class Characters(commands.Cog, name="Character"):
         section_title = modal.section_title.strip().title()
         section_description = modal.section_description.strip()
 
-        self.bot.char_service.custom_section_update_or_add(
+        self.bot.char_svc.custom_section_update_or_add(
             ctx,
             character,
             section_title=section_description,
@@ -463,7 +438,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         modal = ProfileModal(title=f"Profile for {character}", character=character)
         await ctx.send_modal(modal)
@@ -507,7 +482,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update the value of a trait."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         if not self.bot.user_svc.can_update_traits(ctx, character):
             await present_embed(
@@ -555,7 +530,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Delete custom trait `{trait.name}` from `{character.name}`"
         confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
@@ -587,7 +562,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        character = self.bot.char_svc.fetch_claim(ctx)
+        character = self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Delete section `{custom_section.title}` from `{character.full_name}`"
         confirmed, msg = await confirm_action(ctx, title, hidden=hidden)

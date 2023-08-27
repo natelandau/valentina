@@ -113,7 +113,7 @@ class ValidCharTrait(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> Trait | CustomTrait:
         """Validate and normalize traits."""
-        character = ctx.bot.char_svc.fetch_claim(ctx)
+        character = ctx.bot.user_svc.fetch_active_character(ctx)
 
         for trait in character.traits_list:
             if argument.lower() == trait.name.lower():
@@ -153,7 +153,7 @@ class ValidCustomSection(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> CustomSection:
         """Validate and return a custom section."""
-        character = ctx.bot.char_svc.fetch_claim(ctx)
+        character = ctx.bot.user_svc.fetch_active_character(ctx)
 
         for cs in CustomSection.select().where(CustomSection.character == character):
             if argument.lower() == cs.title.lower():
@@ -167,7 +167,7 @@ class ValidCustomTrait(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> CustomTrait:
         """Validate and return a custom trait."""
-        character = ctx.bot.char_svc.fetch_claim(ctx)
+        character = ctx.bot.user_svc.fetch_active_character(ctx)
 
         for ct in CustomTrait.select().where(CustomTrait.character == character):
             if argument.lower() == ct.name.lower():
@@ -247,7 +247,7 @@ class ValidTraitOrCustomTrait(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> Trait | CustomTrait:
         """Validate and normalize traits."""
-        character = ctx.bot.char_svc.fetch_claim(ctx)
+        character = ctx.bot.user_svc.fetch_active_character(ctx)
 
         for trait in character.traits_list:
             if argument.lower() == trait.name.lower():

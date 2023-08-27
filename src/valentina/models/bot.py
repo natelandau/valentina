@@ -29,7 +29,6 @@ class Valentina(commands.Bot):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
-        self.char_service: Any = None
         self.parent_dir = parent_dir
         self.config = config
         self.version = version

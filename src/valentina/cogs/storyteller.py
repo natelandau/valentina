@@ -340,7 +340,7 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """View a character sheet for a storyteller character."""
-        await show_sheet(ctx, character=character, claimed_by=None)
+        await show_sheet(ctx, character=character)
 
     @storyteller.command(name="delete_character", description="Delete a storyteller character")
     async def delete_storyteller_character(

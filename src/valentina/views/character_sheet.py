@@ -55,7 +55,7 @@ def __build_trait_display(
 def __embed1(
     ctx: discord.ApplicationContext,
     character: Character,
-    claimed_by: discord.User | None = None,
+    owned_by_user: discord.User | None = None,
     title: str | None = None,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
@@ -64,7 +64,7 @@ def __embed1(
     if title is None:
         title = character.name
 
-    footer = f"Claimed by: {claimed_by.display_name} • " if claimed_by else ""
+    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
     footer += f"Last updated: {modified}"
     char_traits = character.all_trait_values
 
@@ -135,7 +135,7 @@ def __embed1(
 def __embed2(
     ctx: discord.ApplicationContext,
     character: Character,
-    claimed_by: discord.User | None = None,
+    owned_by_user: discord.User | None = None,
     title: str | None = None,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
@@ -145,7 +145,7 @@ def __embed2(
     if title is None:
         title = f"{character.name} - Page 2"
 
-    footer = f"Claimed by: {claimed_by.display_name} • " if claimed_by else ""
+    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
     footer += f"Last updated: {modified}"
 
     embed = discord.Embed(title=title, description="", color=0x7777FF)
@@ -189,13 +189,14 @@ def __embed2(
 async def show_sheet(
     ctx: discord.ApplicationContext,
     character: Character,
-    claimed_by: discord.User,
     ephemeral: Any = False,
 ) -> Any:
     """Show a character sheet."""
+    print(character.owned_by)
+    owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.id)
     embeds = []
-    embeds.append(__embed1(ctx, character, claimed_by))
-    embeds.append(__embed2(ctx, character, claimed_by))
+    embeds.append(__embed1(ctx, character, owned_by_user))
+    embeds.append(__embed2(ctx, character, owned_by_user))
 
     paginator = pages.Paginator(pages=embeds)  # type: ignore [arg-type]
     paginator.remove_button("first")
@@ -206,8 +207,9 @@ async def show_sheet(
 async def sheet_embed(
     ctx: discord.ApplicationContext,
     character: Character,
-    claimed_by: discord.User | None = None,
+    owned_by_user: discord.User | None = None,
     title: str | None = None,
 ) -> discord.Embed:
     """Return the first page of the sheet as an embed."""
-    return __embed1(ctx, character, claimed_by=claimed_by, title=title)
+    owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by)
+    return __embed1(ctx, character, owned_by_user=owned_by_user, title=title)

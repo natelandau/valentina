@@ -224,7 +224,6 @@ class TestCharacterService:
         # Check that the dictionaries are initialized as empty dictionaries
         assert self.char_svc.character_cache == {}
         assert self.char_svc.storyteller_character_cache == {}
-        assert self.char_svc.claim_cache == {}
 
     def test_get_char_key(self):
         """Test get_char_key()."""
@@ -238,56 +237,6 @@ class TestCharacterService:
             self.char_svc._CharacterService__get_char_key(guild_id, char_id)
             == f"{guild_id}_{char_id}"
         )
-
-    def test_get_claim_key(self):
-        """Test get_claim_key()."""
-        # GIVEN a guild ID and a user ID
-        guild_id = 123
-        user_id = 456
-
-        # WHEN the __get_claim_key method is called
-        # THEN check the correct key is generated
-        assert (
-            self.char_svc._CharacterService__get_claim_key(guild_id, user_id)
-            == f"{guild_id}_{user_id}"
-        )
-
-    def test_add_claim(self):
-        """Test add_claim()."""
-        # GIVEN a guild ID, a character ID, and a user ID, and an empty cache
-        guild_id = 123
-        char_id = 456
-        user_id = 789
-        assert self.char_svc.claim_cache == {}
-
-        # WHEN the add_claim method is called for the first time
-        # THEN check the claim is added correctly
-        assert self.char_svc.add_claim(guild_id, char_id, user_id) is True
-        assert (
-            self.char_svc._CharacterService__get_claim_key(guild_id, user_id)
-            in self.char_svc.claim_cache
-        )
-        assert self.char_svc.claim_cache == {f"{guild_id}_{user_id}": f"{guild_id}_{char_id}"}
-
-        # GIVEN the same guild ID and user ID, but a different character ID
-        char_id = 999
-
-        # WHEN the add_claim method is called again
-        # THEN check the method returns True and the claim still exists
-        assert self.char_svc.add_claim(guild_id, char_id, user_id) is True
-        assert (
-            self.char_svc._CharacterService__get_claim_key(guild_id, user_id)
-            in self.char_svc.claim_cache
-        )
-        assert self.char_svc.claim_cache == {f"{guild_id}_{user_id}": f"{guild_id}_{char_id}"}
-
-        # GIVEN the same guild ID and character ID, but a different user ID
-        user_id = 999
-
-        # WHEN the add_claim method is called
-        # THEN check the method raises a CharacterClaimedError
-        with pytest.raises(errors.CharacterClaimedError):
-            self.char_svc.add_claim(guild_id, char_id, user_id)
 
     def test_custom_section_update_or_add(self, mock_ctx):
         """Test custom_section_update_or_add()."""
@@ -416,54 +365,6 @@ class TestCharacterService:
         assert "DATABASE: Fetch 1 StoryTeller characters" in returned
         assert self.char_svc.storyteller_character_cache[guild_id] == [character1, character2]
 
-    def test_fetch_claim(self, mock_ctx):
-        """Test fetch_claim()."""
-        # GIVEN a context object for a user with no claim
-        # WHEN the fetch_claim method is called
-        # THEN check the method raises a NoClaimError
-        with pytest.raises(errors.NoClaimError):
-            self.char_svc.fetch_claim(mock_ctx)
-
-        # GIVEN a character object and a context object for a user with a claim
-        character = Character.get_by_id(1)
-        self.char_svc.add_claim(mock_ctx.guild.id, character.id, mock_ctx.author.id)
-
-        # WHEN the fetch_claim method is called
-        # THEN check the method returns the correct character
-        assert self.char_svc.fetch_claim(mock_ctx) == character
-
-    def test_fetch_user_of_character(self):
-        """Test fetch_user_of_character()."""
-        # GIVEN a guild ID, a character ID, and a claim in the cache
-        guild_id = 12333111222
-        user_id = 1
-        character = Character.create(
-            data={
-                "first_name": str(uuid4()).split("-")[0],
-                "last_name": "character",
-                "nickname": "testy",
-                "storyteller_character": False,
-                "player_character": True,
-            },
-            char_class=1,
-            guild=guild_id,
-            created_by=user_id,
-            clan=1,
-        )
-        self.char_svc.add_claim(guild_id, character.id, user_id)
-
-        # WHEN the fetch_user_of_character method is called with a claimed character
-        result = self.char_svc.fetch_user_of_character(guild_id, character.id)
-
-        # THEN check the method returns the correct user ID
-        assert result == user_id
-
-        # WHEN the fetch_user_of_character method is called with an unclaimed character
-        result = self.char_svc.fetch_user_of_character(guild_id, 999)
-
-        # THEN check the method returns None
-        assert result is None
-
     def test_is_cached_character(self):
         """Test is_cached_character()."""
         # GIVEN a guild ID and a character ID
@@ -485,117 +386,29 @@ class TestCharacterService:
         # THEN check the method returns True
         assert self.char_svc.is_cached_character(key=f"{guild_id}_{char_id}") is True
 
-    def test_is_char_claimed(self):
-        """Test is_char_claimed()."""
-        # GIVEN a guild id, a character id, and a claimed character
-        guild_id = 123
-        char_id = 456
-        user_id = 789
-        self.char_svc.add_claim(guild_id, char_id, user_id)
-
-        # WHEN the is_char_claimed method is called with a guild ID and character ID
-        # THEN check the method returns True if the character is claimed and False otherwise
-        assert self.char_svc.is_char_claimed(guild_id, char_id) is True
-        assert self.char_svc.is_char_claimed(guild_id, 999) is False
-
     def test_purge_cache(self, mock_ctx):
         """Test purge_cache()."""
         self.char_svc.character_cache = {}
         self.char_svc.storyteller_character_cache = {}
-        self.char_svc.claim_cache = {}
 
         # GIVEN a guild ID, a character ID, and a character in the cache
         for i in [1, 2]:
             self.char_svc.character_cache[f"{i}_{i}"] = "test"
             self.char_svc.storyteller_character_cache[i] = ["test1", "test2"]
-            self.char_svc.claim_cache[f"{i}_{i}"] = "test"
 
         # WHEN the purge_cache method is called with a context object
         self.char_svc.purge_cache(mock_ctx)
 
-        # THEN all caches are purged for the matching guild ID but the claims are not
+        # THEN all caches are purged for the matching guild ID
         assert self.char_svc.character_cache == {"2_2": "test"}
         assert self.char_svc.storyteller_character_cache == {2: ["test1", "test2"]}
-        assert self.char_svc.claim_cache == {"1_1": "test", "2_2": "test"}
 
-        # WHEN the purge_cache method is called with a context object and with_claims=True
-        self.char_svc.purge_cache(mock_ctx, with_claims=True)
-
-        # THEN all caches are purged for the matching guild ID and the claims are purged
-        assert self.char_svc.character_cache == {"2_2": "test"}
-        assert self.char_svc.storyteller_character_cache == {2: ["test1", "test2"]}
-        assert self.char_svc.claim_cache == {"2_2": "test"}
-
-        # WHEN the purge_cache method is called without a context object and with_claims=False
+        # WHEN the purge_cache method is called without a context object
         self.char_svc.purge_cache()
 
         # THEN all caches are purged
         assert self.char_svc.character_cache == {}
         assert self.char_svc.storyteller_character_cache == {}
-        assert self.char_svc.claim_cache == {"2_2": "test"}
-
-        # WHEN the purge_cache method is called without a context object and with_claims=True
-        self.char_svc.purge_cache(with_claims=True)
-
-        # THEN all caches are purged
-        assert self.char_svc.character_cache == {}
-        assert self.char_svc.storyteller_character_cache == {}
-        assert self.char_svc.claim_cache == {}
-
-    def test_remove_claim(self):
-        """Test remove_claim()."""
-        # GIVEN a guild ID, a character ID, and a user ID, and a claim in the cache
-        guild_id = 123
-        char_id = 456
-        user_id = 789
-        self.char_svc.add_claim(guild_id, char_id, user_id)
-        assert (
-            self.char_svc._CharacterService__get_claim_key(guild_id, user_id)
-            in self.char_svc.claim_cache
-        )
-
-        # WHEN the remove_claim method is called
-        # THEN check the claim is removed correctly
-        assert self.char_svc.remove_claim(guild_id, user_id) is True
-        assert (
-            self.char_svc._CharacterService__get_claim_key(guild_id, user_id)
-            not in self.char_svc.claim_cache
-        )
-
-        # GIVEN the same guild ID and user ID, but the claim is no longer in the cache
-        # WHEN the remove_claim method is called again
-        # THEN check the method returns False
-        assert self.char_svc.remove_claim(guild_id, user_id) is False
-
-    def test_user_has_claim(self, mock_ctx):
-        """Test user_has_claim()."""
-        # GIVEN a context object for a user with a character claim
-        character = Character.create(
-            data={
-                "first_name": str(uuid4()).split("-")[0],
-                "last_name": "character",
-                "nickname": "testy",
-                "storyteller_character": False,
-                "player_character": True,
-            },
-            char_class=1,
-            guild=mock_ctx.guild.id,
-            created_by=mock_ctx.author.id,
-            clan=1,
-        )
-        self.char_svc.claim_cache[
-            f"{mock_ctx.guild.id}_{mock_ctx.author.id}"
-        ] = f"{mock_ctx.guild.id}_{character.id}"
-
-        # WHEN the user_has_claim method is called
-        # THEN check the method returns True
-        assert self.char_svc.user_has_claim(mock_ctx) is True
-
-        # GIVEN a context object for a user with no character claim
-        # WHEN the user_has_claim method is called
-        # THEN check the method returns False
-        self.char_svc.claim_cache = {}
-        assert self.char_svc.user_has_claim(mock_ctx) is False
 
     def test_update_or_add_one(self, mock_ctx):
         """Test update_character()."""

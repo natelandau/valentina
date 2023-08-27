@@ -42,9 +42,9 @@ async def select_char_class(ctx: discord.AutocompleteContext) -> list[str]:
 async def select_char_trait(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available common and custom traits for a character."""
     try:
-        character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except errors.NoClaimError:
-        return ["No character claimed"]
+        character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
+    except errors.NoActiveCharacterError:
+        return ["No active character"]
 
     # Discord option can be either "trait" or "trait_one"
     if "trait" in ctx.options:
@@ -66,9 +66,9 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[str]:
 async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available common and custom traits for a character."""
     try:
-        character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except errors.NoClaimError:
-        return ["No character claimed"]
+        character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
+    except errors.NoActiveCharacterError:
+        return ["No active character"]
 
     traits = []
     for t in character.traits_list:
@@ -96,9 +96,9 @@ async def select_campaign(ctx: discord.ApplicationContext) -> list[str]:
 async def select_custom_section(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of the user's available custom sections."""
     try:
-        character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except errors.NoClaimError:
-        return ["No character claimed"]
+        character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
+    except errors.NoActiveCharacterError:
+        return ["No active character"]
 
     sections = []
     for section in character.custom_sections:
@@ -113,9 +113,9 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[str]:
 async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available custom traits."""
     try:
-        character = ctx.bot.char_svc.fetch_claim(ctx)  # type: ignore [attr-defined]
-    except errors.NoClaimError:
-        return ["No character claimed"]
+        character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
+    except errors.NoActiveCharacterError:
+        return ["No active character"]
 
     traits = []
     for trait in character.custom_traits:
@@ -206,12 +206,9 @@ async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
 
 async def select_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of the user's available characters."""
-    if (guild := ctx.interaction.guild) is None:
-        return []
-
-    characters = ctx.bot.char_svc.fetch_all_player_characters(guild.id)  # type: ignore [attr-defined]
+    possible_characters = ctx.bot.user_svc.fetch_alive_characters(ctx)  # type: ignore [attr-defined]
     all_chars = []
-    for character in characters:
+    for character in possible_characters:
         char_id = character.id
         name = f"{character.name}"
         all_chars.append((name, char_id))

@@ -204,6 +204,7 @@ CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
     "experience": 0,
     "first_name": None,
     "generation": None,
+    "is_active": False,
     "last_name": None,
     "nature": None,
     "nickname": None,

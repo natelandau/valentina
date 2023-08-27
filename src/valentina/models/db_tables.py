@@ -218,7 +218,6 @@ class Character(BaseModel):
     # Foreign Keys ###############################
     char_class = ForeignKeyField(CharacterClass, backref="characters")
     guild = ForeignKeyField(Guild, backref="characters")
-    claimed_by = ForeignKeyField(User, backref="claimed_character", null=True)
     created_by = ForeignKeyField(User, backref="created_characters")
     owned_by = ForeignKeyField(User, backref="owned_characters", null=True)
     clan = ForeignKeyField(VampireClan, backref="characters", null=True)

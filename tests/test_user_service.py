@@ -382,3 +382,46 @@ class TestUserService:
         # THEN return the correct result from the cache
         assert result == character
         assert "CACHE: Return active character" in logged
+
+    def test_set_active_character(self, mock_ctx) -> None:
+        """Test switching active characters."""
+        # GIVEN an active and an inactive character and a cache
+        character1 = Character.create(
+            data={
+                "first_name": "char1",
+                "last_name": "character",
+                "storyteller_character": False,
+                "player_character": True,
+                "alive": True,
+                "is_active": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            owned_by=mock_ctx.author.id,
+            clan=1,
+        )
+        character2 = Character.create(
+            data={
+                "first_name": "char2",
+                "last_name": "character",
+                "storyteller_character": False,
+                "player_character": True,
+                "alive": True,
+                "is_active": False,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            owned_by=mock_ctx.author.id,
+            clan=1,
+        )
+        self.user_svc.active_character_cache = {1: character1}
+
+        # WHEN set_active_character is called
+        self.user_svc.set_active_character(mock_ctx, character2)
+
+        # THEN the active character is switched
+        assert not Character.get_by_id(character1.id).data["is_active"]
+        assert Character.get_by_id(character2.id).data["is_active"]
+        assert self.user_svc.active_character_cache == {1: character2}

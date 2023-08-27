@@ -57,7 +57,7 @@ class UserService:
             for key in list(self.user_cache.keys()):
                 if key.startswith(f"{ctx.guild.id}_"):
                     self.user_cache.pop(key, None)
-                    logger.debug(f"CACHE: Purge user cache: {key}")
+                    logger.debug(f"CACHE: Purge user cache for user `{ctx.author.id}`")
             self.active_character_cache.pop(ctx.author.id, None)
         else:
             self.user_cache = {}
@@ -83,7 +83,7 @@ class UserService:
 
         key = self.__get_user_key(guild.id, author.id)
         if key in self.user_cache:
-            logger.info(f"CACHE: Return user with ID {author.id}")
+            logger.debug(f"CACHE: Return user with ID {author.id}")
             return self.user_cache[key]
 
         user, created = User.get_or_create(
@@ -98,12 +98,13 @@ class UserService:
         )
 
         if created:
-            GuildUser.get_or_create(user=author.id, guild=guild.id)
             logger.info(f"DATABASE: Create user '{author.display_name}'")
         else:
             user.last_seen = time_now()
             user.save()
             logger.debug(f"DATABASE: Update last_seen for user '{author.display_name}'")
+
+        GuildUser.get_or_create(user=author.id, guild=guild.id)  # Add to guild lookup table
 
         self.user_cache[key] = user
         logger.debug(f"CACHE: Add user '{author.display_name}'")
@@ -130,8 +131,18 @@ class UserService:
 
     def fetch_active_character(
         self, ctx: discord.ApplicationContext | discord.AutocompleteContext
-    ) -> Character | None:
-        """Fetch the active character for the user."""
+    ) -> Character:
+        """Fetch the active character for the user.
+
+        Args:
+            ctx (ApplicationContext | discord.AutocompleteContext): The context which contains the author and guild information.
+
+        Returns:
+            Character: The active character for the user.
+
+        Raises:
+            errors.NoActiveCharacterError: Raised if the user has no active character.
+        """
         user = self.fetch_user(ctx)
 
         if user.id in self.active_character_cache:
@@ -156,6 +167,26 @@ class UserService:
         self.active_character_cache[user.id] = character
 
         return character
+
+    def set_active_character(self, ctx: discord.ApplicationContext, character: Character) -> None:
+        """Switch the active character for the user."""
+        user = self.fetch_user(ctx)
+
+        for c in Character.select().where(
+            Character.owned_by == user,
+            Character.guild == ctx.guild.id,
+            Character.data["player_character"] == True,  # noqa: E712
+        ):
+            if c.id == character.id:
+                c.data["is_active"] = True
+                c.save()
+            else:
+                c.data["is_active"] = False
+                c.save()
+
+        self.active_character_cache[user.id] = character
+
+        logger.debug(f"DATABASE: Set active character for {user.username} to '{character.id}'")
 
     def can_update_xp(self, ctx: discord.ApplicationContext, character: Character = None) -> bool:
         """Check if the user has permissions to add experience points.

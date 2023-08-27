@@ -671,6 +671,39 @@ class MigrateDatabase:
                 character.owned_by = character.created_by
                 character.save()
 
+        if self._column_exists(Character._meta.table_name, "claimed_by_id"):
+            logger.debug("DATABASE: Drop `claimed_by_id` column from `characters` table")
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+
+            # Create new table
+            self.db.execute_sql(
+                """
+                CREATE TABLE new_characters (
+                    id INTEGER PRIMARY KEY,
+                    created DATETIME NOT NULL,
+                    char_class_id INTEGER NOT NULL,
+                    guild_id INTEGER NOT NULL,
+                    created_by_id INTEGER NOT NULL,
+                    owned_by_id INTEGER,
+                    clan_id INTEGER,
+                    data JSON
+                );
+            """
+            )
+
+            # Copy data from old table to new table
+            self.db.execute_sql(
+                """
+                INSERT INTO new_characters (id, created, char_class_id, guild_id, created_by_id, owned_by_id, clan_id, data)
+                SELECT id, created, char_class_id, guild_id, created_by_id, owned_by_id, clan_id, data
+                FROM characters;
+            """
+            )
+            self.db.execute_sql("DROP TABLE characters;")
+            self.db.execute_sql("ALTER TABLE new_characters RENAME TO characters;")
+
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
+
 
 class PopulateDatabase:
     """A class that handles the populating data in a database.
