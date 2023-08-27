@@ -6,9 +6,12 @@ from discord.commands import OptionChoice
 from valentina.constants import MAX_OPTION_LIST_SIZE
 from valentina.models.db_tables import CharacterClass, Trait, TraitCategory, VampireClan
 from valentina.utils import errors
+from valentina.utils.helpers import truncate_string
+
+MAX_OPTION_LENGTH = 99
 
 
-async def select_chapter(ctx: discord.ApplicationContext) -> list[str]:
+async def select_chapter(ctx: discord.AutocompleteContext) -> list[str]:
     """Populates the autocomplete for the chapter option."""
     try:
         campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
@@ -81,7 +84,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     return traits
 
 
-async def select_campaign(ctx: discord.ApplicationContext) -> list[str]:
+async def select_campaign(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available campaigns."""
     campaigns = []
     for c in ctx.bot.campaign_svc.fetch_all(ctx):  # type: ignore [attr-defined]
@@ -93,21 +96,29 @@ async def select_campaign(ctx: discord.ApplicationContext) -> list[str]:
     return campaigns
 
 
-async def select_custom_section(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_custom_section(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of the user's available custom sections."""
     try:
         character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
     except errors.NoActiveCharacterError:
-        return ["No active character"]
+        [OptionChoice("No active character", "")]
 
-    sections = []
+    possible_sections = []
     for section in character.custom_sections:
-        if section.title.lower().startswith(ctx.options["custom_section"].lower()):
-            sections.append(section.title)
-        if len(sections) >= MAX_OPTION_LIST_SIZE:
-            break
+        display_title = truncate_string(section.title, MAX_OPTION_LENGTH)
+        possible_sections.append((display_title, str(section.id)))
 
-    return sections
+    options = [
+        OptionChoice(display_title, title)
+        for display_title, title in sorted(possible_sections)
+        if display_title.casefold().startswith(ctx.value.casefold() or "")
+    ]
+
+    if len(options) > MAX_OPTION_LIST_SIZE:
+        instructions = "Keep typing ..." if ctx.value else "Start typing..."
+        return [OptionChoice(f"Too many sections to display. {instructions}", "")]
+
+    return options
 
 
 async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
@@ -155,7 +166,7 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
     return options
 
 
-async def select_macro(ctx: discord.ApplicationContext) -> list[OptionChoice]:
+async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate a select list with a users' macros."""
     options = [
         OptionChoice(f"{macro.name} {macro.abbreviation}", str(macro.id))
@@ -170,7 +181,7 @@ async def select_macro(ctx: discord.ApplicationContext) -> list[OptionChoice]:
     return options
 
 
-async def select_note(ctx: discord.ApplicationContext) -> list[str]:
+async def select_note(ctx: discord.AutocompleteContext) -> list[str]:
     """Populates the autocomplete for the note option."""
     try:
         campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
@@ -187,7 +198,7 @@ async def select_note(ctx: discord.ApplicationContext) -> list[str]:
     return notes
 
 
-async def select_npc(ctx: discord.ApplicationContext) -> list[str]:
+async def select_npc(ctx: discord.AutocompleteContext) -> list[str]:
     """Populates the autocomplete for the npc option."""
     try:
         campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
@@ -228,12 +239,9 @@ async def select_player_character(ctx: discord.AutocompleteContext) -> list[Opti
     return options
 
 
-async def select_storyteller_character(ctx: discord.ApplicationContext) -> list[OptionChoice]:
+async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of the user's available storyteller characters."""
-    if (guild := ctx.interaction.guild) is None:
-        return []
-
-    characters = ctx.bot.char_svc.fetch_all_storyteller_characters(guild_id=guild.id)  # type: ignore [attr-defined]
+    characters = ctx.bot.char_svc.fetch_all_storyteller_characters(ctx)  # type: ignore [attr-defined]
 
     all_chars = []
     for character in characters:
@@ -256,13 +264,10 @@ async def select_storyteller_character(ctx: discord.ApplicationContext) -> list[
     return options
 
 
-async def select_any_character(ctx: discord.ApplicationContext) -> list[OptionChoice]:
+async def select_any_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of the user's available storyteller characters."""
-    if (guild := ctx.interaction.guild) is None:
-        return []
-
     # Build list of storyteller characters
-    characters = ctx.bot.char_svc.fetch_all_storyteller_characters(guild_id=guild.id)  # type: ignore [attr-defined]
+    characters = ctx.bot.char_svc.fetch_all_storyteller_characters(ctx)  # type: ignore [attr-defined]
 
     all_chars = []
     for character in characters:
@@ -279,7 +284,7 @@ async def select_any_character(ctx: discord.ApplicationContext) -> list[OptionCh
     ]
 
     # Build list of player characters
-    characters = ctx.bot.char_svc.fetch_all_player_characters(guild.id)  # type: ignore [attr-defined]
+    characters = ctx.bot.char_svc.fetch_all_player_characters(ctx)  # type: ignore [attr-defined]
     all_chars = []
     for character in characters:
         char_id = character.id

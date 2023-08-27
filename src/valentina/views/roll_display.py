@@ -32,11 +32,6 @@ class RollDisplay:
         self.trait_two = trait_two
         self.trait_two_value = trait_two_value
 
-        from rich import print
-
-        print(trait_one)
-        print(trait_two)
-
     def _add_comment_field(self, embed: discord.Embed) -> discord.Embed:
         """Add the comment field to the embed."""
         if self.comment:

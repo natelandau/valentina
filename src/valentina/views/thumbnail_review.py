@@ -27,7 +27,7 @@ class DeleteOrCategorize(discord.ui.View):
         button.label = "✅ Deleted Thumbnail"
         button.style = discord.ButtonStyle.secondary
         button.disabled = True
-        print(f"delete = {self.thumbnail_id}")
+
         for child in self.children:
             if type(child) == Button:
                 child.disabled = True

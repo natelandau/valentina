@@ -201,7 +201,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """List all player characters in this guild."""
-        characters = self.bot.char_svc.fetch_all_player_characters(ctx.guild.id)
+        characters = self.bot.char_svc.fetch_all_player_characters(ctx)
 
         if len(characters) == 0:
             await present_embed(
@@ -411,17 +411,16 @@ class Characters(commands.Cog, name="Character"):
         self.bot.char_svc.custom_section_update_or_add(
             ctx,
             character,
-            section_title=section_description,
+            section_title=section_title,
             section_description=section_description,
+            section_id=custom_section.id,
         )
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Update section `{section_title}` for `{character.name}`"
-        )
-
+        title = f"Update section `{section_title}` for `{character.name}`"
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await present_embed(
             ctx,
-            title=f"Update section `{section_title}` for `{character.name}`",
+            title=title,
             description=f"**{section_title}**\n{section_description}",
             ephemeral=hidden,
             level="success",

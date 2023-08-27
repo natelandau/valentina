@@ -253,7 +253,7 @@ class StoryTeller(commands.Cog):
         ctx: discord.ApplicationContext,
     ) -> None:
         """List all storyteller characters."""
-        characters = self.bot.char_svc.fetch_all_storyteller_characters(ctx=ctx)
+        characters = self.bot.char_svc.fetch_all_storyteller_characters(ctx)
 
         if len(characters) == 0:
             await present_embed(

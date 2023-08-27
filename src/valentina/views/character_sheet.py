@@ -192,7 +192,6 @@ async def show_sheet(
     ephemeral: Any = False,
 ) -> Any:
     """Show a character sheet."""
-    print(character.owned_by)
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.id)
     embeds = []
     embeds.append(__embed1(ctx, character, owned_by_user))

@@ -151,15 +151,14 @@ class ValidClan(Converter):
 class ValidCustomSection(Converter):
     """Converter to ensure a custom section is valid."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> CustomSection:
+    async def convert(self, ctx: commands.Context, argument: str) -> CustomSection:  # noqa: ARG002
         """Validate and return a custom section."""
-        character = ctx.bot.user_svc.fetch_active_character(ctx)
-
-        for cs in CustomSection.select().where(CustomSection.character == character):
-            if argument.lower() == cs.title.lower():
-                return cs
-
-        raise errors.DatabaseError(f"`{argument}` is not a valid custom section")
+        try:
+            return CustomSection.get_by_id(int(argument))
+        except DoesNotExist as e:
+            raise errors.DatabaseError(
+                f"No custom section found in database with id `{argument}`"
+            ) from e
 
 
 class ValidCustomTrait(Converter):
