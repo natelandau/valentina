@@ -143,37 +143,37 @@ class MigrateDatabase:
     def migrate(self) -> None:
         """Migrate the database to the latest version."""
         logger.debug("DATABASE: Migration check")
+        """
+        Migrate the database to the latest version.
 
-        if Version.parse(self.db_version) <= Version.parse("0.8.2"):
-            self.__0_8_2()
+        Checks the current database version and applies migration functions
+        to update it to the latest version.
 
-        if Version.parse(self.db_version) <= Version.parse("0.12.0"):
-            self.__0_12_0()
+        Returns:
+            None
+        """
+        logger.debug("DATABASE: Migration check")
 
-        if Version.parse(self.db_version) <= Version.parse("1.0.2"):
-            self.__1_0_2()
+        # Define a mapping of version numbers to migration functions
+        migrations = {
+            "0.8.2": self.__0_8_2,
+            "0.12.0": self.__0_12_0,
+            "1.0.2": self.__1_0_2,
+            "1.0.3": self.__1_0_3,
+            "1.1.0": self.__1_1_0,
+            "1.1.5": self.__1_1_5,
+            "1.3.0": self.__1_3_0,
+            "1.4.0": self.__1_4_0,
+            "1.4.1": self.__1_4_1,
+            "1.5.0": self.__1_5_0,
+        }
 
-        if Version.parse(self.db_version) <= Version.parse("1.0.3"):
-            self.__1_0_3()
+        current_version = Version.parse(self.db_version)
 
-        if Version.parse(self.db_version) <= Version.parse("1.1.0"):
-            self.__1_1_0()
-
-        if Version.parse(self.db_version) <= Version.parse("1.1.5"):
-            logger.info("DATABASE: Migrate database from v1.1.5")
-            self.__1_1_5()
-
-        if Version.parse(self.db_version) <= Version.parse("1.3.0"):
-            logger.info("DATABASE: Migrate database from v1.3.0")
-            self.__1_3_0()
-
-        if Version.parse(self.db_version) <= Version.parse("1.4.0"):
-            logger.info("DATABASE: Migrate database from v1.4.0")
-            self.__1_4_0()
-
-        if Version.parse(self.db_version) <= Version.parse("1.4.1"):
-            logger.info("DATABASE: Migrate database from v1.4.1")
-            self.__1_4_1()
+        for version, migration_func in migrations.items():
+            if current_version <= Version.parse(version):
+                logger.info(f"DATABASE: Migrate database from v{version}")
+                migration_func()
 
     def _column_exists(self, table: str, column: str) -> bool:
         """Check if a column exists in a table.
@@ -661,6 +661,15 @@ class MigrateDatabase:
 
             # Re-enable foreign keys
             self.db.execute_sql("PRAGMA foreign_keys=ON;")
+
+    def __1_5_0(self) -> None:
+        """Migrate from version 1.5.0."""
+        # Pre-populate characters "owned_by" with "created_by"
+        logger.debug("DATABASE: Pre-populate characters 'owned_by' with 'created_by'")
+        for character in Character.select():
+            if not character.owned_by:
+                character.owned_by = character.created_by
+                character.save()
 
 
 class PopulateDatabase:

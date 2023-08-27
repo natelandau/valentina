@@ -225,7 +225,7 @@ class Character(BaseModel):
 
     @property
     def name(self) -> str:
-        """Return the name of the character."""
+        """Return the name of the character including their nickname."""
         first_name = self.data.get("first_name", "")
         last_name = self.data.get("last_name", "")
         nickname = self.data.get("nickname", "")
