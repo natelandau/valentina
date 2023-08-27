@@ -234,7 +234,7 @@ class Characters(commands.Cog, name="Character"):
             autocomplete=select_player_character,
             required=True,
         ),
-        new_user: Option(discord.User, description="The user to transfer the character to"),
+        new_owner: Option(discord.User, description="The user to transfer the character to"),
         hidden: Option(
             bool,
             description="Make the sheet only visible to you (default true).",
@@ -242,12 +242,12 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Transfer one of your characters to another user."""
-        title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_user.display_name}`"
+        title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_owner.display_name}`"
         confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
         if not confirmed:
             return
 
-        self.bot.user_svc.transfer_character_owner(ctx, character, new_user)
+        self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
