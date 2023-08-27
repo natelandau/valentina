@@ -2,6 +2,7 @@
 """Test the UserService class."""
 
 import arrow
+import discord
 import pytest
 from discord import ApplicationContext, Role
 
@@ -46,6 +47,23 @@ class TestUserService:
         # Confirm added to database
         assert User.get_by_id(600).name == "Test User 600"
         assert GuildUser.get_by_id(2).user.name == "Test User 600"
+
+    def test_fetch_user_three(self, mock_ctx, mocker):
+        """Test fetching a user that is not the author of a command."""
+        # GIVEN a user not in the ctx object
+        mock_member = mocker.MagicMock()
+        mock_member.id = 1500
+        mock_member.display_name = "Test User 1500"
+        mock_member.name = "testuser 1500"
+        mock_member.mention = "<@5100>"
+        mock_member.__class__ = discord.Member
+
+        # WHEN the user is fetched
+        result = self.user_svc.fetch_user(mock_ctx, mock_member)
+
+        # THEN the correct user is returned
+        assert result == User.get_by_id(1500)
+        assert self.user_svc.user_cache["1_1500"] == User.get_by_id(1500)
 
     def test_purge_all(self):
         """Test purging all users from the cache.
@@ -425,3 +443,37 @@ class TestUserService:
         assert not Character.get_by_id(character1.id).data["is_active"]
         assert Character.get_by_id(character2.id).data["is_active"]
         assert self.user_svc.active_character_cache == {1: character2}
+
+    def test_transfer_character_owner(self, mock_ctx, mocker) -> None:
+        """Test transferring character ownership."""
+        # Given a character owned by one user and a second user
+        character1 = Character.create(
+            data={
+                "first_name": "char1_to_transfer",
+                "last_name": "character",
+                "storyteller_character": False,
+                "player_character": True,
+                "alive": True,
+                "is_active": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            owned_by=mock_ctx.author.id,
+            clan=1,
+        )
+        self.user_svc.active_character_cache = {1_1: Character.get_by_id(character1.id)}
+
+        mock_member = mocker.MagicMock()
+        mock_member.id = 15001500051
+        mock_member.display_name = "Test User 15001500051"
+        mock_member.name = "testuser 15001500051"
+        mock_member.mention = "<@15001500051>"
+        mock_member.__class__ = discord.Member
+
+        # WHEN transfer_character_owner is called
+        self.user_svc.transfer_character_owner(mock_ctx, character1, mock_member)
+
+        # THEN the character is owned by the second user
+        assert Character.get_by_id(character1.id).owned_by.id == 15001500051
+        assert self.user_svc.active_character_cache == {}

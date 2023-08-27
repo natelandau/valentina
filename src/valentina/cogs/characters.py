@@ -222,6 +222,38 @@ class Characters(commands.Cog, name="Character"):
         embed = discord.Embed(description=text, color=EmbedColor.INFO.value)
         await ctx.respond(embed=embed, ephemeral=hidden)
 
+    @chars.command(
+        name="transfer_character", description="Transfer one of your characters to another user"
+    )
+    async def transfer_character(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to view",
+            autocomplete=select_player_character,
+            required=True,
+        ),
+        new_user: Option(discord.User, description="The user to transfer the character to"),
+        hidden: Option(
+            bool,
+            description="Make the sheet only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Transfer one of your characters to another user."""
+        title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_user.display_name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        if not confirmed:
+            return
+
+        self.bot.user_svc.transfer_character_owner(ctx, character, new_user)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
+        )
+
     ### ADD COMMANDS ####################################################################
 
     @add.command(name="date_of_birth")
