@@ -152,10 +152,8 @@ def __embed2(
 
     embed.set_footer(text=footer)
 
-    embed.add_field(name="Class", value=character.class_name, inline=True)
-
-    if character.class_name.lower() == "vampire" and character.clan:
-        embed.add_field(name="Clan", value=character.clan.name, inline=True)
+    if character.data.get("bio"):
+        embed.add_field(name="**BIOGRAPHY**", value=character.data["bio"], inline=False)
 
     embed.add_field(name="\u200b", value="**EXPERIENCE**", inline=False)
     embed.add_field(name="Experience", value=f"`{character.data['experience']}`", inline=True)
@@ -165,11 +163,6 @@ def __embed2(
     embed.add_field(
         name="Lifetime Cool Points", value=f"`{character.data['cool_points_total']}`", inline=True
     )
-
-    if character.data.get("bio"):
-        embed.add_field(
-            name=f"**About {character.name}**", value=character.data["bio"], inline=False
-        )
 
     if len(custom_sections) > 0:
         embed.add_field(name="\u200b", value="**CUSTOM SECTIONS**", inline=False)

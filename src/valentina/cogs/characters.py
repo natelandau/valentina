@@ -392,7 +392,7 @@ class Characters(commands.Cog, name="Character"):
         character = self.bot.user_svc.fetch_active_character(ctx)
 
         modal = BioModal(
-            title=f"Enter the biography for {character.name}", current_bio=character.bio
+            title=f"Enter the biography for {character.name}", current_bio=character.data["bio"]
         )
         await ctx.send_modal(modal)
         await modal.wait()

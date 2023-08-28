@@ -137,6 +137,9 @@ class CharacterService:
         Returns:
             Character: The updated or created character.
         """
+        # Purge the user's character cache
+        ctx.bot.user_svc.purge_cache(ctx)  # type: ignore [attr-defined]
+
         # Always add the modified timestamp if data is provided.
         if data:
             data["modified"] = str(time_now())
