@@ -1,3 +1,20 @@
+## v1.6.0 (2023-08-27)
+
+### Feat
+
+- **character**: saved active characters replace character claims (#52)
+
+### Fix
+
+- **character**: fix character biographies
+- **campaign**: fix typo breaking campaign notes
+- **character**: improve display of character list
+- **gameplay**: include url of thumbnail in log
+
+### Refactor
+
+- **admin**: reduce complexity of settings management (#51)
+
 ## v1.5.0 (2023-08-25)
 
 ### Feat
