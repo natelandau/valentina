@@ -6,6 +6,7 @@
 -   [ ] Campaign: Renumber chapters
 -   [ ] Campaign: View any campaign, not just active one
 -   [ ] Campaign: If only one campaign, always set it as active
+-   [ ] Gameplay: Button to create macro from rolling traits
 -   [ ] Statistics: Pull stats based on timeframe
 -   [ ] Storyteller: Add notes
 -   [x] Storyteller: Allow creating storyteller NPCs with the chargen wizard

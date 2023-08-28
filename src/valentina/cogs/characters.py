@@ -128,10 +128,7 @@ class Characters(commands.Cog, name="Character"):
             data["is_active"] = True
 
         character = self.bot.char_svc.update_or_add(
-            ctx,
-            data=data,
-            char_class=char_class,
-            clan=vampire_clan,
+            ctx, data=data, char_class=char_class, clan=vampire_clan
         )
 
         for trait, value in trait_values_from_chargen:
@@ -214,10 +211,13 @@ class Characters(commands.Cog, name="Character"):
             return
 
         text = f"## All player {p.plural_noun('character', len(characters))} on {ctx.guild.name}\n"
+
         for character in sorted(characters, key=lambda x: x.name):
-            text += f"### {character.name}\n"
-            text += f"Class: {character.char_class.name}\n"
-            text += f"Owner: {self.bot.get_user(character.owned_by.id).display_name}\n"
+            text += f"**{character.name}**\n"
+            text += "```\n"
+            text += f"Class: {character.char_class.name:<20}  Created On: {character.created.split(' ')[0]}\n"
+            text += f"Owner: {self.bot.get_user(character.owned_by.id).display_name:<20} Lifetime XP: {character.data['experience']}\n"
+            text += "```\n"
 
         embed = discord.Embed(description=text, color=EmbedColor.INFO.value)
         await ctx.respond(embed=embed, ephemeral=hidden)

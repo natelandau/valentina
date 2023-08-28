@@ -147,6 +147,7 @@ class CharacterService:
             new_character = Character.create(
                 guild_id=ctx.guild.id,
                 created_by=user,
+                owned_by=user,
                 data=data or {},
                 **kwargs,
             )
