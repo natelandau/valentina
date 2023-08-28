@@ -532,7 +532,7 @@ An overview of {campaign.name}.
             return
 
         fields = []
-        for chapter in sorted(chapters, key=lambda x: x.chapter_nnumber):
+        for chapter in sorted(chapters, key=lambda x: x.chapter_number):
             fields.append(
                 (
                     f"**{chapter.chapter_number}.** **__{chapter.name}__**",
@@ -719,7 +719,7 @@ An overview of {campaign.name}.
                 (
                     f"**__{note.name}__**",
                     f"**Chapter:** {note.chapter.chapter_number}\n{note.description}"
-                    if note.chapter_number
+                    if note.chapter
                     else f"{note.description}",
                 )
             )

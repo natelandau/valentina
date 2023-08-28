@@ -173,8 +173,9 @@ class CampaignService:
             created=time_now(),
             modified=time_now(),
         )
+
         # Remove this guild's npcs from the cache, forcing a refresh next time they're accessed
-        self.npc_cache.pop(ctx.guild.id, None)
+        self.purge_cache(ctx)
 
         logger.info(f"CAMPAIGN: Create NPC {name} for guild {ctx.guild.id}")
 
@@ -193,6 +194,7 @@ class CampaignService:
         try:
             # Delete the campaign and all its associated content
             campaign.delete_instance(recursive=True, delete_nullable=True)
+            self.purge_cache(ctx)
             logger.info(
                 f"CAMPAIGN: Delete '{campaign.name}' and all content for guild ID: {ctx.guild.id}"
             )
