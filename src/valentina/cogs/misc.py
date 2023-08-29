@@ -69,9 +69,9 @@ class Misc(commands.Cog):
     @commands.slash_command(name="coinflip", help="Flip a coin")
     async def coinflip(self, ctx: discord.ApplicationContext) -> None:
         """Coinflip!"""
-        coinsides = ["Heads", "Tails"]
+        coin_sides = ["Heads", "Tails"]
         await ctx.respond(
-            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coinsides)}**!"
+            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coin_sides)}**!"
         )
 
 

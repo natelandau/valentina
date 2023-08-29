@@ -390,7 +390,7 @@ class MigrateDatabase:
     def __1_1_5(self) -> None:
         """Migrate from version 1.1.5."""
         if not self._column_exists(Character._meta.table_name, "storyteller_character"):
-            logger.debug("DATABASE: create chracters:storyteller_character column")
+            logger.debug("DATABASE: create characters:storyteller_character column")
             self.db.execute_sql(
                 f"ALTER TABLE {Character._meta.table_name} ADD COLUMN storyteller_character INTEGER DEFAULT 0;"
             )

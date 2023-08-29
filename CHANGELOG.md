@@ -309,7 +309,7 @@
 
 - **character**: add clan to vampires
 - **debug**: add `/debug tail` to allow viewing last lines of log
-- **xp**: break xp management into seperate command
+- **xp**: break xp management into separate command
 - **help**: add a guide for understanding the bot
 
 ### Fix

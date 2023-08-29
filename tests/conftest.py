@@ -310,12 +310,12 @@ def caplog(caplog):
     # logger.enable("")  # enable all logs from all modules
     # logging.addLevelName(5, "TRACE")  # tell python logging how to interpret TRACE logs
 
-    class PropogateHandler(logging.Handler):
+    class PropagateHandler(logging.Handler):
         def emit(self, record):
             logging.getLogger(record.name).handle(record)
 
     logger.add(
-        PropogateHandler(), format="{message}"
+        PropagateHandler(), format="{message}"
     )  # shunt logs into the standard python logging machinery
     # caplog.set_level(0)  # Tell logging to handle all log levels
     return caplog

@@ -456,7 +456,7 @@ class Admin(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         members: Option(
-            str, "The mentions, usernames, or IDs of the members to ban. Seperated by spaces"
+            str, "The mentions, usernames, or IDs of the members to ban. Separated by spaces"
         ),
         *,
         reason: Option(
@@ -680,7 +680,7 @@ class Admin(commands.Cog):
         *,
         reason: Option(
             str,
-            description="The reason for purging messsages",
+            description="The reason for purging messages",
             default="No reason provided",
         ),
     ) -> None:
@@ -825,7 +825,7 @@ class Admin(commands.Cog):
                 await present_embed(
                     ctx,
                     title="Emoji Creation Failed",
-                    description=f"An HTTP error ocurred while fetching the image: {res.status} {res.reason}",
+                    description=f"An HTTP error occurred while fetching the image: {res.status} {res.reason}",
                     level="error",
                     ephemeral=True,
                 )

@@ -50,6 +50,7 @@
         ruff          = "^0.0.286"
         sh            = "^2.0.6"
         shellcheck-py = "^0.9.0.5"
+        typos         = "^1.16.9"
         vulture       = "^2.9"
 
 [tool.black]
@@ -287,6 +288,9 @@
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "mypy --config-file pyproject.toml src/"
+
+        [[tool.poe.tasks.lint.sequence]]
+            shell = "typos"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "vulture src/ tests/ --exclude src/valentina/cogs/test_cog.py"
