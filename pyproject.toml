@@ -40,18 +40,19 @@
         pytest-xdist           = "^3.2.1"
 
     [tool.poetry.group.dev.dependencies]
-        black         = "^23.7.0"
-        commitizen    = "^3.6.0"
-        coverage      = "^7.2.5"
-        mypy          = "^1.5.0"
-        pdoc          = "^14.0.0"
-        poethepoet    = "^0.21.1"
-        pre-commit    = "^3.3.3"
-        ruff          = "^0.0.286"
-        sh            = "^2.0.6"
-        shellcheck-py = "^0.9.0.5"
-        typos         = "^1.16.9"
-        vulture       = "^2.9"
+        black          = "^23.7.0"
+        commitizen     = "^3.6.0"
+        coverage       = "^7.2.5"
+        mypy           = "^1.5.0"
+        pdoc           = "^14.0.0"
+        poethepoet     = "^0.21.1"
+        pre-commit     = "^3.3.3"
+        ruff           = "^0.0.286"
+        sh             = "^2.0.6"
+        shellcheck-py  = "^0.9.0.5"
+        types-aiofiles = "^23.2.0.0"
+        typos          = "^1.16.9"
+        vulture        = "^2.9"
 
 [tool.black]
     line-length = 100
