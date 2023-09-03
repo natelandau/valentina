@@ -18,7 +18,7 @@ from valentina.models.db_tables import Character, CharacterClass, RollProbabilit
 from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
-from valentina.utils.options import select_char_class
+from valentina.utils.options import select_aws_object_from_guild, select_char_class
 from valentina.views import present_embed
 
 p = inflect.engine()
@@ -59,6 +59,37 @@ class Developer(commands.Cog):
             description=f"`{db_file}`",
             ephemeral=hidden,
             level="success",
+        )
+
+    @developer.command()
+    @commands.is_owner()
+    async def delete_from_s3_guild(
+        self,
+        ctx: discord.ApplicationContext,
+        key: discord.Option(
+            str, "Name of file", required=True, autocomplete=select_aws_object_from_guild
+        ),
+    ) -> None:
+        """Delete an image from the S3 bucket for the active guild."""
+        url = self.bot.aws_svc.get_url(key)
+
+        title = f"Delete `{key}` from S3"
+        confirmed, msg = await confirm_action(ctx, title, url=url)
+        if not confirmed:
+            return
+
+        self.bot.aws_svc.delete_object(key)
+
+        objects = self.bot.aws_svc.list_objects(f"{ctx.guild.id}/")
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(
+                title=title,
+                description="## Remaining objects" + "\n".join(objects),
+                color=EmbedColor.SUCCESS.value,
+            ),
+            view=None,
         )
 
     @developer.command(description="Clear probability data from the database")

@@ -1,4 +1,5 @@
 """Models for Valentina."""
+from .aws import AWSService
 from .campaign import CampaignService
 from .characters import CharacterService
 from .database import DatabaseService, DBBackup
@@ -10,6 +11,7 @@ from .traits import TraitService
 from .users import UserService
 
 __all__ = [
+    "AWSService",
     "CharacterService",
     "CampaignService",
     "DatabaseService",

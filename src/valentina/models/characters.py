@@ -175,3 +175,42 @@ class CharacterService:
         logger.debug(f"DATABASE: Updated Character '{character}'")
 
         return Character.get_by_id(character.id)  # Have to query db again to get updated data ???
+
+    def add_character_image(
+        self, ctx: discord.ApplicationContext, character: Character, extension: str, data: bytes
+    ) -> str:
+        """Add an image to a character.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            character (Character): The character to add the image to.
+            extension (str): The file extension of the image.
+            data (bytes): The image data as bytes.
+
+        Returns:
+            str: The key to the image in S3.
+        """
+        # Purge the user's character cache
+        ctx.bot.user_svc.purge_cache(ctx)  # type: ignore [attr-defined]
+
+        # Get a list of the character's current images
+        current_character_images = character.data.get("images", [])
+
+        # Generate the key for the image
+        key_prefix = ctx.bot.aws_svc.get_key_prefix(ctx, "character", character_id=character.id).rstrip("/")  # type: ignore [attr-defined]
+
+        image_number = len(current_character_images) + 1
+
+        image_name = f"{image_number}.{extension}"
+
+        key = f"{key_prefix}/{image_name}"
+
+        # Upload the image to S3
+        ctx.bot.aws_svc.upload_image(data=data, key=key)  # type: ignore [attr-defined]
+
+        # Add the image to the character's data
+        current_character_images.append(key)
+        self.update_or_add(ctx, character=character, data={"images": current_character_images})
+
+        # Return the url to the image
+        return key

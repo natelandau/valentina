@@ -14,6 +14,7 @@ from .modals import (
     ProfileModal,
 )
 from .roll_display import RollDisplay
+from .s3_image_review import S3ImageReview
 from .thumbnail_review import ThumbnailReview
 
 __all__ = [
@@ -29,6 +30,7 @@ __all__ = [
     "ProfileModal",
     "ReRollButton",
     "RollDisplay",
+    "S3ImageReview",
     "sheet_embed",
     "show_sheet",
     "ThumbnailReview",

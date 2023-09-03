@@ -1,8 +1,10 @@
 """Helper functions for Valentina."""
+import io
 import random
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
+import aiohttp
 import discord
 from aiohttp import ClientSession
 
@@ -15,6 +17,7 @@ from valentina.constants import (
     XPMultiplier,
     XPNew,
 )
+from valentina.utils import errors
 
 from .errors import BotMissingPermissionsError
 
@@ -245,6 +248,15 @@ def get_trait_new_value(trait: str, category: str) -> int:
         return XPNew[category.upper()].value
 
     return XPNew.DEFAULT.value
+
+
+async def fetch_data_from_url(url: str) -> io.BytesIO:
+    """Fetch data from a URL to be used to upload to Amazon S3."""
+    async with aiohttp.ClientSession() as session, session.get(url) as resp:
+        if resp.status != 200:  # noqa: PLR2004
+            raise errors.URLNotAvailableError(f"Could not fetch data from {url}")
+
+        return io.BytesIO(await resp.read())
 
 
 def num_to_circles(num: int = 0, maximum: int = 5) -> str:

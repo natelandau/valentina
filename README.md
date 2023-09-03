@@ -27,6 +27,36 @@ Before running Valentina, the following must be configured or installed.
 
 -   Docker and Docker Compose
 -   A valid Discord Bot token. Instructions for this can be found on [Discord's Developer Portal](https://discord.com/developers/docs/getting-started)
+-   If you plan on using image uploads, an AWS S3 Bucket must be configured with appropriate permissions. _(Instructions on how to do this are out of scope for this document)_
+
+    -   Public must be able to read objects from the bucket
+    -   An IAM role must be created with read/write/list access and the credentials added to the environment variables.
+
+        ```json
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "GetBucketLocation",
+                    "Effect": "Allow",
+                    "Action": ["s3:GetBucketLocation"],
+                    "Resource": ["arn:aws:s3:::Bucket-Name"]
+                },
+                {
+                    "Sid": "ListObjectsInBucket",
+                    "Effect": "Allow",
+                    "Action": ["s3:ListBucket"],
+                    "Resource": ["arn:aws:s3:::Bucket-Name"]
+                },
+                {
+                    "Sid": "AllObjectActions",
+                    "Effect": "Allow",
+                    "Action": "s3:*Object",
+                    "Resource": ["arn:aws:s3:::Bucket-Name/*"]
+                }
+            ]
+        }
+        ```
 
 ### Run the bot
 
@@ -38,22 +68,26 @@ Before running Valentina, the following must be configured or installed.
 
 #### Environment Variables
 
-| Variable                    | Default Value              | Usage                                                                                                                                |
-| --------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| VALENTINA_BACKUP_PATH       | `/valentina/backup`        | Sets the directory to store database backups.<br />Note, this is the directory used within the Docker container                      |
-| VALENTINA_DAILY_RETENTION   | `7`                        | Sets the number of days to retain database backups.                                                                                  |
-| VALENTINA_DB_PATH           | `/valentina/db`            | Sets the directory to store the database.<br />Note, this is the directory used within the Docker container                          |
-| VALENTINA_DISCORD_TOKEN     |                            | Sets the Discord bot token. This is required to run the bot.                                                                         |
-| VALENTINA_GUILDS            |                            | Sets the Discord guilds the bot is allowed to join. This is a comma separated list of guild IDs.                                     |
-| VALENTINA_LOG_FILE          | `/valentina/valentina.log` | Sets the file to write logs to.<br />Note, this is the directory used within the Docker container                                    |
-| VALENTINA_LOG_LEVEL         | `INFO`                     | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
-| VALENTINA_LOG_LEVEL_DB      | `INFO`                     | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                         |
-| VALENTINA_LOG_LEVEL_HTTP    | `INFO`                     | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
-| VALENTINA_OWNER_CHANNELS    |                            | Sets the Discord channels that are allowed to run bot admin commands. This is a comma separated list of Discord channel IDs.         |
-| VALENTINA_MONTHLY_RETENTION | `12`                       | Sets the number of months to retain database backups.                                                                                |
-| VALENTINA_OWNER_IDS         |                            | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated list of Discord user IDs.            |
-| VALENTINA_WEEKLY_RETENTION  | `4`                        | Sets the number of weeks to retain database backups.                                                                                 |
-| VALENTINA_YEARLY_RETENTION  | `2`                        | Sets the number of years to retain database backups.                                                                                 |
+| Variable                        | Default Value              | Usage                                                                                                                                |
+| ------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| VALENTINA_AWS_ACCESS_KEY_ID     |                            | Access key for AWS (Optional: Only needed for image uploads)                                                                         |
+| VALENTINA_AWS_SECRET_ACCESS_KEY |                            | Secret access key for AWS (Optional: Only needed for image uploads)                                                                  |
+| VALENTINA_S3_BUCKET_NAME        |                            | Name of the S3 bucket to use (Optional: Only needed for image uploads)                                                               |
+| VALENTINA_BACKUP_PATH           | `/valentina/backup`        | Sets the directory to store database backups.<br />Note, this is the directory used within the Docker container                      |
+| VALENTINA_DAILY_RETENTION       | `7`                        | Sets the number of days to retain database backups.                                                                                  |
+| VALENTINA_DB_PATH               | `/valentina/db`            | Sets the directory to store the database.<br />Note, this is the directory used within the Docker container                          |
+| VALENTINA_DISCORD_TOKEN         |                            | Sets the Discord bot token. This is required to run the bot.                                                                         |
+| VALENTINA_GUILDS                |                            | Sets the Discord guilds the bot is allowed to join. This is a comma separated list of guild IDs.                                     |
+| VALENTINA_LOG_FILE              | `/valentina/valentina.log` | Sets the file to write logs to.<br />Note, this is the directory used within the Docker container                                    |
+| VALENTINA_LOG_LEVEL             | `INFO`                     | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
+| VALENTINA_LOG_LEVEL_AWS         | `INFO`                     | Sets the log level for AWS S3. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                       |
+| VALENTINA_LOG_LEVEL_DB          | `INFO`                     | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                         |
+| VALENTINA_LOG_LEVEL_HTTP        | `INFO`                     | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_OWNER_CHANNELS        |                            | Sets the Discord channels that are allowed to run bot admin commands. This is a comma separated list of Discord channel IDs.         |
+| VALENTINA_MONTHLY_RETENTION     | `12`                       | Sets the number of months to retain database backups.                                                                                |
+| VALENTINA_OWNER_IDS             |                            | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated list of Discord user IDs.            |
+| VALENTINA_WEEKLY_RETENTION      | `4`                        | Sets the number of weeks to retain database backups.                                                                                 |
+| VALENTINA_YEARLY_RETENTION      | `2`                        | Sets the number of years to retain database backups.                                                                                 |
 
 ---
 

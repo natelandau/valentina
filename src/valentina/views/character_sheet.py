@@ -179,6 +179,32 @@ def __embed2(
     return embed
 
 
+def __image_embed(
+    ctx: discord.ApplicationContext,
+    character: Character,
+    image_key: str,
+    owned_by_user: discord.User | None = None,
+    title: str | None = None,
+) -> discord.Embed:
+    """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
+    modified = arrow.get(character.data["modified"]).humanize()
+
+    if title is None:
+        title = f"{character.name} - Images"
+
+    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+    footer += f"Last updated: {modified}"
+
+    embed = discord.Embed(title=title, description="", color=0x7777FF)
+
+    embed.set_footer(text=footer)
+
+    image_url = ctx.bot.aws_svc.get_url(image_key)  # type: ignore [attr-defined] # it exists
+    embed.set_image(url=image_url)
+
+    return embed
+
+
 async def show_sheet(
     ctx: discord.ApplicationContext,
     character: Character,
@@ -189,6 +215,12 @@ async def show_sheet(
     embeds = []
     embeds.append(__embed1(ctx, character, owned_by_user))
     embeds.append(__embed2(ctx, character, owned_by_user))
+
+    image_keys = character.data.get("images", None)
+
+    if image_keys:
+        for image_key in image_keys:
+            embeds.append(__image_embed(ctx, character, image_key, owned_by_user))
 
     paginator = pages.Paginator(pages=embeds)  # type: ignore [arg-type]
     paginator.remove_button("first")

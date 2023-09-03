@@ -8,6 +8,7 @@ from discord.ext import commands
 from discord.ext.commands import BadArgument, Converter
 from peewee import DoesNotExist, fn
 
+from valentina.constants import VALID_IMAGE_EXTENSIONS
 from valentina.models.db_tables import (
     Campaign,
     Character,
@@ -175,16 +176,21 @@ class ValidCustomTrait(Converter):
         raise BadArgument(f"`{argument}` is not a valid vampire clan")
 
 
-class ValidThumbnailURL(Converter):
-    """Converter that ensures a requested thumbnail URL is valid."""
+class ValidImageURL(Converter):
+    """Converter that ensures a requested image URL is valid."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> str:  # noqa: ARG002
         """Validate and normalize thumbnail URLs."""
         if not re.match(r"^https?://", argument):
             raise BadArgument("Thumbnail URLs must start with `http://` or `https://`")
 
-        if not re.match(r".+\.(png|jpg|jpeg|gif)$", argument):
-            raise BadArgument("Thumbnail URLs must end with a valid image extension")
+        # Extract the file extension from the URL
+        file_extension = argument.split(".")[-1].lower()
+
+        if file_extension not in VALID_IMAGE_EXTENSIONS:
+            raise BadArgument(
+                f"Thumbnail URLs must end with a valid image extension: {', '.join(VALID_IMAGE_EXTENSIONS)}"
+            )
 
         async with aiohttp.ClientSession() as session, session.get(argument) as r:
             success_status_codes = [200, 201, 202, 203, 204, 205, 206]

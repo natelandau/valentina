@@ -50,7 +50,9 @@ class ErrorReporter:
             errors.NoActiveCampaignError
             | errors.ValidationError
             | errors.NoMatchingItemsError
-            | errors.NoActiveCharacterError,
+            | errors.NoActiveCharacterError
+            | errors.URLNotAvailableError
+            | errors.S3ObjectExistsError,
         ):
             user_msg = str(error)
 

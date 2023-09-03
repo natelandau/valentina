@@ -256,6 +256,13 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
     ]
 
 
+async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Populate the autocomplete list for the aws_object option based on the user's input."""
+    guild_prefix = f"{ctx.interaction.guild.id}/"
+
+    return [OptionChoice(x.strip(guild_prefix), x) for x in ctx.bot.aws_svc.list_objects(guild_prefix)][:MAX_OPTION_LIST_SIZE]  # type: ignore [attr-defined]
+
+
 async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate a select list with a user's macros based on the input.
 
