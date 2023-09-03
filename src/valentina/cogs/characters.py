@@ -280,41 +280,54 @@ class Characters(commands.Cog, name="Character"):
             default=True,
         ),
     ) -> None:
-        """Add an image to a character."""
-        # Error Handling
+        """Add an image to a character.
+
+        This function allows the user to add an image to a character either by uploading a file or providing a URL. It performs validation checks on the image, confirms the action with the user, and then uploads the image.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            file (discord.Attachment): The image file to be uploaded.
+            url (ValidImageURL): The URL of the image to be uploaded.
+            hidden (bool): Whether the interaction should only be visible to the user initiating it.
+
+        Returns:
+            None
+        """
+        # Validate input
         if (not file and not url) or (file and url):
             await present_embed(ctx, title="Please provide a single image", level="error")
             return
 
-        if file and Path(file.filename).suffix.lstrip(".").lower() not in VALID_IMAGE_EXTENSIONS:
-            await present_embed(
-                ctx,
-                title=f"Must provide a valid image: {', '.join(VALID_IMAGE_EXTENSIONS)}",
-                level="error",
-            )
-            return
+        if file:
+            file_extension = Path(file.filename).suffix.lstrip(".").lower()
+            if file_extension not in VALID_IMAGE_EXTENSIONS:
+                await present_embed(
+                    ctx,
+                    title=f"Must provide a valid image: {', '.join(VALID_IMAGE_EXTENSIONS)}",
+                    level="error",
+                )
+                return
 
-        # Command Logic
+        # Fetch active character and confirm action
         character = self.bot.user_svc.fetch_active_character(ctx)
         title = f"Add image to `{character.name}`"
         confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
         if not confirmed:
             return
 
-        extension = (
-            Path(file.filename).suffix.lstrip(".").lower() if file else url.split(".")[-1].lower()
-        )
-
+        # Determine image extension and read data
+        extension = file_extension if file else url.split(".")[-1].lower()
         data = await file.read() if file else await fetch_data_from_url(url)
 
+        # Add image to character
         result = self.bot.char_svc.add_character_image(ctx, character, extension, data)
+        image_url = self.bot.aws_svc.get_url(result)
 
-        saved_url = self.bot.aws_svc.get_url(result)
-
+        # Update audit log and original response
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value).set_image(
-                url=saved_url
+                url=image_url
             ),
             view=None,
         )
@@ -329,12 +342,26 @@ class Characters(commands.Cog, name="Character"):
             default=True,
         ),
     ) -> None:
-        """Delete an image from a character."""
+        """Delete an image from a character.
+
+        This function fetches the active character for the user, generates the key prefix for the character's images, and then initiates an S3ImageReview to allow the user to review and delete images.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            hidden (bool): Whether the interaction should only be visible to the user initiating it.
+
+        Returns:
+            None
+        """
+        # Fetch the active character for the user
         character = self.bot.user_svc.fetch_active_character(ctx)
+
+        # Generate the key prefix for the character's images
         key_prefix = self.bot.aws_svc.get_key_prefix(
             ctx, "character", character_id=character.id
         ).rstrip("/")
 
+        # Initiate an S3ImageReview to allow the user to review and delete images
         await S3ImageReview(ctx, key_prefix, review_type="character", hidden=hidden).send(ctx)
 
     ### ADD COMMANDS ####################################################################

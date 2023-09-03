@@ -61,7 +61,7 @@ class Developer(commands.Cog):
             level="success",
         )
 
-    @developer.command()
+    @developer.command(description="Delete an image from the Amazon S3 bucket for the active guild")
     @commands.is_owner()
     async def delete_from_s3_guild(
         self,
@@ -70,18 +70,33 @@ class Developer(commands.Cog):
             str, "Name of file", required=True, autocomplete=select_aws_object_from_guild
         ),
     ) -> None:
-        """Delete an image from the S3 bucket for the active guild."""
+        """Delete an image from the Amazon S3 bucket for the active guild.
+
+        This function fetches the URL of the image to be deleted, confirms the action with the user,
+        deletes the object from S3, and then sends a message to the audit log.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            key (str): The key of the file to be deleted from S3.
+
+        Returns:
+            None
+        """
+        # Fetch the URL of the image to be deleted
         url = self.bot.aws_svc.get_url(key)
 
+        # Confirm the deletion action
         title = f"Delete `{key}` from S3"
         confirmed, msg = await confirm_action(ctx, title, url=url)
         if not confirmed:
             return
 
+        # Delete the object from S3
         self.bot.aws_svc.delete_object(key)
+        logger.info(f"Deleted object with key: {key} from S3")
 
+        # List remaining objects and send to audit log
         objects = self.bot.aws_svc.list_objects(f"{ctx.guild.id}/")
-
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
             embed=discord.Embed(
