@@ -16,7 +16,12 @@ CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 class AWSService:
     """Class for interacting with AWS services."""
 
-    def __init__(self, aws_access_key_id: str, aws_secret_access_key: str, bucket_name: str):
+    def __init__(
+        self,
+        aws_access_key_id: str,
+        aws_secret_access_key: str,
+        bucket_name: str,
+    ):
         """Initialize the AWS Service class with credentials.
 
         Args:
@@ -24,14 +29,24 @@ class AWSService:
             aws_secret_access_key (str): AWS secret access key.
             bucket_name (str): Name of the S3 bucket to use.
         """
-        self.s3 = boto3.client(
-            "s3",
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            config=CONFIG,
-        )
-        self.bucket = bucket_name
-        self.location = self.s3.get_bucket_location(Bucket=self.bucket)  # Ex. us-east-1
+        if not aws_access_key_id or not aws_secret_access_key or not bucket_name:
+            self.disabled = True
+        else:
+            self.disabled = False
+
+            self.s3 = boto3.client(
+                "s3",
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+                config=CONFIG,
+            )
+            self.bucket = bucket_name
+            self.location = self.s3.get_bucket_location(Bucket=self.bucket)  # Ex. us-east-1
+
+    def check_disabled(self) -> None:
+        """Check if the service is disabled and raise an error if it is."""
+        if self.disabled:
+            raise errors.ServiceDisabledError
 
     def get_key_prefix(
         self, ctx: discord.ApplicationContext, object_type: str, **kwargs: str | int
@@ -90,6 +105,8 @@ class AWSService:
         Returns:
             bool: True if the copy is successful, False otherwise.
         """
+        self.check_disabled()
+
         copy_source = {"Bucket": self.bucket, "Key": source_key}
         try:
             self.s3.copy_object(CopySource=copy_source, Bucket=self.bucket, Key=dest_key)
@@ -111,6 +128,8 @@ class AWSService:
         Returns:
             bool: True if the deletion is successful, False otherwise.
         """
+        self.check_disabled()
+
         try:
             # Attempt to delete the object from the S3 bucket
             result = self.s3.delete_object(Bucket=self.bucket, Key=key)
@@ -131,6 +150,8 @@ class AWSService:
         Returns:
             bool: True if the download is successful, False otherwise.
         """
+        self.check_disabled()
+
         try:
             self.s3.download_file(Bucket=self.bucket, Key=key, Filename=download_path)
         except ClientError as e:
@@ -150,6 +171,8 @@ class AWSService:
         Returns:
             str | None: Presigned URL or None if the operation fails.
         """
+        self.check_disabled()
+
         try:
             url = self.s3.generate_presigned_url(
                 "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expiration
@@ -175,6 +198,8 @@ class AWSService:
         Returns:
             list[str]: A list of object keys that start with the given prefix.
         """
+        self.check_disabled()
+
         result = self.s3.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
         return [obj["Key"] for obj in result.get("Contents", [])]
 
@@ -211,6 +236,8 @@ class AWSService:
         Returns:
             bool: True if the upload is successful, False otherwise.
         """
+        self.check_disabled()
+
         # Check if the object exists and whether we should overwrite it
         if not overwrite and self.object_exist(key):
             raise errors.S3ObjectExistsError()
@@ -245,6 +272,8 @@ class AWSService:
         Returns:
             bool: True if the upload is successful, False otherwise.
         """
+        self.check_disabled()
+
         # Determine the name of the file in the S3 bucket
         key = name or f"{ctx.guild.id}/{path.name}"
 

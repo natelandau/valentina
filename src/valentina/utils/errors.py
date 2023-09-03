@@ -2,6 +2,24 @@
 from discord import DiscordException
 
 
+class ServiceDisabledError(DiscordException):
+    """Raised when a service is disabled."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The requested service is disabled."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class URLNotAvailableError(DiscordException):
     """Raised when a URL is not available."""
 
