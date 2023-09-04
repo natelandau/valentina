@@ -10,6 +10,7 @@ from discord.ext import commands, tasks
 from loguru import logger
 
 from valentina.models import (
+    AWSService,
     CampaignService,
     CharacterService,
     DatabaseService,
@@ -42,6 +43,11 @@ class Valentina(commands.Bot):
         self.trait_svc = TraitService()
         self.user_svc = UserService()
         self.macro_svc = MacroService()
+        self.aws_svc = AWSService(
+            aws_access_key_id=self.config.get("VALENTINA_AWS_ACCESS_KEY_ID", False),
+            aws_secret_access_key=self.config.get("VALENTINA_AWS_SECRET_ACCESS_KEY", False),
+            bucket_name=self.config.get("VALENTINA_S3_BUCKET_NAME", False),
+        )
 
         # Load Cogs
         # #######################

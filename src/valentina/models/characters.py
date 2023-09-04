@@ -10,6 +10,40 @@ from valentina.utils.helpers import time_now
 class CharacterService:
     """A service for managing the Player characters in the database."""
 
+    def add_character_image(
+        self, ctx: discord.ApplicationContext, character: Character, extension: str, data: bytes
+    ) -> str:
+        """Add an image to a character and upload it to Amazon S3.
+
+        This function generates a unique key for the image, uploads the image to S3, and updates the character in the database to include the new image.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            character (Any): The character object to which the image will be added.
+            extension (str): The file extension of the image.
+            data (bytes): The image data in bytes.
+
+        Returns:
+            str: The key to the image in Amazon S3.
+        """
+        # Get a list of the character's current images
+        current_character_images = character.data.get("images", [])
+
+        # Generate the key for the image
+        key_prefix = ctx.bot.aws_svc.get_key_prefix(ctx, "character", character_id=character.id).rstrip("/")  # type: ignore [attr-defined]
+        image_number = len(current_character_images) + 1
+        image_name = f"{image_number}.{extension}"
+        key = f"{key_prefix}/{image_name}"
+
+        # Upload the image to S3
+        ctx.bot.aws_svc.upload_image(data=data, key=key)  # type: ignore [attr-defined]
+
+        # Add the image to the character's data
+        current_character_images.append(key)
+        self.update_or_add(ctx, character=character, data={"images": current_character_images})
+
+        return key
+
     def custom_section_update_or_add(
         self,
         ctx: discord.ApplicationContext,

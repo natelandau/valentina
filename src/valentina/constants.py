@@ -8,7 +8,7 @@ MAX_CHARACTER_COUNT = 1990  # truncate text to fit in embeds
 MAX_FIELD_COUNT = 1010
 MAX_OPTION_LIST_SIZE = 25  # maximum number of options in a discord select menu
 MAX_PAGE_CHARACTER_COUNT = 1950
-
+VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 
 ### ENUMS ###
 
@@ -189,7 +189,7 @@ class XPMultiplier(Enum):
 
 
 ### Database Default Values ###
-CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
+CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
     "alive": True,
     "auspice": None,
     "bio": None,
@@ -213,6 +213,7 @@ CHARACTER_DEFAULTS: dict[str, int | bool | None | str] = {
     "storyteller_character": False,
     "tradition": None,
     "tribe": None,
+    "images": [],
 }
 
 GUILD_DEFAULTS: dict[str, int | bool | None | str] = {

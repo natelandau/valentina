@@ -8,8 +8,8 @@ from valentina.constants import ChannelPermission, EmbedColor, RollResultType
 from valentina.models.db_tables import RollThumbnail
 
 
-class DeleteOrCategorize(discord.ui.View):
-    """A view for deleting or categorizing a thumbnail."""
+class DeleteOrCategorizeThumbnails(discord.ui.View):
+    """A view for deleting or categorizing a roll result thumbnails."""
 
     def __init__(
         self, ctx: discord.ApplicationContext, thumbnail_id: int, thumbnail_url: str
@@ -130,7 +130,7 @@ class ThumbnailReview:
         pages_to_send: list[pages.Page] = []
 
         for db_id, url in self.thumbnails.items():
-            view = DeleteOrCategorize(ctx=self.ctx, thumbnail_id=db_id, thumbnail_url=url)
+            view = DeleteOrCategorizeThumbnails(ctx=self.ctx, thumbnail_id=db_id, thumbnail_url=url)
 
             embed = await self._get_embed(db_id, url)
 

@@ -10,7 +10,7 @@ from valentina.models import Probability
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.cogs import confirm_action
-from valentina.utils.converters import ValidCharTrait, ValidMacroFromID, ValidThumbnailURL
+from valentina.utils.converters import ValidCharTrait, ValidImageURL, ValidMacroFromID
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
 from valentina.utils.perform_roll import perform_roll
 
@@ -197,7 +197,7 @@ class Roll(commands.Cog):
             required=True,
             choices=[roll_type.name for roll_type in RollResultType],
         ),
-        url: Option(ValidThumbnailURL, description="URL of the thumbnail", required=True),
+        url: Option(ValidImageURL, description="URL of the thumbnail", required=True),
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",

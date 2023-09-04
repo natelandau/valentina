@@ -246,6 +246,44 @@ jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
+name = "boto3"
+version = "1.28.40"
+description = "The AWS SDK for Python"
+optional = false
+python-versions = ">= 3.7"
+files = [
+    {file = "boto3-1.28.40-py3-none-any.whl", hash = "sha256:bd7c760afb195eaeaab907dc6b2c21fa64ddbba3fed4a869e80d820ddbd6cc70"},
+    {file = "boto3-1.28.40.tar.gz", hash = "sha256:6ff9a5b815e106656596064d51c9b6ba97a307807baa5f89634384b7d3f7ecc6"},
+]
+
+[package.dependencies]
+botocore = ">=1.31.40,<1.32.0"
+jmespath = ">=0.7.1,<2.0.0"
+s3transfer = ">=0.6.0,<0.7.0"
+
+[package.extras]
+crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
+
+[[package]]
+name = "botocore"
+version = "1.31.40"
+description = "Low-level, data-driven core of boto 3."
+optional = false
+python-versions = ">= 3.7"
+files = [
+    {file = "botocore-1.31.40-py3-none-any.whl", hash = "sha256:df766969f0d9ef9eda1a9c9946e0e173c10199f37a9e4c92861f11ddb5c9e702"},
+    {file = "botocore-1.31.40.tar.gz", hash = "sha256:ce22a82ef8674f49691477d09558992cc87e7331f65c6a5b0da897ab192240ca"},
+]
+
+[package.dependencies]
+jmespath = ">=0.7.1,<2.0.0"
+python-dateutil = ">=2.1,<3.0.0"
+urllib3 = ">=1.25.4,<1.27"
+
+[package.extras]
+crt = ["awscrt (==0.16.26)"]
+
+[[package]]
 name = "cfgv"
 version = "3.4.0"
 description = "Validate configuration and produce human readable error messages."
@@ -683,6 +721,17 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "jmespath"
+version = "1.0.1"
+description = "JSON Matching Expressions"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "jmespath-1.0.1-py3-none-any.whl", hash = "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980"},
+    {file = "jmespath-1.0.1.tar.gz", hash = "sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe"},
+]
+
+[[package]]
 name = "loguru"
 version = "0.7.0"
 description = "Python logging made (stupidly) simple"
@@ -1104,13 +1153,13 @@ files = [
 
 [[package]]
 name = "pre-commit"
-version = "3.3.3"
+version = "3.4.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pre_commit-3.3.3-py2.py3-none-any.whl", hash = "sha256:10badb65d6a38caff29703362271d7dca483d01da88f9d7e05d0b97171c136cb"},
-    {file = "pre_commit-3.3.3.tar.gz", hash = "sha256:a2256f489cd913d575c145132ae196fe335da32d91a8294b7afe6622335dd023"},
+    {file = "pre_commit-3.4.0-py2.py3-none-any.whl", hash = "sha256:96d529a951f8b677f730a7212442027e8ba53f9b04d217c4c67dc56c393ad945"},
+    {file = "pre_commit-3.4.0.tar.gz", hash = "sha256:6bbd5129a64cad4c0dfaeeb12cd8f7ea7e15b77028d985341478c8af3c759522"},
 ]
 
 [package.dependencies]
@@ -1306,13 +1355,13 @@ plugins = ["importlib-metadata"]
 
 [[package]]
 name = "pytest"
-version = "7.4.0"
+version = "7.4.1"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytest-7.4.0-py3-none-any.whl", hash = "sha256:78bf16451a2eb8c7a2ea98e32dc119fd2aa758f1d5d66dbf0a59d69a3969df32"},
-    {file = "pytest-7.4.0.tar.gz", hash = "sha256:b4bf8c45bd59934ed84001ad51e11b4ee40d40a1229d2c79f9c592b0a3f6bd8a"},
+    {file = "pytest-7.4.1-py3-none-any.whl", hash = "sha256:460c9a59b14e27c602eb5ece2e47bec99dc5fc5f6513cf924a7d03a578991b1f"},
+    {file = "pytest-7.4.1.tar.gz", hash = "sha256:2f2301e797521b23e4d2585a0a3d7b5e50fdddaaf7e7d6773ea26ddb17c213ab"},
 ]
 
 [package.dependencies]
@@ -1561,6 +1610,23 @@ files = [
 ]
 
 [[package]]
+name = "s3transfer"
+version = "0.6.2"
+description = "An Amazon S3 Transfer Manager"
+optional = false
+python-versions = ">= 3.7"
+files = [
+    {file = "s3transfer-0.6.2-py3-none-any.whl", hash = "sha256:b014be3a8a2aab98cfe1abc7229cc5a9a0cf05eb9c1f2b86b230fd8df3f78084"},
+    {file = "s3transfer-0.6.2.tar.gz", hash = "sha256:cab66d3380cca3e70939ef2255d01cd8aece6a4907a9528740f668c4b0611861"},
+]
+
+[package.dependencies]
+botocore = ">=1.12.36,<2.0a.0"
+
+[package.extras]
+crt = ["botocore[crt] (>=1.20.29,<2.0a.0)"]
+
+[[package]]
 name = "semver"
 version = "3.0.1"
 description = "Python helper for Semantic Versioning (https://semver.org)"
@@ -1728,22 +1794,38 @@ files = [
 
 [[package]]
 name = "typos"
-version = "1.16.9"
+version = "1.16.10"
 description = "Source Code Spelling Correction"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "typos-1.16.9-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:a57a2bb3c2cefe635a311656e68c37befaee6380af7b5c670250125781862cdb"},
-    {file = "typos-1.16.9-py3-none-macosx_11_0_arm64.whl", hash = "sha256:22c3006eb56410d1854c78e982b2c61a2f35d5530fa9b58a5c61c9fff80a550e"},
-    {file = "typos-1.16.9-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8a0424c6536dc7210892437c610d761278b13dc8a755e35a8a2ee16017bcf112"},
-    {file = "typos-1.16.9-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7e26df48469ce64d994b7abcfc31ac18080429e4099ac2d6485b610b589cf418"},
-    {file = "typos-1.16.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:62abe376396b97b3a9830b51125af1207a0b598c8bad83a4a9c593e0a9e228a8"},
-    {file = "typos-1.16.9-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:b4a6dc96a9e8f46f5ef7f49b6b8c504ac432e12ade37e08df4c488acca18b76f"},
-    {file = "typos-1.16.9-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:de0641a1c09f6c5255b9025e6de4e4137a3aaf910dc067312c288a22d3eb245c"},
-    {file = "typos-1.16.9-py3-none-win32.whl", hash = "sha256:abcd1dde8b5c598363a392a32ebb1572442a377ad67377cb912b367d269e6a4a"},
-    {file = "typos-1.16.9-py3-none-win_amd64.whl", hash = "sha256:1a3f65697e8d290abb05fda06704b64a90489e2b66802d1c2bdc1122d5fdc784"},
-    {file = "typos-1.16.9.tar.gz", hash = "sha256:ebc3437484aff83c85cde05128533aaa2f4fdeb29054e7ae7511921d14bb7ce8"},
+    {file = "typos-1.16.10-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:909d0c6446c3d1f68f2721e9acfd4ed996d459cb0fbea129d66daf22c42b2a2d"},
+    {file = "typos-1.16.10-py3-none-macosx_11_0_arm64.whl", hash = "sha256:849b4b5b3f6a507e287b604f327bd881d5b96cb6c81856e05fb5891b6a3a0bba"},
+    {file = "typos-1.16.10-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b6d2842494e03cc97133126509bc40b129de5810b86f3d1d3f15f966c8b7c031"},
+    {file = "typos-1.16.10-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:ef6104f5951bb8348337c6cb64ebb4a6f72af2f6157e981473db8bd1ba3b5569"},
+    {file = "typos-1.16.10-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2325bdf30f38d53e5efdf170a7691ce4fb51411782c4fc465a862d152b0df198"},
+    {file = "typos-1.16.10-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:dc77b0ae05cf81cfa4bbb5486e008ce7049770539340ef01c3be950a91981032"},
+    {file = "typos-1.16.10-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:670bb6877b99de725fae6b374a4aef4f13ff1bfe492bb165054bac8454086e88"},
+    {file = "typos-1.16.10-py3-none-win32.whl", hash = "sha256:2173f10ec3eff7812b49cce096199deee044c399fa2c49c9a7d24bf3e10d28b2"},
+    {file = "typos-1.16.10-py3-none-win_amd64.whl", hash = "sha256:486edb47ab514d0aa15f145b7da9b5fc5892f8bde5afc5e49e792f5a39e4ec77"},
+    {file = "typos-1.16.10.tar.gz", hash = "sha256:e4325f5818de70f7cec5caeb8644853a8271fce47bba391f73b529750841c059"},
 ]
+
+[[package]]
+name = "urllib3"
+version = "1.26.16"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+files = [
+    {file = "urllib3-1.26.16-py2.py3-none-any.whl", hash = "sha256:8d36afa7616d8ab714608411b4a3b13e58f463aee519024578e062e141dce20f"},
+    {file = "urllib3-1.26.16.tar.gz", hash = "sha256:8f135f6502756bde6b2a9b28989df5fbe87c9970cecaa69041edcce7f0589b14"},
+]
+
+[package.extras]
+brotli = ["brotli (>=1.0.9)", "brotlicffi (>=0.8.0)", "brotlipy (>=0.6.0)"]
+secure = ["certifi", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "ipaddress", "pyOpenSSL (>=0.14)", "urllib3-secure-extra"]
+socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "virtualenv"
@@ -1909,4 +1991,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "f312f67d7a1605ea72866a0058103bed6ba0deb469e89c4215e14d5897a7e953"
+content-hash = "5216cc829270577ae0578b1a4f302d064ed05801dfa7f5c0be6e2b446b819e85"
