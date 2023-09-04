@@ -254,7 +254,7 @@ class TestCharacterService:
         assert result.title == "new2"
         assert result.description == "new description2"
 
-    def test_fetch_all_player_characters(self, mocker):
+    def test_fetch_all_player_characters(self, mocker, mock_member, mock_member2):
         """Test fetch_all_player_characters()."""
         # GIVEN characters for a guild
 
@@ -268,49 +268,67 @@ class TestCharacterService:
         character1 = Character.create(
             data={
                 "first_name": str(uuid4()).split("-")[0],
-                "last_name": "character",
+                "last_name": "character1",
                 "storyteller_character": False,
                 "player_character": True,
             },
             char_class=1,
             guild=local_mock_ctx.guild.id,
-            created_by=1,
+            created_by=mock_member.id,
+            owned_by=mock_member.id,
             clan=1,
         )
         character2 = Character.create(
             data={
                 "first_name": str(uuid4()).split("-")[0],
-                "last_name": "character",
+                "last_name": "character2",
                 "storyteller_character": False,
                 "player_character": True,
             },
             char_class=1,
             guild=local_mock_ctx.guild.id,
-            created_by=1,
+            created_by=mock_member.id,
+            owned_by=mock_member.id,
+            clan=1,
+        )
+        # Created by a second user
+        character3 = Character.create(
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character3",
+                "storyteller_character": False,
+                "player_character": True,
+            },
+            char_class=1,
+            guild=local_mock_ctx.guild.id,
+            created_by=mock_member2.id,
+            owned_by=mock_member2.id,
             clan=1,
         )
         # not a player character
         Character.create(
             data={
                 "first_name": str(uuid4()).split("-")[0],
-                "last_name": "character",
+                "last_name": "character4",
                 "storyteller_character": True,
             },
             char_class=1,
             guild=local_mock_ctx.guild.id,
-            created_by=1,
+            created_by=mock_member.id,
+            owned_by=mock_member.id,
             clan=1,
         )
         # not in the guild
         Character.create(
             data={
                 "first_name": str(uuid4()).split("-")[0],
-                "last_name": "character",
+                "last_name": "character5",
                 "player_character": True,
             },
             char_class=1,
             guild=local_mock_ctx.guild.id + 5,
-            created_by=1,
+            created_by=mock_member.id,
+            owned_by=mock_member.id,
             clan=1,
         )
 
@@ -318,8 +336,12 @@ class TestCharacterService:
         result = self.char_svc.fetch_all_player_characters(local_mock_ctx)
 
         # THEN check the method returns the correct characters database and updates the default values
-        assert result == [character1, character2]
+        assert result == [character1, character2, character3]
         assert result[0].data["experience"] == 0  # Check default value
+
+        # WHEN the fetch_all_player_characters method is called with a user
+        result = self.char_svc.fetch_all_player_characters(local_mock_ctx, owned_by=mock_member)
+        assert result == [character1, character2]
 
     def test_fetch_all_storyteller_characters(self, mocker):
         """Test fetch_all_storyteller_characters()."""

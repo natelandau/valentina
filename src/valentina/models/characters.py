@@ -91,12 +91,15 @@ class CharacterService:
             character.set_default_data_values()
 
     def fetch_all_player_characters(
-        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+        self,
+        ctx: discord.ApplicationContext | discord.AutocompleteContext,
+        owned_by: discord.Member | None = None,
     ) -> list[Character]:
         """Fetch all characters for a specific guild and confirm that default data values are set before returning them as a list.
 
         Args:
             ctx (ApplicationContext | discord.AutocompleteContext): Context object containing guild information.
+            owned_by (discord.Member | None, optional): The member who owns the characters. Defaults to None.
 
         Returns:
             list[Character]: List of characters for the guild.
@@ -107,9 +110,17 @@ class CharacterService:
             else ctx.interaction.guild.id
         )
 
-        characters = Character.select().where(
-            Character.guild_id == guild_id, Character.data["player_character"] == True  # noqa: E712
-        )
+        if owned_by:
+            characters = Character.select().where(
+                Character.guild_id == guild_id,
+                Character.data["player_character"] == True,  # noqa: E712
+                Character.owned_by == owned_by.id,
+            )
+        else:
+            characters = Character.select().where(
+                Character.guild_id == guild_id,
+                Character.data["player_character"] == True,  # noqa: E712
+            )
         logger.debug(f"DATABASE: Fetch {len(characters)} characters for guild `{guild_id}`")
 
         # Verify default data values are set
