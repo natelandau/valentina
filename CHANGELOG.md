@@ -1,3 +1,9 @@
+## v1.7.0 (2023-09-03)
+
+### Feat
+
+- **character**: add and remove character images (#53)
+
 ## v1.6.0 (2023-08-27)
 
 ### Feat
