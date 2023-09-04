@@ -64,6 +64,7 @@ class DatabaseVersion(BaseModel):
     """Database version model for the database."""
 
     version = TextField()
+    date = DateTimeField(default=time_now)
 
 
 class Guild(BaseModel):

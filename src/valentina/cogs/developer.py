@@ -412,7 +412,7 @@ class Developer(commands.Cog):
         embed.add_field(name="Bot Version", value=f"`{self.bot.version}`")
         embed.add_field(name="Pycord Version", value=f"`{discord.__version__}`")
         embed.add_field(
-            name="Database Version", value=f"`{self.bot.db_svc.fetch_database_version()}`"
+            name="Database Version", value=f"`{self.bot.db_svc.fetch_current_version()}`"
         )
 
         await ctx.respond(embed=embed, ephemeral=hidden)
