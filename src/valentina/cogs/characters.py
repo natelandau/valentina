@@ -27,6 +27,7 @@ from valentina.utils.converters import (
 )
 from valentina.utils.helpers import fetch_data_from_url
 from valentina.utils.options import (
+    select_any_player_character,
     select_char_class,
     select_char_trait,
     select_custom_section,
@@ -181,7 +182,7 @@ class Characters(commands.Cog, name="Character"):
         character: Option(
             ValidCharacterObject,
             description="The character to view",
-            autocomplete=select_player_character,
+            autocomplete=select_any_player_character,
             required=True,
         ),
         hidden: Option(
