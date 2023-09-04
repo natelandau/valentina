@@ -56,10 +56,10 @@ class Characters(commands.Cog, name="Character"):
         self.bot: Valentina = bot
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
-    update = chars.create_subgroup("update", "Make edits to character information")
     image = chars.create_subgroup("image", "Add or update character images")
-    add = chars.create_subgroup("add", "Add new information to characters")
-    delete = chars.create_subgroup("delete", "Delete information from characters")
+    bio = chars.create_subgroup("bio", "Add or update a character's bio, profile, and DOB")
+    trait = chars.create_subgroup("trait", "Work with character traits")
+    section = chars.create_subgroup("section", "Work with character custom sections")
 
     @chars.command(name="create", description="Create a new character")
     async def create_character(
@@ -365,36 +365,8 @@ class Characters(commands.Cog, name="Character"):
         # Initiate an S3ImageReview to allow the user to review and delete images
         await S3ImageReview(ctx, key_prefix, review_type="character", hidden=hidden).send(ctx)
 
-    ### ADD COMMANDS ####################################################################
-
-    @add.command(name="date_of_birth")
-    async def date_of_birth(
-        self,
-        ctx: discord.ApplicationContext,
-        dob: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Set the DOB of a character."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-
-        self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
-
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`"
-        )
-        await present_embed(
-            ctx,
-            title="Date of Birth Updated",
-            description=f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`",
-            level="success",
-            ephemeral=hidden,
-        )
-
-    @add.command(name="trait", description="Add a custom trait to a character")
+    ### TRAIT COMMANDS ####################################################################
+    @trait.command(name="add", description="Add a trait to a character")
     async def add_custom_trait(
         self,
         ctx: discord.ApplicationContext,
@@ -431,8 +403,6 @@ class Characters(commands.Cog, name="Character"):
         if not confirmed:
             return
 
-        ###############################################33
-
         character.add_custom_trait(
             name=name,
             category=category,
@@ -446,165 +416,7 @@ class Characters(commands.Cog, name="Character"):
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
-    @add.command(name="custom_section", description="Add a custom section to the character sheet")
-    async def add_custom_section(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Add a custom section to the character sheet."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-
-        modal = CustomSectionModal(title=f"Custom section for {character.name}")
-        await ctx.send_modal(modal)
-        await modal.wait()
-
-        section_title = modal.section_title.strip().title()
-        section_description = modal.section_description.strip()
-
-        existing_sections = character.custom_sections
-        if section_title.replace("-", "_").replace(" ", "_").lower() in [
-            x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
-        ]:
-            raise errors.ValidationError("Custom section already exists")
-
-        self.bot.char_svc.custom_section_update_or_add(
-            ctx, character, section_title, section_description
-        )
-
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Add section `{section_title}` to `{character.name}`"
-        )
-
-        await present_embed(
-            ctx,
-            f"Add section `{section_title}` to `{character.name}`",
-            description=f"**{section_title}**\n{section_description}",
-            ephemeral=hidden,
-            level="success",
-        )
-
-    ### UPDATE COMMANDS ####################################################################
-    @update.command(name="bio", description="Add or update a character's bio")
-    async def update_bio(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Update a character's bio."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-
-        modal = BioModal(
-            title=f"Enter the biography for {character.name}", current_bio=character.data["bio"]
-        )
-        await ctx.send_modal(modal)
-        await modal.wait()
-        biography = modal.bio.strip()
-
-        self.bot.char_svc.update_or_add(ctx, character=character, data={"bio": biography})
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Update biography for `{character.name}`")
-
-        await present_embed(
-            ctx,
-            title=f"Update biography for `{character.name}`",
-            description=f"**Biography**\n{biography}",
-            level="success",
-            ephemeral=hidden,
-        )
-
-    @update.command(name="custom_section", description="Update a custom section")
-    async def update_custom_section(
-        self,
-        ctx: discord.ApplicationContext,
-        custom_section: Option(
-            ValidCustomSection,
-            description="Custom section to update",
-            required=True,
-            autocomplete=select_custom_section,
-        ),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Update a custom section."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-
-        modal = CustomSectionModal(
-            section_title=custom_section.title,
-            section_description=custom_section.description,
-            title=f"Custom section for {character.name}",
-        )
-        await ctx.send_modal(modal)
-        await modal.wait()
-
-        section_title = modal.section_title.strip().title()
-        section_description = modal.section_description.strip()
-
-        self.bot.char_svc.custom_section_update_or_add(
-            ctx,
-            character,
-            section_title=section_title,
-            section_description=section_description,
-            section_id=custom_section.id,
-        )
-
-        title = f"Update section `{section_title}` for `{character.name}`"
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await present_embed(
-            ctx,
-            title=title,
-            description=f"**{section_title}**\n{section_description}",
-            ephemeral=hidden,
-            level="success",
-        )
-
-    @chars.command(name="profile", description="Update a character's profile")
-    async def update_profile(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Update a character's profile."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-
-        modal = ProfileModal(title=f"Profile for {character}", character=character)
-        await ctx.send_modal(modal)
-        await modal.wait()
-        if modal.confirmed:
-            update_data: dict = {}
-            for k, v in modal.results.items():
-                if v:
-                    update_data[k] = v
-
-            self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
-
-            await self.bot.guild_svc.send_to_audit_log(
-                ctx, f"Update profile for `{character.name}`"
-            )
-
-            await present_embed(
-                ctx,
-                title=f"Update profile for `{character.name}`",
-                level="success",
-                ephemeral=hidden,
-            )
-
-    @update.command(name="trait", description="Update the value of a trait for a character")
+    @trait.command(name="update", description="Update the value of a trait for a character")
     async def update_trait(
         self,
         ctx: discord.ApplicationContext,
@@ -654,8 +466,7 @@ class Characters(commands.Cog, name="Character"):
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
-    ### DELETE COMMANDS ####################################################################
-    @delete.command(name="trait", description="Delete a custom trait from a character")
+    @trait.command(name="delete", description="Delete a custom trait from a character")
     async def delete_custom_trait(
         self,
         ctx: discord.ApplicationContext,
@@ -687,7 +498,99 @@ class Characters(commands.Cog, name="Character"):
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
-    @delete.command(name="custom_section", description="Delete a custom section from a character")
+    ### SECTION COMMANDS ####################################################################
+
+    @section.command(name="add", description="Add a new custom section to the character sheet")
+    async def add_custom_section(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Add a custom section to the character sheet."""
+        character = self.bot.user_svc.fetch_active_character(ctx)
+
+        modal = CustomSectionModal(title=f"Custom section for {character.name}")
+        await ctx.send_modal(modal)
+        await modal.wait()
+
+        section_title = modal.section_title.strip().title()
+        section_description = modal.section_description.strip()
+
+        existing_sections = character.custom_sections
+        if section_title.replace("-", "_").replace(" ", "_").lower() in [
+            x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
+        ]:
+            raise errors.ValidationError("Custom section already exists")
+
+        self.bot.char_svc.custom_section_update_or_add(
+            ctx, character, section_title, section_description
+        )
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"Add section `{section_title}` to `{character.name}`"
+        )
+
+        await present_embed(
+            ctx,
+            f"Add section `{section_title}` to `{character.name}`",
+            description=f"**{section_title}**\n{section_description}",
+            ephemeral=hidden,
+            level="success",
+        )
+
+    @section.command(name="update", description="Update a custom section")
+    async def update_custom_section(
+        self,
+        ctx: discord.ApplicationContext,
+        custom_section: Option(
+            ValidCustomSection,
+            description="Custom section to update",
+            required=True,
+            autocomplete=select_custom_section,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Update a custom section."""
+        character = self.bot.user_svc.fetch_active_character(ctx)
+
+        modal = CustomSectionModal(
+            section_title=custom_section.title,
+            section_description=custom_section.description,
+            title=f"Custom section for {character.name}",
+        )
+        await ctx.send_modal(modal)
+        await modal.wait()
+
+        section_title = modal.section_title.strip().title()
+        section_description = modal.section_description.strip()
+
+        self.bot.char_svc.custom_section_update_or_add(
+            ctx,
+            character,
+            section_title=section_title,
+            section_description=section_description,
+            section_id=custom_section.id,
+        )
+
+        title = f"Update section `{section_title}` for `{character.name}`"
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await present_embed(
+            ctx,
+            title=title,
+            description=f"**{section_title}**\n{section_description}",
+            ephemeral=hidden,
+            level="success",
+        )
+
+    @section.command(name="delete", description="Delete a custom section from a character")
     async def delete_custom_section(
         self,
         ctx: discord.ApplicationContext,
@@ -717,6 +620,102 @@ class Characters(commands.Cog, name="Character"):
         await msg.edit_original_response(
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
+
+    ### BIO COMMANDS ####################################################################
+
+    @bio.command(name="date_of_birth")
+    async def date_of_birth(
+        self,
+        ctx: discord.ApplicationContext,
+        dob: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Set the DOB of a character."""
+        character = self.bot.user_svc.fetch_active_character(ctx)
+
+        self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`"
+        )
+        await present_embed(
+            ctx,
+            title="Date of Birth Updated",
+            description=f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`",
+            level="success",
+            ephemeral=hidden,
+        )
+
+    @bio.command(name="biography", description="Add or update a character's bio")
+    async def update_bio(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Update a character's bio."""
+        character = self.bot.user_svc.fetch_active_character(ctx)
+
+        modal = BioModal(
+            title=f"Enter the biography for {character.name}", current_bio=character.data["bio"]
+        )
+        await ctx.send_modal(modal)
+        await modal.wait()
+        biography = modal.bio.strip()
+
+        self.bot.char_svc.update_or_add(ctx, character=character, data={"bio": biography})
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, f"Update biography for `{character.name}`")
+
+        await present_embed(
+            ctx,
+            title=f"Update biography for `{character.name}`",
+            description=f"**Biography**\n{biography}",
+            level="success",
+            ephemeral=hidden,
+        )
+
+    @bio.command(name="profile", description="Update a character's profile")
+    async def update_profile(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Update a character's profile."""
+        character = self.bot.user_svc.fetch_active_character(ctx)
+
+        modal = ProfileModal(title=f"Profile for {character}", character=character)
+        await ctx.send_modal(modal)
+        await modal.wait()
+        if modal.confirmed:
+            update_data: dict = {}
+            for k, v in modal.results.items():
+                if v:
+                    update_data[k] = v
+
+            self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
+
+            await self.bot.guild_svc.send_to_audit_log(
+                ctx, f"Update profile for `{character.name}`"
+            )
+
+            await present_embed(
+                ctx,
+                title=f"Update profile for `{character.name}`",
+                level="success",
+                ephemeral=hidden,
+            )
 
 
 def setup(bot: Valentina) -> None:
