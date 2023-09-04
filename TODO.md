@@ -13,3 +13,6 @@
 -   [x] Storyteller: Allow creating storyteller NPCs with the chargen wizard
 -   [x] Storyteller: Allow updating player characters
 -   [x] Storyteller: Allow updating storyteller characters
+-   [ ] Storyteller: Add custom traits to storyteller characters
+-   [ ] Storyteller: Add custom sections to storyteller characters
+-   [ ] Storyteller: Add bios to storyteller characters
