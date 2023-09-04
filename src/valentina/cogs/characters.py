@@ -198,6 +198,12 @@ class Characters(commands.Cog, name="Character"):
     async def list_characters(
         self,
         ctx: discord.ApplicationContext,
+        scope: Option(
+            str,
+            description="Scope of characters to list",
+            default="all",
+            choices=["all", "mine"],
+        ),
         hidden: Option(
             bool,
             description="Make the list only visible to you (default true).",
@@ -205,7 +211,12 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """List all player characters in this guild."""
-        characters = self.bot.char_svc.fetch_all_player_characters(ctx)
+        if scope == "all":
+            characters = self.bot.char_svc.fetch_all_player_characters(ctx)
+            title_prefix = "All player"
+        elif scope == "mine":
+            characters = self.bot.char_svc.fetch_all_player_characters(ctx, owned_by=ctx.author)
+            title_prefix = "Your"
 
         if len(characters) == 0:
             await present_embed(
@@ -217,7 +228,9 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        text = f"## All player {p.plural_noun('character', len(characters))} on {ctx.guild.name}\n"
+        text = (
+            f"## {title_prefix} {p.plural_noun('character', len(characters))} on {ctx.guild.name}\n"
+        )
 
         for character in sorted(characters, key=lambda x: x.name):
             text += f"**{character.name}**\n"
@@ -229,9 +242,7 @@ class Characters(commands.Cog, name="Character"):
         embed = discord.Embed(description=text, color=EmbedColor.INFO.value)
         await ctx.respond(embed=embed, ephemeral=hidden)
 
-    @chars.command(
-        name="transfer_character", description="Transfer one of your characters to another user"
-    )
+    @chars.command(name="transfer", description="Transfer one of your characters to another user")
     async def transfer_character(
         self,
         ctx: discord.ApplicationContext,

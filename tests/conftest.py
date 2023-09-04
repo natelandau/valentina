@@ -187,6 +187,28 @@ def mock_member(mocker):
 
 
 @pytest.fixture()
+def mock_member2(mocker):
+    """A mock of a discord.Member object."""
+    mock_role_one = mocker.MagicMock()
+    mock_role_one.id = 1
+    mock_role_one.name = "@everyone"
+
+    mock_role_two = mocker.MagicMock()
+    mock_role_two.id = 2
+    mock_role_two.name = "Player"
+
+    mock_member = mocker.MagicMock()
+    mock_member.id = 2
+    mock_member.display_name = "Test User2"
+    mock_member.name = "testuser2"
+    mock_member.mention = "<@2>"
+    mock_member.__class__ = discord.Member
+    mock_member.roles = [mock_role_one, mock_role_two]
+
+    return mock_member
+
+
+@pytest.fixture()
 def mock_ctx(mocker, mock_member):
     """Create a mock context object with user 1."""
     # Mock the ctx.bot object
