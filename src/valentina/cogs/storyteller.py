@@ -20,7 +20,6 @@ from valentina.utils.converters import (
 )
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
-    select_any_character,
     select_any_player_character,
     select_char_class,
     select_country,
@@ -54,8 +53,12 @@ class StoryTeller(commands.Cog):
         "Commands for the storyteller",
         checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
     )
+    character = storyteller.create_subgroup("character", "Work with storyteller characters")
+    player = storyteller.create_subgroup("player", "Work with player characters")
+    roll = storyteller.create_subgroup("roll", "Roll dice for storyteller characters")
 
-    @storyteller.command(name="create_full_character", description="Create a full npc character")
+    ### CHARACTER COMMANDS ####################################################################
+    @character.command(name="create_full", description="Create a full npc character")
     async def create_story_char(
         self,
         ctx: discord.ApplicationContext,
@@ -128,9 +131,7 @@ class StoryTeller(commands.Cog):
         )
         logger.info(f"CHARACTER: Create character {character}")
 
-    @storyteller.command(
-        name="create_rng_character", description="Create a random new npc character"
-    )
+    @character.command(name="create_rng", description="Create a random new npc character")
     async def create_rng_char(
         self,
         ctx: discord.ApplicationContext,
@@ -248,7 +249,7 @@ class StoryTeller(commands.Cog):
             ),
         )
 
-    @storyteller.command(name="list_characters", description="List all characters")
+    @character.command(name="list", description="List all characters")
     async def list_characters(
         self,
         ctx: discord.ApplicationContext,
@@ -287,14 +288,14 @@ class StoryTeller(commands.Cog):
             level="info",
         )
 
-    @storyteller.command()
-    async def update_character(
+    @character.command(name="update", description="Update a storyteller character")
+    async def update_storyteller_character(
         self,
         ctx: discord.ApplicationContext,
         character: Option(
             ValidCharacterObject,
-            description="The character to delete",
-            autocomplete=select_any_character,
+            description="The character to update",
+            autocomplete=select_storyteller_character,
             required=True,
         ),
         # FIXME: This does not pull custom traits
@@ -329,7 +330,55 @@ class StoryTeller(commands.Cog):
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
-    @storyteller.command(description="Transfer a character from one owner to another.")
+    @character.command(name="sheet", description="View a character sheet")
+    async def view_character_sheet(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to view",
+            autocomplete=select_storyteller_character,
+            required=True,
+        ),
+    ) -> None:
+        """View a character sheet for a storyteller character."""
+        await show_sheet(ctx, character=character)
+
+    @character.command(name="delete", description="Delete a storyteller character")
+    async def delete_storyteller_character(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to delete",
+            autocomplete=select_storyteller_character,
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Delete a storyteller character."""
+        title = f"Delete storyteller character `{character.full_name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
+            return
+
+        character.delete_instance(delete_nullable=True, recursive=True)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
+        )
+
+    ### PLAYER COMMANDS ####################################################################
+
+    @player.command(
+        name="transfer_character", description="Transfer a character from one owner to another."
+    )
     async def transfer_character(
         self,
         ctx: discord.ApplicationContext,
@@ -360,29 +409,25 @@ class StoryTeller(commands.Cog):
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
-    @storyteller.command(name="sheet", description="View a character sheet")
-    async def view_character_sheet(
+    @player.command(name="update", description="Update a player character")
+    async def update_player_character(
         self,
         ctx: discord.ApplicationContext,
         character: Option(
             ValidCharacterObject,
-            description="The character to view",
-            autocomplete=select_storyteller_character,
+            description="The character to update",
+            autocomplete=select_player_character,
             required=True,
         ),
-    ) -> None:
-        """View a character sheet for a storyteller character."""
-        await show_sheet(ctx, character=character)
-
-    @storyteller.command(name="delete_character", description="Delete a storyteller character")
-    async def delete_storyteller_character(
-        self,
-        ctx: discord.ApplicationContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to delete",
-            autocomplete=select_storyteller_character,
+        # FIXME: This does not pull custom traits
+        trait: Option(
+            ValidTrait,
+            description="Trait to update",
             required=True,
+            autocomplete=select_trait,
+        ),
+        new_value: Option(
+            int, description="New value for the trait", required=True, min_value=0, max_value=20
         ),
         hidden: Option(
             bool,
@@ -390,21 +435,117 @@ class StoryTeller(commands.Cog):
             default=True,
         ),
     ) -> None:
-        """Delete a storyteller character."""
-        title = f"Delete storyteller character `{character.full_name}`"
+        """Update the value of a trait for a storyteller or player character."""
+        old_value = character.get_trait_value(trait)
+
+        title = f"Update `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`"
         confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
 
         if not confirmed:
             return
 
-        character.delete_instance(delete_nullable=True, recursive=True)
+        character.set_trait_value(trait, new_value)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await msg.edit_original_response(
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
-    @storyteller.command(name="roll_traits", description="Roll traits for a character")
+    @player.command(name="grant_xp", description="Grant xp to a player character")
+    async def grant_xp(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to grant xp to",
+            autocomplete=select_player_character,
+            required=True,
+        ),
+        xp: Option(int, description="The amount of xp to grant", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Grant xp to a player character."""
+        current_xp = character.data.get("experience", 0)
+        current_xp_total = character.data.get("experience_total", 0)
+        new_xp = current_xp + xp
+        new_xp_total = current_xp_total + xp
+
+        title = f"Grant `{xp}` xp to `{character.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
+            return
+
+        self.bot.char_svc.update_or_add(
+            ctx,
+            character=character,
+            data={
+                "experience": new_xp,
+                "experience_total": new_xp_total,
+            },
+        )
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
+        )
+
+    @player.command(name="grant_cp", description="Grant a cool point to a player character")
+    async def grant_cp(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to grant a cp to",
+            autocomplete=select_player_character,
+            required=True,
+        ),
+        cp: Option(int, description="The number of cool points to grant", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Grant a cool point to a player character."""
+        current_cp = character.data.get("cool_points_total", 0)
+        current_xp = character.data.get("experience", 0)
+        current_xp_total = character.data.get("experience_total", 0)
+
+        xp_amount = cp * COOL_POINT_VALUE
+
+        new_xp = current_xp + xp_amount
+        new_xp_total = current_xp_total + xp_amount
+        new_cp_total = current_cp + cp
+
+        title = f"Grant `{cp}` cool {p.plural_noun('member', cp)} (`{xp_amount}` xp) to `{character.name}`"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
+            return
+
+        self.bot.char_svc.update_or_add(
+            ctx,
+            character=character,
+            data={
+                "experience": new_xp,
+                "experience_total": new_xp_total,
+                "cool_points_total": new_cp_total,
+            },
+        )
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
+        )
+
+    ### ROLL COMMANDS ####################################################################
+
+    @roll.command(name="roll_traits", description="Roll traits for a character")
     async def roll_traits(
         self,
         ctx: discord.ApplicationContext,
@@ -457,98 +598,6 @@ class StoryTeller(commands.Cog):
             trait_two=trait_two,
             trait_two_value=trait_two_value,
             character=character,
-        )
-
-    @storyteller.command(name="grant_xp", description="Grant xp to a player character")
-    async def grant_xp(
-        self,
-        ctx: discord.ApplicationContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to grant xp to",
-            autocomplete=select_player_character,
-            required=True,
-        ),
-        xp: Option(int, description="The amount of xp to grant", required=True),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Grant xp to a player character."""
-        current_xp = character.data.get("experience", 0)
-        current_xp_total = character.data.get("experience_total", 0)
-        new_xp = current_xp + xp
-        new_xp_total = current_xp_total + xp
-
-        title = f"Grant `{xp}` xp to `{character.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not confirmed:
-            return
-
-        self.bot.char_svc.update_or_add(
-            ctx,
-            character=character,
-            data={
-                "experience": new_xp,
-                "experience_total": new_xp_total,
-            },
-        )
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
-
-    @storyteller.command(name="grant_cp", description="Grant a cool point to a player character")
-    async def grant_cp(
-        self,
-        ctx: discord.ApplicationContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to grant a cp to",
-            autocomplete=select_player_character,
-            required=True,
-        ),
-        cp: Option(int, description="The number of cool points to grant", required=True),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Grant a cool point to a player character."""
-        current_cp = character.data.get("cool_points_total", 0)
-        current_xp = character.data.get("experience", 0)
-        current_xp_total = character.data.get("experience_total", 0)
-
-        xp_amount = cp * COOL_POINT_VALUE
-
-        new_xp = current_xp + xp_amount
-        new_xp_total = current_xp_total + xp_amount
-        new_cp_total = current_cp + cp
-
-        title = f"Grant `{cp}` cool {p.plural_noun('member', cp)} (`{xp_amount}` xp) to `{character.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not confirmed:
-            return
-
-        self.bot.char_svc.update_or_add(
-            ctx,
-            character=character,
-            data={
-                "experience": new_xp,
-                "experience_total": new_xp_total,
-                "cool_points_total": new_cp_total,
-            },
-        )
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
 
