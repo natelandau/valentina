@@ -44,6 +44,32 @@ class CharacterService:
 
         return key
 
+    def delete_character_image(
+        self, ctx: discord.ApplicationContext, character: Character, key: str
+    ) -> None:
+        """Delete a character's image from both the character data and Amazon S3.
+
+        This method updates the character's data to remove the image reference
+        and also deletes the actual image stored in Amazon S3.
+
+        Args:
+            ctx (discord.ApplicationContext): The context containing the bot object.
+            character (Character): The character object to update.
+            key (str): The key representing the image to be deleted.
+
+        Returns:
+            None
+        """
+        # Remove image key from character's data
+        character_images = character.data.get("images", [])
+        character_images.remove(key)
+        self.update_or_add(ctx, character=character, data={"images": character_images})
+        logger.debug(f"DATA: Removed image key '{key}' from character '{character.name}'")
+
+        # Delete the image from Amazon S3
+        ctx.bot.aws_svc.delete_object(key)  # type: ignore [attr-defined]
+        logger.info(f"S3: Deleted {key} from {character}")
+
     def custom_section_update_or_add(
         self,
         ctx: discord.ApplicationContext,
@@ -206,10 +232,6 @@ class CharacterService:
             return character
 
         if data:
-            # FIXME: Log each key and value being updated.
-            for key, value in data.items():
-                logger.debug(f"DATABASE: Update {character} `{key}:{value}`")
-
             Character.update(data=Character.data.update(data)).where(
                 Character.id == character.id
             ).execute()

@@ -41,24 +41,19 @@ class DeleteS3Images(discord.ui.View):
             # Delete the image from the character's data
             character_id = self.key.split("/")[-2]
             character = Character.get_by_id(character_id)
-            character_images = character.data.get("images", [])
-            character_images.remove(self.key)
-            self.ctx.bot.char_svc.update_or_add(  # type: ignore [attr-defined]
-                self.ctx, character=character, data={"images": character_images}
+            self.ctx.bot.char_svc.delete_character_image(  # type: ignore [attr-defined]
+                self.ctx, character=character, key=self.key
             )
-
-            # Delete the image from S3
-            self.ctx.bot.aws_svc.delete_object(self.key)  # type: ignore [attr-defined]
 
         # Log to audit log
         await self.ctx.bot.guild_svc.send_to_audit_log(  # type: ignore [attr-defined]
-            self.ctx, f"Deleted image from {character.name}"
+            self.ctx, f"Delete image from {character.name}"
         )
 
         # Respond to user
         await interaction.response.edit_message(
             embed=discord.Embed(
-                title=f"Deleted image id `{self.key}`", color=EmbedColor.SUCCESS.value
+                title=f"Delete image id `{self.key}`", color=EmbedColor.SUCCESS.value
             ),
             view=None,
         )  # view=None removes all buttons

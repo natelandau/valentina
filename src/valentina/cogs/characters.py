@@ -12,7 +12,6 @@ from loguru import logger
 from valentina.constants import COOL_POINT_VALUE, VALID_IMAGE_EXTENSIONS, EmbedColor, XPMultiplier
 from valentina.models.bot import Valentina
 from valentina.utils import errors
-from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
@@ -48,6 +47,7 @@ from valentina.views import (
     CustomSectionModal,
     ProfileModal,
     S3ImageReview,
+    confirm_action,
     present_embed,
     show_sheet,
 )
@@ -171,16 +171,14 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Select a character as your active character."""
         title = f"Set `{character.name}` as active character for `{ctx.author.display_name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-        if not confirmed:
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
             return
 
         self.bot.user_svc.set_active_character(ctx, character)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @chars.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
@@ -268,16 +266,14 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Transfer one of your characters to another user."""
         title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_owner.display_name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-        if not confirmed:
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
             return
 
         self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     ### XP COMMANDS ####################################################################
 
@@ -343,9 +339,8 @@ class Characters(commands.Cog, name="Character"):
             return
 
         title = f"Upgrade `{trait.name}` from `{old_value}` {p.plural_noun('dot', old_value)} to `{new_value}` {p.plural_noun('dot', new_value)} for `{upgrade_cost}` xp"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not confirmed:
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
             return
 
         character.set_trait_value(trait, new_value)
@@ -356,9 +351,7 @@ class Characters(commands.Cog, name="Character"):
         )
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @xp.command(name="add", description="Add experience to a character")
     async def add_xp(
@@ -391,9 +384,9 @@ class Characters(commands.Cog, name="Character"):
         new_total = current_total + xp
 
         title = f"Add `{xp}` xp to `{character.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.char_svc.update_or_add(
@@ -406,9 +399,7 @@ class Characters(commands.Cog, name="Character"):
         )
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @xp.command(name="add_cp", description="Add cool points to a character")
     async def add_cool_points(
@@ -448,9 +439,9 @@ class Characters(commands.Cog, name="Character"):
         title = (
             f"Add `{cp}` cool {p.plural_noun('point', cp)} ({xp_amount} xp) to `{character.name}`"
         )
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.char_svc.update_or_add(
@@ -464,9 +455,7 @@ class Characters(commands.Cog, name="Character"):
         )
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     ### IMAGE COMMANDS ####################################################################
     @image.command(name="add", description="Add an image to a character")
@@ -516,29 +505,32 @@ class Characters(commands.Cog, name="Character"):
                 )
                 return
 
-        # Fetch active character and confirm action
+        # Fetch active character
         character = self.bot.user_svc.fetch_active_character(ctx)
-        title = f"Add image to `{character.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-        if not confirmed:
-            return
+
+        # Upload the image to S3
+        # We upload the image prior to the confirmation step to allow us to display the image to the user.  If the user cancels the confirmation, we must delete the image from S3.
 
         # Determine image extension and read data
         extension = file_extension if file else url.split(".")[-1].lower()
         data = await file.read() if file else await fetch_data_from_url(url)
 
         # Add image to character
-        result = self.bot.char_svc.add_character_image(ctx, character, extension, data)
-        image_url = self.bot.aws_svc.get_url(result)
+        image_key = self.bot.char_svc.add_character_image(ctx, character, extension, data)
+        image_url = self.bot.aws_svc.get_url(image_key)
+
+        ###########################################################
+        title = f"Add image to `{character.name}`"
+        is_confirmed, confirmation_response_msg = await confirm_action(
+            ctx, title, hidden=hidden, image=image_url
+        )
+        if not is_confirmed:
+            self.bot.char_svc.delete_character_image(ctx, character, image_key)
+            return
 
         # Update audit log and original response
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value).set_image(
-                url=image_url
-            ),
-            view=None,
-        )
+        await confirmation_response_msg
 
     @image.command(name="delete", description="Delete an image from a character")
     async def delete_image(
@@ -605,9 +597,8 @@ class Characters(commands.Cog, name="Character"):
         character = self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not confirmed:
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
             return
 
         character.add_custom_trait(
@@ -619,9 +610,7 @@ class Characters(commands.Cog, name="Character"):
         )
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @trait.command(name="update", description="Update the value of a trait for a character")
     async def update_trait(
@@ -661,17 +650,15 @@ class Characters(commands.Cog, name="Character"):
         title = (
             f"Update `{trait.name}` from `{old_value}` to `{new_value}` for `{character.full_name}`"
         )
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         character.set_trait_value(trait, new_value)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @trait.command(name="delete", description="Delete a custom trait from a character")
     async def delete_custom_trait(
@@ -693,17 +680,15 @@ class Characters(commands.Cog, name="Character"):
         character = self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Delete custom trait `{trait.name}` from `{character.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         trait.delete_instance()
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     ### SECTION COMMANDS ####################################################################
 
@@ -817,16 +802,13 @@ class Characters(commands.Cog, name="Character"):
         character = self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Delete section `{custom_section.title}` from `{character.full_name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not confirmed:
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
             return
 
         custom_section.delete_instance()
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     ### BIO COMMANDS ####################################################################
 

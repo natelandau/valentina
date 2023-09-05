@@ -6,12 +6,11 @@ from discord.commands import Option
 from discord.ext import commands, pages
 from loguru import logger
 
-from valentina.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT, EmbedColor
+from valentina.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT
 from valentina.models.bot import Valentina
-from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidCampaign, ValidYYYYMMDD
 from valentina.utils.options import select_campaign, select_chapter, select_note, select_npc
-from valentina.views import ChapterModal, NoteModal, NPCModal, present_embed
+from valentina.views import ChapterModal, NoteModal, NPCModal, confirm_action, present_embed
 
 
 class Campaign(commands.Cog):
@@ -62,17 +61,15 @@ class Campaign(commands.Cog):
             return
 
         title = f"Create new campaign: `{name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.campaign_svc.create_campaign(ctx, name=name)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @campaign.command(name="current_date", description="Set the current date of a campaign")
     async def current_date(
@@ -120,17 +117,15 @@ class Campaign(commands.Cog):
             return
 
         title = f"Delete campaign: {campaign.name}"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.campaign_svc.delete_campaign(ctx, campaign)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @campaign.command(name="view", description="View a campaign")
     async def view_campaign(self, ctx: discord.ApplicationContext) -> None:
@@ -230,17 +225,15 @@ An overview of {campaign.name}.
             return
 
         title = f"Set campaign `{campaign.name}` as active"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.campaign_svc.set_active(ctx, campaign)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @campaign.command(name="set_inactive", description="Set a campaign as inactive")
     async def campaign_set_inactive(
@@ -259,17 +252,15 @@ An overview of {campaign.name}.
         campaign = self.bot.campaign_svc.fetch_active(ctx)
 
         title = f"Set campaign `{campaign.name}` as inactive"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.campaign_svc.set_inactive(ctx)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @campaign.command(name="list", description="List all campaigns")
     async def campaign_list(
@@ -450,18 +441,15 @@ An overview of {campaign.name}.
         npc = self.bot.campaign_svc.fetch_npc_by_name(ctx, campaign, npc)
 
         title = f"Delete NPC: `{npc.name}` in `{campaign.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.campaign_svc.delete_npc(ctx, npc)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value),
-            view=None,
-        )
+        await confirmation_response_msg
 
     ### CHAPTER COMMANDS ####################################################################
 
@@ -618,18 +606,15 @@ An overview of {campaign.name}.
         )
 
         title = f"Delete Chapter `{chapter.chapter_number}. {chapter.name}` from `{campaign.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.campaign_svc.delete_chapter(ctx, chapter)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value),
-            view=None,
-        )
+        await confirmation_response_msg
 
     ### NOTE COMMANDS ####################################################################
 
@@ -800,17 +785,15 @@ An overview of {campaign.name}.
         note = self.bot.campaign_svc.fetch_note_by_id(note_select.split(":")[0])
 
         title = f"Delete note: `{note.name}` from `{campaign.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.campaign_svc.delete_note(ctx, note)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
 
 def setup(bot: Valentina) -> None:

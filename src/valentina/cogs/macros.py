@@ -5,16 +5,14 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import EmbedColor
 from valentina.models.bot import Valentina
-from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidMacroFromID, ValidTraitOrCustomTrait
 from valentina.utils.options import (
     select_char_trait,
     select_char_trait_two,
     select_macro,
 )
-from valentina.views import MacroCreateModal, present_embed
+from valentina.views import MacroCreateModal, confirm_action, present_embed
 
 
 class Macro(commands.Cog):
@@ -147,18 +145,17 @@ class Macro(commands.Cog):
     ) -> None:
         """Delete a macro from a user."""
         title = "Delete macro `{macro.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(
+            ctx, title, hidden=hidden, footer="This action is irreversible."
+        )
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.macro_svc.delete_macro(ctx, macro)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value),
-            view=None,
-        )
+        await confirmation_response_msg
 
 
 def setup(bot: Valentina) -> None:

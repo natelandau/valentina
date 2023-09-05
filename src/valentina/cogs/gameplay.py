@@ -5,14 +5,14 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import DEFAULT_DIFFICULTY, DiceType, EmbedColor, RollResultType
+from valentina.constants import DEFAULT_DIFFICULTY, DiceType, RollResultType
 from valentina.models import Probability
 from valentina.models.bot import Valentina
 from valentina.utils import errors
-from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidCharTrait, ValidImageURL, ValidMacroFromID
 from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
 from valentina.utils.perform_roll import perform_roll
+from valentina.views import confirm_action
 
 
 class Roll(commands.Cog):
@@ -206,20 +206,17 @@ class Roll(commands.Cog):
     ) -> None:
         """Add a roll result thumbnail to the bot."""
         title = f"Upload roll result thumbnail\n{url}"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden, url=url)
+        is_confirmed, confirmation_response_msg = await confirm_action(
+            ctx, title, hidden=hidden, image=url
+        )
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.guild_svc.add_roll_result_thumb(ctx, roll_type, url)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(
-                title=title,
-                color=EmbedColor.SUCCESS.value,
-            ).set_image(url=url)
-        )
+        await confirmation_response_msg
 
 
 def setup(bot: Valentina) -> None:

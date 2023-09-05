@@ -1,9 +1,10 @@
 """Views for Valentina."""
 
+from .embeds import present_embed, user_error_embed  # isort:skip
 from .buttons import ConfirmCancelButtons, ReRollButton  # isort:skip
+from .actions import confirm_action
 from .character_sheet import sheet_embed, show_sheet
 from .chargen_wizard import CharGenWizard
-from .embeds import present_embed, user_error_embed
 from .modals import (
     BioModal,
     ChapterModal,
@@ -18,6 +19,7 @@ from .s3_image_review import S3ImageReview
 from .thumbnail_review import ThumbnailReview
 
 __all__ = [
+    "confirm_action",
     "BioModal",
     "ChapterModal",
     "CharGenWizard",

@@ -15,11 +15,10 @@ from peewee import fn
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, CharacterClass, RollProbability, VampireClan
-from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import select_aws_object_from_guild, select_char_class
-from valentina.views import present_embed
+from valentina.views import confirm_action, present_embed
 
 p = inflect.engine()
 
@@ -37,31 +36,36 @@ class Developer(commands.Cog):
         "Valentina developer commands. Beware, these can be destructive.",
         default_member_permissions=discord.Permissions(administrator=True),
     )
+    s3 = developer.create_subgroup(
+        "aws",
+        "Work with data stored in Amazon S3",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
+    database = developer.create_subgroup(
+        "database",
+        "Work with the database",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
+    guild = developer.create_subgroup(
+        "guild",
+        "Work with the current guild",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
+    server = developer.create_subgroup(
+        "server",
+        "Work with the bot globally",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
+    stats = developer.create_subgroup(
+        "stats",
+        "View bot statistics",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
 
-    @developer.command()
-    @commands.is_owner()
-    @logger.catch
-    async def backupdb(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the response only visible to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Create a backup of the database."""
-        logger.info("ADMIN: Manually create database backup")
-        db_file = await self.bot.db_svc.backup_database(self.bot.config)
-        await present_embed(
-            ctx,
-            title="Database backup created",
-            description=f"`{db_file}`",
-            ephemeral=hidden,
-            level="success",
-        )
-
-    @developer.command(description="Delete an image from the Amazon S3 bucket for the active guild")
+    ### S3 COMMANDS ################################################################
+    @s3.command(
+        name="delete", description="Delete an image from the Amazon S3 bucket for the active guild"
+    )
     @commands.is_owner()
     async def delete_from_s3_guild(
         self,
@@ -87,45 +91,43 @@ class Developer(commands.Cog):
 
         # Confirm the deletion action
         title = f"Delete `{key}` from S3"
-        confirmed, msg = await confirm_action(ctx, title, url=url)
-        if not confirmed:
+        is_confirmed, confirmation_response_msg = await confirm_action(
+            ctx, title, image=url, thumbnail=self.bot.user.display_avatar.url
+        )
+        if not is_confirmed:
             return
 
         # Delete the object from S3
         self.bot.aws_svc.delete_object(key)
         logger.info(f"Deleted object with key: {key} from S3")
 
-        # List remaining objects and send to audit log
-        objects = self.bot.aws_svc.list_objects(f"{ctx.guild.id}/")
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(
-                title=title,
-                description="## Remaining objects" + "\n".join(objects),
-                color=EmbedColor.SUCCESS.value,
-            ),
-            view=None,
-        )
+        await confirmation_response_msg
 
-    @developer.command(description="Clear probability data from the database")
+    ### DATABASE COMMANDS ################################################################
+    @database.command(name="backup", description="Create a backup of the database")
     @commands.is_owner()
-    async def clear_probability_data(self, ctx: discord.ApplicationContext) -> None:
-        """Clear probability data from the database."""
-        cached_results = RollProbability.select()
+    async def backup_db(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Create a backup of the database."""
+        title = "Create backup of the database"
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
 
-        for result in cached_results:
-            result.delete_instance()
+        db_file = await self.bot.db_svc.backup_database(self.bot.config)
+        logger.info(f"ADMIN: Database backup created: {db_file}")
+        await confirmation_response_msg
 
-        logger.info(f"DEVELOPER: {ctx.author.display_name} cleared probability data from the db")
-        await present_embed(
-            ctx,
-            title="Probability data cleared",
-            description=f"Cleared {len(cached_results)} probability results cleared from the database",
-            ephemeral=True,
-            level="success",
-        )
+    ### GUILD COMMANDS ################################################################
 
-    @developer.command()
+    @guild.command()
     @commands.guild_only()
     @commands.is_owner()
     async def create_test_characters(
@@ -148,7 +150,13 @@ class Developer(commands.Cog):
         ),
     ) -> None:
         """Create test characters in the database for the current guild."""
-        # Ensure the user is in the database
+        title = (
+            f"Create `{number}` of test {p.plural_noun('character'), number} on `{ctx.guild.name}`"
+        )
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
         self.bot.user_svc.fetch_user(ctx)
 
         for _ in range(number):
@@ -197,7 +205,9 @@ class Developer(commands.Cog):
                 ephemeral=hidden,
             )
 
-    @developer.command()
+        await confirmation_response_msg
+
+    @guild.command()
     @commands.is_owner()
     @commands.guild_only()
     async def delete_developer_characters(
@@ -210,22 +220,174 @@ class Developer(commands.Cog):
         ),
     ) -> None:
         """Delete all developer characters from the database."""
-        i = 0
-        for character in Character.select().where(
-            Character.data["developer_character"] == True  # noqa: E712
-        ):
-            character.delete_instance(recursive=True, delete_nullable=True)
-            i += 1
-
-        await present_embed(
-            ctx,
-            title="Developer characters deleted",
-            description=f"Deleted {i} {p.plural_noun('character', i)}",
-            level="success",
-            ephemeral=hidden,
+        dev_characters = Character.select().where(
+            (Character.data["developer_character"] == True)  # noqa: E712
+            & (Character.guild == ctx.guild.id)
         )
 
-    @developer.command()
+        title = f"Delete `{len(dev_characters)}` developer {p.plural_noun('character', len(dev_characters))} characters from `{ctx.guild.name}`"
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
+        for c in dev_characters:
+            logger.debug(f"DEVELOPER: Deleting {c}")
+            c.delete_instance(recursive=True, delete_nullable=True)
+
+        await confirmation_response_msg
+
+    @guild.command(name="purge_cache", description="Purge this guild's cache")
+    @commands.guild_only()
+    @commands.is_owner()
+    async def purge_guild_cache(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Purge the bot's cache and reload all data from the database."""
+        title = "Purge the database caches for `{ctx.guild.name}`"
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
+        logger.info(f"DEVELOPER: Purge all caches for {ctx.guild.name}")
+        services = {
+            "guild_svc": self.bot.guild_svc,
+            "user_svc": self.bot.user_svc,
+            "char_svc": self.bot.char_svc,
+            "campaign_svc": self.bot.campaign_svc,
+            "macro_svc": self.bot.macro_svc,
+            "trait_svc": self.bot.trait_svc,
+        }
+
+        for service_name, service in services.items():
+            if hasattr(service, "purge_cache"):
+                service.purge_cache(ctx=ctx)
+            else:
+                logger.warning(f"SERVER: {service_name} does not have a `purge_cache` method")
+
+        await confirmation_response_msg
+
+    ### BOT COMMANDS ################################################################
+
+    @server.command(
+        name="clear_probability_cache", description="Clear probability data from the database"
+    )
+    @commands.is_owner()
+    async def clear_probability_cache(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Clear probability data from the database."""
+        cached_results = RollProbability.select()
+
+        title = f"Clear `{len(cached_results)}` probability {p.plural_noun('statistic', len(cached_results))} from the database"
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
+        for result in cached_results:
+            result.delete_instance()
+
+        logger.info(f"DEVELOPER: {ctx.author.display_name} cleared probability data from the db")
+        await confirmation_response_msg
+
+    @server.command(name="reload", description="Reload all cogs")
+    @commands.is_owner()
+    async def reload(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the confirmation only visible to you (default True)",
+            default=True,
+        ),
+    ) -> None:
+        """Reloads all cogs."""
+        title = "Reload all cogs"
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
+        count = 0
+        for cog in Path(self.bot.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
+            if cog.stem[0] != "_":
+                count += 1
+                logger.info(f"COGS: Reloading - {cog.stem}")
+                self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
+
+        logger.debug("Admin: Reload the bot's cogs")
+        await confirmation_response_msg
+
+    @server.command(name="shutdown", description="Shutdown the bot")
+    @commands.is_owner()
+    async def shutdown(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the shutdown notification only visible to you (default False)",
+            default=False,
+        ),
+    ) -> None:
+        """Shutdown the bot."""
+        title = "Shutdown the bot and end all active sessions"
+        is_confirmed, confirmation_response_msg = await confirm_action(
+            ctx, title, hidden=hidden, footer="This is a destructive action that can not be undone."
+        )
+        if not is_confirmed:
+            return
+
+        await confirmation_response_msg
+        logger.warning(f"DEVELOPER: {ctx.author.display_name} has shut down the bot")
+
+        await self.bot.close()
+
+    @server.command(name="purge_cache", description="Purge all the bot's caches")
+    @commands.guild_only()
+    @commands.is_owner()
+    async def purge_all_caches(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Purge the bot's cache and reload all data from the database."""
+        title = "Purge all database caches across all guilds"
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
+        services = {
+            "guild_svc": self.bot.guild_svc,
+            "user_svc": self.bot.user_svc,
+            "char_svc": self.bot.char_svc,
+            "campaign_svc": self.bot.campaign_svc,
+            "macro_svc": self.bot.macro_svc,
+            "trait_svc": self.bot.trait_svc,
+        }
+        logger.info("DEVELOPER: Purge all caches for all guilds")
+        for service_name, service in services.items():
+            if hasattr(service, "purge_cache"):
+                service.purge_cache()
+            else:
+                logger.warning(f"SERVER: {service_name} does not have a `purge_cache` method")
+
+        await confirmation_response_msg
+
+    @server.command(name="send_log", description="Send the bot's logs")
     @commands.is_owner()
     async def debug_send_log(
         self,
@@ -240,7 +402,7 @@ class Developer(commands.Cog):
         file = discord.File(self.bot.config["VALENTINA_LOG_FILE"])
         await ctx.respond(file=file, ephemeral=hidden)
 
-    @developer.command(description="View last lines of the Valentina's logs")
+    @server.command(name="tail_logs", description="View last lines of the Valentina's logs")
     @commands.is_owner()
     async def debug_tail_logs(
         self,
@@ -266,128 +428,9 @@ class Developer(commands.Cog):
         response = "".join(log_lines)
         await ctx.respond("```" + response[-MAX_CHARACTER_COUNT:] + "```", ephemeral=hidden)
 
-    @developer.command()
-    @commands.guild_only()
-    @commands.is_owner()
-    async def purge_cache(
-        self,
-        ctx: discord.ApplicationContext,
-        all_guilds: Option(bool, default=False, required=False),
-        hidden: Option(
-            bool,
-            description="Make the response only visible to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Purge the bot's cache and reload all data from the database."""
-        title = "Purge all caches" if all_guilds else "Purge this guild's cache"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-        if not confirmed:
-            return
+    ### STATS COMMANDS ################################################################
 
-        services = {
-            "guild_svc": self.bot.guild_svc,
-            "user_svc": self.bot.user_svc,
-            "char_svc": self.bot.char_svc,
-            "campaign_svc": self.bot.campaign_svc,
-            "macro_svc": self.bot.macro_svc,
-            "trait_svc": self.bot.trait_svc,
-        }
-
-        if all_guilds:
-            logger.info("DEVELOPER: Purge all caches for all guilds")
-        else:
-            logger.info(f"DEVELOPER: Purge all caches for {ctx.guild.name}")
-
-        for service_name, service in services.items():
-            if hasattr(service, "purge_cache"):
-                if all_guilds:
-                    service.purge_cache()
-                else:
-                    service.purge_cache(ctx=ctx)
-            else:
-                logger.debug(f"{service_name} does not have a purge_cache method.")
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
-
-    @developer.command(name="bot_reload")
-    @commands.is_owner()
-    async def reload(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the confirmation only visible to you (default True)",
-            default=True,
-        ),
-    ) -> None:
-        """Reloads all cogs."""
-        logger.debug("Admin: Reload the bot")
-        count = 0
-        for cog in Path(self.bot.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
-            if cog.stem[0] != "_":
-                count += 1
-                logger.info(f"COGS: Reloading - {cog.stem}")
-                self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
-
-        embed = discord.Embed(title="Reload Cogs", color=EmbedColor.SUCCESS.value)
-        embed.add_field(name="Status", value="Success")
-
-        await ctx.respond(embed=embed, ephemeral=hidden)
-
-    @developer.command()
-    @commands.is_owner()
-    async def servers(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the server list only visible to you (default True)",
-            default=True,
-        ),
-    ) -> None:
-        """List the servers the bot is connected to."""
-        servers = list(self.bot.guilds)
-        fields = []
-
-        for n, i in enumerate(servers):
-            fields.append(
-                (
-                    f"{n + 1}. {i.name}",
-                    f"Members: `{i.member_count}`\nOwner: {i.owner.mention} (`{i.owner.id}`)",
-                )
-            )
-
-        await present_embed(
-            ctx,
-            title="Connected guilds",
-            description=f"Connected to {p.no('guild'), len(servers)}",
-            level="info",
-            fields=fields,
-            ephemeral=hidden,
-        )
-
-    @developer.command(name="bot_shutdown")
-    @commands.is_owner()
-    async def shutdown(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the shutdown notification only visible to you (default False)",
-            default=False,
-        ),
-    ) -> None:
-        """Shutdown the bot."""
-        logger.warning(f"DEVELOPER: {ctx.author.display_name} has shut down the bot")
-        embed = discord.Embed(title="Shutting down Valentina...", color=EmbedColor.WARNING.value)
-        await ctx.respond(embed=embed, ephemeral=hidden)
-        await self.bot.close()
-
-    @developer.command(name="bot_status")
+    @developer.command(name="status", description="View bot status information")
     @commands.is_owner()
     async def status(
         self,
@@ -404,7 +447,10 @@ class Developer(commands.Cog):
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
 
-        embed = discord.Embed(title="Connection Information", color=EmbedColor.INFO.value)
+        embed = discord.Embed(title="Bot Status", color=EmbedColor.INFO.value)
+        embed.set_thumbnail(url=self.bot.user.display_avatar)
+
+        embed.add_field(name="\u200b", value="**SERVER INFO**", inline=False)
         embed.add_field(name="Status", value=str(self.bot.status))
         embed.add_field(name="Uptime", value=f"`{days}d, {hours}h, {minutes}m, {seconds}s`")
         embed.add_field(name="Latency", value=f"`{self.bot.latency!s}`")
@@ -414,6 +460,19 @@ class Developer(commands.Cog):
         embed.add_field(
             name="Database Version", value=f"`{self.bot.db_svc.fetch_current_version()}`"
         )
+
+        servers = list(self.bot.guilds)
+        embed.add_field(
+            name="\u200b",
+            value=f"**CONNECT TO {len(servers)} {p.plural_noun('GUILD', len(servers))}**",
+            inline=False,
+        )
+        for n, i in enumerate(servers):
+            embed.add_field(
+                name=f"{n + 1}. {i.name}",
+                value=f"Members: `{i.member_count}`\nOwner: {i.owner.mention}",
+                inline=True,
+            )
 
         await ctx.respond(embed=embed, ephemeral=hidden)
 

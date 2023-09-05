@@ -10,7 +10,6 @@ from peewee import fn
 from valentina.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import VampireClan
-from valentina.utils.cogs import confirm_action
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
@@ -35,6 +34,7 @@ from valentina.utils.storyteller import storyteller_character_traits
 from valentina.views import (
     CharGenWizard,
     ConfirmCancelButtons,
+    confirm_action,
     present_embed,
     sheet_embed,
     show_sheet,
@@ -324,17 +324,15 @@ class StoryTeller(commands.Cog):
         old_value = character.get_trait_value(trait)
 
         title = f"Update `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         character.set_trait_value(trait, new_value)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @character.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
@@ -368,17 +366,15 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Delete a storyteller character."""
         title = f"Delete storyteller character `{character.full_name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         character.delete_instance(delete_nullable=True, recursive=True)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @character.command(name="add_trait", description="Add a trait to a storyteller character")
     async def add_custom_trait(
@@ -416,9 +412,9 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Add a custom trait to a character."""
         title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         character.add_custom_trait(
@@ -430,9 +426,7 @@ class StoryTeller(commands.Cog):
         )
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     ### PLAYER COMMANDS ####################################################################
 
@@ -457,17 +451,15 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
         title = f"Transfer `{character.full_name}` from `{character.owned_by.username}` to `{new_owner.display_name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @player.command(name="update", description="Update a player character")
     async def update_player_character(
@@ -504,17 +496,15 @@ class StoryTeller(commands.Cog):
         old_value = character.get_trait_value(trait)
 
         title = f"Update `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         character.set_trait_value(trait, new_value)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @player.command(name="grant_xp", description="Grant xp to a player character")
     async def grant_xp(
@@ -540,9 +530,9 @@ class StoryTeller(commands.Cog):
         new_xp_total = current_xp_total + xp
 
         title = f"Grant `{xp}` xp to `{character.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
-        if not confirmed:
+        if not is_confirmed:
             return
 
         self.bot.char_svc.update_or_add(
@@ -555,9 +545,7 @@ class StoryTeller(commands.Cog):
         )
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     @player.command(name="grant_cp", description="Grant a cool point to a player character")
     async def grant_cp(
@@ -588,9 +576,8 @@ class StoryTeller(commands.Cog):
         new_cp_total = current_cp + cp
 
         title = f"Grant `{cp}` cool {p.plural_noun('member', cp)} (`{xp_amount}` xp) to `{character.name}`"
-        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not confirmed:
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
             return
 
         self.bot.char_svc.update_or_add(
@@ -604,9 +591,7 @@ class StoryTeller(commands.Cog):
         )
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await msg.edit_original_response(
-            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
-        )
+        await confirmation_response_msg
 
     ### ROLL COMMANDS ####################################################################
 
