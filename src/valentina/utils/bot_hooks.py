@@ -1,5 +1,6 @@
 """Helpers for the bot to use via hooks."""
 
+import random
 import re
 from pathlib import Path
 
@@ -233,3 +234,44 @@ async def create_player_role(guild: discord.Guild) -> discord.Role:
     logger.debug(f"CONNECT: {player.name} role created")
 
     return player
+
+
+async def respond_to_mentions(bot: commands.Bot, message: discord.Message) -> None:
+    """Respond to @mentions of the bot."""
+    random_response = [
+        "a bot to help you play White Wolf's TTRPGs",
+        "a blood sucking bot who is here to serve you",
+        "a succubus who will steal your heart",
+        "a maid servant here to serve your deepest desires",
+        "a sweet little thing who will make you scream",
+        "an evil temptress who have you begging for more",
+        "a harpy who will make you regret your words",
+        "a harlot who will make you regret your choices",
+        "a temptress who will wrap you around her finger",
+        "a Tremere primogen who will make you an offer you can't refuse",
+        "a Malkavian who will make you question your sanity",
+        "a Ventrue who will make you question your loyalties",
+        "a Nosferatu who will make you scream in terror",
+        "a Toreador who will make you fall in love",
+        "a Gangrel who will make you run for your life",
+        "a Brujah who will make you fight for your freedom",
+        "a Lasombra who will make you question your faith",
+        "a Ravnos who will make you question your reality",
+        "a Sabbat warrior who will make you question your humanity",
+    ]
+
+    description = [
+        "### Hi there!",
+        f"**I'm Valentina Noir, {random.choice(random_response)}.**\n",
+        "I'm still in development, so please be patient with me.\n",
+        "There are a few ways to get help using me. (_You do want to use me, right?_)\n",
+        "- Type `/help` to get a list of commands",
+        "- Type `/help <command>` to get help for a specific command",
+        "- Type `/help user_guide` to read about my capabilities",
+        "- Type `/changelog` to read about my most recent updates\n",
+        " If none of those answered your questions, please contact an admin.",
+    ]
+
+    embed = discord.Embed(title="", description="\n".join(description), color=EmbedColor.INFO.value)
+    embed.set_thumbnail(url=bot.user.display_avatar)
+    await message.channel.send(embed=embed)

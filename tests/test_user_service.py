@@ -19,34 +19,38 @@ class TestUserService:
     user_svc = UserService()
 
     def test_fetch_user(self, mock_ctx):
-        """Test fetching a user.
+        """Test fetching a user that already exists in the cache and the database.
 
-        Given a context object with a user in the database
-        When a user is fetched
-        Then the user object is returned and added to the cache
+        GIVEN a context object with a user in the database
+        WHEN a user is fetched
+        THEN the user object is returned and added to the cache
         """
+        # WHEN a user is fetched
+        result = self.user_svc.fetch_user(mock_ctx)
+
+        # THEN confirm the correct user object is returned and the database and cache are updated
+        assert result == User(id=1, name="Test User")
+
         # Confirm user object is returned
         assert self.user_svc.fetch_user(mock_ctx) == User(id=1, name="Test User")
-
-        # Confirm user object is in the cache
-        user_one = User(id=1)
-        assert self.user_svc.user_cache["1_1"] == user_one
+        assert self.user_svc.user_cache["1_1"] == User(id=1, name="Test User")
+        assert GuildUser.get(user=1, guild=1) == GuildUser(id=1, user=1, guild=1)
 
     def test_fetch_user_two(self, mock_ctx3):
         """Test creating a user that is not in the cache or db.
 
-        Given a context object with a user not in the database
-        When that user is fetched
-        Then the user is added to the cache and database
+        GIVEN a context object with a user not in the database
+        WHEN that user is fetched
+        THEN the user is added to the cache and database
         """
-        assert self.user_svc.fetch_user(mock_ctx3) == User(id=600, name="Test User 600")
+        # WHEN a user is fetched
+        result = self.user_svc.fetch_user(mock_ctx3)
 
-        # Confirm added to cache
+        # THEN confirm the correct user object is returned and the database and cache are updated
+        assert result == User(id=600, name="Test User 600")
         assert "1_600" in self.user_svc.user_cache
-
-        # Confirm added to database
         assert User.get_by_id(600).name == "Test User 600"
-        assert GuildUser.get_by_id(2).user.name == "Test User 600"
+        assert GuildUser.get(user=600, guild=1) == GuildUser(id=2, user=600, guild=1)
 
     def test_fetch_user_three(self, mock_ctx, mocker):
         """Test fetching a user that is not the author of a command."""
@@ -61,9 +65,31 @@ class TestUserService:
         # WHEN the user is fetched
         result = self.user_svc.fetch_user(mock_ctx, mock_member)
 
-        # THEN the correct user is returned
+        # THEN the correct user is returned and the database and cache are updated
         assert result == User.get_by_id(1500)
         assert self.user_svc.user_cache["1_1500"] == User.get_by_id(1500)
+        assert GuildUser.get(user=1500, guild=1) == GuildUser(id=3, user=1500, guild=1)
+
+    def test_fetch_user_four(self, mocker):
+        """Test fetching a user without a ctx object."""
+        # GIVEN a user not in the ctx object and an empty cache
+        mock_member = mocker.MagicMock()
+        mock_member.id = 150110519
+        mock_member.display_name = "Test User 150110519"
+        mock_member.name = "testuser 150110519"
+        mock_member.mention = "<@150110519>"
+        mock_member.__class__ = discord.Member
+
+        self.user_svc.user_cache = {}
+
+        # WHEN the user is fetched
+        result = self.user_svc.fetch_user(user=mock_member)
+
+        # THEN the correct user is returned and the database and cache are updated
+        assert result == User.get_by_id(150110519)
+        assert self.user_svc.user_cache == {}
+        with pytest.raises(GuildUser.DoesNotExist):
+            GuildUser.get(user=150110519)
 
     def test_purge_all(self):
         """Test purging all users from the cache.

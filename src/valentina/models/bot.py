@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 import discord
-from aiohttp import ClientSession
 from discord.ext import commands, tasks
 from loguru import logger
 
@@ -19,8 +18,7 @@ from valentina.models import (
     TraitService,
     UserService,
 )
-from valentina.models.db_tables import DATABASE, Guild
-from valentina.models.errors import reporter
+from valentina.models.db_tables import DATABASE
 from valentina.utils import bot_hooks
 
 
@@ -95,13 +93,11 @@ class Valentina(commands.Bot):
                 # Create roles
                 storyteller = await bot_hooks.create_storyteller_role(guild)
                 player = await bot_hooks.create_player_role(guild)
-
                 positions = {
                     guild.default_role: 0,
                     player: 1,
                     storyteller: 2,
                 }  # penultimate role
-
                 await guild.edit_role_positions(positions=positions)  # type: ignore [arg-type]
 
                 # Add guild to database
@@ -116,34 +112,6 @@ class Valentina(commands.Bot):
 
         self.welcomed = True
         logger.info(f"{self.user} is ready")
-
-    async def on_message(self, message: discord.Message) -> None:
-        """If the message is a reply to an RP post, ping the RP post's author."""
-        if message.author.bot:
-            return
-
-        # This line allows using prefixed commands
-        if message.channel.id in self.owner_channels:
-            await self.process_commands(message)
-
-    @property
-    def http_session(self) -> ClientSession:
-        """Return the aiohttp session."""
-        return self.http._HTTPClient__session  # type: ignore # it exists, I promise
-
-    @staticmethod
-    async def on_application_command_error(
-        ctx: discord.ApplicationContext, error: discord.DiscordException
-    ) -> None:
-        """Use centralized reporter to handle errors."""
-        await reporter.report_error(ctx, error)
-
-    @staticmethod
-    async def on_guild_update(before: discord.Guild, after: discord.Guild) -> None:
-        """Log guild name changes and update the database."""
-        if before.name != after.name:
-            logger.info(f"BOT: Rename guild `{before.name}` => `{after.name}`")
-            Guild.update(name=after.name).where(Guild.id == after.id).execute()
 
 
 @tasks.loop(time=time(0, tzinfo=timezone.utc))

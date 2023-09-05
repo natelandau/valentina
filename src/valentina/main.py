@@ -90,7 +90,7 @@ def main(
         owner_ids=[int(o) for o in CONFIG["VALENTINA_OWNER_IDS"].split(",")],
         parent_dir=DIR,
         config=CONFIG,
-        command_prefix="!",
+        command_prefix="∑",  # Effectively remove the command prefix by setting it to 'sigma'
         version=__version__,
     )
 

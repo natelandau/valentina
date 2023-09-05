@@ -235,25 +235,76 @@ class UserService:
         in the cache or the database, create a new User in the database and the cache.
 
         Args:
-            ctx (ApplicationContext | discord.AutocompleteContext): The context which contains the author and guild information.
+            ctx (discord.ApplicationContext | discord.AutocompleteContext): The context containing author and guild.
             user (discord.User | discord.Member, optional): A specific user to fetch. Defaults to None.
 
         Returns:
-            User: User database model instance
+            User: User database model instance.
         """
-        if isinstance(ctx, discord.ApplicationContext):
-            member, guild = ctx.author, ctx.guild
-        else:
-            member, guild = ctx.interaction.user, ctx.interaction.guild
+        # Extract member and guild information from the context or the provided user
+        member, guild = self._get_member_and_guild(ctx, user)
 
+        # Try to get or create the User from the database
+        try:
+            db_user, created = self._get_or_create_db_user(member)
+        except Exception as e:
+            logger.error(f"DATABASE: Error while getting or creating user. {e!s}")
+            raise
+
+        # Add user to guild-user lookup table and handle user caching
+        if guild:
+            GuildUser.get_or_create(user=member.id, guild=guild.id)
+            return self._handle_user_caching(db_user, member, guild)
+
+        return db_user
+
+    def _get_member_and_guild(
+        self,
+        ctx: discord.ApplicationContext | discord.AutocompleteContext,
+        user: discord.User | discord.Member,
+    ) -> tuple[discord.Member | discord.User, discord.Guild | None]:
+        """Extract member and guild from the context or the user.
+
+        Determine the member and guild based on the application context. If a user is specifically
+        provided, then that user will override any member found in the context.
+
+        Args:
+            ctx (discord.ApplicationContext | discord.AutocompleteContext): The application or autocomplete context.
+            user (discord.User | discord.Member): A specific user to fetch, if provided.
+
+        Returns:
+            tuple[discord.Member | discord.User, discord.Guild | None]: A tuple containing the member and the guild.
+        """
+        guild: discord.Guild | None = None
+
+        if ctx:
+            # Use attributes common to both ApplicationContext and AutocompleteContext
+            member = (
+                ctx.author if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.user
+            )
+            guild = (
+                ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
+            )
+
+        # If user is explicitly provided, return it regardless of the context.
         if user:
-            member = user
+            return user, guild
 
-        key = self.__get_user_key(guild.id, member.id)
-        if key in self.user_cache:
-            logger.debug(f"CACHE: Return user with ID {member.id}")
-            return self.user_cache[key]
+        return member, guild
 
+    def _get_or_create_db_user(self, member: discord.User | discord.Member) -> tuple:
+        """Retrieve or create a user record in the database.
+
+        This function attempts to get a user from the database based on their Discord ID.
+        If the user is not found, it creates a new user record with default values.
+
+        Args:
+            member (discord.User | discord.Member): The Discord user or member to fetch or create in the database.
+
+        Returns:
+            tuple: A tuple containing the database user and a boolean indicating if the user was created.
+        """
+        # Try to retrieve the user from the database, or create a new entry if not found.
         db_user, created = User.get_or_create(
             id=member.id,
             defaults={
@@ -265,17 +316,49 @@ class UserService:
             },
         )
 
+        # Log based on whether the user was created or updated
         if created:
-            logger.info(f"DATABASE: Create user '{member.display_name}'")
+            logger.info(f"DATABASE: Created a new user record for '{member.display_name}'")
         else:
+            # Update the 'last_seen' timestamp for the existing user
             db_user.last_seen = time_now()
             db_user.save()
-            logger.debug(f"DATABASE: Update last_seen for user '{member.display_name}'")
+            logger.debug(
+                f"DATABASE: Updated 'last_seen' timestamp for user '{member.display_name}'"
+            )
 
-        GuildUser.get_or_create(user=member.id, guild=guild.id)  # Add to guild lookup table
+        return db_user, created
 
+    def _handle_user_caching(
+        self, db_user: User, member: discord.User | discord.Member, guild: discord.Guild
+    ) -> User:
+        """Manage the user caching mechanism.
+
+        This function checks if the user is already in the cache. If so, it returns
+        the cached user. If not, it creates a new entry in the cache.
+
+        Args:
+            db_user (User): The user from the database.
+            member (discord.User | discord.Member): The Discord user or member.
+            guild (discord.Guild): The Discord guild.
+
+        Returns:
+            User: The cached or newly cached user.
+        """
+        # Generate a unique cache key for the user in this guild
+        key = self.__get_user_key(guild.id, member.id)
+
+        # Attempt to retrieve the user from the cache
+        cached_user = self.user_cache.get(key, None)
+
+        # If user is already in the cache, return it
+        if cached_user:
+            logger.debug(f"CACHE: Returned cached user with ID {member.id}")
+            return cached_user
+
+        # Cache the user
         self.user_cache[key] = db_user
-        logger.debug(f"CACHE: Add user '{member.display_name}'")
+        logger.debug(f"CACHE: Added user '{member.display_name}' to cache")
 
         return db_user
 

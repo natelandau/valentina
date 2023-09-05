@@ -5,6 +5,7 @@ from io import BytesIO
 
 import discord
 import inflect
+from aiohttp import ClientSession
 from discord import OptionChoice
 from discord.commands import Option
 from discord.ext import commands
@@ -803,7 +804,8 @@ class Admin(commands.Cog):
     ) -> None:
         """Add a custom emoji to this guild."""
         await assert_permissions(ctx, manage_emojis=True)
-        async with self.bot.http_session.get(url) as res:
+
+        async with ClientSession() as session, session.get(url) as res:
             if 300 > res.status >= 200:  # noqa: PLR2004
                 await ctx.guild.create_custom_emoji(
                     name=name, image=BytesIO(await res.read()).getvalue()
