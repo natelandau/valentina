@@ -1,3 +1,21 @@
+## v1.8.0 (2023-09-05)
+
+### Feat
+
+- **bot**: respond to messages which `@` mention the bot
+- **character**: move xp commands to `/character xp [command]`
+- **storyteller**: add custom traits to storyteller characters
+- **bot**: post changelog when new version is deployed (#54)
+
+### Fix
+
+- **admin**: reorganize admin commands to `/admin [noun] verb]`
+- **developer**: reorganize developer commands to `/developer [noun] [verb]`
+- **storyteller**: reorganize commands to `/storyteller [noun] [verb]`
+- **character**: filter `/character list` by user or all
+- **character**: reorganize commands to `/character [noun] [verb]`
+- **character**: view sheets of any player character
+
 ## v1.7.0 (2023-09-03)
 
 ### Feat
