@@ -85,9 +85,24 @@ class DatabaseService:
             )
         logger.info("DATABASE: Create Tables")
 
-    def fetch_database_version(self) -> str:
-        """Get the version of the database."""
-        return DatabaseVersion.get_by_id(1).version
+    def fetch_current_version(self) -> str:
+        """Get the version of the bot."""
+        return DatabaseVersion.select().order_by(DatabaseVersion.id.desc()).get().version
+
+    def _column_exists(self, table: str, column: str) -> bool:
+        """Check if a column exists in a table.
+
+        Args:
+            table (str): The table to check.
+            column (str): The column to check.
+
+        Returns:
+            bool: Whether the column exists in the table.
+        """
+        db = self.db
+        cursor = db.execute_sql(f"PRAGMA table_info({table})")
+        columns = [row[1] for row in cursor.fetchall()]
+        return column in columns
 
     @logger.catch
     def initialize_database(self, bot_version: str) -> None:
@@ -105,8 +120,7 @@ class DatabaseService:
         # Populate the database
         PopulateDatabase(self.db).populate()
 
-        database_version, new_db_created = DatabaseVersion.get_or_create(
-            id=1,
+        _, new_db_created = DatabaseVersion.get_or_create(
             defaults={"version": bot_version},
         )
 
@@ -119,14 +133,39 @@ class DatabaseService:
         MigrateDatabase(
             self.db,
             bot_version=bot_version,
-            db_version=database_version.version,
+            db_version=self.fetch_current_version(),
         ).migrate()
 
-        # Update the database version to the current bot version
-        DatabaseVersion.set_by_id(1, {"version": bot_version})
+        # Update the database version to the current bot version if needed
+        if self.fetch_current_version() != bot_version:
+            DatabaseVersion.create(version=bot_version)
 
         # Log the new version of the database
         logger.info(f"DATABASE: Database is v{bot_version}")
+
+    def migrate_databaseversion_table(self) -> None:
+        """This method is used to migrate the databaseversion table if necessary. It is outside of the MigrateDatabase class because this table is required for that class to function.
+
+        IMPORTANT: Unless a migration is needed, this method should do nothing.
+        """
+        # TODO: Remove this after the next release
+
+        if self._column_exists("databaseversion", "date"):
+            return
+        # Migrate the database
+        from peewee import DateTimeField
+        from playhouse.migrate import SqliteMigrator, migrate
+
+        from valentina.utils.helpers import time_now
+
+        self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+        date_field = DateTimeField(default=time_now)
+        migrator = SqliteMigrator(self.db)
+        migrate(
+            migrator.add_column("databaseversion", "date", date_field),
+        )
+        self.db.execute_sql("PRAGMA foreign_keys=ON;")
+        logger.warning("DATABASE: Added Date Field to DatabaseVersion")
 
 
 class DBBackup:

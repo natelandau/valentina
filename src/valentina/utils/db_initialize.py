@@ -172,7 +172,7 @@ class MigrateDatabase:
 
         for version, migration_func in migrations.items():
             if current_version <= Version.parse(version):
-                logger.info(f"DATABASE: Migrate database from v{version}")
+                logger.warning(f"DATABASE: Migrate database from v{version}")
                 migration_func()
 
     def _column_exists(self, table: str, column: str) -> bool:
