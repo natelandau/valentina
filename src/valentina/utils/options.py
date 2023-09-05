@@ -6,7 +6,7 @@ from loguru import logger
 from peewee import DoesNotExist
 
 from valentina.constants import MAX_OPTION_LIST_SIZE
-from valentina.models.db_tables import CharacterClass, Trait, TraitCategory, VampireClan
+from valentina.models.db_tables import Character, CharacterClass, TraitCategory, VampireClan
 from valentina.utils import errors
 from valentina.utils.helpers import truncate_string
 
@@ -498,11 +498,10 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     return options if options else [OptionChoice("No characters available", "")]
 
 
-async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available common traits for autocomplete.
+async def select_storyteller_trait(ctx: discord.AutocompleteContext) -> list[str]:
+    """Generate a list of available traits for a storyteller character.
 
-    This function fetches all common traits from the database, filters them based on the user's input,
-    and returns a list of trait names to populate the autocomplete list.
+    This function fetches all common and custom traits from the database, filters them based on the user's input, and returns a list of trait names to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
@@ -513,21 +512,22 @@ async def select_trait(ctx: discord.AutocompleteContext) -> list[str]:
     # Determine the argument based on the Discord option
     argument = ctx.options.get("trait") or ctx.options.get("trait_one") or ""
 
+    # Fetch the character from the ctx options
+    character = Character.get_by_id(int(ctx.options["character"]))
+
     # Fetch and filter traits
+    # Filter and return the character's traits
     options = [
-        t.name
-        for t in Trait.select().order_by(Trait.name.asc())
-        if t.name.lower().startswith(argument.lower())
+        t.name for t in character.traits_list if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
     return options if options else ["No traits"]
 
 
-async def select_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available common traits for autocomplete.
+async def select_storyteller_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
+    """Generate a list of available traits for a storyteller character.
 
-    This function fetches all common traits from the database, filters them based on the user's input,
-    and returns a list of trait names to populate the autocomplete list.
+    This function fetches all common and custom traits from the database, filters them based on the user's input, and returns a list of trait names to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
@@ -535,10 +535,14 @@ async def select_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     Returns:
         list[str]: A list of trait names for the autocomplete list.
     """
+    # Fetch the character from the ctx options
+    character = Character.get_by_id(int(ctx.options["character"]))
+
     # Fetch and filter traits
+    # Filter and return the character's traits
     options = [
         t.name
-        for t in Trait.select().order_by(Trait.name.asc())
+        for t in character.traits_list
         if t.name.lower().startswith(ctx.options["trait_two"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 

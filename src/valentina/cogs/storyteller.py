@@ -16,7 +16,7 @@ from valentina.utils.converters import (
     ValidCharacterName,
     ValidCharacterObject,
     ValidClan,
-    ValidTrait,
+    ValidTraitCategory,
 )
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
@@ -25,8 +25,9 @@ from valentina.utils.options import (
     select_country,
     select_player_character,
     select_storyteller_character,
-    select_trait,
-    select_trait_two,
+    select_storyteller_trait,
+    select_storyteller_trait_two,
+    select_trait_category,
     select_vampire_clan,
 )
 from valentina.utils.perform_roll import perform_roll
@@ -298,12 +299,11 @@ class StoryTeller(commands.Cog):
             autocomplete=select_storyteller_character,
             required=True,
         ),
-        # FIXME: This does not pull custom traits
         trait: Option(
-            ValidTrait,
+            str,
             description="Trait to update",
             required=True,
-            autocomplete=select_trait,
+            autocomplete=select_storyteller_trait,
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
@@ -315,6 +315,12 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
+        # Get trait object from name
+        for t in character.traits_list:
+            if trait.lower() == t.name.lower():
+                trait = t
+                break
+
         old_value = character.get_trait_value(trait)
 
         title = f"Update `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`"
@@ -374,6 +380,60 @@ class StoryTeller(commands.Cog):
             embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
         )
 
+    @character.command(name="add_trait", description="Add a trait to a storyteller character")
+    async def add_custom_trait(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to delete",
+            autocomplete=select_storyteller_character,
+            required=True,
+        ),
+        name: Option(str, "Name of of trait to add.", required=True),
+        category: Option(
+            ValidTraitCategory,
+            name="category",
+            description="The category to add the trait to",
+            required=True,
+            autocomplete=select_trait_category,
+        ),
+        value: Option(int, "The value of the trait", required=True, min_value=0, max_value=20),
+        max_value: Option(
+            int,
+            "The maximum value of the trait (Defaults to 5)",
+            required=False,
+            min_value=1,
+            max_value=20,
+            default=5,
+        ),
+        description: Option(str, "A description of the trait", required=False),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Add a custom trait to a character."""
+        title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
+        confirmed, msg = await confirm_action(ctx, title, hidden=hidden)
+
+        if not confirmed:
+            return
+
+        character.add_custom_trait(
+            name=name,
+            category=category,
+            value=value,
+            max_value=max_value,
+            description=description,
+        )
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await msg.edit_original_response(
+            embed=discord.Embed(title=title, color=EmbedColor.SUCCESS.value), view=None
+        )
+
     ### PLAYER COMMANDS ####################################################################
 
     @player.command(
@@ -419,12 +479,11 @@ class StoryTeller(commands.Cog):
             autocomplete=select_player_character,
             required=True,
         ),
-        # FIXME: This does not pull custom traits
         trait: Option(
-            ValidTrait,
+            str,
             description="Trait to update",
             required=True,
-            autocomplete=select_trait,
+            autocomplete=select_storyteller_trait,
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
@@ -436,6 +495,12 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
+        # Get trait object from name
+        for t in character.traits_list:
+            if trait.lower() == t.name.lower():
+                trait = t
+                break
+
         old_value = character.get_trait_value(trait)
 
         title = f"Update `{trait.name}` for `{character.name}` from `{old_value}` to `{new_value}`"
@@ -556,16 +621,16 @@ class StoryTeller(commands.Cog):
             required=True,
         ),
         trait_one: Option(
-            ValidTrait,
+            str,
             description="First trait to roll",
             required=True,
-            autocomplete=select_trait,
+            autocomplete=select_storyteller_trait,
         ),
         trait_two: Option(
-            ValidTrait,
+            str,
             description="Second trait to roll",
             required=True,
-            autocomplete=select_trait_two,
+            autocomplete=select_storyteller_trait_two,
         ),
         difficulty: Option(
             int,
@@ -581,6 +646,17 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Roll traits for a storyteller character."""
+        # Get trait objects from names
+        for t in character.traits_list:
+            if trait_one.lower() == t.name.lower():
+                trait_one = t
+                break
+
+        for t in character.traits_list:
+            if trait_two.lower() == t.name.lower():
+                trait_two = t
+                break
+
         trait_one_value = character.get_trait_value(trait_one)
         trait_two_value = character.get_trait_value(trait_two)
 
