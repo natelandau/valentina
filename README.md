@@ -27,7 +27,7 @@ Before running Valentina, the following must be configured or installed.
 
 -   Docker and Docker Compose
 -   A valid Discord Bot token. Instructions for this can be found on [Discord's Developer Portal](https://discord.com/developers/docs/getting-started)
--   If you plan on using image uploads, an AWS S3 Bucket must be configured with appropriate permissions. _(Instructions on how to do this are out of scope for this document)_
+-   To use image uploads, an AWS S3 Bucket must be configured with appropriate permissions. _(Instructions on how to do this are out of scope for this document)_
 
     -   Public must be able to read objects from the bucket
     -   An IAM role must be created with read/write/list access and the credentials added to the environment variables.
@@ -70,9 +70,9 @@ Before running Valentina, the following must be configured or installed.
 
 | Variable                        | Default Value              | Usage                                                                                                                                |
 | ------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| VALENTINA_AWS_ACCESS_KEY_ID     |                            | Access key for AWS (Optional: Only needed for image uploads)                                                                         |
-| VALENTINA_AWS_SECRET_ACCESS_KEY |                            | Secret access key for AWS (Optional: Only needed for image uploads)                                                                  |
-| VALENTINA_S3_BUCKET_NAME        |                            | Name of the S3 bucket to use (Optional: Only needed for image uploads)                                                               |
+| VALENTINA_AWS_ACCESS_KEY_ID     |                            | Access key for AWS (_Optional: Only needed for image uploads_)                                                                       |
+| VALENTINA_AWS_SECRET_ACCESS_KEY |                            | Secret access key for AWS (_Optional: Only needed for image uploads_)                                                                |
+| VALENTINA_S3_BUCKET_NAME        |                            | Name of the S3 bucket to use (_Optional: Only needed for image uploads_)                                                             |
 | VALENTINA_BACKUP_PATH           | `/valentina/backup`        | Sets the directory to store database backups.<br />Note, this is the directory used within the Docker container                      |
 | VALENTINA_DAILY_RETENTION       | `7`                        | Sets the number of days to retain database backups.                                                                                  |
 | VALENTINA_DB_PATH               | `/valentina/db`            | Sets the directory to store the database.<br />Note, this is the directory used within the Docker container                          |
@@ -104,7 +104,7 @@ There are two ways to contribute to this project.
 3. Install the Poetry environment with `poetry install`.
 4. Activate your Poetry environment with `poetry shell`.
 5. Install the pre-commit hooks with `pre-commit install --install-hooks`.
-6. Before running valentina locally, set the necessary ENV variables with `export VAR=abc`
+6. Before running valentina locally, set the minimum required ENV variables with `export VAR=abc`
     - `VALENTINA_DISCORD_TOKEN`
     - `VALENTINA_GUILDS`
     - `VALENTINA_OWNER_IDS`
