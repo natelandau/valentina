@@ -105,10 +105,11 @@ class Valentina(commands.Bot):
                 await guild.edit_role_positions(positions=positions)  # type: ignore [arg-type]
 
                 # Add guild to database
-                # ############################
-
                 self.guild_svc.update_or_add(guild=guild)
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
+
+                # Send welcome message
+                await bot_hooks.welcome_message(self, guild)
 
             # Update all character default values in case something changed
             self.char_svc.set_character_default_values()
