@@ -18,7 +18,6 @@ from valentina.constants import (
     PermissionsEditXP,
     RollResultType,
 )
-from valentina.models import Statistics
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import ValidChannelName
@@ -83,69 +82,6 @@ class Admin(commands.Cog):
         await member.add_roles(role, reason=reason)
 
         await confirmation_response_msg
-
-    @user.command(name="info", description="View information about a user")
-    @discord.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def user_info(
-        self,
-        ctx: discord.ApplicationContext,
-        user: Option(
-            discord.User,
-            description="The user to view information for",
-            required=True,
-        ),
-        hidden: Option(
-            bool,
-            description="Make the response only visible to you (default False).",
-            default=False,
-        ),
-    ) -> None:
-        """View information about a user."""
-        target = user or ctx.author
-
-        creation = ((target.id >> 22) + 1420070400000) // 1000
-
-        fields = [("Account Created", f"<t:{creation}:R> on <t:{creation}:D>")]
-        if isinstance(target, discord.Member):
-            fields.append(
-                (
-                    "Joined Server",
-                    f"<t:{int(target.joined_at.timestamp())}:R> on <t:{int(target.joined_at.timestamp())}:D>",
-                )
-            )
-            fields.append(
-                (
-                    f"Roles ({len(target._roles)})",
-                    ", ".join(r.mention for r in target.roles[::-1][:-1])
-                    or "_Member has no roles_",
-                )
-            )
-            if boost := target.premium_since:
-                fields.append(
-                    (
-                        "Boosting Since",
-                        f"<t:{int(boost.timestamp())}:R> on <t:{int(boost.timestamp())}:D>",
-                    )
-                )
-            else:
-                fields.append(("Boosting Server?", "No"))
-
-            roll_stats = Statistics(ctx, user=target)
-            fields.append(("Roll Statistics", roll_stats.get_text(with_title=False)))
-
-        await present_embed(
-            ctx,
-            title=f"{target.display_name}",
-            fields=fields,
-            inline_fields=False,
-            thumbnail=target.display_avatar.url,
-            author=str(target),
-            author_avatar=target.display_avatar.url,
-            footer=f"Requested by {ctx.author}",
-            ephemeral=hidden,
-            level="info",
-        )
 
     @user.command()
     @discord.guild_only()
