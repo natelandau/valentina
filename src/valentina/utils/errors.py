@@ -2,42 +2,6 @@
 from discord import DiscordException
 
 
-class ServiceDisabledError(DiscordException):
-    """Raised when a service is disabled."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "The requested service is disabled."
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
-class URLNotAvailableError(DiscordException):
-    """Raised when a URL is not available."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "The requested URL is not available."
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
 class BotMissingPermissionsError(DiscordException):
     """Raised when the bot is missing permissions to run a command."""
 
@@ -152,6 +116,45 @@ class S3ObjectExistsError(Exception):
     ):
         if not msg:
             msg = "A file with that name already exists."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class URLNotAvailableError(DiscordException):
+    """Raised when a URL is not available."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The requested URL is not available."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class ServiceDisabledError(DiscordException):
+    """Raised when a service is disabled."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The requested service is disabled"
+        else:
+            msg = f"The requested service is disabled: {msg}"
+
         if e:
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 

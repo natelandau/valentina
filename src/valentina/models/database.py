@@ -143,30 +143,6 @@ class DatabaseService:
         # Log the new version of the database
         logger.info(f"DATABASE: Database is v{bot_version}")
 
-    def migrate_databaseversion_table(self) -> None:
-        """This method is used to migrate the databaseversion table if necessary. It is outside of the MigrateDatabase class because this table is required for that class to function.
-
-        IMPORTANT: Unless a migration is needed, this method should do nothing.
-        """
-        # TODO: Remove this after the next release
-
-        if self._column_exists("databaseversion", "date"):
-            return
-        # Migrate the database
-        from peewee import DateTimeField
-        from playhouse.migrate import SqliteMigrator, migrate
-
-        from valentina.utils.helpers import time_now
-
-        self.db.execute_sql("PRAGMA foreign_keys=OFF;")
-        date_field = DateTimeField(default=time_now)
-        migrator = SqliteMigrator(self.db)
-        migrate(
-            migrator.add_column("databaseversion", "date", date_field),
-        )
-        self.db.execute_sql("PRAGMA foreign_keys=ON;")
-        logger.warning("DATABASE: Added Date Field to DatabaseVersion")
-
 
 class DBBackup:
     """A class that manages backups of the bot database.
