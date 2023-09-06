@@ -7,6 +7,7 @@ from discord.ext import commands
 
 from valentina.models.bot import Valentina
 from valentina.utils.converters import ValidMacroFromID, ValidTraitOrCustomTrait
+from valentina.utils.helpers import truncate_string
 from valentina.utils.options import (
     select_char_trait,
     select_char_trait_two,
@@ -56,7 +57,7 @@ class Macro(commands.Cog):
         self.bot.user_svc.fetch_user(ctx)
 
         modal = MacroCreateModal(
-            title="Enter the details for your macro",
+            title=truncate_string("Enter the details for your macro", 45),
             trait_one=trait_one.name,
             trait_two=trait_two.name,
         )

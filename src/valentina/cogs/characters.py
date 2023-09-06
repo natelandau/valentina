@@ -30,6 +30,7 @@ from valentina.utils.helpers import (
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
+    truncate_string,
 )
 from valentina.utils.options import (
     select_any_player_character,
@@ -705,7 +706,9 @@ class Characters(commands.Cog, name="Character"):
         """Add a custom section to the character sheet."""
         character = self.bot.user_svc.fetch_active_character(ctx)
 
-        modal = CustomSectionModal(title=f"Custom section for {character.name}")
+        modal = CustomSectionModal(
+            title=truncate_string(f"Custom section for {character.full_name}", 45)
+        )
         await ctx.send_modal(modal)
         await modal.wait()
 
@@ -756,7 +759,7 @@ class Characters(commands.Cog, name="Character"):
         modal = CustomSectionModal(
             section_title=custom_section.title,
             section_description=custom_section.description,
-            title=f"Custom section for {character.name}",
+            title=truncate_string(f"Custom section for {character.full_name}", 45),
         )
         await ctx.send_modal(modal)
         await modal.wait()
@@ -853,7 +856,8 @@ class Characters(commands.Cog, name="Character"):
         character = self.bot.user_svc.fetch_active_character(ctx)
 
         modal = BioModal(
-            title=f"Enter the biography for {character.name}", current_bio=character.data["bio"]
+            title=truncate_string(f"Enter the biography for {character.full_name}", 45),
+            current_bio=character.data["bio"],
         )
         await ctx.send_modal(modal)
         await modal.wait()
@@ -884,7 +888,9 @@ class Characters(commands.Cog, name="Character"):
         """Update a character's profile."""
         character = self.bot.user_svc.fetch_active_character(ctx)
 
-        modal = ProfileModal(title=f"Profile for {character}", character=character)
+        modal = ProfileModal(
+            title=truncate_string(f"Profile for {character}", 45), character=character
+        )
         await ctx.send_modal(modal)
         await modal.wait()
         if modal.confirmed:

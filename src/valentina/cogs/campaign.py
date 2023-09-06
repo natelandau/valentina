@@ -9,6 +9,7 @@ from loguru import logger
 from valentina.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT
 from valentina.models.bot import Valentina
 from valentina.utils.converters import ValidCampaign, ValidYYYYMMDD
+from valentina.utils.helpers import truncate_string
 from valentina.utils.options import select_campaign, select_chapter, select_note, select_npc
 from valentina.views import ChapterModal, NoteModal, NPCModal, confirm_action, present_embed
 
@@ -306,7 +307,7 @@ An overview of {campaign.name}.
         """Create a new NPC."""
         campaign = self.bot.campaign_svc.fetch_active(ctx)
 
-        modal = NPCModal(title="Create new NPC")
+        modal = NPCModal(title=truncate_string("Create new NPC", 45))
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
@@ -389,7 +390,7 @@ An overview of {campaign.name}.
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         npc = self.bot.campaign_svc.fetch_npc_by_name(ctx, campaign, npc)
 
-        modal = NPCModal(title="Edit NPC", npc=npc)
+        modal = NPCModal(title=truncate_string("Edit NPC", 45), npc=npc)
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
@@ -466,7 +467,7 @@ An overview of {campaign.name}.
         """Create a new chapter."""
         campaign = self.bot.campaign_svc.fetch_active(ctx)
 
-        modal = ChapterModal(title="Create new chapter")
+        modal = ChapterModal(title=truncate_string("Create new chapter", 45))
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
@@ -554,7 +555,7 @@ An overview of {campaign.name}.
             campaign, chapter_select.split(":")[1]
         )
 
-        modal = ChapterModal(title="Edit chapter", chapter=chapter)
+        modal = ChapterModal(title=truncate_string("Edit chapter", 45), chapter=chapter)
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
@@ -644,7 +645,7 @@ An overview of {campaign.name}.
             else None
         )
 
-        modal = NoteModal(title="Create new note")
+        modal = NoteModal(title=truncate_string("Create new note", 45))
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
@@ -734,7 +735,7 @@ An overview of {campaign.name}.
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         note = self.bot.campaign_svc.fetch_note_by_id(note_select.split(":")[0])
 
-        modal = NoteModal(title="Edit note", note=note)
+        modal = NoteModal(title=truncate_string("Edit note", 45), note=note)
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
