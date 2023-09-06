@@ -151,7 +151,7 @@ class Developer(commands.Cog):
     ) -> None:
         """Create test characters in the database for the current guild."""
         title = (
-            f"Create `{number}` of test {p.plural_noun('character'), number} on `{ctx.guild.name}`"
+            f"Create `{number}` of test {p.plural_noun('character', number)} on `{ctx.guild.name}`"
         )
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:

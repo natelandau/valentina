@@ -34,13 +34,13 @@ def truncate_string(text: str, max_length: int = 1000) -> str:
 
     Examples:
         >>> truncate_string("This is a test", 10)
-        'This is...'
+        'This i...'
 
         >>> truncate_string("This is a test", 100)
         'This is a test'
     """
     if len(text) > max_length:
-        return text[: max_length - 3] + "..."
+        return text[: max_length - 4] + "..."
     return text
 
 
