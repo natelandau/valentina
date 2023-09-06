@@ -467,10 +467,26 @@ class Developer(commands.Cog):
             value=f"**CONNECT TO {len(servers)} {p.plural_noun('GUILD', len(servers))}**",
             inline=False,
         )
-        for n, i in enumerate(servers):
+        for n, guild in enumerate(servers):
+            player_characters = (
+                Character.select()
+                .where(
+                    Character.guild == guild.id,
+                    Character.data["player_character"] == True,  # noqa: E712
+                )
+                .count()
+            )
+            value = (
+                "```yaml\n",
+                f"members: {guild.member_count}\n",
+                f"owner  : {guild.owner.display_name}\n",
+                f"chars  : {player_characters}\n",
+                "```",
+            )
+
             embed.add_field(
-                name=f"{n + 1}. {i.name}",
-                value=f"Members: `{i.member_count}`\nOwner: {i.owner.mention}",
+                name=f"{n + 1}. {guild.name}",
+                value="".join(value),
                 inline=True,
             )
 

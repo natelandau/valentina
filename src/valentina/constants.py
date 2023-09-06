@@ -9,7 +9,7 @@ MAX_FIELD_COUNT = 1010
 MAX_OPTION_LIST_SIZE = 25  # maximum number of options in a discord select menu
 MAX_PAGE_CHARACTER_COUNT = 1950
 VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
-
+SPACER = " \u200b"
 ### ENUMS ###
 
 
