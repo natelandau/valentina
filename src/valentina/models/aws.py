@@ -46,7 +46,7 @@ class AWSService:
     def check_disabled(self) -> None:
         """Check if the service is disabled and raise an error if it is."""
         if self.disabled:
-            raise errors.ServiceDisabledError
+            raise errors.ServiceDisabledError("AWS")
 
     def get_key_prefix(
         self, ctx: discord.ApplicationContext, object_type: str, **kwargs: str | int

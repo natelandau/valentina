@@ -31,10 +31,10 @@ def changelog_parser(
     """
     # Precompile regex patterns
     version = re.compile(r"## v(\d+\.\d+\.\d+)")
-    date = re.compile(r"(\d{4}-\d{2}-\d{2})")
-    feature = re.compile(r"### Feat")
-    fix = re.compile(r"### Fix")
-    ignored_sections = re.compile(r"### Docs|### Refactor|### Style|### Test")
+    date = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
+    feature = re.compile(r"### Feat", re.I)
+    fix = re.compile(r"### Fix", re.I)
+    ignored_sections = re.compile(r"### (docs|refactor|style|test|perf|ci|build|chore)", re.I)
 
     # Initialize dictionary to store parsed data
     changes: dict[str, dict[str, str | list[str]]] = {}
@@ -126,11 +126,11 @@ async def welcome_message(bot: commands.Bot, guild: discord.Guild) -> None:
 
         # Create and populate the embed description
         description = "## I'm back with a new version of Valentina!\n"
-        description += f"Since I last logged in, I was updated to version {db_version}.\nHere's what you missed.\n\n"
+        description += f"Since I last logged in, I was updated to version {db_version}.\nHere's what you missed:\n\n"
 
         for version, data in changes.items():
             description += (
-                f"**On `{data['date']}` I was updated to version `{version}`.**\n```yaml\n"
+                f"**On `{data['date']}` I was updated to version `{version}`**\n```yaml\n"
             )
             if features := data.get("features"):
                 description += "### Features:\n" + "\n".join(features) + "\n\n"

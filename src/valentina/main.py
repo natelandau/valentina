@@ -78,7 +78,6 @@ def main(
     """Run Valentina."""
     # Setup database
     db = DatabaseService(DATABASE)
-    db.migrate_databaseversion_table()
     db.create_tables()
     db.initialize_database(__version__)
 

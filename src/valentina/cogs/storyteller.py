@@ -54,9 +54,21 @@ class StoryTeller(commands.Cog):
         "Commands for the storyteller",
         checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
     )
-    character = storyteller.create_subgroup("character", "Work with storyteller characters")
-    player = storyteller.create_subgroup("player", "Work with player characters")
-    roll = storyteller.create_subgroup("roll", "Roll dice for storyteller characters")
+    character = storyteller.create_subgroup(
+        "character",
+        "Work with storyteller characters",
+        checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
+    )
+    player = storyteller.create_subgroup(
+        "player",
+        "Work with player characters",
+        checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
+    )
+    roll = storyteller.create_subgroup(
+        "roll",
+        "Roll dice for storyteller characters",
+        checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
+    )
 
     ### CHARACTER COMMANDS ####################################################################
     @character.command(name="create_full", description="Create a full npc character")
