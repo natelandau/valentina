@@ -22,7 +22,12 @@ from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import assert_permissions
-from valentina.views import ThumbnailReview, confirm_action, present_embed
+from valentina.views import (
+    SettingsManager,
+    ThumbnailReview,
+    confirm_action,
+    present_embed,
+)
 
 p = inflect.engine()
 
@@ -55,6 +60,7 @@ class Admin(commands.Cog):
     )
 
     ### USER ADMINISTRATION COMMANDS ################################################################
+
     @user.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
@@ -245,11 +251,37 @@ class Admin(commands.Cog):
 
         await confirmation_response_msg
 
+    ## SETTINGS COMMANDS #############################################################################
+
+    @admin.command(name="settings", description="Manage Guild Settings")
+    async def settings_manager(self, ctx: discord.ApplicationContext) -> None:
+        """Manage Guild Settings."""
+        manager = SettingsManager(ctx)
+        paginator = manager.display_settings_manager()
+        await paginator.respond(ctx.interaction, ephemeral=True)
+        await paginator.wait()
+
     ### GUILD ADMINISTRATION COMMANDS ################################################################
+    @guild.command(name="show_settings", description="Show server settings for this guild")
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def show_settings(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Show server settings for this guild."""
+        embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
+        await ctx.respond(embed=embed, ephemeral=hidden)
+
     @guild.command(description="Configure the settings for this guild")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def settings(
+    async def settings_old(
         self,
         ctx: discord.ApplicationContext,
         trait_permissions: Option(
@@ -435,22 +467,6 @@ class Admin(commands.Cog):
             )
         else:
             await present_embed(ctx, title="No settings updated", level="info", ephemeral=True)
-
-    @guild.command()
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def show_settings(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the response only visible to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Show server settings for this guild."""
-        embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
-        await ctx.respond(embed=embed, ephemeral=hidden)
 
     @guild.command()
     @commands.guild_only()
