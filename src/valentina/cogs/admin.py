@@ -262,22 +262,6 @@ class Admin(commands.Cog):
         await paginator.wait()
 
     ### GUILD ADMINISTRATION COMMANDS ################################################################
-    @guild.command(name="show_settings", description="Show server settings for this guild")
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def show_settings(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the response only visible to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Show server settings for this guild."""
-        embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
-        await ctx.respond(embed=embed, ephemeral=hidden)
-
     @guild.command(description="Configure the settings for this guild")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
