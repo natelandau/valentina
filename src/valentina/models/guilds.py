@@ -7,14 +7,7 @@ from datetime import datetime
 import discord
 from loguru import logger
 
-from valentina.constants import (
-    GUILD_DEFAULTS,
-    ChannelPermission,
-    EmbedColor,
-    PermissionManageCampaign,
-    PermissionsEditTrait,
-    PermissionsEditXP,
-)
+from valentina.constants import GUILD_DEFAULTS, ChannelPermission, EmbedColor
 from valentina.utils import errors
 from valentina.utils.helpers import set_channel_perms, time_now
 
@@ -27,77 +20,6 @@ class GuildService:
     def __init__(self) -> None:
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
-
-    async def get_setting_review_embed(self, ctx: discord.ApplicationContext) -> discord.Embed:
-        """Get an embed of all guild settings."""
-        # Confirm channels exist in discord
-        current_settings = self.fetch_guild_settings(ctx)
-
-        audit_log_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=current_settings["log_channel_id"])
-            if current_settings["log_channel_id"]
-            else None
-        )
-        storyteller_channel = (
-            discord.utils.get(
-                ctx.guild.text_channels, id=current_settings["storyteller_channel_id"]
-            )
-            if current_settings["storyteller_channel_id"]
-            else None
-        )
-        error_log_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=current_settings["error_log_channel_id"])
-            if current_settings["error_log_channel_id"]
-            else None
-        )
-
-        # Build the embed
-        embed = discord.Embed(
-            title=f"Settings for {ctx.guild.name}",
-            color=EmbedColor.INFO.value,
-        )
-
-        embed.add_field(name="\u200b", value="**PERMISSIONS**", inline=False)
-        embed.add_field(
-            name="Editing XP",
-            value=PermissionsEditXP(current_settings["permissions_edit_xp"]).name.title(),
-            inline=True,
-        )
-        embed.add_field(
-            name="Editing Traits",
-            value=PermissionsEditTrait(current_settings["permissions_edit_trait"]).name.title(),
-            inline=True,
-        )
-        embed.add_field(
-            name="Campaign Management",
-            value=PermissionManageCampaign(
-                current_settings["permissions_manage_campaigns"]
-            ).name.title(),
-            inline=True,
-        )
-
-        embed.add_field(name="\u200b", value="**LOGGING**", inline=False)
-
-        desc = "Status: "
-        desc += "`Enabled`" if current_settings["use_audit_log"] else "`Disabled`"
-        desc += "\nChannel: "
-        desc += audit_log_channel.mention if audit_log_channel else "Not set"
-        embed.add_field(name="Audit Log", value=desc, inline=True)
-
-        desc = "Status: "
-        desc += "`Enabled`" if current_settings["use_error_log_channel"] else "`Disabled`"
-        desc += "\nChannel: "
-        desc += error_log_channel.mention if error_log_channel else "Not set"
-        embed.add_field(name="Error Log", value=desc, inline=True)
-
-        embed.add_field(name="\u200b", value="**STORYTELLER**", inline=False)
-        desc = "Status: "
-        desc += "`Enabled`" if current_settings["use_storyteller_channel"] else "`Disabled`"
-        desc += "\nChannel: "
-        desc += storyteller_channel.mention if storyteller_channel else "Not set"
-        embed.add_field(name="Private Storyteller Channel", value=desc, inline=True)
-
-        return embed
 
     def fetch_guild_settings(self, ctx: discord.ApplicationContext) -> dict[str, str | int | bool]:
         """Fetch all guild settings.
@@ -141,49 +63,38 @@ class GuildService:
         RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
         logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
 
-    async def create_channel(
+    async def channel_update_or_add(
         self,
         ctx: discord.ApplicationContext,
-        channel_name: str,
+        channel: str | discord.TextChannel,
         topic: str,
-        position: int,
-        database_key: str,
-        default_role: ChannelPermission,
-        player: ChannelPermission,
-        storyteller: ChannelPermission,
+        permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
     ) -> discord.TextChannel:  # pragma: no cover
         """Create or update a channel in the guild.
 
-        This method creates a new text channel in the guild or updates an existing channel
-        if one with the same name already exists. It sets the permissions for the default role,
-        player role, and storyteller role. If the member is a bot, it sets the permissions to manage.
+        Either create a new text channel in the guild or update an existing one
+        based on the name. Set permissions for default role, player role,
+        and storyteller role. If a member is a bot, set permissions to manage.
 
         Args:
-            ctx (ApplicationContext): The application context.
-            channel_name (str): The name of the channel.
-            topic (str): The topic of the channel.
-            position (int): The position of the channel in the channel list.
-            database_key (str): The key for the channel (value) in the database.
-            default_role (ChannelPermission): The permissions for the default role.
-            player (ChannelPermission): The permissions for the player role.
-            storyteller (ChannelPermission): The permissions for the storyteller role.
+            ctx (discord.ApplicationContext): Application context.
+            channel (str|discord.TextChannel): Channel name or object.
+            topic (str): Channel topic.
+            permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]): Tuple containing channel permissions for default_role, player_role, storyteller_role.
 
         Returns:
-            discord.TextChannel: The created or updated discord text channel.
+            discord.TextChannel: The created or updated text channel.
 
-        Raises:
-            peewee.DoesNotExist: If the guild does not exist in the database.
         """
-        self.settings_cache.pop(ctx.guild.id, None)
-        guild_object = Guild.get(id=ctx.guild.id)
-
+        # Fetch roles
         player_role = discord.utils.get(ctx.guild.roles, name="Player")
         storyteller_role = discord.utils.get(ctx.guild.roles, name="Storyteller")
 
+        # Initialize permission overwrites
         overwrites = {
-            ctx.guild.default_role: set_channel_perms(default_role),
-            player_role: set_channel_perms(player),
-            storyteller_role: set_channel_perms(storyteller),
+            ctx.guild.default_role: set_channel_perms(permissions[0]),
+            player_role: set_channel_perms(permissions[1]),
+            storyteller_role: set_channel_perms(permissions[2]),
             **{
                 user: set_channel_perms(ChannelPermission.MANAGE)
                 for user in ctx.guild.members
@@ -191,24 +102,27 @@ class GuildService:
             },
         }
 
-        channel = discord.utils.get(ctx.guild.text_channels, name=channel_name.lower().strip())
+        # Determine channel object and name
+        if isinstance(channel, discord.TextChannel):
+            channel_object = channel
+        elif isinstance(channel, str):
+            channel_name = channel.lower().strip()
+            channel_object = discord.utils.get(ctx.guild.text_channels, name=channel_name)
 
-        if channel:
-            await channel.edit(overwrites=overwrites, topic=topic, position=position)
-            setattr(guild_object, database_key, channel.id)
-            guild_object.save()
-        else:
-            channel = await ctx.guild.create_text_channel(
-                channel_name,
-                overwrites=overwrites,
-                topic=topic,
-                position=position,
-            )
-            setattr(guild_object, database_key, channel.id)
-            guild_object.save()
+            # Create the channel if it doesn't exist
+            if not channel_object:
+                logger.debug(f"GUILD: Create channel '{channel_object.name}' on '{ctx.guild.name}'")
+                return await ctx.guild.create_text_channel(
+                    channel_name,
+                    overwrites=overwrites,
+                    topic=topic,
+                )
 
-        logger.debug(f"GUILD: Created or updated channel '{channel_name}' for '{ctx.guild.name}'")
-        return channel
+        # Update existing channel
+        logger.debug(f"GUILD: Update channel '{channel_object.name}' on '{ctx.guild.name}'")
+        await channel_object.edit(overwrites=overwrites, topic=topic)
+
+        return channel_object
 
     def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
         """Get all roll result thumbnails for a guild."""
@@ -376,15 +290,14 @@ class GuildService:
         updates: dict[str, str | int | bool] | None = None,
     ) -> Guild:
         """Add a guild to the database or update it if it already exists."""
-        if ctx and guild:
-            raise ValueError("Cannot pass both guild and ctx")
+        if (ctx and guild) or (not ctx and not guild):
+            raise ValueError("Need to pass either a guild or a context")
 
         # Purge the guild from the cache
         if ctx:
             self.purge_cache(ctx)
             guild = ctx.guild
-
-        if guild:
+        elif guild:
             self.purge_cache(guild=guild)
 
         # Create initialization data

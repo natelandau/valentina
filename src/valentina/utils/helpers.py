@@ -68,44 +68,62 @@ async def fetch_random_name(gender: str | None = None, country: str = "us") -> t
 
 
 def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
-    """Set the channel permissions for a role from a ChannelPermission enum.
+    """Translate a ChannelPermission enum to a discord.PermissionOverwrite object.
+
+    Takes a requested channel permission represented as an enum and
+    sets the properties of a discord.PermissionOverwrite object
+    to match those permissions.
 
     Args:
-        requested_permission (ChannelPermission): The requested channel permission.
+        requested_permission (ChannelPermission): The channel permission enum.
 
     Returns:
-        discord.PermissionOverwrite: The corresponding Discord permission overwrite.
+        discord.PermissionOverwrite: Permission settings as a Discord object.
     """
+    # Map each ChannelPermission to the properties that should be False
+    permission_mapping: dict[ChannelPermission, dict[str, bool]] = {
+        ChannelPermission.HIDDEN: {
+            "add_reactions": False,
+            "manage_messages": False,
+            "read_messages": False,
+            "send_messages": False,
+            "view_channel": False,
+            "read_message_history": False,
+        },
+        ChannelPermission.READ_ONLY: {
+            "add_reactions": True,
+            "manage_messages": False,
+            "read_messages": True,
+            "send_messages": False,
+            "view_channel": True,
+            "read_message_history": True,
+            "use_slash_commands": False,
+        },
+        ChannelPermission.POST: {
+            "add_reactions": True,
+            "manage_messages": False,
+            "read_messages": True,
+            "send_messages": True,
+            "view_channel": True,
+            "read_message_history": True,
+            "use_slash_commands": True,
+        },
+        ChannelPermission.MANAGE: {
+            "add_reactions": True,
+            "manage_messages": True,
+            "read_messages": True,
+            "send_messages": True,
+            "view_channel": True,
+            "read_message_history": True,
+            "use_slash_commands": True,
+        },
+    }
+
+    # Create a permission overwrite object
     perms = discord.PermissionOverwrite()
-
-    match requested_permission:
-        case ChannelPermission.HIDDEN:
-            perms.send_messages = False  # type: ignore [misc]
-            perms.read_messages = False  # type: ignore [misc]
-            perms.manage_messages = False  # type: ignore [misc]
-            perms.add_reactions = False  # type: ignore [misc]
-            perms.view_channel = False  # type: ignore [misc]
-
-        case ChannelPermission.READ_ONLY:
-            perms.send_messages = False  # type: ignore [misc]
-            perms.read_messages = True  # type: ignore [misc]
-            perms.manage_messages = False  # type: ignore [misc]
-            perms.add_reactions = True  # type: ignore [misc]
-            perms.view_channel = True  # type: ignore [misc]
-
-        case ChannelPermission.POST:
-            perms.send_messages = True  # type: ignore [misc]
-            perms.read_messages = True  # type: ignore [misc]
-            perms.manage_messages = False  # type: ignore [misc]
-            perms.add_reactions = True  # type: ignore [misc]
-            perms.view_channel = True  # type: ignore [misc]
-
-        case ChannelPermission.MANAGE:
-            perms.send_messages = True  # type: ignore [misc]
-            perms.read_messages = True  # type: ignore [misc]
-            perms.manage_messages = True  # type: ignore [misc]
-            perms.add_reactions = True  # type: ignore [misc]
-            perms.view_channel = True  # type: ignore [misc]
+    # Update the permission overwrite object based on the enum
+    for key, value in permission_mapping.get(requested_permission, {}).items():
+        setattr(perms, key, value)
 
     return perms
 

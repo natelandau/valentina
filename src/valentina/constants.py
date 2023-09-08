@@ -10,9 +10,9 @@ MAX_OPTION_LIST_SIZE = 25  # maximum number of options in a discord select menu
 MAX_PAGE_CHARACTER_COUNT = 1950
 VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 SPACER = " \u200b"
+
+
 ### ENUMS ###
-
-
 class ChannelPermission(Enum):
     """Enum for permissions when creating a character. Default is UNRESTRICTED."""
 
@@ -188,7 +188,32 @@ class XPMultiplier(Enum):
     CONVICTION = 2  # TODO: Get the actual number for this
 
 
-### Database Default Values ###
+### DISCORD SETTINGS ###
+CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, ChannelPermission]] = {
+    # "NAME": (default role, player role, storyteller role)
+    "default": (
+        ChannelPermission.DEFAULT,
+        ChannelPermission.DEFAULT,
+        ChannelPermission.DEFAULT,
+    ),
+    "audit_log": (
+        ChannelPermission.HIDDEN,
+        ChannelPermission.HIDDEN,
+        ChannelPermission.READ_ONLY,
+    ),
+    "storyteller_channel": (
+        ChannelPermission.HIDDEN,
+        ChannelPermission.HIDDEN,
+        ChannelPermission.POST,
+    ),
+    "error_log": (
+        ChannelPermission.HIDDEN,
+        ChannelPermission.HIDDEN,
+        ChannelPermission.HIDDEN,
+    ),
+}
+
+### Data Default Values ###
 CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
     "alive": True,
     "auspice": None,
@@ -230,7 +255,6 @@ GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
 
 ### More Constants ###
 
-
 CLAN_DISCIPLINES = {
     "Assamite": ["Celerity", "Obfuscate", "Quietus"],
     "Brujah": ["Celerity", "Potence", "Presence"],
@@ -246,7 +270,6 @@ CLAN_DISCIPLINES = {
     "Tzimisce": ["Animalism", "Auspex", "Vicissitude"],
     "Ventrue": ["Dominate", "Fortitude", "Presence"],
 }
-
 
 DICEROLL_THUBMS = {
     "BOTCH": [

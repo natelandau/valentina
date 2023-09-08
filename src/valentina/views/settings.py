@@ -1,10 +1,14 @@
 """Views for configuring guild settings."""
+from typing import cast
+
 import discord
 from discord.ext import pages
 from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import (
+    CHANNEL_PERMISSIONS,
+    ChannelPermission,
     EmbedColor,
     PermissionManageCampaign,
     PermissionsEditTrait,
@@ -88,17 +92,80 @@ class SettingsButtons(discord.ui.View):
         self.stop()
 
 
+class SettingsChannelSelect(discord.ui.View):
+    """Add a select to a view to set channel values for a guild."""
+
+    def __init__(
+        self,
+        ctx: discord.ApplicationContext,
+        key: str,
+        permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
+    ):
+        super().__init__(timeout=300)
+        self.ctx = ctx
+        self.key = key
+        self.permissions = permissions
+
+    @discord.ui.channel_select(
+        placeholder="Select channel...",
+        channel_types=[discord.ChannelType.text],
+        min_values=1,
+        max_values=1,
+    )
+    async def channel_select_dropdown(
+        self, select: discord.ui.Select, interaction: discord.Interaction
+    ) -> None:
+        """Respond to the selection, update the database and the view."""
+        # Disable all buttons and select menus after a selection is made
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
+        # NOTE: Cast is required because the type hint for select.values is incorrect
+        selected_channel = cast(discord.TextChannel, select.values[0])
+
+        # Update the channel permissions
+
+        # Update the guild settings and the channel's permissions
+        await self.ctx.bot.guild_svc.channel_update_or_add(  # type: ignore [attr-defined]
+            self.ctx,
+            channel=selected_channel,
+            topic="Valentina error reports",
+            permissions=CHANNEL_PERMISSIONS["error_log"],
+        )
+        self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: selected_channel.id})  # type: ignore [attr-defined]
+
+        await interaction.response.send_message(
+            f"You selected {selected_channel.mention} ({selected_channel.id})"
+        )
+        self.stop()
+
+    @discord.ui.button(label="🚫 Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel")
+    async def cancel_callback(
+        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+    ) -> None:
+        """Disable all buttons and stop the view."""
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
+        await interaction.response.edit_message(view=self)
+        self.stop()
+
+
 class SettingsManager:
     """Manage guild settings."""
 
     def __init__(self, ctx: discord.ApplicationContext) -> None:
         self.ctx: discord.ApplicationContext = ctx
+
         self.current_settings = self.ctx.bot.guild_svc.fetch_guild_settings(self.ctx)  # type: ignore [attr-defined]
         self.page_group: list[pages.PageGroup] = [
             self._home_embed(),
             self._xp_permissions_embed(),
             self._trait_permissions_embed(),
             self._manage_campaign_permissions_embed(),
+            self._select_error_log_channel_embed(),
         ]
 
     def _home_embed(self) -> pages.PageGroup:
@@ -283,6 +350,36 @@ class SettingsManager:
             ],
             label="Manage Campaigns",
             description="Who can manage campaigns",
+            use_default_buttons=False,
+        )
+
+    def _select_error_log_channel_embed(self) -> pages.PageGroup:
+        """Create a view for selecting the error log channel."""
+        description = [
+            "# Select the error log channel",
+            "Valentina can log errors to a channel of your choice. Select the channel to log errors to from the list below. Or create a new text channel and re-run this command.",
+            "### Notes:",
+            "- Any channel selected for error logging must be a text (not a voice) channel",
+            "- The channel selected will be hidden from everyone except for administrators",
+            "- Due to the above restriction, _do not select a channel that has any other purpose than error logging_",
+        ]
+
+        embed = discord.Embed(
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
+        )
+
+        view = SettingsChannelSelect(
+            self.ctx, key="error_log_channel_id", permissions=CHANNEL_PERMISSIONS["error_log"]
+        )
+
+        return pages.PageGroup(
+            pages=[
+                pages.Page(embeds=[embed], custom_view=view),
+            ],
+            label="Error Log Channel",
+            description="Select the channel to log errors to",
             use_default_buttons=False,
         )
 
