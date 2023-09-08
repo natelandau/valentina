@@ -165,6 +165,28 @@ class GuildService:
 
         return None
 
+    def fetch_changelog_channel(
+        self, ctx: discord.ApplicationContext
+    ) -> discord.TextChannel | None:
+        """Retrieve the changelog channel for the guild from the settings.
+
+        Fetch the guild's settings to determine if a changelog channel has been set.
+        If set, return the corresponding TextChannel object; otherwise, return None.
+
+        Args:
+            ctx (discord.ApplicationContext): The context for the discord command.
+
+        Returns:
+            discord.TextChannel|None: The changelog channel, if it exists and is set; otherwise, None.
+        """
+        settings = self.fetch_guild_settings(ctx)
+        db_id = settings.get("changelog_channel_id", None)
+
+        if db_id:
+            return discord.utils.get(ctx.guild.text_channels, id=settings["changelog_channel_id"])
+
+        return None
+
     def fetch_error_log_channel(
         self, ctx: discord.ApplicationContext
     ) -> discord.TextChannel | None:

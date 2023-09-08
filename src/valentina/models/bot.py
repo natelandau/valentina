@@ -105,7 +105,7 @@ class Valentina(commands.Bot):
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
                 # Send welcome message
-                await bot_hooks.welcome_message(self, guild)
+                await bot_hooks.send_changelog(self, guild)
 
             # Update all character default values in case something changed
             self.char_svc.set_character_default_values()

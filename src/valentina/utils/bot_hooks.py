@@ -1,7 +1,6 @@
 """Helpers for the bot to use via hooks."""
 
 import random
-import re
 from pathlib import Path
 
 import discord
@@ -11,80 +10,35 @@ from semver import Version
 
 from valentina.constants import EmbedColor
 from valentina.models.db_tables import DatabaseVersion, Guild
+from valentina.utils.helpers import changelog_parser
+
+RANDOM_RESPONSE = [
+    "bot who helps you play White Wolf's TTRPGs",
+    "blood sucking bot who's here to serve you",
+    "succubus who will yet have your heart",
+    "maid servant here to serve your deepest desires",
+    "sweet little thing",
+    "sweet little thing who will eat your heart out",
+    "doll faced beauty who cries next to you in bed",
+    "evil temptress who has you begging for more",
+    "harpy who makes you regret your words",
+    "harlot who makes you regret your choices",
+    "temptress has you wrapped around her fingers",
+    "guardian angel who watches over you",
+    "Tremere primogen makes you offers you can't refuse",
+    "Malkavian who makes you question your sanity",
+    "Ventrue who makes you question your loyalties",
+    "Nosferatu who makes you scream in terror",
+    "Toreador who makes you fall in love",
+    "Gangrel who makes you run for your life",
+    "Brujah who makes you fight for your freedom",
+    "Lasombra who makes you question your faith",
+    "Ravnos who makes you question your reality",
+    "Sabbat warrior who makes you question your humanity",
+]
 
 
-def changelog_parser(
-    changelog: str, last_posted_version: str
-) -> dict[str, dict[str, str | list[str]]]:
-    """Parse a changelog to extract versions, dates, features, and fixes, stopping at the last posted version.
-
-    The function looks for sections in the changelog that correspond to version numbers,
-    feature and fix descriptions. It ignores specified sections like Docs, Refactor, Style, and Test.
-
-    Args:
-        changelog (str): The changelog text to parse.
-        last_posted_version (str): The last version that was posted, parsing stops when this version is reached.
-
-    Returns:
-        Dict[str, dict[str, str | list[str]]]: A dictionary containing the parsed data.
-        The key is the version number, and the value is another dictionary with date, features, and fixes.
-    """
-    # Precompile regex patterns
-    version = re.compile(r"## v(\d+\.\d+\.\d+)")
-    date = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
-    feature = re.compile(r"### Feat", re.I)
-    fix = re.compile(r"### Fix", re.I)
-    ignored_sections = re.compile(r"### (docs|refactor|style|test|perf|ci|build|chore)", re.I)
-
-    # Initialize dictionary to store parsed data
-    changes: dict[str, dict[str, str | list[str]]] = {}
-    in_features = in_fixes = False  # Flags for parsing feature and fix sections
-
-    # Split changelog into lines and iterate
-    for line in changelog.split("\n"):
-        # Skip empty lines
-        if line == "":
-            continue
-
-        # Skip lines with ignored section headers
-        if ignored_sections.match(line):
-            in_features = in_fixes = False
-            continue
-
-        # Version section
-        if version_match := version.match(line):
-            version_number = version_match.group(1)
-            if version_number == last_posted_version:
-                break  # Stop parsing when last posted version is reached
-
-            changes[version_number] = {
-                "date": date.search(line).group(1),
-                "features": [],
-                "fixes": [],
-            }
-            continue
-
-        if bool(feature.match(line)):
-            in_features = True
-            in_fixes = False
-            continue
-
-        if bool(fix.match(line)):
-            in_features = False
-            in_fixes = True
-            continue
-
-        line = re.sub(r" \(#\d+\)$", "", line)  # noqa: PLW2901
-        line = re.sub(r"(\*\*)", "", line)  # noqa: PLW2901
-        if in_features:
-            changes[version_number]["features"].append(line)  # type: ignore [union-attr]
-        if in_fixes:
-            changes[version_number]["fixes"].append(line)  # type: ignore [union-attr]
-
-    return changes
-
-
-async def welcome_message(bot: commands.Bot, guild: discord.Guild) -> None:
+async def send_changelog(bot: commands.Bot, guild: discord.Guild) -> None:
     """Send a welcome message to the guild's system channel when the bot joins.
 
     The function checks the last posted version for the guild and compares it to the current version.
@@ -97,10 +51,16 @@ async def welcome_message(bot: commands.Bot, guild: discord.Guild) -> None:
     Returns:
         None
     """
-    # Retrieve the last posted version for the guild
-    db_version = DatabaseVersion.select().order_by(DatabaseVersion.id.desc()).get().version
+    # If the guild does not have a changelog channel, return
     db_guild = Guild.get_by_id(guild.id)
+    db_changelog_channel_id = db_guild.data.get("changelog_channel_id", None)
+    changelog_channel = discord.utils.get(guild.text_channels, id=db_changelog_channel_id)
 
+    if not db_changelog_channel_id or not changelog_channel:
+        return
+
+    # Build variables for changelog comparison
+    db_version = DatabaseVersion.select().order_by(DatabaseVersion.id.desc()).get().version
     guild_last_posted_version = db_guild.data.get("changelog_posted_version", None)
 
     # Use current version -1 if no previous version is logged in the database
@@ -125,23 +85,22 @@ async def welcome_message(bot: commands.Bot, guild: discord.Guild) -> None:
         changes = changelog_parser(changelog, guild_last_posted_version)
 
         # Create and populate the embed description
-        description = "## I'm back with a new version of Valentina!\n"
-        description += f"Since I last logged in, I was updated to version {db_version}.\nHere's what you missed:\n\n"
+        description = f"### Your {random.choice(['favorite','friendly neighborhood','prized', 'treasured', 'number one','esteemed','venerated','revered','feared'])} {random.choice(RANDOM_RESPONSE)} has {random.choice(['been granted new powers', 'leveled up','spent experience points','gained new abilities','been bitten by a radioactive spider', 'spent willpower points', 'been updated','squashed bugs and gained new features',])}!\n"
 
         for version, data in changes.items():
-            description += (
-                f"**On `{data['date']}` I was updated to version `{version}`**\n```yaml\n"
-            )
+            description += f"### On `{data['date']}` I was updated to version `{version}`\n"
+
             if features := data.get("features"):
-                description += "### Features:\n" + "\n".join(features) + "\n\n"
+                description += "### Features:\n"
+                description += "\n".join(features)
+                description += "\n"
             if fixes := data.get("fixes"):
                 description += "### Fixes:\n" + "\n".join(fixes) + "\n"
-            description += "```\n"
 
         # Send the embed message
         embed = discord.Embed(title="", description=description, color=EmbedColor.INFO.value)
-        embed.set_thumbnail(url=bot.user.display_avatar)
-        await guild.system_channel.send(embed=embed)
+        embed.set_author(name=bot.user.display_name, icon_url=bot.user.display_avatar)
+        await changelog_channel.send(embed=embed)
 
 
 async def create_storyteller_role(guild: discord.Guild) -> discord.Role:
@@ -238,31 +197,9 @@ async def create_player_role(guild: discord.Guild) -> discord.Role:
 
 async def respond_to_mentions(bot: commands.Bot, message: discord.Message) -> None:
     """Respond to @mentions of the bot."""
-    random_response = [
-        "a bot to help you play White Wolf's TTRPGs",
-        "a blood sucking bot who is here to serve you",
-        "a succubus who will steal your heart",
-        "a maid servant here to serve your deepest desires",
-        "a sweet little thing who will make you scream",
-        "an evil temptress who have you begging for more",
-        "a harpy who will make you regret your words",
-        "a harlot who will make you regret your choices",
-        "a temptress who will wrap you around her finger",
-        "a Tremere primogen who will make you an offer you can't refuse",
-        "a Malkavian who will make you question your sanity",
-        "a Ventrue who will make you question your loyalties",
-        "a Nosferatu who will make you scream in terror",
-        "a Toreador who will make you fall in love",
-        "a Gangrel who will make you run for your life",
-        "a Brujah who will make you fight for your freedom",
-        "a Lasombra who will make you question your faith",
-        "a Ravnos who will make you question your reality",
-        "a Sabbat warrior who will make you question your humanity",
-    ]
-
     description = [
         "### Hi there!",
-        f"**I'm Valentina Noir, {random.choice(random_response)}.**\n",
+        f"**I'm Valentina Noir, a {random.choice(RANDOM_RESPONSE)}.**\n",
         "I'm still in development, so please be patient with me.\n",
         "There are a few ways to get help using me. (_You do want to use me, right?_)\n",
         "- Type `/help` to get a list of commands",

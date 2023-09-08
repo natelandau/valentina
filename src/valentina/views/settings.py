@@ -239,6 +239,7 @@ class SettingsManager:
             self._error_log(),
             self._audit_log(),
             self._storyteller_channel(),
+            self._changelog_channel(),
         ]
 
     def _audit_log(self) -> pages.PageGroup:
@@ -307,6 +308,39 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
+    def _changelog_channel(self) -> pages.PageGroup:
+        """Create a view for selecting the changelog channel."""
+        description = [
+            "# Enable a changelog channel",
+            "Be notified when Valentina is updated with new features and bug fixes.",
+            "### Instructions:",
+            "- Select a channel from the dropdown below enable posting changes to that channel",
+            "- Use the `Disable` button to disable posting changes",
+            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
+        ]
+
+        embed = discord.Embed(
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
+        )
+
+        view = SettingsChannelSelect(
+            self.ctx,
+            key="changelog_channel_id",
+            permissions=CHANNEL_PERMISSIONS["default"],
+            channel_topic="Features and bug fixes for Valentina",
+        )
+
+        return pages.PageGroup(
+            pages=[
+                pages.Page(embeds=[embed], custom_view=view),
+            ],
+            label="Changelog Channel",
+            description="The channel to post Valentina updates to",
+            use_default_buttons=False,
+        )
+
     def _home_embed(self) -> pages.PageGroup:
         """Create the home page group embed.
 
@@ -322,6 +356,7 @@ class SettingsManager:
         error_log_channel = self.ctx.bot.guild_svc.fetch_error_log_channel(self.ctx)  # type: ignore [attr-defined]
         audit_log_channel = self.ctx.bot.guild_svc.fetch_audit_log_channel(self.ctx)  # type: ignore [attr-defined]
         storyteller_channel = self.ctx.bot.guild_svc.fetch_storyteller_channel(self.ctx)  # type: ignore [attr-defined]
+        changelog_channel = self.ctx.bot.guild_svc.fetch_changelog_channel(self.ctx)  # type: ignore [attr-defined]
 
         settings_home_embed.description = "\n".join(
             [
@@ -333,30 +368,31 @@ class SettingsManager:
                 "```yaml",
                 "# Permissions",
                 f"Grant experience   : {PermissionsEditXP(self.current_settings['permissions_edit_xp']).name.title()}",
-                f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
                 f"Manage campaign    : {PermissionManageCampaign(self.current_settings['permissions_manage_campaigns']).name.title()}",
                 "",
+                f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
                 "# Channel Settings:",
+                f"Changelog channel  : {changelog_channel.name}"
+                if storyteller_channel is not None
+                else "Changelog channel  : Not set",
                 f"Storyteller channel: {storyteller_channel.name}"
                 if storyteller_channel is not None
                 else "Storyteller channel: Not set",
                 "",
                 "# Log to channels:",
+                f"Log errors      : Enabled (#{error_log_channel.name})"
+                if error_log_channel is not None
+                else "Log errors      : Disabled",
                 f"Log interactions: Enabled (#{audit_log_channel.name})"
                 if audit_log_channel is not None
-                else "Audit log: Disabled",
-                f"Log errors: Enabled (#{error_log_channel.name})"
-                if error_log_channel is not None
-                else "Log errors: Disabled",
+                else "Log interactions: Disabled",
                 "```",
             ]
         )
 
         view = CancelButton(self.ctx)
         return pages.PageGroup(
-            pages=[
-                pages.Page(embeds=[settings_home_embed], custom_view=view),
-            ],
+            pages=[pages.Page(embeds=[settings_home_embed], custom_view=view)],
             label="Home",
             description="Settings Homepage and Help",
             use_default_buttons=False,
@@ -402,9 +438,7 @@ class SettingsManager:
         )
 
         return pages.PageGroup(
-            pages=[
-                pages.Page(embeds=[embed], custom_view=view),
-            ],
+            pages=[pages.Page(embeds=[embed], custom_view=view)],
             label="Manage Campaigns",
             description="Who can manage campaigns",
             use_default_buttons=False,
@@ -421,9 +455,7 @@ class SettingsManager:
         ]
 
         embed = discord.Embed(
-            title="",
-            description="\n".join(description),
-            color=EmbedColor.INFO.value,
+            title="", description="\n".join(description), color=EmbedColor.INFO.value
         )
 
         view = SettingsChannelSelect(
@@ -434,9 +466,7 @@ class SettingsManager:
         )
 
         return pages.PageGroup(
-            pages=[
-                pages.Page(embeds=[embed], custom_view=view),
-            ],
+            pages=[pages.Page(embeds=[embed], custom_view=view)],
             label="Storyteller Channel",
             description="Select the channel to use for storytellers",
             use_default_buttons=False,
@@ -463,9 +493,7 @@ class SettingsManager:
         ]
 
         embed = discord.Embed(
-            title="",
-            description="\n".join(description),
-            color=EmbedColor.INFO.value,
+            title="", description="\n".join(description), color=EmbedColor.INFO.value
         )
 
         # Build options for the buttons and the view
@@ -481,9 +509,7 @@ class SettingsManager:
         )
 
         return pages.PageGroup(
-            pages=[
-                pages.Page(embeds=[embed], custom_view=view),
-            ],
+            pages=[pages.Page(embeds=[embed], custom_view=view)],
             label="Edit Trait Values",
             description="Who can edit trait values without spending experience",
             use_default_buttons=False,
@@ -510,9 +536,7 @@ class SettingsManager:
         ]
 
         embed = discord.Embed(
-            title="",
-            description="\n".join(description),
-            color=EmbedColor.INFO.value,
+            title="", description="\n".join(description), color=EmbedColor.INFO.value
         )
 
         # Build options for the buttons and the view
@@ -528,9 +552,7 @@ class SettingsManager:
         )
 
         return pages.PageGroup(
-            pages=[
-                pages.Page(embeds=[embed], custom_view=view),
-            ],
+            pages=[pages.Page(embeds=[embed], custom_view=view)],
             label="Grant Experience",
             description="Who can grant experience to a character",
             use_default_buttons=False,

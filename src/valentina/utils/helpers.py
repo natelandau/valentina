@@ -1,6 +1,7 @@
 """Helper functions for Valentina."""
 import io
 import random
+import re
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -22,28 +23,6 @@ from valentina.utils import errors
 from .errors import BotMissingPermissionsError
 
 
-def truncate_string(text: str, max_length: int = 1000) -> str:
-    """Truncate a string to a maximum length.
-
-    Args:
-        text (str): The string to truncate.
-        max_length (int, optional): The maximum length of the string. Defaults to 1000.
-
-    Returns:
-        str: The truncated string.
-
-    Examples:
-        >>> truncate_string("This is a test", 10)
-        'This i...'
-
-        >>> truncate_string("This is a test", 100)
-        'This is a test'
-    """
-    if len(text) > max_length:
-        return text[: max_length - 4] + "..."
-    return text
-
-
 async def assert_permissions(ctx: discord.ApplicationContext, **permissions: bool) -> None:
     """Check if the bot has the required permissions to run the command.""."""
     if missing := [
@@ -52,80 +31,75 @@ async def assert_permissions(ctx: discord.ApplicationContext, **permissions: boo
         raise BotMissingPermissionsError(missing)
 
 
-async def fetch_random_name(gender: str | None = None, country: str = "us") -> tuple[str, str]:
-    """Fetch a random name from the randomuser.me API."""
-    if not gender:
-        gender = random.choice(["male", "female"])
+def changelog_parser(
+    changelog: str, last_posted_version: str
+) -> dict[str, dict[str, str | list[str]]]:
+    """Parse a changelog to extract versions, dates, features, and fixes, stopping at the last posted version.
 
-    params = {"gender": gender, "nat": country, "inc": "name"}
-    url = f"https://randomuser.me/api/?{urlencode(params)}"
-    async with ClientSession() as session, session.get(url) as res:
-        if 300 > res.status >= 200:  # noqa: PLR2004
-            data = await res.json()
-            return (data["results"][0]["name"]["first"], data["results"][0]["name"]["last"])
-
-    return ("John", "Doe")
-
-
-def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
-    """Translate a ChannelPermission enum to a discord.PermissionOverwrite object.
-
-    Takes a requested channel permission represented as an enum and
-    sets the properties of a discord.PermissionOverwrite object
-    to match those permissions.
+    The function looks for sections in the changelog that correspond to version numbers,
+    feature and fix descriptions. It ignores specified sections like Docs, Refactor, Style, and Test.
 
     Args:
-        requested_permission (ChannelPermission): The channel permission enum.
+        changelog (str): The changelog text to parse.
+        last_posted_version (str): The last version that was posted, parsing stops when this version is reached.
 
     Returns:
-        discord.PermissionOverwrite: Permission settings as a Discord object.
+        Dict[str, dict[str, str | list[str]]]: A dictionary containing the parsed data.
+        The key is the version number, and the value is another dictionary with date, features, and fixes.
     """
-    # Map each ChannelPermission to the properties that should be False
-    permission_mapping: dict[ChannelPermission, dict[str, bool]] = {
-        ChannelPermission.HIDDEN: {
-            "add_reactions": False,
-            "manage_messages": False,
-            "read_messages": False,
-            "send_messages": False,
-            "view_channel": False,
-            "read_message_history": False,
-        },
-        ChannelPermission.READ_ONLY: {
-            "add_reactions": True,
-            "manage_messages": False,
-            "read_messages": True,
-            "send_messages": False,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": False,
-        },
-        ChannelPermission.POST: {
-            "add_reactions": True,
-            "manage_messages": False,
-            "read_messages": True,
-            "send_messages": True,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": True,
-        },
-        ChannelPermission.MANAGE: {
-            "add_reactions": True,
-            "manage_messages": True,
-            "read_messages": True,
-            "send_messages": True,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": True,
-        },
-    }
+    # Precompile regex patterns
+    version = re.compile(r"## v(\d+\.\d+\.\d+)")
+    date = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
+    feature = re.compile(r"### Feat", re.I)
+    fix = re.compile(r"### Fix", re.I)
+    ignored_sections = re.compile(r"### (docs|refactor|style|test|perf|ci|build|chore)", re.I)
 
-    # Create a permission overwrite object
-    perms = discord.PermissionOverwrite()
-    # Update the permission overwrite object based on the enum
-    for key, value in permission_mapping.get(requested_permission, {}).items():
-        setattr(perms, key, value)
+    # Initialize dictionary to store parsed data
+    changes: dict[str, dict[str, str | list[str]]] = {}
+    in_features = in_fixes = False  # Flags for parsing feature and fix sections
 
-    return perms
+    # Split changelog into lines and iterate
+    for line in changelog.split("\n"):
+        # Skip empty lines
+        if line == "":
+            continue
+
+        # Skip lines with ignored section headers
+        if ignored_sections.match(line):
+            in_features = in_fixes = False
+            continue
+
+        # Version section
+        if version_match := version.match(line):
+            version_number = version_match.group(1)
+            if version_number == last_posted_version:
+                break  # Stop parsing when last posted version is reached
+
+            changes[version_number] = {
+                "date": date.search(line).group(1),
+                "features": [],
+                "fixes": [],
+            }
+            continue
+
+        if bool(feature.match(line)):
+            in_features = True
+            in_fixes = False
+            continue
+
+        if bool(fix.match(line)):
+            in_features = False
+            in_fixes = True
+            continue
+
+        line = re.sub(r" \(#\d+\)$", "", line)  # noqa: PLW2901
+        line = re.sub(r"(\*\*)", "", line)  # noqa: PLW2901
+        if in_features:
+            changes[version_number]["features"].append(line)  # type: ignore [union-attr]
+        if in_fixes:
+            changes[version_number]["fixes"].append(line)  # type: ignore [union-attr]
+
+    return changes
 
 
 def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
@@ -171,6 +145,21 @@ def fetch_clan_disciplines(clan: str) -> list[str]:
 
     """
     return CLAN_DISCIPLINES[clan.title()]
+
+
+async def fetch_random_name(gender: str | None = None, country: str = "us") -> tuple[str, str]:
+    """Fetch a random name from the randomuser.me API."""
+    if not gender:
+        gender = random.choice(["male", "female"])
+
+    params = {"gender": gender, "nat": country, "inc": "name"}
+    url = f"https://randomuser.me/api/?{urlencode(params)}"
+    async with ClientSession() as session, session.get(url) as res:
+        if 300 > res.status >= 200:  # noqa: PLR2004
+            data = await res.json()
+            return (data["results"][0]["name"]["first"], data["results"][0]["name"]["last"])
+
+    return ("John", "Doe")
 
 
 def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False) -> int | None:
@@ -322,6 +311,89 @@ def round_trait_value(value: int, max_value: int) -> int:
         return max_value
 
     return value
+
+
+def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
+    """Translate a ChannelPermission enum to a discord.PermissionOverwrite object.
+
+    Takes a requested channel permission represented as an enum and
+    sets the properties of a discord.PermissionOverwrite object
+    to match those permissions.
+
+    Args:
+        requested_permission (ChannelPermission): The channel permission enum.
+
+    Returns:
+        discord.PermissionOverwrite: Permission settings as a Discord object.
+    """
+    # Map each ChannelPermission to the properties that should be False
+    permission_mapping: dict[ChannelPermission, dict[str, bool]] = {
+        ChannelPermission.HIDDEN: {
+            "add_reactions": False,
+            "manage_messages": False,
+            "read_messages": False,
+            "send_messages": False,
+            "view_channel": False,
+            "read_message_history": False,
+        },
+        ChannelPermission.READ_ONLY: {
+            "add_reactions": True,
+            "manage_messages": False,
+            "read_messages": True,
+            "send_messages": False,
+            "view_channel": True,
+            "read_message_history": True,
+            "use_slash_commands": False,
+        },
+        ChannelPermission.POST: {
+            "add_reactions": True,
+            "manage_messages": False,
+            "read_messages": True,
+            "send_messages": True,
+            "view_channel": True,
+            "read_message_history": True,
+            "use_slash_commands": True,
+        },
+        ChannelPermission.MANAGE: {
+            "add_reactions": True,
+            "manage_messages": True,
+            "read_messages": True,
+            "send_messages": True,
+            "view_channel": True,
+            "read_message_history": True,
+            "use_slash_commands": True,
+        },
+    }
+
+    # Create a permission overwrite object
+    perms = discord.PermissionOverwrite()
+    # Update the permission overwrite object based on the enum
+    for key, value in permission_mapping.get(requested_permission, {}).items():
+        setattr(perms, key, value)
+
+    return perms
+
+
+def truncate_string(text: str, max_length: int = 1000) -> str:
+    """Truncate a string to a maximum length.
+
+    Args:
+        text (str): The string to truncate.
+        max_length (int, optional): The maximum length of the string. Defaults to 1000.
+
+    Returns:
+        str: The truncated string.
+
+    Examples:
+        >>> truncate_string("This is a test", 10)
+        'This i...'
+
+        >>> truncate_string("This is a test", 100)
+        'This is a test'
+    """
+    if len(text) > max_length:
+        return text[: max_length - 4] + "..."
+    return text
 
 
 def time_now() -> datetime:

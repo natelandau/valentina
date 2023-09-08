@@ -710,6 +710,11 @@ class MigrateDatabase:
         # Remove unused settings from guilds
 
         for guild in Guild.select():
+            if guild.data.get("changelog_posted_version", None) is not None:
+                logger.debug(f"MIGRAGE: Remove data.`changelog_posted_version` on {guild.name}")
+                del guild.data["changelog_posted_version"]
+                guild.save()
+
             if guild.data.get("use_error_log_channel", None) is not None:
                 logger.debug(f"MIGRAGE: Remove data.`use_error_log_channel` on {guild.name}")
                 del guild.data["use_error_log_channel"]
