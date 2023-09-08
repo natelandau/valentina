@@ -6,23 +6,20 @@ from io import BytesIO
 import discord
 import inflect
 from aiohttp import ClientSession
-from discord import OptionChoice
 from discord.commands import Option
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
-from valentina.constants import (
-    ChannelPermission,
-    PermissionManageCampaign,
-    PermissionsEditTrait,
-    PermissionsEditXP,
-    RollResultType,
-)
+from valentina.constants import RollResultType
 from valentina.models.bot import Valentina
 from valentina.utils import errors
-from valentina.utils.converters import ValidChannelName
 from valentina.utils.helpers import assert_permissions
-from valentina.views import ThumbnailReview, confirm_action, present_embed
+from valentina.views import (
+    SettingsManager,
+    ThumbnailReview,
+    confirm_action,
+    present_embed,
+)
 
 p = inflect.engine()
 
@@ -55,6 +52,7 @@ class Admin(commands.Cog):
     )
 
     ### USER ADMINISTRATION COMMANDS ################################################################
+
     @user.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
@@ -245,212 +243,17 @@ class Admin(commands.Cog):
 
         await confirmation_response_msg
 
+    ## SETTINGS COMMANDS #############################################################################
+
+    @admin.command(name="settings", description="Manage Guild Settings")
+    async def settings_manager(self, ctx: discord.ApplicationContext) -> None:
+        """Manage Guild Settings."""
+        manager = SettingsManager(ctx)
+        paginator = manager.display_settings_manager()
+        await paginator.respond(ctx.interaction, ephemeral=True)
+        await paginator.wait()
+
     ### GUILD ADMINISTRATION COMMANDS ################################################################
-    @guild.command(description="Configure the settings for this guild")
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def settings(
-        self,
-        ctx: discord.ApplicationContext,
-        trait_permissions: Option(
-            str,
-            "Whether users should be allowed to edit their traits.",
-            choices=[
-                OptionChoice(x.name.title().replace("_", " "), str(x.value))
-                for x in PermissionsEditTrait
-            ],
-            required=False,
-        ),
-        xp_permissions: Option(
-            str,
-            "Whether users should be allowed to edit their XP totals.",
-            choices=[
-                OptionChoice(x.name.title().replace("_", " "), str(x.value))
-                for x in PermissionsEditXP
-            ],
-            required=False,
-        ),
-        manage_campaigns: Option(
-            str,
-            "Which roles can manage campaigns.",
-            choices=[
-                OptionChoice(x.name.title().replace("_", " "), str(x.value))
-                for x in PermissionManageCampaign
-            ],
-            required=False,
-        ),
-        use_audit_log: Option(
-            bool,
-            "Send audit logs to channel",
-            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
-            required=False,
-            default=None,
-        ),
-        audit_log_channel_name: Option(
-            ValidChannelName,
-            "Audit command usage to this channel",
-            required=False,
-            default=None,
-        ),
-        use_error_log_channel: Option(
-            bool,
-            "Log errors to a specified channel",
-            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
-            required=False,
-            default=None,
-        ),
-        error_log_channel_name: Option(
-            ValidChannelName,
-            "Name for the error log channel",
-            required=False,
-            default=None,
-        ),
-        use_storyteller_channel: Option(
-            bool,
-            "Use a private storyteller channel",
-            choices=[OptionChoice("Enable", True), OptionChoice("Disable", False)],
-            required=False,
-            default=None,
-        ),
-        storyteller_channel_name: Option(
-            ValidChannelName,
-            "Name the private storyteller channel",
-            required=False,
-            default=None,
-        ),
-    ) -> None:
-        """Manage Valentina's settings for this guild.
-
-        Args:
-            ctx (discord.ApplicationContext): The command context.
-            trait_permissions (str, optional): Whether users should be allowed to edit their traits.
-            xp_permissions (str, optional): Whether users should be allowed to edit their XP totals.
-            manage_campaigns (str, optional): Which roles can manage campaigns.
-            use_audit_log (bool, optional): Send audit logs to channel.
-            audit_log_channel_name (str, optional): Audit command usage to this channel.
-            use_error_log_channel (bool, optional): Log errors to a specified channel.
-            error_log_channel_name (str, optional): Name for the error log channel.
-            use_storyteller_channel (bool, optional): Use a private storyteller channel.
-            storyteller_channel_name (str, optional): Name the private storyteller channel.
-
-        Returns:
-            None
-        """
-        current_settings = self.bot.guild_svc.fetch_guild_settings(ctx)
-        fields = []
-        update_data: dict[str, str | int | bool] = {}
-
-        # Handle permissions
-        permission_mapping = {
-            "xp_permissions": (PermissionsEditXP, "permissions_edit_xp"),
-            "trait_permissions": (PermissionsEditTrait, "permissions_edit_trait"),
-            "manage_campaigns": (PermissionManageCampaign, "permissions_manage_campaigns"),
-        }
-
-        for option, (enum_class, db_key) in permission_mapping.items():
-            value = locals()[option]
-            if value is not None:
-                fields.append(
-                    (option.replace("_", " ").title(), enum_class(int(value)).name.title())
-                )
-                update_data[db_key] = int(value)
-
-        # Handle channel-related settings with specific permissions
-        channel_settings = [
-            (
-                "use_audit_log",
-                "log_channel_id",
-                "audit_log_channel_name",
-                "Audit logs",
-                100,
-                ChannelPermission.HIDDEN,
-                ChannelPermission.HIDDEN,
-                ChannelPermission.READ_ONLY,
-            ),
-            (
-                "use_storyteller_channel",
-                "storyteller_channel_id",
-                "storyteller_channel_name",
-                "Storyteller channel",
-                90,
-                ChannelPermission.HIDDEN,
-                ChannelPermission.HIDDEN,
-                ChannelPermission.POST,
-            ),
-            (
-                "use_error_log_channel",
-                "error_log_channel_id",
-                "error_log_channel_name",
-                "Error log channel",
-                90,
-                ChannelPermission.HIDDEN,
-                ChannelPermission.HIDDEN,
-                ChannelPermission.HIDDEN,
-            ),
-        ]
-
-        for (
-            setting,
-            db_key,
-            channel_name_key,
-            topic,
-            position,
-            default_role,
-            player,
-            storyteller,
-        ) in channel_settings:
-            use_setting = locals()[setting]
-            channel_name = locals()[channel_name_key]
-
-            if use_setting is not None:
-                if use_setting and not current_settings[db_key] and not channel_name:
-                    await present_embed(
-                        ctx,
-                        title=f"No {setting.replace('_', ' ').title()} Channel",
-                        description=f"Please rerun the command and enter a name for the {setting.replace('_', ' ').title()} channel",
-                        level="error",
-                        ephemeral=True,
-                    )
-                    return
-
-                fields.append(
-                    (setting.replace("_", " ").title(), "Enabled" if use_setting else "Disabled")
-                )
-                update_data[setting] = use_setting
-
-            if channel_name is not None:
-                created_channel = await self.bot.guild_svc.create_channel(
-                    ctx, channel_name, topic, position, db_key, default_role, player, storyteller
-                )
-                fields.append((setting.replace("_", " ").title(), created_channel.mention))
-                update_data[db_key] = created_channel.id
-
-        # Show results
-        if fields:
-            self.bot.guild_svc.update_or_add(ctx=ctx, updates=update_data)
-            updates = ", ".join(f"`{k}={v}`" for k, v in update_data.items() if k != "modified")
-            await self.bot.guild_svc.send_to_audit_log(ctx, f"Settings updated: {updates}")
-            await present_embed(
-                ctx, title="Settings Updated", fields=fields, level="success", ephemeral=True
-            )
-        else:
-            await present_embed(ctx, title="No settings updated", level="info", ephemeral=True)
-
-    @guild.command()
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def show_settings(
-        self,
-        ctx: discord.ApplicationContext,
-        hidden: Option(
-            bool,
-            description="Make the response only visible to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Show server settings for this guild."""
-        embed = await self.bot.guild_svc.get_setting_review_embed(ctx)
-        await ctx.respond(embed=embed, ephemeral=hidden)
 
     @guild.command()
     @commands.guild_only()

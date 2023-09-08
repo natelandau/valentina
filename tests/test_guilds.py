@@ -36,7 +36,9 @@ class TestGuildService:
         assert self.guild_svc.settings_cache == {1: {"a": "b"}, 2: {"c": "d"}}
         result = Guild.get_by_id(1002002002)
         assert result.name == "Test Guild"
-        assert result.data == IsPartialDict(key="value", use_audit_log=False)
+        assert result.data == IsPartialDict(
+            key="value", permissions_edit_trait=GUILD_DEFAULTS["permissions_edit_trait"]
+        )
         assert result.data.get("modified")
         for k, v in GUILD_DEFAULTS.items():
             assert result.data[k] == v
@@ -49,7 +51,9 @@ class TestGuildService:
         result = Guild.get_by_id(1002002002)
         assert result.name == "Test Guild"
         assert result.data == IsPartialDict(
-            key="new_value", new_key="new_value", use_audit_log=False
+            key="new_value",
+            new_key="new_value",
+            permissions_edit_trait=GUILD_DEFAULTS["permissions_edit_trait"],
         )
 
     def test_fetch_guild_settings(self, mock_ctx, caplog):
@@ -71,14 +75,24 @@ class TestGuildService:
         caplog_text = caplog.text
         assert isinstance(returned, dict)
         assert "DATABASE:" in caplog_text  # confirm the database was queried b/c cache was empty
-        assert returned == IsPartialDict(a="b", c="d", key="value", use_audit_log=False)
+        assert returned == IsPartialDict(
+            a="b",
+            c="d",
+            key="value",
+            permissions_edit_trait=GUILD_DEFAULTS["permissions_edit_trait"],
+        )
 
         # Fetch the guild settings again
         returned = self.guild_svc.fetch_guild_settings(mock_ctx)
         caplog_text = caplog.text
         assert isinstance(returned, dict)
         assert "CACHE:" in caplog_text  # confirm the cache was used
-        assert returned == IsPartialDict(a="b", c="d", key="value", use_audit_log=False)
+        assert returned == IsPartialDict(
+            a="b",
+            c="d",
+            key="value",
+            permissions_edit_trait=GUILD_DEFAULTS["permissions_edit_trait"],
+        )
 
     def test_purge_cache_one(self, mock_ctx):
         """Test GuildService.purge_cache().

@@ -45,7 +45,7 @@ class UserService:
         return f"{guild_id}_{user_id}"
 
     def can_update_xp(self, ctx: discord.ApplicationContext, character: Character = None) -> bool:
-        """Check if the user has permissions to add experience points.
+        """Check if the user has permissions to add experience points to their characters.
 
         The function checks the following conditions in order:
         - If the author is an administrator, return True.
