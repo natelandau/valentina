@@ -64,11 +64,28 @@ class SettingsButtons(discord.ui.View):
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
 
-        await interaction.response.edit_message(view=self)
+        embed = interaction.message.embeds[0]
+        embed.description = "## Cancelled\nNo settings were changed"
+        embed.color = EmbedColor.WARNING.value  # type: ignore [method-assign, assignment]
+
+        await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
     async def button_callback(self, interaction: discord.Interaction) -> None:
         """Respond to the button press, update the database and the view."""
+        # Disable the interaction and grab the setting name
+        for child in self.children:
+            if isinstance(child, Button):
+                if str(self.current_value) == child.custom_id:
+                    child.label = child.label[2:]
+
+                if interaction.data.get("custom_id", None) == child.custom_id:
+                    setting_name = child.label[2:]
+                    child.label = f"✅ {child.label}"
+
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
         # Get the custom_id of the button that was pressed
         response = int(interaction.data.get("custom_id", None))  # type: ignore [call-overload]
         logger.warning(f"SettingsButtons.button_callback: {self.key=}:{response=}")
@@ -76,19 +93,14 @@ class SettingsButtons(discord.ui.View):
         # Update the database
         self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: response})  # type: ignore [attr-defined]
 
-        # Update the buttons
-        for child in self.children:
-            if isinstance(child, Button):
-                if str(self.current_value) == child.custom_id:
-                    child.label = child.label[2:]
+        # Edit the original message
+        embed = interaction.message.embeds[0]
+        embed.description = (
+            f"{embed.description}\n## 👍 Success\nSettings updated to `{setting_name}`"
+        )
+        embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
-                if interaction.data.get("custom_id", None) == child.custom_id:
-                    child.label = f"✅ {child.label}"
-
-            if isinstance(child, Button | discord.ui.Select):
-                child.disabled = True
-
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
 
@@ -165,7 +177,14 @@ class SettingsChannelSelect(discord.ui.View):
 
         await self._update_guild_and_channel(enable=True, channel=selected_channel)
 
-        await interaction.response.send_message(f"You enabled {selected_channel.mention}")
+        # Edit the original message
+        embed = interaction.message.embeds[0]
+        embed.description = (
+            f"{embed.description}\n## 👍 Success\nSettings updated to {selected_channel.mention}"
+        )
+        embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
+
+        await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
     @discord.ui.button(label="⚠️ Disable", style=discord.ButtonStyle.primary, custom_id="disable")
@@ -178,7 +197,13 @@ class SettingsChannelSelect(discord.ui.View):
                 child.disabled = True
 
         await self._update_guild_and_channel(enable=False)
-        await interaction.response.edit_message(view=self)
+
+        # Edit the original message
+        embed = interaction.message.embeds[0]
+        embed.description = f"{embed.description}\n## 👍 Channel Disabled\n_No permissions were changed. No one who couldn't see the channel before can see it now._"
+        embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
+
+        await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
     @discord.ui.button(label="🚫 Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel")
@@ -190,7 +215,12 @@ class SettingsChannelSelect(discord.ui.View):
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
 
-        await interaction.response.edit_message(view=self)
+        # Edit the original message
+        embed = interaction.message.embeds[0]
+        embed.description = "## Cancelled\nNo settings were changed"
+        embed.color = EmbedColor.WARNING.value  # type: ignore [method-assign, assignment]
+
+        await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
 
@@ -205,11 +235,77 @@ class SettingsManager:
             self._home_embed(),
             self._xp_permissions_embed(),
             self._trait_permissions_embed(),
-            self._manage_campaign_permissions_embed(),
+            self._manage_campaigns_embed(),
             self._error_log(),
             self._audit_log(),
             self._storyteller_channel(),
         ]
+
+    def _audit_log(self) -> pages.PageGroup:
+        """Create a view for selecting the audit log channel."""
+        description = [
+            "# Interaction audit logging",
+            "Valentina can log interactions to a channel of your choice. _IMPORTANT: The audit log channel will be hidden from everyone except for administrators and storytellers._",
+            "### Instructions:",
+            "- Select a channel from the dropdown below enable audit logging to that channel",
+            "- Use the `Disable` button to disable audit logging",
+            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
+        ]
+
+        embed = discord.Embed(
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
+        )
+
+        view = SettingsChannelSelect(
+            self.ctx,
+            key="audit_log_channel_id",
+            permissions=CHANNEL_PERMISSIONS["audit_log"],
+            channel_topic="Valentina interaction audit reports",
+        )
+
+        return pages.PageGroup(
+            pages=[
+                pages.Page(embeds=[embed], custom_view=view),
+            ],
+            label="Audit Log",
+            description="Select the channel to log interactions to",
+            use_default_buttons=False,
+        )
+
+    def _error_log(self) -> pages.PageGroup:
+        """Create a view for selecting the error log channel."""
+        description = [
+            "# Enable error logging",
+            "Valentina can log errors to a channel of your choice. _IMPORTANT: The error log channel will be hidden from everyone except for administrators._",
+            "### Instructions:",
+            "- Select a channel from the dropdown below enable error logging to that channel",
+            "- Use the `Disable` button to disable error logging",
+            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
+        ]
+
+        embed = discord.Embed(
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
+        )
+
+        view = SettingsChannelSelect(
+            self.ctx,
+            key="error_log_channel_id",
+            permissions=CHANNEL_PERMISSIONS["error_log_channel"],
+            channel_topic="Valentina error reports",
+        )
+
+        return pages.PageGroup(
+            pages=[
+                pages.Page(embeds=[embed], custom_view=view),
+            ],
+            label="Error Log Channel",
+            description="Select the channel to log errors to",
+            use_default_buttons=False,
+        )
 
     def _home_embed(self) -> pages.PageGroup:
         """Create the home page group embed.
@@ -266,24 +362,25 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _xp_permissions_embed(self) -> pages.PageGroup:
-        """Create a view for setting XP permissions.
+    def _manage_campaigns_embed(self) -> pages.PageGroup:
+        """Create a view for setting who can manage campaigns.
 
         This method generates a Discord embed that provides options for setting permissions
-        on who can grant experience points (XP) to characters. It also sets up buttons for
-        the user to interact with.
+        on who can manage campaigns. It also sets up buttons for the user to interact with.
 
         Returns:
             pages.PageGroup: A PageGroup object containing the embed and custom view for setting permissions.
         """
         description = [
-            "# Settings for editing XP",
-            "Control who can grant experience to a character",
+            "# Settings for managing campaigns",
+            "Controls who can perform the following actions on campaigns:",
+            "- Create a new campaign",
+            "- Delete a campaign",
+            "- Set a campaign as active/inactive",
+            "- Delete NPCs, notes, and chapters from a campaign",
             "### Options:",
-            "1. **Unrestricted** - Any user can grant experience to any character",
-            "2. **Owner Only** - The owner of a character can grant experience to that character",
-            "3. **Within 24 hours** - The owner of a character can grant experience to that character within 24 hours of creation",
-            "3. **Storyteller only** - Only a Storyteller can grant experience to players' characters",
+            "1. **Unrestricted** - Any user can manage campaigns",
+            "2. **Storyteller only** - Only a Storyteller can manage campaigns",
         ]
 
         embed = discord.Embed(
@@ -295,21 +392,53 @@ class SettingsManager:
         # Build options for the buttons and the view
         options = [
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
-            for x in PermissionsEditXP
+            for x in PermissionManageCampaign
         ]
         view = SettingsButtons(
             self.ctx,
-            key="permissions_edit_xp",
+            key="permissions_manage_campaigns",
             options=options,
-            current_value=int(self.current_settings["permissions_edit_xp"]),
+            current_value=int(self.current_settings["permissions_manage_campaigns"]),
         )
 
         return pages.PageGroup(
             pages=[
                 pages.Page(embeds=[embed], custom_view=view),
             ],
-            label="Grant Experience",
-            description="Who can grant experience to a character",
+            label="Manage Campaigns",
+            description="Who can manage campaigns",
+            use_default_buttons=False,
+        )
+
+    def _storyteller_channel(self) -> pages.PageGroup:
+        """Create a view for selecting the storyteller channel."""
+        description = [
+            "# Storyteller channel",
+            "Valentina can set up a channel for storytellers to use to communicate with each other and run commands in private. _IMPORTANT: The storyteller channel will be hidden from everyone except for administrators and storytellers._",
+            "### Instructions:",
+            "- Select a channel from the dropdown to select a storyteller channel and set it's permissions",
+            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
+        ]
+
+        embed = discord.Embed(
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
+        )
+
+        view = SettingsChannelSelect(
+            self.ctx,
+            key="storyteller_channel_id",
+            permissions=CHANNEL_PERMISSIONS["storyteller_channel"],
+            channel_topic="Private channel for storytellers",
+        )
+
+        return pages.PageGroup(
+            pages=[
+                pages.Page(embeds=[embed], custom_view=view),
+            ],
+            label="Storyteller Channel",
+            description="Select the channel to use for storytellers",
             use_default_buttons=False,
         )
 
@@ -360,25 +489,24 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _manage_campaign_permissions_embed(self) -> pages.PageGroup:
-        """Create a view for setting who can manage campaigns.
+    def _xp_permissions_embed(self) -> pages.PageGroup:
+        """Create a view for setting XP permissions.
 
         This method generates a Discord embed that provides options for setting permissions
-        on who can manage campaigns. It also sets up buttons for the user to interact with.
+        on who can grant experience points (XP) to characters. It also sets up buttons for
+        the user to interact with.
 
         Returns:
             pages.PageGroup: A PageGroup object containing the embed and custom view for setting permissions.
         """
         description = [
-            "# Settings for managing campaigns",
-            "Controls who can perform the following actions on campaigns:",
-            "- Create a new campaign",
-            "- Delete a campaign",
-            "- Set a campaign as active/inactive",
-            "- Delete NPCs, notes, and chapters from a campaign",
+            "# Settings for editing XP",
+            "Control who can grant experience to a character",
             "### Options:",
-            "1. **Unrestricted** - Any user can manage campaigns",
-            "2. **Storyteller only** - Only a Storyteller can manage campaigns",
+            "1. **Unrestricted** - Any user can grant experience to any character",
+            "2. **Owner Only** - The owner of a character can grant experience to that character",
+            "3. **Within 24 hours** - The owner of a character can grant experience to that character within 24 hours of creation",
+            "3. **Storyteller only** - Only a Storyteller can grant experience to players' characters",
         ]
 
         embed = discord.Embed(
@@ -390,119 +518,21 @@ class SettingsManager:
         # Build options for the buttons and the view
         options = [
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
-            for x in PermissionManageCampaign
+            for x in PermissionsEditXP
         ]
         view = SettingsButtons(
             self.ctx,
-            key="permissions_manage_campaigns",
+            key="permissions_edit_xp",
             options=options,
-            current_value=int(self.current_settings["permissions_manage_campaigns"]),
+            current_value=int(self.current_settings["permissions_edit_xp"]),
         )
 
         return pages.PageGroup(
             pages=[
                 pages.Page(embeds=[embed], custom_view=view),
             ],
-            label="Manage Campaigns",
-            description="Who can manage campaigns",
-            use_default_buttons=False,
-        )
-
-    def _error_log(self) -> pages.PageGroup:
-        """Create a view for selecting the error log channel."""
-        description = [
-            "# Enable error logging",
-            "Valentina can log errors to a channel of your choice. _IMPORTANT: The error log channel will be hidden from everyone except for administrators._",
-            "### Instructions:",
-            "- Select a channel from the dropdown below enable error logging to that channel",
-            "- Use the `Disable` button to disable error logging",
-            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
-        ]
-
-        embed = discord.Embed(
-            title="",
-            description="\n".join(description),
-            color=EmbedColor.INFO.value,
-        )
-
-        view = SettingsChannelSelect(
-            self.ctx,
-            key="error_log_channel_id",
-            permissions=CHANNEL_PERMISSIONS["error_log_channel"],
-            channel_topic="Valentina error reports",
-        )
-
-        return pages.PageGroup(
-            pages=[
-                pages.Page(embeds=[embed], custom_view=view),
-            ],
-            label="Error Log Channel",
-            description="Select the channel to log errors to",
-            use_default_buttons=False,
-        )
-
-    def _audit_log(self) -> pages.PageGroup:
-        """Create a view for selecting the audit log channel."""
-        description = [
-            "# Interaction audit logging",
-            "Valentina can log interactions to a channel of your choice. _IMPORTANT: The audit log channel will be hidden from everyone except for administrators and storytellers._",
-            "### Instructions:",
-            "- Select a channel from the dropdown below enable audit logging to that channel",
-            "- Use the `Disable` button to disable audit logging",
-            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
-        ]
-
-        embed = discord.Embed(
-            title="",
-            description="\n".join(description),
-            color=EmbedColor.INFO.value,
-        )
-
-        view = SettingsChannelSelect(
-            self.ctx,
-            key="audit_log_channel_id",
-            permissions=CHANNEL_PERMISSIONS["audit_log"],
-            channel_topic="Valentina interaction audit reports",
-        )
-
-        return pages.PageGroup(
-            pages=[
-                pages.Page(embeds=[embed], custom_view=view),
-            ],
-            label="Audit Log",
-            description="Select the channel to log interactions to",
-            use_default_buttons=False,
-        )
-
-    def _storyteller_channel(self) -> pages.PageGroup:
-        """Create a view for selecting the storyteller channel."""
-        description = [
-            "# Storyteller channel",
-            "Valentina can set up a channel for storytellers to use to communicate with each other and run commands in private. _IMPORTANT: The storyteller channel will be hidden from everyone except for administrators and storytellers._",
-            "### Instructions:",
-            "- Select a channel from the dropdown to select a storyteller channel and set it's permissions",
-            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
-        ]
-
-        embed = discord.Embed(
-            title="",
-            description="\n".join(description),
-            color=EmbedColor.INFO.value,
-        )
-
-        view = SettingsChannelSelect(
-            self.ctx,
-            key="storyteller_channel_id",
-            permissions=CHANNEL_PERMISSIONS["storyteller_channel"],
-            channel_topic="Private channel for storytellers",
-        )
-
-        return pages.PageGroup(
-            pages=[
-                pages.Page(embeds=[embed], custom_view=view),
-            ],
-            label="Storyteller Channel",
-            description="Select the channel to use for storytellers",
+            label="Grant Experience",
+            description="Who can grant experience to a character",
             use_default_buttons=False,
         )
 
