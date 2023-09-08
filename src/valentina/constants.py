@@ -190,7 +190,15 @@ class XPMultiplier(Enum):
 
 ### DISCORD SETTINGS ###
 CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, ChannelPermission]] = {
-    # "NAME": (default role, player role, storyteller role)
+    """Dictionary containing a mapping of channel permissions.
+
+        Format:
+            "key": (
+                default role permission,
+                player role permission,
+                storyteller role permission
+            )
+    """
     "default": (
         ChannelPermission.DEFAULT,
         ChannelPermission.DEFAULT,
@@ -206,7 +214,7 @@ CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, Chann
         ChannelPermission.HIDDEN,
         ChannelPermission.POST,
     ),
-    "error_log": (
+    "error_log_channel": (
         ChannelPermission.HIDDEN,
         ChannelPermission.HIDDEN,
         ChannelPermission.HIDDEN,
@@ -243,14 +251,11 @@ CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
 
 GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "error_log_channel_id": None,
-    "log_channel_id": None,
+    "audit_log_channel_id": None,
     "permissions_edit_trait": PermissionsEditTrait.WITHIN_24_HOURS.value,
     "permissions_edit_xp": PermissionsEditXP.WITHIN_24_HOURS.value,
     "permissions_manage_campaigns": PermissionManageCampaign.STORYTELLER_ONLY.value,
     "storyteller_channel_id": None,
-    "use_audit_log": False,
-    "use_error_log_channel": False,
-    "use_storyteller_channel": False,
 }
 
 ### More Constants ###

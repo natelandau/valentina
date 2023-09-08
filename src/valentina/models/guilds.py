@@ -21,32 +21,51 @@ class GuildService:
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
 
-    def fetch_guild_settings(self, ctx: discord.ApplicationContext) -> dict[str, str | int | bool]:
-        """Fetch all guild settings.
-
-        This method fetches the settings for a guild, either from a cache or from the database.
-        It stores the settings in a cache to improve performance on subsequent requests.
+    def _message_to_embed(
+        self, message: str, ctx: discord.ApplicationContext
+    ) -> discord.Embed:  # pragma: no cover
+        """Convert a string message to a discord embed.
 
         Args:
-            ctx (ApplicationContext): The application context.
+            message (str): The message to be converted.
+            ctx (discord.ApplicationContext): The context in which the command was invoked.
 
         Returns:
-            dict[str, str | int | bool]: A dictionary of guild settings.
-
-        Raises:
-            peewee.DoesNotExist: If the guild does not exist in the database.
+            discord.Embed: The created embed.
         """
-        if ctx.guild.id not in self.settings_cache:
-            guild = Guild.get_by_id(ctx.guild.id).set_default_data_values()
-
-            # Store all guild settings in the cache
-            self.settings_cache[ctx.guild.id] = guild.data
-
-            logger.debug(f"DATABASE: Fetch guild settings for '{ctx.guild.name}'")
+        # Set color based on command
+        if hasattr(ctx, "command") and (
+            ctx.command.qualified_name.startswith("admin")
+            or ctx.command.qualified_name.startswith("owner")
+            or ctx.command.qualified_name.startswith("developer")
+        ):
+            color = EmbedColor.WARNING.value
+        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("storyteller"):
+            color = EmbedColor.SUCCESS.value
+        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("gameplay"):
+            color = EmbedColor.GRAY.value
+        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("campaign"):
+            color = EmbedColor.DEFAULT.value
         else:
-            logger.debug(f"CACHE: Fetch guild settings for '{ctx.guild.name}'")
+            color = EmbedColor.INFO.value
 
-        return self.settings_cache[ctx.guild.id]
+        embed = discord.Embed(title=message, color=color)
+        embed.timestamp = datetime.now()
+
+        footer = ""
+        if hasattr(ctx, "command"):
+            footer += f"Command: /{ctx.command.qualified_name}"
+        else:
+            footer += "Command: Unknown"
+
+        if hasattr(ctx, "author"):
+            footer += f" | User: @{ctx.author.display_name}"
+        if hasattr(ctx, "channel"):
+            footer += f" | Channel: #{ctx.channel.name}"
+
+        embed.set_footer(text=footer)
+
+        return embed
 
     def add_roll_result_thumb(
         self, ctx: discord.ApplicationContext, roll_type: str, url: str
@@ -124,6 +143,99 @@ class GuildService:
 
         return channel_object
 
+    def fetch_audit_log_channel(
+        self, ctx: discord.ApplicationContext
+    ) -> discord.TextChannel | None:
+        """Retrieve the audit log channel for the guild from the settings.
+
+        Fetch the guild's settings to determine if an audit log channel has been set.
+        If set, return the corresponding TextChannel object; otherwise, return None.
+
+        Args:
+            ctx (discord.ApplicationContext): The context for the discord command.
+
+        Returns:
+            discord.TextChannel|None: The audit log channel, if it exists and is set; otherwise, None.
+        """
+        settings = self.fetch_guild_settings(ctx)
+        db_id = settings.get("audit_log_channel_id", None)
+
+        if db_id:
+            return discord.utils.get(ctx.guild.text_channels, id=settings["audit_log_channel_id"])
+
+        return None
+
+    def fetch_error_log_channel(
+        self, ctx: discord.ApplicationContext
+    ) -> discord.TextChannel | None:
+        """Retrieve the error log channel for the guild from the settings.
+
+        Fetch the guild's settings to determine if an error log channel has been set.
+        If set, return the corresponding TextChannel object; otherwise, return None.
+
+        Args:
+            ctx (discord.ApplicationContext): The context for the discord command.
+
+        Returns:
+            discord.TextChannel|None: The error log channel, if it exists and is set; otherwise, None.
+        """
+        settings = self.fetch_guild_settings(ctx)
+        db_id = settings.get("error_log_channel_id", None)
+
+        if db_id:
+            return discord.utils.get(ctx.guild.text_channels, id=settings["error_log_channel_id"])
+
+        return None
+
+    def fetch_storyteller_channel(
+        self, ctx: discord.ApplicationContext
+    ) -> discord.TextChannel | None:
+        """Retrieve the storyteller channel for the guild from the settings.
+
+        Fetch the guild's settings to determine if a storyteller channel has been set.
+        If set, return the corresponding TextChannel object; otherwise, return None.
+
+        Args:
+            ctx (discord.ApplicationContext): The context for the discord command.
+
+        Returns:
+            discord.TextChannel|None: The storyteller channel, if it exists and is set; otherwise, None.
+        """
+        settings = self.fetch_guild_settings(ctx)
+        db_id = settings.get("storyteller_channel_id", None)
+
+        if db_id:
+            return discord.utils.get(ctx.guild.text_channels, id=settings["storyteller_channel_id"])
+
+        return None
+
+    def fetch_guild_settings(self, ctx: discord.ApplicationContext) -> dict[str, str | int | bool]:
+        """Fetch all guild settings.
+
+        This method fetches the settings for a guild, either from a cache or from the database.
+        It stores the settings in a cache to improve performance on subsequent requests.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+
+        Returns:
+            dict[str, str | int | bool]: A dictionary of guild settings.
+
+        Raises:
+            peewee.DoesNotExist: If the guild does not exist in the database.
+        """
+        if ctx.guild.id not in self.settings_cache:
+            guild = Guild.get_by_id(ctx.guild.id).set_default_data_values()
+
+            # Store all guild settings in the cache
+            self.settings_cache[ctx.guild.id] = guild.data
+
+            logger.debug(f"DATABASE: Fetch guild settings for '{ctx.guild.name}'")
+        else:
+            logger.debug(f"CACHE: Fetch guild settings for '{ctx.guild.name}'")
+
+        return self.settings_cache[ctx.guild.id]
+
     def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
         """Get all roll result thumbnails for a guild."""
         # Fetch from cache if it exists
@@ -182,19 +294,9 @@ class GuildService:
         Raises:
             discord.DiscordException: If the message could not be sent.
         """
-        settings = self.fetch_guild_settings(ctx)
-        audit_log_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=settings["log_channel_id"])
-            if settings["log_channel_id"]
-            else None
-        )
+        audit_log_channel = self.fetch_audit_log_channel(ctx)
 
-        if settings["use_audit_log"] and audit_log_channel:
-            audit_log_channel = (
-                discord.utils.get(ctx.guild.text_channels, id=settings["log_channel_id"])
-                if settings["log_channel_id"]
-                else None
-            )
+        if audit_log_channel:
             embed = self._message_to_embed(message, ctx) if isinstance(message, str) else message
 
             try:
@@ -205,26 +307,23 @@ class GuildService:
     async def send_to_error_log(
         self, ctx: discord.ApplicationContext, message: str | discord.Embed, error: Exception
     ) -> None:  # pragma: no cover
-        """Send a message to the error log channel for a guild.
+        """Send an error message or embed to the guild's error log channel.
 
-        If a string is passed in, an embed will be created from it. If an embed is passed in, it will be sent as is.
+        If the error log channel exists, convert the input message to an embed if it's a string and send it to the guild's error log channel.
 
         Args:
-            ctx (discord.ApplicationContext): The context in which the command was invoked.
-            error (Exception): The exception that was raised.
-            message (str|discord.Embed): The message to be sent to the error log channel.
+            ctx (discord.ApplicationContext): The context for the discord command.
+            message (str|discord.Embed): The error message or embed to send to the channel.
+            error (Exception): The exception that triggered the error log message.
 
         Raises:
-            discord.DiscordException: If the message could not be sent.
+            discord.DiscordException: If the error message could not be sent to the channel.
         """
-        settings = self.fetch_guild_settings(ctx)
-        error_log_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=settings["error_log_channel_id"])
-            if settings["error_log_channel_id"]
-            else None
-        )
+        # Confirm the channel exists
+        error_log_channel = self.fetch_error_log_channel(ctx)
 
-        if settings["use_error_log_channel"] and error_log_channel:
+        # Log to the error log channel if it exists and is enabled
+        if error_log_channel:
             embed = self._message_to_embed(message, ctx) if isinstance(message, str) else message
             try:
                 await error_log_channel.send(embed=embed)
@@ -236,52 +335,6 @@ class GuildService:
                     timestamp=discord.utils.utcnow(),
                 )
                 await error_log_channel.send(embed=embed)
-
-    def _message_to_embed(
-        self, message: str, ctx: discord.ApplicationContext
-    ) -> discord.Embed:  # pragma: no cover
-        """Convert a string message to a discord embed.
-
-        Args:
-            message (str): The message to be converted.
-            ctx (discord.ApplicationContext): The context in which the command was invoked.
-
-        Returns:
-            discord.Embed: The created embed.
-        """
-        # Set color based on command
-        if hasattr(ctx, "command") and (
-            ctx.command.qualified_name.startswith("admin")
-            or ctx.command.qualified_name.startswith("owner")
-            or ctx.command.qualified_name.startswith("developer")
-        ):
-            color = EmbedColor.WARNING.value
-        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("storyteller"):
-            color = EmbedColor.SUCCESS.value
-        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("gameplay"):
-            color = EmbedColor.GRAY.value
-        elif hasattr(ctx, "command") and ctx.command.qualified_name.startswith("campaign"):
-            color = EmbedColor.DEFAULT.value
-        else:
-            color = EmbedColor.INFO.value
-
-        embed = discord.Embed(title=message, color=color)
-        embed.timestamp = datetime.now()
-
-        footer = ""
-        if hasattr(ctx, "command"):
-            footer += f"Command: /{ctx.command.qualified_name}"
-        else:
-            footer += "Command: Unknown"
-
-        if hasattr(ctx, "author"):
-            footer += f" | User: @{ctx.author.display_name}"
-        if hasattr(ctx, "channel"):
-            footer += f" | Channel: #{ctx.channel.name}"
-
-        embed.set_footer(text=footer)
-
-        return embed
 
     def update_or_add(
         self,

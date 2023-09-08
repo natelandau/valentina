@@ -166,6 +166,7 @@ class MigrateDatabase:
             "1.4.0": self.__1_4_0,
             "1.4.1": self.__1_4_1,
             "1.5.0": self.__1_5_0,
+            "1.8.0": self.__1_8_0,
         }
 
         current_version = Version.parse(self.db_version)
@@ -703,6 +704,34 @@ class MigrateDatabase:
             self.db.execute_sql("ALTER TABLE new_characters RENAME TO characters;")
 
             self.db.execute_sql("PRAGMA foreign_keys=ON;")
+
+    def __1_8_0(self) -> None:
+        """Migrate from version 1.8.0."""
+        # Remove unused settings from guilds
+
+        for guild in Guild.select():
+            if guild.data.get("use_error_log_channel", None) is not None:
+                logger.debug(f"MIGRAGE: Remove data.`use_error_log_channel` on {guild.name}")
+                del guild.data["use_error_log_channel"]
+                guild.save()
+
+            if guild.data.get("log_channel_id", None) is not None:
+                logger.debug(
+                    f"MIGRAGE: Migrate from `log_channel_id` to `audit_log_channel_id` on {guild.name}"
+                )
+                guild.data["audit_log_channel_id"] = guild.data["log_channel_id"]
+                del guild.data["log_channel_id"]
+                guild.save()
+
+            if guild.data.get("use_audit_log", None) is not None:
+                logger.debug(f"MIGRAGE: Remove data.`use_audit_log` on {guild.name}")
+                del guild.data["use_audit_log"]
+                guild.save()
+
+            if guild.data.get("use_storyteller_channel", None) is not None:
+                logger.debug(f"MIGRAGE: Remove data.`use_storyteller_channel` on {guild.name}")
+                del guild.data["use_storyteller_channel"]
+                guild.save()
 
 
 class PopulateDatabase:

@@ -93,18 +93,60 @@ class SettingsButtons(discord.ui.View):
 
 
 class SettingsChannelSelect(discord.ui.View):
-    """Add a select to a view to set channel values for a guild."""
+    """Manage a UI view for channel selection in a guild.
+
+    This class provides a UI view that allows users to select a channel from
+    a dropdown. It then updates the specified setting in the database.
+
+    Permissions are a tuple of (default, player, storyteller) permissions taken from constants.CHANNEL_PERMISSIONS.
+
+    Attributes:
+        ctx (discord.ApplicationContext): The application context for the command invocation.
+        key (str): The database key for storing the channel ID.
+        permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]):
+            A tuple containing permissions for various roles.
+    """
 
     def __init__(
         self,
         ctx: discord.ApplicationContext,
         key: str,
         permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
+        channel_topic: str,
     ):
         super().__init__(timeout=300)
         self.ctx = ctx
         self.key = key
         self.permissions = permissions
+        self.channel_topic = channel_topic
+
+    async def _update_guild_and_channel(
+        self,
+        enable: bool,
+        channel: discord.TextChannel | None = None,
+    ) -> None:
+        """Update guild settings and channel permissions.
+
+        Args:
+            enable (bool): Whether to enable or disable the setting.
+            channel (discord.TextChannel): The selected Discord text channel.
+        """
+        if enable and channel is not None:
+            # Ensure the channel exists and has the right permissions
+            await self.ctx.bot.guild_svc.channel_update_or_add(  # type: ignore [attr-defined]
+                self.ctx,
+                channel=channel,
+                topic=self.channel_topic,
+                permissions=self.permissions,
+            )
+
+            # Update the settings in the database
+            self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: channel.id})  # type: ignore [attr-defined]
+            logger.debug(f"SettingsManager: {self.key=}:{channel.name=}")
+        else:
+            # Update the settings in the database
+            self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: None})  # type: ignore [attr-defined]
+            logger.debug(f"SettingsManager: {self.key=}:None")
 
     @discord.ui.channel_select(
         placeholder="Select channel...",
@@ -116,28 +158,27 @@ class SettingsChannelSelect(discord.ui.View):
         self, select: discord.ui.Select, interaction: discord.Interaction
     ) -> None:
         """Respond to the selection, update the database and the view."""
-        # Disable all buttons and select menus after a selection is made
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+        selected_channel = cast(discord.TextChannel, select.values[0])
+
+        await self._update_guild_and_channel(enable=True, channel=selected_channel)
+
+        await interaction.response.send_message(f"You enabled {selected_channel.mention}")
+        self.stop()
+
+    @discord.ui.button(label="⚠️ Disable", style=discord.ButtonStyle.primary, custom_id="disable")
+    async def disable_callback(
+        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+    ) -> None:
+        """Disable all buttons and stop the view."""
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
 
-        # NOTE: Cast is required because the type hint for select.values is incorrect
-        selected_channel = cast(discord.TextChannel, select.values[0])
-
-        # Update the channel permissions
-
-        # Update the guild settings and the channel's permissions
-        await self.ctx.bot.guild_svc.channel_update_or_add(  # type: ignore [attr-defined]
-            self.ctx,
-            channel=selected_channel,
-            topic="Valentina error reports",
-            permissions=CHANNEL_PERMISSIONS["error_log"],
-        )
-        self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: selected_channel.id})  # type: ignore [attr-defined]
-
-        await interaction.response.send_message(
-            f"You selected {selected_channel.mention} ({selected_channel.id})"
-        )
+        await self._update_guild_and_channel(enable=False)
+        await interaction.response.edit_message(view=self)
         self.stop()
 
     @discord.ui.button(label="🚫 Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel")
@@ -165,7 +206,9 @@ class SettingsManager:
             self._xp_permissions_embed(),
             self._trait_permissions_embed(),
             self._manage_campaign_permissions_embed(),
-            self._select_error_log_channel_embed(),
+            self._error_log(),
+            self._audit_log(),
+            self._storyteller_channel(),
         ]
 
     def _home_embed(self) -> pages.PageGroup:
@@ -178,6 +221,12 @@ class SettingsManager:
             pages.PageGroup: A PageGroup object containing the embed and custom view for the home page.
         """
         settings_home_embed = discord.Embed(title="", color=EmbedColor.DEFAULT.value)
+
+        # Gather information
+        error_log_channel = self.ctx.bot.guild_svc.fetch_error_log_channel(self.ctx)  # type: ignore [attr-defined]
+        audit_log_channel = self.ctx.bot.guild_svc.fetch_audit_log_channel(self.ctx)  # type: ignore [attr-defined]
+        storyteller_channel = self.ctx.bot.guild_svc.fetch_storyteller_channel(self.ctx)  # type: ignore [attr-defined]
+
         settings_home_embed.description = "\n".join(
             [
                 "# Manage Guild Settings",
@@ -191,12 +240,18 @@ class SettingsManager:
                 f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
                 f"Manage campaign    : {PermissionManageCampaign(self.current_settings['permissions_manage_campaigns']).name.title()}",
                 "",
-                "# Channel Settings: (setting, channel_id)",
-                f"Use storyteller channel: {self.current_settings['use_storyteller_channel']} ({self.current_settings['storyteller_channel_id']})",
+                "# Channel Settings:",
+                f"Storyteller channel: {storyteller_channel.name}"
+                if storyteller_channel is not None
+                else "Storyteller channel: Not set",
                 "",
-                "# Log to channels: (setting, channel_id)",
-                f"Log interactions: [{self.current_settings['use_audit_log']} ({self.current_settings['log_channel_id']})",
-                f"Log errors: {self.current_settings['use_error_log_channel']} ({self.current_settings['error_log_channel_id']})",
+                "# Log to channels:",
+                f"Log interactions: Enabled (#{audit_log_channel.name})"
+                if audit_log_channel is not None
+                else "Audit log: Disabled",
+                f"Log errors: Enabled (#{error_log_channel.name})"
+                if error_log_channel is not None
+                else "Log errors: Disabled",
                 "```",
             ]
         )
@@ -353,15 +408,15 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _select_error_log_channel_embed(self) -> pages.PageGroup:
+    def _error_log(self) -> pages.PageGroup:
         """Create a view for selecting the error log channel."""
         description = [
-            "# Select the error log channel",
-            "Valentina can log errors to a channel of your choice. Select the channel to log errors to from the list below. Or create a new text channel and re-run this command.",
-            "### Notes:",
-            "- Any channel selected for error logging must be a text (not a voice) channel",
-            "- The channel selected will be hidden from everyone except for administrators",
-            "- Due to the above restriction, _do not select a channel that has any other purpose than error logging_",
+            "# Enable error logging",
+            "Valentina can log errors to a channel of your choice. _IMPORTANT: The error log channel will be hidden from everyone except for administrators._",
+            "### Instructions:",
+            "- Select a channel from the dropdown below enable error logging to that channel",
+            "- Use the `Disable` button to disable error logging",
+            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
         ]
 
         embed = discord.Embed(
@@ -371,7 +426,10 @@ class SettingsManager:
         )
 
         view = SettingsChannelSelect(
-            self.ctx, key="error_log_channel_id", permissions=CHANNEL_PERMISSIONS["error_log"]
+            self.ctx,
+            key="error_log_channel_id",
+            permissions=CHANNEL_PERMISSIONS["error_log_channel"],
+            channel_topic="Valentina error reports",
         )
 
         return pages.PageGroup(
@@ -380,6 +438,71 @@ class SettingsManager:
             ],
             label="Error Log Channel",
             description="Select the channel to log errors to",
+            use_default_buttons=False,
+        )
+
+    def _audit_log(self) -> pages.PageGroup:
+        """Create a view for selecting the audit log channel."""
+        description = [
+            "# Interaction audit logging",
+            "Valentina can log interactions to a channel of your choice. _IMPORTANT: The audit log channel will be hidden from everyone except for administrators and storytellers._",
+            "### Instructions:",
+            "- Select a channel from the dropdown below enable audit logging to that channel",
+            "- Use the `Disable` button to disable audit logging",
+            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
+        ]
+
+        embed = discord.Embed(
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
+        )
+
+        view = SettingsChannelSelect(
+            self.ctx,
+            key="audit_log_channel_id",
+            permissions=CHANNEL_PERMISSIONS["audit_log"],
+            channel_topic="Valentina interaction audit reports",
+        )
+
+        return pages.PageGroup(
+            pages=[
+                pages.Page(embeds=[embed], custom_view=view),
+            ],
+            label="Audit Log",
+            description="Select the channel to log interactions to",
+            use_default_buttons=False,
+        )
+
+    def _storyteller_channel(self) -> pages.PageGroup:
+        """Create a view for selecting the storyteller channel."""
+        description = [
+            "# Storyteller channel",
+            "Valentina can set up a channel for storytellers to use to communicate with each other and run commands in private. _IMPORTANT: The storyteller channel will be hidden from everyone except for administrators and storytellers._",
+            "### Instructions:",
+            "- Select a channel from the dropdown to select a storyteller channel and set it's permissions",
+            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
+        ]
+
+        embed = discord.Embed(
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
+        )
+
+        view = SettingsChannelSelect(
+            self.ctx,
+            key="storyteller_channel_id",
+            permissions=CHANNEL_PERMISSIONS["storyteller_channel"],
+            channel_topic="Private channel for storytellers",
+        )
+
+        return pages.PageGroup(
+            pages=[
+                pages.Page(embeds=[embed], custom_view=view),
+            ],
+            label="Storyteller Channel",
+            description="Select the channel to use for storytellers",
             use_default_buttons=False,
         )
 

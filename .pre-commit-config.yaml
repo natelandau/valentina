@@ -82,7 +82,8 @@ repos:
           # Disable if you don't have it.
           - id: stopwords
             name: stopwords
-            entry: bash -c 'echo "$@"; ~/bin/git-stopwords "${PWD}/$@";'
+            entry: git-stopwords
+            # args: ["-v"]
             language: system
             pass_filenames: true
             types: [text]
