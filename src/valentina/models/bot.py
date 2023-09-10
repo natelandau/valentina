@@ -89,7 +89,11 @@ class Valentina(commands.Bot):
             # Setup Guilds
             # #######################
 
+            logger.debug(f"Connected Guilds: {self.guilds=}")
+
             for guild in self.guilds:
+                logger.info(f"CONNECT: Provision {guild.name} ({guild.id})")
+
                 # Create roles
                 storyteller = await bot_hooks.create_storyteller_role(guild)
                 player = await bot_hooks.create_player_role(guild)
@@ -99,13 +103,16 @@ class Valentina(commands.Bot):
                     storyteller: 2,
                 }  # penultimate role
                 await guild.edit_role_positions(positions=positions)  # type: ignore [arg-type]
+                logger.debug("CONNECT: Confirm role positions")
 
                 # Add guild to database
+                logger.debug("CONNECT: Add/update guild in database")
                 self.guild_svc.update_or_add(guild=guild)
-                logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
                 # Send welcome message
                 await bot_hooks.send_changelog(self, guild)
+
+                logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
             # Update all character default values in case something changed
             self.char_svc.set_character_default_values()

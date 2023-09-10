@@ -5,13 +5,12 @@ default_stages: [commit, manual]
 fail_fast: true
 repos:
     - repo: "https://github.com/commitizen-tools/commitizen"
-      rev: 3.8.1
+      rev: 3.8.2
       hooks:
           - id: commitizen
-          - id: commitizen-branch
-            stages:
-                - post-commit
-                - push
+          #   - id: commitizen-branch
+          #     stages:
+          #         - push
 
     - repo: "https://github.com/pre-commit/pygrep-hooks"
       rev: v1.10.0

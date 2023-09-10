@@ -112,6 +112,7 @@ class CharacterService:
 
     def set_character_default_values(self) -> None:
         """Set default values for all characters in the database."""
+        logger.info("DATABASE: Set default values for all characters")
         characters = Character.select()
         for character in characters:
             character.set_default_data_values()

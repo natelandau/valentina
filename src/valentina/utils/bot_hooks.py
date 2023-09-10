@@ -51,6 +51,8 @@ async def send_changelog(bot: commands.Bot, guild: discord.Guild) -> None:
     Returns:
         None
     """
+    logger.debug(f"CONNECT: Sending changelog to {guild.name} if needed")
+
     # If the guild does not have a changelog channel, return
     db_guild = Guild.get_by_id(guild.id)
     db_changelog_channel_id = db_guild.data.get("changelog_channel_id", None)
@@ -146,7 +148,7 @@ async def create_storyteller_role(guild: discord.Guild) -> discord.Role:
         view_channel=True,
     )
     await storyteller.edit(reason=None, permissions=perms)
-    logger.debug(f"CONNECT: {storyteller.name} role created")
+    logger.debug(f"CONNECT: {storyteller.name} role created/updated on {guild.name}")
 
     return storyteller
 
@@ -191,7 +193,7 @@ async def create_player_role(guild: discord.Guild) -> discord.Role:
         view_channel=True,
     )
     await player.edit(reason=None, permissions=perms)
-    logger.debug(f"CONNECT: {player.name} role created")
+    logger.debug(f"CONNECT: {player.name} role created/updated on {guild.name}")
 
     return player
 

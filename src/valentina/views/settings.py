@@ -373,7 +373,7 @@ class SettingsManager:
                 f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
                 "# Channel Settings:",
                 f"Changelog channel  : {changelog_channel.name}"
-                if storyteller_channel is not None
+                if changelog_channel is not None
                 else "Changelog channel  : Not set",
                 f"Storyteller channel: {storyteller_channel.name}"
                 if storyteller_channel is not None
