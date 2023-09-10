@@ -1,3 +1,9 @@
+## v1.9.3 (2023-09-10)
+
+### Refactor
+
+- **bot**: separate guild provisioning in `on_ready`
+
 ## v1.9.2 (2023-09-10)
 
 ### Fix
