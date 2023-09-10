@@ -1,3 +1,23 @@
+## v1.9.0 (2023-09-10)
+
+### Feat
+
+- **bot**: add changelog channel configurable by admins
+- **admin**: new setting manager with `/admin settings` (#55)
+- add `/user_info` command
+
+### Fix
+
+- **character**: new `/character profile` command for nature,demeanor, etc
+- **misc**: add footer to automated changelog posts
+- **database**: create daily db backup at 0800 UTC
+- **database**: close the connection before backup to ensure data integrity
+- fix error when modal window title is too long
+
+### Refactor
+
+- **database**: remove unnecessary migration
+
 ## v1.8.0 (2023-09-05)
 
 ### Feat
