@@ -1,3 +1,9 @@
+## v1.9.2 (2023-09-10)
+
+### Fix
+
+- **admin**: fix error in `/admin settings`
+
 ## v1.9.1 (2023-09-10)
 
 ### Refactor
