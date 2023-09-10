@@ -100,6 +100,7 @@ async def send_changelog(bot: commands.Bot, guild: discord.Guild) -> None:
         # Send the embed message
         embed = discord.Embed(title="", description=description, color=EmbedColor.INFO.value)
         embed.set_author(name=bot.user.display_name, icon_url=bot.user.display_avatar)
+        embed.set_footer(text="For more information, type /changelog")
         await changelog_channel.send(embed=embed)
 
 
