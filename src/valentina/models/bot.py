@@ -114,8 +114,15 @@ class Valentina(commands.Bot):
         logger.info(f"{self.user} is ready")
 
 
-@tasks.loop(time=time(0, tzinfo=timezone.utc))
+@tasks.loop(time=time(8, tzinfo=timezone.utc))
 async def backup_db(db_svc: DatabaseService, config: dict) -> None:
-    """Backup the database."""
+    """Run a periodic backup of the database.
+
+    This function is scheduled to run as a background task at a fixed time every day.
+
+    Args:
+        db_svc (DatabaseService): An instance of the DatabaseService class, responsible for performing the actual backup.
+        config (dict): Configuration settings for the backup operation.
+    """
     logger.info("BOT: Run background database backup task")
     await db_svc.backup_database(config)
