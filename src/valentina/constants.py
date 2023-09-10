@@ -187,18 +187,16 @@ class XPMultiplier(Enum):
     RESONANCE = 2  # TODO: Get the actual number for this
     CONVICTION = 2  # TODO: Get the actual number for this
 
+    ### DISCORD SETTINGS ###
 
-### DISCORD SETTINGS ###
+
+# CHANNEL_PERMISSIONS: Dictionary containing a mapping of channel permissions.
+#     Format:
+#         default role permission,
+#         player role permission,
+#         storyteller role permission
+
 CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, ChannelPermission]] = {
-    """Dictionary containing a mapping of channel permissions.
-
-        Format:
-            "key": (
-                default role permission,
-                player role permission,
-                storyteller role permission
-            )
-    """
     "default": (
         ChannelPermission.DEFAULT,
         ChannelPermission.DEFAULT,
