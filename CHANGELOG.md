@@ -1,3 +1,9 @@
+## v1.9.1 (2023-09-10)
+
+### Refactor
+
+- **bot**: log additional steps in `on_ready`
+
 ## v1.9.0 (2023-09-10)
 
 ### Feat
