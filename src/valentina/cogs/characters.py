@@ -63,10 +63,11 @@ class Characters(commands.Cog, name="Character"):
         self.bot: Valentina = bot
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
+    bio = chars.create_subgroup("bio", "Add or update a character's biography")
     image = chars.create_subgroup("image", "Add or update character images")
-    bio = chars.create_subgroup("bio", "Add or update a character's bio, profile, and DOB")
-    trait = chars.create_subgroup("trait", "Work with character traits")
+    profile = chars.create_subgroup("profile", "Nature, Demeanor, DOB, and other profile traits")
     section = chars.create_subgroup("section", "Work with character custom sections")
+    trait = chars.create_subgroup("trait", "Work with character traits")
     xp = chars.create_subgroup("xp", "Add or spend xp")
 
     @chars.command(name="create", description="Create a new character")
@@ -815,34 +816,7 @@ class Characters(commands.Cog, name="Character"):
 
     ### BIO COMMANDS ####################################################################
 
-    @bio.command(name="date_of_birth")
-    async def date_of_birth(
-        self,
-        ctx: discord.ApplicationContext,
-        dob: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Set the DOB of a character."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-
-        self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
-
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`"
-        )
-        await present_embed(
-            ctx,
-            title="Date of Birth Updated",
-            description=f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`",
-            level="success",
-            ephemeral=hidden,
-        )
-
-    @bio.command(name="biography", description="Add or update a character's bio")
+    @bio.command(name="update", description="Add or update a character's bio")
     async def update_bio(
         self,
         ctx: discord.ApplicationContext,
@@ -875,7 +849,36 @@ class Characters(commands.Cog, name="Character"):
             ephemeral=hidden,
         )
 
-    @bio.command(name="profile", description="Update a character's profile")
+    ### PROFiLE COMMANDS ####################################################################
+
+    @profile.command(name="date_of_birth")
+    async def date_of_birth(
+        self,
+        ctx: discord.ApplicationContext,
+        dob: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Set the DOB of a character."""
+        character = self.bot.user_svc.fetch_active_character(ctx)
+
+        self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
+
+        await self.bot.guild_svc.send_to_audit_log(
+            ctx, f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`"
+        )
+        await present_embed(
+            ctx,
+            title="Date of Birth Updated",
+            description=f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`",
+            level="success",
+            ephemeral=hidden,
+        )
+
+    @profile.command(name="update", description="Update a character's profile")
     async def update_profile(
         self,
         ctx: discord.ApplicationContext,
