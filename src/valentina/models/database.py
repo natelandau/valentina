@@ -43,18 +43,34 @@ class DatabaseService:
     """Services for managing the database and working with miscellaneous data."""
 
     def __init__(self, database: CSqliteExtDatabase) -> None:
-        """Initialize the DatabaseService."""
+        """Initialize DatabaseService with the provided Peewee database instance.
+
+        Args:
+            database (CSqliteExtDatabase): The Peewee database instance.
+        """
         self.db = database
 
     @staticmethod
     async def backup_database(config: dict) -> Path:
-        """Create a backup of the database."""
-        backup_file = await DBBackup(config, DATABASE).create_backup()
-        await DBBackup(config, DATABASE).clean_old_backups()
+        """Create a backup of the database and clean old backups.
+
+        This method initializes a DBBackup instance to create a new backup
+        of the database. After that, it cleans up older backups.
+
+        Args:
+            config (dict): Configuration dictionary for the backup process.
+
+        Returns:
+            Path: The path to the created backup file.
+
+        """
+        db_backup = DBBackup(config, DATABASE)
+        backup_file = await db_backup.create_backup()
+        await db_backup.clean_old_backups()
         return backup_file
 
     def create_tables(self) -> None:
-        """Create all tables in the database if they don't exist."""
+        """Create tables in the database if they do not exist."""
         with self.db:
             self.db.create_tables(
                 [
@@ -86,7 +102,11 @@ class DatabaseService:
         logger.info("DATABASE: Create Tables")
 
     def fetch_current_version(self) -> str:
-        """Get the version of the bot."""
+        """Fetch the latest version of the database.
+
+        Returns:
+            str: The latest database version.
+        """
         return DatabaseVersion.select().order_by(DatabaseVersion.id.desc()).get().version
 
     def _column_exists(self, table: str, column: str) -> bool:
@@ -106,41 +126,44 @@ class DatabaseService:
 
     @logger.catch
     def initialize_database(self, bot_version: str) -> None:
-        """Migrate old database versions to the current one.
+        """Initialize or migrate the database to the bot's current version.
 
-        First, populate the database. Then, check the database's existence and version.
-        If the database does not exist, create it. Otherwise, apply necessary migrations.
+        Populate the database first. Then, either create a new database with
+        the current bot version or migrate an existing one to that version.
 
         Args:
-            bot_version (str): The version of the bot running the script.
+            bot_version (str): Current version of the bot.
 
         Returns:
             None
         """
-        # Populate the database
+        # Step 1: Populate the database
         PopulateDatabase(self.db).populate()
 
+        # Step 2: Check or create the database version
         _, new_db_created = DatabaseVersion.get_or_create(
             defaults={"version": bot_version},
         )
 
         if new_db_created:
-            # Log database creation if a new one is created
+            # Log database creation if a new one is created, then return
             logger.info(f"DATABASE: Create new database v{bot_version}")
             return
 
-        # Migrate existing database if needed
+        # Step 3: Fetch current database version
+        current_db_version = self.fetch_current_version()
+
+        # Step 4: Migrate existing database (does nothing if no migration is needed)
         MigrateDatabase(
             self.db,
             bot_version=bot_version,
-            db_version=self.fetch_current_version(),
+            db_version=current_db_version,
         ).migrate()
 
-        # Update the database version to the current bot version if needed
-        if self.fetch_current_version() != bot_version:
+        # Step 5: Update the database version
+        if current_db_version != bot_version:
             DatabaseVersion.create(version=bot_version)
 
-        # Log the new version of the database
         logger.info(f"DATABASE: Database is v{bot_version}")
 
 
@@ -198,18 +221,24 @@ class DBBackup:
         return "daily"
 
     async def create_backup(self) -> Path:
-        """Create a database backup.
+        """Create a backup of the database.
 
-        The method does the following:
-        1. Determines the type of backup (daily, weekly, etc.).
-        2. Creates the necessary directories for storing the backup.
-        3. Creates a backup file named according to the current date, time, and type of backup.
-        4. Performs the database backup and stores it in the file.
-        5. Logs the actions taken.
+        To accomplish a comprehensive backup, do the following:
+
+        1. Close the existing database connection to ensure data integrity.
+        2. Determine the type of backup (e.g., daily, weekly) using custom logic.
+        3. Create required directories asynchronously for backup storage.
+        4. Generate a unique backup file name using the current date, time, and backup type.
+        5. Perform a database backup to the specified file.
+        6. Log key actions for debugging or auditing purposes.
+        7. Reconnect to the database for continued operations.
 
         Returns:
-            Path: The path of the backup file.
+            Path: Return a `Path` object indicating the location of the backup file on disk.
         """
+        # Close the database connection to ensure that the backup contains all the data
+        self.db.close()
+
         backup_type = self.type_of_backup()
 
         await aiofiles.os.makedirs(self.backup_dir, exist_ok=True)
@@ -222,6 +251,10 @@ class DBBackup:
 
         logger.info(f"BACKUP: {backup_type} database backup")
         logger.debug(f"BACKUP: Create {backup_file}")
+
+        # Reopen the database connection
+        self.db.connect(reuse_if_open=True)
+
         return backup_file
 
     async def clean_old_backups(self) -> int:
