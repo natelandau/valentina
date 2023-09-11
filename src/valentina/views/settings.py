@@ -95,9 +95,7 @@ class SettingsButtons(discord.ui.View):
 
         # Edit the original message
         embed = interaction.message.embeds[0]
-        embed.description = (
-            f"{embed.description}\n## 👍 Success\nSettings updated to `{setting_name}`"
-        )
+        embed.description = f"{embed.description}\n## 👍 Success\nSettings updated: `{setting_name}`"
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
@@ -185,7 +183,7 @@ class SettingsChannelSelect(discord.ui.View):
         # Edit the original message
         embed = interaction.message.embeds[0]
         embed.description = (
-            f"{embed.description}\n## 👍 Success\nSettings updated to {selected_channel.mention}"
+            f"{embed.description}\n## 👍 Success\nSettings updated: {selected_channel.mention}"
         )
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
