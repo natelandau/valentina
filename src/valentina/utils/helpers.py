@@ -1,7 +1,6 @@
 """Helper functions for Valentina."""
 import io
 import random
-import re
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -18,77 +17,6 @@ from valentina.constants import (
     XPNew,
 )
 from valentina.utils import errors
-
-
-def changelog_parser(
-    changelog: str, last_posted_version: str
-) -> dict[str, dict[str, str | list[str]]]:
-    """Parse a changelog to extract versions, dates, features, and fixes, stopping at the last posted version.
-
-    The function looks for sections in the changelog that correspond to version numbers,
-    feature and fix descriptions. It ignores specified sections like Docs, Refactor, Style, and Test.
-
-    Args:
-        changelog (str): The changelog text to parse.
-        last_posted_version (str): The last version that was posted, parsing stops when this version is reached.
-
-    Returns:
-        Dict[str, dict[str, str | list[str]]]: A dictionary containing the parsed data.
-        The key is the version number, and the value is another dictionary with date, features, and fixes.
-    """
-    # Precompile regex patterns
-    version = re.compile(r"## v(\d+\.\d+\.\d+)")
-    date = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
-    feature = re.compile(r"### Feat", re.I)
-    fix = re.compile(r"### Fix", re.I)
-    ignored_sections = re.compile(r"### (docs|refactor|style|test|perf|ci|build|chore)", re.I)
-
-    # Initialize dictionary to store parsed data
-    changes: dict[str, dict[str, str | list[str]]] = {}
-    in_features = in_fixes = False  # Flags for parsing feature and fix sections
-
-    # Split changelog into lines and iterate
-    for line in changelog.split("\n"):
-        # Skip empty lines
-        if line == "":
-            continue
-
-        # Skip lines with ignored section headers
-        if ignored_sections.match(line):
-            in_features = in_fixes = False
-            continue
-
-        # Version section
-        if version_match := version.match(line):
-            version_number = version_match.group(1)
-            if version_number == last_posted_version:
-                break  # Stop parsing when last posted version is reached
-
-            changes[version_number] = {
-                "date": date.search(line).group(1),
-                "features": [],
-                "fixes": [],
-            }
-            continue
-
-        if bool(feature.match(line)):
-            in_features = True
-            in_fixes = False
-            continue
-
-        if bool(fix.match(line)):
-            in_features = False
-            in_fixes = True
-            continue
-
-        line = re.sub(r" \(#\d+\)$", "", line)  # noqa: PLW2901
-        line = re.sub(r"(\*\*)", "", line)  # noqa: PLW2901
-        if in_features:
-            changes[version_number]["features"].append(line)  # type: ignore [union-attr]
-        if in_fixes:
-            changes[version_number]["fixes"].append(line)  # type: ignore [union-attr]
-
-    return changes
 
 
 def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:

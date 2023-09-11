@@ -1654,17 +1654,6 @@ testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8-2020", "ini2toml[l
 testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "packaging", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
 
 [[package]]
-name = "sh"
-version = "2.0.6"
-description = "Python subprocess replacement"
-optional = false
-python-versions = ">=3.8.1,<4.0"
-files = [
-    {file = "sh-2.0.6-py3-none-any.whl", hash = "sha256:ced8f2e081a858b66a46ace3703dec243779abbd5a1887ba7e3c34f34da70cd2"},
-    {file = "sh-2.0.6.tar.gz", hash = "sha256:9b2998f313f201c777e2c0061f0b1367497097ef13388595be147e2a00bf7ba1"},
-]
-
-[[package]]
 name = "shellcheck-py"
 version = "0.9.0.5"
 description = "Python wrapper around invoking shellcheck (https://www.shellcheck.net/)"
@@ -1991,4 +1980,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "0d0273df80f60fa0c2f52d6f0c7a660e8312ef035005ccf10f33704babd62eef"
+content-hash = "a3091450d71bf086e4b8ba0455fa7bd0252c95ff67b0f0e8b79a95a7bfd43d3b"

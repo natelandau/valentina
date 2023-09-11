@@ -19,7 +19,6 @@ from valentina.models import (
     UserService,
 )
 from valentina.models.db_tables import DATABASE
-from valentina.utils import bot_hooks
 
 
 class Valentina(commands.Bot):
@@ -96,7 +95,7 @@ class Valentina(commands.Bot):
                 self.guild_svc.update_or_add(guild=guild)
 
                 # Send welcome message
-                await bot_hooks.send_changelog(self, guild)
+                await self.guild_svc.post_changelog(guild=guild, bot=self)
 
                 logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 

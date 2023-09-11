@@ -1,5 +1,6 @@
 """Constants for Valentina models."""
 from enum import Enum, IntEnum
+from pathlib import Path
 
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
 DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
@@ -10,6 +11,7 @@ MAX_OPTION_LIST_SIZE = 25  # maximum number of options in a discord select menu
 MAX_PAGE_CHARACTER_COUNT = 1950
 VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 SPACER = " \u200b"
+CHANGELOG_PATH = Path(__file__).parent / "../../CHANGELOG.md"
 
 
 ### ENUMS ###
@@ -338,4 +340,29 @@ BAD_WORD_LIST = [
     "vagina",
     "wank",
     "whore",
+]
+
+BOT_DESCRIPTIONS = [
+    "bot who helps you play White Wolf's TTRPGs",
+    "blood sucking bot who's here to serve you",
+    "succubus who will yet have your heart",
+    "maid servant here to serve your deepest desires",
+    "sweet little thing",
+    "sweet little thing who will eat your heart out",
+    "doll faced beauty who cries next to you in bed",
+    "evil temptress who has you begging for more",
+    "harpy who makes you regret your words",
+    "harlot who makes you regret your choices",
+    "temptress has you wrapped around her fingers",
+    "guardian angel who watches over you",
+    "Tremere primogen makes you offers you can't refuse",
+    "Malkavian who makes you question your sanity",
+    "Ventrue who makes you question your loyalties",
+    "Nosferatu who makes you scream in terror",
+    "Toreador who makes you fall in love",
+    "Gangrel who makes you run for your life",
+    "Brujah who makes you fight for your freedom",
+    "Lasombra who makes you question your faith",
+    "Ravnos who makes you question your reality",
+    "Sabbat warrior who makes you question your humanity",
 ]

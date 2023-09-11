@@ -71,7 +71,7 @@ class TestGuildService:
         Guild.update(data=Guild.data.update(update_dict)).where(Guild.id == 1).execute()
 
         # Fetch the guild settings
-        returned = self.guild_svc.fetch_guild_settings(mock_ctx)
+        returned = self.guild_svc.fetch_guild_settings(mock_ctx.guild)
         caplog_text = caplog.text
         assert isinstance(returned, dict)
         assert "DATABASE:" in caplog_text  # confirm the database was queried b/c cache was empty
@@ -83,7 +83,7 @@ class TestGuildService:
         )
 
         # Fetch the guild settings again
-        returned = self.guild_svc.fetch_guild_settings(mock_ctx)
+        returned = self.guild_svc.fetch_guild_settings(mock_ctx.guild)
         caplog_text = caplog.text
         assert isinstance(returned, dict)
         assert "CACHE:" in caplog_text  # confirm the cache was used

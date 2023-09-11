@@ -75,7 +75,7 @@ class UserService:
         if ctx.author.guild_permissions.administrator:
             return True
 
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
+        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx.guild)  # type: ignore [attr-defined]
         if not settings:
             return False
 
@@ -119,7 +119,7 @@ class UserService:
         if ctx.author.guild_permissions.administrator:
             return True
 
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
+        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx.guild)  # type: ignore [attr-defined]
         if not settings:
             return False
 
@@ -156,7 +156,7 @@ class UserService:
         if ctx.author.guild_permissions.administrator:
             return True
 
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx)  # type: ignore [attr-defined]
+        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx.guild)  # type: ignore [attr-defined]
         if not settings:
             return False
 

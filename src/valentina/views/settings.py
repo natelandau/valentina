@@ -155,6 +155,11 @@ class SettingsChannelSelect(discord.ui.View):
             # Update the settings in the database
             self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: channel.id})  # type: ignore [attr-defined]
             logger.debug(f"SettingsManager: {self.key=}:{channel.name=}")
+
+            # Post changelog to the channel when the changelog channel is set
+            if self.key == "changelog_channel_id":
+                await self.ctx.bot.guild_svc.post_changelog(guild=self.ctx.guild, bot=self.ctx.bot)  # type: ignore [attr-defined]
+
         else:
             # Update the settings in the database
             self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: None})  # type: ignore [attr-defined]
@@ -230,7 +235,7 @@ class SettingsManager:
     def __init__(self, ctx: discord.ApplicationContext) -> None:
         self.ctx: discord.ApplicationContext = ctx
 
-        self.current_settings = self.ctx.bot.guild_svc.fetch_guild_settings(self.ctx)  # type: ignore [attr-defined]
+        self.current_settings = self.ctx.bot.guild_svc.fetch_guild_settings(self.ctx.guild)  # type: ignore [attr-defined]
         self.page_group: list[pages.PageGroup] = [
             self._home_embed(),
             self._xp_permissions_embed(),
@@ -356,7 +361,7 @@ class SettingsManager:
         error_log_channel = self.ctx.bot.guild_svc.fetch_error_log_channel(self.ctx)  # type: ignore [attr-defined]
         audit_log_channel = self.ctx.bot.guild_svc.fetch_audit_log_channel(self.ctx)  # type: ignore [attr-defined]
         storyteller_channel = self.ctx.bot.guild_svc.fetch_storyteller_channel(self.ctx)  # type: ignore [attr-defined]
-        changelog_channel = self.ctx.bot.guild_svc.fetch_changelog_channel(self.ctx)  # type: ignore [attr-defined]
+        changelog_channel = self.ctx.bot.guild_svc.fetch_changelog_channel(self.ctx.guild)  # type: ignore [attr-defined]
 
         settings_home_embed.description = "\n".join(
             [
