@@ -18,9 +18,11 @@ class ChangelogParser:
         bot: commands.Bot,
         oldest_version: str | None = None,
         newest_version: str | None = None,
+        exclude_categories: list[str] = [],
     ):
         self.path = CHANGELOG_PATH
         self.bot = bot
+        self.exclude_categories = exclude_categories
         self.oldest_version = (
             (oldest_version if self.__check_version_schema(oldest_version) else None)
             if oldest_version
@@ -58,7 +60,7 @@ class ChangelogParser:
         # Prepare compiled regular expressions
         version_re = re.compile(r"## v(\d+\.\d+\.\d+)")
         date_re = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
-        categories = [
+        full_category_list = [
             "feat",
             "fix",
             "docs",
@@ -69,6 +71,9 @@ class ChangelogParser:
             "perf",
             "ci",
             "build",
+        ]
+        categories = [
+            category for category in full_category_list if category not in self.exclude_categories
         ]
         category_re = re.compile(rf"### ({'|'.join(categories)})", re.I)
 
@@ -117,6 +122,24 @@ class ChangelogParser:
                     changelog_dict[version_being_parsed][current_category].append(cleaned_line)  # type: ignore [union-attr]
 
         return changelog_dict
+
+    def has_updates(self) -> bool:
+        """Check if there are any meaningful updates in the changelog other than the date.
+
+        This function modifies `self.changelog_dict` to remove any versions that have only one item (i.e., only a date and no other changes).
+
+        Returns:
+            bool: True if there are meaningful updates, False otherwise.
+        """
+        # List to store keys for removal
+        keys_to_remove = [key for key, version in self.changelog_dict.items() if len(version) <= 1]
+
+        # Remove the identified keys
+        for key in keys_to_remove:
+            self.changelog_dict.pop(key)
+
+        # Return False if the dictionary is empty; True otherwise
+        return bool(self.changelog_dict)
 
     def list_of_versions(self) -> list[str]:
         """Get a list of all versions in the changelog.
@@ -168,12 +191,12 @@ class ChangelogParser:
         """
         print("alive")
         # Create and populate the embed description
-        description = f"### Valentina, your {random.choice(['favorite','friendly neighborhood','prized', 'treasured', 'number one','esteemed','venerated','revered','feared'])} {random.choice(BOT_DESCRIPTIONS)} has {random.choice(['been granted new powers', 'leveled up','spent experience points','gained new abilities','been bitten by a radioactive spider', 'spent willpower points', 'been updated','squashed bugs and gained new features',])}!\n"
+        description = f"Valentina, your {random.choice(['honored','admired','distinguished','celebrated','hallowed','prestigious','acclaimed','favorite','friendly neighborhood','prized', 'treasured', 'number one','esteemed','venerated','revered','feared'])} {random.choice(BOT_DESCRIPTIONS)} has {random.choice(['been granted new powers', 'leveled up','spent experience points','gained new abilities','been bitten by a radioactive spider', 'spent willpower points', 'been updated','squashed bugs and gained new features',])}!\n\n"
 
         # Loop through each version in the changelog
         for version, data in self.changelog_dict.items():
             # Add the version header
-            description += f"### On {data['date']} I was updated to `v{version}`\n"
+            description += f"**On {data['date']} I was updated to `v{version}`**\n"
 
             # Add each category
             for category, entries in data.items():

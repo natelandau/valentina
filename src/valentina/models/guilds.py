@@ -317,7 +317,25 @@ class GuildService:
             logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
             return
 
-        changelog = ChangelogParser(bot, last_posted_version, db_version)
+        changelog = ChangelogParser(
+            bot,
+            last_posted_version,
+            db_version,
+            exclude_categories=[
+                "docs",
+                "refactor",
+                "style",
+                "test",
+                "chore",
+                "perf",
+                "ci",
+                "build",
+            ],
+        )
+        if not changelog.has_updates():
+            logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
+            return
+
         embed = changelog.get_embed_personality()
         await changelog_channel.send(embed=embed)
         logger.debug(f"CHANGELOG: Post changelog to {guild.name}")

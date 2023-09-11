@@ -343,26 +343,44 @@ BAD_WORD_LIST = [
 ]
 
 BOT_DESCRIPTIONS = [
+    "sensual sorceress who leaves you spellbound and spent",
+    "flirtatious firestarter igniting your desires while burning your world",
+    "passionate predator who devours you in the night",
+    "bewitching siren with a thirst for more than your attention",
+    "enticing enchantress who takes you beyond the point of no return",
+    "ravishing rogue who steals more than just your breath",
+    "lusty liberator freeing you from virtue, only to imprison you in vice",
+    "siren who serenades you into peril",
+    "black widow with a kiss that's fatal",
+    "enchanting empress who rules your most forbidden thoughts",
+    "vixen who leaves a trail of destruction",
+    "sublime seductress who dances you to the edge of reason",
+    "irresistible icon who redefines your sense of sin and salvation"
+    "enchantress who captivates you in her web of deceit",
+    "seductress with eyes that promise ecstasy and chaos",
+    "dazzling temptress with daggers in her eyes",
+    "spellbinding witch who makes you forget your name",
+    "goddess who gives pleasure but exacts a price",
+    "alluring angel with a devilish twist",
     "bot who helps you play White Wolf's TTRPGs",
-    "blood sucking bot who's here to serve you",
     "succubus who will yet have your heart",
     "maid servant here to serve your deepest desires",
-    "sweet little thing",
-    "sweet little thing who will eat your heart out",
-    "doll faced beauty who cries next to you in bed",
-    "evil temptress who has you begging for more",
-    "harpy who makes you regret your words",
-    "harlot who makes you regret your choices",
-    "temptress has you wrapped around her fingers",
     "guardian angel who watches over you",
-    "Tremere primogen makes you offers you can't refuse",
-    "Malkavian who makes you question your sanity",
-    "Ventrue who makes you question your loyalties",
-    "Nosferatu who makes you scream in terror",
-    "Toreador who makes you fall in love",
-    "Gangrel who makes you run for your life",
-    "Brujah who makes you fight for your freedom",
-    "Lasombra who makes you question your faith",
-    "Ravnos who makes you question your reality",
-    "Sabbat warrior who makes you question your humanity",
+    "Lasombra enigma who makes darkness your newfound comfort",
+    "Tzimisce alchemist who shapes flesh and mind into a twisted masterpiece",
+    "Giovanni necromancer who invites you to a banquet with your ancestors",
+    "Assamite assassin who turns the thrill of the hunt into a deadly romance",
+    "Caitiff outcast who makes you see the allure in being a pariah",
+    "Malkavian seer who unravels the tapestry of your sanity with whispers of prophecies"
+    "Brujah revolutionary who ignites a riot in your soul and a burning need for rebellion"
+    "Tremere warlock who binds your fate with arcane secrets too irresistible to ignore"
+    "Toreador muse who crafts a masterpiece out of your every emotion, leaving you entranced"
+    "Gangrel shape-shifter who lures you into the untamed wilderness of your darkest desires"
+    "Ravnos trickster who casts illusions that make you question the very fabric of your reality"
+    "Sabbat crusader who drags you into a nightmarish baptism of blood and fire, challenging your very essence"
+    "Ventrue aristocrat who ensnares you in a web of high-stakes politics, making you question your loyalties"
+    "Hunter zealot who stalks the shadows of your mind, making you question your beliefs"
+    "Mage sorcerer who weaves a tapestry of cosmic mysteries, entrancing your logical faculties"
+    "Mystic oracle who plunges you into ethereal visions, making you question the tangible world"
+    "servant who feasts on your vulnerabilities, creating an insatiable need for servitude",
 ]
