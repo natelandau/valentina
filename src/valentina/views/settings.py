@@ -95,9 +95,7 @@ class SettingsButtons(discord.ui.View):
 
         # Edit the original message
         embed = interaction.message.embeds[0]
-        embed.description = (
-            f"{embed.description}\n## 👍 Success\nSettings updated to `{setting_name}`"
-        )
+        embed.description = f"{embed.description}\n## 👍 Success\nSettings updated: `{setting_name}`"
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
@@ -146,7 +144,7 @@ class SettingsChannelSelect(discord.ui.View):
         if enable and channel is not None:
             # Ensure the channel exists and has the right permissions
             await self.ctx.bot.guild_svc.channel_update_or_add(  # type: ignore [attr-defined]
-                self.ctx,
+                self.ctx.guild,
                 channel=channel,
                 topic=self.channel_topic,
                 permissions=self.permissions,
@@ -155,6 +153,11 @@ class SettingsChannelSelect(discord.ui.View):
             # Update the settings in the database
             self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: channel.id})  # type: ignore [attr-defined]
             logger.debug(f"SettingsManager: {self.key=}:{channel.name=}")
+
+            # Post changelog to the channel when the changelog channel is set
+            if self.key == "changelog_channel_id":
+                await self.ctx.bot.guild_svc.post_changelog(guild=self.ctx.guild, bot=self.ctx.bot)  # type: ignore [attr-defined]
+
         else:
             # Update the settings in the database
             self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: None})  # type: ignore [attr-defined]
@@ -180,7 +183,7 @@ class SettingsChannelSelect(discord.ui.View):
         # Edit the original message
         embed = interaction.message.embeds[0]
         embed.description = (
-            f"{embed.description}\n## 👍 Success\nSettings updated to {selected_channel.mention}"
+            f"{embed.description}\n## 👍 Success\nSettings updated: {selected_channel.mention}"
         )
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
@@ -230,7 +233,7 @@ class SettingsManager:
     def __init__(self, ctx: discord.ApplicationContext) -> None:
         self.ctx: discord.ApplicationContext = ctx
 
-        self.current_settings = self.ctx.bot.guild_svc.fetch_guild_settings(self.ctx)  # type: ignore [attr-defined]
+        self.current_settings = self.ctx.bot.guild_svc.fetch_guild_settings(self.ctx.guild)  # type: ignore [attr-defined]
         self.page_group: list[pages.PageGroup] = [
             self._home_embed(),
             self._xp_permissions_embed(),
@@ -353,10 +356,10 @@ class SettingsManager:
         settings_home_embed = discord.Embed(title="", color=EmbedColor.DEFAULT.value)
 
         # Gather information
-        error_log_channel = self.ctx.bot.guild_svc.fetch_error_log_channel(self.ctx)  # type: ignore [attr-defined]
-        audit_log_channel = self.ctx.bot.guild_svc.fetch_audit_log_channel(self.ctx)  # type: ignore [attr-defined]
-        storyteller_channel = self.ctx.bot.guild_svc.fetch_storyteller_channel(self.ctx)  # type: ignore [attr-defined]
-        changelog_channel = self.ctx.bot.guild_svc.fetch_changelog_channel(self.ctx)  # type: ignore [attr-defined]
+        error_log_channel = self.ctx.bot.guild_svc.fetch_error_log_channel(self.ctx.guild)  # type: ignore [attr-defined]
+        audit_log_channel = self.ctx.bot.guild_svc.fetch_audit_log_channel(self.ctx.guild)  # type: ignore [attr-defined]
+        storyteller_channel = self.ctx.bot.guild_svc.fetch_storyteller_channel(self.ctx.guild)  # type: ignore [attr-defined]
+        changelog_channel = self.ctx.bot.guild_svc.fetch_changelog_channel(self.ctx.guild)  # type: ignore [attr-defined]
 
         settings_home_embed.description = "\n".join(
             [

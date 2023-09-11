@@ -13,7 +13,7 @@ from discord.ext.commands import MemberConverter
 from valentina.constants import RollResultType
 from valentina.models.bot import Valentina
 from valentina.utils import errors
-from valentina.utils.helpers import assert_permissions
+from valentina.utils.discord_utils import assert_permissions
 from valentina.views import (
     SettingsManager,
     ThumbnailReview,

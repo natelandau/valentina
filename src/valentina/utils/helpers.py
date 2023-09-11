@@ -1,7 +1,6 @@
 """Helper functions for Valentina."""
 import io
 import random
-import re
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -12,94 +11,12 @@ from aiohttp import ClientSession
 from valentina.constants import (
     CLAN_DISCIPLINES,
     DICEROLL_THUBMS,
-    ChannelPermission,
     MaxTraitValue,
     RollResultType,
     XPMultiplier,
     XPNew,
 )
 from valentina.utils import errors
-
-from .errors import BotMissingPermissionsError
-
-
-async def assert_permissions(ctx: discord.ApplicationContext, **permissions: bool) -> None:
-    """Check if the bot has the required permissions to run the command.""."""
-    if missing := [
-        perm for perm, value in permissions.items() if getattr(ctx.app_permissions, perm) != value
-    ]:
-        raise BotMissingPermissionsError(missing)
-
-
-def changelog_parser(
-    changelog: str, last_posted_version: str
-) -> dict[str, dict[str, str | list[str]]]:
-    """Parse a changelog to extract versions, dates, features, and fixes, stopping at the last posted version.
-
-    The function looks for sections in the changelog that correspond to version numbers,
-    feature and fix descriptions. It ignores specified sections like Docs, Refactor, Style, and Test.
-
-    Args:
-        changelog (str): The changelog text to parse.
-        last_posted_version (str): The last version that was posted, parsing stops when this version is reached.
-
-    Returns:
-        Dict[str, dict[str, str | list[str]]]: A dictionary containing the parsed data.
-        The key is the version number, and the value is another dictionary with date, features, and fixes.
-    """
-    # Precompile regex patterns
-    version = re.compile(r"## v(\d+\.\d+\.\d+)")
-    date = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
-    feature = re.compile(r"### Feat", re.I)
-    fix = re.compile(r"### Fix", re.I)
-    ignored_sections = re.compile(r"### (docs|refactor|style|test|perf|ci|build|chore)", re.I)
-
-    # Initialize dictionary to store parsed data
-    changes: dict[str, dict[str, str | list[str]]] = {}
-    in_features = in_fixes = False  # Flags for parsing feature and fix sections
-
-    # Split changelog into lines and iterate
-    for line in changelog.split("\n"):
-        # Skip empty lines
-        if line == "":
-            continue
-
-        # Skip lines with ignored section headers
-        if ignored_sections.match(line):
-            in_features = in_fixes = False
-            continue
-
-        # Version section
-        if version_match := version.match(line):
-            version_number = version_match.group(1)
-            if version_number == last_posted_version:
-                break  # Stop parsing when last posted version is reached
-
-            changes[version_number] = {
-                "date": date.search(line).group(1),
-                "features": [],
-                "fixes": [],
-            }
-            continue
-
-        if bool(feature.match(line)):
-            in_features = True
-            in_fixes = False
-            continue
-
-        if bool(fix.match(line)):
-            in_features = False
-            in_fixes = True
-            continue
-
-        line = re.sub(r" \(#\d+\)$", "", line)  # noqa: PLW2901
-        line = re.sub(r"(\*\*)", "", line)  # noqa: PLW2901
-        if in_features:
-            changes[version_number]["features"].append(line)  # type: ignore [union-attr]
-        if in_fixes:
-            changes[version_number]["fixes"].append(line)  # type: ignore [union-attr]
-
-    return changes
 
 
 def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
@@ -311,67 +228,6 @@ def round_trait_value(value: int, max_value: int) -> int:
         return max_value
 
     return value
-
-
-def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
-    """Translate a ChannelPermission enum to a discord.PermissionOverwrite object.
-
-    Takes a requested channel permission represented as an enum and
-    sets the properties of a discord.PermissionOverwrite object
-    to match those permissions.
-
-    Args:
-        requested_permission (ChannelPermission): The channel permission enum.
-
-    Returns:
-        discord.PermissionOverwrite: Permission settings as a Discord object.
-    """
-    # Map each ChannelPermission to the properties that should be False
-    permission_mapping: dict[ChannelPermission, dict[str, bool]] = {
-        ChannelPermission.HIDDEN: {
-            "add_reactions": False,
-            "manage_messages": False,
-            "read_messages": False,
-            "send_messages": False,
-            "view_channel": False,
-            "read_message_history": False,
-        },
-        ChannelPermission.READ_ONLY: {
-            "add_reactions": True,
-            "manage_messages": False,
-            "read_messages": True,
-            "send_messages": False,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": False,
-        },
-        ChannelPermission.POST: {
-            "add_reactions": True,
-            "manage_messages": False,
-            "read_messages": True,
-            "send_messages": True,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": True,
-        },
-        ChannelPermission.MANAGE: {
-            "add_reactions": True,
-            "manage_messages": True,
-            "read_messages": True,
-            "send_messages": True,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": True,
-        },
-    }
-
-    # Create a permission overwrite object
-    perms = discord.PermissionOverwrite()
-    # Update the permission overwrite object based on the enum
-    for key, value in permission_mapping.get(requested_permission, {}).items():
-        setattr(perms, key, value)
-
-    return perms
 
 
 def truncate_string(text: str, max_length: int = 1000) -> str:
