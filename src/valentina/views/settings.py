@@ -146,7 +146,7 @@ class SettingsChannelSelect(discord.ui.View):
         if enable and channel is not None:
             # Ensure the channel exists and has the right permissions
             await self.ctx.bot.guild_svc.channel_update_or_add(  # type: ignore [attr-defined]
-                self.ctx,
+                self.ctx.guild,
                 channel=channel,
                 topic=self.channel_topic,
                 permissions=self.permissions,
@@ -358,9 +358,9 @@ class SettingsManager:
         settings_home_embed = discord.Embed(title="", color=EmbedColor.DEFAULT.value)
 
         # Gather information
-        error_log_channel = self.ctx.bot.guild_svc.fetch_error_log_channel(self.ctx)  # type: ignore [attr-defined]
-        audit_log_channel = self.ctx.bot.guild_svc.fetch_audit_log_channel(self.ctx)  # type: ignore [attr-defined]
-        storyteller_channel = self.ctx.bot.guild_svc.fetch_storyteller_channel(self.ctx)  # type: ignore [attr-defined]
+        error_log_channel = self.ctx.bot.guild_svc.fetch_error_log_channel(self.ctx.guild)  # type: ignore [attr-defined]
+        audit_log_channel = self.ctx.bot.guild_svc.fetch_audit_log_channel(self.ctx.guild)  # type: ignore [attr-defined]
+        storyteller_channel = self.ctx.bot.guild_svc.fetch_storyteller_channel(self.ctx.guild)  # type: ignore [attr-defined]
         changelog_channel = self.ctx.bot.guild_svc.fetch_changelog_channel(self.ctx.guild)  # type: ignore [attr-defined]
 
         settings_home_embed.description = "\n".join(

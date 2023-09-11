@@ -93,7 +93,7 @@ class GuildService:
 
     async def channel_update_or_add(
         self,
-        ctx: discord.ApplicationContext,
+        guild: discord.Guild,
         channel: str | discord.TextChannel,
         topic: str,
         permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
@@ -105,7 +105,7 @@ class GuildService:
         and storyteller role. If a member is a bot, set permissions to manage.
 
         Args:
-            ctx (discord.ApplicationContext): Application context.
+            guild (discord.Guild): The guild to create or update the channel in.
             channel (str|discord.TextChannel): Channel name or object.
             topic (str): Channel topic.
             permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]): Tuple containing channel permissions for default_role, player_role, storyteller_role.
@@ -115,17 +115,17 @@ class GuildService:
 
         """
         # Fetch roles
-        player_role = discord.utils.get(ctx.guild.roles, name="Player")
-        storyteller_role = discord.utils.get(ctx.guild.roles, name="Storyteller")
+        player_role = discord.utils.get(guild.roles, name="Player")
+        storyteller_role = discord.utils.get(guild.roles, name="Storyteller")
 
         # Initialize permission overwrites
-        overwrites = {
-            ctx.guild.default_role: set_channel_perms(permissions[0]),
+        overwrites = {  # type:ignore [misc]
+            guild.default_role: set_channel_perms(permissions[0]),
             player_role: set_channel_perms(permissions[1]),
             storyteller_role: set_channel_perms(permissions[2]),
             **{
                 user: set_channel_perms(ChannelPermission.MANAGE)
-                for user in ctx.guild.members
+                for user in guild.members
                 if user.bot
             },
         }
@@ -135,42 +135,40 @@ class GuildService:
             channel_object = channel
         elif isinstance(channel, str):
             channel_name = channel.lower().strip()
-            channel_object = discord.utils.get(ctx.guild.text_channels, name=channel_name)
+            channel_object = discord.utils.get(guild.text_channels, name=channel_name)
 
             # Create the channel if it doesn't exist
             if not channel_object:
-                logger.debug(f"GUILD: Create channel '{channel_object.name}' on '{ctx.guild.name}'")
-                return await ctx.guild.create_text_channel(
+                logger.debug(f"GUILD: Create channel '{channel_object.name}' on '{guild.name}'")
+                return await guild.create_text_channel(
                     channel_name,
                     overwrites=overwrites,
                     topic=topic,
                 )
 
         # Update existing channel
-        logger.debug(f"GUILD: Update channel '{channel_object.name}' on '{ctx.guild.name}'")
+        logger.debug(f"GUILD: Update channel '{channel_object.name}' on '{guild.name}'")
         await channel_object.edit(overwrites=overwrites, topic=topic)
 
         return channel_object
 
-    def fetch_audit_log_channel(
-        self, ctx: discord.ApplicationContext
-    ) -> discord.TextChannel | None:
+    def fetch_audit_log_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         """Retrieve the audit log channel for the guild from the settings.
 
         Fetch the guild's settings to determine if an audit log channel has been set.
         If set, return the corresponding TextChannel object; otherwise, return None.
 
         Args:
-            ctx (discord.ApplicationContext): The context for the discord command.
+            guild (discord.Guild): The guild to fetch the audit log channel for.
 
         Returns:
             discord.TextChannel|None: The audit log channel, if it exists and is set; otherwise, None.
         """
-        settings = self.fetch_guild_settings(ctx.guild)
+        settings = self.fetch_guild_settings(guild)
         db_id = settings.get("audit_log_channel_id", None)
 
         if db_id:
-            return discord.utils.get(ctx.guild.text_channels, id=settings["audit_log_channel_id"])
+            return discord.utils.get(guild.text_channels, id=settings["audit_log_channel_id"])
 
         return None
 
@@ -194,47 +192,43 @@ class GuildService:
 
         return None
 
-    def fetch_error_log_channel(
-        self, ctx: discord.ApplicationContext
-    ) -> discord.TextChannel | None:
+    def fetch_error_log_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         """Retrieve the error log channel for the guild from the settings.
 
         Fetch the guild's settings to determine if an error log channel has been set.
         If set, return the corresponding TextChannel object; otherwise, return None.
 
         Args:
-            ctx (discord.ApplicationContext): The context for the discord command.
+            guild (discord.Guild): The guild to fetch the error log channel for.
 
         Returns:
             discord.TextChannel|None: The error log channel, if it exists and is set; otherwise, None.
         """
-        settings = self.fetch_guild_settings(ctx.guild)
+        settings = self.fetch_guild_settings(guild)
         db_id = settings.get("error_log_channel_id", None)
 
         if db_id:
-            return discord.utils.get(ctx.guild.text_channels, id=settings["error_log_channel_id"])
+            return discord.utils.get(guild.text_channels, id=settings["error_log_channel_id"])
 
         return None
 
-    def fetch_storyteller_channel(
-        self, ctx: discord.ApplicationContext
-    ) -> discord.TextChannel | None:
+    def fetch_storyteller_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         """Retrieve the storyteller channel for the guild from the settings.
 
         Fetch the guild's settings to determine if a storyteller channel has been set.
         If set, return the corresponding TextChannel object; otherwise, return None.
 
         Args:
-            ctx (discord.ApplicationContext): The context for the discord command.
+            guild (discord.Guild): The guild to fetch the storyteller channel for.
 
         Returns:
             discord.TextChannel|None: The storyteller channel, if it exists and is set; otherwise, None.
         """
-        settings = self.fetch_guild_settings(ctx.guild)
+        settings = self.fetch_guild_settings(guild)
         db_id = settings.get("storyteller_channel_id", None)
 
         if db_id:
-            return discord.utils.get(ctx.guild.text_channels, id=settings["storyteller_channel_id"])
+            return discord.utils.get(guild.text_channels, id=settings["storyteller_channel_id"])
 
         return None
 
@@ -371,7 +365,7 @@ class GuildService:
         Raises:
             discord.DiscordException: If the message could not be sent.
         """
-        audit_log_channel = self.fetch_audit_log_channel(ctx)
+        audit_log_channel = self.fetch_audit_log_channel(ctx.guild)
 
         if audit_log_channel:
             embed = self._message_to_embed(message, ctx) if isinstance(message, str) else message
@@ -397,7 +391,7 @@ class GuildService:
             discord.DiscordException: If the error message could not be sent to the channel.
         """
         # Confirm the channel exists
-        error_log_channel = self.fetch_error_log_channel(ctx)
+        error_log_channel = self.fetch_error_log_channel(ctx.guild)
 
         # Log to the error log channel if it exists and is enabled
         if error_log_channel:
