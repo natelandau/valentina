@@ -12,23 +12,12 @@ from aiohttp import ClientSession
 from valentina.constants import (
     CLAN_DISCIPLINES,
     DICEROLL_THUBMS,
-    ChannelPermission,
     MaxTraitValue,
     RollResultType,
     XPMultiplier,
     XPNew,
 )
 from valentina.utils import errors
-
-from .errors import BotMissingPermissionsError
-
-
-async def assert_permissions(ctx: discord.ApplicationContext, **permissions: bool) -> None:
-    """Check if the bot has the required permissions to run the command.""."""
-    if missing := [
-        perm for perm, value in permissions.items() if getattr(ctx.app_permissions, perm) != value
-    ]:
-        raise BotMissingPermissionsError(missing)
 
 
 def changelog_parser(
@@ -311,67 +300,6 @@ def round_trait_value(value: int, max_value: int) -> int:
         return max_value
 
     return value
-
-
-def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
-    """Translate a ChannelPermission enum to a discord.PermissionOverwrite object.
-
-    Takes a requested channel permission represented as an enum and
-    sets the properties of a discord.PermissionOverwrite object
-    to match those permissions.
-
-    Args:
-        requested_permission (ChannelPermission): The channel permission enum.
-
-    Returns:
-        discord.PermissionOverwrite: Permission settings as a Discord object.
-    """
-    # Map each ChannelPermission to the properties that should be False
-    permission_mapping: dict[ChannelPermission, dict[str, bool]] = {
-        ChannelPermission.HIDDEN: {
-            "add_reactions": False,
-            "manage_messages": False,
-            "read_messages": False,
-            "send_messages": False,
-            "view_channel": False,
-            "read_message_history": False,
-        },
-        ChannelPermission.READ_ONLY: {
-            "add_reactions": True,
-            "manage_messages": False,
-            "read_messages": True,
-            "send_messages": False,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": False,
-        },
-        ChannelPermission.POST: {
-            "add_reactions": True,
-            "manage_messages": False,
-            "read_messages": True,
-            "send_messages": True,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": True,
-        },
-        ChannelPermission.MANAGE: {
-            "add_reactions": True,
-            "manage_messages": True,
-            "read_messages": True,
-            "send_messages": True,
-            "view_channel": True,
-            "read_message_history": True,
-            "use_slash_commands": True,
-        },
-    }
-
-    # Create a permission overwrite object
-    perms = discord.PermissionOverwrite()
-    # Update the permission overwrite object based on the enum
-    for key, value in permission_mapping.get(requested_permission, {}).items():
-        setattr(perms, key, value)
-
-    return perms
 
 
 def truncate_string(text: str, max_length: int = 1000) -> str:

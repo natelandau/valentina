@@ -18,6 +18,7 @@ class Events(commands.Cog, name="Events"):
         self.bot: Valentina = bot
 
     @commands.Cog.listener()
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         """on_message event handling."""
         # Do not reply to bot's own messages
@@ -66,6 +67,13 @@ class Events(commands.Cog, name="Events"):
 
         # Add user to the database
         self.bot.user_svc.fetch_user(user=member)
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild) -> None:
+        """Called when the bot joins a guild."""
+        logger.info(f"EVENT: Joined {guild.name} ({guild.id})")
+
+        await self.bot.guild_svc.prepare_guild(guild=guild)
 
 
 def setup(bot: Valentina) -> None:

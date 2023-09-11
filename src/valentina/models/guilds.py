@@ -9,7 +9,12 @@ from loguru import logger
 
 from valentina.constants import GUILD_DEFAULTS, ChannelPermission, EmbedColor
 from valentina.utils import errors
-from valentina.utils.helpers import set_channel_perms, time_now
+from valentina.utils.discord_utils import (
+    create_player_role,
+    create_storyteller_role,
+    set_channel_perms,
+)
+from valentina.utils.helpers import time_now
 
 from .db_tables import Guild, RollThumbnail
 
@@ -403,3 +408,23 @@ class GuildService:
             Guild.get_by_id(guild.id).set_default_data_values()
 
         return Guild.get_by_id(guild.id)
+
+    async def prepare_guild(self, guild: discord.Guild) -> None:
+        """Prepares a guild for use by the bot. This method is called when the bot joins a guild. This method is idempotent, and can be called multiple times without issue if the default roles need to be recreated.
+
+        This method performs the following actions:
+
+        1. Adds the guild to the database
+        2. Creates the default roles
+        3. Creates the default channels
+
+        Args:
+            guild (discord.Guild): The guild to provision.
+        """
+        # Add guild to database
+        logger.debug(f"GUILD: Add {guild.name} ({guild.id}) to database")
+        self.update_or_add(guild=guild)
+
+        # Create roles
+        await create_storyteller_role(guild)
+        await create_player_role(guild)
