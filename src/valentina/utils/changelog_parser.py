@@ -22,6 +22,18 @@ class ChangelogParser:
     ):
         self.path = CHANGELOG_PATH
         self.bot = bot
+        self.all_categories = [
+            "feat",
+            "fix",
+            "docs",
+            "refactor",
+            "style",
+            "test",
+            "chore",
+            "perf",
+            "ci",
+            "build",
+        ]
         self.exclude_categories = exclude_categories
         self.oldest_version = (
             (oldest_version if self.__check_version_schema(oldest_version) else None)
@@ -35,6 +47,8 @@ class ChangelogParser:
         )
         self.full_changelog = self.__get_changelog()
         self.changelog_dict = self.__parse_changelog()
+        # Clean changelog_dict of excluded categories and empty versions
+        self.__clean_changelog()
 
     def __check_version_schema(self, version: str) -> bool:
         """Check if the version string is in the correct format."""
@@ -60,22 +74,7 @@ class ChangelogParser:
         # Prepare compiled regular expressions
         version_re = re.compile(r"## v(\d+\.\d+\.\d+)")
         date_re = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
-        full_category_list = [
-            "feat",
-            "fix",
-            "docs",
-            "refactor",
-            "style",
-            "test",
-            "chore",
-            "perf",
-            "ci",
-            "build",
-        ]
-        categories = [
-            category for category in full_category_list if category not in self.exclude_categories
-        ]
-        category_re = re.compile(rf"### ({'|'.join(categories)})", re.I)
+        category_re = re.compile(rf"### ({'|'.join(self.all_categories)})", re.I)
 
         # Initialize the changelog dictionary
         changelog_dict: dict[str, dict[str, str | list[str]]] = {}
@@ -123,6 +122,38 @@ class ChangelogParser:
 
         return changelog_dict
 
+    def __clean_changelog(self) -> None:
+        """Clean up the changelog dictionary by removing excluded categories and empty versions.
+
+        This function modifies `self.changelog_dict` to remove any versions that have only one item
+        (i.e., only a date and no other changes). It also removes categories that are in the exclusion list.
+
+        Returns:
+        None
+        """
+        from rich import print
+
+        print(self.changelog_dict)
+
+        # Remove excluded categories
+        categories_to_remove: dict[str, list[str]] = {
+            key: [category for category in value if category in self.exclude_categories]
+            for key, value in self.changelog_dict.items()
+        }
+
+        for key, categories in categories_to_remove.items():
+            for category in categories:
+                self.changelog_dict[key].pop(category)
+
+        # Identify keys for removal
+        keys_to_remove = [key for key, version in self.changelog_dict.items() if len(version) <= 1]
+
+        # Remove the identified keys
+        for key in keys_to_remove:
+            self.changelog_dict.pop(key)
+
+        print(self.changelog_dict)
+
     def has_updates(self) -> bool:
         """Check if there are any meaningful updates in the changelog other than the date.
 
@@ -131,13 +162,6 @@ class ChangelogParser:
         Returns:
             bool: True if there are meaningful updates, False otherwise.
         """
-        # List to store keys for removal
-        keys_to_remove = [key for key, version in self.changelog_dict.items() if len(version) <= 1]
-
-        # Remove the identified keys
-        for key in keys_to_remove:
-            self.changelog_dict.pop(key)
-
         # Return False if the dictionary is empty; True otherwise
         return bool(self.changelog_dict)
 
@@ -149,13 +173,15 @@ class ChangelogParser:
         """
         return list(self.changelog_dict.keys())
 
-    def get_embed_basic(self) -> discord.Embed:
+    def get_embed(self) -> discord.Embed:
         """Generate an embed for the changelog.
 
         Returns:
             discord.Embed: The changelog embed.
         """
         description = ""
+
+        description = "## Valentina Noir Changelog\n"
 
         # Loop through each version in the changelog
         for version, data in self.changelog_dict.items():
@@ -175,10 +201,13 @@ class ChangelogParser:
                 for entry in entries:
                     description += f"{entry}\n"
 
+        description += "\n\n----\n"
+        description += "View the [full changelog on Github](https://github.com/natelandau/valentina/releases)\n"
+
         embed = discord.Embed(
-            title="Valentina Changelog", description=description, color=EmbedColor.INFO.value
+            description=description,
+            color=EmbedColor.INFO.value,
         )
-        embed.set_footer(text="For more information, type /changelog")
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
         return embed
@@ -189,14 +218,18 @@ class ChangelogParser:
         Returns:
             discord.Embed: The changelog embed.
         """
-        print("alive")
         # Create and populate the embed description
-        description = f"Valentina, your {random.choice(['honored','admired','distinguished','celebrated','hallowed','prestigious','acclaimed','favorite','friendly neighborhood','prized', 'treasured', 'number one','esteemed','venerated','revered','feared'])} {random.choice(BOT_DESCRIPTIONS)} has {random.choice(['been granted new powers', 'leveled up','spent experience points','gained new abilities','been bitten by a radioactive spider', 'spent willpower points', 'been updated','squashed bugs and gained new features',])}!\n\n"
+        description = (
+            "Valentina, your "
+            + f"{random.choice(['honored','admired','distinguished','celebrated','hallowed','prestigious','acclaimed','favorite','friendly neighborhood','prized', 'treasured', 'number one','esteemed','venerated','revered','feared'])} "
+            + f"{random.choice(BOT_DESCRIPTIONS)}, "
+            + f"has {random.choice(['been granted new powers', 'leveled up','spent experience points','gained new abilities','been bitten by a radioactive spider', 'spent willpower points', 'been updated','squashed bugs and gained new features',])}!\n"
+        )
 
         # Loop through each version in the changelog
         for version, data in self.changelog_dict.items():
             # Add the version header
-            description += f"**On {data['date']} I was updated to `v{version}`**\n"
+            description += f"\n### On {data['date']} I was updated to `v{version}`\n"
 
             # Add each category
             for category, entries in data.items():
@@ -211,8 +244,11 @@ class ChangelogParser:
                 for entry in entries:
                     description += f"{entry}\n"
 
+        description += "\n----\n"
+        description += "- Run `/changelog` to view specific versions\n"
+        description += "- View my [full changelog on Github](https://github.com/natelandau/valentina/releases)\n"
+
         embed = discord.Embed(description=description, color=EmbedColor.INFO.value)
-        embed.set_footer(text="For more information, type /changelog")
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
         return embed

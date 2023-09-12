@@ -7,6 +7,7 @@ from random import randrange
 import aiofiles
 import discord
 import inflect
+import semver
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
@@ -15,9 +16,15 @@ from peewee import fn
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, CharacterClass, RollProbability, VampireClan
+from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
-from valentina.utils.options import select_aws_object_from_guild, select_char_class
+from valentina.utils.options import (
+    select_aws_object_from_guild,
+    select_changelog_version_1,
+    select_changelog_version_2,
+    select_char_class,
+)
 from valentina.views import confirm_action, present_embed
 
 p = inflect.engine()
@@ -235,6 +242,74 @@ class Developer(commands.Cog):
             c.delete_instance(recursive=True, delete_nullable=True)
 
         await confirmation_response_msg
+
+    @guild.command(description="Repost the changelog (run in #changelog)")
+    @commands.is_owner()
+    @commands.guild_only()
+    async def repost_changelog(
+        self,
+        ctx: discord.ApplicationContext,
+        oldest_version: Option(str, autocomplete=select_changelog_version_1, required=True),
+        newest_version: Option(str, autocomplete=select_changelog_version_2, required=True),
+    ) -> None:
+        """Post the changelog."""
+        if semver.compare(oldest_version, newest_version) > 0:
+            raise commands.BadArgument(
+                f"Oldest version `{oldest_version}` is newer than newest version `{newest_version}`"
+            )
+
+        changelog_channel = self.bot.guild_svc.fetch_changelog_channel(ctx.guild)
+        if not changelog_channel:
+            await ctx.respond(
+                embed=discord.Embed(
+                    title="Can not post changelog",
+                    description="No changelog channel set",
+                    color=EmbedColor.ERROR.value,
+                )
+            )
+            return
+
+        # Grab the changelog
+        changelog = ChangelogParser(
+            self.bot,
+            oldest_version,
+            newest_version,
+            exclude_categories=[
+                "docs",
+                "refactor",
+                "style",
+                "test",
+                "chore",
+                "perf",
+                "ci",
+                "build",
+            ],
+        )
+        if not changelog.has_updates():
+            await ctx.respond(
+                embed=discord.Embed(
+                    title="Can not post changelog",
+                    description="No updates found which pass the exclude list",
+                    color=EmbedColor.ERROR.value,
+                )
+            )
+            return
+
+        # Update the last posted version in guild settings
+        updates = {"changelog_posted_version": newest_version}
+        self.bot.guild_svc.update_or_add(guild=ctx.guild, updates=updates)
+
+        # Post the changelog
+        embed = changelog.get_embed_personality()
+        await changelog_channel.send(embed=embed)
+
+        await ctx.respond(
+            embed=discord.Embed(
+                description=f"Changelog reposted and settings`[changelog_posted_version]` updated to `{newest_version}`",
+                color=EmbedColor.SUCCESS.value,
+            ),
+            ephemeral=True,
+        )
 
     @guild.command(name="purge_cache", description="Purge this guild's cache")
     @commands.guild_only()

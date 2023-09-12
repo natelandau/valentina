@@ -35,7 +35,7 @@ class Valentina(commands.Bot):
 
         # Create in-memory caches
         self.db_svc = DatabaseService(DATABASE)
-        self.guild_svc = GuildService()
+        self.guild_svc = GuildService(bot=self)
         self.char_svc = CharacterService()
         self.campaign_svc = CampaignService()
         self.trait_svc = TraitService()

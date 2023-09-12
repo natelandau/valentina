@@ -352,35 +352,45 @@ BOT_DESCRIPTIONS = [
     "lusty liberator freeing you from virtue, only to imprison you in vice",
     "siren who serenades you into peril",
     "black widow with a kiss that's fatal",
+    "fiery femme fatale who leaves you burned but begging for more",
     "enchanting empress who rules your most forbidden thoughts",
     "vixen who leaves a trail of destruction",
     "sublime seductress who dances you to the edge of reason",
     "irresistible icon who redefines your sense of sin and salvation"
     "enchantress who captivates you in her web of deceit",
+    "sultry Silver Fang who leads you into a world of primal passion",
     "seductress with eyes that promise ecstasy and chaos",
     "dazzling temptress with daggers in her eyes",
     "spellbinding witch who makes you forget your name",
     "goddess who gives pleasure but exacts a price",
     "alluring angel with a devilish twist",
-    "bot who helps you play White Wolf's TTRPGs",
+    "trusted bot who helps you play White Wolf's TTRPGs",
     "succubus who will yet have your heart",
     "maid servant here to serve your deepest desires",
     "guardian angel who watches over you",
-    "Lasombra enigma who makes darkness your newfound comfort",
+    "steadfast Silent Strider who journeys through the Umbra on your behalf",
+    "trustworthy Thaumaturge who crafts potent rituals for your adventures",
+    "Lasombra who makes darkness your newfound comfort",
+    "seductive Toreador who makes eternity seem too short",
+    "enigmatic Tremere who binds you in a blood bond you can't resist",
+    "charismatic Ventrue who rules your heart with an iron fist",
+    "shadowy Nosferatu who lurks in the dark corners of your fantasies",
+    "haunting Wraith who whispers sweet nothings from the Shadowlands",
+    "resilient Hunter who makes you question who's really being hunted",
     "Tzimisce alchemist who shapes flesh and mind into a twisted masterpiece",
     "Giovanni necromancer who invites you to a banquet with your ancestors",
     "Assamite assassin who turns the thrill of the hunt into a deadly romance",
     "Caitiff outcast who makes you see the allure in being a pariah",
-    "Malkavian seer who unravels the tapestry of your sanity with whispers of prophecies"
-    "Brujah revolutionary who ignites a riot in your soul and a burning need for rebellion"
-    "Tremere warlock who binds your fate with arcane secrets too irresistible to ignore"
-    "Toreador muse who crafts a masterpiece out of your every emotion, leaving you entranced"
-    "Gangrel shape-shifter who lures you into the untamed wilderness of your darkest desires"
-    "Ravnos trickster who casts illusions that make you question the very fabric of your reality"
-    "Sabbat crusader who drags you into a nightmarish baptism of blood and fire, challenging your very essence"
-    "Ventrue aristocrat who ensnares you in a web of high-stakes politics, making you question your loyalties"
-    "Hunter zealot who stalks the shadows of your mind, making you question your beliefs"
-    "Mage sorcerer who weaves a tapestry of cosmic mysteries, entrancing your logical faculties"
-    "Mystic oracle who plunges you into ethereal visions, making you question the tangible world"
+    "Malkavian seer who unravels the tapestry of your sanity with whispers of prophecies",
+    "Brujah revolutionary who ignites a riot in your soul and a burning need for rebellion",
+    "Tremere warlock who binds your fate with arcane secrets too irresistible to ignore",
+    "Toreador muse who crafts a masterpiece out of your every emotion, leaving you entranced",
+    "Gangrel shape-shifter who lures you into the untamed wilderness of your darkest desires",
+    "Ravnos trickster who casts illusions that make you question the very fabric of your reality",
+    "Sabbat crusader who drags you into a nightmarish baptism of blood and fire, challenging your very essence",
+    "Ventrue aristocrat who ensnares you in a web of high-stakes politics, making you question your loyalties",
+    "Hunter zealot who stalks the shadows of your mind, making you question your beliefs",
+    "enigmatic sorcerer weaving a tapestry of cosmic mysteries, entrancing your logical faculties",
+    "mystic oracle who plunges you into ethereal visions, making you question the tangible world",
     "servant who feasts on your vulnerabilities, creating an insatiable need for servitude",
 ]

@@ -26,9 +26,11 @@ from .db_tables import DatabaseVersion, Guild, RollThumbnail
 class GuildService:
     """Manage guilds in the database. Guilds are created on bot connect."""
 
-    def __init__(self) -> None:
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot: commands.Bot = bot
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
+        self.changelog_versions_cache: list[str] = []
 
     def _message_to_embed(
         self, message: str, ctx: discord.ApplicationContext
@@ -95,7 +97,7 @@ class GuildService:
         Returns:
             None
         """
-        ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         self.roll_result_thumbs.pop(ctx.guild.id, None)
 
@@ -166,6 +168,13 @@ class GuildService:
         await channel_object.edit(overwrites=overwrites, topic=topic)
 
         return channel_object
+
+    def fetch_changelog_versions(self) -> list[str]:
+        """Fetch a list of versions from the changelog."""
+        if not self.changelog_versions_cache:
+            self.changelog_versions_cache = ChangelogParser(self.bot).list_of_versions()
+
+        return self.changelog_versions_cache
 
     def fetch_audit_log_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         """Retrieve the audit log channel for the guild from the settings.
@@ -350,9 +359,9 @@ class GuildService:
         settings = self.fetch_guild_settings(guild)
         last_posted_version = cast(str, settings.get("changelog_posted_version", None))
 
-        # If no last posted version, get the second latest version
+        # If no version has been posted yet in the guild, get the second latest version
         if not last_posted_version:
-            last_posted_version = ChangelogParser(bot).list_of_versions()[1]
+            last_posted_version = self.fetch_changelog_versions()[1]
 
         # Check if there are any updates to post
         if semver.compare(last_posted_version, db_version) == 0:
@@ -385,8 +394,8 @@ class GuildService:
         logger.debug(f"CHANGELOG: Post changelog to {guild.name}")
 
         # Update the last posted version in guild settings
-        settings["changelog_posted_version"] = db_version
-        self.update_or_add(guild=guild, updates=settings)
+        updates = {"changelog_posted_version": db_version}
+        self.update_or_add(guild=guild, updates=updates)
 
     def purge_cache(
         self,
@@ -407,10 +416,12 @@ class GuildService:
         if ctx or guild:
             self.settings_cache.pop(guild.id, None)
             self.roll_result_thumbs.pop(guild.id, None)
+            self.changelog_versions_cache = []
             logger.debug(f"CACHE: Purge guild cache for '{guild.name}'")
         else:
             self.settings_cache = {}
             self.roll_result_thumbs = {}
+            self.changelog_versions_cache = []
             logger.debug("CACHE: Purge all guild caches")
 
     async def send_to_audit_log(

@@ -3,6 +3,7 @@
 import discord
 import pytest
 from dirty_equals import IsPartialDict
+from discord.ext import commands
 from rich.console import Console
 
 from valentina.constants import GUILD_DEFAULTS
@@ -14,11 +15,18 @@ from valentina.models.db_tables import Guild
 c = Console()
 
 
+def local_mock_bot(mocker):
+    """A mock of a discord.Bot object."""
+    mock_bot = mocker.MagicMock()
+    mock_bot.__class__ = commands.Bot
+    return mock_bot
+
+
 @pytest.mark.usefixtures("mock_db")
 class TestGuildService:
     """Test the GuildService class."""
 
-    guild_svc = GuildService()
+    guild_svc = GuildService(bot=local_mock_bot)
 
     def test_update_or_add(self, mocker):
         """Test GuildService.update_or_add()."""
@@ -103,12 +111,14 @@ class TestGuildService:
         """
         # Populate the cache
         self.guild_svc.settings_cache = {1: {"a": "b"}, 2: {"c": "d"}}
+        self.guild_svc.changelog_versions_cache = ["a", "b", "c"]
 
         # Purge the cache
         self.guild_svc.purge_cache(mock_ctx)
 
         # Confirm the cache was purged
         assert self.guild_svc.settings_cache == {2: {"c": "d"}}
+        assert self.guild_svc.changelog_versions_cache == []
 
     def test_purge_cache_two(self):
         """Test GuildService.purge_cache().
@@ -119,9 +129,11 @@ class TestGuildService:
         """
         # Populate the cache
         self.guild_svc.settings_cache = {1: {"a": "b"}, 2: {"c": "d"}}
+        self.guild_svc.changelog_versions_cache = ["a", "b", "c"]
 
         # Purge the cache
         self.guild_svc.purge_cache()
 
         # Confirm the cache was purged
         assert self.guild_svc.settings_cache == {}
+        assert self.guild_svc.changelog_versions_cache == []
