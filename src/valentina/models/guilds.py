@@ -26,9 +26,11 @@ from .db_tables import DatabaseVersion, Guild, RollThumbnail
 class GuildService:
     """Manage guilds in the database. Guilds are created on bot connect."""
 
-    def __init__(self) -> None:
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot: commands.Bot = bot
         self.settings_cache: dict[int, dict[str, str | int | bool]] = {}
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
+        self.changelog_versions_cache: list[str] = []
 
     def _message_to_embed(
         self, message: str, ctx: discord.ApplicationContext
@@ -79,8 +81,23 @@ class GuildService:
     def add_roll_result_thumb(
         self, ctx: discord.ApplicationContext, roll_type: str, url: str
     ) -> None:
-        """Add a roll result thumbnail to the database."""
-        ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        """Add a roll result thumbnail to the database.
+
+        This function fetches the user from the bot's user service, removes any existing thumbnail
+        for the guild, and then adds a new thumbnail to the RollThumbnail database table.
+
+        Args:
+            ctx (discord.ApplicationContext): The context in which the command was invoked.
+            roll_type (str): The type of roll for which the thumbnail is being added.
+            url (str): The URL of the thumbnail image.
+
+        Raises:
+            errors.ValidationError: If the thumbnail already exists in the database.
+
+        Returns:
+            None
+        """
+        self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         self.roll_result_thumbs.pop(ctx.guild.id, None)
 
@@ -151,6 +168,13 @@ class GuildService:
         await channel_object.edit(overwrites=overwrites, topic=topic)
 
         return channel_object
+
+    def fetch_changelog_versions(self) -> list[str]:
+        """Fetch a list of versions from the changelog."""
+        if not self.changelog_versions_cache:
+            self.changelog_versions_cache = ChangelogParser(self.bot).list_of_versions()
+
+        return self.changelog_versions_cache
 
     def fetch_audit_log_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         """Retrieve the audit log channel for the guild from the settings.
@@ -260,7 +284,17 @@ class GuildService:
         return self.settings_cache[guild.id]
 
     def fetch_roll_result_thumbs(self, ctx: discord.ApplicationContext) -> dict[str, list[str]]:
-        """Get all roll result thumbnails for a guild."""
+        """Get all roll result thumbnails for a guild.
+
+        This function first checks if the thumbnails for the guild are already cached.
+        If not, it fetches the thumbnails from the RollThumbnail database table and caches them.
+
+        Args:
+            ctx (discord.ApplicationContext): The context in which the command was invoked.
+
+        Returns:
+            dict[str, List[str]]: A dictionary mapping roll types to lists of thumbnail URLs.
+        """
         # Fetch from cache if it exists
         if ctx.guild.id in self.roll_result_thumbs:
             logger.debug(f"CACHE: Fetch roll result thumbnails for '{ctx.guild.name}'")
@@ -299,24 +333,42 @@ class GuildService:
         await create_player_role(guild)
 
     async def post_changelog(self, guild: discord.Guild, bot: commands.Bot) -> None:
-        """Post a changelog to the guild's changelog channel."""
-        # If the guild does not have a changelog channel, return
+        """Post a changelog to the guild's changelog channel.
+
+        This function fetches the changelog channel for the guild and posts the changelog
+        if there are any updates since the last posted version. It also updates the last
+        posted version in the guild settings.
+
+        Args:
+            guild (discord.Guild): The guild to which the changelog will be posted.
+            bot (commands.Bot): The bot instance.
+
+        Returns:
+            None
+        """
+        # Fetch the changelog channel for the guild
         changelog_channel = self.fetch_changelog_channel(guild)
         if not changelog_channel:
             logger.debug(f"CHANGELOG: No changelog channel found for {guild.name}")
             return
 
-        # Build variables for changelog comparison
+        # Fetch the latest database version
         db_version = DatabaseVersion.select().order_by(DatabaseVersion.id.desc()).get().version
+
+        # Fetch the last posted changelog version from guild settings
         settings = self.fetch_guild_settings(guild)
         last_posted_version = cast(str, settings.get("changelog_posted_version", None))
-        if not last_posted_version:
-            last_posted_version = ChangelogParser(bot).list_of_versions()[1]
 
+        # If no version has been posted yet in the guild, get the second latest version
+        if not last_posted_version:
+            last_posted_version = self.fetch_changelog_versions()[1]
+
+        # Check if there are any updates to post
         if semver.compare(last_posted_version, db_version) == 0:
             logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
             return
 
+        # Initialize the changelog parser
         changelog = ChangelogParser(
             bot,
             last_posted_version,
@@ -336,13 +388,14 @@ class GuildService:
             logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
             return
 
+        # Send the changelog embed to the channel
         embed = changelog.get_embed_personality()
         await changelog_channel.send(embed=embed)
         logger.debug(f"CHANGELOG: Post changelog to {guild.name}")
 
-        # Update the changelog version in the guild settings
-        settings["changelog_posted_version"] = db_version
-        self.update_or_add(guild=guild, updates=settings)
+        # Update the last posted version in guild settings
+        updates = {"changelog_posted_version": db_version}
+        self.update_or_add(guild=guild, updates=updates)
 
     def purge_cache(
         self,
@@ -363,10 +416,12 @@ class GuildService:
         if ctx or guild:
             self.settings_cache.pop(guild.id, None)
             self.roll_result_thumbs.pop(guild.id, None)
+            self.changelog_versions_cache = []
             logger.debug(f"CACHE: Purge guild cache for '{guild.name}'")
         else:
             self.settings_cache = {}
             self.roll_result_thumbs = {}
+            self.changelog_versions_cache = []
             logger.debug("CACHE: Purge all guild caches")
 
     async def send_to_audit_log(
@@ -455,13 +510,13 @@ class GuildService:
         )
 
         if is_created:
-            logger.info(f"DATABASE: Created guild {db_guild.name}")
+            logger.info(f"DATABASE: Created guild: `{db_guild.name}`")
         elif updates:
-            logger.debug(f"DATABASE: Updated guild '{db_guild.name}'")
+            logger.debug(f"DATABASE: Updated guild: `{db_guild.name}`")
             updates["modified"] = str(time_now())
 
             for key, value in updates.items():
-                logger.debug(f"DATABASE: Update guild {db_guild.name}: {key} to {value}")
+                logger.debug(f"DATABASE: Update guild: `{db_guild.name}`: `{key}` to `{value}`")
 
             # Make requested updates to the guild
             Guild.update(data=Guild.data.update(updates)).where(Guild.id == guild.id).execute()
@@ -470,23 +525,3 @@ class GuildService:
             Guild.get_by_id(guild.id).set_default_data_values()
 
         return Guild.get_by_id(guild.id)
-
-    async def prepare_guild(self, guild: discord.Guild) -> None:
-        """Prepares a guild for use by the bot. This method is called when the bot joins a guild. This method is idempotent, and can be called multiple times without issue if the default roles need to be recreated.
-
-        This method performs the following actions:
-
-        1. Adds the guild to the database
-        2. Creates the default roles
-        3. Creates the default channels
-
-        Args:
-            guild (discord.Guild): The guild to provision.
-        """
-        # Add guild to database
-        logger.debug(f"GUILD: Add {guild.name} ({guild.id}) to database")
-        self.update_or_add(guild=guild)
-
-        # Create roles
-        await create_storyteller_role(guild)
-        await create_player_role(guild)

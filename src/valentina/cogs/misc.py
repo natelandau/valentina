@@ -1,18 +1,18 @@
 # mypy: disable-error-code="valid-type"
 """Miscellaneous commands."""
-
 import random
-from pathlib import Path
 
 import discord
+import semver
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 
 from valentina.constants import SPACER, EmbedColor
 from valentina.models import Statistics
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, Macro
+from valentina.utils.changelog_parser import ChangelogParser
+from valentina.utils.options import select_changelog_version_1, select_changelog_version_2
 
 
 class Misc(commands.Cog):
@@ -84,53 +84,27 @@ class Misc(commands.Cog):
 
         await ctx.respond(embed=embed, ephemeral=hidden)
 
-    @commands.slash_command(description="Display the bot's changelog")
-    async def changelog(
+    @commands.slash_command(name="changelog", description="Display the bot's changelog")
+    async def post_changelog(
         self,
-        ctx: commands.Context,
+        ctx: discord.ApplicationContext,
+        oldest_version: Option(str, autocomplete=select_changelog_version_1, required=True),
+        newest_version: Option(str, autocomplete=select_changelog_version_2, required=True),
         hidden: Option(
             bool,
-            description="Make the changelog only visible to you (default true).",
+            description="Make the response only visible to you (default true).",
             default=True,
         ),
     ) -> None:
-        """Display the bot's changelog.
+        """Post the changelog."""
+        if semver.compare(oldest_version, newest_version) > 0:
+            raise commands.BadArgument(
+                f"Oldest version `{oldest_version}` is newer than newest version `{newest_version}`"
+            )
 
-        Args:
-            ctx (commands.Context): The context of the command.
-            hidden (Option[bool]): Whether to make the changelog only visible to you (default true).
-        """
-        # Determine the path to the changelog file
-        path = Path(__file__).parent / "../../../CHANGELOG.md"
-        if not path.exists():
-            logger.error(f"Changelog file not found at {path}")
-            raise FileNotFoundError
-
-        changelog = path.read_text()
-
-        # Use paginator to split the changelog into pages
-        paginator = discord.ext.commands.Paginator(prefix="", suffix="", max_size=800)
-        for line in changelog.split("\n"):
-            paginator.add_line(line)
-
-        # Create embeds for each page of the changelog
-        pages_to_send = [
-            discord.Embed(
-                title="Valentina Changelog",
-                description=page,
-                url="https://github.com/natelandau/valentina/releases",
-            ).set_thumbnail(url=ctx.bot.user.display_avatar)
-            for page in paginator.pages
-        ]
-
-        show_buttons = len(pages_to_send) > 1
-        paginator = discord.ext.pages.Paginator(  # type: ignore [assignment]
-            pages=pages_to_send,  # type: ignore [arg-type]
-            author_check=False,
-            show_disabled=show_buttons,
-            show_indicator=show_buttons,
-        )
-        await paginator.respond(ctx.interaction, ephemeral=hidden)  # type: ignore
+        changelog = ChangelogParser(self.bot, oldest_version, newest_version)
+        embed = changelog.get_embed()
+        await ctx.respond(embed=embed, ephemeral=hidden)
 
     @commands.slash_command(name="coinflip", help="Flip a coin")
     async def coinflip(self, ctx: discord.ApplicationContext) -> None:

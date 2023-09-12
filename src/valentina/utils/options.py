@@ -1,16 +1,39 @@
 """Reusable autocomplete options for cogs and commands."""
 
+from typing import cast
+
 import discord
 from discord.commands import OptionChoice
 from loguru import logger
 from peewee import DoesNotExist
 
 from valentina.constants import MAX_OPTION_LIST_SIZE
+from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, CharacterClass, TraitCategory, VampireClan
 from valentina.utils import errors
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99
+
+
+async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[str]:
+    """Populate the autocomplete for the version option."""
+    bot = cast(Valentina, ctx.bot)
+    possible_versions = bot.guild_svc.fetch_changelog_versions()
+
+    return [version for version in possible_versions if version.startswith(ctx.value)][
+        :MAX_OPTION_LIST_SIZE
+    ]
+
+
+async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[str]:
+    """Populate the autocomplete for the version option."""
+    bot = cast(Valentina, ctx.bot)
+    possible_versions = bot.guild_svc.fetch_changelog_versions()
+
+    return [version for version in possible_versions if version.startswith(ctx.value)][
+        :MAX_OPTION_LIST_SIZE
+    ]
 
 
 async def select_chapter(ctx: discord.AutocompleteContext) -> list[str]:
@@ -28,9 +51,10 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[str]:
     Returns:
         list[str]: A list of strings representing the chapters.
     """
+    bot = cast(Valentina, ctx.bot)
     try:
         # Fetch the active campaign
-        campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
+        campaign = bot.campaign_svc.fetch_active(ctx)
     except errors.NoActiveCampaignError:
         return ["No active campaign"]
 
@@ -38,7 +62,7 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[str]:
     return [
         f"{chapter.chapter_number}: {chapter.name}"
         for chapter in sorted(
-            ctx.bot.campaign_svc.fetch_all_chapters(campaign=campaign),  # type: ignore [attr-defined]
+            bot.campaign_svc.fetch_all_chapters(campaign=campaign),
             key=lambda c: c.chapter_number,
         )
         if chapter.name.lower().startswith(ctx.options["chapter"].lower())
@@ -88,9 +112,10 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[str]:
     Returns:
         list[str]: A list of available common and custom trait names.
     """
+    bot = cast(Valentina, ctx.bot)
     # Fetch the active character
     try:
-        character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
+        character = bot.user_svc.fetch_active_character(ctx)
     except errors.NoActiveCharacterError:
         return ["No active character"]
 
@@ -118,9 +143,10 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     Returns:
         list[str]: A list of available common and custom trait names.
     """
+    bot = cast(Valentina, ctx.bot)
     # Fetch the active character
     try:
-        character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
+        character = bot.user_svc.fetch_active_character(ctx)
     except errors.NoActiveCharacterError:
         return ["No active character"]
 
@@ -146,9 +172,10 @@ async def select_campaign(ctx: discord.AutocompleteContext) -> list[str]:
     Returns:
         list[str]: A list of available campaign names.
     """
+    bot = cast(Valentina, ctx.bot)
     return [
         c.name
-        for c in ctx.bot.campaign_svc.fetch_all(ctx)  # type: ignore [attr-defined]
+        for c in bot.campaign_svc.fetch_all(ctx)
         if c.name.lower().startswith(ctx.options["campaign"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -167,9 +194,10 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
         list[OptionChoice]: A list of option choices for discord selection
                             containing title and id pairs.
     """
+    bot = cast(Valentina, ctx.bot)
     try:
         # Fetch active character
-        character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
+        character = bot.user_svc.fetch_active_character(ctx)
     except errors.NoActiveCharacterError:
         # Return descriptive OptionChoice in case of absence
         return [OptionChoice("No active character", "")]
@@ -210,9 +238,10 @@ async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
         List[str]: List containing names of filtered traits up to a predefined limit.
                    If no character is active, return a list with 'No active character'.
     """
+    bot = cast(Valentina, ctx.bot)
     # Attempt to fetch the active character
     try:
-        character = ctx.bot.user_svc.fetch_active_character(ctx)  # type: ignore [attr-defined]
+        character = bot.user_svc.fetch_active_character(ctx)
     except errors.NoActiveCharacterError:
         return ["No active character"]
 
@@ -258,9 +287,12 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
 
 async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate the autocomplete list for the aws_object option based on the user's input."""
+    bot = cast(Valentina, ctx.bot)
     guild_prefix = f"{ctx.interaction.guild.id}/"
 
-    return [OptionChoice(x.strip(guild_prefix), x) for x in ctx.bot.aws_svc.list_objects(guild_prefix)][:MAX_OPTION_LIST_SIZE]  # type: ignore [attr-defined]
+    return [OptionChoice(x.strip(guild_prefix), x) for x in bot.aws_svc.list_objects(guild_prefix)][
+        :MAX_OPTION_LIST_SIZE
+    ]
 
 
 async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -275,12 +307,11 @@ async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     Returns:
         list[OptionChoice]: A list of OptionChoice objects to populate the select list.
     """
+    bot = cast(Valentina, ctx.bot)
     # Filter macros based on user input
     filtered_macros = [
         macro
-        for macro in ctx.bot.macro_svc.fetch_macros(  # type: ignore [attr-defined]
-            ctx.interaction.guild.id, ctx.interaction.user.id
-        )
+        for macro in bot.macro_svc.fetch_macros(ctx.interaction.guild.id, ctx.interaction.user.id)
         if macro.name.lower().startswith(ctx.options["macro"].lower())
     ]
 
@@ -310,16 +341,17 @@ async def select_note(ctx: discord.AutocompleteContext) -> list[str]:
     Returns:
         list[str]: A list of note IDs and names for the autocomplete list.
     """
+    bot = cast(Valentina, ctx.bot)
     try:
         # Fetch the active campaign
-        campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
+        campaign = bot.campaign_svc.fetch_active(ctx)
     except errors.NoActiveCampaignError:
         return ["No active campaign"]
 
     # Fetch and filter notes
     notes = [
         f"{note.id}: {note.name}"
-        for note in ctx.bot.campaign_svc.fetch_all_notes(campaign)  # type: ignore [attr-defined]
+        for note in bot.campaign_svc.fetch_all_notes(campaign)
         if note.name.lower().startswith(ctx.options["note"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -338,15 +370,16 @@ async def select_npc(ctx: discord.AutocompleteContext) -> list[str]:
     Returns:
         list[str]: A list of NPC names for the autocomplete list.
     """
+    bot = cast(Valentina, ctx.bot)
     try:
-        campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined]
+        campaign = bot.campaign_svc.fetch_active(ctx)
     except errors.NoActiveCampaignError:
         return ["No active campaign"]
 
     # Fetch and filter NPCs
     npcs = [
         npc.name
-        for npc in ctx.bot.campaign_svc.fetch_all_npcs(campaign=campaign)  # type: ignore [attr-defined]
+        for npc in bot.campaign_svc.fetch_all_npcs(campaign=campaign)
         if npc.name.lower().startswith(ctx.options["npc"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -364,10 +397,11 @@ async def select_player_character(ctx: discord.AutocompleteContext) -> list[Opti
     Returns:
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
+    bot = cast(Valentina, ctx.bot)
     # Prepare character data
     all_chars = [
         (f"{character.name}", character.id)
-        for character in ctx.bot.user_svc.fetch_alive_characters(ctx)  # type: ignore [attr-defined]
+        for character in bot.user_svc.fetch_alive_characters(ctx)
     ]
 
     # Perform case-insensitive search
@@ -394,9 +428,10 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
     Returns:
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
+    bot = cast(Valentina, ctx.bot)
     all_chars = [
         (f"{character.name}", character.id)
-        for character in ctx.bot.char_svc.fetch_all_storyteller_characters(ctx)  # type: ignore [attr-defined]
+        for character in bot.char_svc.fetch_all_storyteller_characters(ctx)
     ]
 
     # Perform case-insensitive search
@@ -424,17 +459,18 @@ async def select_any_character(ctx: discord.AutocompleteContext) -> list[OptionC
     Returns:
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
+    bot = cast(Valentina, ctx.bot)
     # Initialize options list
     options = []
 
     # Fetch all characters
     storyteller_chars = [
         (f"{character.full_name} ({character.char_class.name})", character.id)
-        for character in ctx.bot.char_svc.fetch_all_storyteller_characters(ctx)  # type: ignore [attr-defined]
+        for character in bot.char_svc.fetch_all_storyteller_characters(ctx)
     ]
     player_chars = [
         (f"{character.name}", character.id)
-        for character in ctx.bot.char_svc.fetch_all_player_characters(ctx)  # type: ignore [attr-defined]
+        for character in bot.char_svc.fetch_all_player_characters(ctx)
     ]
 
     # Combine both lists
@@ -473,11 +509,11 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     Returns:
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
+    bot = cast(Valentina, ctx.bot)
     # Fetch and prepare player characters
-
     all_chars = [
         (f"{character.name} [Owned by: {character.owned_by.username}]", character.id)
-        for character in ctx.bot.char_svc.fetch_all_player_characters(ctx)  # type: ignore [attr-defined]
+        for character in bot.char_svc.fetch_all_player_characters(ctx)
     ]
 
     # Perform case-insensitive search
