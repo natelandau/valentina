@@ -7,7 +7,7 @@ from discord.commands import OptionChoice
 from loguru import logger
 from peewee import DoesNotExist
 
-from valentina.constants import MAX_OPTION_LIST_SIZE
+from valentina.constants import MAX_OPTION_LIST_SIZE, Emoji
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, CharacterClass, TraitCategory, VampireClan
 from valentina.utils import errors
@@ -398,10 +398,14 @@ async def select_player_character(ctx: discord.AutocompleteContext) -> list[Opti
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
     bot = cast(Valentina, ctx.bot)
+
     # Prepare character data
     all_chars = [
-        (f"{character.name}", character.id)
-        for character in bot.user_svc.fetch_alive_characters(ctx)
+        (
+            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
+            character.id,
+        )
+        for character in bot.user_svc.fetch_player_characters(ctx)
     ]
 
     # Perform case-insensitive search
@@ -462,10 +466,14 @@ async def select_any_character(ctx: discord.AutocompleteContext) -> list[OptionC
     bot = cast(Valentina, ctx.bot)
     # Initialize options list
     options = []
-
     # Fetch all characters
     storyteller_chars = [
-        (f"{character.full_name} ({character.char_class.name})", character.id)
+        (
+            f"{character.full_name} ({character.char_class.name})"
+            if character.is_alive
+            else f"{Emoji.DEAD.value} {character.full_name} ({character.char_class.name})",
+            character.id,
+        )
         for character in bot.char_svc.fetch_all_storyteller_characters(ctx)
     ]
     player_chars = [
@@ -511,8 +519,14 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     """
     bot = cast(Valentina, ctx.bot)
     # Fetch and prepare player characters
+
     all_chars = [
-        (f"{character.name} [Owned by: {character.owned_by.username}]", character.id)
+        (
+            f"{character.name} [@{character.owned_by.username}]"
+            if character.is_alive
+            else f"{Emoji.DEAD.value} {character.name} [@{character.owned_by.username}]",
+            character.id,
+        )
         for character in bot.char_svc.fetch_all_player_characters(ctx)
     ]
 

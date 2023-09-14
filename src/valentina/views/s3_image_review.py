@@ -5,7 +5,7 @@ from discord.ext import pages
 from discord.ui import Button
 from loguru import logger
 
-from valentina.constants import EmbedColor
+from valentina.constants import EmbedColor, Emoji
 from valentina.models.db_tables import Character
 
 
@@ -22,11 +22,14 @@ class DeleteS3Images(discord.ui.View):
         self.review_type = review_type
 
     @discord.ui.button(
-        label="⚠️ Delete image", style=discord.ButtonStyle.danger, custom_id="delete", row=1
+        label=f"{Emoji.WARNING.value} Delete image",
+        style=discord.ButtonStyle.danger,
+        custom_id="delete",
+        row=1,
     )
     async def confirm_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the confirm button."""
-        button.label = "✅ Image deleted"
+        button.label = f"{Emoji.SUCCESS.value} Image deleted"
         button.style = discord.ButtonStyle.secondary
         button.disabled = True
 
@@ -60,7 +63,10 @@ class DeleteS3Images(discord.ui.View):
         self.stop()
 
     @discord.ui.button(
-        label="✅ Complete Review", style=discord.ButtonStyle.primary, custom_id="done", row=1
+        label=f"{Emoji.YES.value} Complete Review",
+        style=discord.ButtonStyle.primary,
+        custom_id="done",
+        row=1,
     )
     async def done_callback(
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002

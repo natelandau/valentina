@@ -5,6 +5,7 @@ import arrow
 import discord
 from discord.ext import pages
 
+from valentina.constants import Emoji
 from valentina.models.db_tables import Character
 from valentina.models.statistics import Statistics
 from valentina.utils import errors
@@ -79,7 +80,12 @@ def __embed1(
     except errors.NoActiveCampaignError:
         pass
 
-    embed.add_field(name="Class", value=character.class_name, inline=True)
+    embed.add_field(
+        name="Alive",
+        value=Emoji.DEAD.value if character.data.get("is_alive", True) else Emoji.DEAD.value,
+    )
+
+    embed.add_field(name="Class", value=Emoji[character.class_name.upper()].value, inline=True)
     embed.add_field(
         name="Demeanor",
         value=character.data["demeanor"] if character.data.get("demeanor") else "",

@@ -48,6 +48,31 @@ class EmbedColor(Enum):
     YELLOW = 0xFFFF00
 
 
+class Emoji(Enum):
+    """Enum for emojis."""
+
+    ALIVE = "🙂"
+    BOT = "🤖"
+    CANCEL = "🚫"
+    COOL_POINT = "🆒"
+    DEAD = "🪦💀🪦"
+    ERROR = "❌"
+    GHOST = "👻"
+    HUNTER = "🧑🏹"
+    MAGE = "🧙🪄"
+    MONSTER = "👹"
+    MORTAL = "🧑"
+    NO = "❌"
+    OTHER = "🤷"
+    QUESTION = "❓"
+    SUCCESS = "👍"
+    VAMPIRE = "🧛"
+    WARNING = "⚠️"
+    WEREWOLF = "🐺"
+    YES = "✅"
+    SETTING = "⚙️"
+
+
 class MaxTraitValue(Enum):
     """Maximum value for a trait.
 
@@ -83,8 +108,8 @@ class MaxTraitValue(Enum):
     RENOWN = 5
 
 
-class PermissionsEditXP(Enum):
-    """Permissions for adding xp to a character."""
+class PermissionsEditTrait(Enum):
+    """Permissions for updating character trait values."""
 
     UNRESTRICTED = 0
     WITHIN_24_HOURS = 1  # Default
@@ -92,8 +117,16 @@ class PermissionsEditXP(Enum):
     STORYTELLER_ONLY = 3
 
 
-class PermissionsEditTrait(Enum):
-    """Permissions for updating character trait values."""
+class PermissionsKillCharacter(Enum):
+    """Permissions for killing characters."""
+
+    UNRESTRICTED = 0
+    CHARACTER_OWNER_ONLY = 1  # Default
+    STORYTELLER_ONLY = 2
+
+
+class PermissionsEditXP(Enum):
+    """Permissions for adding xp to a character."""
 
     UNRESTRICTED = 0
     WITHIN_24_HOURS = 1  # Default
@@ -223,7 +256,7 @@ CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, Chann
 
 ### Data Default Values ###
 CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
-    "alive": True,
+    "is_alive": True,
     "auspice": None,
     "bio": None,
     "breed": None,
@@ -254,6 +287,7 @@ GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "changelog_channel_id": None,
     "error_log_channel_id": None,
     "permissions_edit_trait": PermissionsEditTrait.WITHIN_24_HOURS.value,
+    "permissions_kill_character": PermissionsKillCharacter.CHARACTER_OWNER_ONLY.value,
     "permissions_edit_xp": PermissionsEditXP.WITHIN_24_HOURS.value,
     "permissions_manage_campaigns": PermissionManageCampaign.STORYTELLER_ONLY.value,
     "storyteller_channel_id": None,

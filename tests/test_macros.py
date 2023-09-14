@@ -106,7 +106,7 @@ class TestMacroService:
         # Create the new macro
         with pytest.raises(
             errors.ValidationError,
-            match=r"Macro named `new_macro` or with the same abbreviation already exists",
+            match=r"Macro named `\w+` already exists",
         ):
             self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "nm", "new macro")
 
@@ -128,7 +128,7 @@ class TestMacroService:
         # Create the new macro
         with pytest.raises(
             errors.ValidationError,
-            match="Macro named `new_macro` or with the same abbreviation already exists",
+            match=r"Macro named `\w+` already exists",
         ):
             self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "nm", "new macro")
 

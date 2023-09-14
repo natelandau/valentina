@@ -40,20 +40,19 @@ class MacroService:
         """Create a macro and associated macro traits."""
         existing_macros = self.fetch_macros(ctx.guild.id, ctx.author.id)
 
-        if len(existing_macros) > 0 and (
-            any(macro.name.lower() == name.lower() for macro in existing_macros)
-            or (
-                abbreviation is not None
-                and any(
-                    macro.abbreviation.lower() == abbreviation.lower() for macro in existing_macros
-                )
-            )
+        # Check if a macro with the same name already exists
+        if any(macro.name.lower() == name.lower() for macro in existing_macros):
+            logger.debug(f"CACHE: Macro already exists for {ctx.author.display_name}")
+            raise errors.ValidationError(f"Macro named `{name}` already exists.")
+
+        # Check if a macro with the same abbreviation already exists
+        if abbreviation is not None and any(
+            macro.abbreviation.lower() == abbreviation.lower() for macro in existing_macros
         ):
             logger.debug(f"CACHE: Macro already exists for {ctx.author.display_name}")
-            raise errors.ValidationError(
-                f"Macro named `{name}` or with the same abbreviation already exists."
-            )
+            raise errors.ValidationError("Macro with the same abbreviation already exists.")
 
+        # Create the macro and associated macro traits
         logger.debug(f"DATABASE: Create macro {name} for {ctx.author.display_name}")
         macro = Macro.create(
             name=name,
@@ -64,12 +63,22 @@ class MacroService:
         )
         MacroTrait.create_from_trait_name(macro, trait_one.name)
         MacroTrait.create_from_trait_name(macro, trait_two.name)
+
+        # Purge the cache to ensure consistency
         self.purge_cache(ctx)
 
-        return macro
+        return macro  # Return the created macro
 
     def delete_macro(self, ctx: discord.ApplicationContext, macro: Macro) -> None:
-        """Delete the macro and associated macro traits."""
+        """Delete the macro and associated macro traits.
+
+        Args:
+            ctx: The Discord application context.
+            macro: The macro to delete.
+
+        Raises:
+            ValueError: If the macro does not belong to the user.
+        """
         logger.debug(f"DATABASE: Delete macro {macro.name} for {ctx.author.display_name}")
         macro.delete_instance(recursive=True, delete_nullable=True)
         self.purge_cache(ctx)
@@ -101,7 +110,14 @@ class MacroService:
         return self._macro_cache[user_key]
 
     def fetch_macro_traits(self, macro: Macro) -> list[Trait | CustomTrait]:
-        """Fetch the Trait and Custom Traits associated with a macro."""
+        """Fetch all macro traits for a given macro.
+
+        Args:
+            macro: The macro to fetch traits for.
+
+        Returns:
+            list: A list of MacroTrait objects.
+        """
         if macro.id not in self._trait_cache:
             logger.debug(f"DATABASE: Fetch traits for {macro.name}")
             trait_objects = Trait.select().join(MacroTrait).where(MacroTrait.macro == macro)

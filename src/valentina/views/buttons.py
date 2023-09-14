@@ -2,6 +2,8 @@
 import discord
 from discord.ui import Button
 
+from valentina.constants import Emoji
+
 
 class ReRollButton(discord.ui.View):
     """Add a re-roll button to a view."""
@@ -23,7 +25,7 @@ class ReRollButton(discord.ui.View):
     @discord.ui.button(label="Done", style=discord.ButtonStyle.secondary, custom_id="done")
     async def done_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the re-roll button."""
-        button.label += " ✅"
+        button.label += f" {Emoji.YES.value}"
         button.disabled = True
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
@@ -54,7 +56,7 @@ class ConfirmCancelButtons(discord.ui.View):
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, custom_id="confirm")
     async def confirm_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the confirm button."""
-        button.label += " ✅"
+        button.label += f" {Emoji.YES.value}"
         button.disabled = True
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
@@ -63,10 +65,14 @@ class ConfirmCancelButtons(discord.ui.View):
         self.confirmed = True
         self.stop()
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel")
+    @discord.ui.button(
+        label=f"{Emoji.CANCEL.value} Cancel",
+        style=discord.ButtonStyle.secondary,
+        custom_id="cancel",
+    )
     async def cancel_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the cancel button."""
-        button.label += " ✅"
+        button.label += f" {Emoji.YES.value}"
         button.disabled = True
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
@@ -90,7 +96,11 @@ class CancelButton(discord.ui.View):
         self.ctx = ctx
         self.confirmed: bool = None
 
-    @discord.ui.button(label="🚫 Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel")
+    @discord.ui.button(
+        label=f"{Emoji.CANCEL.value} Cancel",
+        style=discord.ButtonStyle.secondary,
+        custom_id="cancel",
+    )
     async def cancel_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the cancel button."""
         button.disabled = True

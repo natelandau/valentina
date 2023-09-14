@@ -10,9 +10,11 @@ from valentina.constants import (
     CHANNEL_PERMISSIONS,
     ChannelPermission,
     EmbedColor,
+    Emoji,
     PermissionManageCampaign,
     PermissionsEditTrait,
     PermissionsEditXP,
+    PermissionsKillCharacter,
 )
 from valentina.views import CancelButton
 
@@ -48,14 +50,20 @@ class SettingsButtons(discord.ui.View):
         # Create buttons for each option
         for option in options:
             button: Button = Button(
-                label=f"⚙️ {option[0]}" if self.current_value == option[1] else option[0],
+                label=f"{Emoji.SETTING.value} {option[0]}"
+                if self.current_value == option[1]
+                else option[0],
                 custom_id=str(option[1]),
                 style=discord.ButtonStyle.primary,
             )
             button.callback = self.button_callback  # type: ignore [method-assign]
             self.add_item(button)
 
-    @discord.ui.button(label="🚫 Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel")
+    @discord.ui.button(
+        label=f"{Emoji.CANCEL.value} Cancel",
+        style=discord.ButtonStyle.secondary,
+        custom_id="cancel",
+    )
     async def cancel_callback(
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002
     ) -> None:
@@ -65,7 +73,7 @@ class SettingsButtons(discord.ui.View):
                 child.disabled = True
 
         embed = interaction.message.embeds[0]
-        embed.description = "## Cancelled\nNo settings were changed"
+        embed.description = f"## {Emoji.CANCEL.value} Cancelled\nNo settings were changed"
         embed.color = EmbedColor.WARNING.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
@@ -81,7 +89,7 @@ class SettingsButtons(discord.ui.View):
 
                 if interaction.data.get("custom_id", None) == child.custom_id:
                     setting_name = child.label[2:]
-                    child.label = f"✅ {child.label}"
+                    child.label = f"{Emoji.YES.value} {child.label}"
 
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
@@ -95,7 +103,7 @@ class SettingsButtons(discord.ui.View):
 
         # Edit the original message
         embed = interaction.message.embeds[0]
-        embed.description = f"{embed.description}\n## 👍 Success\nSettings updated: `{setting_name}`"
+        embed.description = f"{embed.description}\n## {Emoji.SUCCESS.value} Success\nSettings updated: `{setting_name}`"
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
@@ -182,15 +190,17 @@ class SettingsChannelSelect(discord.ui.View):
 
         # Edit the original message
         embed = interaction.message.embeds[0]
-        embed.description = (
-            f"{embed.description}\n## 👍 Success\nSettings updated: {selected_channel.mention}"
-        )
+        embed.description = f"{embed.description}\n## {Emoji.SUCCESS.value} Success\nSettings updated: {selected_channel.mention}"
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
-    @discord.ui.button(label="⚠️ Disable", style=discord.ButtonStyle.primary, custom_id="disable")
+    @discord.ui.button(
+        label=f"{Emoji.WARNING.value} Disable",
+        style=discord.ButtonStyle.primary,
+        custom_id="disable",
+    )
     async def disable_callback(
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002
     ) -> None:
@@ -203,13 +213,17 @@ class SettingsChannelSelect(discord.ui.View):
 
         # Edit the original message
         embed = interaction.message.embeds[0]
-        embed.description = f"{embed.description}\n## 👍 Channel Disabled\n_No permissions were changed. No one who couldn't see the channel before can see it now._"
+        embed.description = f"{embed.description}\n## {Emoji.SUCCESS.value} Channel Disabled\n_No permissions were changed. No one who couldn't see the channel before can see it now._"
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
-    @discord.ui.button(label="🚫 Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel")
+    @discord.ui.button(
+        label=f"{Emoji.CANCEL.value} Cancel",
+        style=discord.ButtonStyle.secondary,
+        custom_id="cancel",
+    )
     async def cancel_callback(
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002
     ) -> None:
@@ -236,9 +250,10 @@ class SettingsManager:
         self.current_settings = self.ctx.bot.guild_svc.fetch_guild_settings(self.ctx.guild)  # type: ignore [attr-defined]
         self.page_group: list[pages.PageGroup] = [
             self._home_embed(),
-            self._xp_permissions_embed(),
-            self._trait_permissions_embed(),
-            self._manage_campaigns_embed(),
+            self._xp_permissions(),
+            self._trait_permissions(),
+            self._manage_campaigns(),
+            self._kill_character(),
             self._error_log(),
             self._audit_log(),
             self._storyteller_channel(),
@@ -372,8 +387,9 @@ class SettingsManager:
                 "# Permissions",
                 f"Grant experience   : {PermissionsEditXP(self.current_settings['permissions_edit_xp']).name.title()}",
                 f"Manage campaign    : {PermissionManageCampaign(self.current_settings['permissions_manage_campaigns']).name.title()}",
-                "",
                 f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
+                f"Kill Character     : {PermissionsKillCharacter(self.current_settings['permissions_kill_character']).name.title()}",
+                "",
                 "# Channel Settings:",
                 f"Changelog channel  : {changelog_channel.name}"
                 if changelog_channel is not None
@@ -401,7 +417,48 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _manage_campaigns_embed(self) -> pages.PageGroup:
+    def _kill_character(self) -> pages.PageGroup:
+        """Create a view for setting kill character permissions.
+
+        This method generates a Discord embed that provides options for setting permissions
+        on who can mark a character as dead. It also sets up buttons for the user to interact with.
+
+        Returns:
+            pages.PageGroup: A PageGroup object containing the embed and custom view for setting permissions.
+        """
+        description = [
+            "# Settings for killing characters",
+            "Control who can mark a character as dead",
+            "### Options:",
+            "1. **Unrestricted** - Any user can kill a character",
+            "2. **Owner Only** - The owner of a character can kill that character",
+            "3. **Storyteller only** - Only a Storyteller can kill a character",
+        ]
+
+        embed = discord.Embed(
+            title="", description="\n".join(description), color=EmbedColor.INFO.value
+        )
+
+        # Build options for the buttons and the view
+        options = [
+            (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
+            for x in PermissionsKillCharacter
+        ]
+        view = SettingsButtons(
+            self.ctx,
+            key="permissions_kill_character",
+            options=options,
+            current_value=int(self.current_settings["permissions_kill_character"]),
+        )
+
+        return pages.PageGroup(
+            pages=[pages.Page(embeds=[embed], custom_view=view)],
+            label="Kill Character",
+            description="Who can mark a character as dead",
+            use_default_buttons=False,
+        )
+
+    def _manage_campaigns(self) -> pages.PageGroup:
         """Create a view for setting who can manage campaigns.
 
         This method generates a Discord embed that provides options for setting permissions
@@ -475,7 +532,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _trait_permissions_embed(self) -> pages.PageGroup:
+    def _trait_permissions(self) -> pages.PageGroup:
         """Create a view for setting Trait Update permissions.
 
         This method generates a Discord embed that provides options for setting permissions
@@ -518,7 +575,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _xp_permissions_embed(self) -> pages.PageGroup:
+    def _xp_permissions(self) -> pages.PageGroup:
         """Create a view for setting XP permissions.
 
         This method generates a Discord embed that provides options for setting permissions

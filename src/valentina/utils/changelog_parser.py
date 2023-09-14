@@ -131,10 +131,6 @@ class ChangelogParser:
         Returns:
         None
         """
-        from rich import print
-
-        print(self.changelog_dict)
-
         # Remove excluded categories
         categories_to_remove: dict[str, list[str]] = {
             key: [category for category in value if category in self.exclude_categories]
@@ -151,8 +147,6 @@ class ChangelogParser:
         # Remove the identified keys
         for key in keys_to_remove:
             self.changelog_dict.pop(key)
-
-        print(self.changelog_dict)
 
     def has_updates(self) -> bool:
         """Check if there are any meaningful updates in the changelog other than the date.

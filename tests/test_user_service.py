@@ -315,8 +315,8 @@ class TestUserService:
         # THEN return the correct result
         assert result is expected
 
-    def test_fetch_alive_characters(self, mock_ctx) -> None:
-        """Test fetching active characters."""
+    def test_fetch_player_characters(self, mock_ctx) -> None:
+        """Test fetching all player characters."""
         # GIVEN a character
         character = Character.create(
             data={
@@ -324,7 +324,7 @@ class TestUserService:
                 "last_name": "character",
                 "storyteller_character": False,
                 "player_character": True,
-                "alive": True,
+                "is_alive": True,
             },
             char_class=1,
             guild=mock_ctx.guild.id,
@@ -338,7 +338,7 @@ class TestUserService:
                 "last_name": "character",
                 "storyteller_character": False,
                 "player_character": True,
-                "alive": True,
+                "is_alive": True,
             },
             char_class=1,
             guild=mock_ctx.guild.id,
@@ -346,14 +346,14 @@ class TestUserService:
             owned_by=mock_ctx.author.id,
             clan=1,
         )
-        # Do not return dead or non-player characters
-        Character.create(
+        # A dead character
+        character3 = Character.create(
             data={
                 "first_name": "char3",
                 "last_name": "character",
                 "storyteller_character": False,
                 "player_character": True,
-                "alive": False,
+                "is_alive": False,
             },
             char_class=1,
             guild=mock_ctx.guild.id,
@@ -367,7 +367,7 @@ class TestUserService:
                 "last_name": "character",
                 "storyteller_character": True,
                 "player_character": False,
-                "alive": True,
+                "is_alive": True,
             },
             char_class=1,
             guild=mock_ctx.guild.id,
@@ -381,7 +381,7 @@ class TestUserService:
                 "last_name": "character",
                 "storyteller_character": False,
                 "player_character": True,
-                "alive": True,
+                "is_alive": True,
             },
             char_class=1,
             guild=mock_ctx.guild.id + 1,
@@ -391,7 +391,13 @@ class TestUserService:
         )
 
         # WHEN fetch_active_characters is called
-        result = self.user_svc.fetch_alive_characters(mock_ctx)
+        result = self.user_svc.fetch_player_characters(mock_ctx)
+
+        # THEN return the correct result
+        assert result == [character, character2, character3]
+
+        # WHEN fetch_active_characters is called specifying only alive characters
+        result = self.user_svc.fetch_player_characters(mock_ctx, alive_only=True)
 
         # THEN return the correct result
         assert result == [character, character2]
@@ -436,7 +442,7 @@ class TestUserService:
                 "last_name": "character",
                 "storyteller_character": False,
                 "player_character": True,
-                "alive": True,
+                "is_alive": True,
                 "is_active": True,
             },
             char_class=1,
@@ -451,7 +457,7 @@ class TestUserService:
                 "last_name": "character",
                 "storyteller_character": False,
                 "player_character": True,
-                "alive": True,
+                "is_alive": True,
                 "is_active": False,
             },
             char_class=1,
@@ -479,7 +485,7 @@ class TestUserService:
                 "last_name": "character",
                 "storyteller_character": False,
                 "player_character": True,
-                "alive": True,
+                "is_alive": True,
                 "is_active": True,
             },
             char_class=1,

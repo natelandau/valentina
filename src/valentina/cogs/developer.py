@@ -164,7 +164,7 @@ class Developer(commands.Cog):
         if not is_confirmed:
             return
 
-        self.bot.user_svc.fetch_user(ctx)
+        self.bot.user_svc.fetch_user(ctx)  # Instantiate the user in the database if needed
 
         for _ in range(number):
             # Assign a random class unless specified
@@ -190,9 +190,9 @@ class Developer(commands.Cog):
 
             character = self.bot.char_svc.update_or_add(
                 ctx,
-                data=data,
                 char_class=char_class,
                 clan=vampire_clan,
+                data=data,
             )
 
             # Fetch all traits and set them

@@ -355,6 +355,16 @@ class Character(BaseModel):
 
         return trait.value  # custom traits
 
+    @property
+    def is_active(self) -> bool:
+        """Return True if the character is set as active."""
+        return self.data.get("is_active", False)
+
+    @property
+    def is_alive(self) -> bool:
+        """Return True if the character is alive."""
+        return self.data.get("is_alive", True)
+
     def set_trait_value(self, trait: Trait | CustomTrait, value: int) -> None:
         """Set the character's value of a trait."""
         if isinstance(trait, CustomTrait):
@@ -385,9 +395,17 @@ class Character(BaseModel):
         default_values = CHARACTER_DEFAULTS.copy()
         default_values["modified"] = str(time_now())
 
+        # Add default values for any missing keys
         for default_key, default_value in default_values.items():
             if default_key not in self.data:
                 self.data[default_key] = default_value
+                updated = True
+
+        # Remove errant keys
+        keys_to_remove = ["alive"]
+        for key in self.data:
+            if key in keys_to_remove:
+                del self.data[key]
                 updated = True
 
         if updated:

@@ -1,7 +1,7 @@
 # Todo List
 
 -   [x] Admin: Settings for managing campaigns (ie, who can create, who can edit, etc)
--   [ ] Character: Mark characters as dead
+-   [x] Character: Mark characters as dead
 -   [x] Character: Migrate to "owned" characters
 -   [ ] Campaign: Renumber chapters
 -   [ ] Campaign: View any campaign, not just active one
@@ -14,3 +14,4 @@
 -   [x] Storyteller: Allow updating player characters
 -   [x] Storyteller: Allow updating storyteller characters
 -   [x] Storyteller: Add custom traits to storyteller characters
+-   [ ] Refactor: Centralize pagination for long responses

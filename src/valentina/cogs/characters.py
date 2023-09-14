@@ -9,7 +9,13 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import COOL_POINT_VALUE, VALID_IMAGE_EXTENSIONS, EmbedColor, XPMultiplier
+from valentina.constants import (
+    COOL_POINT_VALUE,
+    VALID_IMAGE_EXTENSIONS,
+    EmbedColor,
+    Emoji,
+    XPMultiplier,
+)
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import (
@@ -172,7 +178,13 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Select a character as your active character."""
-        title = f"Set `{character.name}` as active character for `{ctx.author.display_name}`"
+        if not character.is_alive:
+            title = (
+                f"{character.name} is dead. Set as active for `{ctx.author.display_name}` anyway"
+            )
+        else:
+            title = f"Set `{character.name}` as active character for `{ctx.author.display_name}`"
+
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
             return
@@ -213,8 +225,8 @@ class Characters(commands.Cog, name="Character"):
         ),
         hidden: Option(
             bool,
-            description="Make the list only visible to you (default true).",
-            default=True,
+            description="Make the list only visible to you (default false).",
+            default=False,
         ),
     ) -> None:
         """List all player characters in this guild."""
@@ -240,10 +252,12 @@ class Characters(commands.Cog, name="Character"):
         )
 
         for character in sorted(characters, key=lambda x: x.name):
+            alive = Emoji.ALIVE.value if character.is_alive else Emoji.DEAD.value
             text += f"**{character.name}**\n"
             text += "```\n"
             text += f"Class: {character.char_class.name:<20}  Created On: {character.created.split(' ')[0]}\n"
             text += f"Owner: {self.bot.get_user(character.owned_by.id).display_name:<20} Lifetime XP: {character.data['experience']}\n"
+            text += f"Alive: {alive:<20}  Active: {character.is_active}\n"
             text += "```\n"
 
         embed = discord.Embed(description=text, color=EmbedColor.INFO.value)
@@ -262,8 +276,8 @@ class Characters(commands.Cog, name="Character"):
         new_owner: Option(discord.User, description="The user to transfer the character to"),
         hidden: Option(
             bool,
-            description="Make the sheet only visible to you (default true).",
-            default=True,
+            description="Make the sheet only visible to you (default false).",
+            default=False,
         ),
     ) -> None:
         """Transfer one of your characters to another user."""
@@ -273,6 +287,45 @@ class Characters(commands.Cog, name="Character"):
             return
 
         self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
+
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await confirmation_response_msg
+
+    @chars.command(name="kill", description="Kill a character")
+    async def kill_character(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to view",
+            autocomplete=select_any_player_character,
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Kill a character."""
+        if not self.bot.user_svc.can_kill_character(ctx, character):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description=f"You do not have permissions to kill {character.full_name}\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
+
+        title = f"Kill `{character.name}`"
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
+        updates: dict[str, str | int | bool] = {"is_active": False, "is_alive": False}
+        self.bot.char_svc.update_or_add(ctx, character=character, data=updates)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg
@@ -291,8 +344,8 @@ class Characters(commands.Cog, name="Character"):
         ),
         hidden: Option(
             bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
+            description="Make the response visible only to you (default false).",
+            default=False,
         ),
     ) -> None:
         """Spend experience points."""
@@ -362,8 +415,8 @@ class Characters(commands.Cog, name="Character"):
         xp: Option(int, description="The amount of experience to add", required=True),
         hidden: Option(
             bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
+            description="Make the response visible only to you (default false).",
+            default=False,
         ),
     ) -> None:
         """Add experience to a character."""
@@ -410,8 +463,8 @@ class Characters(commands.Cog, name="Character"):
         cp: Option(int, description="The number of cool points to add", required=True),
         hidden: Option(
             bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
+            description="Make the response visible only to you (default false).",
+            default=False,
         ),
     ) -> None:
         """Add cool points to a character."""

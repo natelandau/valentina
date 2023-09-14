@@ -10,7 +10,12 @@ import discord
 from loguru import logger
 from peewee import DoesNotExist
 
-from valentina.constants import PermissionManageCampaign, PermissionsEditTrait, PermissionsEditXP
+from valentina.constants import (
+    PermissionManageCampaign,
+    PermissionsEditTrait,
+    PermissionsEditXP,
+    PermissionsKillCharacter,
+)
 from valentina.models.db_tables import Character, GuildUser, User
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
@@ -44,31 +49,26 @@ class UserService:
 
         return f"{guild_id}_{user_id}"
 
-    def can_update_xp(self, ctx: discord.ApplicationContext, character: Character = None) -> bool:
-        """Check if the user has permissions to add experience points to their characters.
+    def can_manage_campaign(self, ctx: discord.ApplicationContext) -> bool:
+        """Check if the user has permissions to manage campaigns.
 
         The function checks the following conditions in order:
         - If the author is an administrator, return True.
         - Fetch the guild settings. If they cannot be fetched, return False.
-        - Use a mapping from xp permissions to functions to check the corresponding permission type and return the result.
+        - Use a mapping from trait permissions to functions to check the corresponding permission type and return the result.
 
         Args:
             ctx (ApplicationContext): The application context.
-            character (Character, optional): The character to check permissions for. Defaults to None.
+
 
         Returns:
-            bool: True if the user has permissions to add xp, False otherwise.
+            bool: True if the user has permissions to update traits, False otherwise.
         """
         permissions_dict: dict[
-            PermissionsEditXP, Callable[[discord.ApplicationContext, Character], bool]
+            PermissionManageCampaign, Callable[[discord.ApplicationContext], bool]
         ] = {
-            PermissionsEditXP.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
-            PermissionsEditXP.CHARACTER_OWNER_ONLY: lambda ctx, character: character
-            and character.created_by.id == ctx.author.id,
-            PermissionsEditXP.WITHIN_24_HOURS: lambda ctx, character: character
-            and character.created_by.id == ctx.author.id
-            and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            PermissionsEditXP.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            PermissionManageCampaign.UNRESTRICTED: lambda x: True,  # noqa: ARG005
+            PermissionManageCampaign.STORYTELLER_ONLY: lambda ctx: "Storyteller"
             in [x.name for x in ctx.author.roles],
         }
 
@@ -79,7 +79,48 @@ class UserService:
         if not settings:
             return False
 
-        permission = PermissionsEditXP(settings["permissions_edit_xp"])
+        permission = PermissionManageCampaign(settings["permissions_manage_campaigns"])
+        check_permission = permissions_dict.get(permission)
+        if check_permission:
+            return check_permission(ctx)
+
+        return False
+
+    def can_kill_character(
+        self, ctx: discord.ApplicationContext, character: Character = None
+    ) -> bool:
+        """Check if the user has permissions to mark a character as dead.
+
+        The function checks the following conditions in order:
+        - If the author is an administrator, return True.
+        - Fetch the guild settings. If they cannot be fetched, return False.
+        - Use a mapping from PermissionsKillCharacter to functions to check the corresponding permission type and return the result.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            character (Character, optional): The character to check permissions for. Defaults to None.
+
+        Returns:
+            bool: True if the user has permissions to kill a character, False otherwise.
+        """
+        permissions_dict: dict[
+            PermissionsKillCharacter, Callable[[discord.ApplicationContext, Character], bool]
+        ] = {
+            PermissionsKillCharacter.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
+            PermissionsKillCharacter.CHARACTER_OWNER_ONLY: lambda ctx, character: character
+            and character.owned_by.id == ctx.author.id,
+            PermissionsKillCharacter.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            in [x.name for x in ctx.author.roles],
+        }
+
+        if ctx.author.guild_permissions.administrator:
+            return True
+
+        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx.guild)  # type: ignore [attr-defined]
+        if not settings:
+            return False
+
+        permission = PermissionsKillCharacter(settings["permissions_kill_character"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
             return check_permission(ctx, character)
@@ -130,26 +171,31 @@ class UserService:
 
         return False
 
-    def can_manage_campaign(self, ctx: discord.ApplicationContext) -> bool:
-        """Check if the user has permissions to manage campaigns.
+    def can_update_xp(self, ctx: discord.ApplicationContext, character: Character = None) -> bool:
+        """Check if the user has permissions to add experience points to their characters.
 
         The function checks the following conditions in order:
         - If the author is an administrator, return True.
         - Fetch the guild settings. If they cannot be fetched, return False.
-        - Use a mapping from trait permissions to functions to check the corresponding permission type and return the result.
+        - Use a mapping from xp permissions to functions to check the corresponding permission type and return the result.
 
         Args:
             ctx (ApplicationContext): The application context.
-
+            character (Character, optional): The character to check permissions for. Defaults to None.
 
         Returns:
-            bool: True if the user has permissions to update traits, False otherwise.
+            bool: True if the user has permissions to add xp, False otherwise.
         """
         permissions_dict: dict[
-            PermissionManageCampaign, Callable[[discord.ApplicationContext], bool]
+            PermissionsEditXP, Callable[[discord.ApplicationContext, Character], bool]
         ] = {
-            PermissionManageCampaign.UNRESTRICTED: lambda x: True,  # noqa: ARG005
-            PermissionManageCampaign.STORYTELLER_ONLY: lambda ctx: "Storyteller"
+            PermissionsEditXP.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
+            PermissionsEditXP.CHARACTER_OWNER_ONLY: lambda ctx, character: character
+            and character.created_by.id == ctx.author.id,
+            PermissionsEditXP.WITHIN_24_HOURS: lambda ctx, character: character
+            and character.created_by.id == ctx.author.id
+            and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
+            PermissionsEditXP.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
             in [x.name for x in ctx.author.roles],
         }
 
@@ -160,20 +206,52 @@ class UserService:
         if not settings:
             return False
 
-        permission = PermissionManageCampaign(settings["permissions_manage_campaigns"])
+        permission = PermissionsEditXP(settings["permissions_edit_xp"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
-            return check_permission(ctx)
+            return check_permission(ctx, character)
 
         return False
 
-    def fetch_alive_characters(
-        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+    def fetch_player_characters(
+        self,
+        ctx: discord.ApplicationContext | discord.AutocompleteContext,
+        alive_only: bool = False,
     ) -> list[Character]:
-        """Retrieve a list of active characters for the user."""
+        """Retrieve a list of all player characters owned by the user in the current guild.
+
+        Args:
+            ctx: The context object for the command invocation.
+            alive_only (bool, optional): If True, only return characters that are currently alive. Defaults to False.
+
+        Returns:
+            list: Character objects representing the characters owned by the user in the current guild.
+
+
+        Examples:
+            To retrieve all player characters owned by the user in the current guild:
+            ```
+            characters = fetch_player_characters(ctx)
+            ```
+            To retrieve only the alive player characters owned by the user in the current guild:
+            ```
+            characters = fetch_player_characters(ctx, alive_only=True)
+            ```
+        """
         user = self.fetch_user(ctx=ctx)
 
         guild = ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
+
+        if alive_only:
+            return [
+                x
+                for x in Character.select().where(
+                    Character.owned_by == user,
+                    Character.guild == guild.id,
+                    Character.data["player_character"] == True,  # noqa: E712
+                    Character.data["is_alive"] == True,  # noqa: E712
+                )
+            ]
 
         return [
             x
@@ -181,7 +259,6 @@ class UserService:
                 Character.owned_by == user,
                 Character.guild == guild.id,
                 Character.data["player_character"] == True,  # noqa: E712
-                Character.data["alive"] == True,  # noqa: E712
             )
         ]
 

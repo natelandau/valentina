@@ -3,7 +3,7 @@ from collections.abc import Coroutine
 
 import discord
 
-from valentina.constants import EmbedColor
+from valentina.constants import EmbedColor, Emoji
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
@@ -46,7 +46,9 @@ async def confirm_action(
     await view.wait()
     if not view.confirmed:
         embed = discord.Embed(
-            title="Cancelled", description=title.rstrip("?"), color=EmbedColor.WARNING.value
+            title=f"{Emoji.CANCEL.value} Cancelled",
+            description=title.rstrip("?"),
+            color=EmbedColor.WARNING.value,
         )
         await msg.edit_original_response(embed=embed, view=None)
         return (False, None)

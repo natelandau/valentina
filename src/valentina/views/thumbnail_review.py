@@ -4,7 +4,7 @@ import discord
 from discord.ext import pages
 from discord.ui import Button
 
-from valentina.constants import ChannelPermission, EmbedColor, RollResultType
+from valentina.constants import ChannelPermission, EmbedColor, Emoji, RollResultType
 from valentina.models.db_tables import RollThumbnail
 
 
@@ -20,11 +20,14 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         self.thumbnail_url = thumbnail_url
 
     @discord.ui.button(
-        label="⚠️ Delete thumbnail", style=discord.ButtonStyle.danger, custom_id="delete", row=1
+        label=f"{Emoji.WARNING.value} Delete thumbnail",
+        style=discord.ButtonStyle.danger,
+        custom_id="delete",
+        row=1,
     )
     async def confirm_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the confirm button."""
-        button.label = "✅ Deleted Thumbnail"
+        button.label = f"{Emoji.YES.value} Deleted Thumbnail"
         button.style = discord.ButtonStyle.secondary
         button.disabled = True
 
@@ -53,7 +56,10 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         self.stop()
 
     @discord.ui.button(
-        label="✅ Complete Review", style=discord.ButtonStyle.primary, custom_id="done", row=1
+        label=f"{Emoji.YES.value} Complete Review",
+        style=discord.ButtonStyle.primary,
+        custom_id="done",
+        row=1,
     )
     async def done_callback(
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002
