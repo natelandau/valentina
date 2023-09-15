@@ -19,9 +19,9 @@
     [tool.poetry.dependencies]
         aiofiles      = "^23.2.1"
         arrow         = "^1.2.3"
-        boto3         = "^1.28.40"
+        boto3         = "^1.28.49"
         inflect       = "^7.0.0"
-        loguru        = "^0.7.1"
+        loguru        = "^0.7.2"
         numpy         = "^1.25.2"
         peewee        = "^3.16.3"
         py-cord       = "^2.4.1"
@@ -31,28 +31,27 @@
         typer         = { extras = ["all"], version = "^0.9.0" }
 
     [tool.poetry.group.test.dependencies]
-        coverage               = "^7.2.2"
         dirty-equals           = "^0.6.0"
-        pytest                 = "^7.4.0"
+        pytest                 = "^7.4.2"
         pytest-asyncio         = "^0.21.1"
         pytest-clarity         = "^1.0.1"
         pytest-mock            = "^3.11.1"
         pytest-pretty-terminal = "^1.1.0"
-        pytest-xdist           = "^3.2.1"
+        pytest-xdist           = "^3.3.1"
 
     [tool.poetry.group.dev.dependencies]
-        black          = "^23.7.0"
-        commitizen     = "^3.8.2"
-        coverage       = "^7.2.5"
+        black          = "^23.9.1"
+        commitizen     = "^3.9.0"
+        coverage       = "^7.3.1"
         mypy           = "^1.5.0"
         pdoc           = "^14.0.0"
-        poethepoet     = "^0.21.1"
-        pre-commit     = "^3.3.3"
-        ruff           = "^0.0.288"
+        poethepoet     = "^0.22.1"
+        pre-commit     = "^3.4.0"
+        ruff           = "^0.0.289"
         shellcheck-py  = "^0.9.0.5"
         types-aiofiles = "^23.2.0.0"
-        typos          = "^1.16.9"
-        vulture        = "^2.9"
+        typos          = "^1.16.11"
+        vulture        = "^2.9.1"
 
 [tool.black]
     line-length = 100

@@ -11,7 +11,16 @@ from valentina.constants import EmbedColor
 async def error_log_embed(
     ctx: discord.ApplicationContext | discord.Interaction, msg: str, error: Exception
 ) -> discord.Embed:
-    """Create an embed for errors."""
+    """Create an embed for logging errors.
+
+    Args:
+        ctx: The context object for the command invocation or interaction.
+        msg: A message to include in the error log.
+        error: The exception that was raised.
+
+    Returns:
+        A discord.Embed object representing the error log.
+    """
     description = f"{msg}\n"
     description += "\n".join(traceback.format_exception(error))
 
@@ -151,7 +160,25 @@ async def log_to_channel(
     log: str | bool,
     embed: discord.Embed | None = None,
 ) -> None:
-    """Log an event to the guild audit log channel."""
+    """Log an event to the guild audit log channel.
+
+    Args:
+        ctx: The context object for the command invocation.
+        log: The message to log to the audit log channel. If True, a default message will be used.
+        embed: An optional embed to include in the log message.
+
+
+    Examples:
+        To log a message to the audit log channel:
+        ```
+        await log_to_channel(ctx, "User banned.")
+        ```
+        To log an embed to the audit log channel:
+        ```
+        embed = create_success_embed("Success!", "The operation was successful.")
+        await log_to_channel(ctx, True, embed=embed)
+        ```
+    """
     if embed is not None:
         log_embed = embed.copy()
         log_embed.timestamp = datetime.now()
