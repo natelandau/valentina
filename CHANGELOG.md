@@ -1,3 +1,21 @@
+## v1.10.0 (2023-09-16)
+
+### Feat
+
+- **character**: mark characters as dead
+- **misc**: improve /changelog to specify versions (#57)
+
+### Fix
+
+- **gameplay**: add hints to use macros when rolling traits
+- **admin**: add interaction user to check to `/admin settings`
+- **storyteller**: update traits displays friendly error when trait not found
+- **bot**: send changelog on connect (#56)
+
+### Refactor
+
+- **bot**: add newly joined guilds to the database
+
 ## v1.9.3 (2023-09-10)
 
 ### Refactor
