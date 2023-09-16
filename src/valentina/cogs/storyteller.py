@@ -328,10 +328,22 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
         # Get trait object from name
+        found_trait = False
         for t in character.traits_list:
             if trait.lower() == t.name.lower():
+                found_trait = True
                 trait = t
                 break
+
+        if not found_trait:
+            await present_embed(
+                ctx,
+                title="Trait not found",
+                description=f"Trait `{trait}` not found for character `{character.full_name}`",
+                level="error",
+                ephemeral=True,
+            )
+            return
 
         old_value = character.get_trait_value(trait)
 
