@@ -678,6 +678,7 @@ class StoryTeller(commands.Cog):
             DiceType.D10.value,
             comment,
             hidden=hidden,
+            from_macro=True,
             trait_one=trait_one,
             trait_one_value=trait_one_value,
             trait_two=trait_two,

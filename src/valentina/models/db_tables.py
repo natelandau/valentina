@@ -402,13 +402,15 @@ class Character(BaseModel):
                 updated = True
 
         # Remove errant keys
-        keys_to_remove = ["alive"]
+        search_keys = ["alive"]
+        keys_to_remove = []
         for key in self.data:
-            if key in keys_to_remove:
-                del self.data[key]
-                updated = True
+            if key in search_keys:
+                keys_to_remove.append(key)
 
         if updated:
+            for key in keys_to_remove:
+                del self.data[key]
             self.save()
             logger.info(f"DATABASE: Update defaults for {self}")
         else:
