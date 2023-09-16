@@ -138,7 +138,9 @@ class DiceRoll:
                 "difficulty": self.difficulty,
             }
             RollStatistic.create(**fields_to_log)
-            logger.debug(f"DATABASE: Log diceroll {fields_to_log}")
+            logger.debug(
+                f"DICEROLL: {self.ctx.author.display_name} rolled {self.roll} for {self.result_type.name}"
+            )
 
     @property
     def result_type(self) -> RollResultType:

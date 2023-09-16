@@ -470,6 +470,14 @@ class MacroTrait(BaseModel):
             custom_trait = CustomTrait.get(CustomTrait.name == trait_name)
             return cls.create(macro=macro, custom_trait=custom_trait)
 
+    @classmethod
+    def create_from_trait(cls, macro: Macro, trait: Trait | CustomTrait) -> MacroTrait:
+        """Create a MacroTrait for the given macro and trait."""
+        if isinstance(trait, Trait):
+            return cls.create(macro=macro, trait=trait)
+
+        return cls.create(macro=macro, custom_trait=trait)
+
     class Meta:
         """Meta class for the model."""
 

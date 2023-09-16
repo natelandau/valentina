@@ -61,8 +61,8 @@ class MacroService:
             user=ctx.author.id,
             guild=ctx.guild.id,
         )
-        MacroTrait.create_from_trait_name(macro, trait_one.name)
-        MacroTrait.create_from_trait_name(macro, trait_two.name)
+        MacroTrait.create_from_trait(macro, trait_one)
+        MacroTrait.create_from_trait(macro, trait_two)
 
         # Purge the cache to ensure consistency
         self.purge_cache(ctx)
@@ -110,7 +110,7 @@ class MacroService:
         return self._macro_cache[user_key]
 
     def fetch_macro_traits(self, macro: Macro) -> list[Trait | CustomTrait]:
-        """Fetch all macro traits for a given macro.
+        """Fetch all traits for a given macro.
 
         Args:
             macro: The macro to fetch traits for.
@@ -145,3 +145,20 @@ class MacroService:
             logger.debug("CACHE: Purge all macros from cache")
             self._macro_cache.clear()
             self._trait_cache.clear()
+
+    def fetch_macro_from_traits(
+        self,
+        ctx: discord.ApplicationContext,
+        trait_one: Trait | CustomTrait,
+        trait_two: Trait | CustomTrait,
+    ) -> Macro:
+        """Check if a macro already exists for the given user and for the given traits."""
+        existing_macros = self.fetch_macros(ctx.guild.id, ctx.author.id)
+
+        for macro in existing_macros:
+            traits = self.fetch_macro_traits(macro)
+
+            if trait_one in traits and trait_two in traits:
+                return macro
+
+        return None

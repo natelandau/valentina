@@ -180,6 +180,7 @@ class Roll(commands.Cog):
             difficulty,
             DiceType.D10.value,
             comment,
+            from_macro=True,
             trait_one=trait_one,
             trait_one_value=trait_one_value,
             trait_two=trait_two,
