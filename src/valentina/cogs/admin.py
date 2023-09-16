@@ -246,11 +246,19 @@ class Admin(commands.Cog):
     ## SETTINGS COMMANDS #############################################################################
 
     @admin.command(name="settings", description="Manage Guild Settings")
-    async def settings_manager(self, ctx: discord.ApplicationContext) -> None:
+    async def settings_manager(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Manage Guild Settings."""
         manager = SettingsManager(ctx)
         paginator = manager.display_settings_manager()
-        await paginator.respond(ctx.interaction, ephemeral=True)
+        await paginator.respond(ctx.interaction, ephemeral=hidden)
         await paginator.wait()
 
     ### GUILD ADMINISTRATION COMMANDS ################################################################

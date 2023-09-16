@@ -109,6 +109,10 @@ class SettingsButtons(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Disables buttons for everyone except the user who created the embed."""
+        return interaction.user.id == self.ctx.author.id
+
 
 class SettingsChannelSelect(discord.ui.View):
     """Manage a UI view for channel selection in a guild.
@@ -239,6 +243,10 @@ class SettingsChannelSelect(discord.ui.View):
 
         await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Disables buttons for everyone except the user who created the embed."""
+        return interaction.user.id == self.ctx.author.id
 
 
 class SettingsManager:
@@ -391,14 +399,14 @@ class SettingsManager:
                 f"Kill Character     : {PermissionsKillCharacter(self.current_settings['permissions_kill_character']).name.title()}",
                 "",
                 "# Channel Settings:",
-                f"Changelog channel  : {changelog_channel.name}"
+                f"Changelog channel  : Enabled (#{changelog_channel.name})"
                 if changelog_channel is not None
-                else "Changelog channel  : Not set",
-                f"Storyteller channel: {storyteller_channel.name}"
+                else "Changelog channel  : Disabled",
+                f"Storyteller channel: Enabled (#{storyteller_channel.name})"
                 if storyteller_channel is not None
                 else "Storyteller channel: Not set",
                 "",
-                "# Log to channels:",
+                "# Logging:",
                 f"Log errors      : Enabled (#{error_log_channel.name})"
                 if error_log_channel is not None
                 else "Log errors      : Disabled",
