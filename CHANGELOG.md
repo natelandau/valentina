@@ -1,3 +1,9 @@
+## v1.10.1 (2023-09-16)
+
+### Fix
+
+- fix error loading characters
+
 ## v1.10.0 (2023-09-16)
 
 ### Feat
