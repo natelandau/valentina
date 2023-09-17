@@ -1,5 +1,7 @@
 # mypy: disable-error-code="valid-type"
 """Commands for the storyteller."""
+from pathlib import Path
+
 import discord
 import inflect
 from discord.commands import Option
@@ -7,7 +9,13 @@ from discord.ext import commands
 from loguru import logger
 from peewee import fn
 
-from valentina.constants import COOL_POINT_VALUE, DEFAULT_DIFFICULTY, DiceType, EmbedColor
+from valentina.constants import (
+    COOL_POINT_VALUE,
+    DEFAULT_DIFFICULTY,
+    VALID_IMAGE_EXTENSIONS,
+    DiceType,
+    EmbedColor,
+)
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import VampireClan
 from valentina.utils.converters import (
@@ -15,9 +23,10 @@ from valentina.utils.converters import (
     ValidCharacterName,
     ValidCharacterObject,
     ValidClan,
+    ValidImageURL,
     ValidTraitCategory,
 )
-from valentina.utils.helpers import fetch_random_name
+from valentina.utils.helpers import fetch_data_from_url, fetch_random_name
 from valentina.utils.options import (
     select_any_player_character,
     select_char_class,
@@ -34,6 +43,7 @@ from valentina.utils.storyteller import storyteller_character_traits
 from valentina.views import (
     CharGenWizard,
     ConfirmCancelButtons,
+    S3ImageReview,
     confirm_action,
     present_embed,
     sheet_embed,
@@ -451,6 +461,121 @@ class StoryTeller(commands.Cog):
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg
+
+    @character.command(name="image_add", description="Add an image to a storyteller character")
+    async def add_image(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to add the image to",
+            autocomplete=select_storyteller_character,
+            required=True,
+        ),
+        file: Option(
+            discord.Attachment,
+            description="Location of the image on your local computer",
+            required=False,
+            default=None,
+        ),
+        url: Option(
+            ValidImageURL, description="URL of the thumbnail", required=False, default=None
+        ),
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Add an image to a character.
+
+        This function allows the user to add an image to a character either by uploading a file or providing a URL. It performs validation checks on the image, confirms the action with the user, and then uploads the image.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            character (ValidCharacterObject): The character to add the image to.
+            file (discord.Attachment): The image file to be uploaded.
+            url (ValidImageURL): The URL of the image to be uploaded.
+            hidden (bool): Whether the interaction should only be visible to the user initiating it.
+
+        Returns:
+            None
+        """
+        # Validate input
+        if (not file and not url) or (file and url):
+            await present_embed(ctx, title="Please provide a single image", level="error")
+            return
+
+        if file:
+            file_extension = Path(file.filename).suffix.lstrip(".").lower()
+            if file_extension not in VALID_IMAGE_EXTENSIONS:
+                await present_embed(
+                    ctx,
+                    title=f"Must provide a valid image: {', '.join(VALID_IMAGE_EXTENSIONS)}",
+                    level="error",
+                )
+                return
+
+        # Upload the image to S3
+        # We upload the image prior to the confirmation step to allow us to display the image to the user.  If the user cancels the confirmation, we must delete the image from S3.
+
+        # Determine image extension and read data
+        extension = file_extension if file else url.split(".")[-1].lower()
+        data = await file.read() if file else await fetch_data_from_url(url)
+
+        # Add image to character
+        image_key = self.bot.char_svc.add_character_image(ctx, character, extension, data)
+        image_url = self.bot.aws_svc.get_url(image_key)
+
+        title = f"Add image to `{character.name}`"
+        is_confirmed, confirmation_response_msg = await confirm_action(
+            ctx, title, hidden=hidden, image=image_url
+        )
+        if not is_confirmed:
+            self.bot.char_svc.delete_character_image(ctx, character, image_key)
+            return
+
+        # Update audit log and original response
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await confirmation_response_msg
+
+    @character.command(
+        name="image_delete", description="Delete an image to a storyteller character"
+    )
+    async def delete_image(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to delete the image from",
+            autocomplete=select_storyteller_character,
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Delete an image from a character.
+
+        This function fetches the active character for the user, generates the key prefix for the character's images, and then initiates an S3ImageReview to allow the user to review and delete images.
+
+        Args:
+            ctx (ApplicationContext): The application context.
+            character (ValidCharacterObject): The character to delete the image from.
+            hidden (bool): Whether the interaction should only be visible to the user initiating it.
+
+        Returns:
+            None
+        """
+        # Generate the key prefix for the character's images
+        key_prefix = self.bot.aws_svc.get_key_prefix(
+            ctx, "character", character_id=character.id
+        ).rstrip("/")
+
+        # Initiate an S3ImageReview to allow the user to review and delete images
+        await S3ImageReview(ctx, key_prefix, review_type="character", hidden=hidden).send(ctx)
 
     ### PLAYER COMMANDS ####################################################################
 
