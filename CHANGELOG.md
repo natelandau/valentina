@@ -1,3 +1,19 @@
+## v1.11.0 (2023-09-17)
+
+### Feat
+
+- **storyteller**: storyteller characters now have images
+
+### Fix
+
+- **bot**: autoresponses only fire once on full words
+- **admin**: add guild emoji as file or url
+- **character**: alive characters no longer marked dead on character sheets
+
+### Refactor
+
+- **character**: clean up `set_default_data_values`
+
 ## v1.10.1 (2023-09-16)
 
 ### Fix
