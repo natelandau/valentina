@@ -47,7 +47,7 @@
         pdoc           = "^14.0.0"
         poethepoet     = "^0.22.1"
         pre-commit     = "^3.4.0"
-        ruff           = "^0.0.289"
+        ruff           = "^0.0.290"
         shellcheck-py  = "^0.9.0.5"
         types-aiofiles = "^23.2.0.0"
         typos          = "^1.16.11"

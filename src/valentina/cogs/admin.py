@@ -1,19 +1,19 @@
 # mypy: disable-error-code="valid-type"
 """Administration commands for Valentina."""
-
-from io import BytesIO
+from pathlib import Path
 
 import discord
 import inflect
-from aiohttp import ClientSession
 from discord.commands import Option
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
-from valentina.constants import RollResultType
+from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
 from valentina.models.bot import Valentina
 from valentina.utils import errors
+from valentina.utils.converters import ValidImageURL
 from valentina.utils.discord_utils import assert_permissions
+from valentina.utils.helpers import fetch_data_from_url
 from valentina.views import (
     SettingsManager,
     ThumbnailReview,
@@ -273,13 +273,17 @@ class Admin(commands.Cog):
         await ThumbnailReview(ctx, roll_type).send(ctx)
 
     @guild.command(name="emoji_add")
-    @discord.option("name", description="The name of the emoji.")
-    @discord.option("url", description="The image url of the emoji.")
     async def emoji_add(
         self,
         ctx: discord.ApplicationContext,
-        name: str,
-        url: str,
+        name: Option(str, description="The name of the emoji to add"),
+        file: Option(
+            discord.Attachment,
+            description="Location of the image on your local computer",
+            required=False,
+            default=None,
+        ),
+        url: Option(ValidImageURL, description="URL of the image", required=False, default=None),
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",
@@ -289,32 +293,36 @@ class Admin(commands.Cog):
         """Add a custom emoji to this guild."""
         await assert_permissions(ctx, manage_emojis=True)
 
-        async with ClientSession() as session, session.get(url) as res:
-            if 300 > res.status >= 200:  # noqa: PLR2004
-                await ctx.guild.create_custom_emoji(
-                    name=name, image=BytesIO(await res.read()).getvalue()
-                )
+        # Validate input
+        if (not file and not url) or (file and url):
+            await present_embed(ctx, title="Please provide a single image", level="error")
+            return
 
-                await self.bot.guild_svc.send_to_audit_log(
-                    ctx, f"Add emoji to guild: `:{name}:`\n{url}"
-                )
-
+        if file:
+            file_extension = Path(file.filename).suffix.lstrip(".").lower()
+            if file_extension not in VALID_IMAGE_EXTENSIONS:
                 await present_embed(
                     ctx,
-                    title=f"Custom emoji `:{name}:` added",
-                    image=url,
-                    level="success",
-                    ephemeral=hidden,
-                )
-
-            else:
-                await present_embed(
-                    ctx,
-                    title="Emoji Creation Failed",
-                    description=f"An HTTP error occurred while fetching the image: {res.status} {res.reason}",
+                    title=f"Must provide a valid image: {', '.join(VALID_IMAGE_EXTENSIONS)}",
                     level="error",
-                    ephemeral=True,
                 )
+                return
+
+        # Grab the bytes from the file or url
+        data = await file.read() if file else await fetch_data_from_url(url)
+
+        # Confirm the action
+        title = f"Add custom emoji :{name}:"
+        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
+        # Add the emoji
+        await ctx.guild.create_custom_emoji(name=name, image=data)
+
+        # Send confirmation
+        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await confirmation_response_msg
 
     @guild.command(name="emoji_delete")
     @discord.option("name", description="The name of the emoji to delete.")
