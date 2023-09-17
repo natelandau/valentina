@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import BAD_WORD_LIST, BOT_DESCRIPTIONS, EmbedColor
+from valentina.constants import BAD_WORD_PATTERN, BOT_DESCRIPTIONS, EmbedColor
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Guild
 from valentina.models.errors import reporter
@@ -19,7 +19,6 @@ class Events(commands.Cog, name="Events"):
         self.bot: Valentina = bot
 
     @commands.Cog.listener()
-    @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         """on_message event handling."""
         # Do not reply to bot's own messages
@@ -28,7 +27,7 @@ class Events(commands.Cog, name="Events"):
 
         # Do not reply to messages that start with the prefix
         if message.content.startswith(self.bot.command_prefix):
-            logger.warning(f"BOT: Ignoring command message: {message.content}")
+            logger.info(f"BOT: Ignoring command message: {message.content}")
             return
 
         # Respond to @mentions of the  bot
@@ -51,8 +50,51 @@ class Events(commands.Cog, name="Events"):
             embed.set_thumbnail(url=self.bot.user.display_avatar)
             await message.channel.send(embed=embed)
 
-        if any(word in message.content.lower() for word in BAD_WORD_LIST):
-            await message.channel.send("You kiss your mother with that mouth?")
+        if BAD_WORD_PATTERN.search(message.content):
+            responses = [
+                # Existing responses
+                "You kiss your mother with that mouth?",
+                "Watch your language!",
+                "🤬",
+                "🤐",
+                "What did you just say?",
+                "I'm telling your mother!",
+                "Whoa, easy there!",
+                "Mind your manners!",
+                "Is that how you talk at the dinner table?",
+                "Do you speak to everyone like that?",
+                "I'd wash my mouth out if I were you.",
+                "Hey, let's keep it family-friendly.",
+                "Wow, someone's got a potty mouth.",
+                "That's not appropriate.",
+                "Could you rephrase that?",
+                "Let's be civil, okay?",
+                "Oh, someone's got a sailor mouth!",
+                "You must be fun at parties.",
+                "Feeling brave, aren't we?",
+                "Did you eat a bowl of alphabet soup and choke on the bad words?",
+                "Someone needs a timeout!",
+                "You're one keyboard away from soap in the mouth.",
+                "Well, aren't you a little ray of pitch black.",
+                "If you can't say something nice, you're probably at the right place.",
+                "Aw, someone needs a hug... from a distance.",
+                "You're just a keyboard warrior, aren't you?",
+                "You must be the life of the party... or not.",
+                "Careful, you'll hurt my circuits with that language.",
+                "Trying to sound tough, huh?",
+                "Don't make me mute you.",
+                "Wow, you really went to college for that vocabulary, didn't you?",
+                "Someone's keyboard is on fire today!",
+                "Did you learn those words from a cereal box?",
+                "Someone's been reading the dictionary's 'Do Not Use' section.",
+                "Is that the best you can do?",
+                "Ah, the language of Shakespeare, I presume?",
+                "Someone's been skipping their etiquette classes.",
+                "Is that how you make friends?",
+                "Naughty words? You must be a handful.",
+                "Whoa, easy tiger!",
+            ]
+            await message.channel.send(f"{random.choice(responses)}")
             return
 
     @commands.Cog.listener()

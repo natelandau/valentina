@@ -1,6 +1,12 @@
 """Constants for Valentina models."""
+import re
 from enum import Enum, IntEnum
 from pathlib import Path
+
+import inflect
+
+# Create an inflect engine to pluralize words.
+p = inflect.engine()
 
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
 DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
@@ -333,7 +339,7 @@ DICEROLL_THUBMS = {
     ],
 }
 
-BAD_WORD_LIST = [
+BAD_WORDS = [
     "anal",
     "ass",
     "asshole",
@@ -341,6 +347,8 @@ BAD_WORD_LIST = [
     "bitch",
     "blowjob",
     "bollocks",
+    "boob",
+    "boobies",
     "bugger",
     "cock",
     "cocksucker",
@@ -365,16 +373,21 @@ BAD_WORD_LIST = [
     "shite",
     "shitter",
     "tosser",
+    "wank",
     "wanker",
     "slut",
     "tit",
     "titfuck",
     "tittyfuck",
+    "tittyfucker",
     "tosser",
     "vagina",
     "wank",
     "whore",
 ]
+# Create a list of singular and plural forms of the words in BAD_WORD_LIST.
+BAD_WORD_LIST = BAD_WORDS + [p.plural(word) for word in BAD_WORDS]
+BAD_WORD_PATTERN = re.compile(rf"\b({'|'.join(BAD_WORD_LIST)})\b", flags=re.IGNORECASE)
 
 BOT_DESCRIPTIONS = [
     "sensual sorceress who leaves you spellbound and spent",

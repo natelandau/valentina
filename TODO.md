@@ -3,6 +3,8 @@
 -   [x] Admin: Settings for managing campaigns (ie, who can create, who can edit, etc)
 -   [x] Character: Mark characters as dead
 -   [x] Character: Migrate to "owned" characters
+-   [ ] Character: Add Concept
+-   [ ] Character: Add Randomizer
 -   [ ] Campaign: Renumber chapters
 -   [ ] Campaign: View any campaign, not just active one
 -   [ ] Campaign: If only one campaign, always set it as active
