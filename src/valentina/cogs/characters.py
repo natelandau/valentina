@@ -574,7 +574,6 @@ class Characters(commands.Cog, name="Character"):
         image_key = self.bot.char_svc.add_character_image(ctx, character, extension, data)
         image_url = self.bot.aws_svc.get_url(image_key)
 
-        ###########################################################
         title = f"Add image to `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(
             ctx, title, hidden=hidden, image=image_url

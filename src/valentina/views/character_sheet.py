@@ -82,10 +82,10 @@ def __embed1(
 
     embed.add_field(
         name="Alive",
-        value=Emoji.DEAD.value if character.data.get("is_alive", True) else Emoji.DEAD.value,
+        value=Emoji.ALIVE.value if character.data.get("is_alive", True) else Emoji.DEAD.value,
     )
 
-    embed.add_field(name="Class", value=Emoji[character.class_name.upper()].value, inline=True)
+    embed.add_field(name="Class", value=f"{character.class_name.title()}", inline=True)
     embed.add_field(
         name="Demeanor",
         value=character.data["demeanor"] if character.data.get("demeanor") else "",

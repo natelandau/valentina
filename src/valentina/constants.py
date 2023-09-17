@@ -55,7 +55,7 @@ class Emoji(Enum):
     BOT = "🤖"
     CANCEL = "🚫"
     COOL_POINT = "🆒"
-    DEAD = "🪦💀🪦"
+    DEAD = "💀"
     ERROR = "❌"
     GHOST = "👻"
     HUNTER = "🧑🏹"
