@@ -157,6 +157,13 @@ class RollResultType(Enum):
     OTHER = "n/a"
 
 
+class SettingsFlagExperience(Enum):
+    """Options for where to store experience."""
+
+    CHARACTER = 0
+    USER = 1  # Default
+
+
 class TraitCategoryOrder(IntEnum):
     """The order of trait categories to mimic character sheets."""
 
@@ -260,7 +267,7 @@ CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, Chann
     ),
 }
 
-### Data Default Values ###
+### Database Data Default Values ###
 CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
     "is_alive": True,
     "auspice": None,
@@ -292,9 +299,10 @@ GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "audit_log_channel_id": None,
     "changelog_channel_id": None,
     "error_log_channel_id": None,
+    "flag_experience": SettingsFlagExperience.USER.value,
     "permissions_edit_trait": PermissionsEditTrait.WITHIN_24_HOURS.value,
-    "permissions_kill_character": PermissionsKillCharacter.CHARACTER_OWNER_ONLY.value,
     "permissions_edit_xp": PermissionsEditXP.WITHIN_24_HOURS.value,
+    "permissions_kill_character": PermissionsKillCharacter.CHARACTER_OWNER_ONLY.value,
     "permissions_manage_campaigns": PermissionManageCampaign.STORYTELLER_ONLY.value,
     "storyteller_channel_id": None,
 }

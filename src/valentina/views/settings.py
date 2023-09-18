@@ -15,11 +15,12 @@ from valentina.constants import (
     PermissionsEditTrait,
     PermissionsEditXP,
     PermissionsKillCharacter,
+    SettingsFlagExperience,
 )
 from valentina.views import CancelButton
 
 
-class SettingsButtons(discord.ui.View):
+class SettingsFlags(discord.ui.View):
     """Add buttons to a view to set setting values.
 
     This class inherits from discord.ui.View and provides buttons to interactively
@@ -96,7 +97,7 @@ class SettingsButtons(discord.ui.View):
 
         # Get the custom_id of the button that was pressed
         response = int(interaction.data.get("custom_id", None))  # type: ignore [call-overload]
-        logger.warning(f"SettingsButtons.button_callback: {self.key=}:{response=}")
+        logger.warning(f"SettingsFlags.button_callback: {self.key=}:{response=}")
 
         # Update the database
         self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: response})  # type: ignore [attr-defined]
@@ -258,17 +259,18 @@ class SettingsManager:
         self.current_settings = self.ctx.bot.guild_svc.fetch_guild_settings(self.ctx.guild)  # type: ignore [attr-defined]
         self.page_group: list[pages.PageGroup] = [
             self._home_embed(),
-            self._xp_permissions(),
-            self._trait_permissions(),
-            self._manage_campaigns(),
-            self._kill_character(),
-            self._error_log(),
-            self._audit_log(),
-            self._storyteller_channel(),
-            self._changelog_channel(),
+            self._channel_audit_log(),
+            self._channel_changelog(),
+            self._channel_error_log(),
+            self._channel_storyteller(),
+            self._flag_experience(),
+            self._permissions_kill_character(),
+            self._permissions_manage_campaigns(),
+            self._permissions_update_traits(),
+            self._permissions_xp(),
         ]
 
-    def _audit_log(self) -> pages.PageGroup:
+    def _channel_audit_log(self) -> pages.PageGroup:
         """Create a view for selecting the audit log channel."""
         description = [
             "# Interaction audit logging",
@@ -301,7 +303,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _error_log(self) -> pages.PageGroup:
+    def _channel_error_log(self) -> pages.PageGroup:
         """Create a view for selecting the error log channel."""
         description = [
             "# Enable error logging",
@@ -334,7 +336,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _changelog_channel(self) -> pages.PageGroup:
+    def _channel_changelog(self) -> pages.PageGroup:
         """Create a view for selecting the changelog channel."""
         description = [
             "# Enable a changelog channel",
@@ -398,6 +400,9 @@ class SettingsManager:
                 f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
                 f"Kill Character     : {PermissionsKillCharacter(self.current_settings['permissions_kill_character']).name.title()}",
                 "",
+                "# Flags:",
+                f"Experience pool: {SettingsFlagExperience(self.current_settings['flag_experience']).name.title()}",
+                "",
                 "# Channel Settings:",
                 f"Changelog channel  : Enabled (#{changelog_channel.name})"
                 if changelog_channel is not None
@@ -425,7 +430,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _kill_character(self) -> pages.PageGroup:
+    def _permissions_kill_character(self) -> pages.PageGroup:
         """Create a view for setting kill character permissions.
 
         This method generates a Discord embed that provides options for setting permissions
@@ -452,7 +457,7 @@ class SettingsManager:
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
             for x in PermissionsKillCharacter
         ]
-        view = SettingsButtons(
+        view = SettingsFlags(
             self.ctx,
             key="permissions_kill_character",
             options=options,
@@ -466,7 +471,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _manage_campaigns(self) -> pages.PageGroup:
+    def _permissions_manage_campaigns(self) -> pages.PageGroup:
         """Create a view for setting who can manage campaigns.
 
         This method generates a Discord embed that provides options for setting permissions
@@ -498,7 +503,7 @@ class SettingsManager:
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
             for x in PermissionManageCampaign
         ]
-        view = SettingsButtons(
+        view = SettingsFlags(
             self.ctx,
             key="permissions_manage_campaigns",
             options=options,
@@ -512,7 +517,52 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _storyteller_channel(self) -> pages.PageGroup:
+    def _flag_experience(self) -> pages.PageGroup:
+        """Create a view for managing the experience flag.
+
+        This method generates a Discord embed that provides options for setting permissions
+        on where experience is applied. It also sets up buttons for the user to interact with.
+
+        Returns:
+            pages.PageGroup: A PageGroup object containing the embed and custom view for this setting.
+        """
+        description = [
+            "# Control where experience is applied",
+            "Experience can be granted and pooled to a character or a player. This setting controls where experience is applied.",
+            "### Options:",
+            "1. **Character** - Experience is granted to individual characters and can only be spent on the characters that earned it",
+            "2. **User** - Experience is granted to individual players and can be spent on any of their characters",
+            "",
+            f"### {Emoji.WARNING.value} IMPORTANT:",
+            "Changing this setting after experience has been granted will require an bot developer to migrate the experience to the new pool.",
+        ]
+
+        embed = discord.Embed(
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
+        )
+
+        # Build options for the buttons and the view
+        options = [
+            (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
+            for x in SettingsFlagExperience
+        ]
+        view = SettingsFlags(
+            self.ctx,
+            key="flag_experience",
+            options=options,
+            current_value=int(self.current_settings["flag_experience"]),
+        )
+
+        return pages.PageGroup(
+            pages=[pages.Page(embeds=[embed], custom_view=view)],
+            label="Experience pool",
+            description="Control where experience is applied",
+            use_default_buttons=False,
+        )
+
+    def _channel_storyteller(self) -> pages.PageGroup:
         """Create a view for selecting the storyteller channel."""
         description = [
             "# Storyteller channel",
@@ -540,7 +590,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _trait_permissions(self) -> pages.PageGroup:
+    def _permissions_update_traits(self) -> pages.PageGroup:
         """Create a view for setting Trait Update permissions.
 
         This method generates a Discord embed that provides options for setting permissions
@@ -569,7 +619,7 @@ class SettingsManager:
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
             for x in PermissionsEditTrait
         ]
-        view = SettingsButtons(
+        view = SettingsFlags(
             self.ctx,
             key="permissions_edit_trait",
             options=options,
@@ -583,7 +633,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _xp_permissions(self) -> pages.PageGroup:
+    def _permissions_xp(self) -> pages.PageGroup:
         """Create a view for setting XP permissions.
 
         This method generates a Discord embed that provides options for setting permissions
@@ -612,7 +662,7 @@ class SettingsManager:
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
             for x in PermissionsEditXP
         ]
-        view = SettingsButtons(
+        view = SettingsFlags(
             self.ctx,
             key="permissions_edit_xp",
             options=options,
