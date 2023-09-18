@@ -368,10 +368,17 @@ class GuildService:
             logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
             return
 
+        # Add 1 to the last posted version to get the next version to post
+        version_to_post = db_version
+        for v in self.fetch_changelog_versions():
+            if v == last_posted_version:
+                break
+            version_to_post = v
+
         # Initialize the changelog parser
         changelog = ChangelogParser(
             bot,
-            last_posted_version,
+            version_to_post,
             db_version,
             exclude_categories=[
                 "docs",
