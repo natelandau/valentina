@@ -133,20 +133,21 @@ class User(BaseModel):
             User: The User object with defaults verified and potentially updated.
         """
         updated = False
+        guild_id = str(guild.id)  # Always use strings for JSONField keys
 
         if not self.data:
             self.data = {}
 
-        if str(guild.id) not in self.data:
-            self.data[str(guild.id)] = {}
+        if guild_id not in self.data:
+            self.data[guild_id] = {}
             updated = True
 
         default_values = GUILDUSER_DEFAULTS.copy()
         default_values["modified"] = str(time_now())
 
         for default_key, default_value in default_values.items():
-            if default_key not in self.data[str(guild.id)]:
-                self.data[str(guild.id)][default_key] = default_value
+            if default_key not in self.data[guild_id]:
+                self.data[guild_id][default_key] = default_value
                 updated = True
 
         if updated:

@@ -53,7 +53,7 @@ class UserService:
     def _get_member_and_guild(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext,
-        user: discord.User | discord.Member = None,
+        user: discord.User | discord.Member | User = None,
     ) -> tuple[discord.Member | discord.User, discord.Guild | None]:
         """Extract member and guild from the context or the user.
 
@@ -62,7 +62,7 @@ class UserService:
 
         Args:
             ctx (discord.ApplicationContext | discord.AutocompleteContext): The application or autocomplete context.
-            user (discord.User | discord.Member): A specific user to fetch, if provided.
+            user (discord.User | discord.Member|User): A specific user to fetch, if provided.
 
         Returns:
             tuple[discord.Member | discord.User, discord.Guild | None]: A tuple containing the member and the guild.
@@ -80,7 +80,15 @@ class UserService:
 
         # If user is explicitly provided, return it regardless of the context.
         if user:
-            return user, guild
+            if isinstance(user, discord.Member | discord.User):
+                return user, guild
+            if isinstance(user, User):
+                guild = (
+                    ctx.guild
+                    if isinstance(ctx, discord.ApplicationContext)
+                    else ctx.interaction.guild
+                )
+                return discord.utils.get(guild.members, id=user.id), guild
 
         return member, guild
 
@@ -370,6 +378,28 @@ class UserService:
 
         return self.user_cache[key]
 
+    def fetch_guild_users(self, ctx: discord.ApplicationContext) -> list[User]:
+        """Retrieve a list of all users in the database who have guild specific data and adds them to the user_cache.
+
+        Args:
+            ctx (discord.ApplicationContext): The context containing the guild.
+
+        Returns:
+            list[User]: A list of User objects.
+        """
+        # Note: I don't fully understand this query, but it works.
+        # https://docs.peewee-orm.com/en/latest/peewee/sqlite_ext.html?highlight=jsonfield#JSONField.children
+        users = (
+            User.select()
+            .from_(User, User.data.children().alias("children"))
+            .where(User.data.children().alias("children").c.key == str(ctx.guild.id))
+        )
+
+        for user in users:
+            self.fetch_user(ctx, user=user)
+
+        return [x for x in users]
+
     def purge_cache(
         self, ctx: discord.ApplicationContext | discord.AutocompleteContext | None = None
     ) -> None:
@@ -442,7 +472,7 @@ class UserService:
     def update_or_add_user(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext = None,
-        user: discord.Member | discord.User = None,
+        user: discord.Member | discord.User | User = None,
         data: dict[str, str | int | bool | dict[str, str | int | bool]] = {},
     ) -> User:
         """Update a User record in the database.
@@ -459,7 +489,7 @@ class UserService:
                 str(guild.id): {"modified": str(time_now())} | GUILDUSER_DEFAULTS.copy()
             } | (data or {})
         else:
-            member = user
+            member, _ = self._get_member_and_guild(ctx, user)
             initial_data = data or {}
 
         # Try to retrieve the user from the database, or create a new entry if not found.
