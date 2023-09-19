@@ -247,17 +247,17 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.28.49"
+version = "1.28.50"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "boto3-1.28.49-py3-none-any.whl", hash = "sha256:519639859a3c829ccf7073a58b3716cb26cb5906e306fe63eb4beab68bf9bfab"},
-    {file = "boto3-1.28.49.tar.gz", hash = "sha256:c9fad1b01a1d7e7bd51150b3175b4c32b79d699ce94708082611f59fde2e097a"},
+    {file = "boto3-1.28.50-py3-none-any.whl", hash = "sha256:cda98a2952cccb1db4208c53a1bba6585620fffa0ca05244827ca65884856d1f"},
+    {file = "boto3-1.28.50.tar.gz", hash = "sha256:33062ab3801029ab7b2cb35b6bf4768715d13c5f9ea7d5dce22ace6219c1dc7a"},
 ]
 
 [package.dependencies]
-botocore = ">=1.31.49,<1.32.0"
+botocore = ">=1.31.50,<1.32.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -266,13 +266,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.31.49"
+version = "1.31.50"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">= 3.7"
 files = [
-    {file = "botocore-1.31.49-py3-none-any.whl", hash = "sha256:7d64cb45154e4f34f3a45f551e118caad7379ae831565639e0afe5b2af126c61"},
-    {file = "botocore-1.31.49.tar.gz", hash = "sha256:95e9716f27f67d4207f260ab0ea157603ca544d3b82c5f21728b1c732bec1817"},
+    {file = "botocore-1.31.50-py3-none-any.whl", hash = "sha256:5038a407783ea394aaf0671d1086cf55cc1e7c303e1fac244b76adc78cc7ef07"},
+    {file = "botocore-1.31.50.tar.gz", hash = "sha256:a1343f2e38ea86e11247d61bd37a9d5656c16186f4a21b482c713589a054c605"},
 ]
 
 [package.dependencies]
@@ -1568,13 +1568,13 @@ docs = ["Sphinx (>=3.3,<4.0)", "sphinx-autobuild (>=2020.9.1,<2021.0.0)", "sphin
 
 [[package]]
 name = "rich"
-version = "13.5.2"
+version = "13.5.3"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "rich-13.5.2-py3-none-any.whl", hash = "sha256:146a90b3b6b47cac4a73c12866a499e9817426423f57c5a66949c086191a8808"},
-    {file = "rich-13.5.2.tar.gz", hash = "sha256:fb9d6c0a0f643c99eed3875b5377a184132ba9be4d61516a55273d3554d75a39"},
+    {file = "rich-13.5.3-py3-none-any.whl", hash = "sha256:9257b468badc3d347e146a4faa268ff229039d4c2d176ab0cffb4c4fbc73d5d9"},
+    {file = "rich-13.5.3.tar.gz", hash = "sha256:87b43e0543149efa1253f485cd845bb7ee54df16c9617b8a893650ab84b4acb6"},
 ]
 
 [package.dependencies]
@@ -1773,32 +1773,32 @@ files = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.7.1"
-description = "Backported and Experimental Type Hints for Python 3.7+"
+version = "4.8.0"
+description = "Backported and Experimental Type Hints for Python 3.8+"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "typing_extensions-4.7.1-py3-none-any.whl", hash = "sha256:440d5dd3af93b060174bf433bccd69b0babc3b15b1a8dca43789fd7f61514b36"},
-    {file = "typing_extensions-4.7.1.tar.gz", hash = "sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2"},
+    {file = "typing_extensions-4.8.0-py3-none-any.whl", hash = "sha256:8f92fc8806f9a6b641eaa5318da32b44d401efaac0f6678c9bc448ba3605faa0"},
+    {file = "typing_extensions-4.8.0.tar.gz", hash = "sha256:df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef"},
 ]
 
 [[package]]
 name = "typos"
-version = "1.16.11"
+version = "1.16.12"
 description = "Source Code Spelling Correction"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "typos-1.16.11-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:5996c347cab149904c2f2a3f6194982f03c20c5302f9ee4ab866f4e5be0efed8"},
-    {file = "typos-1.16.11-py3-none-macosx_11_0_arm64.whl", hash = "sha256:05edd33a13ef6a6a88016e6f367f3a4158989f397371bc1ca07d5b4c38c94262"},
-    {file = "typos-1.16.11-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b208f42c939a348802e26a45a45cac7200ee6225643106ba27fb91aee418be85"},
-    {file = "typos-1.16.11-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:89f7c99b48ba34166a94e94d8e7e50c0fea503380e2e9bc8bb62bc6bb0d1a2fd"},
-    {file = "typos-1.16.11-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ad94da00878fd53e9442ca3986f2d3edc1eb9321b54f41fcecaa1cec0a8b3dcb"},
-    {file = "typos-1.16.11-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:7282151b26d1c84c47b9bef2d91179ac0eb9ebc58c431ffbd7ec8fbfd2bdbd83"},
-    {file = "typos-1.16.11-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:63b8ee9d45f147acb68070ea0ca46a2a2f8b8e7fcc09cb39d1977fa6db3d1959"},
-    {file = "typos-1.16.11-py3-none-win32.whl", hash = "sha256:b64d6f0b77ca9389a3793a9758783670daa7e85e38b8391a98d1870c0b063519"},
-    {file = "typos-1.16.11-py3-none-win_amd64.whl", hash = "sha256:0c36c0b940a9d288edc25cea085b437df0e9dea1b2eb14bfc7a85b6984538f69"},
-    {file = "typos-1.16.11.tar.gz", hash = "sha256:44e94672544f811cb07e753a57468e4a1bd828868b2b25a5a86b1d0f06de9b23"},
+    {file = "typos-1.16.12-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:100d52d5b269c5c51da4bb8f65624aa6f205b55fdd804c5087bbadb2891477c2"},
+    {file = "typos-1.16.12-py3-none-macosx_11_0_arm64.whl", hash = "sha256:0344cd1a2f053bb5c4e46c3636419d5398450b96d9167e47f665f35bd0a9c249"},
+    {file = "typos-1.16.12-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:50fa38c4ac3dcb9121747612f2d5cf7a4909487a3c99f38f4e625d51ffe84f96"},
+    {file = "typos-1.16.12-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a53b371d65dd1640eec2518a223b04f08420e4d8c30192e9817c82850e6b0edc"},
+    {file = "typos-1.16.12-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4c01dc8d62fc52b0903cc41812a8f12267fcf405a91a1db4c92cdb3324c142c2"},
+    {file = "typos-1.16.12-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:10101f413bb6abce6164c103c81c518ca1e02ed1189330aa3096e5c1b7cd2429"},
+    {file = "typos-1.16.12-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:826a9d2d7b905c244e9403860b2e5640ae87cf3025b56b82b151b1f7b35bc35e"},
+    {file = "typos-1.16.12-py3-none-win32.whl", hash = "sha256:2536d12a167a85600546b0c63c8a59774aa96b7bb48c47479fe6409066fc7c1c"},
+    {file = "typos-1.16.12-py3-none-win_amd64.whl", hash = "sha256:03c111600f2b1336e790514a3af22cdd796927a80306b1c9947bd2ff497212be"},
+    {file = "typos-1.16.12.tar.gz", hash = "sha256:4b94213cbf005fe17a6e0bd9e77b7e44e0422e1ad523f7db1a197c1afc7bdc25"},
 ]
 
 [[package]]
@@ -1965,17 +1965,17 @@ multidict = ">=4.0"
 
 [[package]]
 name = "zipp"
-version = "3.16.2"
+version = "3.17.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "zipp-3.16.2-py3-none-any.whl", hash = "sha256:679e51dd4403591b2d6838a48de3d283f3d188412a9782faadf845f298736ba0"},
-    {file = "zipp-3.16.2.tar.gz", hash = "sha256:ebc15946aa78bd63458992fc81ec3b6f7b1e92d51c35e6de1c3804e73b799147"},
+    {file = "zipp-3.17.0-py3-none-any.whl", hash = "sha256:0e923e726174922dce09c53c59ad483ff7bbb8e572e00c7f7c46b88556409f31"},
+    {file = "zipp-3.17.0.tar.gz", hash = "sha256:84e64a1c28cf7e91ed2078bb8cc8c259cb19b76942096c8d7b84947690cabaf0"},
 ]
 
 [package.extras]
-docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
+docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (<7.2.5)", "sphinx (>=3.5)", "sphinx-lint"]
 testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy (>=0.9.1)", "pytest-ruff"]
 
 [metadata]
