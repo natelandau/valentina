@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import discord
 from dotenv import dotenv_values
 from loguru import logger
 from peewee import (
@@ -119,6 +120,42 @@ class User(BaseModel):
     mention = TextField(null=True)
     last_seen = DateTimeField(default=time_now)
     data = JSONField(null=True)
+
+    def set_default_data_values(self, guild: discord.Guild) -> User:
+        """Verify that the User's JSONField defaults are set.  If any keys are missing, they are added to the data column with default values.
+
+        Note: Due to an annoying bug in SQLITE, all JSON Fields must use strings as keys. Consequently, we have to remember to transpose the guild ID to a string before using it as a key.
+
+        Args:
+            guild (discord.Guild): The guild to set defaults for.
+
+        Returns:
+            User: The User object with defaults verified and potentially updated.
+        """
+        updated = False
+
+        if not self.data:
+            self.data = {}
+
+        if str(guild.id) not in self.data:
+            self.data[str(guild.id)] = {}
+            updated = True
+
+        default_values = GUILDUSER_DEFAULTS.copy()
+        default_values["modified"] = str(time_now())
+
+        for default_key, default_value in default_values.items():
+            if default_key not in self.data[str(guild.id)]:
+                self.data[str(guild.id)][default_key] = default_value
+                updated = True
+
+        if updated:
+            self.save()
+            logger.info(f"DATABASE: Update defaults for user: `{self.name}`")
+        else:
+            logger.debug(f"DATABASE: Default values up to date for user: `{self.name}`")
+
+        return self
 
     class Meta:
         """Meta class for the model."""
@@ -656,32 +693,6 @@ class GuildUser(BaseModel):
     guild = ForeignKeyField(Guild, backref="users")
     user = ForeignKeyField(User, backref="guilds")
     data = JSONField(null=True)
-
-    def set_default_data_values(self) -> GuildUser:
-        """Verify that the GuildUser's JSONField defaults are set.  If any keys are missing, they are added to the data column with default values.
-
-        Returns:
-            GuildUser: The GuildUser object with defaults verified and potentially updated.
-        """
-        updated = False
-        default_values = GUILDUSER_DEFAULTS.copy()
-        default_values["modified"] = str(time_now())
-
-        if not self.data:
-            self.data = {}
-
-        for default_key, default_value in default_values.items():
-            if default_key not in self.data:
-                self.data[default_key] = default_value
-                updated = True
-
-        if updated:
-            self.save()
-            logger.info(f"DATABASE: Update defaults for {self}")
-        else:
-            logger.debug(f"DATABASE: {self}'s defaults are up to date")
-
-        return self
 
 
 class TraitValue(BaseModel):

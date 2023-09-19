@@ -17,7 +17,7 @@ from valentina.constants import (
     PermissionsEditXP,
     PermissionsKillCharacter,
 )
-from valentina.models.db_tables import Character, GuildUser, User
+from valentina.models.db_tables import Character, User
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
@@ -28,7 +28,6 @@ class UserService:
     def __init__(self) -> None:
         """Initialize the UserService."""
         self.user_cache: dict[str, User] = {}  # {user_key: User, ...}
-        self.guild_user_cache: dict[str, GuildUser] = {}  # {guild_user_key: GuildUser, ...}
         self.active_character_cache: dict[str, Character] = {}  # {user.id: Character, ...}
 
     @staticmethod
@@ -359,7 +358,7 @@ class UserService:
         # Grab the user_key
         key = self.__get_user_key(guild.id, member.id)
 
-        # Check if the GuildUser is already in the cache, if so, return it
+        # Check if the User is already in the cache, if so, return it
         if key in self.user_cache:
             logger.debug(f"CACHE: Return user `{member.name}`")
             return self.user_cache[key]
@@ -370,41 +369,6 @@ class UserService:
         self.user_cache[key] = db_object
 
         return self.user_cache[key]
-
-    def fetch_guild_user(
-        self,
-        ctx: discord.ApplicationContext | discord.AutocompleteContext = None,
-        user: discord.User | discord.Member = None,
-    ) -> GuildUser:
-        """Retrieve and/or add a GuildUser object from the cache or the database.
-
-        Use the application context 'ctx' to fetch a User. If the GuildUser isn't present
-        in the cache or the database, create a new GuildUser in the database and the cache.
-
-        Args:
-            ctx (discord.ApplicationContext | discord.AutocompleteContext): The context containing author and guild.
-            user (discord.User | discord.Member, optional): A specific user to fetch. Defaults to None.
-
-        Returns:
-            GuildUser: GuildUser database model instance.
-        """
-        # Extract member and guild information from the context or the provided user
-        member, guild = self._get_member_and_guild(ctx, user)
-
-        # Grab the user_key
-        key = self.__get_user_key(guild.id, member.id)
-
-        # Check if the GuildUser is already in the cache, if so, return it
-        if key in self.guild_user_cache:
-            logger.debug(f"CACHE: GuildUser for `{member.name}` on `{guild.name}`")
-            return self.guild_user_cache[key]
-
-        # Fetch or create in the database and add to the cache
-        db_object = self.update_or_add_guild_user(ctx, user=member)
-        logger.debug(f"DATABASE: GuildUser for `{member.name}` on `{guild.name}`")
-        self.guild_user_cache[key] = db_object
-
-        return self.guild_user_cache[key]
 
     def purge_cache(
         self, ctx: discord.ApplicationContext | discord.AutocompleteContext | None = None
@@ -428,14 +392,13 @@ class UserService:
 
             logger.debug(f"CACHE: Purge UserSvc cache for `{guild.name}`")
 
-            for cache in [self.user_cache, self.guild_user_cache, self.active_character_cache]:
+            for cache in [self.user_cache, self.active_character_cache]:
                 for key in list(cache.keys()):
                     if key.startswith(f"{guild.id}_"):
                         cache.pop(key, None)
 
         else:
             self.user_cache = {}
-            self.guild_user_cache = {}
             self.active_character_cache = {}
             logger.debug("CACHE: Purge all user caches")
 
@@ -480,17 +443,24 @@ class UserService:
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext = None,
         user: discord.Member | discord.User = None,
-        data: dict[str, str | int | bool] = {},
+        data: dict[str, str | int | bool | dict[str, str | int | bool]] = {},
     ) -> User:
-        """Update a User record in the database."""
+        """Update a User record in the database.
+
+        Note: Due to an annoying bug in SQLITE, all JSON Fields must use strings as keys. Consequently, we have to remember to transpose the guild ID to a string before using it as a key.
+        """
         if not ctx and not user:
             raise ValueError("Either 'ctx' or 'user' must be provided.")
 
         # Extract member and guild information from the context or the provided user
         if ctx:
             member, guild = self._get_member_and_guild(ctx, user)
+            initial_data = {
+                str(guild.id): {"modified": str(time_now())} | GUILDUSER_DEFAULTS.copy()
+            } | (data or {})
         else:
             member = user
+            initial_data = data or {}
 
         # Try to retrieve the user from the database, or create a new entry if not found.
         db_user, created = User.get_or_create(
@@ -501,7 +471,7 @@ class UserService:
                 "mention": member.mention,
                 "first_seen": time_now(),
                 "last_seen": time_now(),
-                "data": data or {},
+                "data": initial_data,
             },
         )
 
@@ -510,9 +480,19 @@ class UserService:
             logger.info(f"DATABASE: Created a new user record for '{member.display_name}'")
             return db_user
 
+        # Ensure default data values are set for existing users
+        User.get_by_id(db_user.id).set_default_data_values(guild)
+
         # Update the User if data was provided
         if data:
+            # Purge the cache
             self.purge_cache(ctx)
+
+            # Add the 'modified' timestamp
+            if str(guild.id) not in data:
+                data[str(guild.id)] = {}
+
+            data[str(guild.id)]["modified"] = str(time_now())  # type: ignore [index]
 
             # Make requested updates to the guild
             User.update(data=User.data.update(data)).where(User.id == db_user.id).execute()
@@ -527,54 +507,3 @@ class UserService:
             logger.debug(f"DATABASE: Updated User '{db_user.id}'")
 
         return User.get_by_id(db_user.id)
-
-    def update_or_add_guild_user(
-        self,
-        ctx: discord.ApplicationContext | discord.AutocompleteContext,
-        user: discord.Member | discord.User = None,
-        data: dict[str, str | int | bool] = {},
-    ) -> GuildUser:
-        """Update a GuildUser record in the database.
-
-        Args:
-            ctx (discord.ApplicationContext|discord.AutocompleteContext): The application context.
-            user (discord.Member | discord.User, optional): A specific user to fetch. Defaults to None.
-            data (dict[str, str | int | bool]): The data to update.
-
-        Returns:
-            GuildUser: The updated or created GuildUser.
-        """
-        # Extract member and guild information from the context or the provided user
-        member, guild = self._get_member_and_guild(ctx, user)
-
-        # Create initialization data
-        initial_data = GUILDUSER_DEFAULTS.copy() | {"modified": str(time_now())} | (data or {})
-
-        # Grab the GuildUser from the database, create a new one if not found
-        db_guild_user, created = GuildUser.get_or_create(
-            user=member.id,
-            guild=guild.id,
-            defaults={
-                "data": initial_data,
-            },
-        )
-
-        if created:
-            logger.info(f"DATABASE: Create GuildUser for '{member.display_name}' on '{guild.name}'")
-            return db_guild_user
-
-        # Update the GuildUser if data was provided
-        if data:
-            self.purge_cache(ctx)
-
-            # Add the 'modified' timestamp
-            data["modified"] = str(time_now())
-
-            # Make requested updates to the guild
-            GuildUser.update(data=GuildUser.data.update(data)).where(
-                GuildUser.id == db_guild_user.id
-            ).execute()
-
-            logger.debug(f"DATABASE: Updated GuildUser '{db_guild_user.id}'")
-
-        return GuildUser.get_by_id(db_guild_user.id)

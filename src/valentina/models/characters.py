@@ -126,7 +126,7 @@ class CharacterService:
 
         Args:
             ctx (ApplicationContext | discord.AutocompleteContext): Context object containing guild information.
-            owned_by (discord.Member | None, optional): The member who owns the characters. Defaults to None.
+            owned_by (discord.Member | None, optional): Limit response to a single member who owns the characters. Defaults to None.
 
         Returns:
             list[Character]: List of characters for the guild.
