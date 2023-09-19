@@ -28,7 +28,7 @@ class TestGuildService:
 
     guild_svc = GuildService(bot=local_mock_bot)
 
-    def _clear_db(self):
+    def _clear_tests(self):
         """Clear the database and guild service to prepare for testing."""
         for guild in Guild.select():
             guild.delete_instance(recursive=True, delete_nullable=True)
@@ -147,7 +147,7 @@ class TestGuildService:
 
     def test_fetch_flag_experience(self, mock_ctx):
         """Test GuildService.fetch_flag_experience()."""
-        self._clear_db()
+        self._clear_tests()
 
         # GIVEN a guild with no experience flag
         guild = Guild.create(id=mock_ctx.guild.id, name="test_guild", data={})

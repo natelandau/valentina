@@ -102,7 +102,7 @@ class GuildService:
         Returns:
             None
         """
-        self.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        self.bot.user_svc.update_or_add_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         self.roll_result_thumbs.pop(ctx.guild.id, None)
 

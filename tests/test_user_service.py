@@ -18,78 +18,53 @@ class TestUserService:
 
     user_svc = UserService()
 
-    def test_fetch_user(self, mock_ctx):
-        """Test fetching a user that already exists in the cache and the database.
+    def _clear_tests(self):
+        """Clear the test database."""
+        for user in User.select():
+            user.delete_instance(recursive=True, delete_nullable=True)
 
-        GIVEN a context object with a user in the database
-        WHEN a user is fetched
-        THEN the user object is returned and added to the cache
-        """
-        # WHEN a user is fetched
+        for guild_user in GuildUser.select():
+            guild_user.delete_instance(recursive=True, delete_nullable=True)
+
+        self.user_svc.purge_cache()
+
+    def test_fetch_user(self, mock_ctx, mock_member2, caplog):
+        """Test fetching a user."""
+        self._clear_tests()
+
+        # GIVEN a user in the database
+        user = User.create(id=1, name="Test User")
+
+        # WHEN fetch_user is called with a context object
+        caplog.clear()
         result = self.user_svc.fetch_user(mock_ctx)
+        logs = caplog.text
 
-        # THEN confirm the correct user object is returned and the database and cache are updated
-        assert result == User(id=1, name="Test User")
+        # THEN return the correct result and update the cache
+        assert result == user
+        assert self.user_svc.user_cache["1_1"] == user
+        assert "DATABASE: Fetch user" in logs
+        assert "CACHE" not in logs
 
-        # Confirm user object is returned
-        assert self.user_svc.fetch_user(mock_ctx) == User(id=1, name="Test User")
-        assert self.user_svc.user_cache["1_1"] == User(id=1, name="Test User")
-        assert GuildUser.get(user=1, guild=1) == GuildUser(id=1, user=1, guild=1)
+        # WHEN fetch_user is called again
+        caplog.clear()
+        result = self.user_svc.fetch_user(mock_ctx)
+        logs = caplog.text
 
-    def test_fetch_user_two(self, mock_ctx3):
-        """Test creating a user that is not in the cache or db.
+        # THEN return the correct result from the cache
+        assert result == user
+        assert "CACHE: Return user" in logs
+        assert "DATABASE" not in logs
 
-        GIVEN a context object with a user not in the database
-        WHEN that user is fetched
-        THEN the user is added to the cache and database
-        """
-        # WHEN a user is fetched
-        result = self.user_svc.fetch_user(mock_ctx3)
+        # GIVEN a specified user
+        # WHEN fetch_user is called
+        caplog.clear()
+        result = self.user_svc.fetch_user(mock_ctx, user=mock_member2)
+        logs = caplog.text
 
-        # THEN confirm the correct user object is returned and the database and cache are updated
-        assert result == User(id=600, name="Test User 600")
-        assert "1_600" in self.user_svc.user_cache
-        assert User.get_by_id(600).name == "Test User 600"
-        assert GuildUser.get(user=600, guild=1) == GuildUser(id=2, user=600, guild=1)
-
-    def test_fetch_user_three(self, mock_ctx, mocker):
-        """Test fetching a user that is not the author of a command."""
-        # GIVEN a user not in the ctx object
-        mock_member = mocker.MagicMock()
-        mock_member.id = 1500
-        mock_member.display_name = "Test User 1500"
-        mock_member.name = "testuser 1500"
-        mock_member.mention = "<@5100>"
-        mock_member.__class__ = discord.Member
-
-        # WHEN the user is fetched
-        result = self.user_svc.fetch_user(mock_ctx, mock_member)
-
-        # THEN the correct user is returned and the database and cache are updated
-        assert result == User.get_by_id(1500)
-        assert self.user_svc.user_cache["1_1500"] == User.get_by_id(1500)
-        assert GuildUser.get(user=1500, guild=1) == GuildUser(id=3, user=1500, guild=1)
-
-    def test_fetch_user_four(self, mocker):
-        """Test fetching a user without a ctx object."""
-        # GIVEN a user not in the ctx object and an empty cache
-        mock_member = mocker.MagicMock()
-        mock_member.id = 150110519
-        mock_member.display_name = "Test User 150110519"
-        mock_member.name = "testuser 150110519"
-        mock_member.mention = "<@150110519>"
-        mock_member.__class__ = discord.Member
-
-        self.user_svc.user_cache = {}
-
-        # WHEN the user is fetched
-        result = self.user_svc.fetch_user(user=mock_member)
-
-        # THEN the correct user is returned and the database and cache are updated
-        assert result == User.get_by_id(150110519)
-        assert self.user_svc.user_cache == {}
-        with pytest.raises(GuildUser.DoesNotExist):
-            GuildUser.get(user=150110519)
+        # THEN return the correct result and update the cache
+        assert result == User.get_by_id(2)
+        assert self.user_svc.user_cache["1_2"] == User.get_by_id(2)
 
     def test_purge_all(self):
         """Test purging all users from the cache.
@@ -99,36 +74,32 @@ class TestUserService:
         Then the cache is empty
         """
         self.user_svc.user_cache = {"1_1": "a", "2_2": "b"}
+        self.guild_user_cache = {"1_1": "a", "2_2": "b"}
         self.user_svc.active_character_cache = {"1": "a", "2": "b"}
         self.user_svc.purge_cache()
         assert self.user_svc.user_cache == {}
         assert self.user_svc.active_character_cache == {}
+        assert self.user_svc.guild_user_cache == {}
 
-    def test_purge_by_id(self, mock_ctx, mock_ctx3):
+    def test_purge_by_id(self, mock_ctx):
         """Test purging a user from the cache.
 
         Given a cache with two users
         When one user is purged
         Then the cache contains only the other user
         """
-        # Confirm the caches are populated with data
-        assert self.user_svc.fetch_user(mock_ctx) == User(id=1, name="Test User")
-        assert self.user_svc.fetch_user(mock_ctx3) == User(id=600, name="Test User 600")
-        self.user_svc.user_cache["100_1"] = User(id=1, name="Test User")
-        assert len(self.user_svc.user_cache) == 3
-        self.user_svc.active_character_cache[1] = "one"
-        self.user_svc.active_character_cache[2] = "two"
+        # GIVEN data in the caches
+        self.user_svc.user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
+        self.user_svc.guild_user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
+        self.user_svc.active_character_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
 
-        # Purge one user
+        # WHEN a guild is cached
         self.user_svc.purge_cache(mock_ctx)
 
-        # Confirm one user in cache
-        assert len(self.user_svc.user_cache) == 1
-        assert "1_1" not in self.user_svc.user_cache
-        assert "1_600" not in self.user_svc.user_cache
-        assert "100_1" in self.user_svc.user_cache
-        assert 1 not in self.user_svc.active_character_cache
-        assert 2 in self.user_svc.active_character_cache
+        # THEN only that guild's data is removed from the cache
+        assert self.user_svc.user_cache == {"100_1": "c"}
+        assert self.user_svc.guild_user_cache == {"100_1": "c"}
+        assert self.user_svc.active_character_cache == {"100_1": "c"}
 
     @pytest.mark.parametrize(
         ("xp_permissions_value", "is_admin", "is_char_owner", "hours_since_creation", "expected"),
@@ -404,7 +375,10 @@ class TestUserService:
 
     def test_fetch_active_character(self, mock_ctx, caplog) -> None:
         """Test fetching an active character."""
-        # GIVEN no active characters
+        # GIVEN no active characters and an empty cache
+        self.user_svc.character_cache = {}
+        self.user_svc.active_character_cache = {}
+
         # WHEN fetch_active_character is called
         # THEN raise NoActiveCharacterError
         with pytest.raises(errors.NoActiveCharacterError):
@@ -414,7 +388,6 @@ class TestUserService:
         character = Character.get_by_id(2)
         character.data["is_active"] = True
         character.save()
-        self.user_svc.character_cache = {}
 
         # WHEN fetch_active_character is called
         result = self.user_svc.fetch_active_character(mock_ctx)
@@ -426,12 +399,14 @@ class TestUserService:
         assert "CACHE: Return active character" not in logged
 
         # WHEN fetch_active_character is called again
+        caplog.clear()
         result = self.user_svc.fetch_active_character(mock_ctx)
         logged = caplog.text
 
         # THEN return the correct result from the cache
         assert result == character
         assert "CACHE: Return active character" in logged
+        assert "DATABASE: Fetch active character" not in logged
 
     def test_set_active_character(self, mock_ctx) -> None:
         """Test switching active characters."""
@@ -466,7 +441,7 @@ class TestUserService:
             owned_by=mock_ctx.author.id,
             clan=1,
         )
-        self.user_svc.active_character_cache = {1: character1}
+        self.user_svc.active_character_cache = {"1_1": character1}
 
         # WHEN set_active_character is called
         self.user_svc.set_active_character(mock_ctx, character2)
@@ -474,7 +449,7 @@ class TestUserService:
         # THEN the active character is switched
         assert not Character.get_by_id(character1.id).data["is_active"]
         assert Character.get_by_id(character2.id).data["is_active"]
-        assert self.user_svc.active_character_cache == {1: character2}
+        assert self.user_svc.active_character_cache == {"1_1": character2}
 
     def test_transfer_character_owner(self, mock_ctx, mocker) -> None:
         """Test transferring character ownership."""
@@ -509,3 +484,112 @@ class TestUserService:
         # THEN the character is owned by the second user
         assert Character.get_by_id(character1.id).owned_by.id == 15001500051
         assert self.user_svc.active_character_cache == {}
+
+    def test_fetch_guild_user_one(self, mock_ctx, caplog) -> None:
+        """Test fetching a guild user."""
+        self._clear_tests()
+
+        # WHEN fetch_guild_user is called and a user is not in the cache or database
+        result = self.user_svc.fetch_guild_user(mock_ctx)
+        logs = caplog.text
+
+        # THEN return the correct result and update the cache and database
+        assert result == GuildUser.get(user=1, guild=1)
+        assert self.user_svc.guild_user_cache["1_1"] == GuildUser.get(user=1, guild=1)
+        assert "DATABASE: Create GuildUser for" in logs
+
+        # WHEN fetch_guild_user is called again
+        caplog.clear()
+        result = self.user_svc.fetch_guild_user(mock_ctx)
+        logs = caplog.text
+
+        # THEN return the correct result from the cache
+        assert result == GuildUser.get(user=1, guild=1)
+        assert "CACHE: GuildUser for" in logs
+        assert "DATABASE" not in logs
+
+        # GIVEN a guild user that is not in the cache but is in the database
+        self.user_svc.guild_user_cache = {}
+
+        # WHEN fetch_guild_user is called
+        caplog.clear()
+        result = self.user_svc.fetch_guild_user(mock_ctx)
+        logs = caplog.text
+
+        # THEN return the correct result from the database and update the cache
+        assert result == GuildUser.get(user=1, guild=1)
+        assert self.user_svc.guild_user_cache["1_1"] == GuildUser.get(user=1, guild=1)
+        assert "DATABASE: GuildUser for" in logs
+        assert "CACHE" not in logs
+        assert "DATABASE: Updated GuildUser" not in logs
+
+    def test_update_or_add_guild_user(self, mock_ctx, mock_member2) -> None:
+        """Test updating or adding a guild user."""
+        # Set up the tests
+        self._clear_tests()
+
+        data = {"test": "data"}
+
+        # WHEN update_or_add_guild_user is called and a user is not in database
+        result = self.user_svc.update_or_add_guild_user(mock_ctx, data=data)
+
+        # THEN return the correct result and update the database with default values
+        assert result == GuildUser.get(user=1, guild=1)
+        assert result.data["test"] == "data"
+        assert result.data["experience"] == 0
+        assert "modified" in result.data
+
+        # GIVEN updates to the user
+        updates = {"test": "data2", "experience": 100, "new_key": "new_value"}
+
+        # WHEN update_or_add_guild_user is called again
+        result = self.user_svc.update_or_add_guild_user(mock_ctx, data=updates)
+
+        # THEN return the correct result and update the database with the new values
+        assert result == GuildUser.get(user=1, guild=1)
+        assert result.data["test"] == "data2"
+        assert result.data["experience"] == 100
+        assert result.data["new_key"] == "new_value"
+
+        # WHEN update_or_add_guild_user is called again with a specified user
+        result = self.user_svc.update_or_add_guild_user(mock_ctx, user=mock_member2, data=data)
+
+        # THEN return the correct result and update the database with the new values
+        assert result == GuildUser.get(user=2, guild=1)
+        assert result.data["test"] == "data"
+        assert result.data["experience"] == 0
+
+    def test_update_or_add_user(self, mock_ctx, mock_member2) -> None:
+        """Test updating or adding a user."""
+        self._clear_tests()
+        data = {"test": "data"}
+        self.user_svc.user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
+        # WHEN update_or_add_user is called and a user is not in database
+        result = self.user_svc.update_or_add_user(mock_ctx, data=data)
+
+        # THEN return the correct result and update the database with default values and the cache is intact
+        assert result == User.get_by_id(1)
+        assert result.name == "Test User"
+        assert result.data["test"] == "data"
+        assert self.user_svc.user_cache == {"1_1": "a", "1_600": "b", "100_1": "c"}
+
+        # GIVEN updates to the user
+        updates = {"test": "data2", "new_key": "new_value"}
+
+        # WHEN update_or_add_user is called again
+        result = self.user_svc.update_or_add_user(mock_ctx, data=updates)
+
+        # THEN return the correct result and update the database with the new values and the cache is cleared
+        assert result == User.get_by_id(1)
+        assert result.name == "Test User"
+        assert result.data["test"] == "data2"
+        assert result.data["new_key"] == "new_value"
+        assert self.user_svc.user_cache == {"100_1": "c"}
+
+        # WHEN update_or_add_user is called again with a specified user
+        result = self.user_svc.update_or_add_user(ctx=None, user=mock_member2, data=data)
+
+        # THEN return the correct result and update the database with the new values
+        assert result == User.get_by_id(2)
+        assert result.name == "Test User2"
+        assert result.data["test"] == "data"

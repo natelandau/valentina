@@ -54,7 +54,7 @@ class Macro(commands.Cog):
             trait_two (Option[ValidTraitOrCustomTrait]): The second trait to roll.
             hidden (Option[bool]): Whether to make the result only to you (default true).
         """
-        self.bot.user_svc.fetch_user(ctx)
+        self.bot.user_svc.update_or_add_user(ctx)
 
         modal = MacroCreateModal(
             title=truncate_string("Enter the details for your macro", 45),

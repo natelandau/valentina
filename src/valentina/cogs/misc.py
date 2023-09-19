@@ -39,7 +39,7 @@ class Misc(commands.Cog):
     ) -> None:
         """View information about a user."""
         target = user or ctx.author
-        db_user = self.bot.user_svc.fetch_user(ctx=ctx)
+        db_user = self.bot.user_svc.update_or_add_user(ctx=ctx)
 
         # Variables for embed
         num_characters = (

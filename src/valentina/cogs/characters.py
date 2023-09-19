@@ -110,7 +110,7 @@ class Characters(commands.Cog, name="Character"):
             vampire_clan (VampireClan, optional): The character's vampire clan. Defaults to None.
         """
         # Ensure the user is in the database
-        self.bot.user_svc.fetch_user(ctx)
+        self.bot.user_svc.update_or_add_user(ctx)
 
         # Require a clan for vampires
         if char_class.name.lower() == "vampire" and not vampire_clan:

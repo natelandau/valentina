@@ -217,7 +217,7 @@ class CharacterService:
             data["modified"] = str(time_now())
 
         if not character:
-            user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+            user = ctx.bot.user_svc.update_or_add_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
             new_character = Character.create(
                 guild_id=ctx.guild.id,

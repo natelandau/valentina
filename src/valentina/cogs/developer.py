@@ -164,7 +164,7 @@ class Developer(commands.Cog):
         if not is_confirmed:
             return
 
-        self.bot.user_svc.fetch_user(ctx)  # Instantiate the user in the database if needed
+        self.bot.user_svc.update_or_add_user(ctx)  # Instantiate the user in the database if needed
 
         for _ in range(number):
             # Assign a random class unless specified

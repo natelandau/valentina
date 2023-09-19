@@ -125,7 +125,7 @@ class DiceRoll:
     def _log_roll(self) -> None:
         """Log the roll to the database."""
         # Ensure the user in the database to avoid foreign key errors
-        user = self.ctx.bot.user_svc.fetch_user(self.ctx)  # type: ignore [attr-defined]
+        user = self.ctx.bot.user_svc.update_or_add_user(self.ctx)  # type: ignore [attr-defined]
 
         # Log the roll to the database
         if self.dice_type == DiceType.D10:

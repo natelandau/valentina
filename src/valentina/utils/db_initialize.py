@@ -20,6 +20,7 @@ from valentina.models.db_tables import (
     CustomSection,
     CustomTrait,
     Guild,
+    GuildUser,
     Macro,
     RollThumbnail,
     Trait,
@@ -27,6 +28,7 @@ from valentina.models.db_tables import (
     TraitCategoryClass,
     TraitClass,
     TraitValue,
+    User,
     VampireClan,
 )
 
@@ -167,6 +169,7 @@ class MigrateDatabase:
             "1.4.1": self.__1_4_1,
             "1.5.0": self.__1_5_0,
             "1.8.0": self.__1_8_0,
+            "1.11.0": self.__1_11_0,
         }
 
         current_version = Version.parse(self.db_version)
@@ -737,6 +740,26 @@ class MigrateDatabase:
                 logger.debug(f"MIGRAGE: Remove data.`use_storyteller_channel` on {guild.name}")
                 del guild.data["use_storyteller_channel"]
                 guild.save()
+
+    def __1_11_0(self) -> None:
+        """Migrate from version 1.11.0."""
+        if not self._column_exists(GuildUser._meta.table_name, "data"):
+            logger.info("DATABASE: add data column to GuildUser")
+            migrator = SqliteMigrator(self.db)
+
+            data_column = JSONField(null=True)
+            migrate(
+                migrator.add_column(GuildUser._meta.table_name, "data", data_column),
+            )
+
+        if not self._column_exists(User._meta.table_name, "data"):
+            logger.info("DATABASE: add data column to User")
+            migrator = SqliteMigrator(self.db)
+
+            data_column = JSONField(null=True)
+            migrate(
+                migrator.add_column(User._meta.table_name, "data", data_column),
+            )
 
 
 class PopulateDatabase:

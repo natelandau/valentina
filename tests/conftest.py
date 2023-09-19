@@ -213,7 +213,7 @@ def mock_ctx(mocker, mock_member):
     """Create a mock context object with user 1."""
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()
-    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_member)
+    mock_bot.user_svc.update_or_add_user = MagicMock(return_value=mock_member)
     mock_bot.__class__ = commands.Bot
 
     # Mock the ctx.guild object matches the mock database
@@ -239,7 +239,7 @@ def mock_ctx2(mocker, mock_member):
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()
     mock_bot.__class__ = commands.Bot
-    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_member)
+    mock_bot.user_svc.update_or_add_user = MagicMock(return_value=mock_member)
 
     # Mock the ctx.guild object matches the mock database
     mock_guild = mocker.MagicMock()
@@ -272,7 +272,7 @@ def mock_ctx3(mocker):
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()
     mock_bot.__class__ = commands.Bot
-    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
+    mock_bot.user_svc.update_or_add_user = MagicMock(return_value=mock_author)
 
     # Mock the ctx.guild object matches the mock database
     mock_guild = mocker.MagicMock()
@@ -305,7 +305,7 @@ def mock_ctx4(mocker):
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()
     mock_bot.__class__ = commands.Bot
-    mock_bot.user_svc.fetch_user = MagicMock(return_value=mock_author)
+    mock_bot.user_svc.update_or_add_user = MagicMock(return_value=mock_author)
 
     # Mock the ctx.guild object
     mock_guild = mocker.MagicMock()

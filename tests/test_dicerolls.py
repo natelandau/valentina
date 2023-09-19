@@ -17,7 +17,7 @@ class TestDiceRolls:
         # Create a mock user object
         mock_user = User.get_by_id(1)
         mock_bot = mocker.MagicMock()
-        mock_bot.user_svc.fetch_user = mocker.MagicMock(return_value=mock_user)
+        mock_bot.user_svc.update_or_add_user = mocker.MagicMock(return_value=mock_user)
 
         # create a mock guild object
         mock_guild_object = Guild.get_by_id(1)
@@ -158,7 +158,7 @@ class TestDiceRolls:
         # Create a mock user object
         mock_user = User.get_by_id(1)
         mock_bot = mocker.MagicMock()
-        mock_bot.user_svc.fetch_user = mocker.MagicMock(return_value=mock_user)
+        mock_bot.user_svc.update_or_add_user = mocker.MagicMock(return_value=mock_user)
 
         # create a mock guild object
         mock_guild_object = Guild.get_by_id(1)

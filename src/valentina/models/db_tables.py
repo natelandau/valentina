@@ -19,7 +19,7 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
-from valentina.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS
+from valentina.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS, GUILDUSER_DEFAULTS
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
@@ -118,6 +118,7 @@ class User(BaseModel):
     first_seen = DateTimeField(default=time_now)
     mention = TextField(null=True)
     last_seen = DateTimeField(default=time_now)
+    data = JSONField(null=True)
 
     class Meta:
         """Meta class for the model."""
@@ -650,10 +651,37 @@ class RollProbability(BaseModel):
 
 
 class GuildUser(BaseModel):
-    """Join table for Guild and User."""
+    """Table for storing information specific to users on a guild."""
 
     guild = ForeignKeyField(Guild, backref="users")
     user = ForeignKeyField(User, backref="guilds")
+    data = JSONField(null=True)
+
+    def set_default_data_values(self) -> GuildUser:
+        """Verify that the GuildUser's JSONField defaults are set.  If any keys are missing, they are added to the data column with default values.
+
+        Returns:
+            GuildUser: The GuildUser object with defaults verified and potentially updated.
+        """
+        updated = False
+        default_values = GUILDUSER_DEFAULTS.copy()
+        default_values["modified"] = str(time_now())
+
+        if not self.data:
+            self.data = {}
+
+        for default_key, default_value in default_values.items():
+            if default_key not in self.data:
+                self.data[default_key] = default_value
+                updated = True
+
+        if updated:
+            self.save()
+            logger.info(f"DATABASE: Update defaults for {self}")
+        else:
+            logger.debug(f"DATABASE: {self}'s defaults are up to date")
+
+        return self
 
 
 class TraitValue(BaseModel):

@@ -307,6 +307,10 @@ GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "storyteller_channel_id": None,
 }
 
+GUILDUSER_DEFAULTS: dict[str, int | bool | None | str] = {
+    "experience": 0,
+}
+
 ### More Constants ###
 
 CLAN_DISCIPLINES = {
