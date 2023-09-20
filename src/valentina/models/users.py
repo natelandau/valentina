@@ -8,7 +8,7 @@ from datetime import timedelta
 import arrow
 import discord
 from loguru import logger
-from peewee import DoesNotExist
+from peewee import DoesNotExist, fn
 
 from valentina.constants import (
     GUILDUSER_DEFAULTS,
@@ -55,14 +55,14 @@ class UserService:
         ctx: discord.ApplicationContext | discord.AutocompleteContext,
         user: discord.User | discord.Member | User = None,
     ) -> tuple[discord.Member | discord.User, discord.Guild | None]:
-        """Extract member and guild from the context or the user.
+        """Extract member and guild from the context and/or the user.
 
         Determine the member and guild based on the application context. If a user is specifically
         provided, then that user will override any member found in the context.
 
         Args:
             ctx (discord.ApplicationContext | discord.AutocompleteContext): The application or autocomplete context.
-            user (discord.User | discord.Member|User): A specific user to fetch, if provided.
+            user (discord.User | discord.Member | User): A specific user to fetch, if provided.
 
         Returns:
             tuple[discord.Member | discord.User, discord.Guild | None]: A tuple containing the member and the guild.
@@ -346,7 +346,7 @@ class UserService:
     def fetch_user(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext,
-        user: discord.User | discord.Member = None,
+        user: discord.User | discord.Member | User = None,
     ) -> User:
         """Retrieve and/or add a User object from the cache or the database.
 
@@ -355,7 +355,7 @@ class UserService:
 
         Args:
             ctx (discord.ApplicationContext | discord.AutocompleteContext): The context containing author and guild.
-            user (discord.User | discord.Member, optional): A specific user to fetch. Defaults to None.
+            user (discord.User | discord.Member| User, optional): A specific user to fetch. Defaults to None.
 
         Returns:
             User: User database model instance.
@@ -379,7 +379,7 @@ class UserService:
         return self.user_cache[key]
 
     def fetch_guild_users(self, ctx: discord.ApplicationContext) -> list[User]:
-        """Retrieve a list of all users in the database who have guild specific data and adds them to the user_cache.
+        """Retrieve a list of all users in the database who have guild-specific data and adds them to the user_cache.
 
         Args:
             ctx (discord.ApplicationContext): The context containing the guild.
@@ -387,18 +387,20 @@ class UserService:
         Returns:
             list[User]: A list of User objects.
         """
-        # Note: I don't fully understand this query, but it works.
-        # https://docs.peewee-orm.com/en/latest/peewee/sqlite_ext.html?highlight=jsonfield#JSONField.children
-        users = (
-            User.select()
-            .from_(User, User.data.children().alias("children"))
-            .where(User.data.children().alias("children").c.key == str(ctx.guild.id))
+        guild_id_str = str(ctx.guild.id)
+
+        # Use JSON functions to filter users who have guild-specific data
+        users_query = User.select().where(
+            fn.JSON_EXTRACT(User.data, f"$.{guild_id_str}") != None  # noqa: E711
         )
 
-        for user in users:
+        # Fetch users and populate the cache
+        fetched_users = []
+        for user in users_query:
             self.fetch_user(ctx, user=user)
+            fetched_users.append(user)
 
-        return [x for x in users]
+        return fetched_users
 
     def purge_cache(
         self, ctx: discord.ApplicationContext | discord.AutocompleteContext | None = None
@@ -433,22 +435,29 @@ class UserService:
             logger.debug("CACHE: Purge all user caches")
 
     def set_active_character(self, ctx: discord.ApplicationContext, character: Character) -> None:
-        """Switch the active character for the user."""
-        user = self.fetch_user(ctx=ctx)
+        """Switch the active character for the user in the given guild.
 
+        Args:
+            ctx (discord.ApplicationContext): The Discord application context.
+            character (Character): The character object to set as active.
+
+        Returns:
+            None
+        """
+        user = self.fetch_user(ctx=ctx)
         key = self.__get_user_key(ctx.guild.id, user.id)
 
-        for c in Character.select().where(
+        # Deactivate all characters for the user in the guild
+        Character.update(data=Character.data["is_active"].set(False)).where(
             Character.owned_by == user,
             Character.guild == ctx.guild.id,
             Character.data["player_character"] == True,  # noqa: E712
-        ):
-            if c.id == character.id:
-                c.data["is_active"] = True
-                c.save()
-            else:
-                c.data["is_active"] = False
-                c.save()
+        ).execute()
+
+        # Activate the selected character
+        Character.update(data=Character.data["is_active"].set(True)).where(
+            Character.id == character.id
+        ).execute()
 
         self.active_character_cache[key] = character
 
@@ -457,7 +466,19 @@ class UserService:
     def transfer_character_owner(
         self, ctx: discord.ApplicationContext, character: Character, new_owner: User
     ) -> None:
-        """Transfer ownership of a character to another user."""
+        """Transfer ownership of a character to another user.
+
+        This method transfers the ownership of a character from the current user to a new user.
+        It updates the 'owned_by' field of the character, saves the changes, and purges the cache.
+
+        Args:
+            ctx (discord.ApplicationContext): The application context containing the current user.
+            character (Character): The character object whose ownership is to be transferred.
+            new_owner (User): The new owner of the character.
+
+        Returns:
+            None
+        """
         current_user = self.fetch_user(ctx)
         new_user = self.fetch_user(ctx, new_owner)
 
@@ -478,6 +499,14 @@ class UserService:
         """Update a User record in the database.
 
         Note: Due to an annoying bug in SQLITE, all JSON Fields must use strings as keys. Consequently, we have to remember to transpose the guild ID to a string before using it as a key.
+
+        Args:
+            ctx (discord.ApplicationContext | discord.AutocompleteContext, optional): The application context. Defaults to None.
+            user (discord.Member | discord.User | User, optional): A specific user to fetch. Defaults to None.
+            data (dict[str, str | int | bool | dict[str, str | int | bool]], optional): Data to update. Defaults to {}.
+
+        Returns:
+            User: The updated User object.
         """
         if not ctx and not user:
             raise ValueError("Either 'ctx' or 'user' must be provided.")

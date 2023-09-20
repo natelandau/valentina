@@ -324,6 +324,32 @@ def mock_ctx4(mocker):
     return mock_ctx
 
 
+@pytest.fixture()
+def mock_autocomplete_ctx1(mocker):
+    """Create a mock autocomplete context object with user 1."""
+    # Mock the ctx.guild object matches the mock database
+    mock_guild = mocker.MagicMock()
+    mock_guild.id = 1
+    mock_guild.name = "Test Guild"
+    mock_guild.data = {"key": "value"}
+    mock_guild.__class__ = discord.Guild
+
+    mock_user = mocker.MagicMock()
+    mock_user.id = 1
+
+    mock_interaction = mocker.MagicMock()
+    mock_interaction.guild = mock_guild
+    mock_interaction.user = mock_user
+
+    # Mock the ctx object
+    mock_ctx = mocker.MagicMock()
+    mock_ctx.interaction = mock_interaction
+
+    mock_ctx.__class__ = discord.AutocompleteContext
+
+    return mock_ctx
+
+
 ### OTHER FIXTURES ################################
 @pytest.fixture()
 def caplog(caplog):
