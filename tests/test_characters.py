@@ -24,10 +24,15 @@ from valentina.utils import errors
 class TestCharacterModel:
     """Test the character database model."""
 
-    def test_character_add_custom_trait(self):
-        """Test add_custom_trait()."""
-        # GIVEN a Character object and a TraitCategory object
-        character = Character.create(
+    def test_character_add_custom_trait(self) -> None:
+        """Test the add_custom_trait method.
+
+        GIVEN: A Character object and a TraitCategory object.
+        WHEN: The add_custom_trait method is called.
+        THEN: The custom trait should be added correctly.
+        """
+        # GIVEN: A Character object and a TraitCategory object
+        test_character = Character.create(
             data={
                 "first_name": "add_custom_trait",
                 "last_name": "character",
@@ -40,54 +45,79 @@ class TestCharacterModel:
             created_by=1,
             clan=1,
         )
-        assert len(character.custom_traits) == 0
-        category = TraitCategory.get_by_id(1)
+        assert len(test_character.custom_traits) == 0
+        test_category = TraitCategory.get_by_id(1)
 
-        # WHEN the add_custom_trait method is called
-        character.add_custom_trait("new_trait", "new description", category, 1, 5)
+        # WHEN: The add_custom_trait method is called
+        test_character.add_custom_trait("new_trait", "new description", test_category, 1, 5)
 
-        # THEN check the custom trait is added correctly
-        assert len(character.custom_traits) == 1
-        assert character.custom_traits[0].name == "new_trait"
-        assert character.custom_traits[0].description == "new description"
-        assert character.custom_traits[0].category == category
-        assert character.custom_traits[0].value == 1
-        assert character.custom_traits[0].max_value == 5
+        # THEN: Check the custom trait is added correctly
+        assert len(test_character.custom_traits) == 1
+        custom_trait = test_character.custom_traits[0]
+        assert custom_trait.name == "new_trait"
+        assert custom_trait.description == "new description"
+        assert custom_trait.category == test_category
+        assert custom_trait.value == 1
+        assert custom_trait.max_value == 5
 
-        # WHEN the add_custom_trait method is called again with the same name
-        # THEN raise a validation error
+        # WHEN: The add_custom_trait method is called again with the same name
+        # THEN: Raise a validation error
         with pytest.raises(errors.ValidationError):
-            character.add_custom_trait("new_trait", "new description", category, 1, 5)
+            test_character.add_custom_trait("new_trait", "new description", test_category, 1, 5)
 
-    def test_character_all_trait_values(self):
-        """Test character.all_trait_values.
+    def test_character_all_trait_values(self) -> None:
+        """Test the all_trait_values method of the Character class.
 
-        Given a character with traits
-        When character.all_trait_values is called
-        Then all trait values are returned as a dictionary containing the appropriate tuple values
+        GIVEN: A Character object with traits.
+        WHEN: The all_trait_values method is called.
+        THEN: All trait values should be returned as a dictionary containing the appropriate tuple values.
         """
-        returned = Character.get_by_id(1).all_trait_values
+        # GIVEN: A Character object with traits
+        # (Assuming that the Character with id=1 has the traits as described in the test)
 
-        assert returned["Physical"] == [
+        # WHEN: The all_trait_values method is called
+        trait_values = Character.get_by_id(1).all_trait_values
+
+        # THEN: All trait values should be returned as expected
+        assert "Physical" in trait_values
+        assert "Skills" in trait_values
+
+        assert trait_values["Physical"] == [
             ("Strength", 1, 5, "●○○○○"),
             ("Dexterity", 2, 5, "●●○○○"),
             ("Stamina", 3, 5, "●●●○○"),
         ]
-        assert returned["Skills"] == [("Test_Trait", 2, 5, "●●○○○")]
 
-    def test_character_custom_traits(self):
-        """Test character.custom_traits.
+        assert trait_values["Skills"] == [("Test_Trait", 2, 5, "●●○○○")]
 
-        Given a character with custom traits
-        When character.custom_traits is called
-        Then all custom traits are returned
+    def test_character_custom_traits(self) -> None:
+        """Test the custom_traits method of the Character class.
+
+        GIVEN: A Character object with custom traits.
+        WHEN: The custom_traits method is called.
+        THEN: All custom traits should be returned as expected.
         """
-        returned = Character.get_by_id(1).custom_traits
-        assert len(returned) == 1
-        assert returned[0].name == "Test_Trait"
+        # GIVEN: A Character object with custom traits
+        # (Assuming that the Character with id=1 has the custom traits as described in the test)
+
+        # WHEN: The custom_traits method is called
+        custom_traits = Character.get_by_id(1).custom_traits
+
+        # THEN: All custom traits should be returned as expected
+        assert custom_traits is not None, "Custom traits should not be None"
+        assert len(custom_traits) == 1, "There should be exactly one custom trait"
+
+        first_trait = custom_traits[0]
+        assert (
+            first_trait.name == "Test_Trait"
+        ), "The name of the first custom trait should be 'Test_Trait'"
 
     def test_character_get_trait_value(self, mock_ctx):
-        """Test character.get_trait_value()."""
+        """Test character.get_trait_value() method.
+
+        This test verifies that the method correctly returns the value of a given trait or custom trait.
+        It also checks that the method returns 0 for a trait that does not exist for the character.
+        """
         # GIVEN a character with a custom trait and a trait value
         character = Character.create(
             data={
@@ -114,19 +144,22 @@ class TestCharacterModel:
 
         # WHEN the get_trait_value method is called with a CustomTrait
         # THEN check the trait value is returned correctly
-        assert character.get_trait_value(custom_trait) == 4
+        assert character.get_trait_value(custom_trait) == 4, "Custom trait value should be 4"
 
         # WHEN the get_trait_value method is called with a Trait
         # THEN check the trait value is returned correctly
-        assert character.get_trait_value(trait) == 2
+        assert character.get_trait_value(trait) == 2, "Trait value should be 2"
 
         # WHEN the get_trait_value method is called with a TraitValue that does not exist
         # THEN return 0 for the value
-        assert character.get_trait_value(TraitValue(trait=Trait.get_by_id(2))) == 0
+        non_existent_trait_value = TraitValue(trait=Trait.get_by_id(2))
+        assert (
+            character.get_trait_value(non_existent_trait_value) == 0
+        ), "Non-existent trait value should be 0"
 
-    def test_character_set_trait_value(self, mock_ctx):
-        """Test character.set_trait_value()."""
-        # GIVEN a character with custom traits
+    def test_set_custom_trait_value(self, mock_ctx):
+        """Test setting a value for a custom trait using character.set_trait_value()."""
+        # GIVEN a character with a custom trait
         character = Character.create(
             data={
                 "first_name": str(uuid4()).split("-")[0],
@@ -148,13 +181,30 @@ class TestCharacterModel:
             max_value=5,
             character=character,
         )
-        trait = Trait.get_by_id(1)
 
         # WHEN the set_trait_value method is called with a CustomTrait
         character.set_trait_value(custom_trait, 3)
 
         # THEN check the trait value is updated correctly
         assert custom_trait.value == 3
+
+    def test_create_new_trait_value(self, mock_ctx):
+        """Test creating a new trait value using character.set_trait_value()."""
+        # GIVEN a character without a standard trait value
+        character = Character.create(
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+                "player_character": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            clan=1,
+        )
+        trait = Trait.get_by_id(1)
 
         # WHEN the set_trait_value method is called with a Trait
         character.set_trait_value(trait, 3)
@@ -167,6 +217,25 @@ class TestCharacterModel:
             .value
             == 3
         )
+
+    def test_update_existing_trait_value(self, mock_ctx):
+        """Test updating an existing trait value using character.set_trait_value()."""
+        # GIVEN a character with an existing standard trait value
+        character = Character.create(
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "nickname": "testy",
+                "storyteller_character": False,
+                "player_character": True,
+            },
+            char_class=1,
+            guild=mock_ctx.guild.id,
+            created_by=mock_ctx.author.id,
+            clan=1,
+        )
+        trait = Trait.get_by_id(1)
+        TraitValue.create(character=character, trait=trait, value=3)
 
         # WHEN the set_trait_value method is called with a Trait
         character.set_trait_value(trait, 1)
@@ -217,7 +286,15 @@ class TestCharacterService:
     char_svc = CharacterService()
 
     def test_custom_section_update_or_add(self, mock_ctx):
-        """Test custom_section_update_or_add()."""
+        """Test if custom_section_update_or_add() correctly adds or updates a custom section.
+
+        This test covers two scenarios:
+        1. Adding a new custom section to an empty list of custom sections.
+        2. Updating an existing custom section.
+
+        Args:
+            mock_ctx (Mock): Mocked context for the service function call.
+        """
         # GIVEN a character object with no custom sections
         character = Character.create(
             data={
@@ -232,27 +309,33 @@ class TestCharacterService:
             created_by=1,
             clan=1,
         )
-        assert character.custom_sections == []
+        assert character.custom_sections == [], "Initial custom sections should be empty"
 
-        # WHEN the custom_section_update_or_add method is called
-        result = self.char_svc.custom_section_update_or_add(
+        # WHEN the custom_section_update_or_add method is called for the first time
+        result1 = self.char_svc.custom_section_update_or_add(
             mock_ctx, character, "new", "new description"
         )
 
-        # THEN check the custom section is added correctly
-        assert character.custom_sections == IsList(length=1)
-        assert result.title == "new"
-        assert result.description == "new description"
+        # THEN check that the custom section is added correctly
+        assert character.custom_sections == IsList(length=1), "One custom section should be added"
+        assert result1.title == "new", "The title should match the initial input"
+        assert (
+            result1.description == "new description"
+        ), "The description should match the initial input"
 
-        # WHEN the custom_section_update_or_add method is called again
-        result = self.char_svc.custom_section_update_or_add(
+        # WHEN the custom_section_update_or_add method is called a second time with different details
+        result2 = self.char_svc.custom_section_update_or_add(
             mock_ctx, character, "new2", "new description2"
         )
 
-        # THEN check the custom section is updated correctly
-        assert character.custom_sections == IsList(length=1)
-        assert result.title == "new2"
-        assert result.description == "new description2"
+        # THEN check that the existing custom section is updated correctly
+        assert character.custom_sections == IsList(
+            length=1
+        ), "Should still be only one custom section after update"
+        assert result2.title == "new2", "The title should be updated to 'new2'"
+        assert (
+            result2.description == "new description2"
+        ), "The description should be updated to 'new description2'"
 
     def test_fetch_all_player_characters(self, mocker, mock_member, mock_member2):
         """Test fetch_all_player_characters()."""
