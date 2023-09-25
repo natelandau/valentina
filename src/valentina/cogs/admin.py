@@ -28,7 +28,7 @@ class Admin(commands.Cog):
     """Valentina settings, debugging, and administration."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     admin = discord.SlashCommandGroup(
         "admin",

@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from valentina.models import MacroService
-from valentina.models.db_tables import CustomTrait, Macro, MacroTrait, Trait
+from valentina.models.db_tables import CustomTrait, GuildUser, Macro, MacroTrait, Trait
 from valentina.utils import errors
 
 
@@ -24,12 +24,13 @@ class TestMacroService:
         """
         # Given an empty cache and no macros for a user
         self.macro_svc._macro_cache = {}
+        user = GuildUser.get_by_id(1)
         for m in Macro.select():
             m.delete_instance()
 
         macro = Macro.create(
             guild=1,
-            user=1,
+            user=user,
             name=str(uuid4()).split("-")[0],
             abbreviation="tm",
             description="test description",
@@ -39,7 +40,7 @@ class TestMacroService:
         )
 
         # WHEN the macros are fetched
-        result = self.macro_svc.fetch_macros(1, 1)
+        result = self.macro_svc.fetch_macros(user)
 
         # THEN the database is queried and the cache is updated
         captured = caplog.text
@@ -50,7 +51,7 @@ class TestMacroService:
         assert macro in self.macro_svc._macro_cache["1_1"]
 
         # WHEN the macros are fetched again
-        result = self.macro_svc.fetch_macros(1, 1)
+        result = self.macro_svc.fetch_macros(user)
         captured = caplog.text
 
         # THEN the cache is used
@@ -66,19 +67,20 @@ class TestMacroService:
         WHEN a macro is created
         THEN the database is updated
         """
-        # Grab traits to use
+        # Grab database to use
         trait = Trait.get_by_id(1)
         custom_trait = CustomTrait.get_by_id(1)
+        user = GuildUser.get_by_id(1)
 
         # Verify the new macro is not already in the cache
         assert len(self.macro_svc._macro_cache) == 1
 
         # Create the new macro
         result = self.macro_svc.create_macro(
-            mock_ctx, "new_macro", trait, custom_trait, "nm", "new macro"
+            mock_ctx, user, "new_macro", trait, custom_trait, "nm", "new macro"
         )
         captured = caplog.text
-        assert "DATABASE: Create macro new_macro for Test User" in captured
+        assert "DATABASE: Create macro new_macro for [1] test_user" in captured
 
         # Verify the macro was created
         assert result.name == "new_macro"
@@ -108,15 +110,18 @@ class TestMacroService:
             "valentina.models.db_tables.MacroTrait.create_from_trait_name", return_value=None
         )
 
-        # Grab a Trait object to use
+        # Grab a database object to use
         trait = Trait.get_by_id(1)
+        user = GuildUser.get_by_id(1)
 
         # Create the new macro
         with pytest.raises(
             errors.ValidationError,
             match=r"Macro named `\w+` already exists",
         ):
-            self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "nm", "new macro")
+            self.macro_svc.create_macro(
+                mock_ctx, user, "new_macro", trait, trait, "nm", "new macro"
+            )
 
     def test_create_macro_three(self, mocker, mock_ctx):
         """Test creating a macro.
@@ -130,15 +135,18 @@ class TestMacroService:
             "valentina.models.db_tables.MacroTrait.create_from_trait_name", return_value=None
         )
 
-        # Grab a Trait object to use
+        # Grab a database object to use
         trait = Trait.get_by_id(1)
+        user = GuildUser.get_by_id(1)
 
         # Create the new macro
         with pytest.raises(
             errors.ValidationError,
             match=r"Macro named `\w+` already exists",
         ):
-            self.macro_svc.create_macro(mock_ctx, "new_macro", trait, trait, "nm", "new macro")
+            self.macro_svc.create_macro(
+                mock_ctx, user, "new_macro", trait, trait, "nm", "new macro"
+            )
 
     def test_delete_macro_one(self, mock_ctx, caplog):
         """Test deleting a macro.

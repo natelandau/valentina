@@ -15,7 +15,13 @@ from peewee import fn
 
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import Character, CharacterClass, RollProbability, User, VampireClan
+from valentina.models.db_tables import (
+    Character,
+    CharacterClass,
+    GuildUser,
+    RollProbability,
+    VampireClan,
+)
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
@@ -34,7 +40,7 @@ class Developer(commands.Cog):
     """Valentina developer commands. Beware, these can be destructive."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     ### BOT ADMINISTRATION COMMANDS ################################################################
 
@@ -146,13 +152,11 @@ class Developer(commands.Cog):
         if not is_confirmed:
             return
 
-        users = self.bot.user_svc.fetch_guild_users(ctx)
+        users = await self.bot.user_svc.fetch_guild_users(ctx)
         for user in users:
             description = ""
-            user_experience = User.get_by_id(user.id).data[str(ctx.guild.id)].get("experience", 0)
-            user_lifetime_experience = (
-                User.get_by_id(user.id).data[str(ctx.guild.id)].get("experience_total", 0)
-            )
+            user_experience = GuildUser.get_by_id(user.id).data.get("experience", 0)
+            user_lifetime_experience = GuildUser.get_by_id(user.id).data.get("experience_total", 0)
             description += f"start experience: {user_experience}\n"
             description += f"start lifetime experience: {user_lifetime_experience}\n"
 
@@ -160,7 +164,7 @@ class Developer(commands.Cog):
                 description += f"{c.name}: {c.data['experience']} experience\n"
                 user_experience += c.data["experience"]
                 user_lifetime_experience += c.data["experience_total"]
-                self.bot.char_svc.update_or_add(
+                await self.bot.char_svc.update_or_add(
                     ctx,
                     character=c,
                     data={
@@ -170,17 +174,15 @@ class Developer(commands.Cog):
                 )
 
             # Update the user's experience
-            self.bot.user_svc.update_or_add_user(
+            await self.bot.user_svc.update_or_add_user(
                 ctx,
                 user,
                 data={
-                    str(ctx.guild.id): {
-                        "experience": user_experience,
-                        "experience_total": user_lifetime_experience,
-                    }
+                    "experience": user_experience,
+                    "experience_total": user_lifetime_experience,
                 },
             )
-            description += f"end experience: {User.get_by_id(user.id).data[str(ctx.guild.id)].get('experience', 0)}\n end lifetime experience: {User.get_by_id(user.id).data[str(ctx.guild.id)].get('experience_total', 0)}\n"
+            description += f"end experience: {GuildUser.get_by_id(user.id).data[str(ctx.guild.id)].get('experience', 0)}\n end lifetime experience: {GuildUser.get_by_id(user.id).data[str(ctx.guild.id)].get('experience_total', 0)}\n"
             await ctx.send(embed=discord.Embed(description=description))
 
         logger.info(f"DEVELOPER: {ctx.author.display_name} transferring all character XP to users")
@@ -216,7 +218,9 @@ class Developer(commands.Cog):
         if not is_confirmed:
             return
 
-        self.bot.user_svc.update_or_add_user(ctx)  # Instantiate the user in the database if needed
+        await self.bot.user_svc.update_or_add_user(
+            ctx
+        )  # Instantiate the user in the database if needed
 
         for _ in range(number):
             # Assign a random class unless specified
@@ -240,7 +244,7 @@ class Developer(commands.Cog):
                 "player_character": True,
             }
 
-            character = self.bot.char_svc.update_or_add(
+            character = await self.bot.char_svc.update_or_add(
                 ctx,
                 char_class=char_class,
                 clan=vampire_clan,

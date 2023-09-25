@@ -4,7 +4,8 @@
 -   [x] Character: Mark characters as dead
 -   [x] Character: Migrate to "owned" characters
 -   [ ] Character: Add Concept
--   [ ] Character: Add Randomizer
+-   [ ] Character: Add Character generator
+-   [ ] Character: Add Character generation roll bot
 -   [ ] Campaign: Renumber chapters
 -   [ ] Campaign: View any campaign, not just active one
 -   [ ] Campaign: If only one campaign, always set it as active
@@ -17,3 +18,10 @@
 -   [x] Storyteller: Allow updating storyteller characters
 -   [x] Storyteller: Add custom traits to storyteller characters
 -   [ ] Refactor: Centralize pagination for long responses
+
+## Move to Guild User Objects
+
+-   [x] rewrite user_svc to use guild user objects
+-   [ ] change all cogs and references to use guild user objects
+-   [ ] migrate all user database objects to guild_user objects
+-   [ ] migrate all foreign keys from user database objects to guild_user objects

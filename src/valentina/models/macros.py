@@ -4,7 +4,7 @@ from __future__ import annotations
 import discord
 from loguru import logger
 
-from valentina.models.db_tables import CustomTrait, Macro, MacroTrait, Trait
+from valentina.models.db_tables import CustomTrait, GuildUser, Macro, MacroTrait, Trait
 from valentina.utils import errors
 
 
@@ -31,6 +31,7 @@ class MacroService:
     def create_macro(
         self,
         ctx: discord.ApplicationContext,
+        user: GuildUser,
         name: str,
         trait_one: Trait | CustomTrait,
         trait_two: Trait | CustomTrait,
@@ -38,28 +39,28 @@ class MacroService:
         description: str | None = None,
     ) -> Macro:
         """Create a macro and associated macro traits."""
-        existing_macros = self.fetch_macros(ctx.guild.id, ctx.author.id)
+        existing_macros = self.fetch_macros(user)
 
         # Check if a macro with the same name already exists
         if any(macro.name.lower() == name.lower() for macro in existing_macros):
-            logger.debug(f"CACHE: Macro already exists for {ctx.author.display_name}")
+            logger.debug(f"CACHE: Macro already exists for {user}")
             raise errors.ValidationError(f"Macro named `{name}` already exists.")
 
         # Check if a macro with the same abbreviation already exists
         if abbreviation is not None and any(
             macro.abbreviation.lower() == abbreviation.lower() for macro in existing_macros
         ):
-            logger.debug(f"CACHE: Macro already exists for {ctx.author.display_name}")
+            logger.debug(f"CACHE: Macro already exists for {user}")
             raise errors.ValidationError("Macro with the same abbreviation already exists.")
 
         # Create the macro and associated macro traits
-        logger.debug(f"DATABASE: Create macro {name} for {ctx.author.display_name}")
+        logger.debug(f"DATABASE: Create macro {name} for {user}")
         macro = Macro.create(
             name=name,
             abbreviation=abbreviation,
             description=description,
-            user=ctx.author.id,
-            guild=ctx.guild.id,
+            user=user,
+            guild=user.guild.id,
         )
         MacroTrait.create_from_trait(macro, trait_one)
         MacroTrait.create_from_trait(macro, trait_two)
@@ -83,29 +84,25 @@ class MacroService:
         macro.delete_instance(recursive=True, delete_nullable=True)
         self.purge_cache(ctx)
 
-    def fetch_macros(self, guild_id: int, user_id: int) -> list[Macro]:
+    def fetch_macros(self, user: GuildUser) -> list[Macro]:
         """Fetch the macros for the given guild and user.
 
         Args:
-            guild_id (discord.Guild | int): The guild to get the macros for.
-            user_id (discord.User | int): The user to get the macros for.
+            user (GuildUser): The user to fetch macros for.
 
         Returns:
             list[Macro]: The list of macros.
         """
-        user_key = self.__get_user_key(guild_id, user_id)
+        user_key = self.__get_user_key(user.guild.id, user.user)
 
         if user_key not in self._macro_cache:
-            logger.debug(f"DATABASE: Fetch macros for {user_id}")
+            logger.debug(f"DATABASE: Fetch macros for {user}")
 
             self._macro_cache[user_key] = [
-                x
-                for x in Macro.select()
-                .where((Macro.guild == guild_id) & (Macro.user == user_id))
-                .order_by(Macro.name.asc())
+                x for x in Macro.select().where(Macro.user == user).order_by(Macro.name.asc())
             ]
         else:
-            logger.debug(f"CACHE: Fetch macros for {user_id}")
+            logger.debug(f"CACHE: Fetch macros for {user}")
 
         return self._macro_cache[user_key]
 
@@ -153,7 +150,9 @@ class MacroService:
         trait_two: Trait | CustomTrait,
     ) -> Macro:
         """Check if a macro already exists for the given user and for the given traits."""
-        existing_macros = self.fetch_macros(ctx.guild.id, ctx.author.id)
+        user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+
+        existing_macros = self.fetch_macros(user)
 
         for macro in existing_macros:
             traits = self.fetch_macro_traits(macro)

@@ -83,7 +83,7 @@ class GuildService:
 
         return embed
 
-    def add_roll_result_thumb(
+    async def add_roll_result_thumb(
         self, ctx: discord.ApplicationContext, roll_type: str, url: str
     ) -> None:
         """Add a roll result thumbnail to the database.
@@ -102,7 +102,7 @@ class GuildService:
         Returns:
             None
         """
-        self.bot.user_svc.update_or_add_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        await self.bot.user_svc.update_or_add_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
         self.roll_result_thumbs.pop(ctx.guild.id, None)
 
@@ -321,6 +321,11 @@ class GuildService:
                 self.roll_result_thumbs[ctx.guild.id][thumb.roll_type].append(thumb.url)
 
         return self.roll_result_thumbs[ctx.guild.id]
+
+    async def update_guild_users(self, guild: discord.Guild) -> None:
+        """Update all users in a guild. Used in bot on_ready."""
+        for member in guild.members:
+            await self.bot.user_svc.update_or_add_user(guild=guild, user=member)  # type: ignore [attr-defined] # it really is defined
 
     async def prepare_guild(self, guild: discord.Guild) -> None:
         """Prepares a guild for use by the bot. This method is called when the bot joins a guild. This method is idempotent, and can be called multiple times without issue if the default roles need to be recreated.

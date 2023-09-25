@@ -19,7 +19,7 @@ class Misc(commands.Cog):
     """Miscellaneous commands."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     @commands.slash_command(name="user_info", description="View information about a user")
     @discord.guild_only()
@@ -39,7 +39,7 @@ class Misc(commands.Cog):
     ) -> None:
         """View information about a user."""
         target = user or ctx.author
-        db_user = self.bot.user_svc.update_or_add_user(ctx=ctx)
+        db_user = await self.bot.user_svc.update_or_add_user(ctx=ctx)
 
         # Variables for embed
         num_characters = (

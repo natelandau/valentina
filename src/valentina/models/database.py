@@ -31,7 +31,6 @@ from valentina.models.db_tables import (
     TraitCategoryClass,
     TraitClass,
     TraitValue,
-    User,
     VampireClan,
 )
 from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
@@ -83,7 +82,6 @@ class DatabaseService:
                     Guild,
                     Macro,
                     RollThumbnail,
-                    User,
                     VampireClan,
                     Campaign,
                     CampaignNote,

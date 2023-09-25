@@ -5,7 +5,7 @@ from loguru import logger
 from peewee import fn
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models.db_tables import Character, RollStatistic
+from valentina.models.db_tables import Character, GuildUser, RollStatistic
 
 
 class Statistics:
@@ -31,7 +31,8 @@ class Statistics:
 
         # Pull statistics
         if self.user:
-            self._pull_statistics("user", self.user.id)
+            db_user = GuildUser.get_or_none(user=self.user.id, guild=self.ctx.guild.id)
+            self._pull_statistics("user", db_user.id)
             self.title += f" for `{self.user.display_name}`"
             self.thumbnail = self.user.display_avatar.url
         elif self.character:

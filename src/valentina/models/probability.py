@@ -64,7 +64,6 @@ class Probability:
                 pool=self.pool,
                 difficulty=self.difficulty,
                 dice_size=self.dice_size,
-                log_roll=False,
             )
             totals["total_results"] += roll.result
             totals["botch_dice"] += roll.botches

@@ -124,7 +124,7 @@ class Events(commands.Cog, name="Events"):
         logger.info(f"EVENT: {member.display_name} has joined the server")
 
         # Add user to the database
-        self.bot.user_svc.update_or_add_user(ctx=None, user=member)
+        await self.bot.user_svc.update_or_add_user(ctx=None, user=member)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:

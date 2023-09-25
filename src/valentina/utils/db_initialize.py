@@ -15,6 +15,8 @@ from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 from semver import Version
 
 from valentina.models.db_tables import (
+    Campaign,
+    CampaignNote,
     Character,
     CharacterClass,
     CustomSection,
@@ -22,13 +24,13 @@ from valentina.models.db_tables import (
     Guild,
     GuildUser,
     Macro,
+    RollStatistic,
     RollThumbnail,
     Trait,
     TraitCategory,
     TraitCategoryClass,
     TraitClass,
     TraitValue,
-    User,
     VampireClan,
 )
 
@@ -744,22 +746,137 @@ class MigrateDatabase:
     def __1_11_0(self) -> None:
         """Migrate from version 1.11.0."""
         if not self._column_exists(GuildUser._meta.table_name, "data"):
-            logger.info("DATABASE: add data column to GuildUser")
-            migrator = SqliteMigrator(self.db)
+            logger.info("DATABASE: Migrate from User to GuildUser")
 
-            data_column = JSONField(null=True)
-            migrate(
-                migrator.add_column(GuildUser._meta.table_name, "data", data_column),
-            )
+            logger.debug("DATABASE: Create GuildUser table")
+            # Drop and recreate the GuildUser Table
+            users = self.db.execute_sql("SELECT * FROM guilduser;").fetchall()
 
-        if not self._column_exists(User._meta.table_name, "data"):
-            logger.info("DATABASE: add data column to User")
-            migrator = SqliteMigrator(self.db)
+            self.db.drop_tables([GuildUser])
+            self.db.create_tables([GuildUser])
 
-            data_column = JSONField(null=True)
-            migrate(
-                migrator.add_column(User._meta.table_name, "data", data_column),
-            )
+            for user in users:
+                guild = Guild.get_by_id(user[1])
+                GuildUser.create(user=user[2], guild=guild)
+
+            for guild_user in GuildUser.select():
+                guild_user.set_default_data_values()
+
+            # Transfer Foreign Keys
+
+            # Characters Table
+            logger.debug("DATABASE: Migrate characters")
+            characters = self.db.execute_sql("SELECT * FROM characters;").fetchall()
+            # Recreate characters table
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+            self.db.execute_sql("DROP TABLE characters;")
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
+            self.db.create_tables([Character])
+
+            # Re-add data to characters table
+            for character in characters:
+                Character.create(
+                    id=character[0],
+                    created=character[1],
+                    char_class=character[2],
+                    guild=character[3],
+                    created_by=GuildUser.get_or_none(user=character[4], guild=character[3]),
+                    owned_by=GuildUser.get_or_none(user=character[4], guild=character[3]),
+                    clan=character[6],
+                    data=json.loads(character[7]),
+                )
+
+            # Macros Table
+            logger.debug("DATABASE: Migrate macros")
+            macros = self.db.execute_sql("SELECT * FROM macros;").fetchall()
+            # Recreate macros table
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+            self.db.execute_sql("DROP TABLE macros;")
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
+            self.db.create_tables([Macro])
+
+            # Re-add data to macros table
+            for macro in macros:
+                Macro.create(
+                    id=macro[0],
+                    name=macro[1],
+                    abbreviation=macro[2],
+                    description=macro[3],
+                    created=macro[4],
+                    modified=macro[5],
+                    guild=macro[6],
+                    user=GuildUser.get_or_none(user=macro[7], guild=macro[6]),
+                )
+
+            # Campaign Notes Table
+            logger.debug("DATABASE: Migrate campaign notes")
+            notes = self.db.execute_sql("SELECT * FROM campaign_notes;").fetchall()
+            # Recreate campaign_notes table
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+            self.db.execute_sql("DROP TABLE campaign_notes;")
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
+            self.db.create_tables([CampaignNote])
+
+            # Re-add data to campaign_notes table
+            for note in notes:
+                CampaignNote.create(
+                    id=note[0],
+                    campaign=note[1],
+                    chapter=note[2],
+                    user=GuildUser.get_or_none(
+                        user=note[3], guild=Campaign.get_by_id(note[1]).guild
+                    ),
+                    created=note[4],
+                    modified=note[5],
+                    name=note[6],
+                    description=note[7],
+                    data={},
+                )
+
+            # Migrate roll thumbnails table
+            logger.debug("DATABASE: Migrate roll thumbnails")
+            thumbs = self.db.execute_sql("SELECT * FROM roll_thumbnails;").fetchall()
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+            self.db.execute_sql("DROP TABLE roll_thumbnails;")
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
+            self.db.create_tables([RollThumbnail])
+
+            for thumb in thumbs:
+                RollThumbnail.create(
+                    id=thumb[0],
+                    url=thumb[1],
+                    roll_type=thumb[2],
+                    created=thumb[3],
+                    guild=thumb[4],
+                    user=GuildUser.get_or_none(user=thumb[5], guild=thumb[4]),
+                )
+
+            # Migrate roll statistics table
+            logger.debug("DATABASE: Migrate roll statistics")
+            stats = self.db.execute_sql("SELECT * FROM rollstatistic;").fetchall()
+            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+            self.db.execute_sql("DROP TABLE rollstatistic;")
+            self.db.execute_sql("PRAGMA foreign_keys=ON;")
+            self.db.create_tables([RollStatistic])
+
+            for stat in stats:
+                RollStatistic.create(
+                    id=stat[0],
+                    user=GuildUser.get_or_none(user=stat[1], guild=stat[2]),
+                    guild=stat[2],
+                    character=stat[3],
+                    result=stat[4],
+                    pool=stat[5],
+                    difficulty=stat[6],
+                    date_rolled=stat[7],
+                )
+
+            # Finally drop the user table
+            if "users" in self.get_tables():
+                logger.debug("DATABASE: Drop user table")
+                self.db.execute_sql("DROP TABLE users;")
+
+            logger.debug("DATABASE: Migrate complete")
 
 
 class PopulateDatabase:

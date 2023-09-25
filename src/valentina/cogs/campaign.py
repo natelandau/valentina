@@ -20,7 +20,7 @@ class Campaign(commands.Cog):
     # TODO: Add paginator to long embeds (e.g. campaign list, campaign chapters, etc.)
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     campaign = discord.SlashCommandGroup("campaign", "Manage campaigns")
     chapter = campaign.create_subgroup(name="chapter", description="Manage campaign chapters")
@@ -654,7 +654,7 @@ An overview of {campaign.name}.
         name = modal.name.strip().title()
         description = modal.description.strip()
 
-        self.bot.campaign_svc.create_note(
+        await self.bot.campaign_svc.create_note(
             ctx,
             campaign=campaign,
             name=name,

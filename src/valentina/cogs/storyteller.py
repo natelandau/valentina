@@ -57,7 +57,7 @@ class StoryTeller(commands.Cog):
     """Commands for the storyteller."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     storyteller = discord.SlashCommandGroup(
         "storyteller",
@@ -106,7 +106,7 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Create a new storyteller character."""
         # Ensure the user is in the database
-        self.bot.user_svc.update_or_add_user(ctx)
+        await self.bot.user_svc.update_or_add_user(ctx)
 
         # Require a clan for vampires
         if char_class.name.lower() == "vampire" and not vampire_clan:
@@ -139,7 +139,7 @@ class StoryTeller(commands.Cog):
             "storyteller_character": True,
         }
 
-        character = self.bot.char_svc.update_or_add(
+        character = await self.bot.char_svc.update_or_add(
             ctx,
             data=data,
             char_class=char_class,
@@ -222,7 +222,7 @@ class StoryTeller(commands.Cog):
             "player_character": False,
         }
 
-        character = self.bot.char_svc.update_or_add(
+        character = await self.bot.char_svc.update_or_add(
             ctx,
             data=data,
             char_class=char_class,
@@ -524,7 +524,7 @@ class StoryTeller(commands.Cog):
         data = await file.read() if file else await fetch_data_from_url(url)
 
         # Add image to character
-        image_key = self.bot.char_svc.add_character_image(ctx, character, extension, data)
+        image_key = await self.bot.char_svc.add_character_image(ctx, character, extension, data)
         image_url = self.bot.aws_svc.get_url(image_key)
 
         title = f"Add image to `{character.name}`"
@@ -532,7 +532,7 @@ class StoryTeller(commands.Cog):
             ctx, title, hidden=hidden, image=image_url
         )
         if not is_confirmed:
-            self.bot.char_svc.delete_character_image(ctx, character, image_key)
+            await self.bot.char_svc.delete_character_image(ctx, character, image_key)
             return
 
         # Update audit log and original response
@@ -599,13 +599,15 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
-        title = f"Transfer `{character.full_name}` from `{character.owned_by.username}` to `{new_owner.display_name}`"
+        present_owner_name = character.owned_by.data.get("display_name", "Unknown")
+
+        title = f"Transfer `{character.full_name}` from `{present_owner_name}` to `{new_owner.display_name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
         if not is_confirmed:
             return
 
-        self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
+        await self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg
@@ -684,7 +686,7 @@ class StoryTeller(commands.Cog):
         if not is_confirmed:
             return
 
-        self.bot.char_svc.update_or_add(
+        await self.bot.char_svc.update_or_add(
             ctx,
             character=character,
             data={
@@ -729,7 +731,7 @@ class StoryTeller(commands.Cog):
         if not is_confirmed:
             return
 
-        self.bot.char_svc.update_or_add(
+        await self.bot.char_svc.update_or_add(
             ctx,
             character=character,
             data={

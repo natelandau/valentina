@@ -114,7 +114,7 @@ class ValidCharTrait(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> Trait | CustomTrait:
         """Validate and normalize traits."""
-        character = ctx.bot.user_svc.fetch_active_character(ctx)
+        character = await ctx.bot.user_svc.fetch_active_character(ctx)
 
         for trait in character.traits_list:
             if argument.lower() == trait.name.lower():
@@ -167,7 +167,7 @@ class ValidCustomTrait(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> CustomTrait:
         """Validate and return a custom trait."""
-        character = ctx.bot.user_svc.fetch_active_character(ctx)
+        character = await ctx.bot.user_svc.fetch_active_character(ctx)
 
         for ct in CustomTrait.select().where(CustomTrait.character == character):
             if argument.lower() == ct.name.lower():
@@ -252,7 +252,7 @@ class ValidTraitOrCustomTrait(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> Trait | CustomTrait:
         """Validate and normalize traits."""
-        character = ctx.bot.user_svc.fetch_active_character(ctx)
+        character = await ctx.bot.user_svc.fetch_active_character(ctx)
 
         for trait in character.traits_list:
             if argument.lower() == trait.name.lower():

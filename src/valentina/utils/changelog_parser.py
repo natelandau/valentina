@@ -223,7 +223,7 @@ class ChangelogParser:
         # Loop through each version in the changelog
         for version, data in self.changelog_dict.items():
             # Add the version header
-            description += f"\n### On {data['date']} I was updated to `v{version}`\n"
+            description += f"\n### `v{version}` ({data['date']})\n"
 
             # Add each category
             for category, entries in data.items():

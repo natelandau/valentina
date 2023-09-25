@@ -17,7 +17,7 @@ class Reference(commands.Cog):
     """Reference information for the game. Remind yourself of the rules."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     reference = discord.SlashCommandGroup("reference", "Get information about the game")
 

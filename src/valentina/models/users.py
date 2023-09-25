@@ -7,8 +7,9 @@ from datetime import timedelta
 
 import arrow
 import discord
+from discord.ext import commands
 from loguru import logger
-from peewee import DoesNotExist, fn
+from peewee import DoesNotExist
 
 from valentina.constants import (
     GUILDUSER_DEFAULTS,
@@ -17,7 +18,7 @@ from valentina.constants import (
     PermissionsEditXP,
     PermissionsKillCharacter,
 )
-from valentina.models.db_tables import Character, User
+from valentina.models.db_tables import Character, GuildUser
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
@@ -25,9 +26,10 @@ from valentina.utils.helpers import time_now
 class UserService:
     """User manager and in-memory cache."""
 
-    def __init__(self) -> None:
+    def __init__(self, bot: commands.Bot = None) -> None:
         """Initialize the UserService."""
-        self.user_cache: dict[str, User] = {}  # {user_key: User, ...}
+        self.bot = bot
+        self.user_cache: dict[str, GuildUser] = {}  # {user_key: GuildUser, ...}
         self.active_character_cache: dict[str, Character] = {}  # {user.id: Character, ...}
 
     @staticmethod
@@ -50,10 +52,11 @@ class UserService:
 
         return f"{guild_id}_{user_id}"
 
-    def _get_member_and_guild(
+    async def _get_member_and_guild(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext,
-        user: discord.User | discord.Member | User = None,
+        user: discord.User | discord.Member | int | GuildUser = None,
+        guild: discord.Guild | None = None,
     ) -> tuple[discord.Member | discord.User, discord.Guild | None]:
         """Extract member and guild from the context and/or the user.
 
@@ -62,35 +65,44 @@ class UserService:
 
         Args:
             ctx (discord.ApplicationContext | discord.AutocompleteContext): The application or autocomplete context.
-            user (discord.User | discord.Member | User): A specific user to fetch, if provided.
+            guild (discord.Guild | None, optional): A specific guild to fetch, if provided. Defaults to None.
+            user (discord.User | discord.Member | GuildUser| int | None, optional): A specific user to fetch, if provided.
 
         Returns:
             tuple[discord.Member | discord.User, discord.Guild | None]: A tuple containing the member and the guild.
         """
-        guild: discord.Guild | None = None
+        # Parse a GuildUser object and return corresponding values
+        if isinstance(user, GuildUser):
+            discord_guild = await discord.utils.get_or_fetch(self.bot, "guild", user.guild_id)
+            member = discord.utils.get(discord_guild.members, id=user.user)
+            return member, discord_guild
 
+        # Parse a discord.Member if no ctx is provided (called from on_member_join)
+        if not ctx and not guild and isinstance(user, discord.Member):
+            return user, user.guild
+
+        # Parse a context object
         if ctx:
-            # Use attributes common to both ApplicationContext and AutocompleteContext
             member = (
                 ctx.author if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.user
             )
-            guild = (
+            discord_guild = (
                 ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
             )
 
         # If user is explicitly provided, return it regardless of the context.
         if user:
-            if isinstance(user, discord.Member | discord.User):
-                return user, guild
-            if isinstance(user, User):
-                guild = (
-                    ctx.guild
-                    if isinstance(ctx, discord.ApplicationContext)
-                    else ctx.interaction.guild
-                )
-                return discord.utils.get(guild.members, id=user.id), guild
+            member = (
+                user
+                if isinstance(user, discord.Member | discord.User)
+                else discord.utils.get(guild.members, id=user)
+            )
 
-        return member, guild
+        # If a guild is provided, use that over the context
+        if guild:
+            discord_guild = guild
+
+        return member, discord_guild
 
     def can_manage_campaign(self, ctx: discord.ApplicationContext) -> bool:
         """Check if the user has permissions to manage campaigns.
@@ -151,7 +163,7 @@ class UserService:
         ] = {
             PermissionsKillCharacter.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
             PermissionsKillCharacter.CHARACTER_OWNER_ONLY: lambda ctx, character: character
-            and character.owned_by.id == ctx.author.id,
+            and character.owned_by.user == ctx.author.id,
             PermissionsKillCharacter.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
             in [x.name for x in ctx.author.roles],
         }
@@ -256,7 +268,7 @@ class UserService:
 
         return False
 
-    def fetch_player_characters(
+    async def fetch_player_characters(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext,
         alive_only: bool = False,
@@ -281,7 +293,7 @@ class UserService:
             characters = fetch_player_characters(ctx, alive_only=True)
             ```
         """
-        user = self.fetch_user(ctx=ctx)
+        user = await self.fetch_user(ctx=ctx)
 
         guild = ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
 
@@ -305,7 +317,7 @@ class UserService:
             )
         ]
 
-    def fetch_active_character(
+    async def fetch_active_character(
         self, ctx: discord.ApplicationContext | discord.AutocompleteContext
     ) -> Character:
         """Fetch the active character for the user.
@@ -319,7 +331,7 @@ class UserService:
         Raises:
             errors.NoActiveCharacterError: Raised if the user has no active character.
         """
-        user = self.fetch_user(ctx=ctx)
+        user = await self.fetch_user(ctx=ctx)
         guild = ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
 
         key = self.__get_user_key(guild.id, user.id)
@@ -343,25 +355,25 @@ class UserService:
 
         return character
 
-    def fetch_user(
+    async def fetch_user(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext,
-        user: discord.User | discord.Member | User = None,
-    ) -> User:
-        """Retrieve and/or add a User object from the cache or the database.
+        user: discord.User | discord.Member | GuildUser = None,
+    ) -> GuildUser:
+        """Retrieve and/or add a GuildUser object from the cache or the database.
 
-        Use the application context 'ctx' to fetch a User. If the User isn't present
-        in the cache or the database, create a new User in the database and the cache.
+        Use the application context 'ctx' to fetch a GuildUser. If the GuildUser isn't present
+        in the cache or the database, create a new GuildUser in the database and the cache.
 
         Args:
             ctx (discord.ApplicationContext | discord.AutocompleteContext): The context containing author and guild.
-            user (discord.User | discord.Member| User, optional): A specific user to fetch. Defaults to None.
+            user (discord.User | discord.Member| GuildUser, optional): A specific user to fetch. Defaults to None.
 
         Returns:
-            User: User database model instance.
+            GuildUser: GuildUser database model instance.
         """
         # Extract member and guild information from the context or the provided user
-        member, guild = self._get_member_and_guild(ctx, user)
+        member, guild = await self._get_member_and_guild(ctx, user)
 
         # Grab the user_key
         key = self.__get_user_key(guild.id, member.id)
@@ -372,32 +384,27 @@ class UserService:
             return self.user_cache[key]
 
         # Fetch or create in the database and add to the cache
-        db_object = self.update_or_add_user(ctx, user=member)
+        db_object = await self.update_or_add_user(ctx, user=member)
         logger.debug(f"DATABASE: Fetch user `{member.name}`")
         self.user_cache[key] = db_object
 
         return self.user_cache[key]
 
-    def fetch_guild_users(self, ctx: discord.ApplicationContext) -> list[User]:
-        """Retrieve a list of all users in the database who have guild-specific data and adds them to the user_cache.
+    async def fetch_guild_users(self, ctx: discord.ApplicationContext) -> list[GuildUser]:
+        """Retrieve a list of all users in the database and add them to the user_cache.
 
         Args:
             ctx (discord.ApplicationContext): The context containing the guild.
 
         Returns:
-            list[User]: A list of User objects.
+            list[GuildUser]: A list of GuildUser objects.
         """
-        guild_id_str = str(ctx.guild.id)
-
-        # Use JSON functions to filter users who have guild-specific data
-        users_query = User.select().where(
-            fn.JSON_EXTRACT(User.data, f"$.{guild_id_str}") != None  # noqa: E711
-        )
+        users_query = GuildUser.select().where(GuildUser.guild_id == ctx.guild.id)
 
         # Fetch users and populate the cache
         fetched_users = []
         for user in users_query:
-            self.fetch_user(ctx, user=user)
+            await self.fetch_user(ctx, user=user)
             fetched_users.append(user)
 
         return fetched_users
@@ -434,7 +441,9 @@ class UserService:
             self.active_character_cache = {}
             logger.debug("CACHE: Purge all user caches")
 
-    def set_active_character(self, ctx: discord.ApplicationContext, character: Character) -> None:
+    async def set_active_character(
+        self, ctx: discord.ApplicationContext, character: Character
+    ) -> None:
         """Switch the active character for the user in the given guild.
 
         Args:
@@ -444,7 +453,7 @@ class UserService:
         Returns:
             None
         """
-        user = self.fetch_user(ctx=ctx)
+        user = await self.fetch_user(ctx=ctx)
         key = self.__get_user_key(ctx.guild.id, user.id)
 
         # Deactivate all characters for the user in the guild
@@ -461,10 +470,10 @@ class UserService:
 
         self.active_character_cache[key] = character
 
-        logger.debug(f"DATABASE: Set active character for {user.username} to '{character.id}'")
+        logger.debug(f"DATABASE: Set active character for {user} to '{character.id}'")
 
-    def transfer_character_owner(
-        self, ctx: discord.ApplicationContext, character: Character, new_owner: User
+    async def transfer_character_owner(
+        self, ctx: discord.ApplicationContext, character: Character, new_owner: GuildUser
     ) -> None:
         """Transfer ownership of a character to another user.
 
@@ -479,90 +488,95 @@ class UserService:
         Returns:
             None
         """
-        current_user = self.fetch_user(ctx)
-        new_user = self.fetch_user(ctx, new_owner)
+        current_user = await self.fetch_user(ctx)
+        new_user = await self.fetch_user(ctx, new_owner)
 
         character.owned_by = new_user
         character.save()
 
         self.purge_cache()
         logger.debug(
-            f"DATABASE: '{current_user.username}' transferred ownership of '{character.id}' to '{new_user.username}'"
+            f"DATABASE: '{current_user}' transferred ownership of '{character.id}' to '{new_user}'"
         )
 
-    def update_or_add_user(
+    async def update_or_add_user(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext = None,
-        user: discord.Member | discord.User | User = None,
+        user: discord.Member | discord.User | GuildUser = None,
+        guild: discord.Guild | None = None,
         data: dict[str, str | int | bool | dict[str, str | int | bool]] = {},
-    ) -> User:
-        """Update a User record in the database.
+    ) -> GuildUser:
+        """Update a GuildUser record in the database.
 
         Note: Due to an annoying bug in SQLITE, all JSON Fields must use strings as keys. Consequently, we have to remember to transpose the guild ID to a string before using it as a key.
 
         Args:
             ctx (discord.ApplicationContext | discord.AutocompleteContext, optional): The application context. Defaults to None.
-            user (discord.Member | discord.User | User, optional): A specific user to fetch. Defaults to None.
+            user (discord.Member | discord.User | GuildUser, optional): A specific user to fetch. Defaults to None.
+            guild (discord.Guild | None, optional): The guild to update. Defaults to None.
             data (dict[str, str | int | bool | dict[str, str | int | bool]], optional): Data to update. Defaults to {}.
 
         Returns:
-            User: The updated User object.
+            GuildUser: The updated User object.
         """
-        if not ctx and not user:
-            raise ValueError("Either 'ctx' or 'user' must be provided.")
+        # Grab the user and the guild
+        member, guild = await self._get_member_and_guild(ctx=ctx, user=user, guild=guild)
 
-        # Extract member and guild information from the context or the provided user
-        if ctx:
-            member, guild = self._get_member_and_guild(ctx, user)
-            initial_data = {
-                str(guild.id): {"modified": str(time_now())} | GUILDUSER_DEFAULTS.copy()
-            } | (data or {})
-        else:
-            member, _ = self._get_member_and_guild(ctx, user)
-            initial_data = data or {}
+        if not member or not guild:
+            raise ValueError("If no context is provided, 'user' and 'guild' must be provided.")
+
+        # Grab up to date discord.Member information
+        member_info: dict[str, str | int] = {
+            "display_name": member.display_name,
+            "id": member.id,
+            "mention": member.mention,
+            "name": member.name,
+            "nick": member.nick if isinstance(member, discord.Member) else member.display_name,
+        }
+
+        initialization_data = {
+            "modified": str(time_now())
+        } | member_info | GUILDUSER_DEFAULTS.copy() | data or {}
 
         # Try to retrieve the user from the database, or create a new entry if not found.
-        db_user, created = User.get_or_create(
-            id=member.id,
+        db_object, created = GuildUser.get_or_create(
+            user=member.id,
+            guild=guild.id,
             defaults={
-                "name": member.display_name,
-                "username": member.name,
-                "mention": member.mention,
-                "first_seen": time_now(),
-                "last_seen": time_now(),
-                "data": initial_data,
+                "data": initialization_data,
             },
         )
 
         # Log based on whether the user was created or updated
         if created:
             logger.info(f"DATABASE: Created a new user record for '{member.display_name}'")
-            return db_user
+            return db_object
 
         # Ensure default data values are set for existing users
-        User.get_by_id(db_user.id).set_default_data_values(guild)
+        GuildUser.get_by_id(db_object.id).set_default_data_values()
 
         # Update the User if data was provided
         if data:
             # Purge the cache
-            self.purge_cache(ctx)
+            self.purge_cache(ctx) if ctx else self.purge_cache()
 
-            # Add the 'modified' timestamp
-            if str(guild.id) not in data:
-                data[str(guild.id)] = {}
+            # Ensure discord.Member information is up to date
+            for key, value in member_info.items():
+                if key not in db_object.data and key not in data:
+                    data[key] = value
+                    continue
 
-            data[str(guild.id)]["modified"] = str(time_now())  # type: ignore [index]
+                if db_object.data[key] != value and key not in data:
+                    data[key] = value
 
-            # Make requested updates to the guild
-            User.update(data=User.data.update(data)).where(User.id == db_user.id).execute()
+            # Always update the 'modified' timestamp
+            data["modified"] = str(time_now())
 
-            user_object = User.get_by_id(db_user.id)
-            user_object.last_seen = time_now()
-            user_object.save()
-            logger.debug(
-                f"DATABASE: Updated 'last_seen' timestamp for user '{member.display_name}'"
-            )
+            # Make requested updates to the guild user
+            GuildUser.update(data=GuildUser.data.update(data)).where(
+                GuildUser.id == db_object.id
+            ).execute()
 
-            logger.debug(f"DATABASE: Updated User '{db_user.id}'")
+            logger.debug(f"DATABASE: Updated User '{db_object.id}'")
 
-        return User.get_by_id(db_user.id)
+        return GuildUser.get_by_id(db_object.id)
