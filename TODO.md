@@ -18,6 +18,9 @@
 -   [x] Storyteller: Allow updating storyteller characters
 -   [x] Storyteller: Add custom traits to storyteller characters
 -   [ ] Refactor: Centralize pagination for long responses
+-   [ ] Tests: Add tests for options
+-   [ ] Tests: Add tests for converters
+-   [ ] Tests: Add tests for cogs
 
 ## Move to Guild User Objects
 
