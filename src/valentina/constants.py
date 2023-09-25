@@ -308,8 +308,8 @@ GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
 }
 
 GUILDUSER_DEFAULTS: dict[str, int | bool | None | str] = {
-    "experience": 0,
-    "experience_total": 0,
+    "lifetime_experience": 0,
+    "lifetime_cool_points": 0,
 }
 
 ### More Constants ###

@@ -174,7 +174,7 @@ class Developer(commands.Cog):
                 )
 
             # Update the user's experience
-            await self.bot.user_svc.update_or_add_user(
+            await self.bot.user_svc.update_or_add(
                 ctx,
                 user,
                 data={
@@ -218,9 +218,7 @@ class Developer(commands.Cog):
         if not is_confirmed:
             return
 
-        await self.bot.user_svc.update_or_add_user(
-            ctx
-        )  # Instantiate the user in the database if needed
+        await self.bot.user_svc.update_or_add(ctx)  # Instantiate the user in the database if needed
 
         for _ in range(number):
             # Assign a random class unless specified

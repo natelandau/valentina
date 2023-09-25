@@ -114,7 +114,7 @@ class TestUserService:
         assert guild.id == 2
 
     @pytest.mark.asyncio()
-    async def test_update_or_add_user_new_user_ctx(self, mock_ctx) -> None:
+    async def test_update_or_add_new_user_ctx(self, mock_ctx) -> None:
         """Test updating or adding a new user."""
         # Setup
         self._clear_tests()
@@ -122,51 +122,51 @@ class TestUserService:
         data = {"test": "data"}
         self.user_svc.user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
 
-        # WHEN update_or_add_user is called and a user is not in the database
-        result = await self.user_svc.update_or_add_user(mock_ctx, data=data)
+        # WHEN update_or_add is called and a user is not in the database
+        result = await self.user_svc.update_or_add(mock_ctx, data=data)
 
         # THEN return the correct result and update the database with default values, and the cache is intact
         assert result == GuildUser.get_by_id(1)
         assert result.data["name"] == "testuser"
         assert result.data["test"] == "data"
-        assert result.data["experience"] == 0
+        assert result.data["lifetime_experience"] == 0
         assert "modified" in result.data
         assert self.user_svc.user_cache == {"1_1": "a", "1_600": "b", "100_1": "c"}
 
     @pytest.mark.asyncio()
-    async def test_update_or_add_user_new_user_from_user(self, mock_ctx, mock_member2) -> None:
+    async def test_update_or_add_new_user_from_user(self, mock_ctx, mock_member2) -> None:
         """Test updating or adding a new user with a specified user object."""
         # Setup
         self._clear_tests()
 
         self.user_svc.user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
 
-        # WHEN update_or_add_user is called and a user is not in the database
-        result = await self.user_svc.update_or_add_user(mock_ctx, user=mock_member2)
+        # WHEN update_or_add is called and a user is not in the database
+        result = await self.user_svc.update_or_add(mock_ctx, user=mock_member2)
 
         # THEN return the correct result and update the database with default values, and the cache is intact
         assert result == GuildUser.get_by_id(1)
         assert result.data["name"] == "testuser2"
-        assert result.data["experience"] == 0
+        assert result.data["lifetime_experience"] == 0
         assert "modified" in result.data
         assert self.user_svc.user_cache == {"1_1": "a", "1_600": "b", "100_1": "c"}
 
     @pytest.mark.asyncio()
-    async def test_update_or_add_user_new_user_from_guild(self, mock_ctx, mock_guild2) -> None:
+    async def test_update_or_add_new_user_from_guild(self, mock_ctx, mock_guild2) -> None:
         """Test updating or adding a new user with a specified guild object."""
         # Setup
         self._clear_tests()
         new_guild = Guild.create(id=mock_guild2.id, name="Test Guild2")
         self.user_svc.user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
 
-        # WHEN update_or_add_user is called and a user is not in the database
-        result = await self.user_svc.update_or_add_user(mock_ctx, guild=mock_guild2)
+        # WHEN update_or_add is called and a user is not in the database
+        result = await self.user_svc.update_or_add(mock_ctx, guild=mock_guild2)
 
         # THEN return the correct result and update the database with default values, and the cache is intact
         assert result == GuildUser.get_by_id(1)
         assert result.guild == new_guild
         assert result.data["name"] == "testuser"
-        assert result.data["experience"] == 0
+        assert result.data["lifetime_experience"] == 0
         assert "modified" in result.data
         assert self.user_svc.user_cache == {"1_1": "a", "1_600": "b", "100_1": "c"}
 
@@ -178,20 +178,20 @@ class TestUserService:
         new_guild = Guild.create(id=mock_guild2.id, name="Test Guild2")
         self.user_svc.user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
 
-        # WHEN update_or_add_user is called and a user is not in the database
-        result = await self.user_svc.update_or_add_user(user=mock_member2, guild=mock_guild2)
+        # WHEN update_or_add is called and a user is not in the database
+        result = await self.user_svc.update_or_add(user=mock_member2, guild=mock_guild2)
         print(result)
 
         # THEN return the correct result and update the database with default values, and the cache is intact
         assert result == GuildUser.get_by_id(1)
         assert result.guild == new_guild
         assert result.data["name"] == "testuser2"
-        assert result.data["experience"] == 0
+        assert result.data["lifetime_experience"] == 0
         assert "modified" in result.data
         assert self.user_svc.user_cache == {"1_1": "a", "1_600": "b", "100_1": "c"}
 
     @pytest.mark.asyncio()
-    async def test_update_or_add_user_existing_user(self, mock_ctx) -> None:
+    async def test_update_or_add_existing_user(self, mock_ctx) -> None:
         """Test updating an existing user."""
         # Setup
         self._clear_tests()
@@ -202,19 +202,19 @@ class TestUserService:
         }
         self.user_svc.user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
 
-        # WHEN update_or_add_user is called again
-        result = await self.user_svc.update_or_add_user(mock_ctx, data=updates)
+        # WHEN update_or_add is called again
+        result = await self.user_svc.update_or_add(mock_ctx, data=updates)
 
         # THEN return the correct result and update the database with the new values, and the cache is cleared
         assert result == GuildUser.get_by_id(1)
         assert result.data["name"] == "testuser"
         assert result.data["test"] == "new_data"
         assert result.data["new_key"] == "new_value"
-        assert result.data["experience"] == 0
+        assert result.data["lifetime_experience"] == 0
         assert self.user_svc.user_cache == {"100_1": "c"}
 
     @pytest.mark.asyncio()
-    async def test_update_or_add_user_existing_user_existing_data(self, mock_ctx) -> None:
+    async def test_update_or_add_existing_user_existing_data(self, mock_ctx) -> None:
         """Test updating an existing user with existing data."""
         # Setup
         self._clear_tests()
@@ -224,7 +224,7 @@ class TestUserService:
             data={
                 "test": "data",
                 "experience": 100,
-                "experience_total": 200,
+                "lifetime_experience": 200,
                 "name": "testuser_old",
             },
         )
@@ -234,8 +234,8 @@ class TestUserService:
         }
         self.user_svc.user_cache = {"1_1": "a", "1_600": "b", "100_1": "c"}
 
-        # WHEN update_or_add_user is called again
-        result = await self.user_svc.update_or_add_user(mock_ctx, data=updates)
+        # WHEN update_or_add is called again
+        result = await self.user_svc.update_or_add(mock_ctx, data=updates)
 
         # THEN return the correct result and update the database with the new values, and the cache is cleared
         assert result == GuildUser.get_by_id(1)
@@ -243,11 +243,11 @@ class TestUserService:
         assert result.data["test"] == "new_data"
         assert result.data["new_key"] == "new_value"
         assert result.data["experience"] == 100
-        assert result.data["experience_total"] == 200
+        assert result.data["lifetime_experience"] == 200
         assert self.user_svc.user_cache == {"100_1": "c"}
 
     @pytest.mark.asyncio()
-    async def test_update_or_add_user_existing_user_with_user(self, mock_ctx, mocker) -> None:
+    async def test_update_or_add_existing_user_with_user(self, mock_ctx, mocker) -> None:
         """Test updating an existing user with existing data."""
         # Setup
         self._clear_tests()
@@ -257,7 +257,7 @@ class TestUserService:
             data={
                 "test": "data",
                 "experience": 100,
-                "experience_total": 200,
+                "lifetime_experience": 200,
                 "name": "testuser_old",
             },
         )
@@ -273,8 +273,8 @@ class TestUserService:
             "discord.utils.get_or_fetch", return_value=mock_ctx.guild
         )  # patch discord.utils.get
 
-        # WHEN update_or_add_user is called again
-        result = await self.user_svc.update_or_add_user(mock_ctx, user=user, data=updates)
+        # WHEN update_or_add is called again
+        result = await self.user_svc.update_or_add(mock_ctx, user=user, data=updates)
 
         # THEN return the correct result and update the database with the new values, and the cache is cleared
         assert result == GuildUser.get_by_id(1)
@@ -282,7 +282,7 @@ class TestUserService:
         assert result.data["test"] == "new_data"
         assert result.data["new_key"] == "new_value"
         assert result.data["experience"] == 100
-        assert result.data["experience_total"] == 200
+        assert result.data["lifetime_experience"] == 200
         assert self.user_svc.user_cache == {"100_1": "c"}
 
     @pytest.mark.parametrize(

@@ -29,7 +29,7 @@ class Misc(commands.Cog):
         user: Option(
             discord.User,
             description="The user to view information for",
-            required=True,
+            required=False,
         ),
         hidden: Option(
             bool,
@@ -39,7 +39,7 @@ class Misc(commands.Cog):
     ) -> None:
         """View information about a user."""
         target = user or ctx.author
-        db_user = await self.bot.user_svc.update_or_add_user(ctx=ctx)
+        db_user = await self.bot.user_svc.fetch_user(ctx=ctx, user=target)
 
         # Variables for embed
         num_characters = (
@@ -58,6 +58,12 @@ class Misc(commands.Cog):
         creation_date = ((target.id >> 22) + 1420070400000) // 1000
         roles = ", ".join(r.mention for r in target.roles[::-1][:-1]) or "_Member has no roles_"
         roll_stats = Statistics(ctx, user=target)
+        lifetime_xp = db_user.data.get("lifetime_experience", 0)
+        lifetime_cp = db_user.data.get("lifetime_cool_points", 0)
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        campaign_xp = db_user.data.get(f"{campaign.id}_experience", 0)
+        campaign_total_xp = db_user.data.get(f"{campaign.id}_total_experience", 0)
+        campaign_cp = db_user.data.get(f"{campaign.id}_total_cool_points", 0)
 
         # Build Embed
         description = (
@@ -66,9 +72,16 @@ class Misc(commands.Cog):
             f"**Account Created :** <t:{creation_date}:R> on <t:{creation_date}:D>",
             f"**Joined Server{SPACER * 7}:** <t:{int(target.joined_at.timestamp())}:R> on <t:{int(target.joined_at.timestamp())}:D>",
             f"**Roles{SPACER * 24}:** {roles}",
+            "### __Campaign Information__",
+            f"Available Experience{SPACER * 2}: `{campaign_xp}`",
+            f"Total Experience{SPACER * 10}: `{campaign_total_xp}`",
+            f"Cool Points{SPACER * 20}: `{campaign_cp}`",
+            "### __Experience Information__",
+            f"Lifetime Experience{SPACER * 3}: `{lifetime_xp}`",
+            f"Lifetime Cool Points{SPACER * 2}: `{lifetime_cp}`",
             "### __Gameplay Information__",
-            f"**Player Characters :** `{num_characters}`",
-            f"**Roll Macros{SPACER * 14}:** `{num_macros}`",
+            f"Player Characters{SPACER * 2}: `{num_characters}`",
+            f"Roll Macros{SPACER * 14}: `{num_macros}`",
             "### __Roll Statistics__",
             roll_stats.get_text(with_title=False),
         )

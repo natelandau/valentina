@@ -384,7 +384,7 @@ class UserService:
             return self.user_cache[key]
 
         # Fetch or create in the database and add to the cache
-        db_object = await self.update_or_add_user(ctx, user=member)
+        db_object = await self.update_or_add(ctx, user=member)
         logger.debug(f"DATABASE: Fetch user `{member.name}`")
         self.user_cache[key] = db_object
 
@@ -499,14 +499,14 @@ class UserService:
             f"DATABASE: '{current_user}' transferred ownership of '{character.id}' to '{new_user}'"
         )
 
-    async def update_or_add_user(
+    async def update_or_add(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext = None,
         user: discord.Member | discord.User | GuildUser = None,
         guild: discord.Guild | None = None,
         data: dict[str, str | int | bool | dict[str, str | int | bool]] = {},
     ) -> GuildUser:
-        """Update a GuildUser record in the database.
+        """Update or add a GuildUser record to the database.
 
         Note: Due to an annoying bug in SQLITE, all JSON Fields must use strings as keys. Consequently, we have to remember to transpose the guild ID to a string before using it as a key.
 

@@ -10,7 +10,6 @@ from loguru import logger
 from peewee import fn
 
 from valentina.constants import (
-    COOL_POINT_VALUE,
     DEFAULT_DIFFICULTY,
     VALID_IMAGE_EXTENSIONS,
     DiceType,
@@ -33,9 +32,9 @@ from valentina.utils.options import (
     select_country,
     select_player_character,
     select_storyteller_character,
-    select_storyteller_trait,
-    select_storyteller_trait_two,
     select_trait_category,
+    select_trait_from_char_option,
+    select_trait_from_char_option_two,
     select_vampire_clan,
 )
 from valentina.utils.perform_roll import perform_roll
@@ -106,7 +105,7 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Create a new storyteller character."""
         # Ensure the user is in the database
-        await self.bot.user_svc.update_or_add_user(ctx)
+        await self.bot.user_svc.update_or_add(ctx)
 
         # Require a clan for vampires
         if char_class.name.lower() == "vampire" and not vampire_clan:
@@ -325,7 +324,7 @@ class StoryTeller(commands.Cog):
             str,
             description="Trait to update",
             required=True,
-            autocomplete=select_storyteller_trait,
+            autocomplete=select_trait_from_char_option,
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
@@ -626,7 +625,7 @@ class StoryTeller(commands.Cog):
             str,
             description="Trait to update",
             required=True,
-            autocomplete=select_storyteller_trait,
+            autocomplete=select_trait_from_char_option,
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
@@ -657,93 +656,6 @@ class StoryTeller(commands.Cog):
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg
 
-    @player.command(name="grant_xp", description="Grant xp to a player character")
-    async def grant_xp(
-        self,
-        ctx: discord.ApplicationContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to grant xp to",
-            autocomplete=select_player_character,
-            required=True,
-        ),
-        xp: Option(int, description="The amount of xp to grant", required=True),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Grant xp to a player character."""
-        current_xp = character.data.get("experience", 0)
-        current_xp_total = character.data.get("experience_total", 0)
-        new_xp = current_xp + xp
-        new_xp_total = current_xp_total + xp
-
-        title = f"Grant `{xp}` xp to `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not is_confirmed:
-            return
-
-        await self.bot.char_svc.update_or_add(
-            ctx,
-            character=character,
-            data={
-                "experience": new_xp,
-                "experience_total": new_xp_total,
-            },
-        )
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await confirmation_response_msg
-
-    @player.command(name="grant_cp", description="Grant a cool point to a player character")
-    async def grant_cp(
-        self,
-        ctx: discord.ApplicationContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to grant a cp to",
-            autocomplete=select_player_character,
-            required=True,
-        ),
-        cp: Option(int, description="The number of cool points to grant", required=True),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Grant a cool point to a player character."""
-        current_cp = character.data.get("cool_points_total", 0)
-        current_xp = character.data.get("experience", 0)
-        current_xp_total = character.data.get("experience_total", 0)
-
-        xp_amount = cp * COOL_POINT_VALUE
-
-        new_xp = current_xp + xp_amount
-        new_xp_total = current_xp_total + xp_amount
-        new_cp_total = current_cp + cp
-
-        title = f"Grant `{cp}` cool {p.plural_noun('member', cp)} (`{xp_amount}` xp) to `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
-        if not is_confirmed:
-            return
-
-        await self.bot.char_svc.update_or_add(
-            ctx,
-            character=character,
-            data={
-                "experience": new_xp,
-                "experience_total": new_xp_total,
-                "cool_points_total": new_cp_total,
-            },
-        )
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await confirmation_response_msg
-
     ### ROLL COMMANDS ####################################################################
 
     @roll.command(name="roll_traits", description="Roll traits for a character")
@@ -760,13 +672,13 @@ class StoryTeller(commands.Cog):
             str,
             description="First trait to roll",
             required=True,
-            autocomplete=select_storyteller_trait,
+            autocomplete=select_trait_from_char_option,
         ),
         trait_two: Option(
             str,
             description="Second trait to roll",
             required=True,
-            autocomplete=select_storyteller_trait_two,
+            autocomplete=select_trait_from_char_option_two,
         ),
         difficulty: Option(
             int,

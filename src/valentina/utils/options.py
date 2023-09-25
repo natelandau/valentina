@@ -550,10 +550,10 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     return options if options else [OptionChoice("No characters available", "")]
 
 
-async def select_storyteller_trait(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available traits for a storyteller character.
 
-    This function fetches all common and custom traits from the database, filters them based on the user's input, and returns a list of trait names to populate the autocomplete list.
+    This function takes a character id defined in a previous discord command option, and fetches all the common and custom traits available for that character to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
@@ -576,7 +576,7 @@ async def select_storyteller_trait(ctx: discord.AutocompleteContext) -> list[str
     return options if options else ["No traits"]
 
 
-async def select_storyteller_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available traits for a storyteller character.
 
     This function fetches all common and custom traits from the database, filters them based on the user's input, and returns a list of trait names to populate the autocomplete list.

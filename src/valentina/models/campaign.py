@@ -127,7 +127,7 @@ class CampaignService:
 
         TODO: Write test for this method that mocks the call to fetch_user
         """
-        user = await ctx.bot.user_svc.update_or_add_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        user = await ctx.bot.user_svc.update_or_add(ctx)  # type: ignore [attr-defined] # it really is defined
 
         note = CampaignNote.create(
             campaign=campaign.id,
