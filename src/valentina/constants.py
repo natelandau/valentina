@@ -230,6 +230,50 @@ class XPMultiplier(Enum):
     ### DISCORD SETTINGS ###
 
 
+class CharGenClass(Enum):
+    """Enum for RNG character generation classes."""
+
+    HUMAN = range(0, 60)
+    VAMPIRE = range(61, 66)
+    WEREWOLF = range(67, 72)
+    MAGE = range(73, 78)
+    GHOUL = range(79, 84)
+    CHANGELING = range(85, 90)
+    CHANGELING_BREED = range(91, 96)
+    OTHER = range(97, 100)
+
+
+class CharGenHumans(Enum):
+    """Enum for RNG character generation of humans."""
+
+    CIVILIAN = range(0, 40)
+    HUNTER = range(41, 50)
+    CHANGELING = range(51, 53)
+    GHOUL = range(54, 60)
+    WATCHER = range(61, 70)
+    HUNTER_CLASS = range(71, 80)
+    SORCERER = range(81, 90)
+    NUMINOUS = range(91, 100)
+
+
+class CharGenConcept(Enum):
+    """Enum for RNG character generation of concepts."""
+
+    BERSERKER = range(0, 8)
+    PERFORMER = range(9, 16)
+    HEALER = range(17, 24)
+    SHAMAN = range(25, 32)
+    SOLDIER = range(33, 40)
+    ASCETIC = range(41, 48)
+    CRUSADER = range(49, 56)
+    URBAN_TRACKER = range(57, 64)
+    UNDER_WORLDER = range(65, 72)
+    SCIENTIST = range(73, 80)
+    TRADESMAN = range(81, 88)
+    BUSINESSMAN = range(89, 96)
+    CHOOSE = range(97, 100)
+
+
 # CHANNEL_PERMISSIONS: Dictionary containing a mapping of channel permissions.
 #     Format:
 #         default role permission,
