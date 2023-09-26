@@ -148,7 +148,7 @@ class Developer(commands.Cog):
         number: Option(
             int, description="The number of characters to create (default 1)", default=1
         ),
-        char_class: Option(
+        character_class: Option(
             ValidCharacterClass,
             name="char_class",
             description="The character's class",
@@ -173,8 +173,10 @@ class Developer(commands.Cog):
 
         for _ in range(number):
             # Assign a random class unless specified
-            if char_class is None:
+            if character_class is None:
                 char_class = CharacterClass.select().order_by(fn.Random()).limit(1).get()
+            else:
+                char_class = character_class
 
             # Assign a random vampire clan
             if char_class.name.lower() == "vampire":
