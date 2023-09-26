@@ -6,7 +6,6 @@ from discord.commands import Option
 from discord.ext import commands
 
 from valentina.constants import DEFAULT_DIFFICULTY, DiceType, RollResultType
-from valentina.models import Probability
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import ValidCharTrait, ValidImageURL, ValidMacroFromID
@@ -51,36 +50,6 @@ class Roll(commands.Cog):
             character = None
 
         await perform_roll(ctx, pool, difficulty, DiceType.D10.value, comment, character=character)
-
-    @roll.command(name="probability", description="Calculate the probability of a roll")
-    async def probability(
-        self,
-        ctx: discord.ApplicationContext,
-        pool: discord.Option(int, "The number of dice to roll", required=True),
-        difficulty: Option(
-            int,
-            "The difficulty of the roll",
-            required=True,
-        ),
-        hidden: Option(
-            bool,
-            description="Make the probability only visible to you (default False).",
-            default=False,
-        ),
-    ) -> None:
-        """Roll the dice.
-
-        Args:
-            hidden (bool, optional): Make the statistics only visible to you (default true). Defaults to True.
-            ctx (discord.ApplicationContext): The context of the command
-            difficulty (int): The difficulty of the roll
-            pool (int): The number of dice to roll
-        """
-        probabilities = Probability(
-            ctx, pool=pool, difficulty=difficulty, dice_size=DiceType.D10.value
-        )
-        embed = await probabilities.get_embed()
-        await ctx.respond(embed=embed, ephemeral=hidden)
 
     @roll.command(name="traits", description="Throw a roll based on trait names")
     async def traits(

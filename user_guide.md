@@ -135,7 +135,7 @@ The core features of Valentina Noir are covered in the previous sections. These 
 
 -   **Help**: Use `/help` to get help on various topics, including commands, traits, and macros.
 -   **Coinflip**: Use `/coinflip` to flip a coin.
--   **Roll Probabilities**: Use `/roll probability` to see the probability of rolling a certain number of successes.
+-   **Roll Probabilities**: Use `/probability` to see the probability of rolling a certain number of successes.
 -   **Roll Statistics**: Use `/reference statistics` to see the diceroll statistics for a guild, user, or character.
 -   **Reference Information**: Use `/reference` for information on various topics such as health, magic, disciplines, and more.
 -   **Adding Roll Result Images**: Use `/roll upload_thumbnail` to add an image or animated gif to a roll result.
