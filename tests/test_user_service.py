@@ -413,24 +413,39 @@ class TestUserService:
         # THEN return the correct result
         assert result is expected
 
+    # UNRESTRICTED = 0
+    # PLAYER_ONLY = 1  # Default
+    # STORYTELLER_ONLY = 2
+
+    @pytest.mark.asyncio()
     @pytest.mark.parametrize(
-        ("xp_permissions_value", "is_admin", "is_char_owner", "hours_since_creation", "expected"),
+        ("xp_permissions_value", "is_admin", "is_storyteller", "target_self", "expected"),
         [
-            (PermissionsEditXP.UNRESTRICTED.value, False, True, 38, True),
-            (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 1, True),
-            (PermissionsEditXP.WITHIN_24_HOURS.value, False, True, 38, False),
-            (PermissionsEditXP.WITHIN_24_HOURS.value, True, True, 38, True),
-            (PermissionsEditXP.WITHIN_24_HOURS.value, False, False, 1, False),
-            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, True, False, 38, True),
-            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, False, False, 38, False),
-            (PermissionsEditXP.CHARACTER_OWNER_ONLY.value, False, True, 38, True),
-            (PermissionsEditXP.STORYTELLER_ONLY.value, False, True, 1, False),
-            (PermissionsEditXP.STORYTELLER_ONLY.value, False, False, 1, False),
-            (PermissionsEditXP.STORYTELLER_ONLY.value, True, False, 1, True),
+            (PermissionsEditXP.UNRESTRICTED.value, True, False, False, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, True, False, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, False, True, True),
+            (PermissionsEditXP.UNRESTRICTED.value, False, False, False, True),
+            (PermissionsEditXP.PLAYER_ONLY.value, True, False, False, True),
+            (PermissionsEditXP.PLAYER_ONLY.value, False, True, False, True),
+            (PermissionsEditXP.PLAYER_ONLY.value, False, False, True, True),
+            (PermissionsEditXP.PLAYER_ONLY.value, False, False, False, False),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, True, False, False, True),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, True, False, True),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, True, True, True),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, False, True, False),
+            (PermissionsEditXP.STORYTELLER_ONLY.value, False, False, False, False),
         ],
     )
-    def test_can_update_xp(
-        self, mocker, xp_permissions_value, is_admin, is_char_owner, hours_since_creation, expected
+    async def test_can_update_xp(
+        self,
+        mocker,
+        xp_permissions_value,
+        is_admin,
+        is_storyteller,
+        target_self,
+        expected,
+        mock_member,
+        mock_guild1,
     ):
         """Test checking if a user has xp permissions.
 
@@ -438,35 +453,35 @@ class TestUserService:
         WHEN the user and character are checked
         THEN the correct result is returned
         """
-        # GIVEN a mock ApplicationContext and Character
-        mock_role1 = mocker.Mock(spec=Role)
-        mock_role1.name = "Player"
+        self._clear_tests()
 
-        mock_ctx = mocker.Mock(spec=ApplicationContext)
-        mock_ctx.author.guild_permissions.administrator = is_admin
-        mock_ctx.author.roles = [mock_role1]
+        # CREATE MOCKS
+        mock_storyteller_role = mocker.Mock(spec=Role)
+        mock_storyteller_role.name = "Storyteller"
+        mock_author = mock_member
+        if is_storyteller:
+            mock_member.roles.append(mock_storyteller_role)
+        mock_author.guild_permissions.administrator = is_admin
 
-        mock_character = mocker.Mock(spec=Character)
-        mock_character.created_by.id = 1 if is_char_owner else 2
-        mock_character.created = arrow.utcnow().shift(hours=-hours_since_creation).datetime
-        mock_ctx.author.id = 1  # the author is the creator of the character
-
-        # Create mock bot and guild_svc and set them on mock_ctx
         mock_bot = mocker.Mock()
         mock_guild_svc = mocker.Mock()
-
-        # Set up the mock fetch_guild_settings function
-        mock_settings = {"permissions_edit_xp": xp_permissions_value}
-        mock_guild_svc.fetch_guild_settings = mocker.Mock(return_value=mock_settings)
-
+        mock_guild_svc.fetch_guild_settings = mocker.Mock(
+            return_value={"permissions_edit_xp": xp_permissions_value}
+        )
         mock_bot.guild_svc = mock_guild_svc
-        mock_ctx.bot = mock_bot
 
-        # WHEN calling the method with the mock context and character
-        result = self.user_svc.can_update_xp(mock_ctx, mock_character)
+        local_mock_ctx = mocker.Mock(spec=ApplicationContext)
+        local_mock_ctx.author = mock_author
+        local_mock_ctx.guild = mock_guild1
+        local_mock_ctx.bot = mock_bot
 
+        # CREATE DATABASE OBJECTS
+        calling_user = GuildUser.create(guild=mock_guild1.id, user=mock_author.id)
+        target_user = None if target_self else GuildUser.create(guild=mock_guild1.id, user=200)
+
+        # WHEN checking edit xp permissions
         # THEN return the correct result
-        assert result is expected
+        assert await self.user_svc.can_update_xp(local_mock_ctx, target_user) is expected
 
     def test_purge_all(self):
         """Test purging all users from the cache.

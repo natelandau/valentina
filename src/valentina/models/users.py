@@ -226,31 +226,33 @@ class UserService:
 
         return False
 
-    def can_update_xp(self, ctx: discord.ApplicationContext, character: Character = None) -> bool:
-        """Check if the user has permissions to add experience points to their characters.
+    async def can_update_xp(self, ctx: discord.ApplicationContext, user: GuildUser = None) -> bool:
+        """Check if the user has permissions to add grant experience to themselves or other users.
 
         The function checks the following conditions in order:
         - If the author is an administrator, return True.
         - Fetch the guild settings. If they cannot be fetched, return False.
-        - Use a mapping from xp permissions to functions to check the corresponding permission type and return the result.
+        - Use a mapping from PermissionsEditXP to check the corresponding permission type and return the result.
 
         Args:
             ctx (ApplicationContext): The application context.
-            character (Character, optional): The character to check permissions for. Defaults to None.
+            user (GuildUser, optional): The user to grant experience to. Defaults to ctx.author.
 
         Returns:
             bool: True if the user has permissions to add xp, False otherwise.
         """
+        ctx_user = await self.fetch_user(ctx)
+
+        if not user:
+            user = ctx_user
+
         permissions_dict: dict[
-            PermissionsEditXP, Callable[[discord.ApplicationContext, Character], bool]
+            PermissionsEditXP, Callable[[discord.ApplicationContext, GuildUser], bool]
         ] = {
-            PermissionsEditXP.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
-            PermissionsEditXP.CHARACTER_OWNER_ONLY: lambda ctx, character: character
-            and character.created_by.id == ctx.author.id,
-            PermissionsEditXP.WITHIN_24_HOURS: lambda ctx, character: character
-            and character.created_by.id == ctx.author.id
-            and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            PermissionsEditXP.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
+            PermissionsEditXP.UNRESTRICTED: lambda ctx, user: True,  # noqa: ARG005
+            PermissionsEditXP.PLAYER_ONLY: lambda ctx, user: user == ctx_user
+            or "Storyteller" in [x.name for x in ctx.author.roles],
+            PermissionsEditXP.STORYTELLER_ONLY: lambda ctx, user: "Storyteller"  # noqa: ARG005
             in [x.name for x in ctx.author.roles],
         }
 
@@ -264,7 +266,7 @@ class UserService:
         permission = PermissionsEditXP(settings["permissions_edit_xp"])
         check_permission = permissions_dict.get(permission)
         if check_permission:
-            return check_permission(ctx, character)
+            return check_permission(ctx, user)
 
         return False
 

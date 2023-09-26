@@ -54,7 +54,16 @@ class Experience(commands.Cog):
         else:
             user = await self.bot.user_svc.fetch_user(ctx, user=user)
 
-        # TODO: Add check for permissions
+        if not self.bot.user_svc.can_update_xp(ctx, user):
+            await present_embed(
+                ctx,
+                title="You do not have permission to add experience to this user",
+                description="Contact an admin for assistance",
+                level="error",
+                ephemeral=True,
+            )
+            return
+
         campaign = self.bot.campaign_svc.fetch_active(ctx).id
 
         campaign_xp = user.data.get(f"{campaign}_experience", 0)
@@ -84,7 +93,7 @@ class Experience(commands.Cog):
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg
 
-    @xp.command(name="cool_point", description="Add a cool point to a user")
+    @xp.command(name="add_cool_point", description="Add a cool point to a user")
     async def cp_add(
         self,
         ctx: discord.ApplicationContext,
@@ -107,7 +116,16 @@ class Experience(commands.Cog):
         else:
             user = await self.bot.user_svc.fetch_user(ctx, user=user)
 
-        # TODO: Add check for permissions
+        if not self.bot.user_svc.can_update_xp(ctx, user):
+            await present_embed(
+                ctx,
+                title="You do not have permission to add experience to this user",
+                description="Contact an admin for assistance",
+                level="error",
+                ephemeral=True,
+            )
+            return
+
         campaign = self.bot.campaign_svc.fetch_active(ctx).id
 
         campaign_xp = user.data.get(f"{campaign}_experience", 0)

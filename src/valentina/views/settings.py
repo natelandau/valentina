@@ -15,8 +15,8 @@ from valentina.constants import (
     PermissionsEditTrait,
     PermissionsEditXP,
     PermissionsKillCharacter,
-    SettingsFlagExperience,
 )
+from valentina.models.bot import Valentina
 from valentina.views import CancelButton
 
 
@@ -43,6 +43,7 @@ class SettingsFlags(discord.ui.View):
     ):
         super().__init__(timeout=300)
         self.ctx = ctx
+        self.bot = cast(Valentina, ctx.bot)
         self.options = options
         self.key = key
         self.current_value = current_value
@@ -100,7 +101,7 @@ class SettingsFlags(discord.ui.View):
         logger.warning(f"SettingsFlags.button_callback: {self.key=}:{response=}")
 
         # Update the database
-        self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: response})  # type: ignore [attr-defined]
+        self.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: response})
 
         # Edit the original message
         embed = interaction.message.embeds[0]
@@ -139,6 +140,7 @@ class SettingsChannelSelect(discord.ui.View):
     ):
         super().__init__(timeout=300)
         self.ctx = ctx
+        self.bot = cast(Valentina, ctx.bot)
         self.key = key
         self.permissions = permissions
         self.channel_topic = channel_topic
@@ -156,7 +158,7 @@ class SettingsChannelSelect(discord.ui.View):
         """
         if enable and channel is not None:
             # Ensure the channel exists and has the right permissions
-            await self.ctx.bot.guild_svc.channel_update_or_add(  # type: ignore [attr-defined]
+            await self.bot.guild_svc.channel_update_or_add(
                 self.ctx.guild,
                 channel=channel,
                 topic=self.channel_topic,
@@ -164,16 +166,16 @@ class SettingsChannelSelect(discord.ui.View):
             )
 
             # Update the settings in the database
-            self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: channel.id})  # type: ignore [attr-defined]
+            self.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: channel.id})
             logger.debug(f"SettingsManager: {self.key=}:{channel.name=}")
 
             # Post changelog to the channel when the changelog channel is set
             if self.key == "changelog_channel_id":
-                await self.ctx.bot.guild_svc.post_changelog(guild=self.ctx.guild, bot=self.ctx.bot)  # type: ignore [attr-defined]
+                await self.bot.guild_svc.post_changelog(guild=self.ctx.guild, bot=self.bot)
 
         else:
             # Update the settings in the database
-            self.ctx.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: None})  # type: ignore [attr-defined]
+            self.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: None})
             logger.debug(f"SettingsManager: {self.key=}:None")
 
     @discord.ui.channel_select(
@@ -255,15 +257,15 @@ class SettingsManager:
 
     def __init__(self, ctx: discord.ApplicationContext) -> None:
         self.ctx: discord.ApplicationContext = ctx
+        self.bot = cast(Valentina, ctx.bot)
 
-        self.current_settings = self.ctx.bot.guild_svc.fetch_guild_settings(self.ctx.guild)  # type: ignore [attr-defined]
+        self.current_settings = self.bot.guild_svc.fetch_guild_settings(self.ctx.guild)
         self.page_group: list[pages.PageGroup] = [
             self._home_embed(),
             self._channel_audit_log(),
             self._channel_changelog(),
             self._channel_error_log(),
             self._channel_storyteller(),
-            self._flag_experience(),
             self._permissions_kill_character(),
             self._permissions_manage_campaigns(),
             self._permissions_update_traits(),
@@ -381,10 +383,10 @@ class SettingsManager:
         settings_home_embed = discord.Embed(title="", color=EmbedColor.DEFAULT.value)
 
         # Gather information
-        error_log_channel = self.ctx.bot.guild_svc.fetch_error_log_channel(self.ctx.guild)  # type: ignore [attr-defined]
-        audit_log_channel = self.ctx.bot.guild_svc.fetch_audit_log_channel(self.ctx.guild)  # type: ignore [attr-defined]
-        storyteller_channel = self.ctx.bot.guild_svc.fetch_storyteller_channel(self.ctx.guild)  # type: ignore [attr-defined]
-        changelog_channel = self.ctx.bot.guild_svc.fetch_changelog_channel(self.ctx.guild)  # type: ignore [attr-defined]
+        error_log_channel = self.bot.guild_svc.fetch_error_log_channel(self.ctx.guild)
+        audit_log_channel = self.bot.guild_svc.fetch_audit_log_channel(self.ctx.guild)
+        storyteller_channel = self.bot.guild_svc.fetch_storyteller_channel(self.ctx.guild)
+        changelog_channel = self.bot.guild_svc.fetch_changelog_channel(self.ctx.guild)
 
         settings_home_embed.description = "\n".join(
             [
@@ -399,9 +401,6 @@ class SettingsManager:
                 f"Manage campaign    : {PermissionManageCampaign(self.current_settings['permissions_manage_campaigns']).name.title()}",
                 f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
                 f"Kill Character     : {PermissionsKillCharacter(self.current_settings['permissions_kill_character']).name.title()}",
-                "",
-                "# Flags:",
-                f"Experience pool: {SettingsFlagExperience(self.current_settings['flag_experience']).name.title()}",
                 "",
                 "# Channel Settings:",
                 f"Changelog channel  : Enabled (#{changelog_channel.name})"
@@ -517,51 +516,6 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _flag_experience(self) -> pages.PageGroup:
-        """Create a view for managing the experience flag.
-
-        This method generates a Discord embed that provides options for setting permissions
-        on where experience is applied. It also sets up buttons for the user to interact with.
-
-        Returns:
-            pages.PageGroup: A PageGroup object containing the embed and custom view for this setting.
-        """
-        description = [
-            "# Control where experience is applied",
-            "Experience can be granted and pooled to a character or a player. This setting controls where experience is applied.",
-            "### Options:",
-            "1. **Character** - Experience is granted to individual characters and can only be spent on the characters that earned it",
-            "2. **User** - Experience is granted to individual players and can be spent on any of their characters",
-            "",
-            f"### {Emoji.WARNING.value} IMPORTANT:",
-            "Changing this setting after experience has been granted will require an bot developer to migrate the experience to the new pool.",
-        ]
-
-        embed = discord.Embed(
-            title="",
-            description="\n".join(description),
-            color=EmbedColor.INFO.value,
-        )
-
-        # Build options for the buttons and the view
-        options = [
-            (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
-            for x in SettingsFlagExperience
-        ]
-        view = SettingsFlags(
-            self.ctx,
-            key="flag_experience",
-            options=options,
-            current_value=int(self.current_settings["flag_experience"]),
-        )
-
-        return pages.PageGroup(
-            pages=[pages.Page(embeds=[embed], custom_view=view)],
-            label="Experience pool",
-            description="Control where experience is applied",
-            use_default_buttons=False,
-        )
-
     def _channel_storyteller(self) -> pages.PageGroup:
         """Create a view for selecting the storyteller channel."""
         description = [
@@ -637,20 +591,19 @@ class SettingsManager:
         """Create a view for setting XP permissions.
 
         This method generates a Discord embed that provides options for setting permissions
-        on who can grant experience points (XP) to characters. It also sets up buttons for
+        on who can grant experience points and cool points to users. It also sets up buttons for
         the user to interact with.
 
         Returns:
             pages.PageGroup: A PageGroup object containing the embed and custom view for setting permissions.
         """
         description = [
-            "# Settings for editing XP",
-            "Control who can grant experience to a character",
+            "# Settings for granting XP and cool points",
+            "Control who can grant experience to a player",
             "### Options:",
-            "1. **Unrestricted** - Any user can grant experience to any character",
-            "2. **Owner Only** - The owner of a character can grant experience to that character",
-            "3. **Within 24 hours** - The owner of a character can grant experience to that character within 24 hours of creation",
-            "3. **Storyteller only** - Only a Storyteller can grant experience to players' characters",
+            "1. **Unrestricted** - Any player can grant experience to any player",
+            "2. **Player Only** - A player may only grant experience to themselves",
+            "3. **Storyteller only** - Only a Storyteller can grant experience to players",
         ]
 
         embed = discord.Embed(
@@ -672,7 +625,7 @@ class SettingsManager:
         return pages.PageGroup(
             pages=[pages.Page(embeds=[embed], custom_view=view)],
             label="Grant Experience",
-            description="Who can grant experience to a character",
+            description="Who can grant experience to a user",
             use_default_buttons=False,
         )
 

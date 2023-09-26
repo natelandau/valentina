@@ -135,9 +135,8 @@ class PermissionsEditXP(Enum):
     """Permissions for adding xp to a character."""
 
     UNRESTRICTED = 0
-    WITHIN_24_HOURS = 1  # Default
-    CHARACTER_OWNER_ONLY = 2
-    STORYTELLER_ONLY = 3
+    PLAYER_ONLY = 1  # Default
+    STORYTELLER_ONLY = 2
 
 
 class PermissionManageCampaign(Enum):
@@ -155,13 +154,6 @@ class RollResultType(Enum):
     BOTCH = "Botch"
     CRITICAL = "Critical Success"
     OTHER = "n/a"
-
-
-class SettingsFlagExperience(Enum):
-    """Options for where to store experience."""
-
-    CHARACTER = 0
-    USER = 1  # Default
 
 
 class TraitCategoryOrder(IntEnum):
@@ -297,9 +289,8 @@ GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "audit_log_channel_id": None,
     "changelog_channel_id": None,
     "error_log_channel_id": None,
-    "flag_experience": SettingsFlagExperience.USER.value,
     "permissions_edit_trait": PermissionsEditTrait.WITHIN_24_HOURS.value,
-    "permissions_edit_xp": PermissionsEditXP.WITHIN_24_HOURS.value,
+    "permissions_edit_xp": PermissionsEditXP.PLAYER_ONLY.value,
     "permissions_kill_character": PermissionsKillCharacter.CHARACTER_OWNER_ONLY.value,
     "permissions_manage_campaigns": PermissionManageCampaign.STORYTELLER_ONLY.value,
     "storyteller_channel_id": None,

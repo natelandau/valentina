@@ -6,7 +6,7 @@ from dirty_equals import IsPartialDict
 from discord.ext import commands
 from rich.console import Console
 
-from valentina.constants import GUILD_DEFAULTS, SettingsFlagExperience
+from valentina.constants import GUILD_DEFAULTS
 from valentina.models import GuildService
 from valentina.models.db_tables import Guild
 
@@ -144,24 +144,3 @@ class TestGuildService:
         # Confirm the cache was purged
         assert self.guild_svc.settings_cache == {}
         assert self.guild_svc.changelog_versions_cache == []
-
-    def test_fetch_flag_experience(self, mock_ctx):
-        """Test GuildService.fetch_flag_experience()."""
-        self._clear_tests()
-
-        # GIVEN a guild with no experience flag
-        guild = Guild.create(id=mock_ctx.guild.id, name="test_guild", data={})
-
-        # WHEN fetch_flag_experience is called
-        # THEN the default value is returned
-        assert self.guild_svc.fetch_flag_experience(guild) == SettingsFlagExperience.USER
-
-        # GIVEN a settings dict with an experience flag
-        guild.data["flag_experience"] = SettingsFlagExperience.CHARACTER.value
-        guild.save()
-
-        self.guild_svc.purge_cache()
-
-        # WHEN fetch_flag_experience is called
-        # THEN the correct value is returned
-        assert self.guild_svc.fetch_flag_experience(guild) == SettingsFlagExperience.CHARACTER

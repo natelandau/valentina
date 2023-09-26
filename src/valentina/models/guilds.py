@@ -14,7 +14,6 @@ from valentina.constants import (
     GUILD_DEFAULTS,
     ChannelPermission,
     EmbedColor,
-    SettingsFlagExperience,
 )
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
@@ -240,11 +239,6 @@ class GuildService:
             return discord.utils.get(guild.text_channels, id=settings["error_log_channel_id"])
 
         return None
-
-    def fetch_flag_experience(self, guild: discord.Guild) -> SettingsFlagExperience:
-        """Retrieve the experience flag for the guild from the settings."""
-        settings = self.fetch_guild_settings(guild)
-        return SettingsFlagExperience(settings.get("flag_experience", 1))
 
     def fetch_storyteller_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         """Retrieve the storyteller channel for the guild from the settings.
