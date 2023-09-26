@@ -400,6 +400,12 @@ class Character(BaseModel):
         """Return True if the character is alive."""
         return self.data.get("is_alive", True)
 
+    def kill(self) -> None:
+        """Set the character as dead."""
+        self.data["is_alive"] = False
+        self.data["is_active"] = False
+        self.save()
+
     def set_trait_value(self, trait: Trait | CustomTrait, value: int) -> None:
         """Set the character's value of a trait."""
         if isinstance(trait, CustomTrait):

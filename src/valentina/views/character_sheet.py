@@ -86,30 +86,21 @@ def __embed1(
     )
 
     embed.add_field(name="Class", value=f"{character.class_name.title()}", inline=True)
-    embed.add_field(
-        name="Demeanor",
-        value=character.data["demeanor"] if character.data.get("demeanor") else "",
-        inline=True,
-    )
-    embed.add_field(
-        name="Nature",
-        value=character.data["nature"] if character.data.get("nature") else "",
-        inline=True,
-    )
+    embed.add_field(name="Concept", value=character.data.get("concept", ""), inline=True)
 
     if character.class_name.lower() == "vampire":
-        embed.add_field(name="Clan", value=f"{character.clan.name}", inline=True)
-        embed.add_field(name="Generation", value=f"{character.data['generation']}", inline=True)
-        embed.add_field(name="Sire", value=f"{character.data['sire']}", inline=True)
+        embed.add_field(name="Clan", value=character.clan.name, inline=True)
+        embed.add_field(name="Generation", value=character.data.get("generation", ""), inline=True)
+        embed.add_field(name="Sire", value=character.data.get("sire", ""), inline=True)
 
     if character.class_name.lower() == "mage":
-        embed.add_field(name="Tradition", value=f"{character.data['tradition']}", inline=True)
-        embed.add_field(name="Essence", value=f"{character.data['essence']}", inline=True)
+        embed.add_field(name="Tradition", value=character.data.get("tradition", ""), inline=True)
+        embed.add_field(name="Essence", value=character.data.get("essence", ""), inline=True)
 
     if character.class_name.lower() == "werewolf":
-        embed.add_field(name="Tribe", value=f"{character.data['tribe']}", inline=True)
-        embed.add_field(name="Auspice", value=f"{character.data['auspice']}", inline=True)
-        embed.add_field(name="Breed", value=f"{character.data['breed']}", inline=True)
+        embed.add_field(name="Tribe", value=character.data.get("tribe", ""), inline=True)
+        embed.add_field(name="Auspice", value=character.data.get("auspice", ""), inline=True)
+        embed.add_field(name="Breed", value=character.data.get("breed", ""), inline=True)
 
     embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
     for category, traits in __build_trait_display(char_traits, ["physical", "social", "mental"]):
@@ -160,15 +151,6 @@ def __embed2(
 
     if character.data.get("bio"):
         embed.add_field(name="**BIOGRAPHY**", value=character.data["bio"], inline=False)
-
-    embed.add_field(name="\u200b", value="**EXPERIENCE**", inline=False)
-    embed.add_field(name="Experience", value=f"`{character.data['experience']}`", inline=True)
-    embed.add_field(
-        name="Lifetime Experience", value=f"`{character.data['experience_total']}`", inline=True
-    )
-    embed.add_field(
-        name="Lifetime Cool Points", value=f"`{character.data['cool_points_total']}`", inline=True
-    )
 
     if len(custom_sections) > 0:
         embed.add_field(name="\u200b", value="**CUSTOM SECTIONS**", inline=False)

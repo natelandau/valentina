@@ -262,26 +262,16 @@ CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, Chann
 ### Database Data Default Values ###
 CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
     "is_alive": True,
-    "auspice": None,
     "bio": None,
-    "breed": None,
-    "concept": None,
     "date_of_birth": None,
     "debug_character": False,
-    "demeanor": None,
     "developer_character": False,
-    "essence": None,
     "first_name": None,
-    "generation": None,
     "is_active": False,
     "last_name": None,
-    "nature": None,
     "nickname": None,
     "player_character": False,
-    "sire": None,
     "storyteller_character": False,
-    "tradition": None,
-    "tribe": None,
     "images": [],
 }
 

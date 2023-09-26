@@ -413,10 +413,6 @@ class TestUserService:
         # THEN return the correct result
         assert result is expected
 
-    # UNRESTRICTED = 0
-    # PLAYER_ONLY = 1  # Default
-    # STORYTELLER_ONLY = 2
-
     @pytest.mark.asyncio()
     @pytest.mark.parametrize(
         ("xp_permissions_value", "is_admin", "is_storyteller", "target_self", "expected"),
@@ -476,7 +472,7 @@ class TestUserService:
         local_mock_ctx.bot = mock_bot
 
         # CREATE DATABASE OBJECTS
-        calling_user = GuildUser.create(guild=mock_guild1.id, user=mock_author.id)
+        GuildUser.create(guild=mock_guild1.id, user=mock_author.id)
         target_user = None if target_self else GuildUser.create(guild=mock_guild1.id, user=200)
 
         # WHEN checking edit xp permissions

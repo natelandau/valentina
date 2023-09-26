@@ -9,11 +9,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import (
-    VALID_IMAGE_EXTENSIONS,
-    EmbedColor,
-    Emoji,
-)
+from valentina.constants import VALID_IMAGE_EXTENSIONS, EmbedColor, Emoji
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import (
@@ -249,8 +245,8 @@ class Characters(commands.Cog, name="Character"):
             text += f"**{character.name}**\n"
             text += "```\n"
             text += f"Class: {character.char_class.name:<20}  Created On: {character.created.split(' ')[0]}\n"
-            text += f"Owner: {character.owned_by.data['display_name']:<20} Lifetime XP: {character.data['experience']}\n"
-            text += f"Alive: {alive:<20}  Active: {character.is_active}\n"
+            text += f"Alive: {alive:<20} Active: {character.is_active}\n"
+            text += f"Owner: {character.owned_by.data['display_name']:<20}\n"
             text += "```\n"
 
         embed = discord.Embed(description=text, color=EmbedColor.INFO.value)
@@ -317,8 +313,8 @@ class Characters(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        updates: dict[str, str | int | bool] = {"is_active": False, "is_alive": False}
-        await self.bot.char_svc.update_or_add(ctx, character=character, data=updates)
+        character.kill()
+        self.bot.user_svc.purge_cache(ctx)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg

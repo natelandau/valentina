@@ -26,6 +26,13 @@ from valentina.utils import errors
 class TestCharacterModel:
     """Test the character database model."""
 
+    def _clear_test_data(self) -> None:
+        """Clear all test data from the database."""
+        for character in Character.select():
+            if character.id == 1:
+                continue
+            character.delete_instance(recursive=True, delete_nullable=True)
+
     def test_character_add_custom_trait(self) -> None:
         """Test the add_custom_trait method.
 
@@ -250,6 +257,33 @@ class TestCharacterModel:
             .value
             == 1
         )
+
+    def test_kill_character(self):
+        """Test character.kill()."""
+        self._clear_test_data()
+
+        # GIVEN a character
+        character = Character.create(
+            data={
+                "first_name": str(uuid4()).split("-")[0],
+                "last_name": "character",
+                "storyteller_character": True,
+                "is_alive": True,
+                "is_active": True,
+            },
+            char_class=1,
+            guild=1,
+            created_by=1,
+            owner_by=1,
+            clan=1,
+        )
+
+        # WHEN the kill method is called
+        character.kill()
+
+        # THEN check the character is killed correctly
+        assert not character.is_alive
+        assert not character.is_active
 
     def test_character_traits_dict(self):
         """Test character.traits_dict.
