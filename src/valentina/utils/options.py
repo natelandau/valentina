@@ -17,7 +17,7 @@ MAX_OPTION_LENGTH = 99
 
 
 async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[str]:
-    """Populate the autocomplete for the version option."""
+    """Populate the autocomplete for the version option. This is for the first of two options."""
     bot = cast(Valentina, ctx.bot)
     possible_versions = bot.guild_svc.fetch_changelog_versions()
 
@@ -27,7 +27,7 @@ async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[s
 
 
 async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[str]:
-    """Populate the autocomplete for the version option."""
+    """Populate the autocomplete for the version option. This is for the second of two options."""
     bot = cast(Valentina, ctx.bot)
     possible_versions = bot.guild_svc.fetch_changelog_versions()
 

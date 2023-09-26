@@ -7,8 +7,8 @@ import semver
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import SPACER, EmbedColor
-from valentina.models import Statistics
+from valentina.constants import SPACER, DiceType, EmbedColor
+from valentina.models import Probability, Statistics
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, Macro
 from valentina.utils.changelog_parser import ChangelogParser
@@ -21,8 +21,37 @@ class Misc(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot: Valentina = bot
 
+    @commands.slash_command(name="probability", description="Calculate the probability of a roll")
+    async def probability(
+        self,
+        ctx: discord.ApplicationContext,
+        pool: discord.Option(int, "The number of dice to roll", required=True),
+        difficulty: Option(
+            int,
+            "The difficulty of the roll",
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the probability only visible to you (default False)",
+            default=False,
+        ),
+    ) -> None:
+        """Roll the dice.
+
+        Args:
+            hidden (bool, optional): Make the statistics only visible to you (default true). Defaults to True.
+            ctx (discord.ApplicationContext): The context of the command
+            difficulty (int): The difficulty of the roll
+            pool (int): The number of dice to roll
+        """
+        probabilities = Probability(
+            ctx, pool=pool, difficulty=difficulty, dice_size=DiceType.D10.value
+        )
+        embed = await probabilities.get_embed()
+        await ctx.respond(embed=embed, ephemeral=hidden)
+
     @commands.slash_command(name="user_info", description="View information about a user")
-    @discord.guild_only()
     async def user_info(
         self,
         ctx: discord.ApplicationContext,
