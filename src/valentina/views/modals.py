@@ -362,6 +362,7 @@ class ProfileModal(Modal):
         self.confirmed: bool = False
         self.character: Character = character
         self.results: dict[str, str] = {
+            "concept": "",
             "demeanor": "",
             "nature": "",
             "generation": "",
@@ -375,22 +376,12 @@ class ProfileModal(Modal):
 
         self.add_item(
             InputText(
-                label="demeanor",
-                value=self.character.data.get("demeanor", None),
-                placeholder="Enter a demeanor",
+                label="concept",
+                value=self.character.data.get("concept", None),
+                placeholder="Enter a concept",
                 required=False,
                 style=discord.InputTextStyle.short,
-                custom_id="demeanor",
-            )
-        )
-        self.add_item(
-            InputText(
-                label="nature",
-                value=self.character.data.get("nature", None),
-                placeholder="Enter a nature",
-                required=False,
-                style=discord.InputTextStyle.short,
-                custom_id="nature",
+                custom_id="concept",
             )
         )
 
