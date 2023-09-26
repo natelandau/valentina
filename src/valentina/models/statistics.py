@@ -9,7 +9,7 @@ from valentina.models.db_tables import Character, GuildUser, RollStatistic
 
 
 class Statistics:
-    """Compute and display statistics."""
+    """Compute and display roll statistics."""
 
     def __init__(
         self,
@@ -116,16 +116,23 @@ class Statistics:
             msg += "No statistics found"
             return msg
 
-        msg += "```json\n"
-        msg += f"Total Rolls: {'.':.<{22 - 12}} {self.total_rolls}\n"
-        msg += f"Successes: {'.':.<{22 - 10}} {self.successes:<3} ({self.successes / self.total_rolls * 100:.2f}%)\n"
-        msg += f"Failures: {'.':.<{22 - 9}} {self.failures:<3} ({self.failures / self.total_rolls * 100:.2f}%)\n"
-        msg += f"Botches: {'.':.<{22 - 8}} {self.botches:<3} ({self.botches / self.total_rolls * 100:.2f}%)\n"
-        msg += f"Critical Successes: {'.':.<{22 -19}} {self.criticals:<3} ({self.criticals / self.total_rolls * 100:.2f}%)\n"
-        msg += f"Average Difficulty: {'.':.<{22 -19}} {self.average_difficulty}\n"
-        msg += f"Average Pool Size: {'.':.<{22 -18}} {self.average_pool}\n"
-        msg += "```"
+        msg += f"""\
+```json
+Total Rolls: {'.':.<{25 - 12}} {self.total_rolls}
+Critical Success Rolls: {'.':.<{25 -23}} {self.criticals:<3} ({self.criticals / self.total_rolls * 100:.2f}%)
+Successful Rolls: {'.':.<{25 - 17}} {self.successes:<3} ({self.successes / self.total_rolls * 100:.2f}%)
+Failed Rolls: {'.':.<{25 - 13}} {self.failures:<3} ({self.failures / self.total_rolls * 100:.2f}%)
+Botched Rolls: {'.':.<{25 - 14}} {self.botches:<3} ({self.botches / self.total_rolls * 100:.2f}%)
+Average Difficulty: {'.':.<{25 -19}} {self.average_difficulty}
+Average Pool Size: {'.':.<{25 -18}} {self.average_pool}
+```
+> Definitions:
+> - _Critical Success_: More successes than dice rolled
+> - _Success_: At least one success after all dice are tallied
+> - _Failure_: Zero successes after all dice are tallied
+> - _Botch_: Negative successes after all dice are tallied
 
+"""
         return msg
 
     async def get_embed(self) -> discord.Embed:
