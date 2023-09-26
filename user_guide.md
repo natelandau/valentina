@@ -93,6 +93,21 @@ Rolling dice is a core part of gameplay. Valentina Noir provides the following c
 -   **Rolling a Macro**: Use `/roll macro <macro_name>` to roll a macro. For example, `/roll macro pa` will roll the macro `pa` that you created earlier.
 -   **Rolling Arbitrary Dice**: Use `/roll <dice>` to roll arbitrary dice. For example, `/roll 3d6` will roll 3 six-sided dice.
 
+The core mechanics of gameplay in Valentina Noir differ from the published Vampire the Masquerade game. Unless otherwise specified, all rolls are made as a pool of D10s with a set difficulty. The pool is determined by the number of dots for the two traits.
+
+The number of _successes_ is determined by counting each d10.
+
+-   **10s**: Each 10 counts as 2 successes
+-   **1s**: Each 1 counts as -2 success
+-   **Successes**: Each die >= difficulty counts as 1 success
+
+The outcome of the role is defined as:
+
+-   **Critical Success:** More successes than dice rolled
+-   **Success:** At least one success after all dice are tallied
+-   **Failure:** Zero successes after all dice are tallied
+-   **Botch:** Negative successes after all dice are tallied
+
 ### After Gameplay
 
 -   Add or spend experience points using `/xp`.

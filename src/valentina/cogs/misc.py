@@ -2,7 +2,9 @@
 """Miscellaneous commands."""
 import random
 
+import arrow
 import discord
+import inflect
 import semver
 from discord.commands import Option
 from discord.ext import commands
@@ -11,8 +13,11 @@ from valentina.constants import SPACER, DiceType, EmbedColor
 from valentina.models import Probability, Statistics
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, Macro
+from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.options import select_changelog_version_1, select_changelog_version_2
+
+p = inflect.engine()
 
 
 class Misc(commands.Cog):
@@ -20,6 +25,81 @@ class Misc(commands.Cog):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot: Valentina = bot
+
+    @commands.slash_command(name="server_info", description="View information about the server")
+    async def server_info(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the probability only visible to you (default False)",
+            default=False,
+        ),
+    ) -> None:
+        """View information about the server."""
+        # Compute data
+        created_on = arrow.get(ctx.guild.created_at)
+        player_characters = self.bot.char_svc.fetch_all_player_characters(ctx)
+        storyteller_characters = self.bot.char_svc.fetch_all_storyteller_characters(ctx)
+        num_characters = len(player_characters) + len(storyteller_characters)
+        campaigns = self.bot.campaign_svc.fetch_all(ctx)
+        num_campaigns = len(campaigns)
+        try:
+            active_campaign = self.bot.campaign_svc.fetch_active(ctx)
+        except errors.NoActiveCampaignError:
+            active_campaign = None
+        roll_stats = Statistics(ctx)
+
+        # Build the Embed
+        embed = discord.Embed(
+            description=f"## {ctx.guild.name} Information", color=EmbedColor.INFO.value
+        )
+        embed.add_field(
+            name="",
+            value=f"""\
+```scala
+Created: {created_on.humanize()} ({created_on.format('YYYY-MM-DD')})
+Owner  : {ctx.guild.owner.display_name}
+Members: {ctx.guild.member_count}
+Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for x in ctx.guild.roles if not x.is_bot_managed() and not x.is_integration() and not x.is_default()][::-1])}
+```
+""",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="Campaigns",
+            value=f"""\
+```scala
+Total Campaigns: {num_campaigns}
+Active Campaign: {active_campaign.name if active_campaign else 'None'}
+```
+""",
+            inline=True,
+        )
+
+        embed.add_field(
+            name="Characters",
+            value=f"""\
+```scala
+Total Characters      : {num_characters}
+Player Characters     : {len(player_characters)}
+Storyteller Characters: {len(storyteller_characters)}
+```
+""",
+            inline=True,
+        )
+
+        embed.add_field(
+            name="Roll Statistics",
+            value=roll_stats.get_text(with_title=False),
+            inline=False,
+        )
+        embed.set_footer(
+            text=f"Requested by {ctx.author}",
+            icon_url=ctx.author.display_avatar.url,
+        )
+        await ctx.respond(embed=embed, ephemeral=hidden)
 
     @commands.slash_command(name="probability", description="Calculate the probability of a roll")
     async def probability(
@@ -121,7 +201,10 @@ class Misc(commands.Cog):
             color=EmbedColor.INFO.value,
         )
         embed.set_thumbnail(url=target.display_avatar.url)
-        embed.set_footer(text=f"Requested by {ctx.author.display_name}")
+        embed.set_footer(
+            text=f"Requested by {ctx.author}",
+            icon_url=ctx.author.display_avatar.url,
+        )
         embed.timestamp = discord.utils.utcnow()
 
         await ctx.respond(embed=embed, ephemeral=hidden)

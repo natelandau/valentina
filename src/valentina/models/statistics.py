@@ -117,7 +117,7 @@ class Statistics:
             return msg
 
         msg += f"""\
-```json
+```python
 Total Rolls: {'.':.<{25 - 12}} {self.total_rolls}
 Critical Success Rolls: {'.':.<{25 -23}} {self.criticals:<3} ({self.criticals / self.total_rolls * 100:.2f}%)
 Successful Rolls: {'.':.<{25 - 17}} {self.successes:<3} ({self.successes / self.total_rolls * 100:.2f}%)
@@ -148,5 +148,8 @@ Average Pool Size: {'.':.<{25 -18}} {self.average_pool}
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=self.thumbnail)
-
+        embed.set_footer(
+            text=f"Requested by {self.ctx.author}",
+            icon_url=self.ctx.author.display_avatar.url,
+        )
         return embed
