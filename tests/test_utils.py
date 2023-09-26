@@ -48,6 +48,6 @@ class TestProbability:
         assert isinstance(embed, discord.Embed)
         result = embed.to_dict()
 
-        assert result["footer"]["text"] == IsStr(regex=r"Probabilities based on [0-9,]+ trials")
+        assert result["footer"]["text"] == IsStr(regex=r"Requested by .+")
         assert result["description"] == IsStr()
         assert isinstance(result["fields"], list)

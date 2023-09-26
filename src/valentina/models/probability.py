@@ -143,11 +143,14 @@ Failure (< {self.difficulty}):          {self.probabilities['failure_dice']:.2f}
 Botch (1):              {self.probabilities['botch_dice']:.2f}%
 ```
 
-> DEFINITIONS:
-> - _Critical Success_: More successes than dice rolled
-> - _Success_: At least one success after all dice are tallied
-> - _Failure_: Zero successes after all dice are tallied
-> - _Botch_: Negative successes after all dice are tallied
+> - Probabilities based on {self.trials:,} trials
+> - Definitions
+>  - _Critical Success_: More successes than dice rolled
+>  - _Success_: At least one success after all dice are tallied
+>  - _Failure_: Zero successes after all dice are tallied
+>  - _Botch_: Negative successes after all dice are tallied
+
+
         """
 
     async def get_embed(self) -> discord.Embed:
@@ -161,6 +164,9 @@ Botch (1):              {self.probabilities['botch_dice']:.2f}%
             color=EmbedColor.INFO.value,
         )
         embed.description = self._get_description()
-        embed.set_footer(text=f"Probabilities based on {self.trials:,} trials")
+        embed.set_footer(
+            text=f"Requested by {self.ctx.author}",
+            icon_url=self.ctx.author.display_avatar.url,
+        )
 
         return embed
