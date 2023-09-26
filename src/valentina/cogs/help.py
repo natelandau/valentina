@@ -137,7 +137,7 @@ class Help(commands.Cog):
             )
 
     @help.command(name="user_guide", description="A guide on how to use Valentina Noir")
-    async def readme(
+    async def user_guide(
         self,
         ctx: discord.ApplicationContext,
         hidden: Option(
