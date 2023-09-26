@@ -196,6 +196,19 @@ class MigrateDatabase:
         columns = [row[1] for row in cursor.fetchall()]
         return column in columns
 
+    def _drop_and_recreate(self, table_name: str, db_model: type) -> None:
+        """Migrate a specific table.
+
+        Args:
+            table_name: The name of the table to migrate.
+            db_model: The Peewee model class for the table.
+        """
+        logger.debug(f"DATABASE: drop and recreate `{table_name}` table")
+        self.db.execute_sql("PRAGMA foreign_keys=OFF;")
+        self.db.execute_sql(f"DROP TABLE {table_name};")
+        self.db.execute_sql("PRAGMA foreign_keys=ON;")
+        self.db.create_tables([db_model])
+
     def get_tables(self) -> list[str]:
         """Get all tables in the Database."""
         with self.db:
@@ -743,7 +756,7 @@ class MigrateDatabase:
                 del guild.data["use_storyteller_channel"]
                 guild.save()
 
-    def __1_11_0(self) -> None:
+    def __1_11_0(self) -> None:  # noqa: PLR0915, C901
         """Migrate from version 1.11.0."""
         if not self._column_exists(GuildUser._meta.table_name, "data"):
             logger.info("DATABASE: Migrate from User to GuildUser")
@@ -751,9 +764,7 @@ class MigrateDatabase:
             logger.debug("DATABASE: Create GuildUser table")
             # Drop and recreate the GuildUser Table
             users = self.db.execute_sql("SELECT * FROM guilduser;").fetchall()
-
-            self.db.drop_tables([GuildUser])
-            self.db.create_tables([GuildUser])
+            self._drop_and_recreate("guilduser", GuildUser)
 
             for user in users:
                 guild = Guild.get_by_id(user[1])
@@ -762,18 +773,11 @@ class MigrateDatabase:
             for guild_user in GuildUser.select():
                 guild_user.set_default_data_values()
 
-            # Transfer Foreign Keys
+            # Migrate foreign keys which referenced the User table
 
             # Characters Table
-            logger.debug("DATABASE: Migrate characters")
             characters = self.db.execute_sql("SELECT * FROM characters;").fetchall()
-            # Recreate characters table
-            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
-            self.db.execute_sql("DROP TABLE characters;")
-            self.db.execute_sql("PRAGMA foreign_keys=ON;")
-            self.db.create_tables([Character])
-
-            # Re-add data to characters table
+            self._drop_and_recreate("characters", Character)
             for character in characters:
                 Character.create(
                     id=character[0],
@@ -787,15 +791,8 @@ class MigrateDatabase:
                 )
 
             # Macros Table
-            logger.debug("DATABASE: Migrate macros")
             macros = self.db.execute_sql("SELECT * FROM macros;").fetchall()
-            # Recreate macros table
-            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
-            self.db.execute_sql("DROP TABLE macros;")
-            self.db.execute_sql("PRAGMA foreign_keys=ON;")
-            self.db.create_tables([Macro])
-
-            # Re-add data to macros table
+            self._drop_and_recreate("macros", Macro)
             for macro in macros:
                 Macro.create(
                     id=macro[0],
@@ -809,15 +806,8 @@ class MigrateDatabase:
                 )
 
             # Campaign Notes Table
-            logger.debug("DATABASE: Migrate campaign notes")
             notes = self.db.execute_sql("SELECT * FROM campaign_notes;").fetchall()
-            # Recreate campaign_notes table
-            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
-            self.db.execute_sql("DROP TABLE campaign_notes;")
-            self.db.execute_sql("PRAGMA foreign_keys=ON;")
-            self.db.create_tables([CampaignNote])
-
-            # Re-add data to campaign_notes table
+            self._drop_and_recreate("campaign_notes", CampaignNote)
             for note in notes:
                 CampaignNote.create(
                     id=note[0],
@@ -834,13 +824,8 @@ class MigrateDatabase:
                 )
 
             # Migrate roll thumbnails table
-            logger.debug("DATABASE: Migrate roll thumbnails")
             thumbs = self.db.execute_sql("SELECT * FROM roll_thumbnails;").fetchall()
-            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
-            self.db.execute_sql("DROP TABLE roll_thumbnails;")
-            self.db.execute_sql("PRAGMA foreign_keys=ON;")
-            self.db.create_tables([RollThumbnail])
-
+            self._drop_and_recreate("roll_thumbnails", RollThumbnail)
             for thumb in thumbs:
                 RollThumbnail.create(
                     id=thumb[0],
@@ -852,13 +837,8 @@ class MigrateDatabase:
                 )
 
             # Migrate roll statistics table
-            logger.debug("DATABASE: Migrate roll statistics")
             stats = self.db.execute_sql("SELECT * FROM rollstatistic;").fetchall()
-            self.db.execute_sql("PRAGMA foreign_keys=OFF;")
-            self.db.execute_sql("DROP TABLE rollstatistic;")
-            self.db.execute_sql("PRAGMA foreign_keys=ON;")
-            self.db.create_tables([RollStatistic])
-
+            self._drop_and_recreate("rollstatistic", RollStatistic)
             for stat in stats:
                 RollStatistic.create(
                     id=stat[0],
@@ -876,7 +856,36 @@ class MigrateDatabase:
                 logger.debug("DATABASE: Drop user table")
                 self.db.execute_sql("DROP TABLE users;")
 
-            logger.debug("DATABASE: Migrate complete")
+            # Migrate all experience from characters to GuildUsers
+            logger.debug("DATABASE: Migrate experience from characters to GuildUsers")
+            for character in Character.select():
+                if "experience" in character.data:
+                    campaign = Campaign.get(guild == character.guild, Campaign.is_active).id
+                    user = GuildUser.get_by_id(character.owned_by.id)
+
+                    xp_amount = character.data.get("experience", 0)
+                    xp_total_amount = character.data.get("experience_total", 0)
+                    cp_total_amount = character.data.get("cool_points_total", 0)
+
+                    campaign_xp = user.data.get(f"{campaign}_experience", 0)
+                    campaign_total_xp = user.data.get(f"{campaign}_total_experience", 0)
+                    campaign_total_cp = user.data.get(f"{campaign}_total_cool_points", 0)
+                    lifetime_xp = user.data.get("lifetime_experience", 0)
+                    lifetime_cp = user.data.get("lifetime_cool_points", 0)
+
+                    if not user.data:
+                        user.data = {}
+                    user.data[f"{campaign}_experience"] = campaign_xp + xp_amount
+                    user.data[f"{campaign}_total_experience"] = campaign_total_xp + xp_total_amount
+                    user.data[f"{campaign}_total_cool_points"] = campaign_total_cp + cp_total_amount
+                    user.data["lifetime_experience"] = lifetime_xp + xp_total_amount
+                    user.data["lifetime_cool_points"] = lifetime_cp + cp_total_amount
+                    user.save()
+
+                    del character.data["cool_points_total"]
+                    del character.data["experience"]
+                    del character.data["experience_total"]
+                    character.save()
 
 
 class PopulateDatabase:

@@ -325,7 +325,10 @@ class GuildService:
     async def update_guild_users(self, guild: discord.Guild) -> None:
         """Update all users in a guild. Used in bot on_ready."""
         for member in guild.members:
-            await self.bot.user_svc.update_or_add(guild=guild, user=member)  # type: ignore [attr-defined] # it really is defined
+            if member.bot:
+                continue
+            logger.debug(f"DATABASE: Update user: {member.display_name}")
+            await self.bot.user_svc.update_or_add(guild=guild, user=member, data={"display_name": member.display_name})  # type: ignore [attr-defined] # it really is defined
 
     async def prepare_guild(self, guild: discord.Guild) -> None:
         """Prepares a guild for use by the bot. This method is called when the bot joins a guild. This method is idempotent, and can be called multiple times without issue if the default roles need to be recreated.

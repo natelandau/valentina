@@ -555,19 +555,14 @@ class UserService:
         # Ensure default data values are set for existing users
         GuildUser.get_by_id(db_object.id).set_default_data_values()
 
-        # Update the User if data was provided
+        # Update existing users
         if data:
             # Purge the cache
             self.purge_cache(ctx) if ctx else self.purge_cache()
 
             # Ensure discord.Member information is up to date
             for key, value in member_info.items():
-                if key not in db_object.data and key not in data:
-                    data[key] = value
-                    continue
-
-                if db_object.data[key] != value and key not in data:
-                    data[key] = value
+                data[key] = value
 
             # Always update the 'modified' timestamp
             data["modified"] = str(time_now())

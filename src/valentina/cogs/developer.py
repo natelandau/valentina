@@ -18,7 +18,6 @@ from valentina.models.bot import Valentina
 from valentina.models.db_tables import (
     Character,
     CharacterClass,
-    GuildUser,
     RollProbability,
     VampireClan,
 )
@@ -139,54 +138,6 @@ class Developer(commands.Cog):
         await confirmation_response_msg
 
     ### GUILD COMMANDS ################################################################
-
-    @guild.command(name="character_xp_to_user", description="Transfer all character XP to users")
-    @commands.guild_only()
-    @commands.is_owner()
-    async def character_xp_to_user(self, ctx: discord.ApplicationContext) -> None:
-        """Transfer all character XP to users."""
-        title = "Transfer all character XP to users"
-        is_confirmed, confirmation_response_msg = await confirm_action(
-            ctx, title, description="This can not be undone"
-        )
-        if not is_confirmed:
-            return
-
-        users = await self.bot.user_svc.fetch_guild_users(ctx)
-        for user in users:
-            description = ""
-            user_experience = GuildUser.get_by_id(user.id).data.get("experience", 0)
-            user_lifetime_experience = GuildUser.get_by_id(user.id).data.get("experience_total", 0)
-            description += f"start experience: {user_experience}\n"
-            description += f"start lifetime experience: {user_lifetime_experience}\n"
-
-            for c in self.bot.char_svc.fetch_all_player_characters(ctx, owned_by=user):
-                description += f"{c.name}: {c.data['experience']} experience\n"
-                user_experience += c.data["experience"]
-                user_lifetime_experience += c.data["experience_total"]
-                await self.bot.char_svc.update_or_add(
-                    ctx,
-                    character=c,
-                    data={
-                        "experience": 0,
-                        "experience_total": 0,
-                    },
-                )
-
-            # Update the user's experience
-            await self.bot.user_svc.update_or_add(
-                ctx,
-                user,
-                data={
-                    "experience": user_experience,
-                    "experience_total": user_lifetime_experience,
-                },
-            )
-            description += f"end experience: {GuildUser.get_by_id(user.id).data[str(ctx.guild.id)].get('experience', 0)}\n end lifetime experience: {GuildUser.get_by_id(user.id).data[str(ctx.guild.id)].get('experience_total', 0)}\n"
-            await ctx.send(embed=discord.Embed(description=description))
-
-        logger.info(f"DEVELOPER: {ctx.author.display_name} transferring all character XP to users")
-        await confirmation_response_msg
 
     @guild.command()
     @commands.guild_only()

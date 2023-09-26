@@ -422,7 +422,7 @@ class TestCharacterService:
 
         # THEN check the method returns the correct characters database and updates the default values
         assert result == [character1, character2, character3]
-        assert result[0].data["experience"] == 0  # Check default value
+        assert result[0].data["is_alive"]  # Check default value
 
         # WHEN the fetch_all_player_characters method is called with a user
         result = self.char_svc.fetch_all_player_characters(local_mock_ctx, owned_by=mock_member)
@@ -490,7 +490,7 @@ class TestCharacterService:
 
         # THEN check the method returns the correct characters database and updates the default values
         assert result == [character1, character2]
-        assert result[0].data["experience"] == 0  # Check default value
+        assert result[0].data["is_alive"]  # Check default value
 
     @pytest.mark.asyncio()
     async def test_update_or_add_one(self, mock_ctx):

@@ -180,7 +180,6 @@ class TestUserService:
 
         # WHEN update_or_add is called and a user is not in the database
         result = await self.user_svc.update_or_add(user=mock_member2, guild=mock_guild2)
-        print(result)
 
         # THEN return the correct result and update the database with default values, and the cache is intact
         assert result == GuildUser.get_by_id(1)
