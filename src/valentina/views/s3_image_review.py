@@ -1,11 +1,14 @@
 """A paginated view of all the thumbnails in the database."""
 
+from typing import cast
+
 import discord
 from discord.ext import pages
 from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import EmbedColor, Emoji
+from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character
 
 
@@ -20,6 +23,7 @@ class DeleteS3Images(discord.ui.View):
         self.key = key
         self.url = url
         self.review_type = review_type
+        self.bot = cast(Valentina, ctx.bot)
 
     @discord.ui.button(
         label=f"{Emoji.WARNING.value} Delete image",
@@ -44,14 +48,12 @@ class DeleteS3Images(discord.ui.View):
             # Delete the image from the character's data
             character_id = self.key.split("/")[-2]
             character = Character.get_by_id(character_id)
-            self.ctx.bot.char_svc.delete_character_image(  # type: ignore [attr-defined]
+            await self.bot.char_svc.delete_character_image(
                 self.ctx, character=character, key=self.key
             )
 
         # Log to audit log
-        await self.ctx.bot.guild_svc.send_to_audit_log(  # type: ignore [attr-defined]
-            self.ctx, f"Delete image from {character.name}"
-        )
+        await self.bot.guild_svc.send_to_audit_log(self.ctx, f"Delete image from {character.name}")
 
         # Respond to user
         await interaction.response.edit_message(
@@ -94,6 +96,7 @@ class S3ImageReview:
             hidden (bool, optional): Whether or not the paginator should be hidden. Defaults to True.
         """
         self.ctx = ctx
+        self.bot = cast(Valentina, ctx.bot)
         self.prefix = prefix
         self.review_type = review_type
         self.images = self._get_images()
@@ -113,7 +116,9 @@ class S3ImageReview:
         """
         try:
             # Use dictionary comprehension to build the images dictionary
-            return {x: self.ctx.bot.aws_svc.get_url(x) for x in self.ctx.bot.aws_svc.list_objects(self.prefix)}  # type: ignore [attr-defined]
+            return {
+                x: self.bot.aws_svc.get_url(x) for x in self.bot.aws_svc.list_objects(self.prefix)
+            }
         except Exception as e:
             logger.error(f"An error occurred while fetching image URLs: {e}")
             raise

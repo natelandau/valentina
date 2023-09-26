@@ -105,7 +105,7 @@ class CampaignService:
 
         return chapter
 
-    def create_note(
+    async def create_note(
         self,
         ctx: discord.ApplicationContext,
         campaign: Campaign,
@@ -127,13 +127,13 @@ class CampaignService:
 
         TODO: Write test for this method that mocks the call to fetch_user
         """
-        user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+        user = await ctx.bot.user_svc.update_or_add(ctx)  # type: ignore [attr-defined] # it really is defined
 
         note = CampaignNote.create(
             campaign=campaign.id,
             name=name,
             description=description,
-            user=user.id,
+            user=user,
             created=time_now(),
             modified=time_now(),
             chapter=chapter.id if chapter else None,

@@ -217,7 +217,7 @@ async def show_sheet(
     ephemeral: Any = False,
 ) -> Any:
     """Show a character sheet."""
-    owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.id)
+    owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.user)
     embeds = []
     embeds.append(__embed1(ctx, character, owned_by_user))
     embeds.append(__embed2(ctx, character, owned_by_user))
@@ -241,5 +241,5 @@ async def sheet_embed(
     title: str | None = None,
 ) -> discord.Embed:
     """Return the first page of the sheet as an embed."""
-    owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by)
+    owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.user)
     return __embed1(ctx, character, owned_by_user=owned_by_user, title=title)

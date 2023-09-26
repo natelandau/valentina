@@ -3,14 +3,14 @@
 import discord
 from loguru import logger
 
-from valentina.models.db_tables import Character, CustomSection
+from valentina.models.db_tables import Character, CustomSection, GuildUser
 from valentina.utils.helpers import time_now
 
 
 class CharacterService:
     """A service for managing the Player characters in the database."""
 
-    def add_character_image(
+    async def add_character_image(
         self, ctx: discord.ApplicationContext, character: Character, extension: str, data: bytes
     ) -> str:
         """Add an image to a character and upload it to Amazon S3.
@@ -40,11 +40,13 @@ class CharacterService:
 
         # Add the image to the character's data
         current_character_images.append(key)
-        self.update_or_add(ctx, character=character, data={"images": current_character_images})
+        await self.update_or_add(
+            ctx, character=character, data={"images": current_character_images}
+        )
 
         return key
 
-    def delete_character_image(
+    async def delete_character_image(
         self, ctx: discord.ApplicationContext, character: Character, key: str
     ) -> None:
         """Delete a character's image from both the character data and Amazon S3.
@@ -63,7 +65,7 @@ class CharacterService:
         # Remove image key from character's data
         character_images = character.data.get("images", [])
         character_images.remove(key)
-        self.update_or_add(ctx, character=character, data={"images": character_images})
+        await self.update_or_add(ctx, character=character, data={"images": character_images})
         logger.debug(f"DATA: Removed image key '{key}' from character '{character.name}'")
 
         # Delete the image from Amazon S3
@@ -120,13 +122,13 @@ class CharacterService:
     def fetch_all_player_characters(
         self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext,
-        owned_by: discord.Member | None = None,
+        owned_by: GuildUser | None = None,
     ) -> list[Character]:
         """Fetch all characters for a specific guild and confirm that default data values are set before returning them as a list.
 
         Args:
             ctx (ApplicationContext | discord.AutocompleteContext): Context object containing guild information.
-            owned_by (discord.Member | None, optional): The member who owns the characters. Defaults to None.
+            owned_by (discord.Member | None, optional): Limit response to a single member who owns the characters. Defaults to None.
 
         Returns:
             list[Character]: List of characters for the guild.
@@ -191,7 +193,7 @@ class CharacterService:
 
         return to_return
 
-    def update_or_add(
+    async def update_or_add(
         self,
         ctx: discord.ApplicationContext,
         data: dict[str, str | int | bool] | None = None,
@@ -217,7 +219,7 @@ class CharacterService:
             data["modified"] = str(time_now())
 
         if not character:
-            user = ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
+            user = await ctx.bot.user_svc.fetch_user(ctx)  # type: ignore [attr-defined] # it really is defined
 
             new_character = Character.create(
                 guild_id=ctx.guild.id,

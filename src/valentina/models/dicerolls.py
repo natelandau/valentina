@@ -60,7 +60,6 @@ class DiceRoll:
         difficulty: int = 6,
         dice_size: int = 10,
         character: Character = None,
-        log_roll: bool = True,
     ) -> None:
         """A container class that determines the result of a roll.
 
@@ -70,11 +69,9 @@ class DiceRoll:
             difficulty (int, optional): The difficulty of the roll. Defaults to 6.
             pool (int): The pool's total size, including hunger
             character (Character, optional): The character to log the roll for. Defaults to None.
-            log_roll (bool, optional): Whether to log the roll to the database. Defaults to True.
         """
         self.ctx = ctx
         self.character = character
-        self.log_roll = log_roll
 
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
@@ -103,10 +100,6 @@ class DiceRoll:
         self._result: int = None
         self._result_type: RollResultType = None
 
-        # Log the roll to the database
-        if self.log_roll:
-            self._log_roll()
-
     def _calculate_result(self) -> RollResultType:
         if self.dice_type != DiceType.D10:
             return RollResultType.OTHER
@@ -122,10 +115,10 @@ class DiceRoll:
 
         return RollResultType.SUCCESS
 
-    def _log_roll(self) -> None:
+    async def log_roll(self) -> None:
         """Log the roll to the database."""
         # Ensure the user in the database to avoid foreign key errors
-        user = self.ctx.bot.user_svc.fetch_user(self.ctx)  # type: ignore [attr-defined]
+        user = await self.ctx.bot.user_svc.fetch_user(self.ctx)  # type: ignore [attr-defined]
 
         # Log the roll to the database
         if self.dice_type == DiceType.D10:

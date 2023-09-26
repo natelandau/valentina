@@ -2,7 +2,7 @@
 """Tests for the dicerolls module."""
 import pytest
 
-from valentina.models.db_tables import Guild, RollStatistic, User
+from valentina.models.db_tables import Guild, GuildUser, RollStatistic
 from valentina.models.dicerolls import DiceRoll, RollResultType
 from valentina.utils import errors
 
@@ -11,13 +11,14 @@ from valentina.utils import errors
 class TestDiceRolls:
     """Test Dice Rolling."""
 
-    def test_log_roll_to_db(self, mock_ctx, mocker):
+    @pytest.mark.asyncio()
+    async def test_log_roll_to_db(self, mock_ctx, mocker):
         """Test diceroll logging."""
         # SETUP the test with mock objects
         # Create a mock user object
-        mock_user = User.get_by_id(1)
+        mock_user = GuildUser.get_by_id(1)
         mock_bot = mocker.MagicMock()
-        mock_bot.user_svc.fetch_user = mocker.MagicMock(return_value=mock_user)
+        mock_bot.user_svc.fetch_user = mocker.AsyncMock(return_value=mock_user)
 
         # create a mock guild object
         mock_guild_object = Guild.get_by_id(1)
@@ -32,20 +33,22 @@ class TestDiceRolls:
         # GIVEN a number of logged rolls in the database
         num_logged_rolls = RollStatistic().select().count()
 
-        # WHEN the diceroll is rolled with log_roll set to False and the size of dice is 10
-        DiceRoll(mock_ctx, pool=3, dice_size=10, difficulty=6, log_roll=False)
+        # WHEN the diceroll is rolled without calling log_roll and the size of dice is 10
+        DiceRoll(mock_ctx, pool=3, dice_size=10, difficulty=6)
 
         # THEN assert that the diceroll is not logged
         assert RollStatistic().select().count() == num_logged_rolls
 
         # WHEN the diceroll is rolled with log_roll set to True and the size of dice is not 10
-        DiceRoll(mock_ctx_local, pool=3, dice_size=6, difficulty=6, log_roll=True)
+        roll = DiceRoll(mock_ctx_local, pool=3, dice_size=6, difficulty=6)
+        await roll.log_roll()
 
         # THEN assert that the diceroll is not logged
         assert RollStatistic().select().count() == num_logged_rolls
 
         # WHEN the diceroll is rolled with log_roll set to True and the size of dice is 10
-        DiceRoll(mock_ctx_local, pool=3, dice_size=10, difficulty=6, log_roll=True)
+        roll = DiceRoll(mock_ctx_local, pool=3, dice_size=10, difficulty=6)
+        await roll.log_roll()
 
         # THEN assert that the diceroll is logged
         assert RollStatistic().select().count() == num_logged_rolls + 1
@@ -94,7 +97,7 @@ class TestDiceRolls:
         THEN assert that the correct number of dice are rolled with the correct dice type.
         """
         for _ in range(100):
-            roll = DiceRoll(mock_ctx, pool, dice_size=dice_size, difficulty=1, log_roll=False)
+            roll = DiceRoll(mock_ctx, pool, dice_size=dice_size, difficulty=1)
             assert len(roll.roll) == pool
             assert all(1 <= die <= dice_size for die in roll.roll)
 
@@ -144,7 +147,7 @@ class TestDiceRolls:
         """
         mocker.patch.object(DiceRoll, "roll", roll)
 
-        roll = DiceRoll(mock_ctx, pool=3, difficulty=6, log_roll=False)
+        roll = DiceRoll(mock_ctx, pool=3, difficulty=6)
         assert roll.botches == botches
         assert roll.criticals == criticals
         assert roll.failures == failures
@@ -152,13 +155,14 @@ class TestDiceRolls:
         assert roll.result == result
         assert roll.result_type == result_type
 
-    def test_not_d10(self, mocker):
+    @pytest.mark.asyncio()
+    async def test_not_d10(self, mocker):
         """Ensure that customizations for non-d10 dice are applied correctly."""
         # SETUP the test with mock objects
         # Create a mock user object
-        mock_user = User.get_by_id(1)
+        mock_user = GuildUser.get_by_id(1)
         mock_bot = mocker.MagicMock()
-        mock_bot.user_svc.fetch_user = mocker.MagicMock(return_value=mock_user)
+        mock_bot.user_svc.fetch_user = mocker.AsyncMock(return_value=mock_user)
 
         # create a mock guild object
         mock_guild_object = Guild.get_by_id(1)
@@ -171,5 +175,6 @@ class TestDiceRolls:
         mock_ctx_local.guild = mock_guild
 
         # GIVEN a roll with a non-d10 dice
-        roll = DiceRoll(mock_ctx_local, pool=3, dice_size=6, difficulty=6, log_roll=True)
+        roll = DiceRoll(mock_ctx_local, pool=3, dice_size=6, difficulty=6)
+        await roll.log_roll()
         assert roll.result_type == RollResultType.OTHER

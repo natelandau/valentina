@@ -135,9 +135,8 @@ class PermissionsEditXP(Enum):
     """Permissions for adding xp to a character."""
 
     UNRESTRICTED = 0
-    WITHIN_24_HOURS = 1  # Default
-    CHARACTER_OWNER_ONLY = 2
-    STORYTELLER_ONLY = 3
+    PLAYER_ONLY = 1  # Default
+    STORYTELLER_ONLY = 2
 
 
 class PermissionManageCampaign(Enum):
@@ -260,20 +259,18 @@ CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, Chann
     ),
 }
 
-### Data Default Values ###
+### Database Data Default Values ###
 CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
     "is_alive": True,
     "auspice": None,
     "bio": None,
     "breed": None,
-    "cool_points_total": 0,
+    "concept": None,
     "date_of_birth": None,
     "debug_character": False,
     "demeanor": None,
     "developer_character": False,
     "essence": None,
-    "experience_total": 0,
-    "experience": 0,
     "first_name": None,
     "generation": None,
     "is_active": False,
@@ -293,10 +290,15 @@ GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
     "changelog_channel_id": None,
     "error_log_channel_id": None,
     "permissions_edit_trait": PermissionsEditTrait.WITHIN_24_HOURS.value,
+    "permissions_edit_xp": PermissionsEditXP.PLAYER_ONLY.value,
     "permissions_kill_character": PermissionsKillCharacter.CHARACTER_OWNER_ONLY.value,
-    "permissions_edit_xp": PermissionsEditXP.WITHIN_24_HOURS.value,
     "permissions_manage_campaigns": PermissionManageCampaign.STORYTELLER_ONLY.value,
     "storyteller_channel_id": None,
+}
+
+GUILDUSER_DEFAULTS: dict[str, int | bool | None | str] = {
+    "lifetime_experience": 0,
+    "lifetime_cool_points": 0,
 }
 
 ### More Constants ###

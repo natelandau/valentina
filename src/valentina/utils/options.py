@@ -115,7 +115,7 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[str]:
     bot = cast(Valentina, ctx.bot)
     # Fetch the active character
     try:
-        character = bot.user_svc.fetch_active_character(ctx)
+        character = await bot.user_svc.fetch_active_character(ctx)
     except errors.NoActiveCharacterError:
         return ["No active character"]
 
@@ -146,7 +146,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     bot = cast(Valentina, ctx.bot)
     # Fetch the active character
     try:
-        character = bot.user_svc.fetch_active_character(ctx)
+        character = await bot.user_svc.fetch_active_character(ctx)
     except errors.NoActiveCharacterError:
         return ["No active character"]
 
@@ -197,7 +197,7 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
     bot = cast(Valentina, ctx.bot)
     try:
         # Fetch active character
-        character = bot.user_svc.fetch_active_character(ctx)
+        character = await bot.user_svc.fetch_active_character(ctx)
     except errors.NoActiveCharacterError:
         # Return descriptive OptionChoice in case of absence
         return [OptionChoice("No active character", "")]
@@ -241,7 +241,7 @@ async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
     bot = cast(Valentina, ctx.bot)
     # Attempt to fetch the active character
     try:
-        character = bot.user_svc.fetch_active_character(ctx)
+        character = await bot.user_svc.fetch_active_character(ctx)
     except errors.NoActiveCharacterError:
         return ["No active character"]
 
@@ -308,16 +308,18 @@ async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
         list[OptionChoice]: A list of OptionChoice objects to populate the select list.
     """
     bot = cast(Valentina, ctx.bot)
+    user = await bot.user_svc.fetch_user(ctx)
+
     # Filter macros based on user input
     filtered_macros = [
         macro
-        for macro in bot.macro_svc.fetch_macros(ctx.interaction.guild.id, ctx.interaction.user.id)
-        if macro.name.lower().startswith(ctx.options["macro"].lower())
+        for macro in bot.macro_svc.fetch_macros(user)
+        if macro.abbreviation.lower().startswith(ctx.options["macro"].lower())
     ]
 
     # Create OptionChoice objects
     options = [
-        OptionChoice(f"{macro.name} {macro.abbreviation}", str(macro.id))
+        OptionChoice(f"{macro.abbreviation} ({macro.name})", str(macro.id))
         for macro in filtered_macros
     ]
 
@@ -405,7 +407,7 @@ async def select_player_character(ctx: discord.AutocompleteContext) -> list[Opti
             f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
             character.id,
         )
-        for character in bot.user_svc.fetch_player_characters(ctx)
+        for character in await bot.user_svc.fetch_player_characters(ctx)
     ]
 
     # Perform case-insensitive search
@@ -522,9 +524,9 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
 
     all_chars = [
         (
-            f"{character.name} [@{character.owned_by.username}]"
+            f"{character.name} [@{character.owned_by.data['display_name']}]"
             if character.is_alive
-            else f"{Emoji.DEAD.value} {character.name} [@{character.owned_by.username}]",
+            else f"{Emoji.DEAD.value} {character.name} [@{character.owned_by.data['display_name']}]",
             character.id,
         )
         for character in bot.char_svc.fetch_all_player_characters(ctx)
@@ -548,10 +550,10 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     return options if options else [OptionChoice("No characters available", "")]
 
 
-async def select_storyteller_trait(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available traits for a storyteller character.
 
-    This function fetches all common and custom traits from the database, filters them based on the user's input, and returns a list of trait names to populate the autocomplete list.
+    This function takes a character id defined in a previous discord command option, and fetches all the common and custom traits available for that character to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
@@ -574,7 +576,7 @@ async def select_storyteller_trait(ctx: discord.AutocompleteContext) -> list[str
     return options if options else ["No traits"]
 
 
-async def select_storyteller_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) -> list[str]:
     """Generate a list of available traits for a storyteller character.
 
     This function fetches all common and custom traits from the database, filters them based on the user's input, and returns a list of trait names to populate the autocomplete list.

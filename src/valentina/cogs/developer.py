@@ -15,7 +15,12 @@ from peewee import fn
 
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import Character, CharacterClass, RollProbability, VampireClan
+from valentina.models.db_tables import (
+    Character,
+    CharacterClass,
+    RollProbability,
+    VampireClan,
+)
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharacterClass
 from valentina.utils.helpers import fetch_random_name
@@ -34,7 +39,7 @@ class Developer(commands.Cog):
     """Valentina developer commands. Beware, these can be destructive."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     ### BOT ADMINISTRATION COMMANDS ################################################################
 
@@ -164,7 +169,7 @@ class Developer(commands.Cog):
         if not is_confirmed:
             return
 
-        self.bot.user_svc.fetch_user(ctx)  # Instantiate the user in the database if needed
+        await self.bot.user_svc.update_or_add(ctx)  # Instantiate the user in the database if needed
 
         for _ in range(number):
             # Assign a random class unless specified
@@ -188,7 +193,7 @@ class Developer(commands.Cog):
                 "player_character": True,
             }
 
-            character = self.bot.char_svc.update_or_add(
+            character = await self.bot.char_svc.update_or_add(
                 ctx,
                 char_class=char_class,
                 clan=vampire_clan,

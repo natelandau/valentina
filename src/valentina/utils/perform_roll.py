@@ -40,6 +40,7 @@ async def perform_roll(
         character (Character, optional): The ID of the character to log the roll for. Defaults to None.
     """
     roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size, character=character)
+    await roll.log_roll()
 
     while True:
         view = ReRollButton(ctx.author)
@@ -54,27 +55,28 @@ async def perform_roll(
         ).get_embed()
         await ctx.respond(embed=embed, view=view, ephemeral=hidden)
 
+        # If rolling traits and not from a macro, add some friendly hints
+        if not from_macro and trait_one is not None and trait_two is not None:
+            bot = cast(Valentina, ctx.bot)
+            if macro := bot.macro_svc.fetch_macro_from_traits(ctx, trait_one, trait_two):
+                await ctx.respond(
+                    f"🙋‍♂️ Did you know that you already have a macro for this roll? Save time with `/roll macro {macro.name}`",
+                    ephemeral=True,
+                    delete_after=10,
+                )
+            else:
+                await ctx.respond(
+                    "🙋‍♂️ Did you know that you if you roll these traits often, you can save time by creating a macro? Just run `/macro create`",
+                    ephemeral=True,
+                    delete_after=10,
+                )
+
         # Wait for a re-roll
         await view.wait()
         if view.confirmed:
             roll = DiceRoll(
                 ctx, pool=pool, difficulty=difficulty, dice_size=dice_size, character=character
             )
+            await roll.log_roll()
         else:
             break
-
-    # If rolling traits and not from a macro, add some friendly hints
-    if not from_macro and trait_one is not None and trait_two is not None:
-        bot = cast(Valentina, ctx.bot)
-        if macro := bot.macro_svc.fetch_macro_from_traits(ctx, trait_one, trait_two):
-            await ctx.respond(
-                f"🙋‍♂️ Did you know that you already have a macro for this roll? Save time with `/roll macro {macro.name}`",
-                ephemeral=True,
-                delete_after=10,
-            )
-        else:
-            await ctx.respond(
-                "🙋‍♂️ Did you know that you if you roll these traits often, you can save time by creating a macro? Just run `/macro create`",
-                ephemeral=True,
-                delete_after=10,
-            )

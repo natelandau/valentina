@@ -39,7 +39,7 @@ class Valentina(commands.Bot):
         self.char_svc = CharacterService()
         self.campaign_svc = CampaignService()
         self.trait_svc = TraitService()
-        self.user_svc = UserService()
+        self.user_svc = UserService(bot=self)
         self.macro_svc = MacroService()
         self.aws_svc = AWSService(
             aws_access_key_id=self.config.get("VALENTINA_AWS_ACCESS_KEY_ID", False),
@@ -93,6 +93,9 @@ class Valentina(commands.Bot):
                 # Add guild to database
                 logger.debug("CONNECT: Update guild in database")
                 self.guild_svc.update_or_add(guild=guild)
+
+                # Update all existing users in the guild
+                await self.guild_svc.update_guild_users(guild=guild)
 
                 # Send welcome message
                 await self.guild_svc.post_changelog(guild=guild, bot=self)

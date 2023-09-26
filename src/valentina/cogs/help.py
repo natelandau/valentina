@@ -15,7 +15,7 @@ class Help(commands.Cog):
     """Commands for help."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     def __build_command_list(self, ctx: discord.ApplicationContext) -> list:
         """Build a list of commands for the help command."""
@@ -137,7 +137,7 @@ class Help(commands.Cog):
             )
 
     @help.command(name="user_guide", description="A guide on how to use Valentina Noir")
-    async def readme(
+    async def user_guide(
         self,
         ctx: discord.ApplicationContext,
         hidden: Option(

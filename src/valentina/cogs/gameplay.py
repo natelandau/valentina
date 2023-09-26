@@ -19,7 +19,7 @@ class Roll(commands.Cog):
     """Commands used during gameplay."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     roll = discord.SlashCommandGroup("roll", "Roll dice")
 
@@ -46,7 +46,7 @@ class Roll(commands.Cog):
         """
         # Grab the player's active character for statistic logging purposes
         try:
-            character = self.bot.user_svc.fetch_active_character(ctx)
+            character = await self.bot.user_svc.fetch_active_character(ctx)
         except errors.NoActiveCharacterError:
             character = None
 
@@ -107,7 +107,7 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
         trait_one_value = character.get_trait_value(trait_one)
         trait_two_value = character.get_trait_value(trait_two)
 
@@ -163,7 +163,7 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll a macro."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         traits = self.bot.macro_svc.fetch_macro_traits(macro)
         trait_one = traits[0]
@@ -214,7 +214,7 @@ class Roll(commands.Cog):
         if not is_confirmed:
             return
 
-        self.bot.guild_svc.add_roll_result_thumb(ctx, roll_type, url)
+        await self.bot.guild_svc.add_roll_result_thumb(ctx, roll_type, url)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg

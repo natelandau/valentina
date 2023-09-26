@@ -28,6 +28,13 @@ class TestGuildService:
 
     guild_svc = GuildService(bot=local_mock_bot)
 
+    def _clear_tests(self):
+        """Clear the database and guild service to prepare for testing."""
+        for guild in Guild.select():
+            guild.delete_instance(recursive=True, delete_nullable=True)
+
+        self.guild_svc.purge_cache()
+
     def test_update_or_add(self, mocker):
         """Test GuildService.update_or_add()."""
         # GIVEN a guild that is not in the database and items in the cache

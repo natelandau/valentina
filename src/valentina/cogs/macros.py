@@ -20,7 +20,7 @@ class Macro(commands.Cog):
     """Manage macros for quick rolls."""
 
     def __init__(self, bot: Valentina) -> None:
-        self.bot = bot
+        self.bot: Valentina = bot
 
     macro = discord.SlashCommandGroup("macro", "Create & manage macros for quick rolling traits")
 
@@ -54,7 +54,7 @@ class Macro(commands.Cog):
             trait_two (Option[ValidTraitOrCustomTrait]): The second trait to roll.
             hidden (Option[bool]): Whether to make the result only to you (default true).
         """
-        self.bot.user_svc.fetch_user(ctx)
+        user = await self.bot.user_svc.fetch_user(ctx)
 
         modal = MacroCreateModal(
             title=truncate_string("Enter the details for your macro", 45),
@@ -70,7 +70,9 @@ class Macro(commands.Cog):
         abbreviation = modal.abbreviation.strip() if modal.abbreviation else None
         description = modal.description.strip() if modal.description else None
 
-        self.bot.macro_svc.create_macro(ctx, name, trait_one, trait_two, abbreviation, description)
+        self.bot.macro_svc.create_macro(
+            ctx, user, name, trait_one, trait_two, abbreviation, description
+        )
 
         await self.bot.guild_svc.send_to_audit_log(
             ctx, f"Create macro: `{name}`(`{trait_one.name}` + `{trait_two.name}`)"
@@ -99,13 +101,14 @@ class Macro(commands.Cog):
         ),
     ) -> None:
         """List all macros associated with a user account."""
-        macros = self.bot.macro_svc.fetch_macros(ctx.guild.id, ctx.author.id)
+        user = await self.bot.user_svc.fetch_user(ctx)
+        macros = self.bot.macro_svc.fetch_macros(user)
 
         if len(macros) > 0:
             fields = [
                 (
                     f"{macro.name} ({macro.abbreviation}): `{trait_one.name}` + `{trait_two.name}`",
-                    f"{macro.description}",
+                    f"{macro.description}" if macro.description else "",
                 )
                 for macro in macros
                 for trait_one, trait_two in [self.bot.macro_svc.fetch_macro_traits(macro)]
@@ -145,7 +148,7 @@ class Macro(commands.Cog):
         ),
     ) -> None:
         """Delete a macro from a user."""
-        title = "Delete macro `{macro.name}`"
+        title = f"Delete macro `{macro.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(
             ctx, title, hidden=hidden, footer="This action is irreversible."
         )

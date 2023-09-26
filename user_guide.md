@@ -1,20 +1,20 @@
-# Welcome to the Valentina Noir Guide!
+# Valentina Noir User Guide
 
-This guide will help you understand and use Valentina Noir, a tool that manages characters and gameplay for a highly customized version of Vampire the Masquerade. Here's what you'll find inside:
+This guide will help you understand and use Valentina Noir, a bot that manages characters and gameplay for a highly customized version of Vampire the Masquerade. Here's what you'll find inside:
 
-1. Introduction
-2. Core Concepts
-3. Character Creation & Management
-4. Gameplay
-5. Campaigns
-6. Storyteller Features
-7. Other Features
-8. Roles in Valentina Noir
-9. Troubleshooting & FAQ
+1. **Introduction**
+2. **Core Concepts**
+3. **Character Creation & Management**
+4. **Gameplay**
+5. **Campaigns**
+6. **Storyteller Features**
+7. **Other Features**
+8. **Roles in Valentina Noir**
+9. **Troubleshooting & FAQ**
 
 ## 1. INTRODUCTION
 
-Valentina Noir assists in managing role-playing sessions, providing easy access to character stats and dice rolling. The major differences from the published Vampire the Masquerade game include:
+Valentina Noir assists in managing role-playing sessions, providing easy access to character stats and dice rolling. Valentina's rules are highly customized. The major differences from the published Vampire the Masquerade game include:
 
 -   **Dice Rolling:** Dice are rolled as a pool of D10s with a set difficulty. The number of successes determines the outcome:
     -   `< 0` successes: Botch
@@ -23,6 +23,7 @@ Valentina Noir assists in managing role-playing sessions, providing easy access 
     -   `> dice pool` successes: Critical success
 -   **Special Rolls:** Rolled ones count as -1 success, and rolled tens count as 2 successes.
 -   **Cool Points**: Additional rewards worth 10xp each.
+-   **Experience**: Experience is granted to players for use on any of their characters within a specific campaign.
 
 Valentina uses Discord "slash" commands to manage characters and gameplay. To type any command, type `/` into a the Discord message field.
 
@@ -33,7 +34,7 @@ For interactive help, run `/help commands` to see a list of available commands.
 Valentina Noir revolves around three core concepts:
 
 -   **Characters**: Player characters managed in Valentina allow for quick dice rolling, XP spending, and character updates.
--   **Campaigns**: Storylines with multiple chapters, NPCs, and notes, spanning multiple gaming sessions.
+-   **Campaigns**: Storylines with multiple chapters, characters, NPCs, and notes, spanning multiple gaming sessions.
 -   **Gameplay**: The actual game, where you roll dice and play using your character.
 
 ## 3. CHARACTER CREATION & MANAGEMENT
@@ -54,7 +55,7 @@ In some circumstances, you may want to transfer ownership of a character to anot
 
 -   **Adding new information**: Use `/character add ...` to add new traits, abilities, custom sections, and a biography.
 -   **Updating information**: Use `/character update ...` to update existing traits, abilities, custom sections, and a biography.
--   **Spending XP**: Use `/xp` to spend XP and increase your character's stats.
+-   **Spending XP**: Use `/xp spend` to spend XP and increase your character's stats.
 
 ## 4. GAMEPLAY
 
@@ -97,6 +98,8 @@ Rolling dice is a core part of gameplay. Valentina Noir provides the following c
 -   Add or spend experience points using `/xp`.
 -   Remember to update the chapter of your campaign using `/campaign chapter`.
 
+> NOTE: Valentina treats experience differently than most TTRPGs. Instead of granting XP to a specific character, XP is granted to a player. This allows players to spend XP on any of their characters within a specific campaign.
+
 ## 5. CAMPAIGNS
 
 Campaigns are the backbone of your role-playing adventure in Valentina Noir. They span across multiple gaming sessions and help in organizing the story, keeping track of characters and events, and providing a cohesive narrative structure. Regularly updating chapters and making use of NPCs and notes ensures that information is not lost in between gaming sessions.
@@ -124,8 +127,6 @@ Storytellers have access to many features that help in managing the game. These 
 -   **NPCs**: Storytellers can create NPCs and then quickly roll dice for their traits
     -   `/storyteller create_story_char` to create an NPC with full control over trait values
     -   `/storyteller create_rng_char` to quickly create an NPC with randomized trait values
--   **Grant Characters XP**: Use `/storyteller grant_xp` to grant XP to a player character.
--   **Grant Characters Cool Points**: Use `/storyteller grant_cp` to grant cool points to a player character.
 -   **Transfer Characters**: Use `/storyteller transfer_character` to transfer a character from one user to another.
 
 ## 7. OTHER FEATURES

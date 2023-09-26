@@ -10,11 +10,9 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import (
-    COOL_POINT_VALUE,
     VALID_IMAGE_EXTENSIONS,
     EmbedColor,
     Emoji,
-    XPMultiplier,
 )
 from valentina.models.bot import Valentina
 from valentina.utils import errors
@@ -31,11 +29,7 @@ from valentina.utils.converters import (
     ValidYYYYMMDD,
 )
 from valentina.utils.helpers import (
-    fetch_clan_disciplines,
     fetch_data_from_url,
-    get_max_trait_value,
-    get_trait_multiplier,
-    get_trait_new_value,
     truncate_string,
 )
 from valentina.utils.options import (
@@ -74,7 +68,6 @@ class Characters(commands.Cog, name="Character"):
     profile = chars.create_subgroup("profile", "Nature, Demeanor, DOB, and other profile traits")
     section = chars.create_subgroup("section", "Work with character custom sections")
     trait = chars.create_subgroup("trait", "Work with character traits")
-    xp = chars.create_subgroup("xp", "Add or spend xp")
 
     @chars.command(name="create", description="Create a new character")
     async def create_character(
@@ -110,7 +103,7 @@ class Characters(commands.Cog, name="Character"):
             vampire_clan (VampireClan, optional): The character's vampire clan. Defaults to None.
         """
         # Ensure the user is in the database
-        self.bot.user_svc.fetch_user(ctx)
+        await self.bot.user_svc.update_or_add(ctx)
 
         # Require a clan for vampires
         if char_class.name.lower() == "vampire" and not vampire_clan:
@@ -145,11 +138,11 @@ class Characters(commands.Cog, name="Character"):
 
         # Make character active if user does not have an active character
         try:
-            self.bot.user_svc.fetch_active_character(ctx)
+            await self.bot.user_svc.fetch_active_character(ctx)
         except errors.NoActiveCharacterError:
             data["is_active"] = True
 
-        character = self.bot.char_svc.update_or_add(
+        character = await self.bot.char_svc.update_or_add(
             ctx, data=data, char_class=char_class, clan=vampire_clan
         )
 
@@ -189,9 +182,8 @@ class Characters(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        self.bot.user_svc.set_active_character(ctx, character)
+        await self.bot.user_svc.set_active_character(ctx, character)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg
 
     @chars.command(name="sheet", description="View a character sheet")
@@ -234,7 +226,8 @@ class Characters(commands.Cog, name="Character"):
             characters = self.bot.char_svc.fetch_all_player_characters(ctx)
             title_prefix = "All player"
         elif scope == "mine":
-            characters = self.bot.char_svc.fetch_all_player_characters(ctx, owned_by=ctx.author)
+            user = await self.bot.user_svc.fetch_user(ctx)
+            characters = self.bot.char_svc.fetch_all_player_characters(ctx, owned_by=user)
             title_prefix = "Your"
 
         if len(characters) == 0:
@@ -256,7 +249,7 @@ class Characters(commands.Cog, name="Character"):
             text += f"**{character.name}**\n"
             text += "```\n"
             text += f"Class: {character.char_class.name:<20}  Created On: {character.created.split(' ')[0]}\n"
-            text += f"Owner: {self.bot.get_user(character.owned_by.id).display_name:<20} Lifetime XP: {character.data['experience']}\n"
+            text += f"Owner: {character.owned_by.data['display_name']:<20} Lifetime XP: {character.data['experience']}\n"
             text += f"Alive: {alive:<20}  Active: {character.is_active}\n"
             text += "```\n"
 
@@ -286,7 +279,7 @@ class Characters(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
+        await self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg
@@ -325,189 +318,7 @@ class Characters(commands.Cog, name="Character"):
             return
 
         updates: dict[str, str | int | bool] = {"is_active": False, "is_alive": False}
-        self.bot.char_svc.update_or_add(ctx, character=character, data=updates)
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await confirmation_response_msg
-
-    ### XP COMMANDS ####################################################################
-
-    @xp.command(name="spend", description="Spend experience points to upgrade a trait")
-    async def spend_xp(
-        self,
-        ctx: discord.ApplicationContext,
-        trait: Option(
-            ValidCharTrait,
-            description="Trait to raise with xp",
-            required=True,
-            autocomplete=select_char_trait,
-        ),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default false).",
-            default=False,
-        ),
-    ) -> None:
-        """Spend experience points."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-        old_value = character.get_trait_value(trait)
-        category = trait.category.name
-
-        # Compute the cost of the upgrade
-        if character.char_class.name == "Vampire" and trait.name in fetch_clan_disciplines(
-            character.clan_name
-        ):
-            multiplier = XPMultiplier.CLAN_DISCIPLINE.value
-        else:
-            multiplier = get_trait_multiplier(trait.name, category)
-
-        if old_value > 0:
-            upgrade_cost = (old_value + 1) * multiplier
-
-        if old_value == 0:
-            upgrade_cost = get_trait_new_value(trait.name, category)
-
-        if old_value >= get_max_trait_value(trait.name, category):
-            await present_embed(
-                ctx,
-                title=f"Error: {trait.name} at max value",
-                description=f"**{trait.name}** is already at max value of `{old_value}`",
-                level="error",
-                ephemeral=True,
-            )
-            return
-
-        # Compute if the character has enough xp to upgrade
-        current_xp = character.data.get("experience", 0)
-        remaining_xp = current_xp - upgrade_cost
-        new_value = old_value + 1
-        new_experience = character.data["experience"] - upgrade_cost
-
-        if remaining_xp < 0:
-            await present_embed(
-                ctx,
-                title="Error: Not enough XP",
-                description=f"**{trait.name}** upgrade cost is `{upgrade_cost}` xp.  You only have `{current_xp}` xp.",
-                level="error",
-                ephemeral=True,
-            )
-            return
-
-        title = f"Upgrade `{trait.name}` from `{old_value}` {p.plural_noun('dot', old_value)} to `{new_value}` {p.plural_noun('dot', new_value)} for `{upgrade_cost}` xp"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
-        if not is_confirmed:
-            return
-
-        character.set_trait_value(trait, new_value)
-        self.bot.char_svc.update_or_add(
-            ctx,
-            character=character,
-            data={"experience": new_experience},
-        )
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await confirmation_response_msg
-
-    @xp.command(name="add", description="Add experience to a character")
-    async def add_xp(
-        self,
-        ctx: discord.ApplicationContext,
-        xp: Option(int, description="The amount of experience to add", required=True),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default false).",
-            default=False,
-        ),
-    ) -> None:
-        """Add experience to a character."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-
-        if not self.bot.user_svc.can_update_xp(ctx, character):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to add experience on this character\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
-            return
-
-        current_xp = character.data.get("experience", 0)
-        current_total = character.data.get("experience_total", 0)
-        new_xp = current_xp + xp
-        new_total = current_total + xp
-
-        title = f"Add `{xp}` xp to `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not is_confirmed:
-            return
-
-        self.bot.char_svc.update_or_add(
-            ctx,
-            character=character,
-            data={
-                "experience": new_xp,
-                "experience_total": new_total,
-            },
-        )
-
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
-        await confirmation_response_msg
-
-    @xp.command(name="add_cp", description="Add cool points to a character")
-    async def add_cool_points(
-        self,
-        ctx: discord.ApplicationContext,
-        cp: Option(int, description="The number of cool points to add", required=True),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default false).",
-            default=False,
-        ),
-    ) -> None:
-        """Add cool points to a character."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
-
-        if not self.bot.user_svc.can_update_xp(ctx, character):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to add cool points on this character\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
-            return
-
-        current_cp = character.data.get("cool_points_total", 0)
-        current_xp = character.data.get("experience", 0)
-        current_xp_total = character.data.get("experience_total", 0)
-
-        xp_amount = cp * COOL_POINT_VALUE
-
-        new_xp = current_xp + xp_amount
-        new_xp_total = current_xp_total + xp_amount
-        new_cp_total = current_cp + cp
-
-        title = (
-            f"Add `{cp}` cool {p.plural_noun('point', cp)} ({xp_amount} xp) to `{character.name}`"
-        )
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
-
-        if not is_confirmed:
-            return
-
-        self.bot.char_svc.update_or_add(
-            ctx,
-            character=character,
-            data={
-                "cool_points_total": new_cp_total,
-                "experience": new_xp,
-                "experience_total": new_xp_total,
-            },
-        )
+        await self.bot.char_svc.update_or_add(ctx, character=character, data=updates)
 
         await self.bot.guild_svc.send_to_audit_log(ctx, title)
         await confirmation_response_msg
@@ -561,7 +372,7 @@ class Characters(commands.Cog, name="Character"):
                 return
 
         # Fetch active character
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         # Upload the image to S3
         # We upload the image prior to the confirmation step to allow us to display the image to the user.  If the user cancels the confirmation, we must delete the image from S3.
@@ -571,7 +382,7 @@ class Characters(commands.Cog, name="Character"):
         data = await file.read() if file else await fetch_data_from_url(url)
 
         # Add image to character
-        image_key = self.bot.char_svc.add_character_image(ctx, character, extension, data)
+        image_key = await self.bot.char_svc.add_character_image(ctx, character, extension, data)
         image_url = self.bot.aws_svc.get_url(image_key)
 
         title = f"Add image to `{character.name}`"
@@ -579,7 +390,7 @@ class Characters(commands.Cog, name="Character"):
             ctx, title, hidden=hidden, image=image_url
         )
         if not is_confirmed:
-            self.bot.char_svc.delete_character_image(ctx, character, image_key)
+            await self.bot.char_svc.delete_character_image(ctx, character, image_key)
             return
 
         # Update audit log and original response
@@ -608,7 +419,7 @@ class Characters(commands.Cog, name="Character"):
             None
         """
         # Fetch the active character for the user
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         # Generate the key prefix for the character's images
         key_prefix = self.bot.aws_svc.get_key_prefix(
@@ -648,7 +459,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom trait to a character."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
@@ -686,7 +497,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update the value of a trait."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         if not self.bot.user_svc.can_update_traits(ctx, character):
             await present_embed(
@@ -731,7 +542,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Delete custom trait `{trait.name}` from `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
@@ -757,7 +568,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom section to the character sheet."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         modal = CustomSectionModal(
             title=truncate_string(f"Custom section for {character.full_name}", 45)
@@ -807,7 +618,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a custom section."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         modal = CustomSectionModal(
             section_title=custom_section.title,
@@ -855,7 +666,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         title = f"Delete section `{custom_section.title}` from `{character.full_name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
@@ -879,7 +690,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's bio."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         modal = BioModal(
             title=truncate_string(f"Enter the biography for {character.full_name}", 45),
@@ -889,7 +700,7 @@ class Characters(commands.Cog, name="Character"):
         await modal.wait()
         biography = modal.bio.strip()
 
-        self.bot.char_svc.update_or_add(ctx, character=character, data={"bio": biography})
+        await self.bot.char_svc.update_or_add(ctx, character=character, data={"bio": biography})
 
         await self.bot.guild_svc.send_to_audit_log(ctx, f"Update biography for `{character.name}`")
 
@@ -915,9 +726,9 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Set the DOB of a character."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
-        self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
+        await self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
 
         await self.bot.guild_svc.send_to_audit_log(
             ctx, f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`"
@@ -941,7 +752,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
-        character = self.bot.user_svc.fetch_active_character(ctx)
+        character = await self.bot.user_svc.fetch_active_character(ctx)
 
         modal = ProfileModal(
             title=truncate_string(f"Profile for {character}", 45), character=character
@@ -954,7 +765,7 @@ class Characters(commands.Cog, name="Character"):
                 if v:
                     update_data[k] = v
 
-            self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
+            await self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
 
             await self.bot.guild_svc.send_to_audit_log(
                 ctx, f"Update profile for `{character.name}`"

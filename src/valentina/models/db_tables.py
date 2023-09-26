@@ -19,7 +19,7 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
-from valentina.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS
+from valentina.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS, GUILDUSER_DEFAULTS
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
@@ -108,21 +108,56 @@ class Guild(BaseModel):
         table_name = "guilds"
 
 
-class User(BaseModel):
-    """User model for the database."""
+class GuildUser(BaseModel):
+    """Table for storing information specific to users on a guild."""
 
-    id = IntegerField(primary_key=True)  # noqa: A003
-    username = TextField(null=True)
-    name = TextField(null=True)
-    avatar_url = TextField(null=True)
-    first_seen = DateTimeField(default=time_now)
-    mention = TextField(null=True)
-    last_seen = DateTimeField(default=time_now)
+    guild = ForeignKeyField(Guild, backref="users")
+    user = IntegerField()
+    data = JSONField(null=True)
 
-    class Meta:
-        """Meta class for the model."""
+    def __str__(self) -> str:
+        """Return the string representation of the model."""
+        return f"[{self.data['id']}] {self.data['display_name']}"
 
-        table_name = "users"
+    def set_default_data_values(self) -> GuildUser:
+        """Verify that the GuildUser's JSONField defaults are set.  If any keys are missing, they are added to the data column with default values.
+
+        Returns:
+            GuildUser: The GuildUser object with defaults verified and potentially updated.
+        """
+        updated = False
+        default_values = GUILDUSER_DEFAULTS.copy()
+        default_values["modified"] = str(time_now())
+
+        if not self.data:
+            self.data = {}
+
+        # Add default values for any missing keys
+        for default_key, default_value in default_values.items():
+            if default_key not in self.data:
+                self.data[default_key] = default_value
+                updated = True
+
+        # Remove errant keys
+        search_keys: list[str] = []  # Add keys to remove here
+        keys_to_remove = []
+
+        if search_keys:
+            for key in self.data:
+                if key in search_keys:
+                    keys_to_remove.append(key)
+                    updated = True
+
+        if updated:
+            if search_keys:
+                for key in keys_to_remove:
+                    del self.data[key]
+            self.save()
+            logger.info(f"DATABASE: Update defaults for GuildUser: `{self.id}`")
+        else:
+            logger.debug(f"DATABASE: Default values up to date for GuildUser: `{self.id}`")
+
+        return self
 
 
 class CharacterClass(BaseModel):
@@ -219,8 +254,8 @@ class Character(BaseModel):
     # Foreign Keys ###############################
     char_class = ForeignKeyField(CharacterClass, backref="characters")
     guild = ForeignKeyField(Guild, backref="characters")
-    created_by = ForeignKeyField(User, backref="created_characters")
-    owned_by = ForeignKeyField(User, backref="owned_characters", null=True)
+    created_by = ForeignKeyField(GuildUser, backref="created_characters", null=True)
+    owned_by = ForeignKeyField(GuildUser, backref="owned_characters", null=True)
     clan = ForeignKeyField(VampireClan, backref="characters", null=True)
 
     @property
@@ -446,7 +481,7 @@ class Macro(BaseModel):
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     guild = ForeignKeyField(Guild, backref="macros")
-    user = ForeignKeyField(User, backref="macros")
+    user = ForeignKeyField(GuildUser, backref="macros")
 
     def remove(self) -> None:
         """Delete the macro and associated macro traits."""
@@ -573,7 +608,7 @@ class CampaignNote(BaseModel):
 
     campaign = ForeignKeyField(Campaign, backref="notes")
     chapter = ForeignKeyField(CampaignChapter, backref="notes", null=True)
-    user = ForeignKeyField(User, backref="campaign_notes")
+    user = ForeignKeyField(GuildUser, backref="campaign_notes")
     created = DateTimeField(default=time_now)
     modified = DateTimeField(default=time_now)
     name = TextField()
@@ -603,7 +638,8 @@ class RollThumbnail(BaseModel):
     roll_type = TextField()
     created = DateTimeField(default=time_now)
     guild = ForeignKeyField(Guild, backref="roll_thumbnails")
-    user = ForeignKeyField(User, backref="roll_thumbnails")
+    user = ForeignKeyField(GuildUser, backref="roll_thumbnails")
+    data = JSONField(null=True)
 
     class Meta:
         """Meta class for the model."""
@@ -614,13 +650,14 @@ class RollThumbnail(BaseModel):
 class RollStatistic(BaseModel):
     """Track roll results for statistics."""
 
-    user = ForeignKeyField(User, backref="roll_statistics")
+    user = ForeignKeyField(GuildUser, backref="roll_statistics")
     guild = ForeignKeyField(Guild, backref="roll_statistics")
     character = ForeignKeyField(Character, backref="roll_statistics", null=True)
     result = TextField()
     pool = IntegerField()
     difficulty = IntegerField()
     date_rolled = DateTimeField(default=time_now)
+    data = JSONField(null=True)
 
     # TODO: Create these indexes if the query is slow
     """
@@ -647,13 +684,6 @@ class RollProbability(BaseModel):
 
 
 ###### Lookup Tables ######
-
-
-class GuildUser(BaseModel):
-    """Join table for Guild and User."""
-
-    guild = ForeignKeyField(Guild, backref="users")
-    user = ForeignKeyField(User, backref="guilds")
 
 
 class TraitValue(BaseModel):
