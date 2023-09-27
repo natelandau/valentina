@@ -44,7 +44,7 @@ def __storyteller_attributes(
     attribute_adjustment = attribute_adjustment_map.get(level, 0)
 
     # Attributes
-    attribute_values = {"primary": [3, 2, 2], "secondary": [2, 2, 1], "tertiary": [1, 1, 1]}
+    attribute_values = {"primary": [4, 3, 3], "secondary": [3, 3, 2], "tertiary": [1, 2, 3]}
 
     while len(attributes) > 0:
         cat: str = random.choice([x for x in attributes])

@@ -347,6 +347,10 @@ def mock_ctx4(mocker):
 @pytest.fixture()
 def mock_autocomplete_ctx1(mocker, mock_member, mock_guild1):
     """Create a mock autocomplete context object with user 1."""
+    mock_bot = mocker.MagicMock()
+    mock_bot.user_svc.update_or_add = MagicMock(return_value=mock_member)
+    mock_bot.__class__ = commands.Bot
+
     mock_interaction = mocker.MagicMock()
     mock_interaction.guild = mock_guild1
     mock_interaction.user = mock_member
@@ -354,7 +358,8 @@ def mock_autocomplete_ctx1(mocker, mock_member, mock_guild1):
     # Mock the ctx object
     mock_ctx = mocker.MagicMock()
     mock_ctx.interaction = mock_interaction
-
+    mock_ctx.options = {}
+    mock_ctx.bot = mock_bot
     mock_ctx.__class__ = discord.AutocompleteContext
 
     return mock_ctx
