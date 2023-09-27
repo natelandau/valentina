@@ -245,7 +245,7 @@ class Characters(commands.Cog, name="Character"):
             text += f"**{character.name}**\n"
             text += "```\n"
             text += f"Class: {character.char_class.name:<20}  Created On: {character.created.split(' ')[0]}\n"
-            text += f"Alive: {alive:<20} Active: {character.is_active}\n"
+            text += f"Alive: {alive:<20} Active: {bool(character.is_active)}\n"
             text += f"Owner: {character.owned_by.data['display_name']:<20}\n"
             text += "```\n"
 

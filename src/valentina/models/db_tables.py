@@ -119,6 +119,103 @@ class GuildUser(BaseModel):
         """Return the string representation of the model."""
         return f"[{self.data['id']}] {self.data['display_name']}"
 
+    def fetch_experience(self, campaign_id: int) -> tuple[int, int, int, int, int]:
+        """Fetch the experience for a user for a specific campaign.
+
+        Args:
+            campaign_id (int): The campaign ID to fetch experience for.
+
+        Returns:
+            tuple[int, int, int, int, int]: The campaign experience, campaign total experience, lifetime experience, campaign total cool points, and lifetime cool points.
+        """
+        campaign_xp = self.data.get(f"{campaign_id}_experience", 0)
+        campaign_total_xp = self.data.get(f"{campaign_id}_total_experience", 0)
+        campaign_total_cp = self.data.get(f"{campaign_id}_total_cool_points", 0)
+        lifetime_xp = self.data.get("lifetime_experience", 0)
+        lifetime_cp = self.data.get("lifetime_cool_points", 0)
+
+        return campaign_xp, campaign_total_xp, lifetime_xp, campaign_total_cp, lifetime_cp
+
+    def add_experience(self, campaign_id: int, amount: int) -> tuple[int, int, int]:
+        """Set the experience for a user for a specific campaign.
+
+        Args:
+            campaign_id (int): The campaign ID to set experience for.
+            amount (int): The amount of experience to set.
+
+        Returns:
+            tuple[int, int, int]: The campaign experience, campaign total experience, and lifetime experience.
+        """
+        (
+            campaign_xp,
+            campaign_total_xp,
+            lifetime_xp,
+            _,
+            _,
+        ) = self.fetch_experience(campaign_id)
+
+        new_xp = self.data[f"{campaign_id}_experience"] = campaign_xp + amount
+        new_total = self.data[f"{campaign_id}_total_experience"] = campaign_total_xp + amount
+        new_lifetime_total = self.data["lifetime_experience"] = lifetime_xp + amount
+
+        self.save()
+
+        return new_xp, new_total, new_lifetime_total
+
+    def add_cool_points(self, campaign_id: int, amount: int) -> tuple[int, int]:
+        """Set the cool points for a user for a specific campaign.
+
+        Args:
+            campaign_id (int): The campaign ID to set cool points for.
+            amount (int): The amount of cool points to set.
+
+        Returns:
+            tuple[int, int]: The campaign total cool points and lifetime cool points.
+        """
+        (
+            _,
+            _,
+            _,
+            campaign_total_cp,
+            lifetime_cp,
+        ) = self.fetch_experience(campaign_id)
+
+        new_total = self.data[f"{campaign_id}_total_cool_points"] = campaign_total_cp + amount
+        new_lifetime = self.data["lifetime_cool_points"] = lifetime_cp + amount
+
+        self.save()
+
+        return new_total, new_lifetime
+
+    def spend_experience(self, campaign_id: int, amount: int) -> int:
+        """Spend experience for a user for a specific campaign.
+
+        Args:
+            campaign_id (int): The campaign ID to spend experience for.
+            amount (int): The amount of experience to spend.
+
+        Returns:
+            int: The new campaign experience.
+        """
+        (
+            campaign_xp,
+            _,
+            _,
+            _,
+            _,
+        ) = self.fetch_experience(campaign_id)
+
+        new_xp = self.data[f"{campaign_id}_experience"] = campaign_xp - amount
+
+        if new_xp < 0:
+            raise errors.NotEnoughExperienceError(
+                f"Can not spend {amount} xp with only {campaign_xp} available"
+            )
+
+        self.save()
+
+        return new_xp
+
     def set_default_data_values(self) -> GuildUser:
         """Verify that the GuildUser's JSONField defaults are set.  If any keys are missing, they are added to the data column with default values.
 

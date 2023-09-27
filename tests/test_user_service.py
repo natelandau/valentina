@@ -13,6 +13,201 @@ from valentina.utils import errors
 
 
 @pytest.mark.usefixtures("mock_db")
+class TestGuildUserDatabaseModel:
+    """Test the GuildUser database model."""
+
+    def _clear_test_data(self) -> None:
+        """Clear all test data from the database."""
+        for guild in Guild.select():
+            if guild.id != 1:  # Always keep the default guild
+                guild.delete_instance(recursive=True, delete_nullable=True)
+
+        for guild_user in GuildUser.select():
+            guild_user.delete_instance(recursive=True, delete_nullable=True)
+
+    def test_fetch_experience_no_data(self) -> None:
+        """Test fetching experience for a guild user."""
+        self._clear_test_data()
+
+        # GIVEN a guild user with no experience data
+        user = GuildUser.create(guild=1, user=1, data={})
+        campaign_id = 1
+
+        # WHEN fetching experience for the guild user
+        result = user.fetch_experience(campaign_id)
+
+        # THEN return 0 for all values
+        assert result == (0, 0, 0, 0, 0)
+
+    def test_fetch_experience_with_data(self) -> None:
+        """Test fetching experience for a guild user."""
+        self._clear_test_data()
+
+        # GIVEN a guild user with experience data
+        user = GuildUser.create(
+            guild=1,
+            user=1,
+            data={
+                "1_experience": 100,
+                "1_total_experience": 200,
+                "1_total_cool_points": 2,
+                "2_experience": 1000,
+                "2_total_experience": 2000,
+                "2_total_cool_points": 20,
+                "lifetime_experience": 300,
+                "lifetime_cool_points": 3,
+            },
+        )
+        campaign_id = 1
+
+        # WHEN fetching experience for the guild user
+        result = user.fetch_experience(campaign_id)
+
+        # THEN return the correct values
+        assert result == (100, 200, 300, 2, 3)
+
+    def test_add_experience_no_data(self) -> None:
+        """Test adding experience for a guild user."""
+        self._clear_test_data()
+
+        # GIVEN a guild user with no experience data
+        user = GuildUser.create(guild=1, user=1, data={})
+        campaign_id = 1
+
+        # WHEN setting experience for the guild user
+        user.add_experience(campaign_id, 10)
+
+        # THEN the correct values should be set
+        assert user.data == {
+            "1_experience": 10,
+            "1_total_experience": 10,
+            "lifetime_experience": 10,
+        }
+
+    def test_add_experience_existing_data(self) -> None:
+        """Test adding experience for a guild user."""
+        self._clear_test_data()
+
+        # GIVEN a guild user with no experience data
+        user = GuildUser.create(
+            guild=1,
+            user=1,
+            data={
+                "1_experience": 100,
+                "1_total_experience": 200,
+                "1_total_cool_points": 2,
+                "2_experience": 1000,
+                "2_total_experience": 2000,
+                "2_total_cool_points": 20,
+                "lifetime_experience": 300,
+                "lifetime_cool_points": 3,
+            },
+        )
+        campaign_id = 1
+
+        # WHEN setting experience for the guild user
+        user.add_experience(campaign_id, 10)
+
+        # THEN the correct values should be set
+        assert user.data == {
+            "1_experience": 110,
+            "1_total_experience": 210,
+            "1_total_cool_points": 2,
+            "2_experience": 1000,
+            "2_total_experience": 2000,
+            "2_total_cool_points": 20,
+            "lifetime_experience": 310,
+            "lifetime_cool_points": 3,
+        }
+
+    def test_add_cp_no_data(self) -> None:
+        """Test adding cp for a guild user."""
+        self._clear_test_data()
+
+        # GIVEN a guild user with no experience data
+        user = GuildUser.create(guild=1, user=1, data={})
+        campaign_id = 1
+
+        # WHEN setting experience for the guild user
+        user.add_cool_points(campaign_id, 10)
+
+        # THEN the correct values should be set
+        assert user.data == {
+            "1_total_cool_points": 10,
+            "lifetime_cool_points": 10,
+        }
+
+    def test_add_cp_existing_data(self) -> None:
+        """Test adding cp for a guild user."""
+        self._clear_test_data()
+
+        # GIVEN a guild user with no experience data
+        user = GuildUser.create(
+            guild=1,
+            user=1,
+            data={
+                "1_experience": 100,
+                "1_total_experience": 200,
+                "1_total_cool_points": 2,
+                "2_experience": 1000,
+                "2_total_experience": 2000,
+                "2_total_cool_points": 20,
+                "lifetime_experience": 300,
+                "lifetime_cool_points": 3,
+            },
+        )
+        campaign_id = 1
+
+        # WHEN setting experience for the guild user
+        user.add_cool_points(campaign_id, 10)
+
+        # THEN the correct values should be set
+        assert user.data == {
+            "1_experience": 100,
+            "1_total_experience": 200,
+            "1_total_cool_points": 12,
+            "2_experience": 1000,
+            "2_total_experience": 2000,
+            "2_total_cool_points": 20,
+            "lifetime_experience": 300,
+            "lifetime_cool_points": 13,
+        }
+
+    def test_spend_experience(self) -> None:
+        """Test spending experience for a guild user."""
+        self._clear_test_data()
+
+        # GIVEN a guild user without enough experience
+        user = GuildUser.create(
+            guild=1,
+            user=1,
+            data={
+                "1_experience": 1,
+                "1_total_experience": 1,
+                "1_total_cool_points": 1,
+                "2_experience": 1000,
+                "2_total_experience": 2000,
+                "2_total_cool_points": 20,
+                "lifetime_experience": 1001,
+                "lifetime_cool_points": 21,
+            },
+        )
+        campaign_id1 = 1
+        campaign_id2 = 2
+
+        # WHEN spending more experience than the user has
+        # THEN raise an error
+        with pytest.raises(errors.NotEnoughExperienceError):
+            user.spend_experience(campaign_id1, 2)
+
+        # WHEN spending less experience than the user has
+        result = user.spend_experience(campaign_id2, 1)
+
+        # THEN the correct values should be set
+        assert result == 999
+
+
+@pytest.mark.usefixtures("mock_db")
 class TestUserService:
     """Test the user service."""
 

@@ -51,6 +51,7 @@ class ErrorReporter:
             | errors.ValidationError
             | errors.NoMatchingItemsError
             | errors.NoActiveCharacterError
+            | errors.NotEnoughExperienceError
             | errors.URLNotAvailableError
             | errors.ServiceDisabledError
             | errors.S3ObjectExistsError,
