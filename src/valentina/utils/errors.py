@@ -104,6 +104,24 @@ class NoMatchingItemsError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class NotEnoughExperienceError(DiscordException):
+    """Raised when a user does not have enough experience to perform an action."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "Not enough experience to perform this action."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class S3ObjectExistsError(Exception):
     """Raised when an S3 object already exists."""
 

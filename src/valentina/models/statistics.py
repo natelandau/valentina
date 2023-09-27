@@ -99,11 +99,12 @@ class Statistics:
         logger.debug(f"Total rolls: {self.total_rolls}")
         return
 
-    def get_text(self, with_title: bool = True) -> str:
+    def get_text(self, with_title: bool = True, with_help: bool = True) -> str:
         """Return a string with the statistics.
 
         Args:
             with_title (bool, optional): Whether to include the title. Defaults to True.
+            with_help (bool, optional): Whether to include the help text. Defaults to True.
 
         Returns:
             str: String with the statistics.
@@ -126,12 +127,15 @@ Botched Rolls: {'.':.<{25 - 14}} {self.botches:<3} ({self.botches / self.total_r
 Average Difficulty: {'.':.<{25 -19}} {self.average_difficulty}
 Average Pool Size: {'.':.<{25 -18}} {self.average_pool}
 ```
+"""
+
+        if with_help:
+            msg += """\
 > Definitions:
 > - _Critical Success_: More successes than dice rolled
 > - _Success_: At least one success after all dice are tallied
 > - _Failure_: Zero successes after all dice are tallied
 > - _Botch_: Negative successes after all dice are tallied
-
 """
         return msg
 

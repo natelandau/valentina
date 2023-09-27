@@ -9,7 +9,7 @@ import semver
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import SPACER, DiceType, EmbedColor
+from valentina.constants import DiceType, EmbedColor
 from valentina.models import Probability, Statistics
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, Macro
@@ -92,7 +92,7 @@ Storyteller Characters: {len(storyteller_characters)}
 
         embed.add_field(
             name="Roll Statistics",
-            value=roll_stats.get_text(with_title=False),
+            value=roll_stats.get_text(with_title=False, with_help=True),
             inline=False,
         )
         embed.set_footer(
@@ -149,7 +149,7 @@ Storyteller Characters: {len(storyteller_characters)}
         """View information about a user."""
         target = user or ctx.author
         db_user = await self.bot.user_svc.fetch_user(ctx=ctx, user=target)
-
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
         # Variables for embed
         num_characters = (
             Character.select()
@@ -164,41 +164,69 @@ Storyteller Characters: {len(storyteller_characters)}
             Macro.select().where(Macro.guild == ctx.guild.id, Macro.user == db_user).count()
         )
 
-        creation_date = ((target.id >> 22) + 1420070400000) // 1000
-        roles = ", ".join(r.mention for r in target.roles[::-1][:-1]) or "_Member has no roles_"
-        roll_stats = Statistics(ctx, user=target)
-        lifetime_xp = db_user.data.get("lifetime_experience", 0)
-        lifetime_cp = db_user.data.get("lifetime_cool_points", 0)
-        campaign = self.bot.campaign_svc.fetch_active(ctx)
-        campaign_xp = db_user.data.get(f"{campaign.id}_experience", 0)
-        campaign_total_xp = db_user.data.get(f"{campaign.id}_total_experience", 0)
-        campaign_cp = db_user.data.get(f"{campaign.id}_total_cool_points", 0)
-
-        # Build Embed
-        description = (
-            f"# {target.display_name}",
-            "### __Account Information__",
-            f"**Account Created :** <t:{creation_date}:R> on <t:{creation_date}:D>",
-            f"**Joined Server{SPACER * 7}:** <t:{int(target.joined_at.timestamp())}:R> on <t:{int(target.joined_at.timestamp())}:D>",
-            f"**Roles{SPACER * 24}:** {roles}",
-            "### __Campaign Information__",
-            f"Available Experience{SPACER * 2}: `{campaign_xp}`",
-            f"Total Experience{SPACER * 10}: `{campaign_total_xp}`",
-            f"Cool Points{SPACER * 20}: `{campaign_cp}`",
-            "### __Experience Information__",
-            f"Lifetime Experience{SPACER * 3}: `{lifetime_xp}`",
-            f"Lifetime Cool Points{SPACER * 2}: `{lifetime_cp}`",
-            "### __Gameplay Information__",
-            f"Player Characters{SPACER * 2}: `{num_characters}`",
-            f"Roll Macros{SPACER * 14}: `{num_macros}`",
-            "### __Roll Statistics__",
-            roll_stats.get_text(with_title=False),
+        roles = (
+            ", ".join(
+                f"@{r.name}" if not r.name.startswith("@") else r.name
+                for r in target.roles[::-1][:-1]
+                if not r.is_integration()
+            )
+            or "No roles"
         )
+        roll_stats = Statistics(ctx, user=target)
+        (
+            campaign_xp,
+            campaign_total_xp,
+            lifetime_xp,
+            campaign_cp,
+            lifetime_cp,
+        ) = db_user.fetch_experience(campaign.id)
 
+        # Build the Embed
         embed = discord.Embed(
             title="",
-            description="\n".join(description),
+            description=f"# {target.display_name}",
             color=EmbedColor.INFO.value,
+        )
+        embed.add_field(
+            name="",
+            value=f"""\
+```scala
+Account Created: {arrow.get(target.created_at).humanize()} ({arrow.get(target.created_at).format('YYYY-MM-DD')})
+Joined Server  : {arrow.get(target.joined_at).humanize()} ({arrow.get(target.joined_at).format('YYYY-MM-DD')})
+Roles: {roles}
+```
+""",
+            inline=False,
+        )
+        embed.add_field(
+            name="Experience",
+            value=f"""\
+```scala
+Lifetime Experience : {lifetime_xp}
+Lifetime Cool Points: {lifetime_cp}
+
+"{campaign.name}" (active campaign)
+Available Experience: {campaign_xp}
+Total Earned        : {campaign_total_xp}
+Cool Points         : {campaign_cp}
+```
+""",
+            inline=False,
+        )
+        embed.add_field(
+            name="Gameplay",
+            value=f"""\
+```scala
+Player Characters: {num_characters}
+Roll Macros      : {num_macros}
+```
+""",
+            inline=False,
+        )
+        embed.add_field(
+            name="Roll Statistics",
+            value=roll_stats.get_text(with_title=False, with_help=False),
+            inline=False,
         )
         embed.set_thumbnail(url=target.display_avatar.url)
         embed.set_footer(
@@ -207,6 +235,7 @@ Storyteller Characters: {len(storyteller_characters)}
         )
         embed.timestamp = discord.utils.utcnow()
 
+        # Send the embed
         await ctx.respond(embed=embed, ephemeral=hidden)
 
     @commands.slash_command(name="changelog", description="Display the bot's changelog")
