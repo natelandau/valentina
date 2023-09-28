@@ -1,3 +1,22 @@
+## v1.12.0 (2023-09-28)
+
+### Feat
+
+- **misc**: add `/server_info` command (#62)
+- **character**: add `concept` to character profile (#59)
+- **experience**: experience linked to players on a per campaign basis (#58)
+
+### Fix
+
+- **storyteller**: add 1 to all attributes in rng generator (#63)
+- **misc**: clean up display of roll statistics (#61)
+- **misc**: improve display of `/probabilities` (#60)
+- **bot**: on connect print correct version to changelog channel
+
+### Refactor
+
+- **experience**: move xp logic to `GuildUser` object (#64)
+
 ## v1.11.0 (2023-09-17)
 
 ### Feat
