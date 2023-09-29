@@ -151,7 +151,7 @@
         "build",
         "dist",
         "node_modules",
-        "src/valentina/cogs/test_cog.py",
+        # "src/valentina/cogs/test_cog.py",
         "venv",
     ]
     # Avoiding flagging (and removing) `V101` from any `# noqa`
@@ -172,6 +172,7 @@
         "D408",
         "D409",
         "D413",
+        "E266",
         "E501",
         "N805",
         "PGH001",
@@ -195,37 +196,54 @@
         "PLR0913",
         "PLR2004",
         "S101",
+    ], "src/valentina/cogs/*.py" = [
+        "PLR0904",
+        "PLR6301",
+    ], "src/valentina/utils/converters.py" = [
+        "PLR6301",
     ] }
     select = [
-        "A",   # flake8-builtins
-        "ARG", # flake8-unused-arguments
-        "B",   # flake8-bugbear
-        "BLE", # flake8-blind-exception
-        "C40", # flake8-comprehensions
-        "C90", # McCabe
-        "D",   # pydocstyle
-        "E",   # pycodestyle Errors
-        "ERA", # flake8-eradicate
-        "EXE", # flake8-executable
-        "F",   # pyflakes
-        "I",   # iSort
-        "N",   # Pep8-naming
-        "PGH", # pygrep-hooks
-        "PLC", # pylint Convention
-        "PLE", # pylint Error
-        "PLR", # pylint Refactor
-        "PLW", # pylint Warning
-        "PT",  # flake8-pytest-style
-        "PTH", # flake8-use-pathlib
-        "Q",   # flake8-quotes
-        "RET", # flake8-return
-        "RUF", # Ruff-specific rules
-        "S",   # flake8-bandit
-        "SIM", # flake8-simplify
-        "TID", # flake8-tidy-imports
-        "UP",  # pyupgrade
-        "W",   # pycodestyle Warnings
-        "YTT", # flake8-2020
+        "A",     # flake8-builtins
+        "ARG",   # flake8-unused-arguments
+        "ASYNC", # flake8-async
+        "B",     # flake8-bugbear
+        "BLE",   # flake8-blind-exception
+        "C4",    # flake8-comprehensions
+        "C90",   # McCabe
+        "D",     # pydocstyle
+        "E",     # pycodestyle Errors
+        "EM",    # flake8-errmsg
+        "ERA",   # flake8-eradicate
+        "EXE",   # flake8-executable
+        "F",     # pyflakes
+        "FA",    # flake8-future
+        "FLY",   # flynt
+        "FURB",  # refurb
+        "I",     # iSort
+        "ISC",   # flake8-implicit-str-concat
+        "N",     # Pep8-naming
+        "NPY",   # flake8-numpy
+        "PERF",  # Perflint
+        "PGH",   # pygrep-hooks
+        "PL",    # pylint
+        "PLC",   # pylint Convention
+        "PLE",   # pylint Error
+        "PLR",   # pylint Refactor
+        "PLW",   # pylint Warning
+        "PT",    # flake8-pytest-style
+        "PTH",   # flake8-use-pathlib
+        "Q",     # flake8-quotes
+        "RET",   # flake8-return
+        "RUF",   # Ruff-specific rules
+        "S",     # flake8-bandit
+        "SIM",   # flake8-simplify
+        "T20",   # flake8-print
+        "TID",   # flake8-tidy-imports
+        "TRY",   # tryceratops
+        "UP",    # pyupgrade
+        "W",     # pycodestyle Warnings
+        "YTT",   # flake8-2020
+        # "DTZ",   # flake8-datetimez
     ]
     src = ["src", "tests"]
     target-version = "py310"

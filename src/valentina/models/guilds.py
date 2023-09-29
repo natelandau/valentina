@@ -36,8 +36,9 @@ class GuildService:
         self.roll_result_thumbs: dict[int, dict[str, list[str]]] = {}
         self.changelog_versions_cache: list[str] = []
 
+    @staticmethod
     def _message_to_embed(
-        self, message: str, ctx: discord.ApplicationContext
+        message: str, ctx: discord.ApplicationContext
     ) -> discord.Embed:  # pragma: no cover
         """Convert a string message to a discord embed.
 
@@ -107,13 +108,14 @@ class GuildService:
 
         already_exists = RollThumbnail.get_or_none(guild=ctx.guild.id, url=url)
         if already_exists:
-            raise errors.ValidationError("That thumbnail already exists")
+            msg = "That thumbnail already exists"
+            raise errors.ValidationError(msg)
 
         RollThumbnail.create(guild=ctx.guild.id, user=ctx.author.id, url=url, roll_type=roll_type)
         logger.info(f"DATABASE: Add roll result thumbnail for '{ctx.author.display_name}'")
 
+    @staticmethod
     async def channel_update_or_add(
-        self,
         guild: discord.Guild,
         channel: str | discord.TextChannel,
         topic: str,
@@ -507,7 +509,8 @@ class GuildService:
     ) -> Guild:
         """Add a guild to the database or update it if it already exists."""
         if (ctx and guild) or (not ctx and not guild):
-            raise ValueError("Need to pass either a guild or a context")
+            msg = "Need to pass either a guild or a context"
+            raise ValueError(msg)
 
         # Purge the guild from the cache
         if ctx:

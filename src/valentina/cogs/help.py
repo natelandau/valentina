@@ -35,7 +35,7 @@ class Help(commands.Cog):
         for cog in self.bot.cogs:
             if cog not in hidden_commands:
                 for cmd in self.bot.get_cog(cog).get_commands():
-                    unsorted_commands.append(cmd)
+                    unsorted_commands.append(cmd)  # noqa: PERF402
 
         """
         # NOTE: Uncomment this to show all unsorted commands

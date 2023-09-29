@@ -293,13 +293,15 @@ class StoryTeller(commands.Cog):
         plural = "s" if len(characters) > 1 else ""
         description = f"**{len(characters)}** character{plural} on this server\n\u200b"
 
-        for character in sorted(characters, key=lambda x: x.name):
-            fields.append(
+        fields.extend(
+            [
                 (
                     character.full_name,
                     f"Class: `{character.char_class.name}`",
                 )
-            )
+                for character in sorted(characters, key=lambda x: x.name)
+            ]
+        )
 
         await present_embed(
             ctx=ctx,

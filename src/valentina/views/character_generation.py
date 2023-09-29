@@ -196,3 +196,9 @@ class AddFromSheetWizard:
         if self.msg:
             return self.msg.edit  # type: ignore [unreachable]
         return self.ctx.respond
+
+
+class CharGenWizard:
+    """A step-by-step character generation wizard."""
+
+    pass

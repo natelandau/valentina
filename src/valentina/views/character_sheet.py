@@ -201,14 +201,16 @@ async def show_sheet(
     """Show a character sheet."""
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.user)
     embeds = []
-    embeds.append(__embed1(ctx, character, owned_by_user))
-    embeds.append(__embed2(ctx, character, owned_by_user))
+    embeds.extend(
+        [__embed1(ctx, character, owned_by_user), __embed2(ctx, character, owned_by_user)]
+    )
 
     image_keys = character.data.get("images", None)
 
     if image_keys:
-        for image_key in image_keys:
-            embeds.append(__image_embed(ctx, character, image_key, owned_by_user))
+        embeds.extend(
+            [__image_embed(ctx, character, image_key, owned_by_user) for image_key in image_keys]
+        )
 
     paginator = pages.Paginator(pages=embeds)  # type: ignore [arg-type]
     paginator.remove_button("first")

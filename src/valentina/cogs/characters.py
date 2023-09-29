@@ -150,6 +150,10 @@ class Characters(commands.Cog, name="Character"):
         )
         logger.info(f"CHARACTER: Create character {character}")
 
+    @chars.command(name="create", description="Create a new character from scratch")
+    async def create_character(self, ctx: discord.ApplicationContext) -> None:
+        """Create a new character from scratch."""
+
     @chars.command(name="set_active", description="Select a character as your active character")
     async def set_active_character(
         self,
@@ -579,7 +583,8 @@ class Characters(commands.Cog, name="Character"):
         if section_title.replace("-", "_").replace(" ", "_").lower() in [
             x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
         ]:
-            raise errors.ValidationError("Custom section already exists")
+            msg = "Custom section already exists"
+            raise errors.ValidationError(msg)
 
         self.bot.char_svc.custom_section_update_or_add(
             ctx, character, section_title, section_description
@@ -756,10 +761,7 @@ class Characters(commands.Cog, name="Character"):
         await ctx.send_modal(modal)
         await modal.wait()
         if modal.confirmed:
-            update_data: dict = {}
-            for k, v in modal.results.items():
-                if v:
-                    update_data[k] = v
+            update_data: dict = {k: v for k, v in modal.results.items() if v}
 
             await self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
 

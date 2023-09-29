@@ -261,9 +261,10 @@ class Developer(commands.Cog):
     ) -> None:
         """Post the changelog."""
         if semver.compare(oldest_version, newest_version) > 0:
-            raise commands.BadArgument(
+            msg = (
                 f"Oldest version `{oldest_version}` is newer than newest version `{newest_version}`"
             )
+            raise commands.BadArgument(msg)
 
         changelog_channel = self.bot.guild_svc.fetch_changelog_channel(ctx.guild)
         if not changelog_channel:
