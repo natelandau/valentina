@@ -41,21 +41,24 @@ Valentina Noir revolves around three core concepts:
 
 ### Creating a Character
 
--   Use `/character create` to create a character sheet.
+-   Use `/character add` to add a new character you've already created.
 -   **IMPORTANT**: Create your character on paper before entering it into Valentina.
 -   **Post creation:** Don't worry if you make a mistake or the section on your sheet doesn't appear during character generation.You can easily add/update traits, abilities, custom sections, and a biography as needed.
+
+### Updating Your Character
+
+-   **Attributes and Abilities**: In Valentina, attributes, abilities, skills, backgrounds, etc. are all call `traits`. Use `/character trait [add/update/delete]` to manage your character's traits.
+-   **Images**: You can attach images to you character using `/character image [add/delete]`. Images are displayed on the character sheet.
+-   **Custom Sections**: Use `/character section [add/update/delete]` to add custom sections to your character sheet. This is useful for adding additional information that doesn't fit into the standard character sheet such as inventory, spells, etc.
+-   **Biography**: Use `/character bio update` to add or edit a biography for your character.
+-   **Profile**: Use `/character profile update` to manage your character's concept, and class specific items such as clan, sire, tribe, etc.
+-   **Spending XP**: Use `/xp spend` to spend XP and increase your character's traits.
 
 ### Active Characters
 
 You may only have a single character active at a time. To set a character as active, use `/character set_active` and specify the character name. This will allow you to manage and roll dice for that character.
 
 In some circumstances, you may want to transfer ownership of a character to another user. To do so, use `/character transfer` and specify the character name and the user to transfer to.
-
-### Managing Your Character
-
--   **Adding new information**: Use `/character add ...` to add new traits, abilities, custom sections, and a biography.
--   **Updating information**: Use `/character update ...` to update existing traits, abilities, custom sections, and a biography.
--   **Spending XP**: Use `/xp spend` to spend XP and increase your character's stats.
 
 ## 4. GAMEPLAY
 
