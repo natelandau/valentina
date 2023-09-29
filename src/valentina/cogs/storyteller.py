@@ -40,7 +40,7 @@ from valentina.utils.options import (
 from valentina.utils.perform_roll import perform_roll
 from valentina.utils.storyteller import storyteller_character_traits
 from valentina.views import (
-    CharGenWizard,
+    AddFromSheetWizard,
     ConfirmCancelButtons,
     S3ImageReview,
     confirm_action,
@@ -120,7 +120,7 @@ class StoryTeller(commands.Cog):
         # Fetch all traits and set them
         fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
 
-        wizard = CharGenWizard(
+        wizard = AddFromSheetWizard(
             ctx,
             fetched_traits,
             first_name=first_name,

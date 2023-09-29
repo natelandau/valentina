@@ -39,8 +39,8 @@ from valentina.utils.options import (
     select_vampire_clan,
 )
 from valentina.views import (
+    AddFromSheetWizard,
     BioModal,
-    CharGenWizard,
     CustomSectionModal,
     ProfileModal,
     S3ImageReview,
@@ -65,8 +65,8 @@ class Characters(commands.Cog, name="Character"):
     section = chars.create_subgroup("section", "Work with character custom sections")
     trait = chars.create_subgroup("trait", "Work with character traits")
 
-    @chars.command(name="create", description="Create a new character")
-    async def create_character(
+    @chars.command(name="add", description="Add a character to Valentina from a sheet")
+    async def add_character(
         self,
         ctx: discord.ApplicationContext,
         char_class: Option(
@@ -114,7 +114,7 @@ class Characters(commands.Cog, name="Character"):
         # Fetch all traits and set them
         fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
 
-        wizard = CharGenWizard(
+        wizard = AddFromSheetWizard(
             ctx,
             fetched_traits,
             first_name=first_name,

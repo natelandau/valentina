@@ -3,8 +3,8 @@
 from .embeds import present_embed, user_error_embed  # isort:skip
 from .buttons import ConfirmCancelButtons, ReRollButton, CancelButton  # isort:skip
 from .actions import confirm_action
+from .character_generation import AddFromSheetWizard
 from .character_sheet import sheet_embed, show_sheet
-from .chargen_wizard import CharGenWizard
 from .modals import (
     BioModal,
     ChapterModal,
@@ -20,10 +20,10 @@ from .settings import SettingsManager
 from .thumbnail_review import ThumbnailReview
 
 __all__ = [
+    "AddFromSheetWizard",
     "BioModal",
     "CancelButton",
     "ChapterModal",
-    "CharGenWizard",
     "confirm_action",
     "ConfirmCancelButtons",
     "CustomSectionModal",

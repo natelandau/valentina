@@ -65,8 +65,8 @@ class RatingView(discord.ui.View):
         await self.callback(rating, interaction)
 
 
-class CharGenWizard:
-    """Character creation wizard."""
+class AddFromSheetWizard:
+    """A character generation wizard that walks the user through setting a value for each trait. This is used for entering a character that has already been created from a physical character sheet."""
 
     def __init__(
         self,
