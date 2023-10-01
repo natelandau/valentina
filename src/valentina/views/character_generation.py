@@ -4,10 +4,12 @@ import uuid
 from typing import Any, cast
 
 import discord
+import inflect
 from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import (
+    CONCEPT_INFORMATION,
     MAX_BUTTONS_PER_ROW,
     CharGenClass,
     CharGenConcept,
@@ -20,6 +22,9 @@ from valentina.models.bot import Valentina
 from valentina.models.db_tables import Campaign, GuildUser, Trait
 from valentina.models.dicerolls import DiceRoll
 from valentina.utils.helpers import get_max_trait_value
+
+p = inflect.engine()
+p.defnoun("Ability", "Abilities")
 
 ## Add from sheet wizard
 
@@ -419,6 +424,20 @@ The next step is to roll a 100 sided die to determine your character's concept.
     async def _step_4_class_review(self, previous_roll: int) -> None:
         """Finalize the character."""
         view = ConfirmRerollButtons(self.ctx.author)
+
+        # Get the concept's abilities
+        abilities = CONCEPT_INFORMATION[self.char_concept]["abilities"]
+        num_abilities = CONCEPT_INFORMATION[self.char_concept]["num_abilities"]
+        ability_list = "\n".join(
+            [f"> - **{special['name']}**: {special['description']}" for special in abilities]
+        )
+        ability_text = (
+            f"> You may choose `{num_abilities}` from this list\n"
+            if num_abilities < len(abilities)
+            else ""
+        )
+
+        # Get the user's current xp
         (
             campaign_xp,
             _,
@@ -431,11 +450,15 @@ The next step is to roll a 100 sided die to determine your character's concept.
             embed=discord.Embed(
                 title="Character Generation",
                 description=f"""\
-You rolled a `{previous_roll}`. Your concept is: `{self.char_concept.name.title().replace('_', ' ')}`
+You rolled a `{previous_roll}`. Your concept is: `{self.char_concept.name.title().replace('_', ' ')}`.
+## Review your character class
+**You are a {self.char_class.name.title().replace('_', ' ')} {self.char_sub_class.name.title().replace('_', ' ')} {self.char_concept.name.title().replace('_', ' ')}**
+_{CONCEPT_INFORMATION[self.char_concept]["description"]}_
 
-### Review your character class
-You are a `{self.char_class.name.title().replace('_', ' ')}` `{self.char_sub_class.name.title().replace('_', ' ')}` `{self.char_concept.name.title().replace('_', ' ')}`
+> **Special {p.plural_noun('Ability', num_abilities)}**
+{ability_text}{ability_list}
 
+## Next Steps:
 Do you want to reroll for 10xp or confirm your character?
 _(You have `{campaign_xp}`xp remaining.)_
 """,
@@ -448,10 +471,14 @@ _(You have `{campaign_xp}`xp remaining.)_
             self.user.spend_experience(self.campaign.id, 10)
             self.bot.user_svc.purge_cache(self.ctx)
             await self._step_1_class()
+        # TODO: Go to step 5 if user must select a special ability
         elif view.confirmed:
-            await self._step_5_create_character()
+            await self._step_6_create_character()
 
-    async def _step_5_create_character(self) -> None:
+    async def _step_5_specialties(self) -> None:
+        """Choose specialties."""
+
+    async def _step_6_create_character(self) -> None:
         """Create the character."""
         await self.msg.edit_original_response(
             embed=discord.Embed(

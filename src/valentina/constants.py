@@ -4,6 +4,7 @@ from enum import Enum, IntEnum
 from pathlib import Path
 
 import inflect
+from typing_extensions import TypedDict
 
 # Create an inflect engine to pluralize words.
 p = inflect.engine()
@@ -296,18 +297,17 @@ class CharGenConcept(Enum):
     """Enum for RNG character generation of concepts."""
 
     BERSERKER = (0, 8)
-    PERFORMER = (9, 16)
-    HEALER = (17, 24)
-    SHAMAN = (25, 32)
-    SOLDIER = (33, 40)
-    ASCETIC = (41, 48)
-    CRUSADER = (49, 56)
-    URBAN_TRACKER = (57, 64)
-    UNDER_WORLDER = (65, 72)
-    SCIENTIST = (73, 80)
-    TRADESMAN = (81, 88)
-    BUSINESSMAN = (89, 96)
-    CHOOSE = (97, 100)
+    PERFORMER = (9, 17)
+    HEALER = (18, 26)
+    SHAMAN = (27, 35)
+    SOLDIER = (36, 44)
+    ASCETIC = (45, 53)
+    CRUSADER = (54, 62)
+    URBAN_TRACKER = (63, 71)
+    UNDER_WORLDER = (72, 80)
+    SCIENTIST = (81, 89)
+    TRADESMAN = (90, 97)
+    BUSINESSMAN = (98, 100)
 
     @classmethod
     def get_member_by_value(cls, value: int) -> "CharGenConcept":
@@ -325,6 +325,194 @@ class CharGenConcept(Enum):
                 return member
 
         return None
+
+
+class ConceptInfo(TypedDict):
+    """Type for concept info sub-dictionary."""
+
+    description: str
+    num_abilities: int
+    abilities: list[dict[str, str]]
+
+
+CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
+    CharGenConcept.BERSERKER: {
+        "description": "Gang member, Hooligan, Anarchist, Rebel, Terrorist, Underground Fight League Member, Flame Jumper, Mole people, Goon.  Fierce warriors who tap into their primal rage to gain incredible strength and combat prowess.",
+        "num_abilities": 1,
+        "abilities": [
+            {
+                "name": "Frenzy",
+                "description": "Can ignore the first inflicted health levels of damage with no penalty up until they are Mauled, and cannot be stunned.  Barbarians also gain an automatic success on any strength roll once per turn, equal to a permanent dot in Potence.",
+            }
+        ],
+    },
+    CharGenConcept.PERFORMER: {
+        "description": "Musician, Online Influencer, Street Poet, Stand-up Comic, Performance Artist, Visual Artist, Fine Artist.  Charismatic performers and spellcasters who use their artistry and magic to inspire and manipulate.",
+        "num_abilities": 1,
+        "abilities": [
+            {
+                "name": "Fast Talk",
+                "description": "Performers have an automatic granted success (as if a single die was rolled equivalent to a success) on any charisma, expression or performance roll, and can immediately command attention. This works even in combat, functionally freezing enemies, including groups, for the first turn.  Note that the bard needs to keep doing their act for this to work, they can't drop their guitar and pick up a gun without ruining the effect.  Their teammates are free of any compunction, however.",
+            }
+        ],
+    },
+    CharGenConcept.HEALER: {
+        "description": "Doctor, Veterinarian, Mortician, Priest, Rabbi, Medicine Man, EMT, Lifeguard, RN, Dentist, Clinician, Masseuse, Chemical Hacker, New-Ager.   Devout servants of gods or higher powers, with the ability to heal and protect.",
+        "num_abilities": 1,
+        "abilities": [
+            {
+                "name": "Heal",
+                "description": "Heal 3 health levels to a target once per turn.  Any First Aid/medicine roles are also automatically granted one success (with no limit on how many can be performed, with a limit of one per turn). This is usually enough to stabilize a target and prevent them from bleeding out.",
+            },
+            {
+                "name": "True Faith",
+                "description": "Starts with a Faith of `3`, equivalent to a Discipline.  Clerics can repel supernatural beings for every success on a Faith role.",
+            },
+        ],
+    },
+    CharGenConcept.SHAMAN: {
+        "description": "Environmentalist, Tribal, New Age, Artist, Riverkeeper, Green Warden, Nature Guide, Photographer, Self-Documentarian.  Nature-focused spiritualists who wield the power of the natural world.",
+        "num_abilities": 2,
+        "abilities": [
+            {
+                "name": "Familiar",
+                "description": "A trained animal that can carry out simple commands",
+            },
+            {
+                "name": "Friend of Animals",
+                "description": "Per `Animalism` level `1`.",
+            },
+            {
+                "name": "Familiar",
+                "description": "A trained animal that can carry out simple commands.",
+            },
+            {
+                "name": "Spirit Sight",
+                "description": "Sees the dead, naturalistic spirits, places of power. Can generally detect supernatural beings, and penetrate spells, illusions and glamour on a `perception` + `occult` roll with a difficulty of `4`.",
+            },
+            {
+                "name": "Read Auras",
+                "description": "Per the Auspex power.",
+            },
+            {
+                "name": "Astral Projection",
+                "description": "Per the Auspex power.",
+            },
+            {
+                "name": "Remove Frenzy",
+                "description": "Can cool vampires frenzy, werewolves' rage, etc. They become passive for two turns.",
+            },
+        ],
+    },
+    CharGenConcept.SOLDIER: {
+        "description": "Marine, Veteran, Mercenary, Hired Muscle, Hitman, Amateur/Pro Fighter, Martial Artist, Police, Security.  Skilled warriors with a wide range of combat abilities and weapon expertise.",
+        "num_abilities": 1,
+        "abilities": [
+            {
+                "name": "Firearms",
+                "description": "Can re-roll any single Firearms roll once per turn. Can also specialize in new firearms at `3`, `4` and `5` dots instead of `4`, granting an additional dice whenever a specialized weapon is used.",
+            },
+            {
+                "name": "Hand to hand",
+                "description": "Can re-roll any single `Brawl` roll once per turn. Can also gain a new specialization at `3`, `4` and `5` dots instead of `4`, granting an additional die whenever a specialized martial arts style is used. (Wrestling, Karate, Jiu Jitsu, etc.)",
+            },
+            {
+                "name": "Melee",
+                "description": "Can re-roll any single `Melee` roll once per turn. Can also gain a new specialization at `3`, `4` and `5` dots instead of `4`, granting an additional die whenever a specialized melee weapon is used. (Katana, Combat Knife, Chain, etc.)",
+            },
+        ],
+    },
+    CharGenConcept.ASCETIC: {
+        "description": "Martial Artist, Dojo Owner, Competitor, Athlete, Bodybuilder, Body Hacker. Disciplined martial artists who harness their inner ki to perform incredible feats and attacks.",
+        "num_abilities": 2,
+        "abilities": [
+            {
+                "name": "Focus",
+                "description": "Gathering their Chi, the monk can resist gases, poisons, psionic attacks, and hold their breath one turn per existing `stamina`+ `willpower`.  Monks are immune to the vampiric discipline of `Dominate`, (but not `Presence`, curiously).",
+            },
+            {
+                "name": "Iron hand",
+                "description": "Deliver a single punch, once per scene, with damage augmented by spending `willpower`, `1` point per damage level.  Note that spending all willpower renders the player completely exhausted/inert.",
+            },
+        ],
+    },
+    CharGenConcept.CRUSADER: {
+        "description": "Government Agent, Lawyer, Judge, Zealot, Terrorist, Inquisitor. Dedicated sentinels sworn to a code of conduct, armed with divine, academic, and martial skills.",
+        "num_abilities": 1,
+        "abilities": [
+            {
+                "name": "Incorruptible",
+                "description": "Crusaders can choose either the Healer's Heal or Faith ability but gain only one dot for it.  They also gain the Fighter's ability to choose a single combat specialization, and specialize in it at only `3` dots, but without additional specializations at `4` and `5`.  Crusaders choose a single weapon they are loyal to and stick with it.",
+            }
+        ],
+    },
+    CharGenConcept.URBAN_TRACKER: {
+        "description": "Hunter, Tracker, Long Range Recon Patrol, Sniper, Wildlife Photographer, Park Ranger, Paparazzo. Skilled hunters and trackers with a deep connection to the wilderness and survival skills, or the equivalent for the urban jungle.",
+        "num_abilities": 2,
+        "abilities": [
+            {
+                "name": "Camouflage",
+                "description": "The Ranger can camouflage into their preferred environment given 1 turn of preparation.  This is not invisibility!  They can be detected on a `Perception` (or `Focus`) roll with a difficulty of `8`. Any attacks made from this position are considered surprise attacks.",
+            },
+            {
+                "name": "Surprise Attack",
+                "description": "Surprise attacks (ranged or hand to hand) do an additional `3` successes of damage. This is a first-strike ability and subsequent attacks are no longer a surprise unless they can be plausibly silent.",
+            },
+        ],
+    },
+    CharGenConcept.UNDER_WORLDER: {
+        "description": "Burglar, Lockpicker, Hacker, Safe-Cracker, Getaway Car Driver, Forger, Fence, Spy.  Sneaky and dexterous individuals skilled in stealth, lock picking, and traps.",
+        "num_abilities": 3,
+        "abilities": [
+            {
+                "name": "Tools of the Trade",
+                "description": "The character has an object: (a set of lockpicks, a laser drill, a getaway car, a printing press) -- when used, decreases the difficulty by `2`. This means, for example, a Forger will have a standard difficulty of 4 to attempt any forgery, provided they have their printing press, and a cat burglar can get in anywhere, with his rope and lockpicks.",
+            },
+            {
+                "name": "Professional",
+                "description": "Any single `security` roll is done at a `-1` difficulty.",
+            },
+            {
+                "name": "Lay Low",
+                "description": "Start with the equivalent of `Arcane` skill at `2`.  They give off no paper trail, have multiple alternative identities, and their documents will stand up to anything short of a sustained FBI investigation. `+2` dots on any rolls to evade pursuit, lose a tail, or escape the police, or on any sneak roll.",
+            },
+        ],
+    },
+    CharGenConcept.SCIENTIST: {
+        "description": "Debunker, Psychologist, Egyptologist, Filmographer, Data Scientist, Hematologist, Cryptozoologist, Grad Student, Weird Physicist. Experts who draw power from their study of esoteric knowledge, with unique and potent abilities and gear.",
+        "num_abilities": 1,
+        "abilities": [
+            {
+                "name": "Delicate Equipment",
+                "description": "Choose any `Thaumaturgical Paths` from the Vampire or Sorcerer book.  Apply `3` dots spread however. These should be represented as Tools or scientific equipment that generate the effect.  The Lure of Flames might be an experimental flamethrower or backpack-mounted Laser, Lightning might be some weather equipment, and so on.  The equipment can be carried gear, but must be present to create the effect. Technology should be appropriate to the time, if future-facing for it.",
+            },
+        ],
+    },
+    CharGenConcept.TRADESMAN: {
+        "description": "Construction, Carpenter, Plumber, Key Grip, Truck Driver, Uber Driver, Union Man.",
+        "num_abilities": 2,
+        "abilities": [
+            {
+                "name": "Hardiness",
+                "description": "The equivalent of `Fortitude` `1`.  All attacks sustained automatically soak `1` success at no cost.",
+            },
+            {
+                "name": "Handy",
+                "description": "Take a free dot in `repair`, `drive`, or `leadership`.",
+            },
+        ],
+    },
+    CharGenConcept.BUSINESSMAN: {
+        "description": "Professional, Salesman, Girlboss, Entrepreneur, Small Business Owner, Finance Bro, LinkedIn Influencer, Middle Manager, Storekeeper, Barista, In Marketing",
+        "num_abilities": 1,
+        "abilities": [
+            {
+                "name": "Persuasion",
+                "description": "The Businessman can enthrall his enemies and win them over with her powers of facts and logic.  This is less of a fast power and more of a sustained one: the Businessman has `1` automatic success to `Leadership` or `Subterfuge` rolls.  Additionally, take an additional two dots in the `Resources` background and select `4` points in additional advantages.",
+            },
+        ],
+    },
+}
 
 
 # CHANNEL_PERMISSIONS: Dictionary containing a mapping of channel permissions.
