@@ -41,6 +41,8 @@ from valentina.utils.options import (
 from valentina.views import (
     AddFromSheetWizard,
     BioModal,
+    CharGenWizard,
+    ConfirmCancelButtons,
     CustomSectionModal,
     ProfileModal,
     S3ImageReview,
@@ -151,8 +153,49 @@ class Characters(commands.Cog, name="Character"):
         logger.info(f"CHARACTER: Create character {character}")
 
     @chars.command(name="create", description="Create a new character from scratch")
-    async def create_character(self, ctx: discord.ApplicationContext) -> None:
+    async def create_character(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
         """Create a new character from scratch."""
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        user = await self.bot.user_svc.fetch_user(ctx)
+        (
+            campaign_xp,
+            _,
+            _,
+            _,
+            _,
+        ) = user.fetch_experience(campaign.id)
+
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title="Create a new character",
+            description=f"This will walk you through the character creation process.\n\nThis will cost `10` xp and you have `{campaign_xp}` xp available.",
+            view=view,
+            ephemeral=hidden,
+        )
+        await view.wait()
+        if not view.confirmed:
+            embed = discord.Embed(
+                title=f"{Emoji.CANCEL.value} Cancelled",
+                description="Create a new character",
+                color=EmbedColor.WARNING.value,
+            )
+            await msg.edit_original_response(embed=embed, view=None)
+            return
+
+        # Spend 10 xp
+        user.spend_experience(campaign.id, 10)
+
+        wizard = CharGenWizard(ctx, campaign=campaign, user=user, msg=msg, hidden=hidden)
+        await wizard.begin()
 
     @chars.command(name="set_active", description="Select a character as your active character")
     async def set_active_character(

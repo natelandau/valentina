@@ -1,15 +1,27 @@
 """A wizard that walks the user through the character creation process."""
 import asyncio
 import uuid
-from typing import Any
+from typing import Any, cast
 
 import discord
 from discord.ui import Button
 from loguru import logger
 
-from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor
-from valentina.models.db_tables import Trait
+from valentina.constants import (
+    MAX_BUTTONS_PER_ROW,
+    CharGenClass,
+    CharGenConcept,
+    CharGenHumans,
+    DiceType,
+    EmbedColor,
+    Emoji,
+)
+from valentina.models.bot import Valentina
+from valentina.models.db_tables import Campaign, GuildUser, Trait
+from valentina.models.dicerolls import DiceRoll
 from valentina.utils.helpers import get_max_trait_value
+
+## Add from sheet wizard
 
 
 class RatingView(discord.ui.View):
@@ -198,7 +210,263 @@ class AddFromSheetWizard:
         return self.ctx.respond
 
 
+## Character Generation Wizard
+
+
+class RollButton(discord.ui.View):
+    """Add a 'roll' button to a view.  Used as the first step in the character generation wizard."""
+
+    def __init__(self, author: discord.User | discord.Member | None = None):
+        super().__init__()
+        self.author = author
+        self.confirmed: bool = None
+
+    @discord.ui.button(
+        label=f"{Emoji.DICE.value} Roll", style=discord.ButtonStyle.success, custom_id="roll"
+    )
+    async def roll_callback(self, button: Button, interaction: discord.Interaction) -> None:
+        """Callback for the confirm button."""
+        button.label += f" {Emoji.DICE.value}"
+        button.disabled = True
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+        await interaction.response.edit_message(view=None)  # view=None remove all buttons
+        self.confirmed = True
+        self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Disables buttons for everyone except the user who created the embed."""
+        if self.author is None:
+            return True
+        return interaction.user.id == self.author.id
+
+
+class ConfirmRerollButtons(discord.ui.View):
+    """Add a submit and cancel button to a view."""
+
+    def __init__(self, author: discord.User | discord.Member | None = None):
+        super().__init__()
+        self.author = author
+        self.confirmed: bool = None
+        self.rerolled: bool = None
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, custom_id="confirm")
+    async def confirm_callback(self, button: Button, interaction: discord.Interaction) -> None:
+        """Callback for the confirm button."""
+        button.label += f" {Emoji.YES.value}"
+        button.disabled = True
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+        await interaction.response.edit_message(view=None)  # view=None remove all buttons
+        self.confirmed = True
+        self.rerolled = False
+        self.stop()
+
+    @discord.ui.button(
+        label=f"{Emoji.DICE.value} ReRoll",
+        style=discord.ButtonStyle.secondary,
+        custom_id="reroll",
+    )
+    async def reroll_callback(self, button: Button, interaction: discord.Interaction) -> None:
+        """Callback for the confirm button."""
+        button.label += f" {Emoji.YES.value}"
+        button.disabled = True
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+        await interaction.response.edit_message(view=None)  # view=None remove all buttons
+        self.rerolled = True
+        self.confirmed = False
+        self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Disables buttons for everyone except the user who created the embed."""
+        if self.author is None:
+            return True
+        return interaction.user.id == self.author.id
+
+
 class CharGenWizard:
     """A step-by-step character generation wizard."""
 
-    pass
+    def __init__(
+        self,
+        ctx: discord.ApplicationContext,
+        campaign: Campaign,
+        user: GuildUser,
+        msg: discord.Interaction,
+        hidden: bool = True,
+    ) -> None:
+        self.ctx = ctx
+        self.bot = cast(Valentina, ctx.bot)
+        self.user = user
+        self.campaign = campaign
+        self.hidden = hidden
+        self.msg = msg
+        self.char_class: CharGenClass = None
+        self.char_sub_class: CharGenHumans = None
+        self.char_concept: CharGenConcept = None
+
+    async def _step_1_class(self) -> None:
+        """Randomly select the base class for the character."""
+        roll = DiceRoll(self.ctx, pool=1, dice_size=DiceType.D100.value).roll[0]
+        view = RollButton(self.ctx.author)
+        class_descriptions = "\n".join(
+            [f"{c.value[0]}-{c.value[1]}: {c.name.title().replace('_', ' ')}" for c in CharGenClass]
+        )
+
+        await self.msg.edit_original_response(
+            embed=discord.Embed(
+                title="Character Generation",
+                description=f"""\
+The first step is to roll a 100 sided die to determine your class.
+
+### Options
+```yaml
+{class_descriptions}
+```
+""",
+                color=EmbedColor.INFO.value,
+            ).set_footer(text="Step 1/5"),
+            view=view,
+        )
+
+        await view.wait()
+        self.char_class = CharGenClass.get_member_by_value(roll)
+
+        # Handle unimplemented classes
+        if self.char_class != CharGenClass.HUMAN:
+            await self.msg.edit_original_response(
+                embed=discord.Embed(
+                    title="Character Generation",
+                    description=f"You rolled a `{roll}`\n This makes you a {self.char_class.name.title().replace('_', ' ')}\n\nUnfortunately, `{self.char_class.name.title().replace('_', ' ')}` is not implemented.\n\nRoll your sheet manually and use `/character add` to add it to the database.",
+                    color=EmbedColor.INFO.value,
+                ).set_footer(text="Step 2/2"),
+            )
+            return
+
+        await self._step_2_subclass(roll)
+
+    async def _step_2_subclass(self, previous_roll: int) -> None:
+        """Randomly select the secondary class for the character."""
+        roll = DiceRoll(self.ctx, pool=1, dice_size=DiceType.D100.value).roll[0]
+        view = RollButton(self.ctx.author)
+        subclass_descriptions = "\n".join(
+            [
+                f"{c.value[0]}-{c.value[1]}: {c.name.title().replace('_', ' ')}"
+                for c in CharGenHumans
+            ]
+        )
+
+        await self.msg.edit_original_response(
+            embed=discord.Embed(
+                title="Character Generation",
+                description=f"""\
+You rolled a `{previous_roll}`. Your class is: `{self.char_class.name.title().replace('_', ' ')}`
+
+The next step is to roll a 100 sided die to determine your {self.char_class.name.title().replace('_', ' ')} sub-class.
+
+### Options
+```yaml
+{subclass_descriptions}
+```
+""",
+                color=EmbedColor.INFO.value,
+            ).set_footer(text="Step 2/5"),
+            view=view,
+        )
+
+        await view.wait()
+        self.char_sub_class = CharGenHumans.get_member_by_value(roll)
+
+        await self._step_3_concept(roll)
+
+    async def _step_3_concept(self, previous_roll: int) -> None:
+        """Randomly select the secondary class for the character."""
+        roll = DiceRoll(self.ctx, pool=1, dice_size=DiceType.D100.value).roll[0]
+        view = RollButton(self.ctx.author)
+        concept_descriptions = "\n".join(
+            [
+                f"{c.value[0]}-{c.value[1]}: {c.name.title().replace('_', ' ')}"
+                for c in CharGenConcept
+            ]
+        )
+
+        await self.msg.edit_original_response(
+            embed=discord.Embed(
+                title="Character Generation",
+                description=f"""\
+You rolled a `{previous_roll}`. Your subclass is: `{self.char_sub_class.name.title().replace('_', ' ')}`
+
+The next step is to roll a 100 sided die to determine your character's concept.
+
+### Options
+```yaml
+{concept_descriptions}
+```
+""",
+                color=EmbedColor.INFO.value,
+            ).set_footer(text="Step 3/5"),
+            view=view,
+        )
+
+        await view.wait()
+        self.char_concept = CharGenConcept.get_member_by_value(roll)
+        await self._step_4_class_review(previous_roll=roll)
+
+    async def _step_4_class_review(self, previous_roll: int) -> None:
+        """Finalize the character."""
+        view = ConfirmRerollButtons(self.ctx.author)
+        (
+            campaign_xp,
+            _,
+            _,
+            _,
+            _,
+        ) = self.user.fetch_experience(self.campaign.id)
+
+        await self.msg.edit_original_response(
+            embed=discord.Embed(
+                title="Character Generation",
+                description=f"""\
+You rolled a `{previous_roll}`. Your concept is: `{self.char_concept.name.title().replace('_', ' ')}`
+
+### Review your character class
+You are a `{self.char_class.name.title().replace('_', ' ')}` `{self.char_sub_class.name.title().replace('_', ' ')}` `{self.char_concept.name.title().replace('_', ' ')}`
+
+Do you want to reroll for 10xp or confirm your character?
+_(You have `{campaign_xp}`xp remaining.)_
+""",
+                color=EmbedColor.SUCCESS.value,
+            ).set_footer(text="Step 4/5"),
+            view=view,
+        )
+        await view.wait()
+        if view.rerolled:
+            self.user.spend_experience(self.campaign.id, 10)
+            self.bot.user_svc.purge_cache(self.ctx)
+            await self._step_1_class()
+        elif view.confirmed:
+            await self._step_5_create_character()
+
+    async def _step_5_create_character(self) -> None:
+        """Create the character."""
+        await self.msg.edit_original_response(
+            embed=discord.Embed(
+                title="Character Generation",
+                description=f"""\
+Created a `{self.char_class.name.title().replace('_', ' ')}` `{self.char_sub_class.name.title().replace('_', ' ')}` `{self.char_concept.name.title().replace('_', ' ')}`
+
+### Next Steps:
+1. Roll your character sheet
+2. Use `/character add` to add your character to the database
+""",
+                color=EmbedColor.SUCCESS.value,
+            ).set_footer(text="Step 5/5"),
+        )
+
+    async def begin(self) -> None:
+        """Start the character generation wizard."""
+        await self._step_1_class()

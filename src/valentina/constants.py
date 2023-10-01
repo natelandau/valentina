@@ -77,6 +77,9 @@ class Emoji(Enum):
     WEREWOLF = "🐺"
     YES = "✅"
     SETTING = "⚙️"
+    RECYCLE = "♻️"
+    RELOAD = "🔄"
+    DICE = "🎲"
 
 
 class MaxTraitValue(Enum):
@@ -233,45 +236,95 @@ class XPMultiplier(Enum):
 class CharGenClass(Enum):
     """Enum for RNG character generation classes."""
 
-    HUMAN = range(0, 60)
-    VAMPIRE = range(61, 66)
-    WEREWOLF = range(67, 72)
-    MAGE = range(73, 78)
-    GHOUL = range(79, 84)
-    CHANGELING = range(85, 90)
-    CHANGELING_BREED = range(91, 96)
-    OTHER = range(97, 100)
+    HUMAN = (0, 60)
+    VAMPIRE = (61, 66)
+    WEREWOLF = (67, 72)
+    MAGE = (73, 78)
+    GHOUL = (79, 84)
+    CHANGELING = (85, 90)
+    CHANGELING_BREED = (91, 96)
+    SPECIAL = (97, 100)
+
+    @classmethod
+    def get_member_by_value(cls, value: int) -> "CharGenClass":
+        """Find the corresponding enum member's name based on an integer value.
+
+        Args:
+            value (int): The integer value to look up.
+
+        Returns:
+            Optional[str]: The name of the enum member if found, otherwise None.
+        """
+        for member in cls:
+            min_val, max_val = member.value
+            if min_val <= value <= max_val:
+                return member
+        return None
 
 
 class CharGenHumans(Enum):
     """Enum for RNG character generation of humans."""
 
-    CIVILIAN = range(0, 40)
-    HUNTER = range(41, 50)
-    CHANGELING = range(51, 53)
-    GHOUL = range(54, 60)
-    WATCHER = range(61, 70)
-    HUNTER_CLASS = range(71, 80)
-    SORCERER = range(81, 90)
-    NUMINOUS = range(91, 100)
+    CIVILIAN = (0, 40)
+    HUNTER = (41, 50)
+    CHANGELING = (51, 53)
+    GHOUL = (54, 60)
+    WATCHER = (61, 70)
+    HUNTER_CLASS = (71, 80)
+    SORCERER = (81, 90)
+    NUMINOUS = (91, 100)
+
+    @classmethod
+    def get_member_by_value(cls, value: int) -> "CharGenHumans":
+        """Find the corresponding enum member's name based on an integer value.
+
+        Args:
+            value (int): The integer value to look up.
+
+        Returns:
+            Optional[str]: The name of the enum member if found, otherwise None.
+        """
+        for member in cls:
+            min_val, max_val = member.value
+            if min_val <= value <= max_val:
+                return member
+
+        return None
 
 
 class CharGenConcept(Enum):
     """Enum for RNG character generation of concepts."""
 
-    BERSERKER = range(0, 8)
-    PERFORMER = range(9, 16)
-    HEALER = range(17, 24)
-    SHAMAN = range(25, 32)
-    SOLDIER = range(33, 40)
-    ASCETIC = range(41, 48)
-    CRUSADER = range(49, 56)
-    URBAN_TRACKER = range(57, 64)
-    UNDER_WORLDER = range(65, 72)
-    SCIENTIST = range(73, 80)
-    TRADESMAN = range(81, 88)
-    BUSINESSMAN = range(89, 96)
-    CHOOSE = range(97, 100)
+    BERSERKER = (0, 8)
+    PERFORMER = (9, 16)
+    HEALER = (17, 24)
+    SHAMAN = (25, 32)
+    SOLDIER = (33, 40)
+    ASCETIC = (41, 48)
+    CRUSADER = (49, 56)
+    URBAN_TRACKER = (57, 64)
+    UNDER_WORLDER = (65, 72)
+    SCIENTIST = (73, 80)
+    TRADESMAN = (81, 88)
+    BUSINESSMAN = (89, 96)
+    CHOOSE = (97, 100)
+
+    @classmethod
+    def get_member_by_value(cls, value: int) -> "CharGenConcept":
+        """Find the corresponding enum member's name based on an integer value.
+
+        Args:
+            value (int): The integer value to look up.
+
+        Returns:
+            Optional[str]: The name of the enum member if found, otherwise None.
+        """
+        for member in cls:
+            min_val, max_val = member.value
+            if min_val <= value <= max_val:
+                return member
+
+        return None
 
 
 # CHANNEL_PERMISSIONS: Dictionary containing a mapping of channel permissions.
