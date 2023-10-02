@@ -184,12 +184,12 @@ class Developer(commands.Cog):
             else:
                 vampire_clan = None
 
-            first_name, last_name = await fetch_random_name()
+            name = await fetch_random_name()
 
             # Create the character
             data: dict[str, str | int | bool] = {
-                "first_name": first_name,
-                "last_name": last_name,
+                "first_name": name[0][0],
+                "last_name": name[0][1],
                 "nickname": char_class.name,
                 "developer_character": True,
                 "player_character": True,
