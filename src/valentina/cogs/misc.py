@@ -252,9 +252,10 @@ Roll Macros      : {num_macros}
     ) -> None:
         """Post the changelog."""
         if semver.compare(oldest_version, newest_version) > 0:
-            raise commands.BadArgument(
+            msg = (
                 f"Oldest version `{oldest_version}` is newer than newest version `{newest_version}`"
             )
+            raise commands.BadArgument(msg)
 
         changelog = ChangelogParser(self.bot, oldest_version, newest_version)
         embed = changelog.get_embed()

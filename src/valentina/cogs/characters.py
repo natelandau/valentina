@@ -39,8 +39,10 @@ from valentina.utils.options import (
     select_vampire_clan,
 )
 from valentina.views import (
+    AddFromSheetWizard,
     BioModal,
     CharGenWizard,
+    ConfirmCancelButtons,
     CustomSectionModal,
     ProfileModal,
     S3ImageReview,
@@ -65,8 +67,8 @@ class Characters(commands.Cog, name="Character"):
     section = chars.create_subgroup("section", "Work with character custom sections")
     trait = chars.create_subgroup("trait", "Work with character traits")
 
-    @chars.command(name="create", description="Create a new character")
-    async def create_character(
+    @chars.command(name="add", description="Add a character to Valentina from a sheet")
+    async def add_character(
         self,
         ctx: discord.ApplicationContext,
         char_class: Option(
@@ -114,7 +116,7 @@ class Characters(commands.Cog, name="Character"):
         # Fetch all traits and set them
         fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
 
-        wizard = CharGenWizard(
+        wizard = AddFromSheetWizard(
             ctx,
             fetched_traits,
             first_name=first_name,
@@ -149,6 +151,51 @@ class Characters(commands.Cog, name="Character"):
             ctx, f"Created player character: `{character.full_name}` as a `{char_class.name}`"
         )
         logger.info(f"CHARACTER: Create character {character}")
+
+    @chars.command(name="create", description="Create a new character from scratch")
+    async def create_character(
+        self,
+        ctx: discord.ApplicationContext,
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Create a new character from scratch."""
+        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        user = await self.bot.user_svc.fetch_user(ctx)
+        (
+            campaign_xp,
+            _,
+            _,
+            _,
+            _,
+        ) = user.fetch_experience(campaign.id)
+
+        view = ConfirmCancelButtons(ctx.author)
+        msg = await present_embed(
+            ctx,
+            title="Create a new character",
+            description=f"This will walk you through the character creation process.\n\nThis will cost `10` xp and you have `{campaign_xp}` xp available.",
+            view=view,
+            ephemeral=hidden,
+        )
+        await view.wait()
+        if not view.confirmed:
+            embed = discord.Embed(
+                title=f"{Emoji.CANCEL.value} Cancelled",
+                description="Create a new character",
+                color=EmbedColor.WARNING.value,
+            )
+            await msg.edit_original_response(embed=embed, view=None)
+            return
+
+        # Spend 10 xp
+        user.spend_experience(campaign.id, 10)
+
+        wizard = CharGenWizard(ctx, campaign=campaign, user=user, msg=msg, hidden=hidden)
+        await wizard.begin()
 
     @chars.command(name="set_active", description="Select a character as your active character")
     async def set_active_character(
@@ -579,7 +626,8 @@ class Characters(commands.Cog, name="Character"):
         if section_title.replace("-", "_").replace(" ", "_").lower() in [
             x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
         ]:
-            raise errors.ValidationError("Custom section already exists")
+            msg = "Custom section already exists"
+            raise errors.ValidationError(msg)
 
         self.bot.char_svc.custom_section_update_or_add(
             ctx, character, section_title, section_description
@@ -756,10 +804,7 @@ class Characters(commands.Cog, name="Character"):
         await ctx.send_modal(modal)
         await modal.wait()
         if modal.confirmed:
-            update_data: dict = {}
-            for k, v in modal.results.items():
-                if v:
-                    update_data[k] = v
+            update_data: dict = {k: v for k, v in modal.results.items() if v}
 
             await self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
 

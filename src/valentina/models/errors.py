@@ -19,8 +19,9 @@ class ErrorReporter:
         self.bot: commands.Bot = None
         self.channel: discord.TextChannel = None
 
+    @staticmethod
     def _handle_known_exceptions(  # noqa: C901
-        self, ctx: discord.ApplicationContext, error: Exception
+        ctx: discord.ApplicationContext, error: Exception
     ) -> tuple[str | None, str | None, bool]:
         """Handle known exceptions and return user message, log message, and traceback flag.
 

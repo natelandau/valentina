@@ -50,13 +50,12 @@ class ValidChannelName(Converter):
         min_channel_length = 2
         max_channel_length = 96
         if not (min_channel_length <= len(argument) <= max_channel_length):
-            raise BadArgument("Channel name must be between 2 and 96 chars long")
+            msg = "Channel name must be between 2 and 96 chars long"
+            raise BadArgument(msg)
 
         if not all(c.isalnum() or c in self.ALLOWED_CHARACTERS for c in argument):
-            raise BadArgument(
-                "Channel name must only consist of "
-                "alphanumeric characters, minus signs or apostrophes."
-            )
+            msg = "Channel name must only consist of alphanumeric characters, minus signs or apostrophes."
+            raise BadArgument(msg)
 
         # Replace invalid characters with unicode alternatives.
         return argument
@@ -71,7 +70,8 @@ class ValidCharacterClass(Converter):
             if argument.lower() == c.name.lower():
                 return c
 
-        raise BadArgument(f"`{argument}` is not a valid character class")
+        msg = f"`{argument}` is not a valid character class"
+        raise BadArgument(msg)
 
 
 class ValidCharacterName(Converter):
@@ -104,9 +104,8 @@ class ValidCharacterObject(Converter):
         try:
             return Character.get_by_id(int(argument))
         except DoesNotExist as e:
-            raise errors.DatabaseError(
-                f"No character found in database with id `{argument}`"
-            ) from e
+            msg = f"No character found in database with id `{argument}`"
+            raise errors.DatabaseError(msg) from e
 
 
 class ValidCharTrait(Converter):
@@ -120,7 +119,8 @@ class ValidCharTrait(Converter):
             if argument.lower() == trait.name.lower():
                 return trait
 
-        raise BadArgument(f"`{argument}` is not a valid trait")
+        msg = f"`{argument}` is not a valid trait"
+        raise BadArgument(msg)
 
 
 class ValidCampaign(Converter):
@@ -134,7 +134,8 @@ class ValidCampaign(Converter):
         if campaign:
             return campaign
 
-        raise (BadArgument(f"Campaign {argument} not found"))
+        msg = f"Campaign {argument} not found"
+        raise (BadArgument(msg))
 
 
 class ValidClan(Converter):
@@ -146,7 +147,8 @@ class ValidClan(Converter):
             if argument.lower() == c.name.lower():
                 return c
 
-        raise BadArgument(f"`{argument}` is not a valid vampire clan")
+        msg = f"`{argument}` is not a valid vampire clan"
+        raise BadArgument(msg)
 
 
 class ValidCustomSection(Converter):
@@ -157,9 +159,8 @@ class ValidCustomSection(Converter):
         try:
             return CustomSection.get_by_id(int(argument))
         except DoesNotExist as e:
-            raise errors.DatabaseError(
-                f"No custom section found in database with id `{argument}`"
-            ) from e
+            msg = f"No custom section found in database with id `{argument}`"
+            raise errors.DatabaseError(msg) from e
 
 
 class ValidCustomTrait(Converter):
@@ -173,7 +174,8 @@ class ValidCustomTrait(Converter):
             if argument.lower() == ct.name.lower():
                 return ct
 
-        raise BadArgument(f"`{argument}` is not a valid vampire clan")
+        msg = f"`{argument}` is not a valid vampire clan"
+        raise BadArgument(msg)
 
 
 class ValidImageURL(Converter):
@@ -182,20 +184,21 @@ class ValidImageURL(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> str:  # noqa: ARG002
         """Validate and normalize thumbnail URLs."""
         if not re.match(r"^https?://", argument):
-            raise BadArgument("Thumbnail URLs must start with `http://` or `https://`")
+            msg = "Thumbnail URLs must start with `http://` or `https://`"
+            raise BadArgument(msg)
 
         # Extract the file extension from the URL
         file_extension = argument.split(".")[-1].lower()
 
         if file_extension not in VALID_IMAGE_EXTENSIONS:
-            raise BadArgument(
-                f"Thumbnail URLs must end with a valid image extension: {', '.join(VALID_IMAGE_EXTENSIONS)}"
-            )
+            msg = f"Thumbnail URLs must end with a valid image extension: {', '.join(VALID_IMAGE_EXTENSIONS)}"
+            raise BadArgument(msg)
 
         async with aiohttp.ClientSession() as session, session.get(argument) as r:
             success_status_codes = [200, 201, 202, 203, 204, 205, 206]
             if r.status not in success_status_codes:
-                raise BadArgument(f"Thumbnail URL could not be accessed\nStatus: {r.status}")
+                msg = f"Thumbnail URL could not be accessed\nStatus: {r.status}"
+                raise BadArgument(msg)
 
         # Replace media.giphy.com URLs with i.giphy.com URLs
         return re.sub(r"//media\.giphy\.com", "//i.giphy.com", argument)
@@ -210,7 +213,8 @@ class ValidTraitCategory(Converter):
             if argument.lower() == c.name.lower():
                 return c
 
-        raise BadArgument(f"`{argument}` is not a valid trait category")
+        msg = f"`{argument}` is not a valid trait category"
+        raise BadArgument(msg)
 
 
 class ValidYYYYMMDD(Converter):
@@ -221,7 +225,8 @@ class ValidYYYYMMDD(Converter):
         if re.match(r"^\d{4}-\d{2}-\d{2}$", argument):
             return datetime.strptime(argument, "%Y-%m-%d")
 
-        raise BadArgument(f"`{argument}` is not a valid trait")
+        msg = f"`{argument}` is not a valid trait"
+        raise BadArgument(msg)
 
 
 class ValidMacroFromID(Converter):
@@ -244,7 +249,8 @@ class ValidTrait(Converter):
             if argument.lower() == trait.name.lower():
                 return trait
 
-        raise BadArgument(f"`{argument}` is not a valid trait")
+        msg = f"`{argument}` is not a valid trait"
+        raise BadArgument(msg)
 
 
 class ValidTraitOrCustomTrait(Converter):
@@ -258,4 +264,5 @@ class ValidTraitOrCustomTrait(Converter):
             if argument.lower() == trait.name.lower():
                 return trait
 
-        raise BadArgument(f"`{argument}` is not a valid trait")
+        msg = f"`{argument}` is not a valid trait"
+        raise BadArgument(msg)

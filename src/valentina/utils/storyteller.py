@@ -47,7 +47,7 @@ def __storyteller_attributes(
     attribute_values = {"primary": [4, 3, 3], "secondary": [3, 3, 2], "tertiary": [1, 2, 3]}
 
     while len(attributes) > 0:
-        cat: str = random.choice([x for x in attributes])
+        cat: str = random.choice(list(attributes))
 
         if specialty == "Fighter":
             if cat == "Physical":
@@ -60,7 +60,7 @@ def __storyteller_attributes(
             else:
                 vals = random.choice([x for x in attribute_values if x != "primary"])
 
-        vals = random.choice([x for x in attribute_values])
+        vals = random.choice(list(attribute_values))
 
         for t in attributes[cat]:
             value = attribute_values[vals].pop(0)

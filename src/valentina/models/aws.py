@@ -46,10 +46,101 @@ class AWSService:
     def check_disabled(self) -> None:
         """Check if the service is disabled and raise an error if it is."""
         if self.disabled:
-            raise errors.ServiceDisabledError("AWS")
+            msg = "AWS"
+            raise errors.ServiceDisabledError(msg)
 
+    def copy_object(self, source_key: str, dest_key: str) -> bool:
+        """Copy an object within the S3 bucket or to another bucket.
+
+        Args:
+            source_key (str): Key of the source object.
+            dest_key (str): Key for the destination object.
+
+        Returns:
+            bool: True if the copy is successful, False otherwise.
+        """
+        self.check_disabled()
+
+        copy_source = {"Bucket": self.bucket, "Key": source_key}
+        try:
+            self.s3.copy_object(CopySource=copy_source, Bucket=self.bucket, Key=dest_key)
+        except ClientError as e:
+            logger.error(f"Failed to copy object {source_key} to {dest_key}: {e}")
+            raise
+
+        return True
+
+    def delete_object(self, key: str) -> bool:
+        """Delete an object from the S3 bucket.
+
+        Attempt to delete the object from the S3 bucket using the provided key.
+        If the deletion fails, log the error and return False.
+
+        Args:
+            key (str): Key of the object to delete from the S3 bucket.
+
+        Returns:
+            bool: True if the deletion is successful, False otherwise.
+        """
+        self.check_disabled()
+
+        try:
+            # Attempt to delete the object from the S3 bucket
+            result = self.s3.delete_object(Bucket=self.bucket, Key=key)
+        except ClientError as e:
+            logger.error(f"Failed to delete object {key}: {e}")
+            raise
+
+        # Check the DeleteMarker to confirm deletion
+        return bool(result.get("DeleteMarker", False))
+
+    def download_file(self, key: str, download_path: str) -> bool:
+        """Download a file from the S3 bucket to Valentina's server.
+
+        Args:
+            key (str): Key of the object to download from the S3 bucket.
+            download_path (str): Local path to save the downloaded file.
+
+        Returns:
+            bool: True if the download is successful, False otherwise.
+        """
+        self.check_disabled()
+
+        try:
+            self.s3.download_file(Bucket=self.bucket, Key=key, Filename=download_path)
+        except ClientError as e:
+            logger.error(f"Failed to download object {key}: {e}")
+            raise
+
+        return True
+
+    def generate_presigned_url(self, key: str, expiration: int = 3600) -> str | None:
+        """Generate a presigned URL for an object in the S3 bucket.
+
+        A presigned URL grants temporary access to a specific S3 object without requiring AWS security credentials or permissions from the end user.
+
+        Args:
+            key (str): Key of the object.
+            expiration (int): Time in seconds for the URL to expire. (Default: 1 hour)
+
+        Returns:
+            str | None: Presigned URL or None if the operation fails.
+        """
+        self.check_disabled()
+
+        try:
+            url = self.s3.generate_presigned_url(
+                "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expiration
+            )
+        except ClientError as e:
+            logger.error(f"Failed to generate presigned URL for {key}: {e}")
+            return None
+
+        return url
+
+    @staticmethod
     def get_key_prefix(
-        self, ctx: discord.ApplicationContext, object_type: str, **kwargs: str | int
+        ctx: discord.ApplicationContext, object_type: str, **kwargs: str | int
     ) -> str:
         """Generate a key prefix for an object to be uploaded to Amazon S3.
 
@@ -93,95 +184,7 @@ class AWSService:
 
         except KeyError as e:
             logger.error(f"Missing required argument to _key_error: {e}")
-            raise e
-
-    def copy_object(self, source_key: str, dest_key: str) -> bool:
-        """Copy an object within the S3 bucket or to another bucket.
-
-        Args:
-            source_key (str): Key of the source object.
-            dest_key (str): Key for the destination object.
-
-        Returns:
-            bool: True if the copy is successful, False otherwise.
-        """
-        self.check_disabled()
-
-        copy_source = {"Bucket": self.bucket, "Key": source_key}
-        try:
-            self.s3.copy_object(CopySource=copy_source, Bucket=self.bucket, Key=dest_key)
-        except ClientError as e:
-            logger.error(f"Failed to copy object {source_key} to {dest_key}: {e}")
-            raise e
-
-        return True
-
-    def delete_object(self, key: str) -> bool:
-        """Delete an object from the S3 bucket.
-
-        Attempt to delete the object from the S3 bucket using the provided key.
-        If the deletion fails, log the error and return False.
-
-        Args:
-            key (str): Key of the object to delete from the S3 bucket.
-
-        Returns:
-            bool: True if the deletion is successful, False otherwise.
-        """
-        self.check_disabled()
-
-        try:
-            # Attempt to delete the object from the S3 bucket
-            result = self.s3.delete_object(Bucket=self.bucket, Key=key)
-        except ClientError as e:
-            logger.error(f"Failed to delete object {key}: {e}")
-            raise e
-
-        # Check the DeleteMarker to confirm deletion
-        return bool(result.get("DeleteMarker", False))
-
-    def download_file(self, key: str, download_path: str) -> bool:
-        """Download a file from the S3 bucket to Valentina's server.
-
-        Args:
-            key (str): Key of the object to download from the S3 bucket.
-            download_path (str): Local path to save the downloaded file.
-
-        Returns:
-            bool: True if the download is successful, False otherwise.
-        """
-        self.check_disabled()
-
-        try:
-            self.s3.download_file(Bucket=self.bucket, Key=key, Filename=download_path)
-        except ClientError as e:
-            raise e
-
-        return True
-
-    def generate_presigned_url(self, key: str, expiration: int = 3600) -> str | None:
-        """Generate a presigned URL for an object in the S3 bucket.
-
-        A presigned URL grants temporary access to a specific S3 object without requiring AWS security credentials or permissions from the end user.
-
-        Args:
-            key (str): Key of the object.
-            expiration (int): Time in seconds for the URL to expire. (Default: 1 hour)
-
-        Returns:
-            str | None: Presigned URL or None if the operation fails.
-        """
-        self.check_disabled()
-
-        try:
-            url = self.s3.generate_presigned_url(
-                "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expiration
-            )
-        except ClientError as e:
-            logger.error(f"Failed to generate presigned URL for {key}: {e}")
-            return None
-
-        return url
+            raise
 
     def get_url(self, key: str) -> str:
         """Get the URL for an object in the S3 bucket."""
