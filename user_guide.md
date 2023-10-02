@@ -41,7 +41,8 @@ Valentina Noir revolves around three core concepts:
 
 ### Creating a Character
 
--   Use `/character add` to add a new character you've already created.
+-   Use `/character add` to add a new character you've already created by hand.
+-   User `/character create` to create use a RNG guided character creation process.
 -   **IMPORTANT**: Create your character on paper before entering it into Valentina.
 -   **Post creation:** Don't worry if you make a mistake or the section on your sheet doesn't appear during character generation.You can easily add/update traits, abilities, custom sections, and a biography as needed.
 
