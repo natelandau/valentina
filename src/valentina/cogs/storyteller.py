@@ -40,7 +40,7 @@ from valentina.utils.options import (
 from valentina.utils.perform_roll import perform_roll
 from valentina.utils.storyteller import storyteller_character_traits
 from valentina.views import (
-    CharGenWizard,
+    AddFromSheetWizard,
     ConfirmCancelButtons,
     S3ImageReview,
     confirm_action,
@@ -120,7 +120,7 @@ class StoryTeller(commands.Cog):
         # Fetch all traits and set them
         fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
 
-        wizard = CharGenWizard(
+        wizard = AddFromSheetWizard(
             ctx,
             fetched_traits,
             first_name=first_name,
@@ -293,13 +293,15 @@ class StoryTeller(commands.Cog):
         plural = "s" if len(characters) > 1 else ""
         description = f"**{len(characters)}** character{plural} on this server\n\u200b"
 
-        for character in sorted(characters, key=lambda x: x.name):
-            fields.append(
+        fields.extend(
+            [
                 (
                     character.full_name,
                     f"Class: `{character.char_class.name}`",
                 )
-            )
+                for character in sorted(characters, key=lambda x: x.name)
+            ]
+        )
 
         await present_embed(
             ctx=ctx,

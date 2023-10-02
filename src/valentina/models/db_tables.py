@@ -208,9 +208,8 @@ class GuildUser(BaseModel):
         new_xp = self.data[f"{campaign_id}_experience"] = campaign_xp - amount
 
         if new_xp < 0:
-            raise errors.NotEnoughExperienceError(
-                f"Can not spend {amount} xp with only {campaign_xp} available"
-            )
+            msg = f"Can not spend {amount} xp with only {campaign_xp} available"
+            raise errors.NotEnoughExperienceError(msg)
 
         self.save()
 
@@ -396,13 +395,14 @@ class Character(BaseModel):
             list[Trait | CustomTrait]: List of all traits and custom traits.
         """
         all_traits = []
-        for tv in TraitValue.select().where(TraitValue.character == self):
-            all_traits.append(tv.trait)
 
-        for ct in self.custom_traits:
-            all_traits.append(ct)
+        all_traits.extend(
+            [tv.trait for tv in TraitValue.select().where(TraitValue.character == self)]
+        )
 
-        return sorted(list(set(all_traits)), key=lambda x: x.name)
+        all_traits.extend(list(self.custom_traits))
+
+        return sorted(set(all_traits), key=lambda x: x.name)
 
     @property
     def traits_dict(self) -> dict[str, list[Trait | CustomTrait]]:
@@ -462,7 +462,8 @@ class Character(BaseModel):
         if CustomTrait.get_or_none(
             (CustomTrait.character == self) & (fn.lower(CustomTrait.name) == name.lower())
         ):
-            raise errors.ValidationError(f"Trait name `{name}` already exists.")
+            msg = f"Trait name `{name}` already exists."
+            raise errors.ValidationError(msg)
 
         CustomTrait.create(
             character=self,

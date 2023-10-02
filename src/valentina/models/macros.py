@@ -44,14 +44,16 @@ class MacroService:
         # Check if a macro with the same name already exists
         if any(macro.name.lower() == name.lower() for macro in existing_macros):
             logger.debug(f"CACHE: Macro already exists for {user}")
-            raise errors.ValidationError(f"Macro named `{name}` already exists.")
+            msg = f"Macro named `{name}` already exists."
+            raise errors.ValidationError(msg)
 
         # Check if a macro with the same abbreviation already exists
         if abbreviation is not None and any(
             macro.abbreviation.lower() == abbreviation.lower() for macro in existing_macros
         ):
             logger.debug(f"CACHE: Macro already exists for {user}")
-            raise errors.ValidationError("Macro with the same abbreviation already exists.")
+            msg = "Macro with the same abbreviation already exists."
+            raise errors.ValidationError(msg)
 
         # Create the macro and associated macro traits
         logger.debug(f"DATABASE: Create macro {name} for {user}")
@@ -98,9 +100,9 @@ class MacroService:
         if user_key not in self._macro_cache:
             logger.debug(f"DATABASE: Fetch macros for {user}")
 
-            self._macro_cache[user_key] = [
-                x for x in Macro.select().where(Macro.user == user).order_by(Macro.name.asc())
-            ]
+            self._macro_cache[user_key] = list(
+                Macro.select().where(Macro.user == user).order_by(Macro.name.asc())
+            )
         else:
             logger.debug(f"CACHE: Fetch macros for {user}")
 

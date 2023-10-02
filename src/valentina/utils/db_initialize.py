@@ -167,7 +167,6 @@ class MigrateDatabase:
             "1.1.0": self.__1_1_0,
             "1.1.5": self.__1_1_5,
             "1.3.0": self.__1_3_0,
-            "1.4.0": self.__1_4_0,
             "1.4.1": self.__1_4_1,
             "1.5.0": self.__1_5_0,
             "1.8.0": self.__1_8_0,
@@ -570,15 +569,6 @@ class MigrateDatabase:
             # Re-enable foreign keys
             self.db.execute_sql("PRAGMA foreign_keys=ON;")
 
-    def __1_4_0(self) -> None:
-        """Migrate from version 1.4.0."""
-        for character in Character.select().where(
-            Character.data["storyteller_character"] != True  # noqa: E712
-        ):
-            logger.debug(f"DATABASE: Set {character} as a player character")
-            character.data["player_character"] = True
-            character.save()
-
     def __1_4_1(self) -> None:  # noqa: C901
         """Migrate from version 1.4.1."""
         # Micrate roll result thumbnails
@@ -723,7 +713,8 @@ class MigrateDatabase:
 
             self.db.execute_sql("PRAGMA foreign_keys=ON;")
 
-    def __1_8_0(self) -> None:
+    @staticmethod
+    def __1_8_0() -> None:
         """Migrate from version 1.8.0."""
         # Remove unused settings from guilds
 

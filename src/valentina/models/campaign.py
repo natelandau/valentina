@@ -15,7 +15,7 @@ from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
 
-class CampaignService:
+class CampaignService:  # noqa: PLR0904
     """Campaign Manager cache/in-memory database."""
 
     def __init__(self) -> None:
@@ -54,7 +54,8 @@ class CampaignService:
                 is_active=False,
             )
         except IntegrityError as e:
-            raise errors.ValidationError(f"Campaign '{name}' already exists.") from e
+            msg = f"Campaign '{name}' already exists."
+            raise errors.ValidationError(msg) from e
 
         # Remove this guild's campaigns from the cache, forcing a refresh next time they're accessed
         self.purge_cache(ctx)
@@ -315,17 +316,19 @@ class CampaignService:
         # Fetch all campaigns for the guild from the database
         try:
             logger.debug(f"DATABASE: Fetch all campaigns for guild {guild_id}")
-            campaigns = [x for x in Campaign.select().where(Campaign.guild == guild_id)]
+            campaigns = list(Campaign.select().where(Campaign.guild == guild_id))
 
         except DoesNotExist as e:
-            raise errors.ValidationError("No campaigns found") from e
+            msg = "No campaigns found"
+            raise errors.ValidationError(msg) from e
 
         # Update the cache with the fetched campaigns
         self.campaign_cache[guild_id] = campaigns
 
         return campaigns
 
-    def fetch_chapter_by_id(self, chapter_id: int) -> CampaignChapter:
+    @staticmethod
+    def fetch_chapter_by_id(chapter_id: int) -> CampaignChapter:
         """Fetch a chapter by its ID.
 
         Args:
@@ -343,11 +346,14 @@ class CampaignService:
             # Update cache.
 
             logger.debug(f"DATABASE: fetch chapter {chapter.id}")
-            return chapter
         except DoesNotExist as e:
-            raise errors.DatabaseError(f"No chapter found with ID {chapter_id}") from e
+            msg = f"No chapter found with ID {chapter_id}"
+            raise errors.DatabaseError(msg) from e
+        else:
+            return chapter
 
-    def fetch_chapter_by_name(self, campaign: Campaign, name: str) -> CampaignChapter:
+    @staticmethod
+    def fetch_chapter_by_name(campaign: Campaign, name: str) -> CampaignChapter:
         """Fetch a chapter by its name.
 
         Args:
@@ -368,9 +374,11 @@ class CampaignService:
             # Update cache.
 
             logger.debug(f"DATABASE: fetch chapter {chapter.name}")
-            return chapter
         except DoesNotExist as e:
-            raise errors.DatabaseError(f"No chapter found with name {name}") from e
+            msg = f"No chapter found with name {name}"
+            raise errors.DatabaseError(msg) from e
+        else:
+            return chapter
 
     def fetch_all_chapters(self, campaign: Campaign) -> list[CampaignChapter]:
         """Fetch all chapters for a campaign.
@@ -395,12 +403,11 @@ class CampaignService:
 
         # Fetch all chapters for the campaign from the database
         try:
-            chapters = [
-                x for x in CampaignChapter.select().where(CampaignChapter.campaign == campaign.id)
-            ]
+            chapters = list(CampaignChapter.select().where(CampaignChapter.campaign == campaign.id))
             logger.debug(f"DATABASE: Fetch all chapters for campaign {campaign.id}")
         except DoesNotExist as e:
-            raise errors.NoMatchingItemsError("No chapters found") from e
+            msg = "No chapters found"
+            raise errors.NoMatchingItemsError(msg) from e
 
         # Update the cache with the fetched chapters
         self.chapter_cache[campaign.id] = chapters
@@ -423,16 +430,15 @@ class CampaignService:
             logger.debug(f"CACHE: Return notes for campaign {campaign.id}")
             return self.note_cache[campaign.id]
 
-        notes = [
-            note for note in CampaignNote.select().where(CampaignNote.campaign_id == campaign.id)
-        ]
+        notes = list(CampaignNote.select().where(CampaignNote.campaign_id == campaign.id))
         logger.debug(f"DATABASE: Fetch all notes for campaign {campaign.id}")
 
         self.note_cache[campaign.id] = notes
 
         return notes
 
-    def fetch_note_by_id(self, note_id: int) -> CampaignNote:
+    @staticmethod
+    def fetch_note_by_id(note_id: int) -> CampaignNote:
         """Fetch a note by its ID.
 
         This method first checks if the note with the given ID is present in the cache.
@@ -451,7 +457,8 @@ class CampaignService:
             note = CampaignNote.get(id=note_id)
             logger.debug(f"DATABASE: Fetch note id {note_id}")
         except DoesNotExist as e:
-            raise errors.DatabaseError(f"No note found with ID {note_id}") from e
+            msg = f"No note found with ID {note_id}"
+            raise errors.DatabaseError(msg) from e
 
         return note
 
@@ -476,17 +483,19 @@ class CampaignService:
             return self.npc_cache[campaign.id]
 
         try:
-            npcs = [npc for npc in CampaignNPC.select().where(CampaignNPC.campaign == campaign.id)]
+            npcs = list(CampaignNPC.select().where(CampaignNPC.campaign == campaign.id))
             logger.debug(f"DATABASE: Fetch all NPCs for campaign {campaign.name}")
         except DoesNotExist as e:
-            raise errors.NoMatchingItemsError("No NPCs found") from e
+            msg = "No NPCs found"
+            raise errors.NoMatchingItemsError(msg) from e
 
         self.npc_cache[campaign.id] = npcs
 
         return self.npc_cache[campaign.id]
 
+    @staticmethod
     def fetch_npc_by_name(
-        self, ctx: discord.ApplicationContext, campaign: Campaign, name: str
+        ctx: discord.ApplicationContext, campaign: Campaign, name: str
     ) -> CampaignNPC:
         """Fetch an NPC by its name.
 
@@ -512,7 +521,8 @@ class CampaignService:
             npc = CampaignNPC.get(name=name, campaign=campaign.id)
             logger.debug(f"DATABASE: Fetch NPC for guild {guild_id}")
         except DoesNotExist as e:
-            raise errors.NoMatchingItemsError(f"No NPC found with name {name}") from e
+            msg = f"No NPC found with name {name}"
+            raise errors.NoMatchingItemsError(msg) from e
 
         return npc
 
@@ -618,13 +628,8 @@ class CampaignService:
             logger.debug(f"CAMPAIGN: Update chapter {chapter.name} for guild {ctx.guild.id}")
 
         except DoesNotExist as e:
-            raise errors.DatabaseError(f"No chapter found with ID {chapter.id}") from e
-
-        except Exception as e:
-            logger.error(
-                f"CAMPAIGN: Unexpected error occurred while updating chapter {chapter.name} for guild {ctx.guild.id}"
-            )
-            raise e
+            msg = f"No chapter found with ID {chapter.id}"
+            raise errors.DatabaseError(msg) from e
 
     def update_campaign(
         self, ctx: discord.ApplicationContext, campaign: Campaign, **kwargs: str
@@ -649,12 +654,8 @@ class CampaignService:
             self.purge_cache(ctx)
 
         except DoesNotExist as e:
-            raise errors.DatabaseError(f"No campaign found with ID {campaign.id}") from e
-        except Exception as e:
-            logger.error(
-                f"CAMPAIGN: Unexpected error occurred while updating campaign for guild {ctx.guild.id}"
-            )
-            raise e
+            msg = f"No campaign found with ID {campaign.id}"
+            raise errors.DatabaseError(msg) from e
 
     def update_note(
         self, ctx: discord.ApplicationContext, note: CampaignNote, **kwargs: str
@@ -680,12 +681,8 @@ class CampaignService:
 
             logger.debug(f"CAMPAIGN: Update note {note.name} for guild {ctx.guild.id}")
         except DoesNotExist as e:
-            raise errors.DatabaseError(f"No note found with ID {note.id}") from e
-        except Exception as e:
-            logger.error(
-                f"CAMPAIGN: Unexpected error occurred while updating note for guild {ctx.guild.id}"
-            )
-            raise e
+            msg = f"No note found with ID {note.id}"
+            raise errors.DatabaseError(msg) from e
 
     def update_npc(self, ctx: discord.ApplicationContext, npc: CampaignNPC, **kwargs: str) -> None:
         """Update an NPC.
@@ -709,9 +706,5 @@ class CampaignService:
 
             logger.debug(f"CAMPAIGN: Update NPC {npc.name} for guild {ctx.guild.id}")
         except DoesNotExist as e:
-            raise errors.DatabaseError(f"No NPC found with ID {npc.id}") from e
-        except Exception as e:
-            logger.error(
-                f"CAMPAIGN: Unexpected error occurred while updating NPC for guild {ctx.guild.id}"
-            )
-            raise e
+            msg = f"No NPC found with ID {npc.id}"
+            raise errors.DatabaseError(msg) from e

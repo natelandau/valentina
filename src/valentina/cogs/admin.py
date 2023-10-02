@@ -98,10 +98,12 @@ class Admin(commands.Cog):
     ) -> None:
         """Kick a target member, by ID or mention."""
         if member.id == ctx.author.id:
-            raise errors.ValidationError("You cannot kick yourself.")
+            msg = "You cannot kick yourself."
+            raise errors.ValidationError(msg)
 
         if member.top_role >= ctx.author.top_role:
-            raise errors.ValidationError("You cannot kick this member.")
+            msg = "You cannot kick this member."
+            raise errors.ValidationError(msg)
 
         # Confirm the action
         title = f"Kick {member.display_name} from this guild"
@@ -134,10 +136,12 @@ class Admin(commands.Cog):
         await assert_permissions(ctx, ban_members=True)
         if user := discord.utils.get(ctx.guild.members, id=user.id):
             if user.id == ctx.author.id:
-                raise errors.ValidationError("You cannot ban yourself.")
+                msg = "You cannot ban yourself."
+                raise errors.ValidationError(msg)
 
             if user.top_role >= ctx.author.top_role:
-                raise errors.ValidationError("You cannot ban this member.")
+                msg = "You cannot ban this member."
+                raise errors.ValidationError(msg)
 
         # Confirm the action
         title = f"Ban {user.display_name} from this guild"
@@ -234,10 +238,12 @@ class Admin(commands.Cog):
         for user in converted_members:
             if user := discord.utils.get(ctx.guild.members, id=user.id):
                 if user.id == ctx.author.id:
-                    raise errors.ValidationError("You cannot ban yourself.")
+                    msg = "You cannot ban yourself."
+                    raise errors.ValidationError(msg)
 
                 if user.top_role >= ctx.author.top_role:
-                    raise errors.ValidationError("You cannot ban this member.")
+                    msg = "You cannot ban this member."
+                    raise errors.ValidationError(msg)
 
             await ctx.guild.ban(user, reason=f"{ctx.author} ({ctx.author.id}): {reason}")
 
@@ -384,7 +390,8 @@ class Admin(commands.Cog):
     ) -> None:
         """Set slowmode for the current channel."""
         if not isinstance(ctx.channel, discord.TextChannel):
-            raise commands.BadArgument("Slowmode can only be set in text channels.")
+            msg = "Slowmode can only be set in text channels."
+            raise commands.BadArgument(msg)
 
         await assert_permissions(ctx, manage_channels=True)
 
@@ -430,7 +437,8 @@ class Admin(commands.Cog):
         await assert_permissions(ctx, manage_roles=True)
 
         if not isinstance(ctx.channel, discord.TextChannel):
-            raise commands.BadArgument("Only text channels can be locked")
+            msg = "Only text channels can be locked"
+            raise commands.BadArgument(msg)
 
         if ctx.channel.overwrites_for(ctx.guild.default_role).send_messages is False:
             await ctx.respond("This channel is already locked.", ephemeral=True)
@@ -472,7 +480,8 @@ class Admin(commands.Cog):
         """Set the `Send Message` permission to the default state for the default role."""
         await assert_permissions(ctx, manage_roles=True)
         if not isinstance(ctx.channel, discord.TextChannel):
-            raise commands.BadArgument("Only text channels can be locked or unlocked")
+            msg = "Only text channels can be locked or unlocked"
+            raise commands.BadArgument(msg)
 
         if ctx.channel.overwrites_for(ctx.guild.default_role).send_messages is not False:
             await ctx.respond("This channel isn't locked.", ephemeral=True)
