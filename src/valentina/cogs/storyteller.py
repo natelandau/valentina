@@ -208,14 +208,14 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Create a new storyteller character."""
-        first_name, last_name = await fetch_random_name(gender=gender, country=name_type)
+        name = await fetch_random_name(gender=gender, country=name_type)
 
         if char_class.name.lower() == "vampire" and not vampire_clan:
             vampire_clan = VampireClan.select().order_by(fn.Random()).limit(1)[0]
 
         data = {
-            "first_name": first_name,
-            "last_name": last_name,
+            "first_name": name[0][0],
+            "last_name": name[0][1],
             "nickname": char_class.name,
             "storyteller_character": True,
             "player_character": False,

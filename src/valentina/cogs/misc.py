@@ -15,7 +15,12 @@ from valentina.models.bot import Valentina
 from valentina.models.db_tables import Character, Macro
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
-from valentina.utils.options import select_changelog_version_1, select_changelog_version_2
+from valentina.utils.helpers import fetch_random_name
+from valentina.utils.options import (
+    select_changelog_version_1,
+    select_changelog_version_2,
+    select_country,
+)
 
 p = inflect.engine()
 
@@ -267,6 +272,43 @@ Roll Macros      : {num_macros}
         coin_sides = ["Heads", "Tails"]
         await ctx.respond(
             f"**{ctx.author.name}** flipped a coin and got **{random.choice(coin_sides)}**!"
+        )
+
+    @commands.slash_command(name="name_generator", help="Generate a random name")
+    async def name_gen(
+        self,
+        ctx: discord.ApplicationContext,
+        gender: Option(
+            str,
+            name="gender",
+            description="The character's gender",
+            choices=["male", "female"],
+            required=True,
+        ),
+        country: Option(
+            str,
+            name="country",
+            description="The country for the character's name (default 'US')",
+            autocomplete=select_country,
+            default="us",
+        ),
+        number: Option(
+            int, name="number", description="The number of names to generate (default 5)", default=5
+        ),
+    ) -> None:
+        """Generate a random name."""
+        name_list = [
+            f"- {name[0].title()} {name[1].title()}\n"
+            for name in await fetch_random_name(gender=gender, country=country, results=number)
+        ]
+
+        await ctx.respond(
+            embed=discord.Embed(
+                title="Random Name Generator",
+                description=f"Here are some random names for you, {ctx.author.mention}!\n{''.join(name_list)}",
+                color=EmbedColor.INFO.value,
+            ),
+            ephemeral=True,
         )
 
 

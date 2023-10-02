@@ -64,19 +64,29 @@ def fetch_clan_disciplines(clan: str) -> list[str]:
     return CLAN_DISCIPLINES[clan.title()]
 
 
-async def fetch_random_name(gender: str | None = None, country: str = "us") -> tuple[str, str]:
-    """Fetch a random name from the randomuser.me API."""
+async def fetch_random_name(
+    gender: str | None = None, country: str = "us", results: int = 1
+) -> list[tuple[str, str]]:
+    """Fetch a random name from the randomuser.me API.
+
+    Args:
+        country (str, optional): The country to fetch the name from. Defaults to "us".
+        results (int, optional): The number of results to fetch. Defaults to 1.
+        gender (str, optional): The gender of the name to fetch. Defaults to None
+
+    """
     if not gender:
         gender = random.choice(["male", "female"])
 
-    params = {"gender": gender, "nat": country, "inc": "name"}
+    params = {"gender": gender, "nat": country, "inc": "name", "results": results}
     url = f"https://randomuser.me/api/?{urlencode(params)}"
+
     async with ClientSession() as session, session.get(url) as res:
         if 300 > res.status >= 200:  # noqa: PLR2004
             data = await res.json()
-            return (data["results"][0]["name"]["first"], data["results"][0]["name"]["last"])
+            return [(result["name"]["first"], result["name"]["last"]) for result in data["results"]]
 
-    return ("John", "Doe")
+    return [("John", "Doe")]
 
 
 def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False) -> int | None:
