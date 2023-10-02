@@ -286,8 +286,12 @@ An overview of {campaign.name}.
             return
 
         fields = []
-        for c in sorted(campaigns, key=lambda x: x.name):
-            fields.append((f"**{c.name}** (Active)" if c.is_active else f"**{c.name}**", ""))
+        fields.extend(
+            [
+                (f"**{c.name}** (Active)" if c.is_active else f"**{c.name}**", "")
+                for c in sorted(campaigns, key=lambda x: x.name)
+            ]
+        )
 
         await present_embed(ctx, title="Campaigns", fields=fields, level="info")
         logger.debug("CAMPAIGN: List all campaigns")
@@ -365,13 +369,15 @@ An overview of {campaign.name}.
             return
 
         fields = []
-        for npc in sorted(npcs, key=lambda x: x.name):
-            fields.append(
+        fields.extend(
+            [
                 (
                     f"**__{npc.name}__**",
                     f"**Class:** {npc.npc_class}\n**Description:** {npc.description}",
                 )
-            )
+                for npc in sorted(npcs, key=lambda x: x.name)
+            ]
+        )
 
         await present_embed(ctx, title="NPCs", fields=fields, level="info", ephemeral=hidden)
 
@@ -521,13 +527,15 @@ An overview of {campaign.name}.
             return
 
         fields = []
-        for chapter in sorted(chapters, key=lambda x: x.chapter_number):
-            fields.append(
+        fields.extend(
+            [
                 (
                     f"**{chapter.chapter_number}.** **__{chapter.name}__**",
                     f"{chapter.short_description}",
                 )
-            )
+                for chapter in sorted(chapters, key=lambda x: x.chapter_number)
+            ]
+        )
 
         await present_embed(ctx, title="Chapters", fields=fields, level="info")
 
@@ -700,15 +708,17 @@ An overview of {campaign.name}.
             return
 
         fields = []
-        for note in sorted(notes, key=lambda x: x.name):
-            fields.append(
+        fields.extend(
+            [
                 (
                     f"**__{note.name}__**",
                     f"**Chapter:** {note.chapter.chapter_number}\n{note.description}"
                     if note.chapter
                     else f"{note.description}",
                 )
-            )
+                for note in sorted(notes, key=lambda x: x.name)
+            ]
+        )
 
         await present_embed(
             ctx, title=f"Notes for **{campaign.name}**", fields=fields, level="info"

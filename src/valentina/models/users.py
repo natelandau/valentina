@@ -104,7 +104,8 @@ class UserService:
 
         return member, discord_guild
 
-    def can_manage_campaign(self, ctx: discord.ApplicationContext) -> bool:
+    @staticmethod
+    def can_manage_campaign(ctx: discord.ApplicationContext) -> bool:
         """Check if the user has permissions to manage campaigns.
 
         The function checks the following conditions in order:
@@ -141,9 +142,8 @@ class UserService:
 
         return False
 
-    def can_kill_character(
-        self, ctx: discord.ApplicationContext, character: Character = None
-    ) -> bool:
+    @staticmethod
+    def can_kill_character(ctx: discord.ApplicationContext, character: Character = None) -> bool:
         """Check if the user has permissions to mark a character as dead.
 
         The function checks the following conditions in order:
@@ -182,9 +182,8 @@ class UserService:
 
         return False
 
-    def can_update_traits(
-        self, ctx: discord.ApplicationContext, character: Character = None
-    ) -> bool:
+    @staticmethod
+    def can_update_traits(ctx: discord.ApplicationContext, character: Character = None) -> bool:
         """Check if the user has permissions to update character trait values.
 
         The function checks the following conditions in order:
@@ -300,24 +299,22 @@ class UserService:
         guild = ctx.guild if isinstance(ctx, discord.ApplicationContext) else ctx.interaction.guild
 
         if alive_only:
-            return [
-                x
-                for x in Character.select().where(
+            return list(
+                Character.select().where(
                     Character.owned_by == user,
                     Character.guild == guild.id,
                     Character.data["player_character"] == True,  # noqa: E712
                     Character.data["is_alive"] == True,  # noqa: E712
                 )
-            ]
+            )
 
-        return [
-            x
-            for x in Character.select().where(
+        return list(
+            Character.select().where(
                 Character.owned_by == user,
                 Character.guild == guild.id,
                 Character.data["player_character"] == True,  # noqa: E712
             )
-        ]
+        )
 
     async def fetch_active_character(
         self, ctx: discord.ApplicationContext | discord.AutocompleteContext
@@ -525,7 +522,8 @@ class UserService:
         member, guild = await self._get_member_and_guild(ctx=ctx, user=user, guild=guild)
 
         if not member or not guild:
-            raise ValueError("If no context is provided, 'user' and 'guild' must be provided.")
+            msg = "If no context is provided, 'user' and 'guild' must be provided."
+            raise ValueError(msg)
 
         # Grab up to date discord.Member information
         member_info: dict[str, str | int] = {
@@ -563,8 +561,7 @@ class UserService:
             self.purge_cache(ctx) if ctx else self.purge_cache()
 
             # Ensure discord.Member information is up to date
-            for key, value in member_info.items():
-                data[key] = value
+            data.update(dict(member_info.items()))
 
             # Always update the 'modified' timestamp
             data["modified"] = str(time_now())

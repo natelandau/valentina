@@ -178,7 +178,8 @@ async def fetch_data_from_url(url: str) -> io.BytesIO:
     """Fetch data from a URL to be used to upload to Amazon S3."""
     async with aiohttp.ClientSession() as session, session.get(url) as resp:
         if resp.status != 200:  # noqa: PLR2004
-            raise errors.URLNotAvailableError(f"Could not fetch data from {url}")
+            msg = f"Could not fetch data from {url}"
+            raise errors.URLNotAvailableError(msg)
 
         return io.BytesIO(await resp.read())
 

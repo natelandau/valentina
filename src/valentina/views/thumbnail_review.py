@@ -125,7 +125,8 @@ class ThumbnailReview:
             )
         }
 
-    async def _get_embed(self, db_id: int, url: str) -> discord.Embed:
+    @staticmethod
+    async def _get_embed(db_id: int, url: str) -> discord.Embed:
         """Get an embed for a thumbnail."""
         embed = discord.Embed(title=f"Thumbnail id `{db_id}`", color=EmbedColor.DEFAULT.value)
         embed.set_image(url=url)
