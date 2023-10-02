@@ -120,12 +120,12 @@ class Statistics:
         msg += f"""\
 ```python
 Total Rolls: {'.':.<{25 - 12}} {self.total_rolls}
-Critical Success Rolls: {'.':.<{25 -23}} {self.criticals:<3} ({self.criticals / self.total_rolls * 100:.2f}%)
+Critical Success Rolls: {'.':.<{25 - 23}} {self.criticals:<3} ({self.criticals / self.total_rolls * 100:.2f}%)
 Successful Rolls: {'.':.<{25 - 17}} {self.successes:<3} ({self.successes / self.total_rolls * 100:.2f}%)
 Failed Rolls: {'.':.<{25 - 13}} {self.failures:<3} ({self.failures / self.total_rolls * 100:.2f}%)
 Botched Rolls: {'.':.<{25 - 14}} {self.botches:<3} ({self.botches / self.total_rolls * 100:.2f}%)
-Average Difficulty: {'.':.<{25 -19}} {self.average_difficulty}
-Average Pool Size: {'.':.<{25 -18}} {self.average_pool}
+Average Difficulty: {'.':.<{25 - 19}} {self.average_difficulty}
+Average Pool Size: {'.':.<{25 - 18}} {self.average_pool}
 ```
 """
 

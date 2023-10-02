@@ -214,7 +214,7 @@ class ChangelogParser:
             discord.Embed: The changelog embed.
         """
         # Create and populate the embed description
-        description = f"Valentina, your {random.choice(['honored','admired','distinguished','celebrated','hallowed','prestigious','acclaimed','favorite','friendly neighborhood','prized', 'treasured', 'number one','esteemed','venerated','revered','feared'])} {random.choice(BOT_DESCRIPTIONS)}, has {random.choice(['been granted new powers', 'leveled up','spent experience points','gained new abilities','been bitten by a radioactive spider', 'spent willpower points', 'been updated','squashed bugs and gained new features',])}!\n"
+        description = f"Valentina, your {random.choice(['honored', 'admired', 'distinguished', 'celebrated', 'hallowed', 'prestigious', 'acclaimed', 'favorite', 'friendly neighborhood', 'prized', 'treasured', 'number one', 'esteemed', 'venerated', 'revered', 'feared'])} {random.choice(BOT_DESCRIPTIONS)}, has {random.choice(['been granted new powers', 'leveled up', 'spent experience points', 'gained new abilities', 'been bitten by a radioactive spider', 'spent willpower points', 'been updated', 'squashed bugs and gained new features',])}!\n"
 
         # Loop through each version in the changelog
         for version, data in self.changelog_dict.items():

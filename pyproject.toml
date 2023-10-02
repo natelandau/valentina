@@ -27,9 +27,9 @@
         py-cord       = "^2.4.1"
         python        = "^3.11"
         python-dotenv = "^1.0.0"
+        rich          = "^13.6.0"
         semver        = "^3.0.1"
         typer         = { extras = ["all"], version = "^0.9.0" }
-    rich = "^13.6.0"
 
     [tool.poetry.group.test.dependencies]
         dirty-equals           = "^0.6.0"
@@ -48,7 +48,7 @@
         pdoc           = "^14.0.0"
         poethepoet     = "^0.22.1"
         pre-commit     = "^3.4.0"
-        ruff           = "^0.0.291"
+        ruff           = "^0.0.292"
         shellcheck-py  = "^0.9.0.5"
         types-aiofiles = "^23.2.0.0"
         typos          = "^1.16.11"
@@ -297,7 +297,7 @@
         help = "Lint this package"
 
         [[tool.poe.tasks.lint.sequence]]
-            shell = "ruff --no-fix src/"
+            shell = "ruff --preview --no-fix src/"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "black --check src/ tests/"

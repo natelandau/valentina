@@ -64,13 +64,13 @@ class RollDisplay:
         if self.trait_one and self.trait_two:
             embed.add_field(
                 name="**Rolled Traits**",
-                value=f"{self.trait_one.name}: `{self.trait_one_value} {p.plural_noun('die',self.trait_one_value)}`\n{self.trait_two.name}: `{self.trait_two_value} {p.plural_noun('die',self.trait_two_value)}`",
+                value=f"{self.trait_one.name}: `{self.trait_one_value} {p.plural_noun('die', self.trait_one_value)}`\n{self.trait_two.name}: `{self.trait_two_value} {p.plural_noun('die', self.trait_two_value)}`",
                 inline=False,
             )
         elif self.trait_one:
             embed.add_field(
                 name="**Rolled Traits**",
-                value=f"{self.trait_one.name}: `{self.trait_one_value} {p.plural_noun('die',self.trait_one_value)}`",
+                value=f"{self.trait_one.name}: `{self.trait_one_value} {p.plural_noun('die', self.trait_one_value)}`",
                 inline=False,
             )
 
