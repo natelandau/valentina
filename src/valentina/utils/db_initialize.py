@@ -904,12 +904,14 @@ class PopulateDatabase:
         """Create the initial character classes."""
         with self.db.atomic():
             for character_class in [
+                "Changeling",
+                "Ghoul",
+                "Hunter",
+                "Mage",
                 "Mortal",
+                "Other",
                 "Vampire",
                 "Werewolf",
-                "Mage",
-                "Hunter",
-                "Other",
             ]:
                 CharacterClass.insert(name=character_class).on_conflict_ignore().execute()
         logger.debug("DATABASE: Populate character classes")
@@ -944,10 +946,10 @@ class PopulateDatabase:
         # Dictionary of category and associated character classes
         categories = {
             "Backgrounds": ["Common"],
-            "Disciplines": ["Vampire"],
+            "Disciplines": ["Vampire", "Ghoul"],
             "Edges": ["Hunter"],
             "Flaws": ["Common"],
-            "Gifts": ["Werewolf"],
+            "Gifts": ["Werewolf", "Changeling"],
             "Knowledges": ["Common"],
             "Mental": ["Common"],
             "Merits": ["Common"],
@@ -966,13 +968,18 @@ class PopulateDatabase:
         }
         with self.db.atomic():
             for category, classes in categories.items():
-                cat = TraitCategory.insert(name=category).on_conflict_ignore().execute()
+                # Add the categories to the database
+                TraitCategory.insert(name=category).on_conflict_ignore().execute()
+                cat = TraitCategory.get(name=category)
 
+                # If common, add to all classes in the trait/category/class lookup table
                 if cat and "Common" in classes:
                     for c in CharacterClass.select():
                         TraitCategoryClass.insert(
                             character_class=c, category=cat
                         ).on_conflict_ignore().execute()
+
+                # Otherwise, add to the specified classes
                 elif cat:
                     for c in classes:
                         TraitCategoryClass.insert(

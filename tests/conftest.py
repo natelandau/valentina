@@ -135,7 +135,7 @@ def mock_db() -> CSqliteExtDatabase:
 
     # Confirm test data was created
     assert Guild.get_by_id(1).name == "test_guild"
-    assert CharacterClass.get_by_id(1).name == "Mortal"
+    assert CharacterClass.get_by_id(1).name == "Changeling"
     assert VampireClan.get_by_id(1).name == "Assamite"
     assert Character.get_by_id(1).data["first_name"] == "test"
     assert CustomTrait.get_by_id(1).name == "Test_Trait"
