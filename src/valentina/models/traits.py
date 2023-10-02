@@ -21,8 +21,9 @@ class TraitService:
     def __init__(self) -> None:
         self.class_traits: dict[str, list[Trait]] = {}  # {class: [traits]}
 
+    @staticmethod
     def fetch_all_traits(
-        self, guild_id: int, flat_list: bool = False
+        guild_id: int, flat_list: bool = False
     ) -> dict[str, list[str]] | list[str]:
         """Retrieve all traits for a given guild, both common and custom.
 
@@ -85,12 +86,13 @@ class TraitService:
         )
 
         self.class_traits[char_class] = sorted(
-            [x for x in traits], key=lambda x: TraitCategoryOrder[x.category.name]
+            traits, key=lambda x: TraitCategoryOrder[x.category.name]
         )
 
         return self.class_traits[char_class]
 
-    def fetch_trait_id_from_name(self, trait_name: str) -> int:
+    @staticmethod
+    def fetch_trait_id_from_name(trait_name: str) -> int:
         """Fetch the ID of a trait from the database using the trait's name.
 
         Use case-insensitive search to find the trait by its name.
@@ -109,11 +111,14 @@ class TraitService:
 
         try:
             trait = Trait.get(fn.lower(Trait.name) == trait_name.lower())
-            return trait.id
         except DoesNotExist as e:
-            raise errors.NoMatchingItemsError(f"Trait `{trait_name}` not found") from e
+            msg = f"Trait `{trait_name}` not found"
+            raise errors.NoMatchingItemsError(msg) from e
+        else:
+            return trait.id
 
-    def fetch_trait_from_name(self, trait_name: str) -> Trait:
+    @staticmethod
+    def fetch_trait_from_name(trait_name: str) -> Trait:
         """Retrieve a trait from the database based on the provided trait name.
 
         Perform a case-insensitive search for the trait using its name.
@@ -133,7 +138,8 @@ class TraitService:
         try:
             return Trait.get(fn.lower(Trait.name) == trait_name.lower())
         except DoesNotExist as e:
-            raise errors.NoMatchingItemsError(f"Trait `{trait_name}` not found") from e
+            msg = f"Trait `{trait_name}` not found"
+            raise errors.NoMatchingItemsError(msg) from e
 
     @staticmethod
     def fetch_trait_category(query: str | int) -> str:
@@ -162,7 +168,8 @@ class TraitService:
             # Call the function related to the type of query
             return query_mapping[type(query)](query)
         except DoesNotExist as e:
-            raise errors.NoMatchingItemsError(f"Trait `{query}` not found") from e
+            msg = f"Trait `{query}` not found"
+            raise errors.NoMatchingItemsError(msg) from e
 
     def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:  # noqa: ARG002
         """Purge the cache."""

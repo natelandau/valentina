@@ -72,8 +72,8 @@ class CharacterService:
         ctx.bot.aws_svc.delete_object(key)  # type: ignore [attr-defined]
         logger.info(f"S3: Deleted {key} from {character}")
 
+    @staticmethod
     def custom_section_update_or_add(
-        self,
         ctx: discord.ApplicationContext,
         character: Character,
         section_title: str | None = None,
@@ -112,15 +112,16 @@ class CharacterService:
 
         return section
 
-    def set_character_default_values(self) -> None:
+    @staticmethod
+    def set_character_default_values() -> None:
         """Set default values for all characters in the database."""
         logger.info("DATABASE: Set default values for all characters")
         characters = Character.select()
         for character in characters:
             character.set_default_data_values()
 
+    @staticmethod
     def fetch_all_player_characters(
-        self,
         ctx: discord.ApplicationContext | discord.AutocompleteContext,
         owned_by: GuildUser | None = None,
     ) -> list[Character]:
@@ -160,8 +161,9 @@ class CharacterService:
 
         return to_return
 
+    @staticmethod
     def fetch_all_storyteller_characters(
-        self, ctx: discord.ApplicationContext | discord.AutocompleteContext
+        ctx: discord.ApplicationContext | discord.AutocompleteContext,
     ) -> list[Character]:
         """Fetch all StoryTeller characters for a guild.
 
@@ -193,8 +195,8 @@ class CharacterService:
 
         return to_return
 
+    @staticmethod
     async def update_or_add(
-        self,
         ctx: discord.ApplicationContext,
         data: dict[str, str | int | bool] | None = None,
         character: Character | None = None,

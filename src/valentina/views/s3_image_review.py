@@ -123,7 +123,8 @@ class S3ImageReview:
             logger.error(f"An error occurred while fetching image URLs: {e}")
             raise
 
-    async def _get_embed(self, image_name: str, url: str) -> discord.Embed:
+    @staticmethod
+    async def _get_embed(image_name: str, url: str) -> discord.Embed:
         """Get an embed for an image."""
         embed = discord.Embed(title=image_name, color=EmbedColor.DEFAULT.value)
         embed.set_image(url=url)

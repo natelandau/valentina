@@ -62,7 +62,7 @@ repos:
       rev: "v0.0.291"
       hooks:
           - id: ruff
-            args: ["--extend-ignore", "I001,D301,D401"]
+            args: ["--extend-ignore", "I001,D301,D401", "--preview"]
             exclude: tests/
 
     - repo: "https://github.com/jendrikseipp/vulture"

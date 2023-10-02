@@ -15,6 +15,7 @@ async def confirm_action(
     image: str | None = None,
     thumbnail: str | None = None,
     footer: str | None = None,
+    delete_after_confirmation: bool = False,
 ) -> tuple[bool, Coroutine]:
     """Prompt the user for confirmation.
 
@@ -26,6 +27,7 @@ async def confirm_action(
         image (str, optional): The image URL for the confirmation embed. Defaults to None.
         thumbnail (str, optional): The thumbnail URL for the confirmation embed. Defaults to None.
         footer: str | None = None,
+        delete_after_confirmation (bool): Whether to delete the message after the user confirms. Useful for beginning new interactions. Defaults to False.
 
     Returns:
         tuple(bool, discord.InteractionMessage): A tuple containing the user's response and success response coroutine.
@@ -65,6 +67,9 @@ async def confirm_action(
     if footer is not None:
         response_embed.set_footer(text=footer),
 
-    response = msg.edit_original_response(embed=response_embed, view=None)
+    if delete_after_confirmation:
+        response = msg.delete_original_response()
+    else:
+        response = msg.edit_original_response(embed=response_embed, view=None)  # type: ignore [assignment]
 
     return (True, response)
