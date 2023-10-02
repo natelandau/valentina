@@ -242,8 +242,8 @@ class CharGenClass(Enum):
     WEREWOLF = (67, 72)
     MAGE = (73, 78)
     GHOUL = (79, 84)
-    CHANGELING = (85, 90)
-    CHANGELING_BREED = (91, 96)
+    CHANGELING = (85, 87)
+    HUNTER = (88, 96)
     SPECIAL = (97, 100)
 
     @classmethod
@@ -266,14 +266,10 @@ class CharGenClass(Enum):
 class CharGenHumans(Enum):
     """Enum for RNG character generation of humans."""
 
-    CIVILIAN = (0, 40)
-    HUNTER = (41, 50)
-    CHANGELING = (51, 53)
-    GHOUL = (54, 60)
-    WATCHER = (61, 70)
-    HUNTER_CLASS = (71, 80)
-    SORCERER = (81, 90)
-    NUMINOUS = (91, 100)
+    CIVILIAN = (0, 60)
+    HUNTER = (61, 70)
+    WATCHER = (70, 79)
+    NUMINOUS = (90, 100)
 
     @classmethod
     def get_member_by_value(cls, value: int) -> "CharGenHumans":
@@ -570,6 +566,7 @@ CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
     "nickname": None,
     "player_character": False,
     "storyteller_character": False,
+    "chargen_character": False,
     "images": [],
 }
 
