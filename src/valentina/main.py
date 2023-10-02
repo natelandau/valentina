@@ -25,7 +25,7 @@ typer.rich_utils.STYLE_HELPTEXT = ""
 def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
-        print(f"{__package__} version: {__version__}")
+        print(f"{__package__} version: {__version__}")  # noqa: T201
         raise typer.Exit()
 
 

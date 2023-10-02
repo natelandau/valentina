@@ -16,7 +16,8 @@ from valentina.utils import errors
 class TestGuildUserDatabaseModel:
     """Test the GuildUser database model."""
 
-    def _clear_test_data(self) -> None:
+    @staticmethod
+    def _clear_test_data() -> None:
         """Clear all test data from the database."""
         for guild in Guild.select():
             if guild.id != 1:  # Always keep the default guild
@@ -207,13 +208,14 @@ class TestGuildUserDatabaseModel:
         assert result == 999
 
 
-@pytest.mark.usefixtures("mock_db")
+@pytest.mark.usefixtures("mock_db")  # noqa: PLR0904
 class TestUserService:
     """Test the user service."""
 
     user_svc = UserService()
 
-    def _create_user_from_ctx(self, ctx):
+    @staticmethod
+    def _create_user_from_ctx(ctx):
         """Create a GuildUser object from a context object."""
         return GuildUser.create(
             guild=ctx.guild.id,

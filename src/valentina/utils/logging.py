@@ -30,7 +30,8 @@ class InterceptHandler(logging.Handler):
     ```
     """
 
-    def emit(self, record):  # type: ignore [no-untyped-def]
+    @staticmethod
+    def emit(record):  # type: ignore [no-untyped-def]
         """Intercepts standard logging and redirects to Loguru.
 
         This method is called by the Python logging module when a logging message is emitted. It intercepts the message and redirects it to Loguru, a third-party logging library. The method determines the corresponding Loguru level for the message and logs it using the Loguru logger.

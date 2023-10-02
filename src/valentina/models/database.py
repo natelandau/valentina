@@ -99,7 +99,8 @@ class DatabaseService:
             )
         logger.info("DATABASE: Create Tables")
 
-    def fetch_current_version(self) -> str:
+    @staticmethod
+    def fetch_current_version() -> str:
         """Fetch the latest version of the database.
 
         Returns:
@@ -122,7 +123,6 @@ class DatabaseService:
         columns = [row[1] for row in cursor.fetchall()]
         return column in columns
 
-    @logger.catch
     def initialize_database(self, bot_version: str) -> None:
         """Initialize or migrate the database to the bot's current version.
 
@@ -196,7 +196,8 @@ class DBBackup:
         self.backup_dir = Path(config.get("VALENTINA_BACKUP_PATH", "/valentina/backup"))
         self.db = db
 
-    def type_of_backup(self) -> str:
+    @staticmethod
+    def type_of_backup() -> str:
         """Determine the type of backup to perform.
 
         Determine whether the backup type should be "yearly", "monthly", "weekly", or "daily" based on the current date.
@@ -283,7 +284,7 @@ class DBBackup:
                 if backup_type in file.name:
                     backups[backup_type].append(file)
 
-        for backup_type, _backup_list in backups.items():
+        for backup_type in backups:
             retention_policy = getattr(self, f"retention_{backup_type}")
             if len(backups[backup_type]) > retention_policy:
                 for backup in backups[backup_type][retention_policy:]:

@@ -75,20 +75,23 @@ class DiceRoll:
 
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
-            raise errors.ValidationError(f"Invalid dice size `{dice_size}`.")
+            msg = f"Invalid dice size `{dice_size}`."
+            raise errors.ValidationError(msg)
 
         self.dice_type = DiceType(dice_size)
 
         if difficulty < 0:
-            raise errors.ValidationError(f"Difficulty cannot be less than 0. (Got `{difficulty}`.)")
+            msg = f"Difficulty cannot be less than 0. (Got `{difficulty}`.)"
+            raise errors.ValidationError(msg)
         if difficulty > self.dice_type.value:
-            raise errors.ValidationError(
-                f"Difficulty cannot exceed the size of the dice. (Got `{difficulty}` for `{self.dice_type.name}`.)"
-            )
+            msg = f"Difficulty cannot exceed the size of the dice. (Got `{difficulty}` for `{self.dice_type.name}`.)"
+            raise errors.ValidationError(msg)
         if pool < 0:
-            raise errors.ValidationError(f"Pool cannot be less than 0. (Got `{pool}`.)")
+            msg = f"Pool cannot be less than 0. (Got `{pool}`.)"
+            raise errors.ValidationError(msg)
         if pool > _max_pool_size:
-            raise errors.ValidationError(f"Pool cannot exceed {_max_pool_size}. (Got `{pool}`.)")
+            msg = f"Pool cannot exceed {_max_pool_size}. (Got `{pool}`.)"
+            raise errors.ValidationError(msg)
 
         self.difficulty = difficulty
         self.pool = pool
