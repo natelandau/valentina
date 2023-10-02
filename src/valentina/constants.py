@@ -331,13 +331,15 @@ class ConceptInfo(TypedDict):
     """Type for concept info sub-dictionary."""
 
     description: str
+    examples: str
     num_abilities: int
     abilities: list[dict[str, str]]
 
 
 CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
     CharGenConcept.BERSERKER: {
-        "description": "Gang member, Hooligan, Anarchist, Rebel, Terrorist, Underground Fight League Member, Flame Jumper, Mole people, Goon.  Fierce warriors who tap into their primal rage to gain incredible strength and combat prowess.",
+        "description": "Fierce warriors who tap into their primal rage to gain incredible strength and combat prowess.",
+        "examples": "Gang member, Hooligan, Anarchist, Rebel, Terrorist, Underground Fight League Member, Flame Jumper, Mole people, Goon",
         "num_abilities": 1,
         "abilities": [
             {
@@ -347,7 +349,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.PERFORMER: {
-        "description": "Musician, Online Influencer, Street Poet, Stand-up Comic, Performance Artist, Visual Artist, Fine Artist.  Charismatic performers and spellcasters who use their artistry and magic to inspire and manipulate.",
+        "description": "Charismatic performers and spellcasters who use their artistry and magic to inspire and manipulate. ",
+        "examples": "Musician, Online Influencer, Street Poet, Stand-up Comic, Performance Artist, Visual Artist, Fine Artist",
         "num_abilities": 1,
         "abilities": [
             {
@@ -357,7 +360,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.HEALER: {
-        "description": "Doctor, Veterinarian, Mortician, Priest, Rabbi, Medicine Man, EMT, Lifeguard, RN, Dentist, Clinician, Masseuse, Chemical Hacker, New-Ager.   Devout servants of gods or higher powers, with the ability to heal and protect.",
+        "description": "Devout servants of gods or higher powers, with the ability to heal and protect.",
+        "examples": "Doctor, Veterinarian, Mortician, Priest, Rabbi, Medicine Man, EMT, Lifeguard, RN, Dentist, Clinician, Masseuse, Chemical Hacker, New-Ager",
         "num_abilities": 1,
         "abilities": [
             {
@@ -371,7 +375,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.SHAMAN: {
-        "description": "Environmentalist, Tribal, New Age, Artist, Riverkeeper, Green Warden, Nature Guide, Photographer, Self-Documentarian.  Nature-focused spiritualists who wield the power of the natural world.",
+        "description": "Nature-focused spiritualists who wield the power of the natural world.",
+        "examples": "Environmentalist, Tribal, New Age, Artist, Riverkeeper, Green Warden, Nature Guide, Photographer, Self-Documentarian",
         "num_abilities": 2,
         "abilities": [
             {
@@ -405,7 +410,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.SOLDIER: {
-        "description": "Marine, Veteran, Mercenary, Hired Muscle, Hitman, Amateur/Pro Fighter, Martial Artist, Police, Security.  Skilled warriors with a wide range of combat abilities and weapon expertise.",
+        "description": "Skilled warriors with a wide range of combat abilities and weapon expertise.",
+        "examples": "Marine, Veteran, Mercenary, Hired Muscle, Hitman, Amateur/Pro Fighter, Martial Artist, Police, Security",
         "num_abilities": 1,
         "abilities": [
             {
@@ -423,7 +429,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.ASCETIC: {
-        "description": "Martial Artist, Dojo Owner, Competitor, Athlete, Bodybuilder, Body Hacker. Disciplined martial artists who harness their inner ki to perform incredible feats and attacks.",
+        "description": "Disciplined martial artists who harness their inner ki to perform incredible feats and attacks.",
+        "examples": "Martial Artist, Dojo Owner, Competitor, Athlete, Bodybuilder, Body Hacker",
         "num_abilities": 2,
         "abilities": [
             {
@@ -437,7 +444,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.CRUSADER: {
-        "description": "Government Agent, Lawyer, Judge, Zealot, Terrorist, Inquisitor. Dedicated sentinels sworn to a code of conduct, armed with divine, academic, and martial skills.",
+        "description": "Dedicated sentinels sworn to a code of conduct, armed with divine, academic, and martial skills.",
+        "examples": "Government Agent, Lawyer, Judge, Zealot, Terrorist, Inquisitor",
         "num_abilities": 1,
         "abilities": [
             {
@@ -447,7 +455,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.URBAN_TRACKER: {
-        "description": "Hunter, Tracker, Long Range Recon Patrol, Sniper, Wildlife Photographer, Park Ranger, Paparazzo. Skilled hunters and trackers with a deep connection to the wilderness and survival skills, or the equivalent for the urban jungle.",
+        "description": "Skilled hunters and trackers with a deep connection to the wilderness and survival skills, or the equivalent for the urban jungle.",
+        "examples": "Hunter, Tracker, Long Range Recon Patrol, Sniper, Wildlife Photographer, Park Ranger, Paparazzo",
         "num_abilities": 2,
         "abilities": [
             {
@@ -461,7 +470,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.UNDER_WORLDER: {
-        "description": "Burglar, Lockpicker, Hacker, Safe-Cracker, Getaway Car Driver, Forger, Fence, Spy.  Sneaky and dexterous individuals skilled in stealth, lock picking, and traps.",
+        "description": "Sneaky and dexterous individuals skilled in stealth, lock picking, and traps.",
+        "examples": "Burglar, Lockpicker, Hacker, Safe-Cracker, Getaway Car Driver, Forger, Fence, Spy",
         "num_abilities": 3,
         "abilities": [
             {
@@ -479,7 +489,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.SCIENTIST: {
-        "description": "Debunker, Psychologist, Egyptologist, Filmographer, Data Scientist, Hematologist, Cryptozoologist, Grad Student, Weird Physicist. Experts who draw power from their study of esoteric knowledge, with unique and potent abilities and gear.",
+        "description": "Experts who draw power from their study of esoteric knowledge, with unique and potent abilities and gear.",
+        "examples": "Debunker, Psychologist, Egyptologist, Filmographer, Data Scientist, Hematologist, Cryptozoologist, Grad Student, Weird Physicist",
         "num_abilities": 1,
         "abilities": [
             {
@@ -489,7 +500,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.TRADESMAN: {
-        "description": "Construction, Carpenter, Plumber, Key Grip, Truck Driver, Uber Driver, Union Man.",
+        "description": "Skilled artisans or laborers who excel in a specific trade or craft, such as blacksmithing, carpentry, or alchemy, often creating items of great value.",
+        "examples": "Construction, Carpenter, Plumber, Key Grip, Truck Driver, Uber Driver, Union Man",
         "num_abilities": 2,
         "abilities": [
             {
@@ -503,7 +515,8 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
         ],
     },
     CharGenConcept.BUSINESSMAN: {
-        "description": "Professional, Salesman, Girlboss, Entrepreneur, Small Business Owner, Finance Bro, LinkedIn Influencer, Middle Manager, Storekeeper, Barista, In Marketing",
+        "description": "Astute and savvy individuals focused on commerce and negotiation, skilled in the art of deal-making and resource management.",
+        "examples": "Professional, Salesman, Girlboss, Entrepreneur, Small Business Owner, Finance Bro, LinkedIn Influencer, Middle Manager, Storekeeper, Barista, In Marketing",
         "num_abilities": 1,
         "abilities": [
             {
