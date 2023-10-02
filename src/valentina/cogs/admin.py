@@ -228,7 +228,7 @@ class Admin(commands.Cog):
             return
 
         # Confirm the action
-        title = f"Mass ban {count} {p.plural_noun('member',count)} from this guild"
+        title = f"Mass ban {count} {p.plural_noun('member', count)} from this guild"
         is_confirmed, confirmation_response_msg = await confirm_action(
             ctx, title, description=reason, hidden=hidden
         )
@@ -604,7 +604,7 @@ class Admin(commands.Cog):
             count = len(await purge(limit=limit, reason=reason, check=lambda m: m.author.bot))
             await present_embed(
                 ctx,
-                title=f"Purged `{count}` bot {p.plural_noun('message',count)} in this channel",
+                title=f"Purged `{count}` bot {p.plural_noun('message', count)} in this channel",
                 level="warning",
                 ephemeral=True,
             )
@@ -646,7 +646,7 @@ class Admin(commands.Cog):
             )
             await present_embed(
                 ctx,
-                title=f"Purged `{count}` {p.plural_noun('message',count)} containing `{phrase}` in this channel",
+                title=f"Purged `{count}` {p.plural_noun('message', count)} containing `{phrase}` in this channel",
                 level="warning",
                 ephemeral=True,
             )
