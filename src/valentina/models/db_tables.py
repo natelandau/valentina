@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -21,7 +22,13 @@ from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
 from valentina.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS, GUILDUSER_DEFAULTS
 from valentina.utils import errors
-from valentina.utils.helpers import time_now
+
+
+# This is duplicated from valentina.utils.helpers to avoid circular imports
+def time_now() -> datetime:
+    """Return the current time in UTC."""
+    return datetime.now(timezone.utc).replace(microsecond=0)
+
 
 # Import configuration from environment variables
 env_dir = Path(__file__).parents[3].absolute()

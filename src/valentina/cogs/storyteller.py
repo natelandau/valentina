@@ -7,7 +7,6 @@ import inflect
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
-from peewee import fn
 
 from valentina.constants import (
     DEFAULT_DIFFICULTY,
@@ -16,7 +15,6 @@ from valentina.constants import (
     EmbedColor,
 )
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import VampireClan
 from valentina.utils.converters import (
     ValidCharacterClass,
     ValidCharacterName,
@@ -25,7 +23,11 @@ from valentina.utils.converters import (
     ValidImageURL,
     ValidTraitCategory,
 )
-from valentina.utils.helpers import fetch_data_from_url, fetch_random_name
+from valentina.utils.helpers import (
+    fetch_data_from_url,
+    fetch_random_name,
+    fetch_random_vampire_clan,
+)
 from valentina.utils.options import (
     select_any_player_character,
     select_char_class,
@@ -211,7 +213,7 @@ class StoryTeller(commands.Cog):
         name = await fetch_random_name(gender=gender, country=name_type)
 
         if char_class.name.lower() == "vampire" and not vampire_clan:
-            vampire_clan = VampireClan.select().order_by(fn.Random()).limit(1)[0]
+            vampire_clan = fetch_random_vampire_clan
 
         data = {
             "first_name": name[0][0],

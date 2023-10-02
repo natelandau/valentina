@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 import aiohttp
 import discord
 from aiohttp import ClientSession
+from peewee import fn
 
 from valentina.constants import (
     CLAN_DISCIPLINES,
@@ -16,6 +17,7 @@ from valentina.constants import (
     XPMultiplier,
     XPNew,
 )
+from valentina.models.db_tables import VampireClan
 from valentina.utils import errors
 
 
@@ -87,6 +89,11 @@ async def fetch_random_name(
             return [(result["name"]["first"], result["name"]["last"]) for result in data["results"]]
 
     return [("John", "Doe")]
+
+
+def fetch_random_vampire_clan() -> str:
+    """Fetch a random vampire class."""
+    return VampireClan.select().order_by(fn.Random()).limit(1)[0]
 
 
 def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False) -> int | None:

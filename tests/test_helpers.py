@@ -3,7 +3,34 @@
 import pytest
 
 from valentina.constants import RollResultType
-from valentina.utils.helpers import diceroll_thumbnail, num_to_circles
+from valentina.models.db_tables import VampireClan
+from valentina.utils.helpers import diceroll_thumbnail, fetch_random_vampire_clan, num_to_circles
+
+
+@pytest.mark.usefixtures("mock_db")
+class TestsWithDatabase:
+    """Tests which require the a mock database."""
+
+    @staticmethod
+    def test_random_vampire_clan():
+        """Test the random_vampire_clan function."""
+        result = fetch_random_vampire_clan()
+        assert isinstance(result, VampireClan)
+        assert result.name in [
+            "Assamite",
+            "Brujah",
+            "Followers of Set",
+            "Gangrel",
+            "Giovanni",
+            "Lasombra",
+            "Malkavian",
+            "Nosferatu",
+            "Ravnos",
+            "Toreador",
+            "Tremere",
+            "Tzimisce",
+            "Ventrue",
+        ]
 
 
 def test_diceroll_thumbnail(mocker):

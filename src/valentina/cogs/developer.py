@@ -19,11 +19,10 @@ from valentina.models.db_tables import (
     Character,
     CharacterClass,
     RollProbability,
-    VampireClan,
 )
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharacterClass
-from valentina.utils.helpers import fetch_random_name
+from valentina.utils.helpers import fetch_random_name, fetch_random_vampire_clan
 from valentina.utils.options import (
     select_aws_object_from_guild,
     select_changelog_version_1,
@@ -180,7 +179,7 @@ class Developer(commands.Cog):
 
             # Assign a random vampire clan
             if char_class.name.lower() == "vampire":
-                vampire_clan = VampireClan.select().order_by(fn.Random()).limit(1).get()
+                vampire_clan = fetch_random_vampire_clan()
             else:
                 vampire_clan = None
 
