@@ -38,7 +38,7 @@ jobs:
         strategy:
             fail-fast: true
             matrix:
-                python-version: ["3.11"]
+                python-version: ["3.11", "3.12"]
         steps:
             - name: Harden Security Runner
               uses: step-security/harden-runner@v2
