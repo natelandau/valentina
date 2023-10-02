@@ -1,3 +1,10 @@
+## v1.13.0 (2023-10-02)
+
+### Feat
+
+- **misc**: add random name generator `/name_gen` (#76)
+- **character**: new chargen wizard with `character create`  (#75)
+
 ## v1.12.0 (2023-09-28)
 
 ### Feat
