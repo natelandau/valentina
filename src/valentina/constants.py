@@ -2,13 +2,17 @@
 import re
 from enum import Enum, IntEnum
 from pathlib import Path
+from random import choice
+from typing import ClassVar
 
 import inflect
-from typing_extensions import TypedDict
+
+from valentina.utils import types
 
 # Create an inflect engine to pluralize words.
 p = inflect.engine()
 
+# Single constants
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
 DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
 MAX_BUTTONS_PER_ROW = 5
@@ -234,20 +238,65 @@ class XPMultiplier(Enum):
     ### DISCORD SETTINGS ###
 
 
-class CharGenClass(Enum):
-    """Enum for RNG character generation classes."""
+# Enums linked to the Database
 
-    HUMAN = (0, 60)
-    VAMPIRE = (61, 66)
-    WEREWOLF = (67, 72)
-    MAGE = (73, 78)
-    GHOUL = (79, 84)
-    CHANGELING = (85, 87)
-    HUNTER = (88, 96)
-    SPECIAL = (97, 100)
+
+class CharClassType(Enum):
+    """Character classes for character generation."""
+
+    MORTAL: ClassVar[types.CharacterClassDict] = {
+        "name": "Mortal",
+        "range": (0, 60),
+        "description": "",
+    }
+    VAMPIRE: ClassVar[types.CharacterClassDict] = {
+        "name": "Vampire",
+        "range": (61, 66),
+        "description": "",
+    }
+    WEREWOLF: ClassVar[types.CharacterClassDict] = {
+        "name": "Werewolf",
+        "range": (67, 72),
+        "description": "",
+    }
+    MAGE: ClassVar[types.CharacterClassDict] = {
+        "name": "Mage",
+        "range": (73, 78),
+        "description": "",
+    }
+    GHOUL: ClassVar[types.CharacterClassDict] = {
+        "name": "Ghoul",
+        "range": (79, 84),
+        "description": "",
+    }
+    CHANGELING: ClassVar[types.CharacterClassDict] = {
+        "name": "Changeling",
+        "range": (85, 87),
+        "description": "",
+    }
+    HUNTER: ClassVar[types.CharacterClassDict] = {
+        "name": "Hunter",
+        "range": (88, 96),
+        "description": "",
+    }
+    SPECIAL: ClassVar[types.CharacterClassDict] = {
+        "name": "Special",
+        "range": (97, 100),
+        "description": "",
+    }
+    OTHER: ClassVar[types.CharacterClassDict] = {
+        "name": None,
+        "range": None,
+        "description": "Demon, Angel, Exalted, Titan, Mummy, etc.",
+    }
+    NONE: ClassVar[types.CharacterClassDict] = {
+        "name": None,
+        "range": None,
+        "description": None,
+    }
 
     @classmethod
-    def get_member_by_value(cls, value: int) -> "CharGenClass":
+    def get_member_by_value(cls, value: int) -> "CharClassType":
         """Find the corresponding enum member's name based on an integer value.
 
         Args:
@@ -257,10 +306,88 @@ class CharGenClass(Enum):
             Optional[str]: The name of the enum member if found, otherwise None.
         """
         for member in cls:
-            min_val, max_val = member.value
+            min_val, max_val = member.value["range"]
             if min_val <= value <= max_val:
                 return member
         return None
+
+    @classmethod
+    def random_member(cls) -> "CharClassType":
+        """Select a random member from the enum.
+
+        Returns:
+            CharClassType: A random enum member.
+        """
+        while True:
+            member = choice(list(cls))
+            if member.value["name"]:
+                return member
+
+
+class VampireClanType(Enum):
+    """Vampire clans for character generation."""
+
+    ASSAMITE: ClassVar[types.VampireClanDict] = {
+        "name": "Assamite",
+        "disciplines": ["Celerity", "Obfuscate", "Quietus"],
+    }
+    BRUJAH: ClassVar[types.VampireClanDict] = {
+        "name": "Brujah",
+        "disciplines": ["Celerity", "Potence", "Presence"],
+    }
+    FOLLOWERS_OF_SET: ClassVar[types.VampireClanDict] = {
+        "name": "Followers of Set",
+        "disciplines": ["Obfuscate", "Presence", "Serpentis"],
+    }
+    GANGREL: ClassVar[types.VampireClanDict] = {
+        "name": "Gangrel",
+        "disciplines": ["Animalism", "Fortitude", "Protean"],
+    }
+    GIOVANNI: ClassVar[types.VampireClanDict] = {
+        "name": "Giovanni",
+        "disciplines": ["Dominate", "Necromancy", "Potence"],
+    }
+    LASOMBRA: ClassVar[types.VampireClanDict] = {
+        "name": "Lasombra",
+        "disciplines": ["Dominate", "Obfuscate", "Potence"],
+    }
+    MALKAVIAN: ClassVar[types.VampireClanDict] = {
+        "name": "Malkavian",
+        "disciplines": ["Auspex", "Dominate", "Obfuscate"],
+    }
+    NOSFERATU: ClassVar[types.VampireClanDict] = {
+        "name": "Nosferatu",
+        "disciplines": ["Animalism", "Obfuscate", "Potence"],
+    }
+    RAVNOS: ClassVar[types.VampireClanDict] = {
+        "name": "Ravnos",
+        "disciplines": ["Animalism", "Chimerstry", "Fortitude"],
+    }
+    TOREADOR: ClassVar[types.VampireClanDict] = {
+        "name": "Toreador",
+        "disciplines": ["Auspex", "Celerity", "Presence"],
+    }
+    TREMERE: ClassVar[types.VampireClanDict] = {
+        "name": "Tremere",
+        "disciplines": ["Auspex", "Dominate", "Thaumaturgy"],
+    }
+    TZIMISCE: ClassVar[types.VampireClanDict] = {
+        "name": "Tzimisce",
+        "disciplines": ["Animalism", "Auspex", "Vicissitude"],
+    }
+    VENTRUE: ClassVar[types.VampireClanDict] = {
+        "name": "Ventrue",
+        "disciplines": ["Dominate", "Fortitude", "Presence"],
+    }
+
+    @classmethod
+    def random_member(cls) -> "VampireClanType":
+        """Select a random member from the enum.
+
+        Returns:
+            VampireClanType: A random enum member.
+        """
+        return choice(list(cls))
 
 
 class CharGenHumans(Enum):
@@ -289,53 +416,39 @@ class CharGenHumans(Enum):
         return None
 
 
-class CharGenConcept(Enum):
-    """Enum for RNG character generation of concepts."""
+class RNGCharLevel(Enum):
+    """Enum to specify character levels for RNG-based trait generation.
 
-    BERSERKER = (0, 8)
-    PERFORMER = (9, 17)
-    HEALER = (18, 26)
-    SHAMAN = (27, 35)
-    SOLDIER = (36, 44)
-    ASCETIC = (45, 53)
-    CRUSADER = (54, 62)
-    URBAN_TRACKER = (63, 71)
-    UNDER_WORLDER = (72, 80)
-    SCIENTIST = (81, 89)
-    TRADESMAN = (90, 97)
-    BUSINESSMAN = (98, 100)
+    This enum is used by the RNG engine to determine the mean and standard deviation
+    values for generating character traits using numpy's random.normal distribution.
+
+    The tuple values represent (mean, standard deviation). Higher numerical values
+    indicate a higher likelihood of the character having superior traits.
+    """
+
+    NEW = (1.0, 2.0)
+    INTERMEDIATE = (1.5, 2.0)
+    ADVANCED = (2.5, 2.0)
+    ELITE = (3.0, 2.0)
 
     @classmethod
-    def get_member_by_value(cls, value: int) -> "CharGenConcept":
-        """Find the corresponding enum member's name based on an integer value.
-
-        Args:
-            value (int): The integer value to look up.
+    def random_member(cls) -> "RNGCharLevel":
+        """Select a random member from the enum.
 
         Returns:
-            Optional[str]: The name of the enum member if found, otherwise None.
+            CharClassType: A random enum member.
         """
-        for member in cls:
-            min_val, max_val = member.value
-            if min_val <= value <= max_val:
-                return member
-
-        return None
+        return choice(list(cls))
 
 
-class ConceptInfo(TypedDict):
-    """Type for concept info sub-dictionary."""
+class CharConcept(Enum):
+    """Enum for RNG character generation of concepts."""
 
-    description: str
-    examples: str
-    num_abilities: int
-    abilities: list[dict[str, str]]
-
-
-CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
-    CharGenConcept.BERSERKER: {
+    BERSERKER: ClassVar[types.CharConceptDict] = {
+        "name": "Berserker",
         "description": "Fierce warriors who tap into their primal rage to gain incredible strength and combat prowess.",
         "examples": "Gang member, Hooligan, Anarchist, Rebel, Terrorist, Underground Fight League Member, Flame Jumper, Mole people, Goon",
+        "range": (0, 9),
         "num_abilities": 1,
         "abilities": [
             {
@@ -343,22 +456,48 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
                 "description": "Can ignore the first inflicted health levels of damage with no penalty up until they are Mauled, and cannot be stunned.  Barbarians also gain an automatic success on any strength roll once per turn, equal to a permanent dot in Potence.",
             }
         ],
-    },
-    CharGenConcept.PERFORMER: {
+        "ability_specialty": "Talents",
+        "attribute_specialty": "Physical",
+        "specific_abilities": [
+            "Melee",
+            "Firearms",
+            "Alertness",
+            "Athletics",
+            "Brawl",
+            "Dodge",
+            "Stealth",
+        ],
+    }
+    PERFORMER: ClassVar[types.CharConceptDict] = {
+        "name": "performer",
         "description": "Charismatic performers and spellcasters who use their artistry and magic to inspire and manipulate. ",
         "examples": "Musician, Online Influencer, Street Poet, Stand-up Comic, Performance Artist, Visual Artist, Fine Artist",
         "num_abilities": 1,
+        "range": (10, 18),
         "abilities": [
             {
                 "name": "Fast Talk",
                 "description": "Performers have an automatic granted success (as if a single die was rolled equivalent to a success) on any charisma, expression or performance roll, and can immediately command attention. This works even in combat, functionally freezing enemies, including groups, for the first turn.  Note that the bard needs to keep doing their act for this to work, they can't drop their guitar and pick up a gun without ruining the effect.  Their teammates are free of any compunction, however.",
             }
         ],
-    },
-    CharGenConcept.HEALER: {
+        "ability_specialty": "Skills",
+        "attribute_specialty": "Social",
+        "specific_abilities": [
+            "Expression",
+            "Empathy",
+            "Subterfuge",
+            "Leadership",
+            "Alertness",
+            "Performance",
+            "Intimidation",
+        ],
+    }
+    HEALER: ClassVar[types.CharConceptDict] = {
+        "name": "healer",
         "description": "Devout servants of gods or higher powers, with the ability to heal and protect.",
         "examples": "Doctor, Veterinarian, Mortician, Priest, Rabbi, Medicine Man, EMT, Lifeguard, RN, Dentist, Clinician, Masseuse, Chemical Hacker, New-Ager",
         "num_abilities": 1,
+        "range": (19, 27),
         "abilities": [
             {
                 "name": "Heal",
@@ -369,11 +508,24 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
                 "description": "Starts with a Faith of `3`, equivalent to a Discipline.  Clerics can repel supernatural beings for every success on a Faith role.",
             },
         ],
-    },
-    CharGenConcept.SHAMAN: {
+        "ability_specialty": "Knowledges",
+        "attribute_specialty": "Mental",
+        "specific_abilities": [
+            "Academics",
+            "Empathy",
+            "Investigation",
+            "Medicine",
+            "Occult",
+            "Science",
+            "Survival",
+        ],
+    }
+    SHAMAN: ClassVar[types.CharConceptDict] = {
+        "name": "shaman",
         "description": "Nature-focused spiritualists who wield the power of the natural world.",
         "examples": "Environmentalist, Tribal, New Age, Artist, Riverkeeper, Green Warden, Nature Guide, Photographer, Self-Documentarian",
         "num_abilities": 2,
+        "range": (28, 36),
         "abilities": [
             {
                 "name": "Familiar",
@@ -404,11 +556,25 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
                 "description": "Can cool vampires frenzy, werewolves' rage, etc. They become passive for two turns.",
             },
         ],
-    },
-    CharGenConcept.SOLDIER: {
+        "ability_specialty": "Knowledges",
+        "attribute_specialty": "Mental",
+        "specific_abilities": [
+            "Alertness",
+            "Animal Ken",
+            "Empathy",
+            "Expression",
+            "Linguistics",
+            "Medicine",
+            "Occult",
+            "Survival",
+        ],
+    }
+    SOLDIER: ClassVar[types.CharConceptDict] = {
+        "name": "soldier",
         "description": "Skilled warriors with a wide range of combat abilities and weapon expertise.",
         "examples": "Marine, Veteran, Mercenary, Hired Muscle, Hitman, Amateur/Pro Fighter, Martial Artist, Police, Security",
         "num_abilities": 1,
+        "range": (37, 44),
         "abilities": [
             {
                 "name": "Firearms",
@@ -423,11 +589,26 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
                 "description": "Can re-roll any single `Melee` roll once per turn. Can also gain a new specialization at `3`, `4` and `5` dots instead of `4`, granting an additional die whenever a specialized melee weapon is used. (Katana, Combat Knife, Chain, etc.)",
             },
         ],
-    },
-    CharGenConcept.ASCETIC: {
+        "ability_specialty": "Talents",
+        "attribute_specialty": "Physical",
+        "specific_abilities": [
+            "Alertness",
+            "Athletics",
+            "Brawl",
+            "Demolitions",
+            "Dodge",
+            "Firearms",
+            "Melee",
+            "Stealth",
+            "Survival",
+        ],
+    }
+    ASCETIC: ClassVar[types.CharConceptDict] = {
+        "name": "ascetic",
         "description": "Disciplined martial artists who harness their inner ki to perform incredible feats and attacks.",
         "examples": "Martial Artist, Dojo Owner, Competitor, Athlete, Bodybuilder, Body Hacker",
         "num_abilities": 2,
+        "range": (45, 52),
         "abilities": [
             {
                 "name": "Focus",
@@ -435,25 +616,44 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
             },
             {
                 "name": "Iron hand",
-                "description": "Deliver a single punch, once per scene, with damage augmented by spending `willpower`, `1` point per damage level.  Note that spending all willpower renders the player completely exhausted/inert.",
+                "description": "Deliver a single punch, once per scene, with damage augmented by spending `willpower`, `1` point per damage level.",
             },
         ],
-    },
-    CharGenConcept.CRUSADER: {
+        "ability_specialty": "Talents",
+        "attribute_specialty": "Physical",
+        "specific_abilities": ["Alertness", "Athletics", "Brawl", "Dodge", "Melee", "Stealth"],
+    }
+    CRUSADER: ClassVar[types.CharConceptDict] = {
+        "name": "crusader",
         "description": "Dedicated sentinels sworn to a code of conduct, armed with divine, academic, and martial skills.",
         "examples": "Government Agent, Lawyer, Judge, Zealot, Terrorist, Inquisitor",
         "num_abilities": 1,
+        "range": (53, 60),
         "abilities": [
             {
                 "name": "Incorruptible",
                 "description": "Crusaders can choose either the Healer's Heal or Faith ability but gain only one dot for it.  They also gain the Fighter's ability to choose a single combat specialization, and specialize in it at only `3` dots, but without additional specializations at `4` and `5`.  Crusaders choose a single weapon they are loyal to and stick with it.",
             }
         ],
-    },
-    CharGenConcept.URBAN_TRACKER: {
+        "ability_specialty": "Knowledges",
+        "attribute_specialty": "Mental",
+        "specific_abilities": [
+            "Academics",
+            "Investigation",
+            "Occult",
+            "Politics",
+            "Computer",
+            "Alertness",
+            "Leadership",
+            "Etiquette",
+        ],
+    }
+    URBAN_TRACKER: ClassVar[types.CharConceptDict] = {
+        "name": "Urban Tracker",
         "description": "Skilled hunters and trackers with a deep connection to the wilderness and survival skills, or the equivalent for the urban jungle.",
         "examples": "Hunter, Tracker, Long Range Recon Patrol, Sniper, Wildlife Photographer, Park Ranger, Paparazzo",
         "num_abilities": 2,
+        "range": (61, 68),
         "abilities": [
             {
                 "name": "Camouflage",
@@ -464,11 +664,24 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
                 "description": "Surprise attacks (ranged or hand to hand) do an additional `3` successes of damage. This is a first-strike ability and subsequent attacks are no longer a surprise unless they can be plausibly silent.",
             },
         ],
-    },
-    CharGenConcept.UNDER_WORLDER: {
+        "ability_specialty": "Skills",
+        "attribute_specialty": "Mental",
+        "specific_abilities": [
+            "Alertness",
+            "Animal Ken",
+            "Athletics",
+            "Firearms",
+            "Stealth",
+            "Streetwise",
+            "Survival",
+        ],
+    }
+    UNDER_WORLDER: ClassVar[types.CharConceptDict] = {
+        "name": "Under-worlder",
         "description": "Sneaky and dexterous individuals skilled in stealth, lock picking, and traps.",
         "examples": "Burglar, Lockpicker, Hacker, Safe-Cracker, Getaway Car Driver, Forger, Fence, Spy",
         "num_abilities": 3,
+        "range": (69, 76),
         "abilities": [
             {
                 "name": "Tools of the Trade",
@@ -483,22 +696,48 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
                 "description": "Start with the equivalent of `Arcane` skill at `2`.  They give off no paper trail, have multiple alternative identities, and their documents will stand up to anything short of a sustained FBI investigation. `+2` dots on any rolls to evade pursuit, lose a tail, or escape the police, or on any sneak roll.",
             },
         ],
-    },
-    CharGenConcept.SCIENTIST: {
+        "ability_specialty": "Skills",
+        "attribute_specialty": "Social",
+        "specific_abilities": [
+            "Alertness",
+            "Investigation",
+            "Larceny",
+            "Security",
+            "Stealth",
+            "Streetwise",
+            "Subterfuge",
+        ],
+    }
+    SCIENTIST: ClassVar[types.CharConceptDict] = {
+        "name": "Scientist",
         "description": "Experts who draw power from their study of esoteric knowledge, with unique and potent abilities and gear.",
         "examples": "Debunker, Psychologist, Egyptologist, Filmographer, Data Scientist, Hematologist, Cryptozoologist, Grad Student, Weird Physicist",
         "num_abilities": 1,
+        "range": (77, 84),
         "abilities": [
             {
                 "name": "Delicate Equipment",
                 "description": "Choose any `Thaumaturgical Paths` from the Vampire or Sorcerer book.  Apply `3` dots spread however. These should be represented as Tools or scientific equipment that generate the effect.  The Lure of Flames might be an experimental flamethrower or backpack-mounted Laser, Lightning might be some weather equipment, and so on.  The equipment can be carried gear, but must be present to create the effect. Technology should be appropriate to the time, if future-facing for it.",
             },
         ],
-    },
-    CharGenConcept.TRADESMAN: {
+        "ability_specialty": "Knowledges",
+        "attribute_specialty": "Mental",
+        "specific_abilities": [
+            "Academics",
+            "Computer",
+            "Etiquette",
+            "Investigation",
+            "Linguistics",
+            "Occult",
+            "Science",
+        ],
+    }
+    TRADESMAN: ClassVar[types.CharConceptDict] = {
+        "name": "Tradesman",
         "description": "Skilled artisans or laborers who excel in a specific trade or craft, such as blacksmithing, carpentry, or alchemy, often creating items of great value.",
         "examples": "Construction, Carpenter, Plumber, Key Grip, Truck Driver, Uber Driver, Union Man",
         "num_abilities": 2,
+        "range": (85, 92),
         "abilities": [
             {
                 "name": "Hardiness",
@@ -509,19 +748,60 @@ CONCEPT_INFORMATION: dict[CharGenConcept, ConceptInfo] = {
                 "description": "Take a free dot in `repair`, `drive`, or `leadership`.",
             },
         ],
-    },
-    CharGenConcept.BUSINESSMAN: {
+        "ability_specialty": "Skills",
+        "attribute_specialty": "Physical",
+        "specific_abilities": ["Crafts", "Drive", "Repair", "Survival", "Brawl", "Leadership"],
+    }
+    BUSINESSMAN: ClassVar[types.CharConceptDict] = {
+        "name": "Businessman",
         "description": "Astute and savvy individuals focused on commerce and negotiation, skilled in the art of deal-making and resource management.",
         "examples": "Professional, Salesman, Girlboss, Entrepreneur, Small Business Owner, Finance Bro, LinkedIn Influencer, Middle Manager, Storekeeper, Barista, In Marketing",
         "num_abilities": 1,
+        "range": (93, 100),
         "abilities": [
             {
                 "name": "Persuasion",
                 "description": "The Businessman can enthrall his enemies and win them over with her powers of facts and logic.  This is less of a fast power and more of a sustained one: the Businessman has `1` automatic success to `Leadership` or `Subterfuge` rolls.  Additionally, take an additional two dots in the `Resources` background and select `4` points in additional advantages.",
             },
         ],
-    },
-}
+        "ability_specialty": "Knowledges",
+        "attribute_specialty": "Social",
+        "specific_abilities": [
+            "Finance",
+            "Leadership",
+            "Subterfuge",
+            "Etiquette",
+            "Politics",
+            "Expression",
+            "Intimidation",
+            "Performance",
+        ],
+    }
+
+    @classmethod
+    def get_member_by_value(cls, value: int) -> "CharConcept":
+        """Find the corresponding enum member's name based on an integer value.
+
+        Args:
+            value (int): The integer value to look up.
+
+        Returns:
+            Optional[str]: The name of the enum member if found, otherwise None.
+        """
+        for member in cls:
+            min_val, max_val = member.value["range"]
+            if min_val <= value <= max_val:
+                return member
+        return None
+
+    @classmethod
+    def random_member(cls) -> "CharConcept":
+        """Select a random member from the enum.
+
+        Returns:
+            CharClassType: A random enum member.
+        """
+        return choice(list(cls))
 
 
 # CHANNEL_PERMISSIONS: Dictionary containing a mapping of channel permissions.
@@ -558,7 +838,6 @@ CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
     "is_alive": True,
     "bio": None,
     "date_of_birth": None,
-    "debug_character": False,
     "developer_character": False,
     "first_name": None,
     "is_active": False,
@@ -587,22 +866,6 @@ GUILDUSER_DEFAULTS: dict[str, int | bool | None | str] = {
 }
 
 ### More Constants ###
-
-CLAN_DISCIPLINES = {
-    "Assamite": ["Celerity", "Obfuscate", "Quietus"],
-    "Brujah": ["Celerity", "Potence", "Presence"],
-    "Followers of Set": ["Obfuscate", "Presence", "Serpentis"],
-    "Gangrel": ["Animalism", "Fortitude", "Protean"],
-    "Giovanni": ["Dominate", "Necromancy", "Potence"],
-    "Lasombra": ["Dominate", "Obfuscate", "Potence"],
-    "Malkavian": ["Auspex", "Dominate", "Obfuscate"],
-    "Nosferatu": ["Animalism", "Obfuscate", "Potence"],
-    "Ravnos": ["Animalism", "Chimerstry", "Fortitude"],
-    "Toreador": ["Auspex", "Celerity", "Presence"],
-    "Tremere": ["Auspex", "Dominate", "Thaumaturgy"],
-    "Tzimisce": ["Animalism", "Auspex", "Vicissitude"],
-    "Ventrue": ["Dominate", "Fortitude", "Presence"],
-}
 
 DICEROLL_THUBMS = {
     "BOTCH": [

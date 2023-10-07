@@ -2,7 +2,6 @@
 """Commands for bot development."""
 from datetime import datetime
 from pathlib import Path
-from random import randrange
 
 import aiofiles
 import discord
@@ -11,18 +10,15 @@ import semver
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
-from peewee import fn
 
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models.bot import Valentina
 from valentina.models.db_tables import (
     Character,
-    CharacterClass,
     RollProbability,
 )
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharacterClass
-from valentina.utils.helpers import fetch_random_name, fetch_random_vampire_clan
 from valentina.utils.options import (
     select_aws_object_from_guild,
     select_changelog_version_1,
@@ -153,6 +149,7 @@ class Developer(commands.Cog):
             description="The character's class",
             autocomplete=select_char_class,
             required=False,
+            default=None,
         ),
         hidden: Option(
             bool,
@@ -171,41 +168,13 @@ class Developer(commands.Cog):
         await self.bot.user_svc.update_or_add(ctx)  # Instantiate the user in the database if needed
 
         for _ in range(number):
-            # Assign a random class unless specified
-            if character_class is None:
-                char_class = CharacterClass.select().order_by(fn.Random()).limit(1).get()
-            else:
-                char_class = character_class
-
-            # Assign a random vampire clan
-            if char_class.name.lower() == "vampire":
-                vampire_clan = fetch_random_vampire_clan()
-            else:
-                vampire_clan = None
-
-            name = await fetch_random_name()
-
-            # Create the character
-            data: dict[str, str | int | bool] = {
-                "first_name": name[0][0],
-                "last_name": name[0][1],
-                "nickname": char_class.name,
-                "developer_character": True,
-                "player_character": True,
-            }
-
-            character = await self.bot.char_svc.update_or_add(
+            character = await self.bot.char_svc.rng_creator(
                 ctx,
-                char_class=char_class,
-                clan=vampire_clan,
-                data=data,
+                developer_character=True,
+                player_character=True,
+                char_class=character_class,
+                nickname_is_class=True,
             )
-
-            # Fetch all traits and set them
-            fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
-
-            for trait in fetched_traits:
-                character.set_trait_value(trait, randrange(0, 5))
 
             await present_embed(
                 ctx,

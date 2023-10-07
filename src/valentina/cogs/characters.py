@@ -9,7 +9,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import VALID_IMAGE_EXTENSIONS, EmbedColor, Emoji
+from valentina.constants import VALID_IMAGE_EXTENSIONS, CharClassType, EmbedColor, Emoji
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import (
@@ -90,10 +90,10 @@ class Characters(commands.Cog, name="Character"):
             default=None,
         ),
     ) -> None:
-        """Create a new character.
+        """Add a character from a character sheet using the chargen wizard.
 
         Args:
-            char_class (CharacterClass): The character's class
+            char_class (CharClassType): The character's class
             ctx (discord.ApplicationContext): The context of the command
             first_name (str): The character's first name
             last_name (str, optional): The character's last name. Defaults to None.
@@ -104,7 +104,7 @@ class Characters(commands.Cog, name="Character"):
         await self.bot.user_svc.update_or_add(ctx)
 
         # Require a clan for vampires
-        if char_class.name.lower() == "vampire" and not vampire_clan:
+        if char_class == CharClassType.VAMPIRE and not vampire_clan:
             await present_embed(
                 ctx,
                 title="Vampire clan required",
@@ -114,7 +114,7 @@ class Characters(commands.Cog, name="Character"):
             return
 
         # Fetch all traits and set them
-        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
+        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class)
 
         wizard = AddFromSheetWizard(
             ctx,
@@ -172,12 +172,28 @@ class Characters(commands.Cog, name="Character"):
             _,
             _,
         ) = user.fetch_experience(campaign.id)
+        class_descriptions = "\n".join(
+            [
+                f"{c.value['range'][0]}-{c.value['range'][1]}: {c.value['description']}"
+                for c in CharClassType
+            ]
+        )
 
         view = ConfirmCancelButtons(ctx.author)
         msg = await present_embed(
             ctx,
             title="Create a new character",
-            description=f"This will walk you through the character creation process.\n\nThis will cost `10` xp and you have `{campaign_xp}` xp available.",
+            description=f"""\
+For the cost of 10xp, I will create three random characters for you to choose between.  You select the one you want to keep.
+
+### How this works
+By rolling percentile dice we choose a random class and associated information.  We then roll for abilities and traits.  After you select your character, you can customize it to your liking.
+
+**Here's the percentage breakdown:**
+{class_descriptions}
+
+_This will cost `10` xp and you have `{campaign_xp}` xp available._
+""",
             view=view,
             ephemeral=hidden,
         )

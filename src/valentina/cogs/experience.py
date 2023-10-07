@@ -5,14 +5,13 @@ import inflect
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import COOL_POINT_VALUE, XPMultiplier
+from valentina.constants import COOL_POINT_VALUE, CharClassType, VampireClanType, XPMultiplier
 from valentina.models.bot import Valentina
 from valentina.utils.converters import (
     ValidCharacterObject,
     ValidCharTrait,
 )
 from valentina.utils.helpers import (
-    fetch_clan_disciplines,
     get_max_trait_value,
     get_trait_multiplier,
     get_trait_new_value,
@@ -163,10 +162,14 @@ class Experience(commands.Cog):
         old_trait_value = character.get_trait_value(trait)
         category = trait.category.name
 
+        char_class = CharClassType[character.char_class.name]
+        try:
+            clan = VampireClanType[character.clan.name] if character.clan else None
+        except KeyError:
+            clan = None
+
         # Compute the cost of the upgrade
-        if character.char_class.name == "Vampire" and trait.name in fetch_clan_disciplines(
-            character.clan_name
-        ):
+        if char_class == char_class.VAMPIRE and trait.name in clan.value["disciplines"]:
             multiplier = XPMultiplier.CLAN_DISCIPLINE.value
         else:
             multiplier = get_trait_multiplier(trait.name, category)

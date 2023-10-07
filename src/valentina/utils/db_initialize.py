@@ -9,11 +9,12 @@ IMPORTANT notes about Populating the Database:
 import json
 
 from loguru import logger
-from peewee import TextField
+from peewee import IntegrityError, TextField
 from playhouse.migrate import SqliteMigrator, migrate
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 from semver import Version
 
+from valentina.constants import CharClassType, VampireClanType
 from valentina.models.db_tables import (
     Campaign,
     CampaignNote,
@@ -902,39 +903,70 @@ class PopulateDatabase:
 
     def _character_classes(self) -> None:
         """Create the initial character classes."""
+        # TODO: This is a migration from 1.13.0. Remove this after a few releases
+        if not CharacterClass.get_or_none(name="VAMPIRE"):
+            for c in CharacterClass.select():
+                try:
+                    # Attempt to find the corresponding enum member
+                    enum_member = CharClassType[c.name.upper()]
+                except KeyError:  # noqa: PERF203
+                    logger.warning(f"No matching enum member for {c.name}")
+                else:
+                    # Update the name and save the record
+                    logger.debug(f"Rename {c.name} to {enum_member.name}")
+                    c.name = enum_member.name
+                    c.save()
+
+        # Ensure all character classes are in the database
         with self.db.atomic():
-            for character_class in [
-                "Changeling",
-                "Ghoul",
-                "Hunter",
-                "Mage",
-                "Mortal",
-                "Other",
-                "Vampire",
-                "Werewolf",
-            ]:
-                CharacterClass.insert(name=character_class).on_conflict_ignore().execute()
+            for charclass in CharClassType:
+                CharacterClass.insert(name=charclass.name).on_conflict_ignore().execute()
+
+        # Remove any character classes that are no longer in the CharacterClasses enum
+        with self.db.atomic():
+            for db_object in CharacterClass.select():
+                if db_object.name not in CharClassType.__members__:
+                    try:
+                        db_object.delete_instance()
+                    except IntegrityError:
+                        logger.warning(
+                            f"DATABASE: Unable to delete character class: `{db_object.name}`"
+                        )
+
         logger.debug("DATABASE: Populate character classes")
 
     def _vampire_clans(self) -> None:
         """Create the initial character classes."""
+        # TODO: This is a migration from 1.13.0. Remove this after a few releases
+        if not VampireClan.get_or_none(name="BRUJAH"):
+            for c in VampireClan.select():
+                try:
+                    # Attempt to find the corresponding enum member
+                    enum_member = VampireClanType[c.name.upper()]
+                except KeyError:  # noqa: PERF203
+                    logger.warning(f"No matching enum member for {c.name}")
+                else:
+                    # Update the name and save the record
+                    logger.debug(f"Rename {c.name} to {enum_member.name}")
+                    c.name = enum_member.name
+                    c.save()
+
+        # Ensure all clans are in the database
         with self.db.atomic():
-            for clan in [
-                "Assamite",
-                "Brujah",
-                "Followers of Set",
-                "Gangrel",
-                "Giovanni",
-                "Lasombra",
-                "Malkavian",
-                "Nosferatu",
-                "Ravnos",
-                "Toreador",
-                "Tremere",
-                "Tzimisce",
-                "Ventrue",
-            ]:
-                VampireClan.insert(name=clan).on_conflict_ignore().execute()
+            for clan in VampireClanType:
+                VampireClan.insert(name=clan.name).on_conflict_ignore().execute()
+
+        # Remove any clans that are no longer in the VampireClanType enum
+        with self.db.atomic():
+            for db_object in VampireClan.select():
+                if db_object.name not in VampireClanType.__members__:
+                    try:
+                        db_object.delete_instance()
+                    except IntegrityError:
+                        logger.warning(
+                            f"DATABASE: Unable to delete character class: `{db_object.name}`"
+                        )
+
         logger.debug("DATABASE: Populate vampire clans")
 
     def _trait_categories(self) -> None:
@@ -946,24 +978,24 @@ class PopulateDatabase:
         # Dictionary of category and associated character classes
         categories = {
             "Backgrounds": ["Common"],
-            "Disciplines": ["Vampire", "Ghoul"],
-            "Edges": ["Hunter"],
+            "Disciplines": ["VAMPIRE", "GHOUL"],
+            "Edges": ["HUNTER"],
             "Flaws": ["Common"],
-            "Gifts": ["Werewolf", "Changeling"],
+            "Gifts": ["WEREWOLF", "CHANGELING"],
             "Knowledges": ["Common"],
             "Mental": ["Common"],
             "Merits": ["Common"],
             "Other": ["Common"],
             "Paths": ["Common"],
             "Physical": ["Common"],
-            "Renown": ["Werewolf"],
+            "Renown": ["WEREWOLF"],
             "Skills": ["Common"],
             "Social": ["Common"],
-            "Spheres": ["Mage"],
+            "Spheres": ["MAGE"],
             "Talents": ["Common"],
             "Virtues": ["Common"],
-            "Numina": ["Mage", "Mortal", "Hunter"],
-            "Resonance": ["Mage"],
+            "Numina": ["MAGE", "MORTAL", "HUNTER"],
+            "Resonance": ["MAGE"],
             "Advantages": ["Common"],
         }
         with self.db.atomic():
@@ -992,11 +1024,11 @@ class PopulateDatabase:
         """Create the initial traits."""
         trait_dictionaries: list[dict[str, str | dict[str, list[str]]]] = [
             {"char_class": "Common", "dict": common_traits},
-            {"char_class": "Mage", "dict": mage_traits},
-            {"char_class": "Vampire", "dict": vampire_traits},
-            {"char_class": "Werewolf", "dict": werewolf_traits},
-            {"char_class": "Hunter", "dict": hunter_traits},
-            {"char_class": "Mortal", "dict": mortal_traits},
+            {"char_class": "MAGE", "dict": mage_traits},
+            {"char_class": "VAMPIRE", "dict": vampire_traits},
+            {"char_class": "WEREWOLF", "dict": werewolf_traits},
+            {"char_class": "HUNTER", "dict": hunter_traits},
+            {"char_class": "MORTAL", "dict": mortal_traits},
         ]
 
         with self.db.atomic():

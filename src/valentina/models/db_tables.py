@@ -770,19 +770,6 @@ class RollStatistic(BaseModel):
     date_rolled = DateTimeField(default=time_now)
     data = JSONField(null=True)
 
-    # TODO: Create these indexes if the query is slow
-    """
-    class Meta:
-        indexes = (
-            (("user",), False),
-            (("guild",), False),
-            (("character",), False),
-            (("user", "date_rolled"), False),
-            (("guild", "date_rolled"), False),
-            (("character", "date_rolled"), False),
-        )
-        """
-
 
 class RollProbability(BaseModel):
     """Track proability of roll results."""

@@ -8,17 +8,21 @@ from discord.ext import commands
 from discord.ext.commands import BadArgument, Converter
 from peewee import DoesNotExist, fn
 
-from valentina.constants import VALID_IMAGE_EXTENSIONS
+from valentina.constants import (
+    VALID_IMAGE_EXTENSIONS,
+    CharClassType,
+    CharConcept,
+    RNGCharLevel,
+    VampireClanType,
+)
 from valentina.models.db_tables import (
     Campaign,
     Character,
-    CharacterClass,
     CustomSection,
     CustomTrait,
     Macro,
     Trait,
     TraitCategory,
-    VampireClan,
 )
 from valentina.utils import errors
 
@@ -64,14 +68,37 @@ class ValidChannelName(Converter):
 class ValidCharacterClass(Converter):
     """A converter that ensures a requested character class name is valid."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> CharacterClass:  # noqa: ARG002
+    async def convert(self, ctx: commands.Context, argument: str) -> CharClassType:  # noqa: ARG002
         """Validate and normalize character classes."""
-        for c in CharacterClass.select().order_by(CharacterClass.name.asc()):
-            if argument.lower() == c.name.lower():
-                return c
+        try:
+            return CharClassType[argument]
+        except KeyError as e:
+            msg = f"`{argument}` is not a valid character class"
+            raise BadArgument(msg) from e
 
-        msg = f"`{argument}` is not a valid character class"
-        raise BadArgument(msg)
+
+class ValidCharacterConcept(Converter):
+    """A converter that converts a character concept name to a CharConcept enum."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> CharConcept:  # noqa: ARG002
+        """Validate and normalize character concepts."""
+        try:
+            return CharConcept[argument]
+        except KeyError as e:
+            msg = f"`{argument}` is not a valid character class"
+            raise BadArgument(msg) from e
+
+
+class ValidCharacterLevel(Converter):
+    """A converter that converts a character level name to a RNGCharLevel enum."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> RNGCharLevel:  # noqa: ARG002
+        """Validate and normalize character levels."""
+        try:
+            return RNGCharLevel[argument]
+        except KeyError as e:
+            msg = f"`{argument}` is not a valid character class"
+            raise BadArgument(msg) from e
 
 
 class ValidCharacterName(Converter):
@@ -113,7 +140,14 @@ class ValidCharTrait(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> Trait | CustomTrait:
         """Validate and normalize traits."""
-        character = await ctx.bot.user_svc.fetch_active_character(ctx)
+        # Certain autocomplete options prefix a character id to the trait name
+        match = re.match(r"(\d+)_(.*)", argument)
+        if match:
+            integer_part, string_part = match.groups()
+            character = Character.get_by_id(int(integer_part))
+            argument = string_part
+        else:
+            character = await ctx.bot.user_svc.fetch_active_character(ctx)
 
         for trait in character.traits_list:
             if argument.lower() == trait.name.lower():
@@ -141,14 +175,15 @@ class ValidCampaign(Converter):
 class ValidClan(Converter):
     """A converter that ensures a requested vampire clan is valid."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> VampireClan:  # noqa: ARG002
-        """Validate and normalize character's clan."""
-        for c in VampireClan.select().order_by(VampireClan.name.asc()):
-            if argument.lower() == c.name.lower():
-                return c
-
-        msg = f"`{argument}` is not a valid vampire clan"
-        raise BadArgument(msg)
+    async def convert(
+        self, ctx: commands.Context, argument: str  # noqa: ARG002
+    ) -> VampireClanType:
+        """Validate and normalize vampire clan."""
+        try:
+            return VampireClanType[argument]
+        except KeyError as e:
+            msg = f"`{argument}` is not a valid vampire clan"
+            raise BadArgument(msg) from e
 
 
 class ValidCustomSection(Converter):

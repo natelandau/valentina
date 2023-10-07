@@ -9,7 +9,7 @@ import discord
 from loguru import logger
 from peewee import DoesNotExist, fn
 
-from valentina.constants import TraitCategoryOrder
+from valentina.constants import CharClassType, TraitCategoryOrder
 from valentina.utils import errors
 
 from .db_tables import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass
@@ -57,7 +57,7 @@ class TraitService:
 
         return all_traits
 
-    def fetch_all_class_traits(self, char_class: str) -> list[Trait]:
+    def fetch_all_class_traits(self, char_class: CharClassType) -> list[Trait]:
         """Fetch all traits for a specified character class.
 
         Checks if the traits for the character class are already cached.
@@ -66,30 +66,30 @@ class TraitService:
         sorts them by the `TraitCategoryOrder`, caches them, and then returns the traits.
 
         Args:
-            char_class (str): Name of the character class to fetch traits for.
+            char_class (CharClassType): Name of the character class to fetch traits for.
 
         Returns:
             list[Trait]: List of traits for the specified character class, sorted by `TraitCategoryOrder`.
         """
         # Guard clause: return cached traits if they exist
-        if char_class in self.class_traits:
-            logger.debug(f"CACHE: Return traits for `{char_class}`")
-            return self.class_traits[char_class]
+        if char_class.name in self.class_traits:
+            logger.debug(f"CACHE: Return traits for `{char_class.name}`")
+            return self.class_traits[char_class.name]
 
-        logger.debug(f"DATABASE: Fetch all traits for `{char_class}`")
+        logger.debug(f"DATABASE: Fetch all traits for `{char_class.name}`")
 
         traits = (
             Trait.select()
             .join(TraitClass)
             .join(CharacterClass)
-            .where(CharacterClass.name == char_class)
+            .where(CharacterClass.name == char_class.name)
         )
 
-        self.class_traits[char_class] = sorted(
+        self.class_traits[char_class.name] = sorted(
             traits, key=lambda x: TraitCategoryOrder[x.category.name]
         )
 
-        return self.class_traits[char_class]
+        return self.class_traits[char_class.name]
 
     @staticmethod
     def fetch_trait_id_from_name(trait_name: str) -> int:

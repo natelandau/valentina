@@ -3,8 +3,8 @@
 from .embeds import present_embed, user_error_embed  # isort:skip
 from .buttons import ConfirmCancelButtons, ReRollButton, CancelButton  # isort:skip
 from .actions import confirm_action
-from .character_generation import AddFromSheetWizard, CharGenWizard
 from .character_sheet import sheet_embed, show_sheet
+from .chargen import AddFromSheetWizard, CharGenWizard
 from .modals import (
     BioModal,
     ChapterModal,

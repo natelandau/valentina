@@ -1,10 +1,19 @@
 """Models for working with characters in the database."""
+from typing import Literal
 
 import discord
 from loguru import logger
 
-from valentina.models.db_tables import Character, CustomSection, GuildUser
-from valentina.utils.helpers import time_now
+from valentina.constants import CharClassType, CharConcept, RNGCharLevel, VampireClanType
+from valentina.models.db_tables import (
+    Character,
+    CharacterClass,
+    CustomSection,
+    GuildUser,
+    VampireClan,
+)
+from valentina.utils.helpers import fetch_random_name, time_now
+from valentina.utils.rng_trait_values import RNGTraitValues
 
 
 class CharacterService:
@@ -200,6 +209,8 @@ class CharacterService:
         ctx: discord.ApplicationContext,
         data: dict[str, str | int | bool] | None = None,
         character: Character | None = None,
+        char_class: CharClassType | None = CharClassType.NONE,
+        clan: VampireClanType | None = None,
         **kwargs: str | int,
     ) -> Character:
         """Update or add a character.
@@ -208,6 +219,8 @@ class CharacterService:
             ctx (ApplicationContext): The application context.
             data (dict[str, str | int | bool] | None): The character data.
             character (Character | None): The character to update, or None to create.
+            char_class (CharClassType | None): The character class.
+            clan (VampireClanType | None): The vampire clan.
             **kwargs: Additional fields for the character.
 
         Returns:
@@ -227,6 +240,8 @@ class CharacterService:
                 guild_id=ctx.guild.id,
                 created_by=user,
                 owned_by=user,
+                char_class=CharacterClass.get_or_none(name=char_class.name),
+                clan=VampireClan.get_or_none(name=clan.name) if clan else None,
                 data=data or {},
                 **kwargs,
             )
@@ -247,3 +262,68 @@ class CharacterService:
         logger.debug(f"DATABASE: Updated Character '{character}'")
 
         return Character.get_by_id(character.id)  # Have to query db again to get updated data ???
+
+    async def rng_creator(
+        self,
+        ctx: discord.ApplicationContext,
+        char_class: CharClassType | None = None,
+        concept: CharConcept | None = None,
+        vampire_clan: VampireClanType | None = None,
+        character_level: RNGCharLevel | None = None,
+        player_character: bool = False,
+        storyteller_character: bool = False,
+        developer_character: bool = False,
+        chargen_character: bool = False,
+        gender: Literal["male", "female"] | None = None,
+        nationality: str = "us",
+        nickname_is_class: bool = False,
+    ) -> Character:
+        """Create a random character."""
+        # Add a random name
+
+        name = await fetch_random_name(gender=gender, country=nationality)
+        first_name, last_name = name[0]
+
+        data: dict[str, str | int | bool] = {
+            "first_name": first_name,
+            "last_name": last_name,
+        }
+
+        # Add a random class
+        if char_class is None:
+            char_class = CharClassType.random_member()
+
+        if nickname_is_class:
+            data["nickname"] = char_class.value["name"]
+
+        # Add a random clan
+        if char_class == CharClassType.VAMPIRE and not vampire_clan:
+            vampire_clan = VampireClanType.random_member()
+
+        # Add character type flags
+        data["player_character"] = player_character
+        data["storyteller_character"] = storyteller_character
+        data["developer_character"] = developer_character
+        data["chargen_character"] = chargen_character
+
+        # Add character to database
+        character = await self.update_or_add(
+            ctx,
+            char_class=CharacterClass.get(name=char_class.name),
+            clan=VampireClan(name=vampire_clan.name) if vampire_clan else None,
+            data=data,
+        )
+
+        if concept is None:
+            concept = CharConcept.random_member()
+
+        if character_level is None:
+            character_level = RNGCharLevel.random_member()
+
+        rng_traits = RNGTraitValues(
+            ctx=ctx, character=character, concept=concept, level=character_level
+        )
+        character = rng_traits.set_trait_values()
+        # TODO: Add specialties, backgrounds, etc.
+        logger.debug(f"CHARGEN: Created {character} from RNG")
+        return character
