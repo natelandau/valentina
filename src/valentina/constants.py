@@ -215,6 +215,7 @@ class XPMultiplier(Enum):
 
 
 # Enums linked to the Database
+# Updates may require a database migration
 
 
 class CharClassType(Enum):
