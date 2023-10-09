@@ -20,7 +20,12 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
-from valentina.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS, GUILDUSER_DEFAULTS
+from valentina.constants import (
+    CHARACTER_DEFAULTS,
+    GUILD_DEFAULTS,
+    GUILDUSER_DEFAULTS,
+    TraitCategories,
+)
 from valentina.utils import errors
 
 
@@ -441,8 +446,8 @@ class Character(BaseModel):
 
         Example:
             {
-                "Physical": [("Strength", 3, 5, "●●●○○"), ("Agility", 2, 5, "●●●○○")],
-                "Social": [("Persuasion", 1, 5, "●○○○○")]
+                "PHYSICAL": [("Strength", 3, 5, "●●●○○"), ("Agility", 2, 5, "●●●○○")],
+                "SOCIAL": [("Persuasion", 1, 5, "●○○○○")]
             }
         """
         from valentina.utils.helpers import get_max_trait_value, num_to_circles
@@ -462,7 +467,7 @@ class Character(BaseModel):
         return all_traits
 
     def add_custom_trait(
-        self, name: str, description: str, category: TraitCategory, value: int, max_value: int
+        self, name: str, description: str, category: TraitCategories, value: int, max_value: int
     ) -> None:
         """Add a custom trait to the character."""
         # Confirm the custom trait name is unique for this character
@@ -476,7 +481,7 @@ class Character(BaseModel):
             character=self,
             name=name,
             description=description,
-            category=category,
+            category=TraitCategory.get(name=category.name),
             value=value,
             max_value=max_value,
         )

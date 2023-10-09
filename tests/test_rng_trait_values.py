@@ -5,11 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from valentina.constants import (
-    CharClassType,
-    CharConcept,
-    RNGCharLevel,
-)
+from valentina.constants import CharClassType, CharConcept, RNGCharLevel, TraitCategories
 from valentina.models.db_tables import Character, CharacterClass, VampireClan
 from valentina.models.traits import TraitService
 from valentina.utils.rng_trait_values import RNGTraitValues
@@ -104,16 +100,23 @@ class TestRNGTraitValues:
         )
 
         # WHEN we set the abilities
-        categories = ["Talents", "Skills", "Knowledges"]
+        categories = [
+            TraitCategories.TALENTS,
+            TraitCategories.SKILLS,
+            TraitCategories.KNOWLEDGES,
+        ]
         result = rng._set_abilities(categories=categories)
 
         # THEN assert categories have the correct number of dots
         for category in categories:
             if category == CharConcept[concept].value["ability_specialty"]:
-                assert sum([x[1] for x in result if x[0].category.name == category]) == primary_dots
+                assert (
+                    sum([x[1] for x in result if x[0].category.name == category.name])
+                    == primary_dots
+                )
             else:
                 assert (
-                    sum([x[1] for x in result if x[0].category.name == category])
+                    sum([x[1] for x in result if x[0].category.name == category.name])
                     in non_primary_dots
                 )
 
@@ -190,7 +193,13 @@ class TestRNGTraitValues:
         )
 
         # WHEN we set the attributes
-        result = rng._set_attributes(categories=["Physical", "Social", "Mental"])
+        result = rng._set_attributes(
+            categories=[
+                TraitCategories.PHYSICAL,
+                TraitCategories.SOCIAL,
+                TraitCategories.MENTAL,
+            ]
+        )
 
         # THEN assert the result is correct
         assert len(result) == 9

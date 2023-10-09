@@ -1,6 +1,6 @@
 """Constants for Valentina models."""
 import re
-from enum import Enum, IntEnum
+from enum import Enum
 from pathlib import Path
 from random import choice
 from typing import ClassVar
@@ -164,30 +164,6 @@ class RollResultType(Enum):
     OTHER = "n/a"
 
 
-class TraitCategoryOrder(IntEnum):
-    """The order of trait categories to mimic character sheets."""
-
-    Physical = 1
-    Social = 2
-    Mental = 3
-    Talents = 4
-    Skills = 5
-    Knowledges = 6
-    Spheres = 7
-    Disciplines = 8
-    Numina = 9
-    Backgrounds = 10
-    Merits = 12
-    Flaws = 13
-    Virtues = 14
-    Resonance = 16
-    Gifts = 17
-    Renown = 18
-    Paths = 19
-    Edges = 20
-    Other = 21
-
-
 class XPNew(Enum):
     """Experience cost for gaining a wholly new trait. Values are the cost in xp."""
 
@@ -294,6 +270,11 @@ class CharClassType(Enum):
         "range": None,
         "description": None,
     }
+    COMMON: ClassVar[types.CharacterClassDict] = {
+        "name": None,
+        "range": None,
+        "description": None,
+    }
 
     @classmethod
     def get_member_by_value(cls, value: int) -> "CharClassType":
@@ -320,8 +301,113 @@ class CharClassType(Enum):
         """
         while True:
             member = choice(list(cls))
-            if member.value["name"]:
+            if member.value["name"] and member.value["range"]:
                 return member
+
+
+class TraitCategories(Enum):
+    """Enum for categories of traits."""
+
+    PHYSICAL: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Physical",
+        "order": 1,
+    }
+    SOCIAL: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Social",
+        "order": 2,
+    }
+    MENTAL: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Mental",
+        "order": 3,
+    }
+    TALENTS: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Talents",
+        "order": 4,
+    }
+    SKILLS: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Skills",
+        "order": 5,
+    }
+    KNOWLEDGES: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Knowledges",
+        "order": 6,
+    }
+    SPHERES: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.MAGE],
+        "name": "Spheres",
+        "order": 7,
+    }
+    DISCIPLINES: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.VAMPIRE, CharClassType.GHOUL],
+        "name": "Disciplines",
+        "order": 8,
+    }
+    NUMINA: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.MORTAL, CharClassType.MAGE, CharClassType.HUNTER],
+        "name": "Numina",
+        "order": 9,
+    }
+    BACKGROUNDS: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Backgrounds",
+        "order": 10,
+    }
+    MERITS: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Merits",
+        "order": 11,
+    }
+    FLAWS: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Flaws",
+        "order": 12,
+    }
+    VIRTUES: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Virtues",
+        "order": 13,
+    }
+    RESONANCE: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.MAGE],
+        "name": "Resonance",
+        "order": 14,
+    }
+    GIFTS: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.WEREWOLF, CharClassType.CHANGELING],
+        "name": "Gifts",
+        "order": 15,
+    }
+    RENOWN: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.WEREWOLF],
+        "name": "Renown",
+        "order": 16,
+    }
+    EDGES: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.HUNTER],
+        "name": "Edges",
+        "order": 17,
+    }
+    PATHS: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Paths",
+        "order": 18,
+    }
+    OTHER: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Other",
+        "order": 19,
+    }
+    ADVANTAGES: ClassVar[types.TraitCategoriesDict] = {
+        "classes": [CharClassType.COMMON],
+        "name": "Advantages",
+        "order": 20,
+    }
 
 
 class VampireClanType(Enum):
@@ -453,11 +539,14 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Frenzy",
-                "description": "Can ignore the first inflicted health levels of damage with no penalty up until they are Mauled, and cannot be stunned.  Barbarians also gain an automatic success on any strength roll once per turn, equal to a permanent dot in Potence.",
+                "description": "Ignore the first inflicted health levels of damage with no penalty up until `Mauled`, and cannot be stunned.  Barbarians also gain an automatic success on any strength roll once per turn, equal to a permanent dot in Potence.",
+                "category": "Disciplines",
+                "trait": "Potence",
+                "dots": 1,
             }
         ],
-        "ability_specialty": "Talents",
-        "attribute_specialty": "Physical",
+        "ability_specialty": TraitCategories.TALENTS,
+        "attribute_specialty": TraitCategories.PHYSICAL,
         "specific_abilities": [
             "Melee",
             "Firearms",
@@ -477,11 +566,14 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Fast Talk",
-                "description": "Performers have an automatic granted success (as if a single die was rolled equivalent to a success) on any charisma, expression or performance roll, and can immediately command attention. This works even in combat, functionally freezing enemies, including groups, for the first turn.  Note that the bard needs to keep doing their act for this to work, they can't drop their guitar and pick up a gun without ruining the effect.  Their teammates are free of any compunction, however.",
+                "description": "Performers have an automatic success on any `charisma`, `expression` or `performance` roll, and can immediately command attention. This works even in combat, functionally freezing enemies, including groups, for the first turn. Note that the bard needs to keep doing their act for this to work, they can't drop their guitar and pick up a gun without ruining the effect.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             }
         ],
-        "ability_specialty": "Skills",
-        "attribute_specialty": "Social",
+        "ability_specialty": TraitCategories.SKILLS,
+        "attribute_specialty": TraitCategories.SOCIAL,
         "specific_abilities": [
             "Expression",
             "Empathy",
@@ -501,15 +593,21 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Heal",
-                "description": "Heal 3 health levels to a target once per turn.  Any First Aid/medicine roles are also automatically granted one success (with no limit on how many can be performed, with a limit of one per turn). This is usually enough to stabilize a target and prevent them from bleeding out.",
+                "description": "Heal 3 health levels to a target once per turn.  Any First Aid/medicine roles are also automatically granted one success. This is usually enough to stabilize a target and prevent them from bleeding out.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "True Faith",
                 "description": "Starts with a Faith of `3`, equivalent to a Discipline.  Clerics can repel supernatural beings for every success on a Faith role.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
         ],
-        "ability_specialty": "Knowledges",
-        "attribute_specialty": "Mental",
+        "ability_specialty": TraitCategories.KNOWLEDGES,
+        "attribute_specialty": TraitCategories.MENTAL,
         "specific_abilities": [
             "Academics",
             "Empathy",
@@ -530,34 +628,48 @@ class CharConcept(Enum):
             {
                 "name": "Familiar",
                 "description": "A trained animal that can carry out simple commands",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Friend of Animals",
                 "description": "Per `Animalism` level `1`.",
-            },
-            {
-                "name": "Familiar",
-                "description": "A trained animal that can carry out simple commands.",
+                "category": "Disciplines",
+                "trait": "Animalism",
+                "dots": 1,
             },
             {
                 "name": "Spirit Sight",
-                "description": "Sees the dead, naturalistic spirits, places of power. Can generally detect supernatural beings, and penetrate spells, illusions and glamour on a `perception` + `occult` roll with a difficulty of `4`.",
+                "description": "Sees the dead, naturalistic spirits, places of power. Can detect supernatural beings, and penetrate spells, illusions and glamour on a `perception` + `occult` roll with a difficulty of `4`.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Read Auras",
-                "description": "Per the Auspex power.",
+                "description": "Per the Auspex discipline.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Astral Projection",
-                "description": "Per the Auspex power.",
+                "description": "Per the Auspex discipline.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Remove Frenzy",
                 "description": "Can cool vampires frenzy, werewolves' rage, etc. They become passive for two turns.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
         ],
-        "ability_specialty": "Knowledges",
-        "attribute_specialty": "Mental",
+        "ability_specialty": TraitCategories.KNOWLEDGES,
+        "attribute_specialty": TraitCategories.MENTAL,
         "specific_abilities": [
             "Alertness",
             "Animal Ken",
@@ -579,18 +691,27 @@ class CharConcept(Enum):
             {
                 "name": "Firearms",
                 "description": "Can re-roll any single Firearms roll once per turn. Can also specialize in new firearms at `3`, `4` and `5` dots instead of `4`, granting an additional dice whenever a specialized weapon is used.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Hand to hand",
                 "description": "Can re-roll any single `Brawl` roll once per turn. Can also gain a new specialization at `3`, `4` and `5` dots instead of `4`, granting an additional die whenever a specialized martial arts style is used. (Wrestling, Karate, Jiu Jitsu, etc.)",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Melee",
                 "description": "Can re-roll any single `Melee` roll once per turn. Can also gain a new specialization at `3`, `4` and `5` dots instead of `4`, granting an additional die whenever a specialized melee weapon is used. (Katana, Combat Knife, Chain, etc.)",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
         ],
-        "ability_specialty": "Talents",
-        "attribute_specialty": "Physical",
+        "ability_specialty": TraitCategories.TALENTS,
+        "attribute_specialty": TraitCategories.PHYSICAL,
         "specific_abilities": [
             "Alertness",
             "Athletics",
@@ -605,7 +726,7 @@ class CharConcept(Enum):
     }
     ASCETIC: ClassVar[types.CharConceptDict] = {
         "name": "Ascetic",
-        "description": "Disciplined martial artists who harness their inner ki to perform incredible feats and attacks.",
+        "description": "Disciplined martial artists who harnesses their inner chi to perform incredible feats and attacks.",
         "examples": "Martial Artist, Dojo Owner, Competitor, Athlete, Bodybuilder, Body Hacker",
         "num_abilities": 2,
         "range": (45, 52),
@@ -613,14 +734,20 @@ class CharConcept(Enum):
             {
                 "name": "Focus",
                 "description": "Gathering their Chi, the monk can resist gases, poisons, psionic attacks, and hold their breath one turn per existing `stamina`+ `willpower`.  Monks are immune to the vampiric discipline of `Dominate`, (but not `Presence`, curiously).",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Iron hand",
                 "description": "Deliver a single punch, once per scene, with damage augmented by spending `willpower`, `1` point per damage level.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
         ],
-        "ability_specialty": "Talents",
-        "attribute_specialty": "Physical",
+        "ability_specialty": TraitCategories.TALENTS,
+        "attribute_specialty": TraitCategories.PHYSICAL,
         "specific_abilities": ["Alertness", "Athletics", "Brawl", "Dodge", "Melee", "Stealth"],
     }
     CRUSADER: ClassVar[types.CharConceptDict] = {
@@ -632,11 +759,14 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Incorruptible",
-                "description": "Crusaders can choose either the Healer's Heal or Faith ability but gain only one dot for it.  They also gain the Fighter's ability to choose a single combat specialization, and specialize in it at only `3` dots, but without additional specializations at `4` and `5`.  Crusaders choose a single weapon they are loyal to and stick with it.",
+                "description": "Crusaders can choose either the Healer's `Heal` or `Faith` ability but gain only one dot for it.  They also gain the Fighter's ability to choose a single combat specialization, and specialize in it at only `3` dots, but without additional specializations at `4` and `5`.  Crusaders choose a single weapon they are loyal to and stick with it.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             }
         ],
-        "ability_specialty": "Knowledges",
-        "attribute_specialty": "Mental",
+        "ability_specialty": TraitCategories.KNOWLEDGES,
+        "attribute_specialty": TraitCategories.MENTAL,
         "specific_abilities": [
             "Academics",
             "Investigation",
@@ -658,14 +788,20 @@ class CharConcept(Enum):
             {
                 "name": "Camouflage",
                 "description": "The Ranger can camouflage into their preferred environment given 1 turn of preparation.  This is not invisibility!  They can be detected on a `Perception` (or `Focus`) roll with a difficulty of `8`. Any attacks made from this position are considered surprise attacks.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Surprise Attack",
                 "description": "Surprise attacks (ranged or hand to hand) do an additional `3` successes of damage. This is a first-strike ability and subsequent attacks are no longer a surprise unless they can be plausibly silent.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
         ],
-        "ability_specialty": "Skills",
-        "attribute_specialty": "Mental",
+        "ability_specialty": TraitCategories.SKILLS,
+        "attribute_specialty": TraitCategories.MENTAL,
         "specific_abilities": [
             "Alertness",
             "Animal Ken",
@@ -686,18 +822,27 @@ class CharConcept(Enum):
             {
                 "name": "Tools of the Trade",
                 "description": "The character has an object: (a set of lockpicks, a laser drill, a getaway car, a printing press) -- when used, decreases the difficulty by `2`. This means, for example, a Forger will have a standard difficulty of 4 to attempt any forgery, provided they have their printing press, and a cat burglar can get in anywhere, with his rope and lockpicks.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Professional",
                 "description": "Any single `security` roll is done at a `-1` difficulty.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
             {
                 "name": "Lay Low",
                 "description": "Start with the equivalent of `Arcane` skill at `2`.  They give off no paper trail, have multiple alternative identities, and their documents will stand up to anything short of a sustained FBI investigation. `+2` dots on any rolls to evade pursuit, lose a tail, or escape the police, or on any sneak roll.",
+                "category": "Backgrounds",
+                "trait": "Arcane",
+                "dots": 2,
             },
         ],
-        "ability_specialty": "Skills",
-        "attribute_specialty": "Social",
+        "ability_specialty": TraitCategories.SKILLS,
+        "attribute_specialty": TraitCategories.SOCIAL,
         "specific_abilities": [
             "Alertness",
             "Investigation",
@@ -717,11 +862,14 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Delicate Equipment",
-                "description": "Choose any `Thaumaturgical Paths` from the Vampire or Sorcerer book.  Apply `3` dots spread however. These should be represented as Tools or scientific equipment that generate the effect.  The Lure of Flames might be an experimental flamethrower or backpack-mounted Laser, Lightning might be some weather equipment, and so on.  The equipment can be carried gear, but must be present to create the effect. Technology should be appropriate to the time, if future-facing for it.",
+                "description": "Choose any `Thaumaturgical Paths` from the Vampire or Sorcerer book.  Apply `3` dots spread however. These should be represented as Tools or scientific equipment that generate the effect.  The Lure of Flames might be an experimental flamethrower or backpack-mounted Laser, Lightning might be some weather equipment, and so on.  The equipment can be carried gear, but must be present to create the effect.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
         ],
-        "ability_specialty": "Knowledges",
-        "attribute_specialty": "Mental",
+        "ability_specialty": TraitCategories.KNOWLEDGES,
+        "attribute_specialty": TraitCategories.MENTAL,
         "specific_abilities": [
             "Academics",
             "Computer",
@@ -742,14 +890,20 @@ class CharConcept(Enum):
             {
                 "name": "Hardiness",
                 "description": "The equivalent of `Fortitude` `1`.  All attacks sustained automatically soak `1` success at no cost.",
+                "category": "Disciplines",
+                "trait": "Fortitude",
+                "dots": 1,
             },
             {
                 "name": "Handy",
                 "description": "Take a free dot in `repair`, `drive`, or `leadership`.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
         ],
-        "ability_specialty": "Skills",
-        "attribute_specialty": "Physical",
+        "ability_specialty": TraitCategories.SKILLS,
+        "attribute_specialty": TraitCategories.PHYSICAL,
         "specific_abilities": ["Crafts", "Drive", "Repair", "Survival", "Brawl", "Leadership"],
     }
     BUSINESSMAN: ClassVar[types.CharConceptDict] = {
@@ -762,10 +916,13 @@ class CharConcept(Enum):
             {
                 "name": "Persuasion",
                 "description": "The Businessman can enthrall his enemies and win them over with her powers of facts and logic.  This is less of a fast power and more of a sustained one: the Businessman has `1` automatic success to `Leadership` or `Subterfuge` rolls.  Additionally, take an additional two dots in the `Resources` background and select `4` points in additional advantages.",
+                "category": None,
+                "trait": None,
+                "dots": None,
             },
         ],
-        "ability_specialty": "Knowledges",
-        "attribute_specialty": "Social",
+        "ability_specialty": TraitCategories.KNOWLEDGES,
+        "attribute_specialty": TraitCategories.SOCIAL,
         "specific_abilities": [
             "Finance",
             "Leadership",

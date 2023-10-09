@@ -11,10 +11,11 @@ from valentina.constants import (
     CharConcept,
     Emoji,
     RNGCharLevel,
+    TraitCategories,
     VampireClanType,
 )
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import Character, TraitCategory
+from valentina.models.db_tables import Character
 from valentina.utils import errors
 from valentina.utils.helpers import truncate_string
 
@@ -644,7 +645,7 @@ async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) ->
     return options if options else [OptionChoice("No traits", "")]
 
 
-async def select_trait_category(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_trait_category(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available trait categories for autocomplete.
 
     This function fetches all trait categories from the database, filters them based on the user's input, and returns a list of trait category names to populate the autocomplete list.
@@ -656,8 +657,8 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[str]:
         list[str]: A list of trait category names for the autocomplete list.
     """
     return [
-        category.name
-        for category in TraitCategory.select().order_by(TraitCategory.name.asc())
+        OptionChoice(category.value["name"], category.name)
+        for category in TraitCategories
         if category.name.lower().startswith(ctx.options["category"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 

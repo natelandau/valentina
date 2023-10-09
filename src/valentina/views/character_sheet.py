@@ -5,7 +5,7 @@ import arrow
 import discord
 from discord.ext import pages
 
-from valentina.constants import Emoji
+from valentina.constants import Emoji, TraitCategories
 from valentina.models.db_tables import Character
 from valentina.models.statistics import Statistics
 from valentina.utils import errors
@@ -15,7 +15,7 @@ MAX_DOT_DISPLAY = 6
 
 def __build_trait_display(
     char_traits: dict[str, Any],
-    categories_list: list[str],
+    categories_list: list[TraitCategories],
     exclude_from_list: bool = False,
     show_zeros: bool = True,
     sort_items: bool = False,
@@ -34,21 +34,21 @@ def __build_trait_display(
         char_traits = {k: sorted(v, key=lambda x: x[0]) for k, v in char_traits.items()}
 
     for category, traits in char_traits.items():
-        if exclude_from_list and category.lower() in [x.lower() for x in categories_list]:
+        if exclude_from_list and category in [x.name for x in categories_list]:
             continue
-        if not exclude_from_list and category.lower() not in [x.lower() for x in categories_list]:
+        if not exclude_from_list and category not in [x.name for x in categories_list]:
             continue
 
         formatted = []
         for trait, value, max_value, dots in traits:
-            if (not show_zeros or category == "Disciplines") and value == 0:
+            if (not show_zeros or category == TraitCategories.DISCIPLINES.name) and value == 0:
                 continue
             if max_value > MAX_DOT_DISPLAY:
                 formatted.append(f"`{trait:13}: {value}/{max_value}`")
             else:
                 formatted.append(f"`{trait:13}: {dots}`")
 
-        embed_values.append((category, "\n".join(formatted)))
+        embed_values.append((category.title(), "\n".join(formatted)))
 
     return embed_values
 
@@ -108,24 +108,37 @@ def __embed1(  # noqa: C901
         embed.add_field(name="Breed", value=character.data.get("breed", ""), inline=True)
 
     embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
-    for category, traits in __build_trait_display(char_traits, ["physical", "social", "mental"]):
+    for category, traits in __build_trait_display(
+        char_traits,
+        [
+            TraitCategories.PHYSICAL,
+            TraitCategories.SOCIAL,
+            TraitCategories.MENTAL,
+        ],
+    ):
         embed.add_field(name=category, value=traits, inline=True)
 
     embed.add_field(name="\u200b", value="**ABILITIES**", inline=False)
     for category, traits in __build_trait_display(
-        char_traits, ["talents", "skills", "knowledges"], sort_items=True
+        char_traits,
+        [
+            TraitCategories.TALENTS,
+            TraitCategories.SKILLS,
+            TraitCategories.KNOWLEDGES,
+        ],
+        sort_items=True,
     ):
         embed.add_field(name=category, value=traits, inline=True)
 
     for category, traits in __build_trait_display(
         char_traits,
         [
-            "physical",
-            "social",
-            "mental",
-            "talents",
-            "skills",
-            "knowledges",
+            TraitCategories.PHYSICAL,
+            TraitCategories.SOCIAL,
+            TraitCategories.MENTAL,
+            TraitCategories.TALENTS,
+            TraitCategories.SKILLS,
+            TraitCategories.KNOWLEDGES,
         ],
         exclude_from_list=True,
     ):

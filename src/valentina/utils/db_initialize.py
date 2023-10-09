@@ -14,7 +14,7 @@ from playhouse.migrate import SqliteMigrator, migrate
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 from semver import Version
 
-from valentina.constants import CharClassType, VampireClanType
+from valentina.constants import CharClassType, TraitCategories, VampireClanType
 from valentina.models.db_tables import (
     Campaign,
     CampaignNote,
@@ -35,6 +35,7 @@ from valentina.models.db_tables import (
     VampireClan,
 )
 
+# Traits used in character creation
 common_traits = {
     "Physical": ["Strength", "Dexterity", "Stamina"],
     "Social": ["Charisma", "Manipulation", "Appearance"],
@@ -937,7 +938,7 @@ class PopulateDatabase:
 
     def _vampire_clans(self) -> None:
         """Create the initial character classes."""
-        # TODO: This is a migration from 1.13.0. Remove this after a few releases
+        # TODO: This if statement is a migration from 1.13.0. Remove this after a few releases
         if not VampireClan.get_or_none(name="BRUJAH"):
             for c in VampireClan.select():
                 try:
@@ -975,47 +976,36 @@ class PopulateDatabase:
         This method associates predefined character classes to each category. If a category
         is associated with the 'Common' class, it will be linked with all character classes.
         """
-        # Dictionary of category and associated character classes
-        categories = {
-            "Backgrounds": ["Common"],
-            "Disciplines": ["VAMPIRE", "GHOUL"],
-            "Edges": ["HUNTER"],
-            "Flaws": ["Common"],
-            "Gifts": ["WEREWOLF", "CHANGELING"],
-            "Knowledges": ["Common"],
-            "Mental": ["Common"],
-            "Merits": ["Common"],
-            "Other": ["Common"],
-            "Paths": ["Common"],
-            "Physical": ["Common"],
-            "Renown": ["WEREWOLF"],
-            "Skills": ["Common"],
-            "Social": ["Common"],
-            "Spheres": ["MAGE"],
-            "Talents": ["Common"],
-            "Virtues": ["Common"],
-            "Numina": ["MAGE", "MORTAL", "HUNTER"],
-            "Resonance": ["MAGE"],
-            "Advantages": ["Common"],
-        }
+        # TODO: This if statement is a migration from 1.13.0. Remove this after a few releases
+        if not TraitCategory.get_or_none(name="PHYSICAL"):
+            for c in TraitCategory.select():
+                try:
+                    # Attempt to find the corresponding enum member
+                    enum_member = TraitCategories[c.name.upper()]
+                except KeyError:  # noqa: PERF203
+                    logger.warning(f"No matching enum member for {c.name}")
+                else:
+                    # Update the name and save the record
+                    logger.debug(f"Rename {c.name} to {enum_member.name}")
+                    c.name = enum_member.name
+                    c.save()
+
         with self.db.atomic():
-            for category, classes in categories.items():
-                # Add the categories to the database
-                TraitCategory.insert(name=category).on_conflict_ignore().execute()
-                cat = TraitCategory.get(name=category)
+            for category in TraitCategories:
+                db_cat, _ = TraitCategory.get_or_create(name=category.name)
 
                 # If common, add to all classes in the trait/category/class lookup table
-                if cat and "Common" in classes:
+                if CharClassType.COMMON in category.value["classes"]:
                     for c in CharacterClass.select():
                         TraitCategoryClass.insert(
-                            character_class=c, category=cat
+                            character_class=c, category=db_cat
                         ).on_conflict_ignore().execute()
 
                 # Otherwise, add to the specified classes
-                elif cat:
-                    for c in classes:
+                else:
+                    for c in category.value["classes"]:
                         TraitCategoryClass.insert(
-                            character_class=CharacterClass.get(name=c), category=cat
+                            character_class=CharacterClass.get(name=c.name), category=db_cat
                         ).on_conflict_ignore().execute()
 
         logger.debug("DATABASE: Populate trait categories")
@@ -1023,7 +1013,7 @@ class PopulateDatabase:
     def _traits(self) -> None:
         """Create the initial traits."""
         trait_dictionaries: list[dict[str, str | dict[str, list[str]]]] = [
-            {"char_class": "Common", "dict": common_traits},
+            {"char_class": "COMMON", "dict": common_traits},
             {"char_class": "MAGE", "dict": mage_traits},
             {"char_class": "VAMPIRE", "dict": vampire_traits},
             {"char_class": "WEREWOLF", "dict": werewolf_traits},
@@ -1038,13 +1028,15 @@ class PopulateDatabase:
                         for trait in traits:
                             t, _created = Trait.get_or_create(
                                 name=trait,
-                                category=TraitCategory.get_or_none(name=category),
+                                category=TraitCategory.get_or_none(name=category.upper()),
                             )
 
-                            if dictionary["char_class"] == "Common":
+                            # Add common traits to all classes
+                            if dictionary["char_class"] == "COMMON":
                                 for c in CharacterClass.select():
                                     TraitClass.get_or_create(character_class=c, trait=t)
                             else:
+                                # Add trait to the specified classes
                                 TraitClass.get_or_create(
                                     character_class=CharacterClass.get(
                                         name=dictionary["char_class"]

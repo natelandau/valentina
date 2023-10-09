@@ -375,11 +375,16 @@ class CharGenWizard:
         self.hidden = hidden
         self.paginator: pages.Paginator = None  # Container for the paginator
 
-    async def _generate_character(self) -> Character:
+    async def _generate_rng_character(self) -> Character:
         """Generate a character."""
         return await self.bot.char_svc.rng_creator(self.ctx, chargen_character=True)
 
-    async def _character_embed_creator(self, character: Character) -> discord.Embed:
+    async def _character_embed_creator(
+        self,
+        character: Character,
+        title: str | None = None,
+        prefix: str | None = None,
+    ) -> discord.Embed:
         """Create an embed for a character."""
         concept_info = CharConcept[character.data["concept_db"]].value
 
@@ -405,8 +410,8 @@ class CharGenWizard:
         return await sheet_embed(
             self.ctx,
             character,
-            title=f"{character.full_name}",
-            desc_prefix=None,
+            title=title if title else f"{character.full_name}",
+            desc_prefix=prefix,
             desc_suffix=suffix,
         )
 
@@ -428,7 +433,7 @@ class CharGenWizard:
         await self.paginator.cancel(page=embed, include_custom=True)
 
     @staticmethod
-    def _create_review_home_embed(characters: list[Character]) -> discord.Embed:
+    def _first_review_embed(characters: list[Character]) -> discord.Embed:
         """Create an embed for the home page of the character generation wizard."""
         description = f"## Created {len(characters)} {p.plural_noun('character', len(characters))} for you to choose from\n"
 
@@ -467,6 +472,8 @@ For the cost of 10xp, I will generate three characters for you to choose between
 By rolling percentile dice we select a class and a concept.  The concept guides how default dots are added to your character.
 
 Once you select a character you can re-allocate dots and change the name, but you cannot change the concept, class, or clan.
+
+*View the possible classes and concepts by scrolling through the pages below*
 """,
             color=EmbedColor.INFO.value,
         )
@@ -516,13 +523,22 @@ Once you select a character you can re-allocate dots and change the name, but yo
         self.user.spend_experience(self.campaign.id, 10)
         await self.select_character()
 
+    async def _update_selected_character(self, character: Character) -> Character:
+        """Update the selected character."""
+        title = f"{Emoji.YES.value} Created {character.full_name}\n"
+        embed = await self._character_embed_creator(character, title=title)
+
+        await self.paginator.update(pages=[embed], custom_view=None)  # type: ignore [arg-type]
+
+        return character
+
     async def select_character(self) -> None:
         """Start the character generation wizard."""
         # Generate 3 characters
-        characters = [await self._generate_character() for i in range(3)]
+        characters = [await self._generate_rng_character() for i in range(3)]
 
         # Add the pages to the paginator
-        pages: list[discord.Embed] = [self._create_review_home_embed(characters)]
+        pages: list[discord.Embed] = [self._first_review_embed(characters)]
         pages.extend([await self._character_embed_creator(character) for character in characters])
 
         # present the character selection paginator
@@ -548,28 +564,14 @@ Once you select a character you can re-allocate dots and change the name, but yo
             await self.start(restart=True)
 
         if view.pick_character:
-            character = view.selected
+            selected_character = view.selected
 
-            # Delete the other characters
+            # Delete the unselected characters
             for c in characters:
-                if c.id != character.id:
+                if c.id != selected_character.id:
                     c.delete_instance(delete_nullable=True, recursive=True)
-                if c.id == character.id:
-                    # TODO: Remove this once we have a way to update the character
-                    data: dict[str, str | int | bool] = {
-                        "chargen_character": False,
-                        "player_character": True,
-                    }
-                    await self.bot.char_svc.update_or_add(self.ctx, character=character, data=data)
 
-            # TODO: Remove this once we have a way to update the character
-            embed = discord.Embed(
-                title=f"{Emoji.CANCEL.value} Cancelled",
-                description=f"Created {character.full_name} for you to play",
-                color=EmbedColor.WARNING.value,
-            )
-            embed.set_thumbnail(url=self.ctx.bot.user.display_avatar)
-            await self.paginator.cancel(page=embed, include_custom=True)
+            await self._update_selected_character(selected_character)
 
         # TODO: Allow the user to change the name
         # TODO: Allow the user to change select their special ability

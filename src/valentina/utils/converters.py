@@ -13,6 +13,7 @@ from valentina.constants import (
     CharClassType,
     CharConcept,
     RNGCharLevel,
+    TraitCategories,
     VampireClanType,
 )
 from valentina.models.db_tables import (
@@ -22,7 +23,6 @@ from valentina.models.db_tables import (
     CustomTrait,
     Macro,
     Trait,
-    TraitCategory,
 )
 from valentina.utils import errors
 
@@ -242,14 +242,15 @@ class ValidImageURL(Converter):
 class ValidTraitCategory(Converter):
     """A converter that ensures a requested trait category is valid."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> TraitCategory:  # noqa: ARG002
+    async def convert(
+        self, ctx: commands.Context, argument: str  # noqa: ARG002
+    ) -> TraitCategories:
         """Validate and normalize trait categories."""
-        for c in TraitCategory.select().order_by(TraitCategory.name.asc()):
-            if argument.lower() == c.name.lower():
-                return c
-
-        msg = f"`{argument}` is not a valid trait category"
-        raise BadArgument(msg)
+        try:
+            return TraitCategories[argument]
+        except KeyError as e:
+            msg = f"`{argument}` is not a valid trait category"
+            raise BadArgument(msg) from e
 
 
 class ValidYYYYMMDD(Converter):

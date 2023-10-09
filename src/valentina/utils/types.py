@@ -1,3 +1,4 @@
+# mypy: disable-error-code="name-defined"
 """Custom Types for Valentina."""
 from typing_extensions import TypedDict
 
@@ -12,12 +13,20 @@ class CharacterClassDict(TypedDict):
     description: str
 
 
+class TraitCategoriesDict(TypedDict):
+    """Type for TraitCategories Enum."""
+
+    classes: list["CharacterClass"]  # noqa: F821 # type: ignore
+    name: str
+    order: int
+
+
 class CharConceptDict(TypedDict):
     """Type for concept info sub-dictionary."""
 
-    abilities: list[dict[str, str]]
-    ability_specialty: str
-    attribute_specialty: str
+    abilities: list[dict[str, str | int]]
+    ability_specialty: "CharacterClass"  # noqa: F821 # type: ignore
+    attribute_specialty: "CharacterClass"  # noqa: F821 # type: ignore
     description: str
     examples: str
     name: str

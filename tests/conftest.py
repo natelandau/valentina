@@ -110,7 +110,7 @@ def _create_test_database_data():
         character=1,
         guild=1,
         name="Test_Trait",
-        category=13,
+        category=TraitCategory.get(name="SKILLS"),
         value=2,
         max_value=5,
     )

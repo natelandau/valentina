@@ -10,6 +10,7 @@ from valentina.constants import (
     CharClassType,
     CharConcept,
     RNGCharLevel,
+    TraitCategories,
     VampireClanType,
 )
 from valentina.models.db_tables import Character, Trait
@@ -62,7 +63,7 @@ class RNGTraitValues:
         }
         logger.debug(f"CHARGEN: Initialized RNGTraitValues for {self.character}")
 
-    def _set_attributes(self, categories: list[str]) -> list[tuple[Trait, int]]:
+    def _set_attributes(self, categories: list[TraitCategories]) -> list[tuple[Trait, int]]:
         """Generate and assign attribute trait values for the character.
 
         Filter the available traits based on the provided attribute categories. Then, calculate the total number of dots (trait values)
@@ -82,7 +83,9 @@ class RNGTraitValues:
         """
         # Filter traits by attribute categories
         attributes: dict[str, list[Trait]] = {
-            cat: traits for cat, traits in self.traits_by_category.items() if cat in categories
+            cat: traits
+            for cat, traits in self.traits_by_category.items()
+            if TraitCategories[cat] in categories
         }
 
         # Initialize dot distribution based on character level and class. Each is three dot higher than a player would select b/c each attribute starts with one dot before a user applies their selection
@@ -110,7 +113,7 @@ class RNGTraitValues:
         tertiary_category = random.choice(categories)
 
         category_priority: list[types.CharGenCategoryDict] = [
-            {"total_dots": total_dots.pop(0), "category": cat}
+            {"total_dots": total_dots.pop(0), "category": cat.name}
             for cat in [primary_category, secondary_category, tertiary_category]
         ]
 
@@ -177,7 +180,7 @@ class RNGTraitValues:
             return []
 
         # Fetch all disciplines and map extra disciplines based on character level
-        all_disciplines = self.traits_by_category["Disciplines"]
+        all_disciplines = self.traits_by_category[TraitCategories.DISCIPLINES.name]
         extra_disciplines_map = {
             RNGCharLevel.NEW: 0,
             RNGCharLevel.INTERMEDIATE: 1,
@@ -208,7 +211,7 @@ class RNGTraitValues:
         logger.debug(f"CHARGEN: Set attributes: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
-    def _set_abilities(self, categories: list[str]) -> list[tuple[Trait, int]]:
+    def _set_abilities(self, categories: list[TraitCategories]) -> list[tuple[Trait, int]]:
         """Assign ability values to the character based on specified categories and character level.
 
         Initialize the character's abilities by filtering out relevant traits based on the given categories.
@@ -229,7 +232,9 @@ class RNGTraitValues:
         """
         # Filter traits by attribute categories
         filtered_traits: dict[str, list[Trait]] = {
-            cat: traits for cat, traits in self.traits_by_category.items() if cat in categories
+            cat: traits
+            for cat, traits in self.traits_by_category.items()
+            if TraitCategories[cat] in categories
         }
 
         # Initialize dot distribution based on character level
@@ -253,7 +258,7 @@ class RNGTraitValues:
         tertiary_category = random.choice(categories)
 
         category_priority: list[types.CharGenCategoryDict] = [
-            {"total_dots": total_dots.pop(0), "category": cat}
+            {"total_dots": total_dots.pop(0), "category": cat.name}
             for cat in [primary_category, secondary_category, tertiary_category]
         ]
 
@@ -332,11 +337,27 @@ class RNGTraitValues:
 
         # Extend trait_values with generated attribute values
         logger.debug(f"CHARGEN: Generate attribute values for {self.character}")
-        trait_values.extend(self._set_attributes(categories=["Physical", "Social", "Mental"]))
+        trait_values.extend(
+            self._set_attributes(
+                categories=[
+                    TraitCategories.PHYSICAL,
+                    TraitCategories.SOCIAL,
+                    TraitCategories.MENTAL,
+                ]
+            )
+        )
 
         # Extend trait_values with generated ability values
         logger.debug(f"CHARGEN: Generate ability values for {self.character}")
-        trait_values.extend(self._set_abilities(categories=["Talents", "Skills", "Knowledges"]))
+        trait_values.extend(
+            self._set_abilities(
+                categories=[
+                    TraitCategories.TALENTS,
+                    TraitCategories.SKILLS,
+                    TraitCategories.KNOWLEDGES,
+                ]
+            )
+        )
 
         # If Disciplines exist in traits_by_category, extend trait_values with generated discipline values
         if "Disciplines" in self.traits_by_category:

@@ -9,7 +9,7 @@ import discord
 import pytest
 from dirty_equals import IsList, IsPartialDict
 
-from valentina.constants import CharClassType, TraitCategoryOrder, VampireClanType
+from valentina.constants import CharClassType, TraitCategories, VampireClanType
 from valentina.models import CharacterService
 from valentina.models.db_tables import (
     Character,
@@ -94,16 +94,16 @@ class TestCharacterModel:
         trait_values = Character.get_by_id(1).all_trait_values
 
         # THEN: All trait values should be returned as expected
-        assert "Physical" in trait_values
-        assert "Skills" in trait_values
+        assert "PHYSICAL" in trait_values
+        assert "SKILLS" in trait_values
 
-        assert trait_values["Physical"] == [
+        assert trait_values["PHYSICAL"] == [
             ("Strength", 1, 5, "●○○○○"),
             ("Dexterity", 2, 5, "●●○○○"),
             ("Stamina", 3, 5, "●●●○○"),
         ]
 
-        assert trait_values["Skills"] == [("Test_Trait", 2, 5, "●●○○○")]
+        assert trait_values["SKILLS"] == [("Test_Trait", 2, 5, "●●○○○")]
 
     @staticmethod
     def test_character_custom_traits() -> None:
@@ -307,8 +307,8 @@ class TestCharacterModel:
         returned = Character.get_by_id(1).traits_dict
 
         assert returned == {
-            "Physical": [Trait.get_by_id(1), Trait.get_by_id(2), Trait.get_by_id(3)],
-            "Skills": [CustomTrait.get_by_id(1)],
+            "PHYSICAL": [Trait.get_by_id(1), Trait.get_by_id(2), Trait.get_by_id(3)],
+            "SKILLS": [CustomTrait.get_by_id(1)],
         }
 
     @staticmethod
@@ -354,7 +354,7 @@ class TestCharacterService:
             .where(CharacterClass.name == char_class.name)
         )
 
-        return sorted(traits, key=lambda x: TraitCategoryOrder[x.category.name])
+        return sorted(traits, key=lambda x: TraitCategories[x.category.name].value["order"])
 
     def test_custom_section_update_or_add(self, mock_ctx):
         """Test if custom_section_update_or_add() correctly adds or updates a custom section.
