@@ -247,47 +247,47 @@ class CharClassType(Enum):
     MORTAL: ClassVar[types.CharacterClassDict] = {
         "name": "Mortal",
         "range": (0, 60),
-        "description": "",
+        "description": "Receive special abilities based on their concept",
     }
     VAMPIRE: ClassVar[types.CharacterClassDict] = {
         "name": "Vampire",
         "range": (61, 66),
-        "description": "",
+        "description": "Receive a clan and disciplines",
     }
     WEREWOLF: ClassVar[types.CharacterClassDict] = {
         "name": "Werewolf",
         "range": (67, 72),
-        "description": "",
+        "description": "Receive a tribe and gifts",
     }
     MAGE: ClassVar[types.CharacterClassDict] = {
         "name": "Mage",
         "range": (73, 78),
-        "description": "",
+        "description": "Receive a tradition and spheres",
     }
     GHOUL: ClassVar[types.CharacterClassDict] = {
         "name": "Ghoul",
         "range": (79, 84),
-        "description": "",
+        "description": "Receive disciplines and a master",
     }
     CHANGELING: ClassVar[types.CharacterClassDict] = {
         "name": "Changeling",
-        "range": (85, 87),
+        "range": (85, 90),
         "description": "",
     }
     HUNTER: ClassVar[types.CharacterClassDict] = {
         "name": "Hunter",
-        "range": (88, 96),
-        "description": "",
+        "range": (91, 96),
+        "description": "Receive a creed and edges",
     }
     SPECIAL: ClassVar[types.CharacterClassDict] = {
         "name": "Special",
         "range": (97, 100),
-        "description": "",
+        "description": "Examples: Demon, Angel, Exalted, Titan, Mummy, etc. You choose.",
     }
     OTHER: ClassVar[types.CharacterClassDict] = {
         "name": None,
         "range": None,
-        "description": "Demon, Angel, Exalted, Titan, Mummy, etc.",
+        "description": "",
     }
     NONE: ClassVar[types.CharacterClassDict] = {
         "name": None,
@@ -448,7 +448,7 @@ class CharConcept(Enum):
         "name": "Berserker",
         "description": "Fierce warriors who tap into their primal rage to gain incredible strength and combat prowess.",
         "examples": "Gang member, Hooligan, Anarchist, Rebel, Terrorist, Underground Fight League Member, Flame Jumper, Mole people, Goon",
-        "range": (0, 9),
+        "range": (1, 9),
         "num_abilities": 1,
         "abilities": [
             {
@@ -469,7 +469,7 @@ class CharConcept(Enum):
         ],
     }
     PERFORMER: ClassVar[types.CharConceptDict] = {
-        "name": "performer",
+        "name": "Performer",
         "description": "Charismatic performers and spellcasters who use their artistry and magic to inspire and manipulate. ",
         "examples": "Musician, Online Influencer, Street Poet, Stand-up Comic, Performance Artist, Visual Artist, Fine Artist",
         "num_abilities": 1,
@@ -493,7 +493,7 @@ class CharConcept(Enum):
         ],
     }
     HEALER: ClassVar[types.CharConceptDict] = {
-        "name": "healer",
+        "name": "Healer",
         "description": "Devout servants of gods or higher powers, with the ability to heal and protect.",
         "examples": "Doctor, Veterinarian, Mortician, Priest, Rabbi, Medicine Man, EMT, Lifeguard, RN, Dentist, Clinician, Masseuse, Chemical Hacker, New-Ager",
         "num_abilities": 1,
@@ -521,7 +521,7 @@ class CharConcept(Enum):
         ],
     }
     SHAMAN: ClassVar[types.CharConceptDict] = {
-        "name": "shaman",
+        "name": "Shaman",
         "description": "Nature-focused spiritualists who wield the power of the natural world.",
         "examples": "Environmentalist, Tribal, New Age, Artist, Riverkeeper, Green Warden, Nature Guide, Photographer, Self-Documentarian",
         "num_abilities": 2,
@@ -570,7 +570,7 @@ class CharConcept(Enum):
         ],
     }
     SOLDIER: ClassVar[types.CharConceptDict] = {
-        "name": "soldier",
+        "name": "Soldier",
         "description": "Skilled warriors with a wide range of combat abilities and weapon expertise.",
         "examples": "Marine, Veteran, Mercenary, Hired Muscle, Hitman, Amateur/Pro Fighter, Martial Artist, Police, Security",
         "num_abilities": 1,
@@ -604,7 +604,7 @@ class CharConcept(Enum):
         ],
     }
     ASCETIC: ClassVar[types.CharConceptDict] = {
-        "name": "ascetic",
+        "name": "Ascetic",
         "description": "Disciplined martial artists who harness their inner ki to perform incredible feats and attacks.",
         "examples": "Martial Artist, Dojo Owner, Competitor, Athlete, Bodybuilder, Body Hacker",
         "num_abilities": 2,
@@ -624,7 +624,7 @@ class CharConcept(Enum):
         "specific_abilities": ["Alertness", "Athletics", "Brawl", "Dodge", "Melee", "Stealth"],
     }
     CRUSADER: ClassVar[types.CharConceptDict] = {
-        "name": "crusader",
+        "name": "Crusader",
         "description": "Dedicated sentinels sworn to a code of conduct, armed with divine, academic, and martial skills.",
         "examples": "Government Agent, Lawyer, Judge, Zealot, Terrorist, Inquisitor",
         "num_abilities": 1,

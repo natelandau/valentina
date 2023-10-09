@@ -3,6 +3,7 @@ from typing import Literal
 
 import discord
 from loguru import logger
+from numpy.random import default_rng
 
 from valentina.constants import CharClassType, CharConcept, RNGCharLevel, VampireClanType
 from valentina.models.db_tables import (
@@ -14,6 +15,8 @@ from valentina.models.db_tables import (
 )
 from valentina.utils.helpers import fetch_random_name, time_now
 from valentina.utils.rng_trait_values import RNGTraitValues
+
+_rng = default_rng()
 
 
 class CharacterService:
@@ -289,18 +292,27 @@ class CharacterService:
             "last_name": last_name,
         }
 
-        # Add a random class
+        # Add character metadata
         if char_class is None:
-            char_class = CharClassType.random_member()
+            percentile = _rng.integers(1, 101)
+            char_class = CharClassType.get_member_by_value(percentile)
 
         if nickname_is_class:
             data["nickname"] = char_class.value["name"]
 
-        # Add a random clan
+        if concept is None:
+            percentile = _rng.integers(1, 101)
+            concept = CharConcept.get_member_by_value(percentile)
+        data["concept_human"] = concept.value["name"]
+        data["concept_db"] = concept.name
+
+        if character_level is None:
+            character_level = RNGCharLevel.random_member()
+        data["rng_level"] = character_level.name.title()
+
         if char_class == CharClassType.VAMPIRE and not vampire_clan:
             vampire_clan = VampireClanType.random_member()
 
-        # Add character type flags
         data["player_character"] = player_character
         data["storyteller_character"] = storyteller_character
         data["developer_character"] = developer_character
@@ -313,12 +325,6 @@ class CharacterService:
             clan=VampireClan(name=vampire_clan.name) if vampire_clan else None,
             data=data,
         )
-
-        if concept is None:
-            concept = CharConcept.random_member()
-
-        if character_level is None:
-            character_level = RNGCharLevel.random_member()
 
         rng_traits = RNGTraitValues(
             ctx=ctx, character=character, concept=concept, level=character_level

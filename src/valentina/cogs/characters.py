@@ -9,7 +9,12 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import VALID_IMAGE_EXTENSIONS, CharClassType, EmbedColor, Emoji
+from valentina.constants import (
+    VALID_IMAGE_EXTENSIONS,
+    CharClassType,
+    EmbedColor,
+    Emoji,
+)
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import (
@@ -42,7 +47,6 @@ from valentina.views import (
     AddFromSheetWizard,
     BioModal,
     CharGenWizard,
-    ConfirmCancelButtons,
     CustomSectionModal,
     ProfileModal,
     S3ImageReview,
@@ -165,6 +169,7 @@ class Characters(commands.Cog, name="Character"):
         """Create a new character from scratch."""
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         user = await self.bot.user_svc.fetch_user(ctx)
+
         (
             campaign_xp,
             _,
@@ -172,46 +177,20 @@ class Characters(commands.Cog, name="Character"):
             _,
             _,
         ) = user.fetch_experience(campaign.id)
-        class_descriptions = "\n".join(
-            [
-                f"{c.value['range'][0]}-{c.value['range'][1]}: {c.value['description']}"
-                for c in CharClassType
-            ]
-        )
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title="Create a new character",
-            description=f"""\
-For the cost of 10xp, I will create three random characters for you to choose between.  You select the one you want to keep.
-
-### How this works
-By rolling percentile dice we choose a random class and associated information.  We then roll for abilities and traits.  After you select your character, you can customize it to your liking.
-
-**Here's the percentage breakdown:**
-{class_descriptions}
-
-_This will cost `10` xp and you have `{campaign_xp}` xp available._
-""",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title=f"{Emoji.CANCEL.value} Cancelled",
-                description="Create a new character",
-                color=EmbedColor.WARNING.value,
+        # Abort if user does not have enough xp
+        if campaign_xp < 10:  # noqa: PLR2004
+            await present_embed(
+                ctx,
+                title="Not enough xp",
+                description="You do not have enough xp to create a new character",
+                level="error",
+                ephemeral=hidden,
             )
-            await msg.edit_original_response(embed=embed, view=None)
             return
 
-        # Spend 10 xp
-        user.spend_experience(campaign.id, 10)
-
-        wizard = CharGenWizard(ctx, campaign=campaign, user=user, msg=msg, hidden=hidden)
-        await wizard.begin()
+        wizard = CharGenWizard(ctx, campaign=campaign, user=user, hidden=hidden)
+        await wizard.start()
 
     @chars.command(name="set_active", description="Select a character as your active character")
     async def set_active_character(

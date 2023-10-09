@@ -53,11 +53,14 @@ def __build_trait_display(
     return embed_values
 
 
-def __embed1(
+def __embed1(  # noqa: C901
     ctx: discord.ApplicationContext,
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
+    desc_prefix: str | None = None,
+    desc_suffix: str | None = None,
+    show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
     modified = arrow.get(character.data["modified"]).humanize()
@@ -65,11 +68,13 @@ def __embed1(
     if title is None:
         title = character.name
 
-    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
-    footer += f"Last updated: {modified}"
+    if show_footer:
+        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+        footer += f"Last updated: {modified}"
+
     char_traits = character.all_trait_values
 
-    embed = discord.Embed(title=title, description="", color=0x7777FF)
+    embed = discord.Embed(title=title, description=desc_prefix, color=0x7777FF)
     embed.set_footer(text=footer)
 
     try:
@@ -86,7 +91,7 @@ def __embed1(
     )
 
     embed.add_field(name="Class", value=f"{character.class_name.title()}", inline=True)
-    embed.add_field(name="Concept", value=character.data.get("concept", ""), inline=True)
+    embed.add_field(name="Concept", value=character.data.get("concept_human", ""), inline=True)
 
     if character.class_name.lower() == "vampire":
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
@@ -125,6 +130,9 @@ def __embed1(
         exclude_from_list=True,
     ):
         embed.add_field(name=category, value=traits, inline=True)
+
+    if desc_suffix:
+        embed.add_field(name="\u200b", value=desc_suffix, inline=False)
 
     return embed
 
@@ -223,7 +231,16 @@ async def sheet_embed(
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
+    desc_prefix: str | None = None,
+    desc_suffix: str | None = None,
 ) -> discord.Embed:
     """Return the first page of the sheet as an embed."""
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.user)
-    return __embed1(ctx, character, owned_by_user=owned_by_user, title=title)
+    return __embed1(
+        ctx,
+        character,
+        owned_by_user=owned_by_user,
+        title=title,
+        desc_prefix=desc_prefix,
+        desc_suffix=desc_suffix,
+    )
