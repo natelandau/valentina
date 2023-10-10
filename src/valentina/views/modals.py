@@ -7,6 +7,66 @@ from valentina.models.db_tables import CampaignChapter, CampaignNote, CampaignNP
 from valentina.views import ConfirmCancelButtons
 
 
+class ChangeNameModal(Modal):
+    """A modal for changing the name of a character."""
+
+    def __init__(self, ctx: discord.ApplicationContext, character: Character, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+        super().__init__(*args, **kwargs)
+        self.character = character
+        self.name = None
+        self.ctx = ctx
+
+        self.add_item(
+            InputText(
+                label="first name",
+                placeholder="Enter a first name for the character",
+                value=self.character.data.get("first_name", None),
+                style=discord.InputTextStyle.short,
+                required=True,
+            )
+        )
+        self.add_item(
+            InputText(
+                label="last name",
+                placeholder="Enter a last name for the character",
+                value=self.character.data.get("last_name", None),
+                style=discord.InputTextStyle.short,
+                required=True,
+            )
+        )
+        self.add_item(
+            InputText(
+                label="nickname",
+                placeholder="Enter a nickname for the character",
+                value=self.character.data.get("nickname", None),
+                style=discord.InputTextStyle.short,
+                required=False,
+            )
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        """Callback for the modal."""
+        self.first_name = self.children[0].value
+        self.last_name = self.children[1].value
+        self.nickname = self.children[2].value
+        data = {}
+        if self.first_name:
+            data["first_name"] = self.first_name
+        if self.last_name:
+            data["last_name"] = self.last_name
+        if self.nickname:
+            data["nickname"] = self.nickname
+
+        self.character = await self.ctx.bot.char_svc.update_or_add(  # type: ignore [attr-defined]
+            self.ctx, character=self.character, data=data
+        )
+
+        embed = discord.Embed(title="Name Updated", color=EmbedColor.SUCCESS.value)
+        await interaction.response.send_message(embeds=[embed], ephemeral=True, delete_after=0)
+
+        self.stop()
+
+
 class BioModal(Modal):
     """A modal for entering a biography."""
 

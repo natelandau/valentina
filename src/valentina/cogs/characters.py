@@ -791,6 +791,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
+        # TODO: Update concept to work with ConceptType enum
         character = await self.bot.user_svc.fetch_active_character(ctx)
 
         modal = ProfileModal(

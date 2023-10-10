@@ -53,7 +53,7 @@ class Experience(commands.Cog):
         else:
             user = await self.bot.user_svc.fetch_user(ctx, user=user)
 
-        if not self.bot.user_svc.can_update_xp(ctx, user):
+        if not await self.bot.user_svc.can_update_xp(ctx, user):
             await present_embed(
                 ctx,
                 title="You do not have permission to add experience to this user",
@@ -104,7 +104,7 @@ class Experience(commands.Cog):
         else:
             user = await self.bot.user_svc.fetch_user(ctx, user=user)
 
-        if not self.bot.user_svc.can_update_xp(ctx, user):
+        if not await self.bot.user_svc.can_update_xp(ctx, user):
             await present_embed(
                 ctx,
                 title="You do not have permission to add experience to this user",

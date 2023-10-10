@@ -6,6 +6,7 @@ from .actions import confirm_action
 from .character_sheet import sheet_embed, show_sheet
 from .modals import (
     BioModal,
+    ChangeNameModal,
     ChapterModal,
     CustomSectionModal,
     MacroCreateModal,
@@ -26,6 +27,7 @@ __all__ = [
     "CancelButton",
     "ChapterModal",
     "CharGenWizard",
+    "ChangeNameModal",
     "confirm_action",
     "ConfirmCancelButtons",
     "CustomSectionModal",

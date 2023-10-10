@@ -74,6 +74,7 @@ class Emoji(Enum):
     MONSTER = "👹"
     MORTAL = "🧑"
     NO = "❌"
+    PENCIL = "✏️"
     OTHER = "🤷"
     QUESTION = "❓"
     SUCCESS = "👍"

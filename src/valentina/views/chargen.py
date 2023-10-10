@@ -26,7 +26,7 @@ from valentina.models.db_tables import (
     Trait,
 )
 from valentina.utils.helpers import get_max_trait_value
-from valentina.views import sheet_embed
+from valentina.views import ChangeNameModal, sheet_embed
 
 p = inflect.engine()
 p.defnoun("Ability", "Abilities")
@@ -358,6 +358,61 @@ class BeginCancelCharGenButtons(discord.ui.View):
         return interaction.user.id == self.author.id
 
 
+class UpdateCharacterButtons(discord.ui.View):
+    """Buttons to update a character."""
+
+    def __init__(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Character,
+        author: discord.User | discord.Member | None = None,
+    ):
+        super().__init__()
+        self.ctx = ctx
+        self.character = character
+        self.author = author
+        self.updated: bool = False
+        self.done: bool = False
+
+    @discord.ui.button(
+        label=f"{Emoji.PENCIL.value} Rename",
+        style=discord.ButtonStyle.primary,
+        custom_id="rename",
+        row=2,
+    )
+    async def rename_callback(
+        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+    ) -> None:
+        """Callback for the rename button."""
+        modal = ChangeNameModal(ctx=self.ctx, character=self.character, title="Rename Character")
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        self.character = modal.character
+        self.updated = True
+        self.stop()
+
+    @discord.ui.button(
+        label=f"{Emoji.YES.value} Done",
+        style=discord.ButtonStyle.success,
+        custom_id="done",
+        row=3,
+    )
+    async def done_callback(
+        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+    ) -> None:
+        """Callback for the done button."""
+        button.disabled = True
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+        self.done = True
+        self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Disables buttons for everyone except the user who created the embed."""
+        return interaction.user.id == self.ctx.author.id
+
+
 class CharGenWizard:
     """A step-by-step character generation wizard."""
 
@@ -369,6 +424,7 @@ class CharGenWizard:
         hidden: bool = True,
     ) -> None:
         self.ctx = ctx
+        self.interaction = ctx.interaction
         self.bot = cast(Valentina, ctx.bot)
         self.user = user
         self.campaign = campaign
@@ -509,6 +565,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
                 pages=[embed1, embed2, embed3],  # type: ignore [arg-type]
                 custom_view=view,
                 author_check=True,
+                timeout=600,
             )
             self.paginator.remove_button("first")
             self.paginator.remove_button("last")
@@ -523,14 +580,38 @@ Once you select a character you can re-allocate dots and change the name, but yo
         self.user.spend_experience(self.campaign.id, 10)
         await self.select_character()
 
-    async def _update_selected_character(self, character: Character) -> Character:
+    async def make_character_updates(self, character: Character) -> Character:
         """Update the selected character."""
         title = f"{Emoji.YES.value} Created {character.full_name}\n"
         embed = await self._character_embed_creator(character, title=title)
 
-        await self.paginator.update(pages=[embed], custom_view=None)  # type: ignore [arg-type]
+        view = UpdateCharacterButtons(self.ctx, character=character, author=self.ctx.author)
 
-        return character
+        await self.paginator.update(
+            pages=[embed],  # type: ignore [arg-type]
+            custom_view=view,
+            show_disabled=False,
+            show_indicator=False,
+            timeout=600,
+        )
+
+        await view.wait()
+        if view.updated:
+            # Restart the view and show the changes
+            await self.make_character_updates(view.character)
+
+        if view.done:
+            embed = discord.Embed(
+                title=f"{Emoji.SUCCESS.value} Created {character.name}",
+                description="Thanks for using my character generation wizard.",
+                color=EmbedColor.WARNING.value,
+            )
+            embed.set_thumbnail(url=self.ctx.bot.user.display_avatar)
+            await self.paginator.cancel(page=embed, include_custom=True)
+
+            return character
+
+        return None
 
     async def select_character(self) -> None:
         """Start the character generation wizard."""
@@ -544,7 +625,11 @@ Once you select a character you can re-allocate dots and change the name, but yo
         # present the character selection paginator
         # TODO: Fix interaction which works but says it doesn't
         view = CharacterPickerButtons(self.ctx, characters)
-        await self.paginator.update(pages=pages, custom_view=view)  # type: ignore [arg-type]
+        await self.paginator.update(
+            pages=pages,  # type: ignore [arg-type]
+            custom_view=view,
+            timeout=600,
+        )
         await view.wait()
 
         if view.cancelled:
@@ -566,12 +651,20 @@ Once you select a character you can re-allocate dots and change the name, but yo
         if view.pick_character:
             selected_character = view.selected
 
-            # Delete the unselected characters
             for c in characters:
                 if c.id != selected_character.id:
+                    # Delete the characters the user did not select
                     c.delete_instance(delete_nullable=True, recursive=True)
+                if c.id == selected_character.id:
+                    # Add the selected character to the player's character list
+                    data: dict[str, str | int | bool] = {
+                        "chargen_character": False,
+                        "player_character": True,
+                    }
+                    await self.bot.char_svc.update_or_add(self.ctx, character=c, data=data)
 
-            await self._update_selected_character(selected_character)
+            # Post-process the character
+            await self.make_character_updates(selected_character)
 
         # TODO: Allow the user to change the name
         # TODO: Allow the user to change select their special ability
