@@ -35,6 +35,12 @@ class IntegerButtons(discord.ui.View):
         cancel_button.callback = self.cancel_callback  # type: ignore [method-assign]
         self.add_item(cancel_button)
 
+    def _disable_all(self) -> None:
+        """Disable all buttons in the view."""
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
     async def button_callback(self, interaction: discord.Interaction) -> None:
         """Respond to selecting a character."""
         await interaction.response.defer()
@@ -57,9 +63,7 @@ class IntegerButtons(discord.ui.View):
     async def cancel_callback(self, interaction: discord.Interaction) -> None:
         """Disable all buttons and stop the view."""
         await interaction.response.defer()
-        for child in self.children:
-            if isinstance(child, Button | discord.ui.Select):
-                child.disabled = True
+        self._disable_all()
         self.cancelled = True
         self.stop()
 
@@ -82,6 +86,12 @@ class ReRollButton(discord.ui.View):
         self.author = author
         self.confirmed: bool = None
 
+    def _disable_all(self) -> None:
+        """Disable all buttons in the view."""
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
     @discord.ui.button(label="Re-Roll", style=discord.ButtonStyle.success, custom_id="reroll")
     async def reroll_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the re-roll button."""
@@ -98,9 +108,7 @@ class ReRollButton(discord.ui.View):
         await interaction.response.defer()
         button.label += f" {Emoji.YES.value}"
         button.disabled = True
-        for child in self.children:
-            if isinstance(child, Button | discord.ui.Select):
-                child.disabled = True
+        self._disable_all()
         await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = False
         self.stop()
@@ -124,15 +132,19 @@ class ConfirmCancelButtons(discord.ui.View):
         self.author = author
         self.confirmed: bool = None
 
+    def _disable_all(self) -> None:
+        """Disable all buttons in the view."""
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, custom_id="confirm")
     async def confirm_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the confirm button."""
         await interaction.response.defer()
         button.label += f" {Emoji.YES.value}"
         button.disabled = True
-        for child in self.children:
-            if isinstance(child, Button | discord.ui.Select):
-                child.disabled = True
+        self._disable_all()
         await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = True
         self.stop()
@@ -147,9 +159,7 @@ class ConfirmCancelButtons(discord.ui.View):
         await interaction.response.defer()
         button.label += f" {Emoji.YES.value}"
         button.disabled = True
-        for child in self.children:
-            if isinstance(child, Button | discord.ui.Select):
-                child.disabled = True
+        self._disable_all()
         await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = False
         self.stop()
@@ -169,6 +179,12 @@ class CancelButton(discord.ui.View):
         self.ctx = ctx
         self.confirmed: bool = None
 
+    def _disable_all(self) -> None:
+        """Disable all buttons in the view."""
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
     @discord.ui.button(
         label=f"{Emoji.CANCEL.value} Cancel",
         style=discord.ButtonStyle.secondary,
@@ -178,9 +194,7 @@ class CancelButton(discord.ui.View):
         """Callback for the cancel button."""
         await interaction.response.defer()
         button.disabled = True
-        for child in self.children:
-            if isinstance(child, Button | discord.ui.Select):
-                child.disabled = True
+        self._disable_all()
         await interaction.response.edit_message(view=self)  # view=None remove all buttons
         self.confirmed = False
         self.stop()

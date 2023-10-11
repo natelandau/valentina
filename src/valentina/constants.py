@@ -95,7 +95,7 @@ class MaxTraitValue(Enum):
     """
 
     DEFAULT = 5
-    # Specific values
+    # Specific traits
     ARETE = 10
     BLOOD_POOL = 20
     GLORY = 10

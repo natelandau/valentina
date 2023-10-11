@@ -1,4 +1,4 @@
-"""Helper utilities for building storyteller characters."""
+"""A class to generate random trait values for a character."""
 import random
 
 import discord
@@ -23,7 +23,7 @@ from valentina.utils.helpers import (
 _rng = default_rng()
 
 
-class RNGTraitValues:
+class CharacterTraitRandomizer:
     """Generate random trait values using a random number generator."""
 
     def __init__(
@@ -33,7 +33,7 @@ class RNGTraitValues:
         concept: CharConcept,
         level: RNGCharLevel,
     ) -> None:
-        """Initialize the RNGTraitValues instance.
+        """Initialize the instance.
 
         Populate the instance with traits and trait categories based on the given character, concept, and level.
 
@@ -61,9 +61,82 @@ class RNGTraitValues:
             category: [trait for trait in self.traits if trait.category.name == category]
             for category in {trait.category.name for trait in self.traits}
         }
-        logger.debug(f"CHARGEN: Initialized RNGTraitValues for {self.character}")
+        logger.debug(f"CHARGEN: Initialized CharacterTraitRandomizer for {self.character}")
 
-    def _set_attributes(self, categories: list[TraitCategories]) -> list[tuple[Trait, int]]:
+    def _adjust_value_based_on_level(self, value: int) -> int:
+        """Adjust the discipline value based on the character's level.
+
+        For advanced and elite levels, the value is incremented by 1.
+        For new characters, the value is capped at 3.
+        The final value is constrained between 1 and 5.
+
+        Args:
+            value (int): The initial discipline value.
+
+        Returns:
+            int: The adjusted discipline value.
+        """
+        # Increment value for advanced and elite levels
+        if self.level in {RNGCharLevel.ADVANCED, RNGCharLevel.ELITE}:
+            value += 1
+
+        # Cap values based on character level
+        if self.level == RNGCharLevel.NEW and value > 2:  # noqa: PLR2004
+            value = 2
+
+        if self.level == RNGCharLevel.INTERMEDIATE and value > 3:  # noqa: PLR2004
+            value = 3
+
+        # Constrain the final value between 1 and 5
+        return max(min(value, 5), 1)
+
+    def _generate_trait_values(self) -> list[tuple[Trait, int]]:
+        """Update the character's traits based on randomly generated values.
+
+        This method calls other methods to set attribute, ability, and discipline values for the character.
+        The generated trait values are then stored in the `trait_values` attribute of the instance.
+
+        Returns:
+            List[Tuple[Trait, int]]: A list of tuples, where each tuple contains a Trait object and an integer representing the number of dots assigned to that trait.
+
+        """
+        # Initialize or clear the trait_values list
+        trait_values: list[tuple[Trait, int]] = []
+
+        # Extend trait_values with generated attribute values
+        logger.debug(f"CHARGEN: Generate attribute values for {self.character}")
+        trait_values.extend(
+            self._randomly_assign_attributes(
+                categories=[
+                    TraitCategories.PHYSICAL,
+                    TraitCategories.SOCIAL,
+                    TraitCategories.MENTAL,
+                ]
+            )
+        )
+
+        # Extend trait_values with generated ability values
+        logger.debug(f"CHARGEN: Generate ability values for {self.character}")
+        trait_values.extend(
+            self._randomly_assign_abilities(
+                categories=[
+                    TraitCategories.TALENTS,
+                    TraitCategories.SKILLS,
+                    TraitCategories.KNOWLEDGES,
+                ]
+            )
+        )
+
+        # If Disciplines exist in traits_by_category, extend trait_values with generated discipline values
+        if "Disciplines" in self.traits_by_category:
+            logger.debug(f"CHARGEN: Generate discipline values for {self.character}")
+            trait_values.extend(self._randomly_assign_disciplines())
+
+        return trait_values
+
+    def _randomly_assign_attributes(
+        self, categories: list[TraitCategories]
+    ) -> list[tuple[Trait, int]]:
         """Generate and assign attribute trait values for the character.
 
         Filter the available traits based on the provided attribute categories. Then, calculate the total number of dots (trait values)
@@ -139,34 +212,7 @@ class RNGTraitValues:
         logger.debug(f"CHARGEN: Set attributes: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
-    def __adjust_discipline_value(self, value: int) -> int:
-        """Adjust the discipline value based on the character's level.
-
-        For advanced and elite levels, the value is incremented by 1.
-        For new characters, the value is capped at 3.
-        The final value is constrained between 1 and 5.
-
-        Args:
-            value (int): The initial discipline value.
-
-        Returns:
-            int: The adjusted discipline value.
-        """
-        # Increment value for advanced and elite levels
-        if self.level in {RNGCharLevel.ADVANCED, RNGCharLevel.ELITE}:
-            value += 1
-
-        # Cap values based on character level
-        if self.level == RNGCharLevel.NEW and value > 2:  # noqa: PLR2004
-            value = 2
-
-        if self.level == RNGCharLevel.INTERMEDIATE and value > 3:  # noqa: PLR2004
-            value = 3
-
-        # Constrain the final value between 1 and 5
-        return max(min(value, 5), 1)
-
-    def _set_disciplines(self) -> list[tuple[Trait, int]]:
+    def _randomly_assign_disciplines(self) -> list[tuple[Trait, int]]:
         """Set discipline trait values for the character based on their clan and level.
 
         Determines the disciplines relevant to the character's clan and level, then generates
@@ -201,7 +247,7 @@ class RNGTraitValues:
         # Generate trait values from a normal distribution
         mean, distribution = self.level.value
         values = [
-            self.__adjust_discipline_value(x)
+            self._adjust_value_based_on_level(x)
             for x in _rng.normal(mean, distribution, len(disciplines_to_set)).astype(int32)
         ]
 
@@ -211,7 +257,9 @@ class RNGTraitValues:
         logger.debug(f"CHARGEN: Set attributes: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
-    def _set_abilities(self, categories: list[TraitCategories]) -> list[tuple[Trait, int]]:
+    def _randomly_assign_abilities(
+        self, categories: list[TraitCategories]
+    ) -> list[tuple[Trait, int]]:
         """Assign ability values to the character based on specified categories and character level.
 
         Initialize the character's abilities by filtering out relevant traits based on the given categories.
@@ -322,51 +370,7 @@ class RNGTraitValues:
         logger.debug(f"CHARGEN: Set abilities: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
-    def generate_trait_values(self) -> list[tuple[Trait, int]]:
-        """Update the character's traits based on randomly generated values.
-
-        This method calls other methods to set attribute, ability, and discipline values for the character.
-        The generated trait values are then stored in the `trait_values` attribute of the instance.
-
-        Returns:
-            List[Tuple[Trait, int]]: A list of tuples, where each tuple contains a Trait object and an integer representing the number of dots assigned to that trait.
-
-        """
-        # Initialize or clear the trait_values list
-        trait_values: list[tuple[Trait, int]] = []
-
-        # Extend trait_values with generated attribute values
-        logger.debug(f"CHARGEN: Generate attribute values for {self.character}")
-        trait_values.extend(
-            self._set_attributes(
-                categories=[
-                    TraitCategories.PHYSICAL,
-                    TraitCategories.SOCIAL,
-                    TraitCategories.MENTAL,
-                ]
-            )
-        )
-
-        # Extend trait_values with generated ability values
-        logger.debug(f"CHARGEN: Generate ability values for {self.character}")
-        trait_values.extend(
-            self._set_abilities(
-                categories=[
-                    TraitCategories.TALENTS,
-                    TraitCategories.SKILLS,
-                    TraitCategories.KNOWLEDGES,
-                ]
-            )
-        )
-
-        # If Disciplines exist in traits_by_category, extend trait_values with generated discipline values
-        if "Disciplines" in self.traits_by_category:
-            logger.debug(f"CHARGEN: Generate discipline values for {self.character}")
-            trait_values.extend(self._set_disciplines())
-
-        return trait_values
-
-    def set_trait_values(self) -> Character:
+    def generate_character(self) -> Character:
         """Set the character's trait values based on the generated trait values.
 
         This method iterates through the trait_values attribute and sets the value of each trait to the corresponding value in the list.
@@ -374,7 +378,7 @@ class RNGTraitValues:
         Returns:
             Character: The updated character object.
         """
-        for trait, value in self.generate_trait_values():
+        for trait, value in self._generate_trait_values():
             self.character.set_trait_value(trait, value)
 
         return self.character

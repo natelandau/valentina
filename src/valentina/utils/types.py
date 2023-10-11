@@ -49,7 +49,7 @@ class VampireClanDict(TypedDict):
 
 
 class CharGenCategoryDict(TypedDict):
-    """Type for character generation category sub-dictionary used in RNGTraitValues."""
+    """Type for character generation category sub-dictionary used in CharacterTraitRandomizer."""
 
     total_dots: int
     category: str

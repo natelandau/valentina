@@ -6,14 +6,14 @@ from unittest.mock import MagicMock
 import pytest
 
 from valentina.constants import CharClassType, CharConcept, RNGCharLevel, TraitCategories
+from valentina.models.characters import CharacterTraitRandomizer
 from valentina.models.db_tables import Character, CharacterClass, VampireClan
 from valentina.models.traits import TraitService
-from valentina.utils.rng_trait_values import RNGTraitValues
 
 
 @pytest.mark.usefixtures("mock_db")
-class TestRNGTraitValues:
-    """Test the RNGTraitValue."""
+class TestCharacterTraitRandomizer:
+    """Test the CharacterTraitRandomizer."""
 
     trait_svc = TraitService()
 
@@ -91,8 +91,8 @@ class TestRNGTraitValues:
         all_class_traits = self.trait_svc.fetch_all_class_traits(CharClassType[char_class])
         mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
 
-        # Instantiate the RNGTraitValues class
-        rng = RNGTraitValues(
+        # Instantiate the CharacterTraitRandomizer class
+        rng = CharacterTraitRandomizer(
             ctx=mock_ctx,
             character=character,
             concept=CharConcept[concept],
@@ -105,7 +105,7 @@ class TestRNGTraitValues:
             TraitCategories.SKILLS,
             TraitCategories.KNOWLEDGES,
         ]
-        result = rng._set_abilities(categories=categories)
+        result = rng._randomly_assign_abilities(categories=categories)
 
         # THEN assert categories have the correct number of dots
         for category in categories:
@@ -184,8 +184,8 @@ class TestRNGTraitValues:
         all_class_traits = self.trait_svc.fetch_all_class_traits(CharClassType[char_class])
         mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
 
-        # Instantiate the RNGTraitValues class
-        rng = RNGTraitValues(
+        # Instantiate the CharacterTraitRandomizer class
+        rng = CharacterTraitRandomizer(
             ctx=mock_ctx,
             character=character,
             concept=CharConcept[concept],
@@ -193,7 +193,7 @@ class TestRNGTraitValues:
         )
 
         # WHEN we set the attributes
-        result = rng._set_attributes(
+        result = rng._randomly_assign_attributes(
             categories=[
                 TraitCategories.PHYSICAL,
                 TraitCategories.SOCIAL,
@@ -236,8 +236,8 @@ class TestRNGTraitValues:
         all_class_traits = self.trait_svc.fetch_all_class_traits(CharClassType[char_class])
         mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
 
-        # Instantiate the RNGTraitValues class
-        rng = RNGTraitValues(
+        # Instantiate the CharacterTraitRandomizer class
+        rng = CharacterTraitRandomizer(
             ctx=mock_ctx,
             character=character,
             concept=CharConcept.SOLDIER,  # Ignored for this test
@@ -245,7 +245,7 @@ class TestRNGTraitValues:
         )
 
         # WHEN we set the disciplines
-        result = rng._set_disciplines()
+        result = rng._randomly_assign_disciplines()
 
         # THEN assert the result is correct
         assert len(result) == num_disciplines
