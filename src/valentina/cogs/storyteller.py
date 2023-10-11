@@ -8,6 +8,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
+from valentina.characters import AddFromSheetWizard
 from valentina.constants import (
     DEFAULT_DIFFICULTY,
     VALID_IMAGE_EXTENSIONS,
@@ -44,7 +45,6 @@ from valentina.utils.options import (
 )
 from valentina.utils.perform_roll import perform_roll
 from valentina.views import (
-    AddFromSheetWizard,
     ConfirmCancelButtons,
     S3ImageReview,
     confirm_action,

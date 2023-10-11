@@ -9,6 +9,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
+from valentina.characters import AddFromSheetWizard, CharGenWizard
 from valentina.constants import (
     VALID_IMAGE_EXTENSIONS,
     CharClassType,
@@ -44,9 +45,7 @@ from valentina.utils.options import (
     select_vampire_clan,
 )
 from valentina.views import (
-    AddFromSheetWizard,
     BioModal,
-    CharGenWizard,
     CustomSectionModal,
     ProfileModal,
     S3ImageReview,

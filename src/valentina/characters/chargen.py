@@ -1,17 +1,13 @@
-"""A wizard that walks the user through the character creation process."""
-import asyncio
-import uuid
-from typing import Any, cast
+"""A RNG character generator for Valentina."""
+from typing import cast
 
 import discord
 import inflect
 from discord.ext import pages
 from discord.ui import Button
-from loguru import logger
 from numpy.random import default_rng
 
 from valentina.constants import (
-    MAX_BUTTONS_PER_ROW,
     CharClassType,
     CharConcept,
     EmbedColor,
@@ -23,205 +19,14 @@ from valentina.models.db_tables import (
     Campaign,
     Character,
     GuildUser,
-    Trait,
 )
-from valentina.utils.helpers import get_max_trait_value
 from valentina.views import ChangeNameModal, sheet_embed
+
+from .reallocate_dots import ReallocateDots
 
 p = inflect.engine()
 p.defnoun("Ability", "Abilities")
 _rng = default_rng()
-
-## Add from sheet wizard
-
-
-class RatingView(discord.ui.View):
-    """A View that lets the user select a rating."""
-
-    def __init__(  # type: ignore [no-untyped-def]
-        self,
-        trait: Trait,
-        callback,
-        failback,
-    ) -> None:
-        """Initialize the view."""
-        super().__init__(timeout=300)
-        self.callback = callback
-        self.failback = failback
-
-        self.trait_id = trait.id
-        self.trait_name = trait.name
-        self.trait_category = trait.category.name
-        self.trait_max_value = get_max_trait_value(self.trait_name, self.trait_category)
-        self.ratings: dict[str, int] = {}
-        self.response: int = None
-        self.last_interaction = None
-
-        for rating in range(1, self.trait_max_value + 1):
-            button_id = str(uuid.uuid4())
-            self.ratings[button_id] = rating
-
-            # Calculate the row number for the button
-            row = 1 if rating <= MAX_BUTTONS_PER_ROW else 0
-
-            button: Button = Button(
-                label=str(rating), custom_id=button_id, style=discord.ButtonStyle.primary, row=row
-            )
-            button.callback = self.button_pressed  # type: ignore [method-assign]
-            self.add_item(button)
-
-        # Add the 0 button at the end, so it appears at the bottom
-        zero_button_id = str(uuid.uuid4())
-        self.ratings[zero_button_id] = 0
-        zero_button: Button = Button(
-            label="0", custom_id=zero_button_id, style=discord.ButtonStyle.secondary, row=2
-        )
-        zero_button.callback = self.button_pressed  # type: ignore [method-assign]
-        self.add_item(zero_button)
-
-    async def button_pressed(self, interaction) -> None:  # type: ignore [no-untyped-def]
-        """Respond to the button."""
-        button_id = interaction.data["custom_id"]
-        rating = self.ratings.get(button_id, 0)
-        self.last_interaction = interaction
-
-        await self.callback(rating, interaction)
-
-
-class AddFromSheetWizard:
-    """A character generation wizard that walks the user through setting a value for each trait. This is used for entering a character that has already been created from a physical character sheet."""
-
-    def __init__(
-        self,
-        ctx: discord.ApplicationContext,
-        all_traits: list[Trait],
-        first_name: str | None = None,
-        last_name: str | None = None,
-        nickname: str | None = None,
-    ) -> None:
-        self.ctx = ctx
-        self.msg = None
-        self.all_traits = all_traits
-        self.assigned_traits: list[tuple[Trait, int]] = []
-        self.view: discord.ui.View = None
-
-        self.name = first_name.title()
-        self.name += f" ({nickname.title()})" if nickname else ""
-        self.name += f" {last_name.title() }" if last_name else ""
-
-    async def begin_chargen(self) -> None:
-        """Start the chargen wizard."""
-        await self.__send_messages()
-
-    async def wait_until_done(self) -> list[tuple[Trait, int]]:
-        """Wait until the wizard is done."""
-        while self.all_traits:
-            await asyncio.sleep(1)  # Wait a bit then check again
-
-        return self.assigned_traits
-
-    async def __view_callback(self, rating: int, interaction: discord.Interaction) -> None:
-        """Assign the next trait.
-
-        Assign a value to the previously rated trait and display the next trait or finish creating the character if finished.
-
-        Args:
-            rating (int): The value for the next rating in the list.
-            interaction (discord.Interaction): The interaction that triggered
-        """
-        # Remove the first trait from the list and assign it
-        previously_rated_trait = self.all_traits.pop(0)
-        self.assigned_traits.append((previously_rated_trait, rating))
-
-        if not self.all_traits:
-            # We're finished; create the character
-            await self.__finalize_character()
-        else:
-            await self.__send_messages(
-                message=f"`{previously_rated_trait.name} set to {rating}`",
-                interaction=interaction,
-            )
-
-    async def __finalize_character(
-        self,
-    ) -> None:
-        """Add the character to the database and inform the user they are done."""
-        embed = discord.Embed(
-            title="Success!",
-            description=f"{self.name} has been created",
-            color=EmbedColor.INFO.value,
-        )
-        embed.set_author(
-            name=f"Valentina on {self.ctx.guild.name}", icon_url=self.ctx.guild.icon or ""
-        )
-        embed.add_field(name="Make a mistake?", value="Use `/character update trait`", inline=False)
-        embed.add_field(
-            name="Need to add a trait?", value="Use `/character add trait`", inline=False
-        )
-
-        embed.set_footer(text="See /help for further details")
-
-        button: discord.ui.Button = Button(
-            label=f"Back to {self.ctx.guild.name}", url=self.ctx.guild.jump_url
-        )
-
-        self.view.stop()
-        await self.edit_message(embed=embed, view=discord.ui.View(button))
-
-    async def __send_messages(
-        self, *, interaction: discord.Interaction | None = None, message: str | None = None
-    ) -> None:
-        """Query a trait."""
-        trait_to_be_rated = self.all_traits[0]
-
-        description = "This wizard will guide you through the character creation process.\n\n"
-
-        if message is not None:
-            description = message
-
-        embed = discord.Embed(
-            title=f"Select the rating for: {trait_to_be_rated.name}",
-            description=description,
-            color=0x7777FF,
-        )
-        embed.set_author(
-            name=f"Creating {self.name}",
-            icon_url=self.ctx.guild.icon or "",
-        )
-        embed.set_footer(text="Your character will not be saved until you have entered all traits.")
-
-        # Build the view with the first trait in the list. (Note, it is removed from the list in the callback)
-
-        self.view = RatingView(trait_to_be_rated, self.__view_callback, self.__timeout)
-
-        if self.msg is None:
-            # Send DM with the character generation wizard as a DM. This is the first message.
-            self.msg = await self.ctx.author.send(embed=embed, view=self.view)
-
-            # Respond in-channel to check DM
-            await self.ctx.respond(
-                "Please check your DMs! I hope you have your character sheet ready.",
-                ephemeral=True,
-            )
-        else:
-            # Subsequent sends, edit the interaction of the DM
-            await interaction.response.edit_message(embed=embed, view=self.view)  # type: ignore [unreachable]
-
-    async def __timeout(self) -> None:
-        """Inform the user they took too long."""
-        errmsg = f"Due to inactivity, your character generation on **{self.ctx.guild.name}** has been canceled."
-        await self.edit_message(content=errmsg, embed=None, view=None)
-        logger.info("CHARGEN: Timed out")
-
-    @property
-    def edit_message(self) -> Any:
-        """Get the proper edit method for editing our message outside of an interaction."""
-        if self.msg:
-            return self.msg.edit  # type: ignore [unreachable]
-        return self.ctx.respond
-
-
-## Character Generation Wizard
 
 
 class CharacterPickerButtons(discord.ui.View):
@@ -241,7 +46,7 @@ class CharacterPickerButtons(discord.ui.View):
             button: Button = Button(
                 label=f"{i + 1}. {character.full_name}",
                 custom_id=f"{i}",
-                style=discord.ButtonStyle.success,
+                style=discord.ButtonStyle.primary,
             )
             button.callback = self.button_callback  # type: ignore [method-assign]
             self.add_item(button)
@@ -256,6 +61,7 @@ class CharacterPickerButtons(discord.ui.View):
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002
     ) -> None:
         """Disable all buttons and stop the view."""
+        await interaction.response.defer()
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
@@ -274,19 +80,17 @@ class CharacterPickerButtons(discord.ui.View):
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002
     ) -> None:
         """Disable all buttons and stop the view."""
+        await interaction.response.defer()
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
-
-        embed = interaction.message.embeds[0]
-        embed.description = f"## {Emoji.CANCEL.value} Cancelled\nNo character was selected"
-        embed.color = EmbedColor.WARNING.value  # type: ignore [method-assign, assignment]
 
         self.cancelled = True
         self.stop()
 
     async def button_callback(self, interaction: discord.Interaction) -> None:
         """Respond to selecting a character."""
+        await interaction.response.defer()
         # Disable the interaction and grab the setting name
         for child in self.children:
             if (
@@ -322,10 +126,9 @@ class BeginCancelCharGenButtons(discord.ui.View):
         custom_id="roll",
         row=2,
     )
-    async def roll_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
-    ) -> None:
+    async def roll_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the roll button."""
+        await interaction.response.defer()
         button.label += f" {Emoji.YES.value}"
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
@@ -342,6 +145,7 @@ class BeginCancelCharGenButtons(discord.ui.View):
     )
     async def cancel_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the cancel button."""
+        await interaction.response.defer()
         button.label += f" {Emoji.YES.value}"
         button.disabled = True
         for child in self.children:
@@ -374,6 +178,9 @@ class UpdateCharacterButtons(discord.ui.View):
         self.updated: bool = False
         self.done: bool = False
 
+        # TODO: Allow the user to change select their special ability
+        # TODO: Allow the user update their trait values
+
     @discord.ui.button(
         label=f"{Emoji.PENCIL.value} Rename",
         style=discord.ButtonStyle.primary,
@@ -384,10 +191,37 @@ class UpdateCharacterButtons(discord.ui.View):
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002
     ) -> None:
         """Callback for the rename button."""
+        await interaction.response.defer()
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
         modal = ChangeNameModal(ctx=self.ctx, character=self.character, title="Rename Character")
         await interaction.response.send_modal(modal)
         await modal.wait()
         self.character = modal.character
+        self.updated = True
+        self.stop()
+
+    @discord.ui.button(
+        label="💪 Reallocate Dots",
+        style=discord.ButtonStyle.primary,
+        custom_id="reallocate",
+        row=2,
+    )
+    async def reallocate_callback(
+        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+    ) -> None:
+        """Callback for the reallocate button."""
+        await interaction.response.defer()
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
+        shift_dots = ReallocateDots(self.ctx, self.character)
+        updated, character = await shift_dots.execute()
+        if updated:
+            self.character = character
+
         self.updated = True
         self.stop()
 
@@ -397,10 +231,9 @@ class UpdateCharacterButtons(discord.ui.View):
         custom_id="done",
         row=3,
     )
-    async def done_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
-    ) -> None:
+    async def done_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the done button."""
+        await interaction.response.defer()
         button.disabled = True
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
@@ -431,11 +264,11 @@ class CharGenWizard:
         self.hidden = hidden
         self.paginator: pages.Paginator = None  # Container for the paginator
 
-    async def _generate_rng_character(self) -> Character:
+    async def _create_rng_character(self) -> Character:
         """Generate a character."""
         return await self.bot.char_svc.rng_creator(self.ctx, chargen_character=True)
 
-    async def _character_embed_creator(
+    async def _create_char_sheet_embed(
         self,
         character: Character,
         title: str | None = None,
@@ -488,38 +321,9 @@ class CharGenWizard:
         embed.set_thumbnail(url=self.ctx.bot.user.display_avatar)
         await self.paginator.cancel(page=embed, include_custom=True)
 
-    @staticmethod
-    def _first_review_embed(characters: list[Character]) -> discord.Embed:
-        """Create an embed for the home page of the character generation wizard."""
-        description = f"## Created {len(characters)} {p.plural_noun('character', len(characters))} for you to choose from\n"
-
-        character_list = [
-            f"{i}. **{c.full_name}:**  A {CharConcept[c.data['concept_db']].value['name']} {VampireClanType[c.clan.name].value['name'] if c.clan else ''} {CharClassType[c.char_class.name].value['name']}"
-            for i, c in enumerate(characters)
-        ]
-
-        description += "\n".join(character_list)
-
-        description += """
-### Next Steps
-1. **Review the details for each character** by scrolling through their sheets
-2. **Select the character you want to play** by selecting a button below; or
-3. **Reroll all characters** by selecting the reroll button for a cost of `10 XP`
-
-**Important:**
-Once you select a character you can re-allocate dots and change the name, but you cannot change the concept, class, or clan.
-"""
-
-        return discord.Embed(
-            title="Character Generations",
-            description=description,
-            color=EmbedColor.INFO.value,
-        )
-
     async def start(self, restart: bool = False) -> None:
         """Start the character generation wizard."""
         # Build the embeds
-
         embed1 = discord.Embed(
             title="Create a new character",
             description="""\
@@ -580,47 +384,34 @@ Once you select a character you can re-allocate dots and change the name, but yo
         self.user.spend_experience(self.campaign.id, 10)
         await self.select_character()
 
-    async def make_character_updates(self, character: Character) -> Character:
-        """Update the selected character."""
-        title = f"{Emoji.YES.value} Created {character.full_name}\n"
-        embed = await self._character_embed_creator(character, title=title)
-
-        view = UpdateCharacterButtons(self.ctx, character=character, author=self.ctx.author)
-
-        await self.paginator.update(
-            pages=[embed],  # type: ignore [arg-type]
-            custom_view=view,
-            show_disabled=False,
-            show_indicator=False,
-            timeout=600,
-        )
-
-        await view.wait()
-        if view.updated:
-            # Restart the view and show the changes
-            await self.make_character_updates(view.character)
-
-        if view.done:
-            embed = discord.Embed(
-                title=f"{Emoji.SUCCESS.value} Created {character.name}",
-                description="Thanks for using my character generation wizard.",
-                color=EmbedColor.WARNING.value,
-            )
-            embed.set_thumbnail(url=self.ctx.bot.user.display_avatar)
-            await self.paginator.cancel(page=embed, include_custom=True)
-
-            return character
-
-        return None
-
     async def select_character(self) -> None:
         """Start the character generation wizard."""
         # Generate 3 characters
-        characters = [await self._generate_rng_character() for i in range(3)]
+        characters = [await self._create_rng_character() for i in range(3)]
 
         # Add the pages to the paginator
-        pages: list[discord.Embed] = [self._first_review_embed(characters)]
-        pages.extend([await self._character_embed_creator(character) for character in characters])
+        description = f"## Created {len(characters)} {p.plural_noun('character', len(characters))} for you to choose from\n"
+        character_list = [
+            f"{i}. **{c.full_name}:**  A {CharConcept[c.data['concept_db']].value['name']} {VampireClanType[c.clan.name].value['name'] if c.clan else ''} {CharClassType[c.char_class.name].value['name']}"
+            for i, c in enumerate(characters)
+        ]
+        description += "\n".join(character_list)
+        description += """
+### Next Steps
+1. **Review the details for each character** by scrolling through their sheets
+2. **Select the character you want to play** by selecting a button below; or
+3. **Reroll all characters** by selecting the reroll button for a cost of `10 XP`
+
+**Important:**
+Once you select a character you can re-allocate dots and change the name, but you cannot change the concept, class, or clan.
+"""
+
+        pages: list[discord.Embed] = [
+            discord.Embed(
+                title="Character Generations", description=description, color=EmbedColor.INFO.value
+            )
+        ]
+        pages.extend([await self._create_char_sheet_embed(character) for character in characters])
 
         # present the character selection paginator
         # TODO: Fix interaction which works but says it doesn't
@@ -664,8 +455,38 @@ Once you select a character you can re-allocate dots and change the name, but yo
                     await self.bot.char_svc.update_or_add(self.ctx, character=c, data=data)
 
             # Post-process the character
-            await self.make_character_updates(selected_character)
+            await self.character_review(selected_character)
 
-        # TODO: Allow the user to change the name
-        # TODO: Allow the user to change select their special ability
-        # TODO: Allow the user update their trait values
+    async def character_review(self, character: Character) -> Character:
+        """Update the selected character."""
+        title = f"{Emoji.YES.value} Created {character.full_name}\n"
+        embed = await self._create_char_sheet_embed(character, title=title)
+
+        view = UpdateCharacterButtons(self.ctx, character=character, author=self.ctx.author)
+
+        await self.paginator.update(
+            pages=[embed],  # type: ignore [arg-type]
+            custom_view=view,
+            show_disabled=False,
+            show_indicator=False,
+            timeout=600,
+        )
+
+        await view.wait()
+        if view.updated:
+            # Restart the view and show the changes
+            await self.character_review(view.character)
+
+        if view.done:
+            # TODO: Spend 21 freebie points
+            embed = discord.Embed(
+                title=f"{Emoji.SUCCESS.value} Created {character.name}",
+                description="Thanks for using my character generation wizard.",
+                color=EmbedColor.SUCCESS.value,
+            )
+            embed.set_thumbnail(url=self.ctx.bot.user.display_avatar)
+            await self.paginator.cancel(page=embed, include_custom=True)
+
+            return character
+
+        return None

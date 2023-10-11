@@ -1,7 +1,7 @@
 """Views for Valentina."""
 
 from .embeds import present_embed, user_error_embed  # isort:skip
-from .buttons import ConfirmCancelButtons, ReRollButton, CancelButton  # isort:skip
+from .buttons import ConfirmCancelButtons, ReRollButton, CancelButton, IntegerButtons  # isort:skip
 from .actions import confirm_action
 from .character_sheet import sheet_embed, show_sheet
 from .modals import (
@@ -19,18 +19,15 @@ from .s3_image_review import S3ImageReview
 from .settings import SettingsManager
 from .thumbnail_review import ThumbnailReview
 
-from .chargen import AddFromSheetWizard, CharGenWizard  # isort:skip
-
 __all__ = [
-    "AddFromSheetWizard",
     "BioModal",
     "CancelButton",
     "ChapterModal",
-    "CharGenWizard",
     "ChangeNameModal",
     "confirm_action",
     "ConfirmCancelButtons",
     "CustomSectionModal",
+    "IntegerButtons",
     "MacroCreateModal",
     "NoteModal",
     "NPCModal",
