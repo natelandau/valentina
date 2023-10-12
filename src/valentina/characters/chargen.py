@@ -198,8 +198,9 @@ class UpdateCharacterButtons(discord.ui.View):
         self.updated: bool = False
         self.done: bool = False
 
-        # TODO: Allow the user to change select their special ability
+        # TODO: Allow the user to select their special ability
         # TODO: Allow the user update their trait values
+        # TODO: Backgrounds/Merits/Flaws
 
     def _disable_all(self) -> None:
         """Disable all buttons in the view."""
