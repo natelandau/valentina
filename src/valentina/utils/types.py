@@ -13,12 +13,20 @@ class CharacterClassDict(TypedDict):
     description: str
 
 
+class CharSheetSectionDict(TypedDict):
+    """Type for CharSheetSection info Enum."""
+
+    name: str
+    order: int
+
+
 class TraitCategoriesDict(TypedDict):
     """Type for TraitCategories Enum."""
 
     classes: list["CharacterClass"]  # noqa: F821 # type: ignore
     name: str
     order: int
+    section: "CharSheetSection"  # noqa: F821 # type: ignore
 
 
 class CharConceptDict(TypedDict):

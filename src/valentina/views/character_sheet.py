@@ -5,7 +5,7 @@ import arrow
 import discord
 from discord.ext import pages
 
-from valentina.constants import Emoji, TraitCategories
+from valentina.constants import CharSheetSection, Emoji, TraitCategories
 from valentina.models.db_tables import Character
 from valentina.models.statistics import Statistics
 from valentina.utils import errors
@@ -107,42 +107,18 @@ def __embed1(  # noqa: C901
         embed.add_field(name="Auspice", value=character.data.get("auspice", ""), inline=True)
         embed.add_field(name="Breed", value=character.data.get("breed", ""), inline=True)
 
-    embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
-    for category, traits in __build_trait_display(
-        char_traits,
-        [
-            TraitCategories.PHYSICAL,
-            TraitCategories.SOCIAL,
-            TraitCategories.MENTAL,
-        ],
-    ):
-        embed.add_field(name=category, value=traits, inline=True)
-
-    embed.add_field(name="\u200b", value="**ABILITIES**", inline=False)
-    for category, traits in __build_trait_display(
-        char_traits,
-        [
-            TraitCategories.TALENTS,
-            TraitCategories.SKILLS,
-            TraitCategories.KNOWLEDGES,
-        ],
-        sort_items=True,
-    ):
-        embed.add_field(name=category, value=traits, inline=True)
-
-    for category, traits in __build_trait_display(
-        char_traits,
-        [
-            TraitCategories.PHYSICAL,
-            TraitCategories.SOCIAL,
-            TraitCategories.MENTAL,
-            TraitCategories.TALENTS,
-            TraitCategories.SKILLS,
-            TraitCategories.KNOWLEDGES,
-        ],
-        exclude_from_list=True,
-    ):
-        embed.add_field(name=category, value=traits, inline=True)
+    for section in sorted(CharSheetSection, key=lambda x: x.value["order"]):
+        if section != CharSheetSection.NONE:
+            embed.add_field(
+                name="\u200b",
+                value=f"**{section.name.upper()}**",
+                inline=False,
+            )
+        for category, traits in __build_trait_display(
+            char_traits,
+            [tc for tc in TraitCategories if tc.value["section"] == section],
+        ):
+            embed.add_field(name=category, value=traits, inline=True)
 
     if desc_suffix:
         embed.add_field(name="\u200b", value=desc_suffix, inline=False)

@@ -10,6 +10,7 @@ from numpy.random import default_rng
 from valentina.constants import (
     CharClassType,
     CharConcept,
+    CharSheetSection,
     RNGCharLevel,
     TraitCategories,
     VampireClanType,
@@ -125,26 +126,26 @@ class CharacterTraitRandomizer:
         # Initialize or clear the trait_values list
         trait_values: list[tuple[Trait, int]] = []
 
-        # Extend trait_values with generated attribute values
-        logger.debug(f"CHARGEN: Generate attribute values for {self.character}")
-        trait_values.extend(
-            self._randomly_assign_attributes(
-                categories=[
-                    TraitCategories.PHYSICAL,
-                    TraitCategories.SOCIAL,
-                    TraitCategories.MENTAL,
-                ]
-            )
-        )
-
         # Extend trait_values with generated ability values
         logger.debug(f"CHARGEN: Generate ability values for {self.character}")
         trait_values.extend(
             self._randomly_assign_abilities(
                 categories=[
-                    TraitCategories.TALENTS,
-                    TraitCategories.SKILLS,
-                    TraitCategories.KNOWLEDGES,
+                    tc
+                    for tc in TraitCategories
+                    if tc.value["section"] == CharSheetSection.ABILITIES
+                ]
+            )
+        )
+
+        # Extend trait_values with generated attribute values
+        logger.debug(f"CHARGEN: Generate attribute values for {self.character}")
+        trait_values.extend(
+            self._randomly_assign_attributes(
+                categories=[
+                    tc
+                    for tc in TraitCategories
+                    if tc.value["section"] == CharSheetSection.ATTRIBUTES
                 ]
             )
         )
@@ -154,6 +155,119 @@ class CharacterTraitRandomizer:
             logger.debug(f"CHARGEN: Generate discipline values for {self.character}")
             trait_values.extend(self._randomly_assign_disciplines())
 
+        return trait_values
+
+    def _randomly_assign_abilities(
+        self, categories: list[TraitCategories]
+    ) -> list[tuple[Trait, int]]:
+        """Assign ability values to the character based on specified categories and character level.
+
+        Initialize the character's abilities by filtering out relevant traits based on the given categories.
+        Calculate the total number of 'dots' or points that can be allocated to each category based on the character's level.
+
+        The function performs the following steps:
+        1. Filters traits that belong to the specified categories.
+        2. Determines the total number of dots available for each category based on the character's level.
+        3. Prioritizes the categories based on the character's concept and randomly for remaining categories.
+        4. Distributes the dots across the abilities in each category, ensuring the sum matches the total dots for that category.
+        5. Optionally swaps zero values with higher values based on the character's specific abilities.
+
+        Args:
+            categories (list[str]): A list of ability categories to consider for the character.
+
+        Returns:
+            list[tuple[Trait, int]]: A list of tuples, each containing a Trait object and its corresponding value.
+        """
+        # Filter traits by attribute categories
+        filtered_traits: dict[str, list[Trait]] = {
+            cat: traits
+            for cat, traits in self.traits_by_category.items()
+            if TraitCategories[cat] in categories
+        }
+
+        # Initialize dot distribution based on character level
+        starting_dot_distribution = [13, 9, 5]
+        extra_dots_map = {
+            RNGCharLevel.NEW: [0, 0, 0],
+            RNGCharLevel.INTERMEDIATE: [5, 3, 1],
+            RNGCharLevel.ADVANCED: [10, 6, 3],
+            RNGCharLevel.ELITE: [15, 9, 5],
+        }
+        total_dots = [
+            a + b
+            for a, b in zip(starting_dot_distribution, extra_dots_map[self.level], strict=True)
+        ]
+
+        # Initialize category priority
+        primary_category = self.concept.value["ability_specialty"]
+        categories.remove(primary_category)
+        secondary_category = random.choice(categories)
+        categories.remove(secondary_category)
+        tertiary_category = random.choice(categories)
+
+        category_priority: list[types.CharGenCategoryDict] = [
+            {"total_dots": total_dots.pop(0), "category": cat.name}
+            for cat in [primary_category, secondary_category, tertiary_category]
+        ]
+
+        # Initialize the list to store the final trait values
+        trait_values: list[tuple[Trait, int]] = []
+
+        # Set the ability values
+        for priority in category_priority:
+            cat = priority["category"]
+            category_dots = priority["total_dots"]
+            category_traits = list(filtered_traits[cat])
+
+            # Generate initial random distribution for the traits in the category
+            mean, distribution = self.level.value
+            initial_values = [
+                max(min(x, 5), 0)
+                for x in _rng.normal(mean, distribution, len(category_traits)).astype(int32)
+            ]
+
+            # Adjust the sum of the list to match the total dots for the category
+            values = adjust_sum_to_match_total(initial_values, category_dots, max_value=5)
+
+            # Create a list of tuples for the traits and their corresponding values
+            category_trait_values: list[tuple[Trait, int]] = [
+                (t, values.pop(0)) for t in category_traits
+            ]
+
+            # Perform any necessary value swaps based on the concept's specific abilities
+            specified_abilities = self.concept.value["specific_abilities"]
+            for name in specified_abilities:
+                # Find a tuple where Trait.name matches and the integer is zero
+                zero_value_tuple = next(
+                    (t for t in category_trait_values if t[0].name == name and t[1] == 0), None
+                )
+
+                if zero_value_tuple:
+                    # Find a tuple with the highest integer where Trait.name does not match any string in names_to_match
+                    highest_value_tuple = max(
+                        (t for t in category_trait_values if t[0].name not in specified_abilities),
+                        key=lambda x: x[1],
+                        default=None,
+                    )
+
+                    if highest_value_tuple:
+                        # Swap the integers
+                        zero_value_tuple_index = category_trait_values.index(zero_value_tuple)
+                        highest_value_tuple_index = category_trait_values.index(highest_value_tuple)
+
+                        category_trait_values[zero_value_tuple_index] = (
+                            zero_value_tuple[0],
+                            highest_value_tuple[1],
+                        )
+                        category_trait_values[highest_value_tuple_index] = (
+                            highest_value_tuple[0],
+                            zero_value_tuple[1],
+                        )
+
+            # Add the trait values to the list of trait values
+            trait_values.extend(category_trait_values)
+
+        logger.debug(f"CHARGEN: Set abilities: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
     def _randomly_assign_attributes(
@@ -277,119 +391,6 @@ class CharacterTraitRandomizer:
         trait_values: list[tuple[Trait, int]] = [(t, values.pop(0)) for t in disciplines_to_set]
 
         logger.debug(f"CHARGEN: Set attributes: {[(x.name, y) for x, y in trait_values]}")
-        return trait_values
-
-    def _randomly_assign_abilities(
-        self, categories: list[TraitCategories]
-    ) -> list[tuple[Trait, int]]:
-        """Assign ability values to the character based on specified categories and character level.
-
-        Initialize the character's abilities by filtering out relevant traits based on the given categories.
-        Calculate the total number of 'dots' or points that can be allocated to each category based on the character's level.
-
-        The function performs the following steps:
-        1. Filters traits that belong to the specified categories.
-        2. Determines the total number of dots available for each category based on the character's level.
-        3. Prioritizes the categories based on the character's concept and randomly for remaining categories.
-        4. Distributes the dots across the abilities in each category, ensuring the sum matches the total dots for that category.
-        5. Optionally swaps zero values with higher values based on the character's specific abilities.
-
-        Args:
-            categories (list[str]): A list of ability categories to consider for the character.
-
-        Returns:
-            list[tuple[Trait, int]]: A list of tuples, each containing a Trait object and its corresponding value.
-        """
-        # Filter traits by attribute categories
-        filtered_traits: dict[str, list[Trait]] = {
-            cat: traits
-            for cat, traits in self.traits_by_category.items()
-            if TraitCategories[cat] in categories
-        }
-
-        # Initialize dot distribution based on character level
-        starting_dot_distribution = [13, 9, 5]
-        extra_dots_map = {
-            RNGCharLevel.NEW: [0, 0, 0],
-            RNGCharLevel.INTERMEDIATE: [5, 3, 1],
-            RNGCharLevel.ADVANCED: [10, 6, 3],
-            RNGCharLevel.ELITE: [15, 9, 5],
-        }
-        total_dots = [
-            a + b
-            for a, b in zip(starting_dot_distribution, extra_dots_map[self.level], strict=True)
-        ]
-
-        # Initialize category priority
-        primary_category = self.concept.value["ability_specialty"]
-        categories.remove(primary_category)
-        secondary_category = random.choice(categories)
-        categories.remove(secondary_category)
-        tertiary_category = random.choice(categories)
-
-        category_priority: list[types.CharGenCategoryDict] = [
-            {"total_dots": total_dots.pop(0), "category": cat.name}
-            for cat in [primary_category, secondary_category, tertiary_category]
-        ]
-
-        # Initialize the list to store the final trait values
-        trait_values: list[tuple[Trait, int]] = []
-
-        # Set the ability values
-        for priority in category_priority:
-            cat = priority["category"]
-            category_dots = priority["total_dots"]
-            category_traits = list(filtered_traits[cat])
-
-            # Generate initial random distribution for the traits in the category
-            mean, distribution = self.level.value
-            initial_values = [
-                max(min(x, 5), 0)
-                for x in _rng.normal(mean, distribution, len(category_traits)).astype(int32)
-            ]
-
-            # Adjust the sum of the list to match the total dots for the category
-            values = adjust_sum_to_match_total(initial_values, category_dots, max_value=5)
-
-            # Create a list of tuples for the traits and their corresponding values
-            category_trait_values: list[tuple[Trait, int]] = [
-                (t, values.pop(0)) for t in category_traits
-            ]
-
-            # Perform any necessary value swaps based on the concept's specific abilities
-            specified_abilities = self.concept.value["specific_abilities"]
-            for name in specified_abilities:
-                # Find a tuple where Trait.name matches and the integer is zero
-                zero_value_tuple = next(
-                    (t for t in category_trait_values if t[0].name == name and t[1] == 0), None
-                )
-
-                if zero_value_tuple:
-                    # Find a tuple with the highest integer where Trait.name does not match any string in names_to_match
-                    highest_value_tuple = max(
-                        (t for t in category_trait_values if t[0].name not in specified_abilities),
-                        key=lambda x: x[1],
-                        default=None,
-                    )
-
-                    if highest_value_tuple:
-                        # Swap the integers
-                        zero_value_tuple_index = category_trait_values.index(zero_value_tuple)
-                        highest_value_tuple_index = category_trait_values.index(highest_value_tuple)
-
-                        category_trait_values[zero_value_tuple_index] = (
-                            zero_value_tuple[0],
-                            highest_value_tuple[1],
-                        )
-                        category_trait_values[highest_value_tuple_index] = (
-                            highest_value_tuple[0],
-                            zero_value_tuple[1],
-                        )
-
-            # Add the trait values to the list of trait values
-            trait_values.extend(category_trait_values)
-
-        logger.debug(f"CHARGEN: Set abilities: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
     def generate_character(self) -> Character:

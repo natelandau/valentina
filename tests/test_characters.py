@@ -12,6 +12,7 @@ from dirty_equals import IsList, IsPartialDict
 from valentina.constants import (
     CharClassType,
     CharConcept,
+    CharSheetSection,
     RNGCharLevel,
     TraitCategories,
     VampireClanType,
@@ -123,9 +124,7 @@ class TestCharacterTraitRandomizer:
 
         # WHEN we set the abilities
         categories = [
-            TraitCategories.TALENTS,
-            TraitCategories.SKILLS,
-            TraitCategories.KNOWLEDGES,
+            tc for tc in TraitCategories if tc.value["section"] == CharSheetSection.ABILITIES
         ]
         result = rng._randomly_assign_abilities(categories=categories)
 
@@ -217,9 +216,7 @@ class TestCharacterTraitRandomizer:
         # WHEN we set the attributes
         result = rng._randomly_assign_attributes(
             categories=[
-                TraitCategories.PHYSICAL,
-                TraitCategories.SOCIAL,
-                TraitCategories.MENTAL,
+                tc for tc in TraitCategories if tc.value["section"] == CharSheetSection.ATTRIBUTES
             ]
         )
 

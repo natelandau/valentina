@@ -215,6 +215,14 @@ class XPMultiplier(Enum):
     ### DISCORD SETTINGS ###
 
 
+class CharSheetSection(Enum):
+    """Enum for character sheet sections. Rollups of TraitCategories."""
+
+    ATTRIBUTES: ClassVar[types.CharSheetSectionDict] = {"name": "Attributes", "order": 1}
+    ABILITIES: ClassVar[types.CharSheetSectionDict] = {"name": "Abilities", "order": 2}
+    NONE: ClassVar[types.CharSheetSectionDict] = {"name": "None", "order": 3}
+
+
 # Enums linked to the Database
 # Updates may require a database migration
 
@@ -313,101 +321,121 @@ class TraitCategories(Enum):
     PHYSICAL: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Physical",
+        "section": CharSheetSection.ATTRIBUTES,
         "order": 1,
     }
     SOCIAL: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Social",
+        "section": CharSheetSection.ATTRIBUTES,
         "order": 2,
     }
     MENTAL: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Mental",
+        "section": CharSheetSection.ATTRIBUTES,
         "order": 3,
     }
     TALENTS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Talents",
+        "section": CharSheetSection.ABILITIES,
         "order": 4,
     }
     SKILLS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Skills",
+        "section": CharSheetSection.ABILITIES,
         "order": 5,
     }
     KNOWLEDGES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Knowledges",
+        "section": CharSheetSection.ABILITIES,
         "order": 6,
     }
     SPHERES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MAGE],
         "name": "Spheres",
+        "section": CharSheetSection.NONE,
         "order": 7,
     }
     DISCIPLINES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.VAMPIRE, CharClassType.GHOUL],
         "name": "Disciplines",
         "order": 8,
+        "section": CharSheetSection.NONE,
     }
     NUMINA: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MORTAL, CharClassType.MAGE, CharClassType.HUNTER],
         "name": "Numina",
+        "section": CharSheetSection.NONE,
         "order": 9,
     }
     BACKGROUNDS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Backgrounds",
+        "section": CharSheetSection.NONE,
         "order": 10,
     }
     MERITS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Merits",
+        "section": CharSheetSection.NONE,
         "order": 11,
     }
     FLAWS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Flaws",
+        "section": CharSheetSection.NONE,
         "order": 12,
     }
     VIRTUES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Virtues",
+        "section": CharSheetSection.NONE,
         "order": 13,
     }
     RESONANCE: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MAGE],
         "name": "Resonance",
+        "section": CharSheetSection.NONE,
         "order": 14,
     }
     GIFTS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.WEREWOLF, CharClassType.CHANGELING],
         "name": "Gifts",
+        "section": CharSheetSection.NONE,
         "order": 15,
     }
     RENOWN: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.WEREWOLF],
         "name": "Renown",
+        "section": CharSheetSection.NONE,
         "order": 16,
     }
     EDGES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.HUNTER],
         "name": "Edges",
+        "section": CharSheetSection.NONE,
         "order": 17,
     }
     PATHS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Paths",
+        "section": CharSheetSection.NONE,
         "order": 18,
     }
     OTHER: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Other",
+        "section": CharSheetSection.NONE,
         "order": 19,
     }
     ADVANTAGES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Advantages",
+        "section": CharSheetSection.NONE,
         "order": 20,
     }
 

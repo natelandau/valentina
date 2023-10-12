@@ -19,6 +19,12 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         self.thumbnail_id = thumbnail_id
         self.thumbnail_url = thumbnail_url
 
+    def _disable_all(self) -> None:
+        """Disable all buttons in the view."""
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
     @discord.ui.button(
         label=f"{Emoji.WARNING.value} Delete thumbnail",
         style=discord.ButtonStyle.danger,
@@ -29,13 +35,7 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         """Callback for the confirm button."""
         button.label = f"{Emoji.YES.value} Deleted Thumbnail"
         button.style = discord.ButtonStyle.secondary
-        button.disabled = True
-
-        for child in self.children:
-            if type(child) == Button:
-                child.disabled = True
-            if type(child) == discord.ui.Select:
-                child.disabled = True
+        self._disable_all()
 
         # Delete from database
         RollThumbnail.delete_by_id(self.thumbnail_id)
