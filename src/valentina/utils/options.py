@@ -91,7 +91,7 @@ async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoi
     # Filter and return character class names
     return [
         OptionChoice(c.value["name"], c.name)
-        for c in CharClassType
+        for c in CharClassType.playable_classes()
         if c.value["name"] and c.value["name"].lower().startswith(ctx.options["char_class"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 

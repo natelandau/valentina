@@ -35,108 +35,6 @@ from valentina.models.db_tables import (
     VampireClan,
 )
 
-# Traits used in character creation
-common_traits = {
-    "Physical": ["Strength", "Dexterity", "Stamina"],
-    "Social": ["Charisma", "Manipulation", "Appearance"],
-    "Mental": ["Perception", "Intelligence", "Wits"],
-    "Talents": [
-        "Alertness",
-        "Athletics",
-        "Brawl",
-        "Dodge",
-        "Empathy",
-        "Expression",
-        "Intimidation",
-        "Leadership",
-        "Streetwise",
-        "Subterfuge",
-    ],
-    "Skills": [
-        "Animal Ken",
-        "Drive",
-        "Etiquette",
-        "Firearms",
-        "Melee",
-        "Performance",
-        "Security",
-        "Stealth",
-        "Survival",
-    ],
-    "Knowledges": [
-        "Academics",
-        "Computer",
-        "Finance",
-        "Investigation",
-        "Law",
-        "Linguistics",
-        "Medicine",
-        "Occult",
-        "Politics",
-        "Science",
-    ],
-    "Other": ["Willpower", "Desperation", "Reputation"],
-}
-mage_traits = {
-    "Other": ["Humanity", "Arete", "Quintessence"],
-    "Knowledges": ["Cosmology", "Enigmas"],
-    "Skills": ["Crafts", "Technology"],
-    "Talents": ["Awareness"],
-    "Virtues": ["Conscience", "Self-Control", "Courage"],
-    "Spheres": [
-        "Correspondence",
-        "Entropy",
-        "Forces",
-        "Life",
-        "Matter",
-        "Mind",
-        "Prime",
-        "Spirit",
-        "Time",
-    ],
-    "Resonance": ["Dynamic", "Entropic", "Static"],
-}
-vampire_traits = {
-    "Other": ["Blood Pool", "Humanity"],  # TODO: Change to "Humanity/Path" for vampires
-    "Virtues": ["Conscience", "Self-Control", "Courage"],
-    "Disciplines": [
-        "Animalism",
-        "Auspex",
-        "Blood Sorcery",
-        "Celerity",
-        "Chimerstry",
-        "Dominate",
-        "Fortitude",
-        "Necromancy",
-        "Obeah",
-        "Obfuscate",
-        "Oblivion",
-        "Potence",
-        "Presence",
-        "Protean",
-        "Serpentis",
-        "Thaumaturgy",
-        "Vicissitude",
-    ],
-}
-werewolf_traits = {
-    "Talents": ["Primal-Urge"],
-    "Knowledges": ["Rituals", "Enigmas"],
-    "Other": ["Gnosis", "Rage"],
-    "Renown": ["Glory", "Honor", "Wisdom"],
-}
-hunter_traits = {
-    "Skills": ["Crafts", "Demolitions", "Larceny", "Technology", "Repair"],
-    "Talents": ["Awareness", "Insight", "Persuasion"],
-    "Other": ["Conviction", "Faith", "Humanity"],
-    "Virtues": ["Conscience", "Self-Control", "Courage"],
-}
-mortal_traits = {
-    "Skills": ["Crafts", "Larceny", "Repair"],
-    "Other": ["Humanity"],
-    "Virtues": ["Conscience", "Self-Control", "Courage"],
-}
-
 
 class MigrateDatabase:
     """A class that handles migrating an existing database."""
@@ -147,10 +45,7 @@ class MigrateDatabase:
         self.db_version = db_version
 
     def migrate(self) -> None:
-        """Migrate the database to the latest version."""
-        logger.debug("DATABASE: Migration check")
-        """
-        Migrate the database to the latest version.
+        """Migrate the database to the latest version.
 
         Checks the current database version and applies migration functions
         to update it to the latest version.
@@ -898,7 +793,6 @@ class PopulateDatabase:
         """Populate the database with initial data."""
         self._character_classes()
         self._vampire_clans()
-        self._trait_categories()
         self._traits()
         logger.info("DATABASE: Populate initial data")
 
@@ -920,7 +814,7 @@ class PopulateDatabase:
 
         # Ensure all character classes are in the database
         with self.db.atomic():
-            for charclass in CharClassType:
+            for charclass in CharClassType.playable_classes():
                 CharacterClass.insert(name=charclass.name).on_conflict_ignore().execute()
 
         # Remove any character classes that are no longer in the CharacterClasses enum
@@ -943,7 +837,7 @@ class PopulateDatabase:
             for c in VampireClan.select():
                 try:
                     # Attempt to find the corresponding enum member
-                    enum_member = VampireClanType[c.name.upper()]
+                    enum_member = VampireClanType[c.name.upper().replace(" ", "_")]
                 except KeyError:  # noqa: PERF203
                     logger.warning(f"No matching enum member for {c.name}")
                 else:
@@ -970,12 +864,21 @@ class PopulateDatabase:
 
         logger.debug("DATABASE: Populate vampire clans")
 
-    def _trait_categories(self) -> None:
+    def _traits(self) -> None:  # noqa: C901
         """Populate the database with initial trait categories and associated character classes.
 
         This method associates predefined character classes to each category. If a category
         is associated with the 'Common' class, it will be linked with all character classes.
         """
+        # TODO: This if statement is a migration from 1.13.0. Remove this after a few releases
+
+        old_reputation = Trait.get_or_none(
+            name="Reputation", category=TraitCategory.get_or_none(name="OTHER")
+        )
+        if old_reputation:
+            logger.warning("DATABASE: Delete old reputation trait")
+            old_reputation.delete_instance(delete_nullable=True, recursive=True)
+
         # TODO: This if statement is a migration from 1.13.0. Remove this after a few releases
         if not TraitCategory.get_or_none(name="PHYSICAL"):
             for c in TraitCategory.select():
@@ -994,13 +897,13 @@ class PopulateDatabase:
             for category in TraitCategories:
                 db_cat, _ = TraitCategory.get_or_create(name=category.name)
 
-                # If common, add to all classes in the trait/category/class lookup table
+                # trait/category/class lookup table
+                # If common, add to all classes
                 if CharClassType.COMMON in category.value["classes"]:
                     for c in CharacterClass.select():
                         TraitCategoryClass.insert(
                             character_class=c, category=db_cat
                         ).on_conflict_ignore().execute()
-
                 # Otherwise, add to the specified classes
                 else:
                     for c in category.value["classes"]:
@@ -1008,40 +911,29 @@ class PopulateDatabase:
                             character_class=CharacterClass.get(name=c.name), category=db_cat
                         ).on_conflict_ignore().execute()
 
+                # Add traits to the database and associated lookup tables
+                for charclass in CharClassType:
+                    if charclass.name not in category.value:
+                        continue
+
+                    traits_list = category.value[charclass.name]  # type: ignore [literal-required]
+
+                    # Add traits to the database
+                    for trait in traits_list:
+                        # Ensure trait is in the database
+                        db_trait, _ = Trait.get_or_create(name=trait, category=db_cat)
+
+                        if charclass == CharClassType.COMMON:
+                            # Add to all classes
+                            for c in CharacterClass.select():
+                                TraitClass.get_or_create(character_class=c, trait=db_trait)
+                        else:
+                            # Add to lookup in the database
+                            for c in CharacterClass.select():
+                                if c.name == charclass.name:
+                                    TraitClass.get_or_create(
+                                        character_class=c,
+                                        trait=db_trait,
+                                    )
+
         logger.debug("DATABASE: Populate trait categories")
-
-    def _traits(self) -> None:
-        """Create the initial traits."""
-        trait_dictionaries: list[dict[str, str | dict[str, list[str]]]] = [
-            {"char_class": "COMMON", "dict": common_traits},
-            {"char_class": "MAGE", "dict": mage_traits},
-            {"char_class": "VAMPIRE", "dict": vampire_traits},
-            {"char_class": "WEREWOLF", "dict": werewolf_traits},
-            {"char_class": "HUNTER", "dict": hunter_traits},
-            {"char_class": "MORTAL", "dict": mortal_traits},
-        ]
-
-        with self.db.atomic():
-            for dictionary in trait_dictionaries:
-                if isinstance(dictionary["dict"], dict):
-                    for category, traits in dictionary["dict"].items():
-                        for trait in traits:
-                            t, _created = Trait.get_or_create(
-                                name=trait,
-                                category=TraitCategory.get_or_none(name=category.upper()),
-                            )
-
-                            # Add common traits to all classes
-                            if dictionary["char_class"] == "COMMON":
-                                for c in CharacterClass.select():
-                                    TraitClass.get_or_create(character_class=c, trait=t)
-                            else:
-                                # Add trait to the specified classes
-                                TraitClass.get_or_create(
-                                    character_class=CharacterClass.get(
-                                        name=dictionary["char_class"]
-                                    ),
-                                    trait=t,
-                                )
-
-        logger.debug("DATABASE: Populate traits")

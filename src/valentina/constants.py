@@ -234,61 +234,72 @@ class CharClassType(Enum):
         "name": "Mortal",
         "range": (0, 60),
         "description": "Receive special abilities based on their concept",
+        "playable": True,
     }
     VAMPIRE: ClassVar[types.CharacterClassDict] = {
         "name": "Vampire",
         "range": (61, 66),
         "description": "Receive a clan and disciplines",
+        "playable": True,
     }
     WEREWOLF: ClassVar[types.CharacterClassDict] = {
         "name": "Werewolf",
         "range": (67, 72),
         "description": "Receive a tribe and gifts",
+        "playable": True,
     }
     MAGE: ClassVar[types.CharacterClassDict] = {
         "name": "Mage",
         "range": (73, 78),
         "description": "Receive a tradition and spheres",
+        "playable": True,
     }
     GHOUL: ClassVar[types.CharacterClassDict] = {
         "name": "Ghoul",
         "range": (79, 84),
         "description": "Receive disciplines and a master",
+        "playable": True,
     }
     CHANGELING: ClassVar[types.CharacterClassDict] = {
         "name": "Changeling",
         "range": (85, 90),
         "description": "",
+        "playable": True,
     }
     HUNTER: ClassVar[types.CharacterClassDict] = {
         "name": "Hunter",
         "range": (91, 96),
         "description": "Receive a creed and edges",
+        "playable": True,
     }
     SPECIAL: ClassVar[types.CharacterClassDict] = {
         "name": "Special",
         "range": (97, 100),
         "description": "Examples: Demon, Angel, Exalted, Titan, Mummy, etc. You choose.",
+        "playable": True,
     }
     OTHER: ClassVar[types.CharacterClassDict] = {
-        "name": None,
+        "name": "Other",
         "range": None,
-        "description": "",
+        "description": None,
+        "playable": False,
     }
     NONE: ClassVar[types.CharacterClassDict] = {
-        "name": None,
+        "name": "None",
         "range": None,
         "description": None,
+        "playable": False,
     }
     COMMON: ClassVar[types.CharacterClassDict] = {
-        "name": None,
+        "name": "Common",
         "range": None,
         "description": None,
+        "playable": False,
     }
 
     @classmethod
     def get_member_by_value(cls, value: int) -> "CharClassType":
-        """Find the corresponding enum member's name based on an integer value.
+        """Find the corresponding enum member's name based on an integer value found in the range value.
 
         Args:
             value (int): The integer value to look up.
@@ -309,10 +320,16 @@ class CharClassType(Enum):
         Returns:
             CharClassType: A random enum member.
         """
-        while True:
-            member = choice(list(cls))
-            if member.value["name"] and member.value["range"]:
-                return member
+        return choice([x for x in cls if x.value["playable"]])
+
+    @classmethod
+    def playable_classes(cls) -> list["CharClassType"]:
+        """Return a list of playable classes.
+
+        Returns:
+            list[CharClassType]: A list of playable classes.
+        """
+        return [x for x in cls if x.value["playable"]]
 
 
 class TraitCategories(Enum):
@@ -323,120 +340,388 @@ class TraitCategories(Enum):
         "name": "Physical",
         "section": CharSheetSection.ATTRIBUTES,
         "order": 1,
+        "COMMON": ["Strength", "Dexterity", "Stamina"],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     SOCIAL: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Social",
         "section": CharSheetSection.ATTRIBUTES,
         "order": 2,
+        "COMMON": ["Charisma", "Manipulation", "Appearance"],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     MENTAL: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Mental",
         "section": CharSheetSection.ATTRIBUTES,
         "order": 3,
+        "COMMON": ["Perception", "Intelligence", "Wits"],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     TALENTS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Talents",
         "section": CharSheetSection.ABILITIES,
         "order": 4,
+        "COMMON": [
+            "Alertness",
+            "Athletics",
+            "Brawl",
+            "Dodge",
+            "Empathy",
+            "Expression",
+            "Intimidation",
+            "Leadership",
+            "Streetwise",
+            "Subterfuge",
+        ],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": ["Primal-Urge"],
+        "MAGE": ["Awareness"],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": ["Awareness", "Insight", "Persuasion"],
+        "SPECIAL": [],
     }
     SKILLS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Skills",
         "section": CharSheetSection.ABILITIES,
         "order": 5,
+        "COMMON": [
+            "Animal Ken",
+            "Drive",
+            "Etiquette",
+            "Firearms",
+            "Melee",
+            "Performance",
+            "Security",
+            "Stealth",
+            "Survival",
+        ],
+        "MORTAL": ["Crafts", "Larceny", "Repair"],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": ["Crafts", "Technology"],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": ["Crafts", "Demolitions", "Larceny", "Technology", "Repair"],
+        "SPECIAL": [],
     }
     KNOWLEDGES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Knowledges",
         "section": CharSheetSection.ABILITIES,
         "order": 6,
+        "COMMON": [
+            "Academics",
+            "Computer",
+            "Finance",
+            "Investigation",
+            "Law",
+            "Linguistics",
+            "Medicine",
+            "Occult",
+            "Politics",
+            "Science",
+        ],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": ["Rituals", "Enigmas"],
+        "MAGE": ["Cosmology", "Enigmas"],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     SPHERES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MAGE],
         "name": "Spheres",
         "section": CharSheetSection.NONE,
         "order": 7,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [
+            "Correspondence",
+            "Entropy",
+            "Forces",
+            "Life",
+            "Matter",
+            "Mind",
+            "Prime",
+            "Spirit",
+            "Time",
+        ],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     DISCIPLINES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.VAMPIRE, CharClassType.GHOUL],
         "name": "Disciplines",
         "order": 8,
         "section": CharSheetSection.NONE,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [
+            "Animalism",
+            "Auspex",
+            "Blood Sorcery",
+            "Celerity",
+            "Chimerstry",
+            "Dominate",
+            "Fortitude",
+            "Necromancy",
+            "Obeah",
+            "Obfuscate",
+            "Oblivion",
+            "Potence",
+            "Presence",
+            "Protean",
+            "Serpentis",
+            "Thaumaturgy",
+            "Vicissitude",
+        ],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [
+            "Animalism",
+            "Auspex",
+            "Blood Sorcery",
+            "Celerity",
+            "Chimerstry",
+            "Dominate",
+            "Fortitude",
+            "Necromancy",
+            "Obeah",
+            "Obfuscate",
+            "Oblivion",
+            "Potence",
+            "Presence",
+            "Protean",
+            "Serpentis",
+            "Thaumaturgy",
+            "Vicissitude",
+        ],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     NUMINA: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MORTAL, CharClassType.MAGE, CharClassType.HUNTER],
         "name": "Numina",
         "section": CharSheetSection.NONE,
         "order": 9,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     BACKGROUNDS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Backgrounds",
         "section": CharSheetSection.NONE,
         "order": 10,
+        "COMMON": [
+            "Allies",
+            "Contacts",
+            "Fame",
+            "Generation",
+            "Influence",
+            "Mentor",
+            "Resources",
+            "Retainers",
+            "Status",
+        ],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     MERITS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Merits",
         "section": CharSheetSection.NONE,
         "order": 11,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     FLAWS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Flaws",
         "section": CharSheetSection.NONE,
         "order": 12,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     VIRTUES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Virtues",
         "section": CharSheetSection.NONE,
         "order": 13,
+        "COMMON": [],
+        "MORTAL": ["Conscience", "Self-Control", "Courage"],
+        "VAMPIRE": ["Conscience", "Self-Control", "Courage"],
+        "WEREWOLF": [],
+        "MAGE": ["Conscience", "Self-Control", "Courage"],
+        "GHOUL": ["Conscience", "Self-Control", "Courage"],
+        "CHANGELING": [],
+        "HUNTER": ["Conscience", "Self-Control", "Courage"],
+        "SPECIAL": [],
     }
     RESONANCE: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MAGE],
         "name": "Resonance",
         "section": CharSheetSection.NONE,
         "order": 14,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": ["Dynamic", "Entropic", "Static"],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     GIFTS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.WEREWOLF, CharClassType.CHANGELING],
         "name": "Gifts",
         "section": CharSheetSection.NONE,
         "order": 15,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     RENOWN: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.WEREWOLF],
         "name": "Renown",
         "section": CharSheetSection.NONE,
         "order": 16,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": ["Glory", "Honor", "Wisdom"],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": ["Glory", "Honor", "Wisdom"],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     EDGES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.HUNTER],
         "name": "Edges",
         "section": CharSheetSection.NONE,
         "order": 17,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     PATHS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Paths",
         "section": CharSheetSection.NONE,
         "order": 18,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
     OTHER: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Other",
         "section": CharSheetSection.NONE,
         "order": 19,
+        "COMMON": ["Willpower", "Desperation", "Reputation"],
+        "MORTAL": ["Humanity"],
+        "VAMPIRE": ["Blood Pool", "Humanity"],
+        "WEREWOLF": ["Gnosis", "Rage"],
+        "MAGE": ["Humanity", "Arete", "Quintessence"],
+        "GHOUL": ["Humanity"],
+        "CHANGELING": [],
+        "HUNTER": ["Conviction", "Faith", "Humanity"],
+        "SPECIAL": [],
     }
     ADVANTAGES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Advantages",
         "section": CharSheetSection.NONE,
         "order": 20,
+        "COMMON": [],
+        "MORTAL": [],
+        "VAMPIRE": [],
+        "WEREWOLF": [],
+        "MAGE": [],
+        "GHOUL": [],
+        "CHANGELING": [],
+        "HUNTER": [],
+        "SPECIAL": [],
     }
 
 

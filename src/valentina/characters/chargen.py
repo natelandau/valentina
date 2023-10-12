@@ -395,8 +395,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
             description="\n".join(
                 [
                     f"- **`{c.value['range'][1] - c.value['range'][0]}%` {c.value['name']}** {c.value['description']}"
-                    for c in CharClassType
-                    if c.value["range"] is not None
+                    for c in CharClassType.playable_classes()
                 ]
             ),
             color=EmbedColor.INFO.value,

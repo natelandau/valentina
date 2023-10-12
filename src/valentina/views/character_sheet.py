@@ -16,7 +16,6 @@ MAX_DOT_DISPLAY = 6
 def __build_trait_display(
     char_traits: dict[str, Any],
     categories_list: list[TraitCategories],
-    exclude_from_list: bool = False,
     show_zeros: bool = True,
     sort_items: bool = False,
 ) -> list[tuple[str, str]]:
@@ -25,7 +24,6 @@ def __build_trait_display(
     Args:
         char_traits (dict[str, Any]): A dictionary of character traits.
         categories_list (list[str]): A list of categories to include in the embed field.
-        exclude_from_list (bool, optional): If True, the categories list is treated as a list of categories to exclude. Defaults to False.
         show_zeros (bool, optional): If True, traits with a value of 0 are included in the embed field. Defaults to True.
         sort_items (bool, optional): If True, the items in the embed field are sorted alphabetically. Defaults to False.
     """
@@ -34,9 +32,7 @@ def __build_trait_display(
         char_traits = {k: sorted(v, key=lambda x: x[0]) for k, v in char_traits.items()}
 
     for category, traits in char_traits.items():
-        if exclude_from_list and category in [x.name for x in categories_list]:
-            continue
-        if not exclude_from_list and category not in [x.name for x in categories_list]:
+        if category not in [x.name for x in categories_list]:
             continue
 
         formatted = []
@@ -53,7 +49,7 @@ def __build_trait_display(
     return embed_values
 
 
-def __embed1(  # noqa: C901
+def __embed1(  # noqa: C901, PLR0912
     ctx: discord.ApplicationContext,
     character: Character,
     owned_by_user: discord.User | None = None,
@@ -91,7 +87,9 @@ def __embed1(  # noqa: C901
     )
 
     embed.add_field(name="Class", value=f"{character.class_name.title()}", inline=True)
-    embed.add_field(name="Concept", value=character.data.get("concept_human", ""), inline=True)
+
+    if character.class_name.lower() in ["mortal", "hunter", "human"]:
+        embed.add_field(name="Concept", value=character.data.get("concept_human", ""), inline=True)
 
     if character.class_name.lower() == "vampire":
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
@@ -107,6 +105,7 @@ def __embed1(  # noqa: C901
         embed.add_field(name="Auspice", value=character.data.get("auspice", ""), inline=True)
         embed.add_field(name="Breed", value=character.data.get("breed", ""), inline=True)
 
+    # Add the trait sections to the sheet
     for section in sorted(CharSheetSection, key=lambda x: x.value["order"]):
         if section != CharSheetSection.NONE:
             embed.add_field(

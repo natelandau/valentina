@@ -11,6 +11,7 @@ class CharacterClassDict(TypedDict):
     name: str
     range: tuple[int, int]
     description: str
+    playable: bool
 
 
 class CharSheetSectionDict(TypedDict):
@@ -27,6 +28,15 @@ class TraitCategoriesDict(TypedDict):
     name: str
     order: int
     section: "CharSheetSection"  # noqa: F821 # type: ignore
+    COMMON: list[str]
+    MORTAL: list[str]
+    VAMPIRE: list[str]
+    WEREWOLF: list[str]
+    MAGE: list[str]
+    GHOUL: list[str]
+    CHANGELING: list[str]
+    HUNTER: list[str]
+    SPECIAL: list[str]
 
 
 class CharConceptDict(TypedDict):

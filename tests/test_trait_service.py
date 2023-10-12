@@ -4,7 +4,7 @@ import pytest
 
 from valentina.constants import CharClassType
 from valentina.models import TraitService
-from valentina.models.db_tables import CustomTrait, Trait, TraitCategory
+from valentina.models.db_tables import Trait
 from valentina.utils import errors
 
 
@@ -22,7 +22,8 @@ class TestTraitService:
         THEN return only the traits associated with that class
         """
         traits = [x.name for x in self.trait_svc.fetch_all_class_traits(CharClassType.VAMPIRE)]
-        assert len(traits) == 63
+
+        assert len(traits) == 72
 
         for t in ["Willpower", "Strength", "Firearms", "Humanity", "Celerity", "Blood Pool"]:
             assert t in traits
