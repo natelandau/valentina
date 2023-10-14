@@ -90,7 +90,9 @@ def __embed1(  # noqa: C901, PLR0912
     embed.add_field(name="Class", value=f"{character.class_name.title()}", inline=True)
 
     if character.class_name.lower() in ["mortal", "hunter", "human"]:
-        embed.add_field(name="Concept", value=character.data.get("concept_human", ""), inline=True)
+        embed.add_field(
+            name="Concept", value=character.data.get("concept_readable", ""), inline=True
+        )
 
     if character.class_name.lower() == "vampire":
         embed.add_field(name="Clan", value=character.clan.name, inline=True)

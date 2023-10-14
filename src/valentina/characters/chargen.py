@@ -200,7 +200,6 @@ class UpdateCharacterButtons(discord.ui.View):
 
         # TODO: Allow the user to select their special ability
         # TODO: Allow the user update their trait values
-        # TODO: Backgrounds/Merits/Flaws
 
     def _disable_all(self) -> None:
         """Disable all buttons in the view."""
@@ -319,28 +318,23 @@ class CharGenWizard:
         Returns:
             discord.Embed: The created embed.
         """
-        # Extract concept information
-        concept_info = CharConcept[character.data["concept_db"]].value
+        # Extract concept information for mortals
+        if character.char_class.name == CharClassType.MORTAL.name:
+            concept_info = CharConcept[character.data["concept_db"]].value
 
-        # Generate special abilities list
-        special_abilities = (
-            [
+            # Generate special abilities list
+            special_abilities = [
                 f"{i}. **{ability['name']}:** {ability['description']}\n"
                 for i, ability in enumerate(concept_info["abilities"], start=1)
             ]
-            if character.char_class.name in [CharClassType.MORTAL.name, CharClassType.HUNTER.name]
-            else [
-                f"{character.char_class.name.title()}s do not receive special abilities from their concept"
-            ]
-        )
 
-        suffix = f"""
-**{character.full_name} is a {concept_info['name']}**
-{concept_info['description']}
+            suffix = f"""
+    **{character.full_name} is a {concept_info['name']}**
+    {concept_info['description']}
 
-**Special {p.plural_noun('Ability', len(concept_info["abilities"]))}:**
-{''.join(special_abilities)}
-"""
+    **Special {p.plural_noun('Ability', len(concept_info["abilities"]))}:**
+    {''.join(special_abilities)}
+    """
 
         # Create the embed
         return await sheet_embed(
@@ -348,7 +342,7 @@ class CharGenWizard:
             character,
             title=title if title else f"{character.name}",
             desc_prefix=prefix,
-            desc_suffix=suffix,
+            desc_suffix=suffix if character.char_class.name == CharClassType.MORTAL.name else None,
         )
 
     async def _cancel_character_generation(self, msg: str | None = None) -> None:

@@ -106,6 +106,7 @@ class MaxTraitValue(Enum):
     RAGE = 10
     WILLPOWER = 10
     WISDOM = 10
+    CONVICTION = 10
     # Category values
     PHYSICAL = 5
     SOCIAL = 5
@@ -576,6 +577,8 @@ class TraitCategories(Enum):
         "show_zero": False,
         "COMMON": [
             "Allies",
+            "Arcane",
+            "Arsenal",
             "Contacts",
             "Fame",
             "Influence",
@@ -583,14 +586,15 @@ class TraitCategories(Enum):
             "Resources",
             "Retainers",
             "Status",
+            "Reputation",
         ],
         "MORTAL": [],
-        "VAMPIRE": ["Generation"],
+        "VAMPIRE": ["Generation", "Herd"],
         "WEREWOLF": [],
         "MAGE": [],
         "GHOUL": [],
         "CHANGELING": [],
-        "HUNTER": [],
+        "HUNTER": ["Bystanders", "Destiny", "Exposure", "Patron"],
         "SPECIAL": [],
     }
     MERITS: ClassVar[types.TraitCategoriesDict] = {
@@ -638,7 +642,7 @@ class TraitCategories(Enum):
         "MAGE": ["Conscience", "Self-Control", "Courage"],
         "GHOUL": ["Conscience", "Self-Control", "Courage"],
         "CHANGELING": ["Conscience", "Self-Control", "Courage"],
-        "HUNTER": ["Conscience", "Self-Control", "Courage"],
+        "HUNTER": ["Mercy", "Vision", "Zeal"],
         "SPECIAL": ["Conscience", "Self-Control", "Courage"],
     }
     RESONANCE: ClassVar[types.TraitCategoriesDict] = {
@@ -702,7 +706,43 @@ class TraitCategories(Enum):
         "MAGE": [],
         "GHOUL": [],
         "CHANGELING": [],
-        "HUNTER": [],
+        "HUNTER": [
+            "Hide",  # Innocence
+            "Illuminate",
+            "Radiate",
+            "Confront",
+            "Blaze",
+            "Demand",  # Martyrdom
+            "Witness",
+            "Ravage",
+            "Donate",
+            "Payback",
+            "Bluster",  # Redemption
+            "Insinuate",
+            "Respire",
+            "Becalm",
+            "Suspend",
+            "Foresee",  # Visionary
+            "Pinpoint",
+            "Delve",
+            "Restore",
+            "Augur",
+            "Ward",  # Defense
+            "Rejuvenate",
+            "Brand",
+            "Champion",
+            "Burn",
+            "Discern",  # Judgment
+            "Burden",
+            "Balance",
+            "Pierce",
+            "Expose",
+            "Cleave",  # Vengeance
+            "Trail",
+            "Smolder",
+            "Surge",
+            "Smite",
+        ],
         "SPECIAL": [],
     }
     PATHS: ClassVar[types.TraitCategoriesDict] = {
@@ -727,14 +767,14 @@ class TraitCategories(Enum):
         "section": CharSheetSection.NONE,
         "order": 19,
         "show_zero": True,
-        "COMMON": ["Willpower", "Desperation", "Reputation"],
+        "COMMON": ["Willpower", "Desperation"],
         "MORTAL": ["Humanity"],
         "VAMPIRE": ["Blood Pool", "Humanity"],
         "WEREWOLF": ["Gnosis", "Rage"],
         "MAGE": ["Humanity", "Arete", "Quintessence"],
         "GHOUL": ["Humanity"],
         "CHANGELING": [],
-        "HUNTER": ["Conviction", "Faith", "Humanity"],
+        "HUNTER": ["Conviction"],
         "SPECIAL": [],
     }
     ADVANTAGES: ClassVar[types.TraitCategoriesDict] = {
@@ -885,9 +925,13 @@ class CharConcept(Enum):
             {
                 "name": "Frenzy",
                 "description": "Ignore the first inflicted health levels of damage with no penalty up until `Mauled`, and cannot be stunned.  Barbarians also gain an automatic success on any strength roll once per turn, equal to a permanent dot in Potence.",
-                "category": "Disciplines",
-                "trait": "Potence",
-                "dots": 1,
+                "traits": [("Potence", 1)],
+                "custom_sections": [
+                    (
+                        "Frenzy",
+                        "Ignore the first inflicted health levels of damage with no penalty up until `Mauled`, and cannot be stunned",
+                    )
+                ],
             }
         ],
         "ability_specialty": TraitCategories.TALENTS,
@@ -912,9 +956,13 @@ class CharConcept(Enum):
             {
                 "name": "Fast Talk",
                 "description": "Performers have an automatic success on any `charisma`, `expression` or `performance` roll, and can immediately command attention. This works even in combat, functionally freezing enemies, including groups, for the first turn. Note that the bard needs to keep doing their act for this to work, they can't drop their guitar and pick up a gun without ruining the effect.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Fast Talk",
+                        "Performers have an automatic success on any `Charisma`, `Expression` or `Performance` roll, and can immediately command attention. This works even in combat.",
+                    )
+                ],
             }
         ],
         "ability_specialty": TraitCategories.SKILLS,
@@ -938,17 +986,25 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Heal",
-                "description": "Heal 3 health levels to a target once per turn.  Any First Aid/medicine roles are also automatically granted one success. This is usually enough to stabilize a target and prevent them from bleeding out.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "Heal 3 health levels to a target once per turn.  Any First Aid/medicine roles are also automatically granted one success.",
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Heal",
+                        "Heal 3 health levels to a target once per turn.  Any First Aid or Medicine roles are also automatically granted one success.",
+                    ),
+                ],
             },
             {
                 "name": "True Faith",
                 "description": "Starts with a Faith of `3`, equivalent to a Discipline.  Clerics can repel supernatural beings for every success on a Faith role.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "True Faith",
+                        "Starts with a Faith of `3`, equivalent to a Discipline.  Clerics can repel supernatural beings for every success on a Faith role.",
+                    ),
+                ],
             },
         ],
         "ability_specialty": TraitCategories.KNOWLEDGES,
@@ -973,44 +1029,54 @@ class CharConcept(Enum):
             {
                 "name": "Familiar",
                 "description": "A trained animal that can carry out simple commands",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [
+                    ("Familiar", "A trained animal that can carry out simple commands")
+                ],
             },
             {
                 "name": "Friend of Animals",
                 "description": "Per `Animalism` level `1`.",
-                "category": "Disciplines",
-                "trait": "Animalism",
-                "dots": 1,
+                "traits": [("Animalism", 1)],
+                "custom_sections": [],
             },
             {
                 "name": "Spirit Sight",
                 "description": "Sees the dead, naturalistic spirits, places of power. Can detect supernatural beings, and penetrate spells, illusions and glamour on a `perception` + `occult` roll with a difficulty of `4`.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Spirit Sight",
+                        "Can detect supernatural beings, and penetrate spells, illusions and glamour on a `perception` + `occult` roll with a difficulty of `4`",
+                    )
+                ],
             },
             {
                 "name": "Read Auras",
-                "description": "Per the Auspex discipline.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "Learn various qualities of a person from their aura",
+                "traits": [],
+                "custom_sections": [
+                    ("Read Auras", "Learn various qualities of a person from their aura")
+                ],
             },
             {
                 "name": "Astral Projection",
-                "description": "Per the Auspex discipline.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "Free your mind to travel the world in astral form",
+                "traits": [],
+                "custom_sections": [
+                    ("Astral Projection", "Free your mind to travel the world in astral form")
+                ],
             },
             {
                 "name": "Remove Frenzy",
                 "description": "Can cool vampires frenzy, werewolves' rage, etc. They become passive for two turns.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Remove Frenzy",
+                        "Can cool vampires frenzy, werewolves' rage, etc. They become passive for two turns.",
+                    )
+                ],
             },
         ],
         "ability_specialty": TraitCategories.KNOWLEDGES,
@@ -1035,24 +1101,36 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Firearms",
-                "description": "Can re-roll any single Firearms roll once per turn. Can also specialize in new firearms at `3`, `4` and `5` dots instead of `4`, granting an additional dice whenever a specialized weapon is used.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "Can re-roll any single Firearms roll once per turn. Can also specialize in new firearms at `3`, `4` and `5` dots, granting an additional dice whenever a specialized weapon is used.",
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Firearms Specialist",
+                        "Can re-roll any single Firearms roll once per turn. Can also specialize in new firearms at `3`, `4` and `5`, granting an additional dice whenever a specialized weapon is used.",
+                    )
+                ],
             },
             {
-                "name": "Hand to hand",
-                "description": "Can re-roll any single `Brawl` roll once per turn. Can also gain a new specialization at `3`, `4` and `5` dots instead of `4`, granting an additional die whenever a specialized martial arts style is used. (Wrestling, Karate, Jiu Jitsu, etc.)",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "name": "Hand-to-hand Specialist",
+                "description": "Can re-roll any single `Brawl` roll once per turn. Can also gain a new specialization at `3`, `4` and `5` dots, granting an additional die whenever a specialized martial arts style is used. ",
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Hand to hand",
+                        "Can re-roll any single `Brawl` roll once per turn. Can also gain a new specialization at `3`, `4` and `5`, granting an additional die whenever a specialized martial arts style is used.",
+                    )
+                ],
             },
             {
-                "name": "Melee",
-                "description": "Can re-roll any single `Melee` roll once per turn. Can also gain a new specialization at `3`, `4` and `5` dots instead of `4`, granting an additional die whenever a specialized melee weapon is used. (Katana, Combat Knife, Chain, etc.)",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "name": "Melee Specialist",
+                "description": "Can re-roll any single `Melee` roll once per turn. Can also gain a new specialization at `3`, `4` and `5`, granting an additional die whenever a specialized melee weapon is used.",
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Melee",
+                        "Can re-roll any single `Melee` roll once per turn. Can also gain a new specialization at `3`, `4` and `5`, granting an additional die whenever a specialized melee weapon is used.",
+                    )
+                ],
             },
         ],
         "ability_specialty": TraitCategories.TALENTS,
@@ -1078,17 +1156,25 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Focus",
-                "description": "Gathering their Chi, the monk can resist gases, poisons, psionic attacks, and hold their breath one turn per existing `stamina`+ `willpower`.  Monks are immune to the vampiric discipline of `Dominate`, (but not `Presence`, curiously).",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "Gathering their Chi, the monk can resist gases, poisons, psionic attacks, and hold their breath one turn per existing `stamina`+ `willpower`.  Monks are immune to the vampiric discipline of `Dominate`.",
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Focus",
+                        "Gathering their Chi, the monk can resist gases, poisons, psionic attacks, and hold their breath one turn per existing `stamina`+ `willpower`.  Monks are immune to the vampiric discipline of `Dominate`.",
+                    )
+                ],
             },
             {
                 "name": "Iron hand",
                 "description": "Deliver a single punch, once per scene, with damage augmented by spending `willpower`, `1` point per damage level.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Iron Hand",
+                        "Deliver a single punch, once per scene, with damage augmented by spending `willpower`, `1` point per damage level.",
+                    )
+                ],
             },
         ],
         "ability_specialty": TraitCategories.TALENTS,
@@ -1104,11 +1190,23 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Incorruptible",
-                "description": "Crusaders can choose either the Healer's `Heal` or `Faith` ability but gain only one dot for it.  They also gain the Fighter's ability to choose a single combat specialization, and specialize in it at only `3` dots, but without additional specializations at `4` and `5`.  Crusaders choose a single weapon they are loyal to and stick with it.",
-                "category": None,
-                "trait": None,
-                "dots": None,
-            }
+                "description": "Crusaders gain the Healer's `Heal` and `Faith` ability but gain only one dot for it.  Crusaders gain the Fighters specialization and choose a single weapon they are loyal to and stick with it.",
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Heal",
+                        "Heal 3 health levels to a target once per turn.  Any First Aid or Medicine roles are also automatically granted one success.",
+                    ),
+                    (
+                        "True Faith",
+                        "Starts with a Faith of `3`, equivalent to a Discipline.  Clerics can repel supernatural beings for every success on a Faith role.",
+                    ),
+                    (
+                        "Specialization",
+                        "A single combat specialization at only `3` dots, but without additional specializations at `4` and `5`.  Crusaders choose a single weapon they are loyal to and stick with it.",
+                    ),
+                ],
+            },
         ],
         "ability_specialty": TraitCategories.KNOWLEDGES,
         "attribute_specialty": TraitCategories.MENTAL,
@@ -1133,16 +1231,24 @@ class CharConcept(Enum):
             {
                 "name": "Camouflage",
                 "description": "The Ranger can camouflage into their preferred environment given 1 turn of preparation.  This is not invisibility!  They can be detected on a `Perception` (or `Focus`) roll with a difficulty of `8`. Any attacks made from this position are considered surprise attacks.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Camouflage",
+                        "The Ranger can camouflage into their preferred environment given `1` turn of preparation. Any attacks made from this position are considered surprise attacks.",
+                    )
+                ],
             },
             {
                 "name": "Surprise Attack",
-                "description": "Surprise attacks (ranged or hand to hand) do an additional `3` successes of damage. This is a first-strike ability and subsequent attacks are no longer a surprise unless they can be plausibly silent.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "Surprise attacks do an additional `3` successes of damage. This is a first-strike ability and subsequent attacks are no longer a surprise unless they can be plausibly silent.",
+                "traits": [],
+                "custom_sections": [
+                    (
+                        "Surprise Attack",
+                        "Surprise attacks do an additional `3` successes of damage.",
+                    )
+                ],
             },
         ],
         "ability_specialty": TraitCategories.SKILLS,
@@ -1167,23 +1273,25 @@ class CharConcept(Enum):
             {
                 "name": "Tools of the Trade",
                 "description": "The character has an object: (a set of lockpicks, a laser drill, a getaway car, a printing press) -- when used, decreases the difficulty by `2`. This means, for example, a Forger will have a standard difficulty of 4 to attempt any forgery, provided they have their printing press, and a cat burglar can get in anywhere, with his rope and lockpicks.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [],
             },
             {
                 "name": "Professional",
                 "description": "Any single `security` roll is done at a `-1` difficulty.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "traits": [],
+                "custom_sections": [("Professional", "`+1` to any single `security` roll.")],
             },
             {
                 "name": "Lay Low",
-                "description": "Start with the equivalent of `Arcane` skill at `2`.  They give off no paper trail, have multiple alternative identities, and their documents will stand up to anything short of a sustained FBI investigation. `+2` dots on any rolls to evade pursuit, lose a tail, or escape the police, or on any sneak roll.",
-                "category": "Backgrounds",
-                "trait": "Arcane",
-                "dots": 2,
+                "description": "They give off no paper trail, have multiple alternative identities, and their documents will stand up to anything short of a sustained FBI investigation.",
+                "traits": [("Arcane", 2)],
+                "custom_sections": [
+                    (
+                        "Lay Low",
+                        "`+2` dots on any rolls to evade pursuit, lose a tail, escape the police, or on any sneak roll.",
+                    )
+                ],
             },
         ],
         "ability_specialty": TraitCategories.SKILLS,
@@ -1207,10 +1315,9 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Delicate Equipment",
-                "description": "Choose any `Thaumaturgical Paths` from the Vampire or Sorcerer book.  Apply `3` dots spread however. These should be represented as Tools or scientific equipment that generate the effect.  The Lure of Flames might be an experimental flamethrower or backpack-mounted Laser, Lightning might be some weather equipment, and so on.  The equipment can be carried gear, but must be present to create the effect.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "Choose any Thaumaturgical Paths from the Vampire or Sorcerer book. Apply `3` dots spread however. These should be represented as Tools or scientific equipment that generate the effect. The Lure of Flames might be an experimental flamethrower or backpack-mounted Laser, Lightning might be some weather equipment, and so on. The equipment can be carried gear, but must be present to create the effect.",
+                "traits": [],
+                "custom_sections": [],
             },
         ],
         "ability_specialty": TraitCategories.KNOWLEDGES,
@@ -1235,16 +1342,14 @@ class CharConcept(Enum):
             {
                 "name": "Hardiness",
                 "description": "The equivalent of `Fortitude` `1`.  All attacks sustained automatically soak `1` success at no cost.",
-                "category": "Disciplines",
-                "trait": "Fortitude",
-                "dots": 1,
+                "traits": [("Fortitude", 1)],
+                "custom_sections": [],
             },
             {
                 "name": "Handy",
-                "description": "Take a free dot in `repair`, `drive`, or `leadership`.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "Free dot in `Repair` and `Crafts`.",
+                "traits": [("Repair", 1), ("Crafts", 1)],
+                "custom_sections": [],
             },
         ],
         "ability_specialty": TraitCategories.SKILLS,
@@ -1260,10 +1365,11 @@ class CharConcept(Enum):
         "abilities": [
             {
                 "name": "Persuasion",
-                "description": "The Businessman can enthrall his enemies and win them over with her powers of facts and logic.  This is less of a fast power and more of a sustained one: the Businessman has `1` automatic success to `Leadership` or `Subterfuge` rolls.  Additionally, take an additional two dots in the `Resources` background and select `4` points in additional advantages.",
-                "category": None,
-                "trait": None,
-                "dots": None,
+                "description": "The Businessman can enthrall his enemies and win them over with her powers of facts and logic.  This is less of a fast power and more of a sustained one.",
+                "traits": [("Resources", 2)],
+                "custom_sections": [
+                    ("Persuasion", "`1` automatic success to `Leadership` or `Subterfuge` rolls.")
+                ],
             },
         ],
         "ability_specialty": TraitCategories.KNOWLEDGES,

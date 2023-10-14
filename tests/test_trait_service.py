@@ -23,7 +23,7 @@ class TestTraitService:
         """
         traits = [x.name for x in self.trait_svc.fetch_all_class_traits(CharClassType.VAMPIRE)]
 
-        assert len(traits) == 72
+        assert len(traits) == 75
 
         for t in ["Willpower", "Strength", "Firearms", "Humanity", "Celerity", "Blood Pool"]:
             assert t in traits

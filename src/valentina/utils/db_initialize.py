@@ -893,6 +893,13 @@ class PopulateDatabase:
                     c.name = enum_member.name
                     c.save()
 
+        # Always reset lookup tables, this keeps database in sync with TraitCategories enum
+        for tcc in TraitCategoryClass.select():
+            tcc.delete_instance()
+
+        for tc in TraitClass.select():
+            tc.delete_instance()
+
         with self.db.atomic():
             for category in TraitCategories:
                 db_cat, _ = TraitCategory.get_or_create(name=category.name)

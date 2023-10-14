@@ -42,9 +42,9 @@ class TraitCategoriesDict(TypedDict):
 
 
 class CharConceptDict(TypedDict):
-    """Type for concept info sub-dictionary."""
+    """Type for concept info Enum."""
 
-    abilities: list[dict[str, str | int]]
+    abilities: list[dict[str, str | int | list[tuple[str, str | int]]]]
     ability_specialty: "CharacterClass"  # noqa: F821 # type: ignore
     attribute_specialty: "CharacterClass"  # noqa: F821 # type: ignore
     description: str

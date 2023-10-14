@@ -113,62 +113,14 @@ class CharacterTraitRandomizer:
         # Constrain the final value between 1 and 5
         return max(min(value, 5), 1)
 
-    def _generate_trait_values(self) -> list[tuple[Trait, int]]:
-        """Update the character's traits based on randomly generated values.
-
-        This method calls other methods to set attribute, ability, and discipline values for the character.
-        The generated trait values are then stored in the `trait_values` attribute of the instance.
-
-        Returns:
-            List[Tuple[Trait, int]]: A list of tuples, where each tuple contains a Trait object and an integer representing the number of dots assigned to that trait.
-
-        """
-        # Initialize or clear the trait_values list
-        trait_values: list[tuple[Trait, int]] = []
-
-        # Extend trait_values with generated ability values
-        logger.debug(f"CHARGEN: Generate ability values for {self.character}")
-        trait_values.extend(
-            self._randomly_assign_abilities(
-                categories=[
-                    tc
-                    for tc in TraitCategories
-                    if tc.value["section"] == CharSheetSection.ABILITIES
-                ]
-            )
-        )
-
-        # Extend trait_values with generated attribute values
-        logger.debug(f"CHARGEN: Generate attribute values for {self.character}")
-        trait_values.extend(
-            self._randomly_assign_attributes(
-                categories=[
-                    tc
-                    for tc in TraitCategories
-                    if tc.value["section"] == CharSheetSection.ATTRIBUTES
-                ]
-            )
-        )
-
-        # If Disciplines exist in traits_by_category, extend trait_values with generated discipline values
-        if "Disciplines" in self.traits_by_category:
-            logger.debug(f"CHARGEN: Generate discipline values for {self.character}")
-            trait_values.extend(self._randomly_assign_disciplines())
-
-        logger.debug(f"CHARGEN: Generate virtue values for {self.character}")
-        trait_values.extend(self._randomly_assign_virtues())
-
-        logger.debug(f"CHARGEN: Generate background values for {self.character}")
-        trait_values.extend(self._randomly_assign_backgrounds())
-
-        return trait_values
-
     def _randomly_assign_backgrounds(self) -> list[tuple[Trait, int]]:
         """Assign backgrounds for the character.
 
         Returns:
             List[Tuple[Trait, int]]: A list of tuples containing the Trait and its generated value.
         """
+        logger.debug(f"CHARGEN: Generate background values for {self.character}")
+
         if (
             not TraitCategories.BACKGROUNDS.value["COMMON"]
             and not TraitCategories.BACKGROUNDS.value[self.char_class.name]  # type: ignore [literal-required]
@@ -212,6 +164,8 @@ class CharacterTraitRandomizer:
         Returns:
             List[Tuple[Trait, int]]: A list of tuples containing the Trait and its generated value.
         """
+        logger.debug(f"CHARGEN: Generate virtue values for {self.character}")
+
         if (
             not TraitCategories.VIRTUES.value["COMMON"]
             and not TraitCategories.VIRTUES.value[self.char_class.name]  # type: ignore [literal-required]
@@ -238,16 +192,22 @@ class CharacterTraitRandomizer:
         trait_values = [(t, values.pop(0)) for t in virtues]
 
         # Determine willpower and humanity
-        courage = next(x[1] for x in trait_values if x[0].name == "Courage")
-        self_control = next(x[1] for x in trait_values if x[0].name == "Self-Control")
-        conscience = next(x[1] for x in trait_values if x[0].name == "Conscience")
+        courage = next(x[1] for x in trait_values if x[0].name in ["Courage", "Zeal"])
+        self_control = next(x[1] for x in trait_values if x[0].name in ["Self-Control", "Vision"])
+        conscience = next(x[1] for x in trait_values if x[0].name in ["Conscience", "Mercy"])
 
-        trait_values.extend(
-            [
-                (Trait.get(name="Willpower"), courage + self_control),
-                (Trait.get(name="Humanity"), conscience),
-            ]
-        )
+        # All characters gain willpower
+        trait_values.extend([(Trait.get(name="Willpower"), courage + self_control)])
+
+        # Some characters gain humanity
+        humanity = Trait.get(name="Humanity")
+        if humanity in self.traits_by_category[TraitCategories.OTHER.name]:
+            trait_values.extend([(humanity, conscience)])
+
+        # Hunters gain conviction
+        conviction = Trait.get(name="Conviction")
+        if conviction in self.traits_by_category[TraitCategories.OTHER.name]:
+            trait_values.extend([(conviction, conscience)])
 
         logger.debug(f"CHARGEN: Set virtues: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
@@ -273,6 +233,8 @@ class CharacterTraitRandomizer:
         Returns:
             list[tuple[Trait, int]]: A list of tuples, each containing a Trait object and its corresponding value.
         """
+        logger.debug(f"CHARGEN: Generate ability values for {self.character}")
+
         # Filter traits by attribute categories
         filtered_traits: dict[str, list[Trait]] = {
             cat: traits
@@ -385,6 +347,8 @@ class CharacterTraitRandomizer:
         Returns:
             list[tuple[Trait, int]]: A list of tuples, where each tuple contains a Trait object and an integer representing the number of dots assigned to that trait.
         """
+        logger.debug(f"CHARGEN: Generate attribute values for {self.character}")
+
         # Filter traits by attribute categories
         attributes: dict[str, list[Trait]] = {
             cat: traits
@@ -452,7 +416,10 @@ class CharacterTraitRandomizer:
         Returns:
             List[Tuple[Trait, int]]: A list of tuples containing the Trait and its generated value.
         """
+        logger.debug(f"CHARGEN: Generate discipline values for {self.character}")
+
         # Guard clause: Return an empty list if the character doesn't have a clan
+        # TODO: Work with Ghouls which have no clan
         if not self.character.clan:
             return []
 
@@ -488,6 +455,81 @@ class CharacterTraitRandomizer:
         logger.debug(f"CHARGEN: Set attributes: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
+    def _concept_special_abilities(self) -> tuple[list[tuple[Trait, int]], list[tuple[str, str]]]:
+        """Generate and assign special abilities for the character based on their concept."""
+        logger.debug(f"CHARGEN: Generate special ability values for {self.character}")
+
+        # Only mortals and hunters have special abilities
+        if self.char_class != CharClassType.MORTAL:
+            return [], []
+
+        # Fetch the special abilities
+        trait_values: list[tuple[Trait, int]] = []
+        custom_sections: list[tuple[str, str]] = []
+        for x in self.concept.value["abilities"]:
+            if isinstance(x["traits"], list):
+                for t in x["traits"]:
+                    trait = Trait.get_or_none(name=t[0])
+                    if trait:
+                        trait_values.append((trait, int(t[1])))
+
+            if isinstance(x["custom_sections"], list):
+                custom_sections.extend([(x[0], str(x[1])) for x in x["custom_sections"]])
+
+        logger.debug(f"CHARGEN: Set special abilities: {[(x.name, y) for x, y in trait_values]}")
+        return trait_values, custom_sections
+
+    def _process_character_sections(self) -> tuple[list[tuple[Trait, int]], list[tuple[str, str]]]:
+        """Process the character's sections and generate trait values, and custom sections for each section.
+
+        This method calls other methods to randomly generate values for traits and compute custom sections for each section.
+
+        Returns:
+            tuple[list[tuple[Trait, int]], list[tuple[str, str]]]: A tuple containing a list of tuples containing Trait objects and their corresponding values, and a list of tuples containing section titles and descriptions.
+
+        """
+        # Initialize the containers for trait values and custom sections
+        trait_values: list[tuple[Trait, int]] = []
+        custom_sections: list[tuple[str, str]] = []
+
+        ##################################################################################
+
+        # Extend trait_values with generated ability values
+        trait_values.extend(
+            self._randomly_assign_abilities(
+                categories=[
+                    tc
+                    for tc in TraitCategories
+                    if tc.value["section"] == CharSheetSection.ABILITIES
+                ]
+            )
+        )
+
+        # Extend trait_values with generated attribute values
+        trait_values.extend(
+            self._randomly_assign_attributes(
+                categories=[
+                    tc
+                    for tc in TraitCategories
+                    if tc.value["section"] == CharSheetSection.ATTRIBUTES
+                ]
+            )
+        )
+
+        # If Disciplines exist in traits_by_category, extend trait_values with generated discipline values
+        if "Disciplines" in self.traits_by_category:
+            trait_values.extend(self._randomly_assign_disciplines())
+
+        trait_values.extend(self._randomly_assign_virtues())
+        trait_values.extend(self._randomly_assign_backgrounds())
+
+        # Grab special abilities from the character's concept
+        traits, sections = self._concept_special_abilities()
+        trait_values.extend(traits)
+        custom_sections.extend(sections)
+
+        return trait_values, custom_sections
+
     def generate_character(self) -> Character:
         """Set the character's trait values based on the generated trait values.
 
@@ -496,8 +538,15 @@ class CharacterTraitRandomizer:
         Returns:
             Character: The updated character object.
         """
-        for trait, value in self._generate_trait_values():
+        traits, custom_sections = self._process_character_sections()
+
+        for trait, value in traits:
             self.character.set_trait_value(trait, value)
+
+        for title, description in custom_sections:
+            self.ctx.bot.char_svc.custom_section_update_or_add(  # type: ignore [attr-defined]
+                self.ctx, self.character, title, description
+            )
 
         return self.character
 
@@ -786,7 +835,7 @@ class CharacterService:
         if concept is None:
             percentile = _rng.integers(1, 101)
             concept = CharConcept.get_member_by_value(percentile)
-        data["concept_human"] = concept.value["name"]
+        data["concept_readable"] = concept.value["name"]
         data["concept_db"] = concept.name
 
         if character_level is None:
