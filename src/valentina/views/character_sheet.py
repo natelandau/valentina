@@ -37,7 +37,8 @@ def __build_trait_display(
 
         formatted = []
         for trait, value, max_value, dots in traits:
-            if (not show_zeros or category == TraitCategories.DISCIPLINES.name) and value == 0:
+            trait_category = TraitCategories[category]
+            if (not show_zeros or not trait_category.value["show_zero"]) and value == 0:
                 continue
             if max_value > MAX_DOT_DISPLAY:
                 formatted.append(f"`{trait:13}: {value}/{max_value}`")

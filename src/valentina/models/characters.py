@@ -155,6 +155,101 @@ class CharacterTraitRandomizer:
             logger.debug(f"CHARGEN: Generate discipline values for {self.character}")
             trait_values.extend(self._randomly_assign_disciplines())
 
+        logger.debug(f"CHARGEN: Generate virtue values for {self.character}")
+        trait_values.extend(self._randomly_assign_virtues())
+
+        logger.debug(f"CHARGEN: Generate background values for {self.character}")
+        trait_values.extend(self._randomly_assign_backgrounds())
+
+        return trait_values
+
+    def _randomly_assign_backgrounds(self) -> list[tuple[Trait, int]]:
+        """Assign backgrounds for the character.
+
+        Returns:
+            List[Tuple[Trait, int]]: A list of tuples containing the Trait and its generated value.
+        """
+        if (
+            not TraitCategories.BACKGROUNDS.value["COMMON"]
+            and not TraitCategories.BACKGROUNDS.value[self.char_class.name]  # type: ignore [literal-required]
+        ):
+            return []
+
+        backgrounds = self.traits_by_category[TraitCategories.BACKGROUNDS.name]
+        starting_dots = self.char_class.value["chargen_background_dots"]
+        extra_dots_map = {
+            RNGCharLevel.NEW: 0,
+            RNGCharLevel.INTERMEDIATE: 0,
+            RNGCharLevel.ADVANCED: 0,
+            RNGCharLevel.ELITE: 1,
+        }
+        total_dots = starting_dots + extra_dots_map[self.level]
+        if total_dots < 1:
+            return []
+
+        # Generate initial random distribution for the traits in the category
+        mean, distribution = self.level.value
+        initial_values = [
+            max(min(x, 5), 0)
+            for x in _rng.normal(mean, distribution, len(backgrounds)).astype(int32)
+        ]
+
+        # Adjust the sum of the list to match the total dots for the category
+        values = adjust_sum_to_match_total(initial_values, total_dots, max_value=5)
+
+        # Return a list of tuples for the traits and their corresponding values
+        trait_values = [(t, values.pop(0)) for t in backgrounds]
+
+        logger.debug(f"CHARGEN: Set backgrounds: {[(x.name, y) for x, y in trait_values]}")
+        return trait_values
+
+    def _randomly_assign_virtues(self) -> list[tuple[Trait, int]]:
+        """Assign virtues and compute willpower and humanity for the character.
+
+        Determines the virtues, willpower, and humanity for the character, then generates
+        trait values.
+
+        Returns:
+            List[Tuple[Trait, int]]: A list of tuples containing the Trait and its generated value.
+        """
+        if (
+            not TraitCategories.VIRTUES.value["COMMON"]
+            and not TraitCategories.VIRTUES.value[self.char_class.name]  # type: ignore [literal-required]
+        ):
+            return []
+
+        virtues = self.traits_by_category[TraitCategories.VIRTUES.name]
+        starting_dots = 7
+        extra_dots_map = {
+            RNGCharLevel.NEW: 0,
+            RNGCharLevel.INTERMEDIATE: 0,
+            RNGCharLevel.ADVANCED: 1,
+            RNGCharLevel.ELITE: 2,
+        }
+        total_dots = starting_dots + extra_dots_map[self.level]
+
+        # Divide total dots for each category into three to produce a value for each attribute
+        dots_for_each = divide_into_three(total_dots)
+
+        # Adjust the sum of the list to match the total dots for the category
+        values = adjust_sum_to_match_total(dots_for_each, total_dots, max_value=5, min_value=1)
+
+        # Pair traits with their generated values
+        trait_values = [(t, values.pop(0)) for t in virtues]
+
+        # Determine willpower and humanity
+        courage = next(x[1] for x in trait_values if x[0].name == "Courage")
+        self_control = next(x[1] for x in trait_values if x[0].name == "Self-Control")
+        conscience = next(x[1] for x in trait_values if x[0].name == "Conscience")
+
+        trait_values.extend(
+            [
+                (Trait.get(name="Willpower"), courage + self_control),
+                (Trait.get(name="Humanity"), conscience),
+            ]
+        )
+
+        logger.debug(f"CHARGEN: Set virtues: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
     def _randomly_assign_abilities(

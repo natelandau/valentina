@@ -230,6 +230,50 @@ class TestCharacterTraitRandomizer:
         assert (result[6][1] + result[7][1] + result[8][1]) in non_primary_dots
 
     @pytest.mark.parametrize(
+        ("char_class", "level", "modifier"),
+        [
+            ("WEREWOLF", "NEW", 0),
+            ("MORTAL", "NEW", 0),
+            ("VAMPIRE", "INTERMEDIATE", 0),
+            ("VAMPIRE", "ADVANCED", 1),
+            ("VAMPIRE", "ELITE", 2),
+        ],
+    )
+    def test__randomly_assign_virtues(self, mock_ctx, char_class, level, modifier) -> None:
+        """Test setting virtues."""
+        # GIVEN a character
+        character = self._create_character()
+        character.char_class = CharacterClass.get(CharacterClass.name == char_class)
+        character.save()
+
+        # Mock the fetch_all_class_traits method
+        all_class_traits = self.trait_svc.fetch_all_class_traits(CharClassType[char_class])
+        mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
+
+        # Instantiate the CharacterTraitRandomizer class
+        rng = CharacterTraitRandomizer(
+            ctx=mock_ctx,
+            character=character,
+            concept=CharConcept.SOLDIER,  # Ignored for this test
+            level=RNGCharLevel[level],
+        )
+
+        # WHEN we set the disciplines
+        result = rng._randomly_assign_virtues()
+
+        # THEN assert the result is correct
+        if char_class != "WEREWOLF":
+            assert len(result) == 5
+            assert result[0][0].name == "Conscience"
+            assert result[1][0].name == "Self-Control"
+            assert result[2][0].name == "Courage"
+            assert result[3][1] == result[1][1] + result[2][1]
+            assert result[4][1] == result[0][1]
+            assert result[0][1] + result[1][1] + result[2][1] == 7 + modifier
+        else:
+            assert not result
+
+    @pytest.mark.parametrize(
         ("char_class", "clan", "level", "clan_disciplines", "num_disciplines"),
         [
             ("VAMPIRE", "BRUJAH", "NEW", ["Celerity", "Potence", "Presence"], 3),
@@ -239,7 +283,7 @@ class TestCharacterTraitRandomizer:
             ("VAMPIRE", "VENTRUE", "ELITE", ["Dominate", "Fortitude", "Presence"], 6),
         ],
     )
-    def test__set_disciplines(
+    def test__randomly_assign_disciplines(
         self, mock_ctx, char_class, clan, level, clan_disciplines, num_disciplines
     ) -> None:
         """Test setting discipline values."""

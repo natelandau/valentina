@@ -12,6 +12,7 @@ class CharacterClassDict(TypedDict):
     range: tuple[int, int]
     description: str
     playable: bool
+    chargen_background_dots: int  # backgrounds used in chargen
 
 
 class CharSheetSectionDict(TypedDict):
@@ -28,6 +29,7 @@ class TraitCategoriesDict(TypedDict):
     name: str
     order: int
     section: "CharSheetSection"  # noqa: F821 # type: ignore
+    show_zero: bool
     COMMON: list[str]
     MORTAL: list[str]
     VAMPIRE: list[str]
