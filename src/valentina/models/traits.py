@@ -9,7 +9,7 @@ import discord
 from loguru import logger
 from peewee import DoesNotExist, fn
 
-from valentina.constants import TraitCategoryOrder
+from valentina.constants import CharClassType, TraitCategories
 from valentina.utils import errors
 
 from .db_tables import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass
@@ -35,8 +35,7 @@ class TraitService:
             flat_list (bool, optional): If True, return a flat list of traits. Defaults to False.
 
         Returns:
-            dict[str, list[str]] | list[str]: Return a dictionary of categories with associated traits
-                                            or a flat list of traits if 'flat_list' is True.
+            dict[str, list[str]] | list[str]: Return a dictionary of categories with associated traits or a flat list of traits if 'flat_list' is True.
         """
         # Prefetch traits for categories
         categories = TraitCategory.select().order_by(TraitCategory.name.asc()).prefetch(Trait)
@@ -47,9 +46,9 @@ class TraitService:
 
         custom_traits = CustomTrait.select().join(Character).where(Character.guild_id == guild_id)
         for custom_trait in custom_traits:
-            category = custom_trait.category.name.title()
+            category = custom_trait.category.name
             all_traits.setdefault(category, [])
-            all_traits[category].append(custom_trait.name.title())
+            all_traits[category].append(custom_trait.name)
 
         if flat_list:
             # Flatten the dictionary into a list using itertools.chain
@@ -57,39 +56,39 @@ class TraitService:
 
         return all_traits
 
-    def fetch_all_class_traits(self, char_class: str) -> list[Trait]:
+    def fetch_all_class_traits(self, char_class: CharClassType) -> list[Trait]:
         """Fetch all traits for a specified character class.
 
         Checks if the traits for the character class are already cached.
         If they are, it logs this and returns the cached traits.
         If the traits are not cached, it logs this, retrieves the traits from the database,
-        sorts them by the `TraitCategoryOrder`, caches them, and then returns the traits.
+        sorts them by the `TraitCategories[].value["order"]`, caches them, and then returns the traits.
 
         Args:
-            char_class (str): Name of the character class to fetch traits for.
+            char_class (CharClassType): Name of the character class to fetch traits for.
 
         Returns:
-            list[Trait]: List of traits for the specified character class, sorted by `TraitCategoryOrder`.
+            list[Trait]: List of traits for the specified character class, sorted by `TraitCategories[].value["order"]`.
         """
         # Guard clause: return cached traits if they exist
-        if char_class in self.class_traits:
-            logger.debug(f"CACHE: Return traits for `{char_class}`")
-            return self.class_traits[char_class]
+        if char_class.name in self.class_traits:
+            logger.debug(f"CACHE: Return traits for `{char_class.name}`")
+            return self.class_traits[char_class.name]
 
-        logger.debug(f"DATABASE: Fetch all traits for `{char_class}`")
+        logger.debug(f"DATABASE: Fetch all traits for `{char_class.name}`")
 
         traits = (
             Trait.select()
             .join(TraitClass)
             .join(CharacterClass)
-            .where(CharacterClass.name == char_class)
+            .where(CharacterClass.name == char_class.name)
         )
 
-        self.class_traits[char_class] = sorted(
-            traits, key=lambda x: TraitCategoryOrder[x.category.name]
+        self.class_traits[char_class.name] = sorted(
+            traits, key=lambda x: TraitCategories[x.category.name].value["order"]
         )
 
-        return self.class_traits[char_class]
+        return self.class_traits[char_class.name]
 
     @staticmethod
     def fetch_trait_id_from_name(trait_name: str) -> int:
@@ -139,36 +138,6 @@ class TraitService:
             return Trait.get(fn.lower(Trait.name) == trait_name.lower())
         except DoesNotExist as e:
             msg = f"Trait `{trait_name}` not found"
-            raise errors.NoMatchingItemsError(msg) from e
-
-    @staticmethod
-    def fetch_trait_category(query: str | int) -> str:
-        """Fetch a trait's category from the database.
-
-        Use the query parameter, which can be either an integer representing the trait ID
-        or a string representing the trait name, to retrieve the corresponding trait's category.
-
-        Args:
-            query (str | int): Use this as the query to retrieve the trait category. This can be a trait ID (int) or a trait name (str).
-
-        Returns:
-            str: Return the category of the retrieved trait.
-
-        Raises:
-            NoMatchingItemsError: Raise this error if the trait with the given ID or
-                                name does not exist in the database.
-        """
-        # Map query types to the corresponding actions as callable lambda functions
-        query_mapping = {
-            int: lambda q: Trait.get(Trait.id == q).category.name,
-            str: lambda q: Trait.get(fn.lower(Trait.name) == q.lower()).category.name,
-        }
-
-        try:
-            # Call the function related to the type of query
-            return query_mapping[type(query)](query)
-        except DoesNotExist as e:
-            msg = f"Trait `{query}` not found"
             raise errors.NoMatchingItemsError(msg) from e
 
     def purge_cache(self, ctx: discord.ApplicationContext | None = None) -> None:  # noqa: ARG002

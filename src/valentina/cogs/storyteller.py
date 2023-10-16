@@ -7,28 +7,34 @@ import inflect
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
-from peewee import fn
 
+from valentina.characters import AddFromSheetWizard
 from valentina.constants import (
     DEFAULT_DIFFICULTY,
     VALID_IMAGE_EXTENSIONS,
+    CharClassType,
     DiceType,
     EmbedColor,
 )
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import VampireClan
 from valentina.utils.converters import (
     ValidCharacterClass,
+    ValidCharacterConcept,
+    ValidCharacterLevel,
     ValidCharacterName,
     ValidCharacterObject,
     ValidClan,
     ValidImageURL,
     ValidTraitCategory,
 )
-from valentina.utils.helpers import fetch_data_from_url, fetch_random_name
+from valentina.utils.helpers import (
+    fetch_data_from_url,
+)
 from valentina.utils.options import (
     select_any_player_character,
     select_char_class,
+    select_char_concept,
+    select_char_level,
     select_country,
     select_player_character,
     select_storyteller_character,
@@ -38,9 +44,7 @@ from valentina.utils.options import (
     select_vampire_clan,
 )
 from valentina.utils.perform_roll import perform_roll
-from valentina.utils.storyteller import storyteller_character_traits
 from valentina.views import (
-    AddFromSheetWizard,
     ConfirmCancelButtons,
     S3ImageReview,
     confirm_action,
@@ -108,7 +112,7 @@ class StoryTeller(commands.Cog):
         await self.bot.user_svc.update_or_add(ctx)
 
         # Require a clan for vampires
-        if char_class.name.lower() == "vampire" and not vampire_clan:
+        if char_class == CharClassType.VAMPIRE and not vampire_clan:
             await present_embed(
                 ctx,
                 title="Vampire clan required",
@@ -118,7 +122,7 @@ class StoryTeller(commands.Cog):
             return
 
         # Fetch all traits and set them
-        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
+        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class)
 
         wizard = AddFromSheetWizard(
             ctx,
@@ -164,7 +168,7 @@ class StoryTeller(commands.Cog):
             choices=["male", "female"],
             required=True,
         ),
-        char_class: Option(
+        character_class: Option(
             ValidCharacterClass,
             name="char_class",
             description="The character's class",
@@ -172,28 +176,22 @@ class StoryTeller(commands.Cog):
             required=True,
         ),
         level: Option(
-            str,
+            ValidCharacterLevel,
             name="level",
             description="The character's level",
             required=True,
-            choices=[
-                "Weakling",
-                "Average",
-                "Strong",
-                "Super",
-            ],
+            autocomplete=select_char_level,
         ),
-        specialty: Option(
-            str,
-            name="specialty",
-            description="The character's specialty",
-            required=True,
-            choices=["No Specialty", "Fighter", "Thinker", "Leader"],
-            default="No Specialty",
+        concept: Option(
+            ValidCharacterConcept,
+            name="concept",
+            description="The character's concept, if applicable",
+            autocomplete=select_char_concept,
+            default=None,
         ),
-        name_type: Option(
+        nationality: Option(
             str,
-            name="name_type",
+            name="nationality",
             description="The character's name type",
             autocomplete=select_country,
             default="us",
@@ -208,36 +206,19 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Create a new storyteller character."""
-        name = await fetch_random_name(gender=gender, country=name_type)
+        await self.bot.user_svc.update_or_add(ctx)  # Instantiate the user in the database if needed
 
-        if char_class.name.lower() == "vampire" and not vampire_clan:
-            vampire_clan = VampireClan.select().order_by(fn.Random()).limit(1)[0]
-
-        data = {
-            "first_name": name[0][0],
-            "last_name": name[0][1],
-            "nickname": char_class.name,
-            "storyteller_character": True,
-            "player_character": False,
-        }
-
-        character = await self.bot.char_svc.update_or_add(
+        # Create the character
+        character = await self.bot.char_svc.rng_creator(
             ctx,
-            data=data,
-            char_class=char_class,
-            clan=vampire_clan,
+            storyteller_character=True,
+            char_class=character_class,
+            gender=gender,
+            nationality=nationality,
+            vampire_clan=vampire_clan,
+            concept=concept,
+            character_level=level,
         )
-
-        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
-        trait_values = storyteller_character_traits(
-            fetched_traits,
-            level=level,
-            specialty=specialty,
-            clan=vampire_clan.name if vampire_clan else None,
-        )
-
-        for trait, value in trait_values:
-            character.set_trait_value(trait, value)
 
         # Confirm character creation
         view = ConfirmCancelButtons(ctx.author)

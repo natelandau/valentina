@@ -58,7 +58,7 @@ class Campaign(commands.Cog):
         """Create a new campaign."""
         # TODO: Migrate to modal to allow setting campaign description
 
-        if not self.check_permissions(ctx):
+        if not await self.check_permissions(ctx):
             return
 
         title = f"Create new campaign: `{name}`"
@@ -114,7 +114,7 @@ class Campaign(commands.Cog):
         ),
     ) -> None:
         """Delete a campaign."""
-        if not self.check_permissions(ctx):
+        if not await self.check_permissions(ctx):
             return
 
         title = f"Delete campaign: {campaign.name}"
@@ -222,7 +222,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Set a campaign as active."""
-        if not self.check_permissions(ctx):
+        if not await self.check_permissions(ctx):
             return
 
         title = f"Set campaign `{campaign.name}` as active"
@@ -247,7 +247,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Set the active campaign as inactive."""
-        if not self.check_permissions(ctx):
+        if not await self.check_permissions(ctx):
             return
 
         campaign = self.bot.campaign_svc.fetch_active(ctx)
@@ -441,7 +441,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete an NPC."""
-        if not self.check_permissions(ctx):
+        if not await self.check_permissions(ctx):
             return
 
         campaign = self.bot.campaign_svc.fetch_active(ctx)
@@ -606,7 +606,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete a chapter."""
-        if not self.check_permissions(ctx):
+        if not await self.check_permissions(ctx):
             return
 
         campaign = self.bot.campaign_svc.fetch_active(ctx)
@@ -789,7 +789,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Delete a note."""
-        if not self.check_permissions(ctx):
+        if not await self.check_permissions(ctx):
             return
 
         campaign = self.bot.campaign_svc.fetch_active(ctx)

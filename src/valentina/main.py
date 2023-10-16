@@ -78,7 +78,6 @@ def main(
     """Run Valentina."""
     # Setup database
     db = DatabaseService(DATABASE)
-    db.create_tables()
     db.initialize_database(__version__)
 
     # Instantiate the bot

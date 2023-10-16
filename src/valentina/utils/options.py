@@ -4,12 +4,18 @@ from typing import cast
 
 import discord
 from discord.commands import OptionChoice
-from loguru import logger
-from peewee import DoesNotExist
 
-from valentina.constants import MAX_OPTION_LIST_SIZE, Emoji
+from valentina.constants import (
+    MAX_OPTION_LIST_SIZE,
+    CharClassType,
+    CharConcept,
+    Emoji,
+    RNGCharLevel,
+    TraitCategories,
+    VampireClanType,
+)
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import Character, CharacterClass, TraitCategory, VampireClan
+from valentina.models.db_tables import Character
 from valentina.utils import errors
 from valentina.utils.helpers import truncate_string
 
@@ -69,7 +75,7 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[str]:
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_char_class(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available character classes.
 
     This function fetches the available character classes, sorts them by name,
@@ -80,20 +86,54 @@ async def select_char_class(ctx: discord.AutocompleteContext) -> list[str]:
         ctx (discord.AutocompleteContext): The context in which the function is called.
 
     Returns:
-        list[str]: A list of available character class names.
+        list[OptionChoice]: A list of available character class names.
     """
-    try:
-        # Fetch all character classes and sort by name
-        character_classes = CharacterClass.select().order_by(CharacterClass.name.asc())
-    except DoesNotExist as e:
-        logger.error(f"Error occurred while fetching character classes: {e!s}")
-        return []
-
     # Filter and return character class names
     return [
-        char_class.name
-        for char_class in character_classes
-        if char_class.name.lower().startswith(ctx.options["char_class"].lower())
+        OptionChoice(c.value["name"], c.name)
+        for c in CharClassType.playable_classes()
+        if c.value["name"] and c.value["name"].lower().startswith(ctx.options["char_class"].lower())
+    ][:MAX_OPTION_LIST_SIZE]
+
+
+async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of available character concepts.
+
+    This function fetches the available character concepts, sorts them by name,
+    and filters them based on the starting string of the argument.
+    If the number of concepts reaches a maximum size, it stops appending more classes.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context in which the function is called.
+
+    Returns:
+        list[OptionChoice]: A list of available character concepts.
+    """
+    # Filter and return character class names
+    return [
+        OptionChoice(c.value["name"], c.name)
+        for c in CharConcept
+        if c.value["name"] and c.value["name"].lower().startswith(ctx.options["concept"].lower())
+    ][:MAX_OPTION_LIST_SIZE]
+
+
+async def select_char_level(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of available character levels.
+
+    This function fetches the available character levels, sorts them by name,
+    and filters them based on the starting string of the argument.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context in which the function is called.
+
+    Returns:
+        list[OptionChoice]: A list of available character levels.
+    """
+    # Filter and return character class levels
+    return [
+        OptionChoice(c.name.title(), c.name)
+        for c in RNGCharLevel
+        if c.name.lower().startswith(ctx.options["level"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -520,8 +560,8 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
     bot = cast(Valentina, ctx.bot)
-    # Fetch and prepare player characters
 
+    # Fetch and prepare player characters
     all_chars = [
         (
             f"{character.name} [@{character.owned_by.data['display_name']}]"
@@ -550,7 +590,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     return options if options else [OptionChoice("No characters available", "")]
 
 
-async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available traits for a storyteller character.
 
     This function takes a character id defined in a previous discord command option, and fetches all the common and custom traits available for that character to populate the autocomplete list.
@@ -569,14 +609,18 @@ async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> lis
 
     # Fetch and filter traits
     # Filter and return the character's traits
+    # We pass the character id before the trait name for the validation to work
+
     options = [
-        t.name for t in character.traits_list if t.name.lower().startswith(argument.lower())
+        OptionChoice(t.name, f"{character.id}_{t.name}")
+        for t in character.traits_list
+        if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return options if options else ["No traits"]
+    return options if options else [OptionChoice("No traits", "")]
 
 
-async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available traits for a storyteller character.
 
     This function fetches all common and custom traits from the database, filters them based on the user's input, and returns a list of trait names to populate the autocomplete list.
@@ -593,15 +637,15 @@ async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) ->
     # Fetch and filter traits
     # Filter and return the character's traits
     options = [
-        t.name
+        OptionChoice(t.name, f"{character.id}_{t.name}")
         for t in character.traits_list
         if t.name.lower().startswith(ctx.options["trait_two"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return options if options else ["No traits"]
+    return options if options else [OptionChoice("No traits", "")]
 
 
-async def select_trait_category(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_trait_category(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available trait categories for autocomplete.
 
     This function fetches all trait categories from the database, filters them based on the user's input, and returns a list of trait category names to populate the autocomplete list.
@@ -613,13 +657,13 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[str]:
         list[str]: A list of trait category names for the autocomplete list.
     """
     return [
-        category.name
-        for category in TraitCategory.select().order_by(TraitCategory.name.asc())
+        OptionChoice(category.value["name"], category.name)
+        for category in TraitCategories
         if category.name.lower().startswith(ctx.options["category"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available vampire clans for autocomplete.
 
     This function fetches all vampire clans from the database, filters them based on the user's input,
@@ -632,7 +676,7 @@ async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[str]:
         list[str]: A list of vampire clan names for the autocomplete list.
     """
     return [
-        clan.name
-        for clan in VampireClan.select().order_by(VampireClan.name.asc())
-        if clan.name.lower().startswith(ctx.options["vampire_clan"].lower())
+        OptionChoice(c.value["name"], c.name)
+        for c in VampireClanType
+        if c.value["name"].lower().startswith(ctx.options["vampire_clan"].lower())
     ][:MAX_OPTION_LIST_SIZE]

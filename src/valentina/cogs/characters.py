@@ -9,7 +9,13 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import VALID_IMAGE_EXTENSIONS, EmbedColor, Emoji
+from valentina.characters import AddFromSheetWizard, CharGenWizard
+from valentina.constants import (
+    VALID_IMAGE_EXTENSIONS,
+    CharClassType,
+    EmbedColor,
+    Emoji,
+)
 from valentina.models.bot import Valentina
 from valentina.utils import errors
 from valentina.utils.converters import (
@@ -39,10 +45,7 @@ from valentina.utils.options import (
     select_vampire_clan,
 )
 from valentina.views import (
-    AddFromSheetWizard,
     BioModal,
-    CharGenWizard,
-    ConfirmCancelButtons,
     CustomSectionModal,
     ProfileModal,
     S3ImageReview,
@@ -90,10 +93,10 @@ class Characters(commands.Cog, name="Character"):
             default=None,
         ),
     ) -> None:
-        """Create a new character.
+        """Add a character from a character sheet using the chargen wizard.
 
         Args:
-            char_class (CharacterClass): The character's class
+            char_class (CharClassType): The character's class
             ctx (discord.ApplicationContext): The context of the command
             first_name (str): The character's first name
             last_name (str, optional): The character's last name. Defaults to None.
@@ -104,7 +107,7 @@ class Characters(commands.Cog, name="Character"):
         await self.bot.user_svc.update_or_add(ctx)
 
         # Require a clan for vampires
-        if char_class.name.lower() == "vampire" and not vampire_clan:
+        if char_class == CharClassType.VAMPIRE and not vampire_clan:
             await present_embed(
                 ctx,
                 title="Vampire clan required",
@@ -114,7 +117,7 @@ class Characters(commands.Cog, name="Character"):
             return
 
         # Fetch all traits and set them
-        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class.name)
+        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class)
 
         wizard = AddFromSheetWizard(
             ctx,
@@ -165,6 +168,7 @@ class Characters(commands.Cog, name="Character"):
         """Create a new character from scratch."""
         campaign = self.bot.campaign_svc.fetch_active(ctx)
         user = await self.bot.user_svc.fetch_user(ctx)
+
         (
             campaign_xp,
             _,
@@ -173,29 +177,19 @@ class Characters(commands.Cog, name="Character"):
             _,
         ) = user.fetch_experience(campaign.id)
 
-        view = ConfirmCancelButtons(ctx.author)
-        msg = await present_embed(
-            ctx,
-            title="Create a new character",
-            description=f"This will walk you through the character creation process.\n\nThis will cost `10` xp and you have `{campaign_xp}` xp available.",
-            view=view,
-            ephemeral=hidden,
-        )
-        await view.wait()
-        if not view.confirmed:
-            embed = discord.Embed(
-                title=f"{Emoji.CANCEL.value} Cancelled",
-                description="Create a new character",
-                color=EmbedColor.WARNING.value,
+        # Abort if user does not have enough xp
+        if campaign_xp < 10:  # noqa: PLR2004
+            await present_embed(
+                ctx,
+                title="Not enough xp",
+                description="You do not have enough xp to create a new character",
+                level="error",
+                ephemeral=hidden,
             )
-            await msg.edit_original_response(embed=embed, view=None)
             return
 
-        # Spend 10 xp
-        user.spend_experience(campaign.id, 10)
-
-        wizard = CharGenWizard(ctx, campaign=campaign, user=user, msg=msg, hidden=hidden)
-        await wizard.begin()
+        wizard = CharGenWizard(ctx, campaign=campaign, user=user, hidden=hidden)
+        await wizard.start()
 
     @chars.command(name="set_active", description="Select a character as your active character")
     async def set_active_character(

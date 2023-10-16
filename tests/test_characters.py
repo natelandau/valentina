@@ -2,38 +2,343 @@
 """Test the CharacterService class."""
 
 from random import randint
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import discord
 import pytest
 from dirty_equals import IsList, IsPartialDict
 
+from valentina.constants import (
+    CharClassType,
+    CharConcept,
+    CharSheetSection,
+    RNGCharLevel,
+    TraitCategories,
+    VampireClanType,
+)
 from valentina.models import CharacterService
+from valentina.models.characters import CharacterTraitRandomizer
 from valentina.models.db_tables import (
     Character,
+    CharacterClass,
     CustomTrait,
     GuildUser,
     Trait,
     TraitCategory,
+    TraitClass,
     TraitValue,
     VampireClan,
 )
+from valentina.models.traits import TraitService
 from valentina.utils import errors
+
+
+@pytest.mark.usefixtures("mock_db")
+class TestCharacterTraitRandomizer:
+    """Test the CharacterTraitRandomizer."""
+
+    trait_svc = TraitService()
+
+    @staticmethod
+    def _create_character() -> Character:
+        """Create a character."""
+        character = Character.create(
+            owned_by_id=1,
+            created_by_id=1,
+            guild_id=1,
+            char_class_id=1,
+            data={
+                "first_name": "Test",
+                "last_name": "Character",
+                "player_character": True,
+            },
+        )
+        return character.set_default_data_values()
+
+    @pytest.mark.parametrize(
+        (
+            "char_class",
+            "concept",
+            "level",
+            "primary_dots",
+            "non_primary_dots",
+        ),
+        [
+            (
+                "WEREWOLF",
+                "SOLDIER",
+                "NEW",
+                13,
+                [9, 5],
+            ),
+            (
+                "MORTAL",
+                "SHAMAN",
+                "INTERMEDIATE",
+                18,
+                [12, 6],
+            ),
+            (
+                "GHOUL",
+                "CRUSADER",
+                "ADVANCED",
+                23,
+                [15, 8],
+            ),
+            (
+                "VAMPIRE",
+                "UNDER_WORLDER",
+                "ELITE",
+                28,
+                [18, 10],
+            ),
+        ],
+    )
+    def test__set_abilities(
+        self,
+        mock_ctx,
+        char_class,
+        concept,
+        level,
+        primary_dots,
+        non_primary_dots,
+    ) -> None:
+        """Test setting abilities."""
+        # GIVEN a character
+        character = self._create_character()
+        character.char_class = CharacterClass.get(CharacterClass.name == char_class)
+        character.save()
+
+        # Mock the fetch_all_class_traits method
+        all_class_traits = self.trait_svc.fetch_all_class_traits(CharClassType[char_class])
+        mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
+
+        # Instantiate the CharacterTraitRandomizer class
+        rng = CharacterTraitRandomizer(
+            ctx=mock_ctx,
+            character=character,
+            concept=CharConcept[concept],
+            level=RNGCharLevel[level],
+        )
+
+        # WHEN we set the abilities
+        categories = [
+            tc for tc in TraitCategories if tc.value["section"] == CharSheetSection.ABILITIES
+        ]
+        result = rng._randomly_assign_abilities(categories=categories)
+
+        # THEN assert categories have the correct number of dots
+        for category in categories:
+            if category == CharConcept[concept].value["ability_specialty"]:
+                assert (
+                    sum([x[1] for x in result if x[0].category.name == category.name])
+                    == primary_dots
+                )
+            else:
+                assert (
+                    sum([x[1] for x in result if x[0].category.name == category.name])
+                    in non_primary_dots
+                )
+
+    @pytest.mark.parametrize(
+        (
+            "char_class",
+            "concept",
+            "level",
+            "expected_attributes",
+            "primary_dots",
+            "non_primary_dots",
+        ),
+        [
+            (
+                "MORTAL",
+                "PERFORMER",
+                "NEW",
+                ["Charisma", "Manipulation", "Appearance"],
+                9,
+                [8, 6],
+            ),
+            (
+                "VAMPIRE",
+                "BUSINESSMAN",
+                "INTERMEDIATE",
+                ["Charisma", "Manipulation", "Appearance"],
+                11,
+                [8, 6],
+            ),
+            (
+                "MORTAL",
+                "URBAN_TRACKER",
+                "ADVANCED",
+                ["Wits", "Perception", "Intelligence"],
+                11,
+                [9, 6],
+            ),
+            (
+                "WEREWOLF",
+                "SOLDIER",
+                "ELITE",
+                ["Strength", "Dexterity", "Stamina"],
+                13,
+                [10, 7],
+            ),
+        ],
+    )
+    def test__set_attributes(
+        self,
+        mock_ctx,
+        char_class,
+        concept,
+        level,
+        expected_attributes,
+        primary_dots,
+        non_primary_dots,
+    ):
+        """Test setting attributes."""
+        # GIVEN a character
+        character = self._create_character()
+        character.char_class = CharacterClass.get(CharacterClass.name == char_class)
+        character.save()
+
+        # Mock the fetch_all_class_traits method
+        all_class_traits = self.trait_svc.fetch_all_class_traits(CharClassType[char_class])
+        mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
+
+        # Instantiate the CharacterTraitRandomizer class
+        rng = CharacterTraitRandomizer(
+            ctx=mock_ctx,
+            character=character,
+            concept=CharConcept[concept],
+            level=RNGCharLevel[level],
+        )
+
+        # WHEN we set the attributes
+        result = rng._randomly_assign_attributes(
+            categories=[
+                tc for tc in TraitCategories if tc.value["section"] == CharSheetSection.ATTRIBUTES
+            ]
+        )
+
+        # THEN assert the result is correct
+        assert len(result) == 9
+        assert result[0][0].name in expected_attributes
+        assert result[1][0].name in expected_attributes
+        assert result[2][0].name in expected_attributes
+        assert (result[0][1] + result[1][1] + result[2][1]) == primary_dots
+        assert (result[3][1] + result[4][1] + result[5][1]) in non_primary_dots
+        assert (result[6][1] + result[7][1] + result[8][1]) in non_primary_dots
+
+    @pytest.mark.parametrize(
+        ("char_class", "level", "modifier"),
+        [
+            ("WEREWOLF", "NEW", 0),
+            ("MORTAL", "NEW", 0),
+            ("VAMPIRE", "INTERMEDIATE", 0),
+            ("HUNTER", "ADVANCED", 1),
+            ("VAMPIRE", "ELITE", 2),
+        ],
+    )
+    def test__randomly_assign_virtues(self, mock_ctx, char_class, level, modifier) -> None:
+        """Test setting virtues."""
+        # GIVEN a character
+        character = self._create_character()
+        character.char_class = CharacterClass.get(CharacterClass.name == char_class)
+        character.save()
+
+        # Mock the fetch_all_class_traits method
+        all_class_traits = self.trait_svc.fetch_all_class_traits(CharClassType[char_class])
+        mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
+
+        # Instantiate the CharacterTraitRandomizer class
+        rng = CharacterTraitRandomizer(
+            ctx=mock_ctx,
+            character=character,
+            concept=CharConcept.SOLDIER,  # Ignored for this test
+            level=RNGCharLevel[level],
+        )
+
+        # WHEN we set the disciplines
+        result = rng._randomly_assign_virtues()
+
+        # THEN assert the result is correct
+        if char_class in ["MORTAL", "VAMPIRE"]:
+            assert len(result) == 3
+            assert result[0][0].name == "Conscience"
+            assert result[1][0].name == "Self-Control"
+            assert result[2][0].name == "Courage"
+            assert result[0][1] + result[1][1] + result[2][1] == 7 + modifier
+        elif char_class in ["HUNTER"]:
+            assert len(result) == 3
+            assert result[0][0].name == "Mercy"
+            assert result[1][0].name == "Vision"
+            assert result[2][0].name == "Zeal"
+            assert result[0][1] + result[1][1] + result[2][1] == 7 + modifier
+        else:
+            assert not result
+
+    @pytest.mark.parametrize(
+        ("char_class", "clan", "level", "clan_disciplines", "num_disciplines"),
+        [
+            ("VAMPIRE", "BRUJAH", "NEW", ["Celerity", "Potence", "Presence"], 3),
+            ("MORTAL", None, "NEW", [], 0),
+            ("VAMPIRE", "GIOVANNI", "INTERMEDIATE", ["Dominate", "Necromancy", "Potence"], 4),
+            ("VAMPIRE", "MALKAVIAN", "ADVANCED", ["Auspex", "Dominate", "Obfuscate"], 5),
+            ("VAMPIRE", "VENTRUE", "ELITE", ["Dominate", "Fortitude", "Presence"], 6),
+        ],
+    )
+    def test__randomly_assign_disciplines(
+        self, mock_ctx, char_class, clan, level, clan_disciplines, num_disciplines
+    ) -> None:
+        """Test setting discipline values."""
+        # GIVEN a character
+        character = self._create_character()
+        character.char_class = CharacterClass.get(CharacterClass.name == char_class)
+        if clan:
+            character.clan = VampireClan.get(name=clan)
+
+        character.save()
+
+        # Mock the fetch_all_class_traits method
+        all_class_traits = self.trait_svc.fetch_all_class_traits(CharClassType[char_class])
+        mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
+
+        # Instantiate the CharacterTraitRandomizer class
+        rng = CharacterTraitRandomizer(
+            ctx=mock_ctx,
+            character=character,
+            concept=CharConcept.SOLDIER,  # Ignored for this test
+            level=RNGCharLevel[level],
+        )
+
+        # WHEN we set the disciplines
+        result = rng._randomly_assign_disciplines()
+
+        # THEN assert the result is correct
+        assert len(result) == num_disciplines
+        if num_disciplines > 0:
+            assert result[0][0].name == clan_disciplines[0]
+            assert result[1][0].name == clan_disciplines[1]
+            assert result[2][0].name == clan_disciplines[2]
+
+            for discipline in result:
+                assert 1 <= discipline[1] <= 5
 
 
 @pytest.mark.usefixtures("mock_db")
 class TestCharacterModel:
     """Test the character database model."""
 
-    def _clear_test_data(self) -> None:
+    @staticmethod
+    def _clear_test_data() -> None:
         """Clear all test data from the database."""
         for character in Character.select():
             if character.id == 1:
                 continue
             character.delete_instance(recursive=True, delete_nullable=True)
 
-    def test_character_add_custom_trait(self) -> None:
+    @staticmethod
+    def test_character_add_custom_trait() -> None:
         """Test the add_custom_trait method.
 
         GIVEN: A Character object and a TraitCategory object.
@@ -74,7 +379,8 @@ class TestCharacterModel:
         with pytest.raises(errors.ValidationError):
             test_character.add_custom_trait("new_trait", "new description", test_category, 1, 5)
 
-    def test_character_all_trait_values(self) -> None:
+    @staticmethod
+    def test_character_all_trait_values() -> None:
         """Test the all_trait_values method of the Character class.
 
         GIVEN: A Character object with traits.
@@ -88,18 +394,19 @@ class TestCharacterModel:
         trait_values = Character.get_by_id(1).all_trait_values
 
         # THEN: All trait values should be returned as expected
-        assert "Physical" in trait_values
-        assert "Skills" in trait_values
+        assert "PHYSICAL" in trait_values
+        assert "SKILLS" in trait_values
 
-        assert trait_values["Physical"] == [
+        assert trait_values["PHYSICAL"] == [
             ("Strength", 1, 5, "●○○○○"),
             ("Dexterity", 2, 5, "●●○○○"),
             ("Stamina", 3, 5, "●●●○○"),
         ]
 
-        assert trait_values["Skills"] == [("Test_Trait", 2, 5, "●●○○○")]
+        assert trait_values["SKILLS"] == [("Test_Trait", 2, 5, "●●○○○")]
 
-    def test_character_custom_traits(self) -> None:
+    @staticmethod
+    def test_character_custom_traits() -> None:
         """Test the custom_traits method of the Character class.
 
         GIVEN: A Character object with custom traits.
@@ -121,7 +428,8 @@ class TestCharacterModel:
             first_trait.name == "Test_Trait"
         ), "The name of the first custom trait should be 'Test_Trait'"
 
-    def test_character_get_trait_value(self, mock_ctx):
+    @staticmethod
+    def test_character_get_trait_value(mock_ctx):
         """Test character.get_trait_value() method.
 
         This test verifies that the method correctly returns the value of a given trait or custom trait.
@@ -166,7 +474,8 @@ class TestCharacterModel:
             character.get_trait_value(non_existent_trait_value) == 0
         ), "Non-existent trait value should be 0"
 
-    def test_set_custom_trait_value(self, mock_ctx):
+    @staticmethod
+    def test_set_custom_trait_value(mock_ctx):
         """Test setting a value for a custom trait using character.set_trait_value()."""
         # GIVEN a character with a custom trait
         character = Character.create(
@@ -197,7 +506,8 @@ class TestCharacterModel:
         # THEN check the trait value is updated correctly
         assert custom_trait.value == 3
 
-    def test_create_new_trait_value(self, mock_ctx):
+    @staticmethod
+    def test_create_new_trait_value(mock_ctx):
         """Test creating a new trait value using character.set_trait_value()."""
         # GIVEN a character without a standard trait value
         character = Character.create(
@@ -227,7 +537,8 @@ class TestCharacterModel:
             == 3
         )
 
-    def test_update_existing_trait_value(self, mock_ctx):
+    @staticmethod
+    def test_update_existing_trait_value(mock_ctx):
         """Test updating an existing trait value using character.set_trait_value()."""
         # GIVEN a character with an existing standard trait value
         character = Character.create(
@@ -285,7 +596,8 @@ class TestCharacterModel:
         assert not character.is_alive
         assert not character.is_active
 
-    def test_character_traits_dict(self):
+    @staticmethod
+    def test_character_traits_dict():
         """Test character.traits_dict.
 
         Given a character with traits
@@ -295,11 +607,12 @@ class TestCharacterModel:
         returned = Character.get_by_id(1).traits_dict
 
         assert returned == {
-            "Physical": [Trait.get_by_id(1), Trait.get_by_id(2), Trait.get_by_id(3)],
-            "Skills": [CustomTrait.get_by_id(1)],
+            "PHYSICAL": [Trait.get_by_id(1), Trait.get_by_id(2), Trait.get_by_id(3)],
+            "SKILLS": [CustomTrait.get_by_id(1)],
         }
 
-    def test_character_traits_list(self):
+    @staticmethod
+    def test_character_traits_list():
         """Test character.traits_list.
 
         Given a character with traits
@@ -320,6 +633,28 @@ class TestCharacterService:
     """Test the character service."""
 
     char_svc = CharacterService()
+
+    @staticmethod
+    def _clear_test_data() -> None:
+        """Clear all test data from the database."""
+        for character in Character.select():
+            if character.id == 1:  # Always keep the first character created in conftest.py
+                continue
+            character.delete_instance(recursive=True, delete_nullable=True)
+
+    @staticmethod
+    def _mock_fetch_all_class_traits(
+        char_class: CharClassType = CharClassType.MORTAL,
+    ) -> list[Trait]:
+        """Mock the fetch_all_class_traits method of the TraitService class."""
+        traits = (
+            Trait.select()
+            .join(TraitClass)
+            .join(CharacterClass)
+            .where(CharacterClass.name == char_class.name)
+        )
+
+        return sorted(traits, key=lambda x: TraitCategories[x.category.name].value["order"])
 
     def test_custom_section_update_or_add(self, mock_ctx):
         """Test if custom_section_update_or_add() correctly adds or updates a custom section.
@@ -591,39 +926,88 @@ class TestCharacterService:
             nickname="updated",
             storyteller_character=True,
         )
-        assert result.clan == VampireClan.get_by_id(2)
+        assert result.clan == VampireClan.get_by_id(1)
 
     @pytest.mark.asyncio()
-    @pytest.mark.skip("Can't get async mock to work for call to user_svc.fetch_user")
-    async def test_update_or_add_three(self, mocker, mock_ctx):
+    async def test_update_or_add_three(self, mock_ctx):
         """Test update_or_add()."""
+        # Mock the call to fetch_user
+        user, _ = GuildUser.get_or_create(user=mock_ctx.author.id, guild=mock_ctx.guild.id)
+        mock_ctx.bot.user_svc.fetch_user = AsyncMock(return_value=user)
+
         # GIVEN a character that is not created
         name = str(uuid4()).split("-")[0]
         data = {
             "first_name": name,
             "new_key": "new_value",
         }
-        user, _ = GuildUser.get_or_create(user=mock_ctx.author.id, guild=mock_ctx.guild.id)
-
-        async def helper(value):
-            return value
-
-        mocked_fetch_user = AsyncMock(return_value=user)
-        mocker.patch(
-            "valentina.models.users.UserService.fetch_user",
-            new=mocked_fetch_user,
-        )
 
         # WHEN the update_or_add method is called
-        result = await self.char_svc.update_or_add(mock_ctx, data=data, char_class=1, clan=1)
+        result = await self.char_svc.update_or_add(
+            mock_ctx, data=data, char_class=CharClassType.VAMPIRE, clan=VampireClanType.BRUJAH
+        )
 
         # THEN check the character is created correctly with default values
         assert result.data == IsPartialDict(
-            first_name=name,
-            storyteller_character=False,
-            experience=0,
-            experience_total=0,
-            new_key="new_value",
+            first_name=name, storyteller_character=False, new_key="new_value", is_alive=True
         )
         assert not result.data["last_name"]
         assert not result.data["nickname"]
+
+    @pytest.mark.asyncio()
+    async def test_rng_creator_full_random(self, mock_ctx, mocker):
+        """Test rng_creator() with full random."""
+        self._clear_test_data()
+
+        mock_ctx.bot.user_svc.fetch_user = AsyncMock(return_value=GuildUser.get_by_id(1))
+
+        # Mock Random Name
+        async_mock = AsyncMock(return_value=[("John", "Doe")])
+        mocker.patch("valentina.models.characters.fetch_random_name", side_effect=async_mock)
+
+        # Mock all_class_traits
+        all_class_traits = self._mock_fetch_all_class_traits()
+        mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
+
+        result = await self.char_svc.rng_creator(mock_ctx, player_character=True)
+
+        assert result.char_class.name in CharClassType.__members__
+        assert result.data["first_name"] == "John"
+        assert result.data["last_name"] == "Doe"
+        assert not result.data["nickname"]
+        assert result.data["player_character"]
+        assert result.data["storyteller_character"] is False
+        assert result.data["chargen_character"] is False
+        assert result.data["developer_character"] is False
+
+    @pytest.mark.asyncio()
+    async def test_rng_creator_with_options(self, mock_ctx, mocker):
+        """Test rng_creator() with full random."""
+        self._clear_test_data()
+
+        mock_ctx.bot.user_svc.fetch_user = AsyncMock(return_value=GuildUser.get_by_id(1))
+
+        # Mock Random Name
+        async_mock = AsyncMock(return_value=[("John", "Doe")])
+        mocker.patch("valentina.models.characters.fetch_random_name", side_effect=async_mock)
+
+        # Mock all_class_traits
+        all_class_traits = self._mock_fetch_all_class_traits()
+        mock_ctx.bot.trait_svc.fetch_all_class_traits = MagicMock(return_value=all_class_traits)
+
+        result = await self.char_svc.rng_creator(
+            mock_ctx,
+            storyteller_character=True,
+            nickname_is_class=True,
+            char_class=CharClassType.VAMPIRE,
+        )
+
+        assert result.char_class.name == "VAMPIRE"
+        assert result.data["first_name"] == "John"
+        assert result.data["last_name"] == "Doe"
+        assert result.data["nickname"] == "Vampire"
+        assert result.data["player_character"] is False
+        assert result.data["storyteller_character"]
+        assert result.data["chargen_character"] is False
+        assert result.data["developer_character"] is False
+        assert result.clan.name in VampireClanType.__members__

@@ -5,7 +5,7 @@ import arrow
 import discord
 from discord.ext import pages
 
-from valentina.constants import Emoji
+from valentina.constants import CharClassType, CharSheetSection, Emoji, TraitCategories
 from valentina.models.db_tables import Character
 from valentina.models.statistics import Statistics
 from valentina.utils import errors
@@ -15,8 +15,7 @@ MAX_DOT_DISPLAY = 6
 
 def __build_trait_display(
     char_traits: dict[str, Any],
-    categories_list: list[str],
-    exclude_from_list: bool = False,
+    categories_list: list[TraitCategories],
     show_zeros: bool = True,
     sort_items: bool = False,
 ) -> list[tuple[str, str]]:
@@ -25,7 +24,6 @@ def __build_trait_display(
     Args:
         char_traits (dict[str, Any]): A dictionary of character traits.
         categories_list (list[str]): A list of categories to include in the embed field.
-        exclude_from_list (bool, optional): If True, the categories list is treated as a list of categories to exclude. Defaults to False.
         show_zeros (bool, optional): If True, traits with a value of 0 are included in the embed field. Defaults to True.
         sort_items (bool, optional): If True, the items in the embed field are sorted alphabetically. Defaults to False.
     """
@@ -34,43 +32,49 @@ def __build_trait_display(
         char_traits = {k: sorted(v, key=lambda x: x[0]) for k, v in char_traits.items()}
 
     for category, traits in char_traits.items():
-        if exclude_from_list and category.lower() in [x.lower() for x in categories_list]:
-            continue
-        if not exclude_from_list and category.lower() not in [x.lower() for x in categories_list]:
+        if category not in [x.name for x in categories_list]:
             continue
 
         formatted = []
         for trait, value, max_value, dots in traits:
-            if (not show_zeros or category == "Disciplines") and value == 0:
+            trait_category = TraitCategories[category]
+            if (not show_zeros or not trait_category.value["show_zero"]) and value == 0:
                 continue
             if max_value > MAX_DOT_DISPLAY:
                 formatted.append(f"`{trait:13}: {value}/{max_value}`")
             else:
                 formatted.append(f"`{trait:13}: {dots}`")
 
-        embed_values.append((category, "\n".join(formatted)))
+        embed_values.append((category.title(), "\n".join(formatted)))
 
     return embed_values
 
 
-def __embed1(
+def __embed1(  # noqa: C901, PLR0912
     ctx: discord.ApplicationContext,
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
+    desc_prefix: str | None = None,
+    desc_suffix: str | None = None,
+    show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
+    char_class = CharClassType[character.class_name]
+
     modified = arrow.get(character.data["modified"]).humanize()
 
     if title is None:
         title = character.name
 
-    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
-    footer += f"Last updated: {modified}"
     char_traits = character.all_trait_values
 
-    embed = discord.Embed(title=title, description="", color=0x7777FF)
-    embed.set_footer(text=footer)
+    embed = discord.Embed(title=title, description=desc_prefix, color=0x7777FF)
+
+    if show_footer:
+        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+        footer += f"Last updated: {modified}"
+        embed.set_footer(text=footer)
 
     try:
         campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined] # it exists
@@ -86,45 +90,53 @@ def __embed1(
     )
 
     embed.add_field(name="Class", value=f"{character.class_name.title()}", inline=True)
-    embed.add_field(name="Concept", value=character.data.get("concept", ""), inline=True)
 
-    if character.class_name.lower() == "vampire":
+    if character.data.get("concept_readable", None):
+        embed.add_field(
+            name="Concept", value=character.data.get("concept_readable", "").title(), inline=True
+        )
+
+    if char_class == CharClassType.HUNTER:
+        embed.add_field(name="Creed", value=character.data.get("creed", "").title(), inline=True)
+
+    if char_class == CharClassType.VAMPIRE:
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
-        embed.add_field(name="Generation", value=character.data.get("generation", ""), inline=True)
-        embed.add_field(name="Sire", value=character.data.get("sire", ""), inline=True)
+        embed.add_field(
+            name="Generation", value=character.data.get("generation", "").title(), inline=True
+        )
+        embed.add_field(name="Sire", value=character.data.get("sire", "").title(), inline=True)
 
-    if character.class_name.lower() == "mage":
-        embed.add_field(name="Tradition", value=character.data.get("tradition", ""), inline=True)
-        embed.add_field(name="Essence", value=character.data.get("essence", ""), inline=True)
+    if char_class == CharClassType.MAGE:
+        embed.add_field(
+            name="Tradition", value=character.data.get("tradition", "").title(), inline=True
+        )
+        embed.add_field(
+            name="Essence", value=character.data.get("essence", "").title(), inline=True
+        )
 
-    if character.class_name.lower() == "werewolf":
-        embed.add_field(name="Tribe", value=character.data.get("tribe", ""), inline=True)
-        embed.add_field(name="Auspice", value=character.data.get("auspice", ""), inline=True)
-        embed.add_field(name="Breed", value=character.data.get("breed", ""), inline=True)
+    if char_class == CharClassType.WEREWOLF:
+        embed.add_field(name="Tribe", value=character.data.get("tribe", "").title(), inline=True)
+        embed.add_field(
+            name="Auspice", value=character.data.get("auspice", "").title(), inline=True
+        )
+        embed.add_field(name="Breed", value=character.data.get("breed", "").title(), inline=True)
 
-    embed.add_field(name="\u200b", value="**ATTRIBUTES**", inline=False)
-    for category, traits in __build_trait_display(char_traits, ["physical", "social", "mental"]):
-        embed.add_field(name=category, value=traits, inline=True)
+    # Add the trait sections to the sheet
+    for section in sorted(CharSheetSection, key=lambda x: x.value["order"]):
+        if section != CharSheetSection.NONE:
+            embed.add_field(
+                name="\u200b",
+                value=f"**{section.name.upper()}**",
+                inline=False,
+            )
+        for category, traits in __build_trait_display(
+            char_traits,
+            [tc for tc in TraitCategories if tc.value["section"] == section],
+        ):
+            embed.add_field(name=category, value=traits, inline=True)
 
-    embed.add_field(name="\u200b", value="**ABILITIES**", inline=False)
-    for category, traits in __build_trait_display(
-        char_traits, ["talents", "skills", "knowledges"], sort_items=True
-    ):
-        embed.add_field(name=category, value=traits, inline=True)
-
-    for category, traits in __build_trait_display(
-        char_traits,
-        [
-            "physical",
-            "social",
-            "mental",
-            "talents",
-            "skills",
-            "knowledges",
-        ],
-        exclude_from_list=True,
-    ):
-        embed.add_field(name=category, value=traits, inline=True)
+    if desc_suffix:
+        embed.add_field(name="\u200b", value=desc_suffix, inline=False)
 
     return embed
 
@@ -134,6 +146,7 @@ def __embed2(
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
+    show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     custom_sections = character.custom_sections
@@ -142,12 +155,12 @@ def __embed2(
     if title is None:
         title = f"{character.name} - Page 2"
 
-    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
-    footer += f"Last updated: {modified}"
-
     embed = discord.Embed(title=title, description="", color=0x7777FF)
 
-    embed.set_footer(text=footer)
+    if show_footer:
+        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+        footer += f"Last updated: {modified}"
+        embed.set_footer(text=footer)
 
     if character.data.get("bio"):
         embed.add_field(name="**BIOGRAPHY**", value=character.data["bio"], inline=False)
@@ -156,7 +169,7 @@ def __embed2(
         embed.add_field(name="\u200b", value="**CUSTOM SECTIONS**", inline=False)
         for section in custom_sections:
             embed.add_field(
-                name=f"__**{section.title.upper()}**__", value=section.description, inline=True
+                name=f"__**{section.title.title()}**__", value=section.description, inline=True
             )
 
     stats = Statistics(ctx, character=character)
@@ -173,6 +186,7 @@ def __image_embed(
     image_key: str,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
+    show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     modified = arrow.get(character.data["modified"]).humanize()
@@ -180,12 +194,12 @@ def __image_embed(
     if title is None:
         title = f"{character.name} - Images"
 
-    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
-    footer += f"Last updated: {modified}"
-
     embed = discord.Embed(title=title, description="", color=0x7777FF)
 
-    embed.set_footer(text=footer)
+    if show_footer:
+        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+        footer += f"Last updated: {modified}"
+        embed.set_footer(text=footer)
 
     image_url = ctx.bot.aws_svc.get_url(image_key)  # type: ignore [attr-defined] # it exists
     embed.set_image(url=image_url)
@@ -197,19 +211,26 @@ async def show_sheet(
     ctx: discord.ApplicationContext,
     character: Character,
     ephemeral: Any = False,
+    show_footer: bool = True,
 ) -> Any:
     """Show a character sheet."""
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.user)
     embeds = []
     embeds.extend(
-        [__embed1(ctx, character, owned_by_user), __embed2(ctx, character, owned_by_user)]
+        [
+            __embed1(ctx, character, owned_by_user, show_footer=show_footer),
+            __embed2(ctx, character, owned_by_user, show_footer=show_footer),
+        ]
     )
 
     image_keys = character.data.get("images", None)
 
     if image_keys:
         embeds.extend(
-            [__image_embed(ctx, character, image_key, owned_by_user) for image_key in image_keys]
+            [
+                __image_embed(ctx, character, image_key, owned_by_user, show_footer=show_footer)
+                for image_key in image_keys
+            ]
         )
 
     paginator = pages.Paginator(pages=embeds)  # type: ignore [arg-type]
@@ -223,7 +244,18 @@ async def sheet_embed(
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
+    desc_prefix: str | None = None,
+    desc_suffix: str | None = None,
+    show_footer: bool = True,
 ) -> discord.Embed:
     """Return the first page of the sheet as an embed."""
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.user)
-    return __embed1(ctx, character, owned_by_user=owned_by_user, title=title)
+    return __embed1(
+        ctx,
+        character,
+        owned_by_user=owned_by_user,
+        title=title,
+        desc_prefix=desc_prefix,
+        desc_suffix=desc_suffix,
+        show_footer=show_footer,
+    )

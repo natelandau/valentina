@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -19,9 +20,20 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
-from valentina.constants import CHARACTER_DEFAULTS, GUILD_DEFAULTS, GUILDUSER_DEFAULTS
+from valentina.constants import (
+    CHARACTER_DEFAULTS,
+    GUILD_DEFAULTS,
+    GUILDUSER_DEFAULTS,
+    TraitCategories,
+)
 from valentina.utils import errors
-from valentina.utils.helpers import time_now
+
+
+# This is duplicated from valentina.utils.helpers to avoid circular imports
+def time_now() -> datetime:
+    """Return the current time in UTC."""
+    return datetime.now(timezone.utc).replace(microsecond=0)
+
 
 # Import configuration from environment variables
 env_dir = Path(__file__).parents[3].absolute()
@@ -378,6 +390,11 @@ class Character(BaseModel):
         return display_name
 
     @property
+    def freebie_points(self) -> int:
+        """Return the number of freebie points the character has available."""
+        return self.data.get("freebie_points", 0)
+
+    @property
     def class_name(self) -> str:
         """Return the character's class from the char_class table."""
         return self.char_class.name
@@ -434,8 +451,8 @@ class Character(BaseModel):
 
         Example:
             {
-                "Physical": [("Strength", 3, 5, "●●●○○"), ("Agility", 2, 5, "●●●○○")],
-                "Social": [("Persuasion", 1, 5, "●○○○○")]
+                "PHYSICAL": [("Strength", 3, 5, "●●●○○"), ("Agility", 2, 5, "●●●○○")],
+                "SOCIAL": [("Persuasion", 1, 5, "●○○○○")]
             }
         """
         from valentina.utils.helpers import get_max_trait_value, num_to_circles
@@ -455,7 +472,7 @@ class Character(BaseModel):
         return all_traits
 
     def add_custom_trait(
-        self, name: str, description: str, category: TraitCategory, value: int, max_value: int
+        self, name: str, description: str, category: TraitCategories, value: int, max_value: int
     ) -> None:
         """Add a custom trait to the character."""
         # Confirm the custom trait name is unique for this character
@@ -469,7 +486,7 @@ class Character(BaseModel):
             character=self,
             name=name,
             description=description,
-            category=category,
+            category=TraitCategory.get(name=category.name),
             value=value,
             max_value=max_value,
         )
@@ -762,19 +779,6 @@ class RollStatistic(BaseModel):
     difficulty = IntegerField()
     date_rolled = DateTimeField(default=time_now)
     data = JSONField(null=True)
-
-    # TODO: Create these indexes if the query is slow
-    """
-    class Meta:
-        indexes = (
-            (("user",), False),
-            (("guild",), False),
-            (("character",), False),
-            (("user", "date_rolled"), False),
-            (("guild", "date_rolled"), False),
-            (("character", "date_rolled"), False),
-        )
-        """
 
 
 class RollProbability(BaseModel):

@@ -12,7 +12,8 @@ from valentina.models.db_tables import RollProbability
 class TestProbability:
     """Test the probability helper."""
 
-    def test_calculate(self, mock_ctx):
+    @staticmethod
+    def test_calculate(mock_ctx):
         """Test the calculate method."""
         # GIVEN an empty RollProbability table
         for i in RollProbability.select():
@@ -34,7 +35,8 @@ class TestProbability:
         assert RollProbability.select().count() == 1
 
     @pytest.mark.asyncio()
-    async def test_get_embed(self, mock_ctx):
+    @staticmethod
+    async def test_get_embed(mock_ctx):
         """Test the get_embed method."""
         # GIVEN a probability instance
         pool = 5

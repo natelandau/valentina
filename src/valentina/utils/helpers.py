@@ -7,9 +7,9 @@ from urllib.parse import urlencode
 import aiohttp
 import discord
 from aiohttp import ClientSession
+from loguru import logger
 
 from valentina.constants import (
-    CLAN_DISCIPLINES,
     DICEROLL_THUBMS,
     MaxTraitValue,
     RollResultType,
@@ -17,6 +17,69 @@ from valentina.constants import (
     XPNew,
 )
 from valentina.utils import errors
+
+
+def adjust_sum_to_match_total(
+    values: list[int], total: int, max_value: int | None = None, min_value: int = 0
+) -> list[int]:
+    """Adjust the sum of a list of integers to match a given total.
+
+    The function modifies the list values randomly to match the desired total, ensuring
+    individual values remain within set bounds.
+
+    Args:
+        values (List[int]): List of integers to adjust.
+        total (int): Desired sum of the list after adjustment.
+        max_value (int | None): Maximum allowable value for each integer. If None, there's no upper bound.
+        min_value (int): Minimum allowable value for each integer. Defaults to 0.
+
+    Returns:
+        List[int]: Adjusted list with the sum matching the desired total.
+    """
+    current_sum = sum(values)
+    delta = total - current_sum
+
+    # Adjust the sum to reach the desired total
+    while delta != 0:
+        if delta > 0:
+            # Identify indexes we can give a point to
+            valid_indices = [i for i, x in enumerate(values) if max_value is None or x < max_value]
+        else:
+            valid_indices = [i for i, x in enumerate(values) if x > min_value]
+
+        index_to_adjust = random.choice(valid_indices) if valid_indices else None
+        if index_to_adjust is not None:
+            values[index_to_adjust] += 1 if delta > 0 else -1
+            delta += -1 if delta > 0 else 1
+        else:
+            logger.warning("No valid index found to adjust. Breaking the loop.")
+            break
+
+    # Ensure the min_value is respected
+    while any(x < min_value for x in values):
+        # Identify indexes we can take a point from
+        valid_indices = [i for i, x in enumerate(values) if x > min_value]
+        if valid_indices:
+            # Identify the index we can give a point to
+            index_to_adjust = next((i for i, x in enumerate(values) if x < min_value), None)
+
+            # Adjust the values
+            values[index_to_adjust] += 1
+            values[random.choice(valid_indices)] -= 1
+
+    # Ensure the max_value is respected
+    while max_value is not None and any(x > max_value for x in values):
+        # Identify indexes we can give a point to
+        valid_indices = [i for i, x in enumerate(values) if x < max_value]
+        if valid_indices:
+            # Identify the index we can take a point from
+            index_to_adjust = next((i for i, x in enumerate(values) if x > max_value), None)
+
+            # Adjust the values
+            values[index_to_adjust] -= 1
+            values[random.choice(valid_indices)] += 1
+
+    return values
 
 
 def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
@@ -52,18 +115,6 @@ def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) 
     return random.choice(thumb_list)
 
 
-def fetch_clan_disciplines(clan: str) -> list[str]:
-    """Fetch the disciplines for a clan.
-
-    Examples:
-        >>> fetch_clan_disciplines("toreador")
-        ['Auspex', 'Celerity', 'Presence']
-
-
-    """
-    return CLAN_DISCIPLINES[clan.title()]
-
-
 async def fetch_random_name(
     gender: str | None = None, country: str = "us", results: int = 1
 ) -> list[tuple[str, str]]:
@@ -87,6 +138,37 @@ async def fetch_random_name(
             return [(result["name"]["first"], result["name"]["last"]) for result in data["results"]]
 
     return [("John", "Doe")]
+
+
+def divide_into_three(total: int) -> list[int]:
+    """Divide an integer into three randomly sized integers that add up to the original integer.
+
+    Args:
+        total (int): The original integer value to be divided.
+
+    Returns:
+        list[int, int, int]: A list containing three integers that add up to the original integer.
+    """
+    if total <= 2:  # noqa: PLR2004
+        msg = "Total should be greater than 2 to divide it into three integers."
+        raise ValueError(msg)
+
+    # Generate split1
+    split1 = random.randint(1, total - 2)
+
+    # Generate split2 such that split1 + split2 is less than total
+    split2 = random.randint(1, total - split1)
+
+    # Calculate the three segments
+    segment1 = split1
+    segment2 = split2
+    segment3 = total - (split1 + split2)
+
+    if segment1 + segment2 + segment3 != total:
+        msg = f"Segments do not add up to total. Segments: {segment1}, {segment2}, {segment3}. Total: {total}"
+        raise ValueError(msg)
+
+    return [segment1, segment2, segment3]
 
 
 def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False) -> int | None:
@@ -212,33 +294,6 @@ def num_to_circles(num: int = 0, maximum: int = 5) -> str:
         maximum = num
 
     return "●" * num + "○" * (maximum - num)
-
-
-def round_trait_value(value: int, max_value: int) -> int:
-    """Bound a value to a trait value.
-
-    Args:
-        value (int): The value to bound.
-        max_value (int): The maximum value.
-
-    Returns:
-        int: The bounded value.
-
-    >>> round_trait_value(5, 5)
-    5
-
-    >>> round_trait_value(6, 5)
-    5
-
-    >>> round_trait_value(-10, 5)
-    0
-    """
-    if value < 0:
-        return 0
-    if value > max_value:
-        return max_value
-
-    return value
 
 
 def truncate_string(text: str, max_length: int = 1000) -> str:

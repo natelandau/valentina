@@ -25,6 +25,12 @@ class DeleteS3Images(discord.ui.View):
         self.review_type = review_type
         self.bot = cast(Valentina, ctx.bot)
 
+    def _disable_all(self) -> None:
+        """Disable all buttons in the view."""
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
     @discord.ui.button(
         label=f"{Emoji.WARNING.value} Delete image",
         style=discord.ButtonStyle.danger,
@@ -35,13 +41,7 @@ class DeleteS3Images(discord.ui.View):
         """Callback for the confirm button."""
         button.label = f"{Emoji.SUCCESS.value} Image deleted"
         button.style = discord.ButtonStyle.secondary
-        button.disabled = True
-
-        for child in self.children:
-            if type(child) == Button:
-                child.disabled = True
-            if type(child) == discord.ui.Select:
-                child.disabled = True
+        self._disable_all()
 
         # Delete from database
         if self.review_type == "character":

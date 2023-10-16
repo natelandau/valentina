@@ -54,6 +54,7 @@ jobs:
                       install.python-poetry.org:443
                       pypi.org:443
                       python-poetry.org:443
+                      randomuser.me:443
                       storage.googleapis.com:443
                       uploader.codecov.io:443
 

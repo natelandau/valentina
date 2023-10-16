@@ -22,6 +22,7 @@ from discord.ext import commands
 from loguru import logger
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
+from valentina.constants import CharClassType, VampireClanType
 from valentina.models.db_tables import (
     Campaign,
     CampaignChapter,
@@ -109,7 +110,7 @@ def _create_test_database_data():
         character=1,
         guild=1,
         name="Test_Trait",
-        category=13,
+        category=TraitCategory.get(name="SKILLS"),
         value=2,
         max_value=5,
     )
@@ -135,13 +136,11 @@ def mock_db() -> CSqliteExtDatabase:
 
     # Confirm test data was created
     assert Guild.get_by_id(1).name == "test_guild"
-    assert CharacterClass.get_by_id(1).name == "Mortal"
-    assert VampireClan.get_by_id(1).name == "Assamite"
+    assert CharacterClass.get_by_id(1).name in CharClassType.__members__
+    assert VampireClan.get_by_id(1).name in VampireClanType.__members__
     assert Character.get_by_id(1).data["first_name"] == "test"
     assert CustomTrait.get_by_id(1).name == "Test_Trait"
-    # assert CustomSection.get_by_id(1).title == "test_section"
     assert GuildUser.get_by_id(1).guild.name == "test_guild"
-    # assert Macro.get_by_id(1).name == "test_macro"
     assert TraitValue.get_by_id(1).value == 1
     assert TraitValue.get_by_id(2).value == 2
     assert TraitValue.get_by_id(3).value == 3

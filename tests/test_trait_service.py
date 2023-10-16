@@ -2,6 +2,7 @@
 """Test the TraitService class."""
 import pytest
 
+from valentina.constants import CharClassType
 from valentina.models import TraitService
 from valentina.models.db_tables import Trait
 from valentina.utils import errors
@@ -20,8 +21,9 @@ class TestTraitService:
         WHEN fetching all traits for that class
         THEN return only the traits associated with that class
         """
-        traits = [x.name for x in self.trait_svc.fetch_all_class_traits("Vampire")]
-        assert len(traits) == 63
+        traits = [x.name for x in self.trait_svc.fetch_all_class_traits(CharClassType.VAMPIRE)]
+
+        assert len(traits) == 75
 
         for t in ["Willpower", "Strength", "Firearms", "Humanity", "Celerity", "Blood Pool"]:
             assert t in traits
@@ -43,26 +45,6 @@ class TestTraitService:
         with pytest.raises(errors.NoMatchingItemsError):
             self.trait_svc.fetch_trait_id_from_name("Exception")
 
-    def test_fetch_trait_category(self) -> None:
-        """Test fetch_trait_category().
-
-        GIVEN a trait name
-        WHEN fetching the trait category for that name
-        THEN return the trait category or raise NoMatchingItemsError
-        """
-        assert self.trait_svc.fetch_trait_category("Willpower") == "Other"
-        assert self.trait_svc.fetch_trait_category("Strength") == "Physical"
-        t_id = Trait.get(Trait.name == "Willpower").id
-        assert self.trait_svc.fetch_trait_category(t_id) == "Other"
-        t_id = Trait.get(Trait.name == "Strength").id
-        assert self.trait_svc.fetch_trait_category(t_id) == "Physical"
-
-        with pytest.raises(errors.NoMatchingItemsError, match=r"Trait `\w+` not found"):
-            self.trait_svc.fetch_trait_category("Exception")
-
-        with pytest.raises(errors.NoMatchingItemsError, match=r"Trait `\w+` not found"):
-            self.trait_svc.fetch_trait_category(999999)
-
     def test_purge_cache(self) -> None:
         """Test purge_cache().
 
@@ -83,8 +65,8 @@ class TestTraitService:
         """
         returned = self.trait_svc.fetch_all_traits(guild_id=1)
         assert isinstance(returned, dict)
-        assert "Test_Trait" in returned["Skills"]
-        assert returned["Social"] == ["Appearance", "Charisma", "Manipulation"]
+        assert "Test_Trait" in returned["SKILLS"]
+        assert returned["SOCIAL"] == ["Appearance", "Charisma", "Manipulation"]
 
     def test_fetch_all_traits_two(self):
         """Test TraitService.fetch_all_traits().
