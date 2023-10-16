@@ -437,11 +437,11 @@ class ProfileModal(Modal):
         self.add_item(
             InputText(
                 label="concept",
-                value=self.character.data.get("concept", None),
+                value=self.character.data.get("concept_readable", None),
                 placeholder="Enter a concept",
                 required=False,
                 style=discord.InputTextStyle.short,
-                custom_id="concept",
+                custom_id="concept_readable",
             )
         )
 
@@ -531,7 +531,10 @@ class ProfileModal(Modal):
         embed = discord.Embed(title="Confirm Profile", color=EmbedColor.INFO.value)
         for k, v in self.results.items():
             if v:
-                embed.add_field(name=k.capitalize(), value=v, inline=True)
+                if k == "concept_readable":
+                    embed.add_field(name="Concept", value=v, inline=True)
+                else:
+                    embed.add_field(name=k.capitalize(), value=v, inline=True)
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
         await view.wait()

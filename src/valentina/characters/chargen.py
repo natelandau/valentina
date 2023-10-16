@@ -199,7 +199,7 @@ class UpdateCharacterButtons(discord.ui.View):
         self.updated: bool = False
         self.done: bool = False
 
-        # TODO: Allow the user to select their special ability
+        # TODO: Allow the user to select their special ability when a choice is available
 
     def _disable_all(self) -> None:
         """Disable all buttons in the view."""
@@ -363,24 +363,9 @@ class CharGenWizard:
         """
         return await self.bot.char_svc.rng_creator(self.ctx, chargen_character=True)
 
-    async def _generate_character_sheet_embed(
-        self,
-        character: Character,
-        title: str | None = None,
-        prefix: str | None = None,
-        show_special_abilities: bool = True,
-    ) -> discord.Embed:
-        """Create an embed for the character sheet.
-
-        Args:
-            character (Character): The character for which to create the embed.
-            title (str | None, optional): The title of the embed. Defaults to None.
-            prefix (str | None, optional): The prefix for the description. Defaults to None.
-            show_special_abilities (bool, optional): Whether to show special abilities. Defaults to True.
-
-        Returns:
-            discord.Embed: The created embed.
-        """
+    @staticmethod
+    def _special_ability_char_sheet_text(character: Character) -> str:
+        """Generate the special abilities text for the character sheet."""
         # Extract concept information for mortals
         if character.char_class.name == CharClassType.MORTAL.name:
             concept_info = CharConcept[character.data["concept_db"]].value
@@ -391,23 +376,42 @@ class CharGenWizard:
                 for i, ability in enumerate(concept_info["abilities"], start=1)
             ]
 
-            suffix = f"""
-    **{character.full_name} is a {concept_info['name']}**
-    {concept_info['description']}
+            return f"""
+    **{character.full_name} is a {concept_info["name"]}**
+    {concept_info["description"]}
 
-    **Special {p.plural_noun('Ability', len(concept_info["abilities"]))}:**
-    {''.join(special_abilities)}
+    **Special {p.plural_noun("Ability", len(concept_info["abilities"]))}: **
+    {"".join(special_abilities)}
     """
+        # Return None unless the character is a mortal
+        return None
 
+    async def _generate_character_sheet_embed(
+        self,
+        character: Character,
+        title: str | None = None,
+        prefix: str | None = None,
+        suffix: str | None = None,
+    ) -> discord.Embed:
+        """Create an embed for the character sheet.
+
+        Args:
+            character (Character): The character for which to create the embed.
+            title (str | None, optional): The title of the embed. Defaults to None.
+            prefix (str | None, optional): The prefix for the description. Defaults to None.
+            suffix (str | None, optional): The suffix for the description. Defaults to None.
+
+        Returns:
+            discord.Embed: The created embed.
+        """
         # Create the embed
         return await sheet_embed(
             self.ctx,
             character,
             title=title if title else f"{character.name}",
             desc_prefix=prefix,
-            desc_suffix=suffix
-            if character.char_class.name == CharClassType.MORTAL.name and show_special_abilities
-            else None,
+            desc_suffix=suffix,
+            show_footer=False,
         )
 
     async def _cancel_character_generation(self, msg: str | None = None) -> None:
@@ -536,7 +540,12 @@ Once you select a character you can re-allocate dots and change the name, but yo
             )
         ]
         pages.extend(
-            [await self._generate_character_sheet_embed(character) for character in characters]
+            [
+                await self._generate_character_sheet_embed(
+                    character, suffix=self._special_ability_char_sheet_text(character)
+                )
+                for character in characters
+            ]
         )
 
         # present the character selection paginator
@@ -608,7 +617,9 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
         # Create the character sheet embed
         title = f"{Emoji.YES.value} Created {character.full_name}\n"
-        embed = await self._generate_character_sheet_embed(character, title=title)
+        embed = await self._generate_character_sheet_embed(
+            character, title=title, suffix=self._special_ability_char_sheet_text(character)
+        )
 
         # Update the paginator
         view = UpdateCharacterButtons(self.ctx, character=character, author=self.ctx.author)
@@ -641,10 +652,8 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
         # Create the character sheet embed
         title = f"Spend freebie points on {character.full_name}\n"
-        prefix = f"Use the buttons below to chose where you want to spend your `{character.data.get('freebie_points', 0)}` remaining freebie points.\n"
-        embed = await self._generate_character_sheet_embed(
-            character, title=title, prefix=prefix, show_special_abilities=False
-        )
+        suffix = f"Use the buttons below to chose where you want to spend your `{character.data.get('freebie_points', 0)}` remaining freebie points.\n"
+        embed = await self._generate_character_sheet_embed(character, title=title, suffix=suffix)
 
         # Update the paginator
         view = FreebiePointsButtons(self.ctx, character=character)

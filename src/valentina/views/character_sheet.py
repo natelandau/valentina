@@ -65,14 +65,14 @@ def __embed1(  # noqa: C901, PLR0912
     if title is None:
         title = character.name
 
-    if show_footer:
-        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
-        footer += f"Last updated: {modified}"
-
     char_traits = character.all_trait_values
 
     embed = discord.Embed(title=title, description=desc_prefix, color=0x7777FF)
-    embed.set_footer(text=footer)
+
+    if show_footer:
+        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+        footer += f"Last updated: {modified}"
+        embed.set_footer(text=footer)
 
     try:
         campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined] # it exists
@@ -89,7 +89,7 @@ def __embed1(  # noqa: C901, PLR0912
 
     embed.add_field(name="Class", value=f"{character.class_name.title()}", inline=True)
 
-    if character.class_name.lower() in ["mortal", "hunter", "human"]:
+    if character.data.get("concept_readable", None):
         embed.add_field(
             name="Concept", value=character.data.get("concept_readable", ""), inline=True
         )
@@ -133,6 +133,7 @@ def __embed2(
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
+    show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     custom_sections = character.custom_sections
@@ -141,12 +142,12 @@ def __embed2(
     if title is None:
         title = f"{character.name} - Page 2"
 
-    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
-    footer += f"Last updated: {modified}"
-
     embed = discord.Embed(title=title, description="", color=0x7777FF)
 
-    embed.set_footer(text=footer)
+    if show_footer:
+        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+        footer += f"Last updated: {modified}"
+        embed.set_footer(text=footer)
 
     if character.data.get("bio"):
         embed.add_field(name="**BIOGRAPHY**", value=character.data["bio"], inline=False)
@@ -155,7 +156,7 @@ def __embed2(
         embed.add_field(name="\u200b", value="**CUSTOM SECTIONS**", inline=False)
         for section in custom_sections:
             embed.add_field(
-                name=f"__**{section.title.upper()}**__", value=section.description, inline=True
+                name=f"__**{section.title.title()}**__", value=section.description, inline=True
             )
 
     stats = Statistics(ctx, character=character)
@@ -172,6 +173,7 @@ def __image_embed(
     image_key: str,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
+    show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     modified = arrow.get(character.data["modified"]).humanize()
@@ -179,12 +181,12 @@ def __image_embed(
     if title is None:
         title = f"{character.name} - Images"
 
-    footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
-    footer += f"Last updated: {modified}"
-
     embed = discord.Embed(title=title, description="", color=0x7777FF)
 
-    embed.set_footer(text=footer)
+    if show_footer:
+        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+        footer += f"Last updated: {modified}"
+        embed.set_footer(text=footer)
 
     image_url = ctx.bot.aws_svc.get_url(image_key)  # type: ignore [attr-defined] # it exists
     embed.set_image(url=image_url)
@@ -196,19 +198,26 @@ async def show_sheet(
     ctx: discord.ApplicationContext,
     character: Character,
     ephemeral: Any = False,
+    show_footer: bool = True,
 ) -> Any:
     """Show a character sheet."""
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.user)
     embeds = []
     embeds.extend(
-        [__embed1(ctx, character, owned_by_user), __embed2(ctx, character, owned_by_user)]
+        [
+            __embed1(ctx, character, owned_by_user, show_footer=show_footer),
+            __embed2(ctx, character, owned_by_user, show_footer=show_footer),
+        ]
     )
 
     image_keys = character.data.get("images", None)
 
     if image_keys:
         embeds.extend(
-            [__image_embed(ctx, character, image_key, owned_by_user) for image_key in image_keys]
+            [
+                __image_embed(ctx, character, image_key, owned_by_user, show_footer=show_footer)
+                for image_key in image_keys
+            ]
         )
 
     paginator = pages.Paginator(pages=embeds)  # type: ignore [arg-type]
@@ -224,6 +233,7 @@ async def sheet_embed(
     title: str | None = None,
     desc_prefix: str | None = None,
     desc_suffix: str | None = None,
+    show_footer: bool = True,
 ) -> discord.Embed:
     """Return the first page of the sheet as an embed."""
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.owned_by.user)
@@ -234,4 +244,5 @@ async def sheet_embed(
         title=title,
         desc_prefix=desc_prefix,
         desc_suffix=desc_suffix,
+        show_footer=show_footer,
     )
