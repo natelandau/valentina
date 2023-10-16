@@ -1412,6 +1412,106 @@ class CharConcept(Enum):
         return choice(list(cls))
 
 
+class HunterCreed(Enum):
+    """Enum for Hunter creeds."""
+
+    DEFENDER: ClassVar[types.HunterCreedDict] = {
+        "name": "Defender",
+        "description": "Protectors and _Defenders_ who seek to salvage or preserve what they can in the war against the unknown, perhaps to prove that the fight is worthwhile.",
+        "conviction": 3,
+        "attribute_specialty": TraitCategories.MENTAL,
+        "ability_specialty": TraitCategories.TALENTS,
+        "specific_abilities": ["Empathy"],
+        "edges": ["Ward", "Rejuvenate", "Brand", "Champion", "Burn"],
+        "range": (1, 14),
+    }
+    INNOCENT: ClassVar[types.HunterCreedDict] = {
+        "name": "Innocent",
+        "description": "The curious, unabashed and wide-eyed, the _Innocent_ accept monsters on their own terms and seek simple resolution between creatures and humanity.",
+        "conviction": 3,
+        "attribute_specialty": TraitCategories.SOCIAL,
+        "ability_specialty": TraitCategories.TALENTS,
+        "specific_abilities": ["Empathy", "Subterfuge"],
+        "edges": ["Hide", "Illuminate", "Radiate", "Confront", "Blaze"],
+        "range": (15, 28),
+    }
+    JUDGE: ClassVar[types.HunterCreedDict] = {
+        "name": "Judge",
+        "description": "The eyes and ears of the battle against monsters, _Judges_ seek to uphold the greater good, whether it means destroying creatures or sparing them and questioning other hunters' motives",
+        "conviction": 3,
+        "attribute_specialty": TraitCategories.MENTAL,
+        "ability_specialty": TraitCategories.KNOWLEDGES,
+        "specific_abilities": ["Investigation", "Law"],
+        "edges": ["Discern", "Burden", "Balance", "Pierce", "Expose"],
+        "range": (29, 42),
+    }
+    MARTYR: ClassVar[types.HunterCreedDict] = {
+        "name": "Martyr",
+        "description": "Acting out of desperate passion, _Martyrs_ put themselves in harm's way to protect others or to alleviate some all-consuming guilt.",
+        "conviction": 4,
+        "attribute_specialty": TraitCategories.PHYSICAL,
+        "ability_specialty": TraitCategories.TALENTS,
+        "specific_abilities": ["Empathy", "Intimidation"],
+        "edges": ["Demand", "Witness", "Ravage", "Donate", "Payback"],
+        "range": (43, 56),
+    }
+    REDEEMER: ClassVar[types.HunterCreedDict] = {
+        "name": "Redeemer",
+        "description": "Piercing the souls of the enemy, _Redeemers_ offer the hand of salvation to the deserving and strike down the irredeemable.",
+        "conviction": 3,
+        "attribute_specialty": TraitCategories.PHYSICAL,
+        "ability_specialty": TraitCategories.SKILLS,
+        "specific_abilities": ["Empathy"],
+        "edges": ["Bluster", "Insinuate", "Respire", "Becalm", "Suspend"],
+        "range": (57, 71),
+    }
+    AVENGER: ClassVar[types.HunterCreedDict] = {
+        "name": "Avenger",
+        "description": "Holy terror personified, _Avengers_ accept only one end to the war: the destruction of the enemy.",
+        "conviction": 4,
+        "attribute_specialty": TraitCategories.PHYSICAL,
+        "ability_specialty": TraitCategories.SKILLS,
+        "specific_abilities": ["Firearms", "Dodge", "Brawl", "Melee"],
+        "edges": ["Cleave", "Trail", "Smolder", "Surge", "Smite"],
+        "range": (72, 85),
+    }
+    VISIONARY: ClassVar[types.HunterCreedDict] = {
+        "name": "Visionary",
+        "description": "Introspective, questioning and doubtful, _Visionaries_ seek the ultimate goals of the war against the unknown, and they seek purpose for hunters as a whole.",
+        "conviction": 3,
+        "attribute_specialty": TraitCategories.MENTAL,
+        "ability_specialty": TraitCategories.SKILLS,
+        "specific_abilities": ["Leadership", "Expression", "Subterfuge", "Intimidation", "Occult"],
+        "edges": ["Foresee", "Pinpoint", "Delve", "Restore", "Augur"],
+        "range": (86, 100),
+    }
+
+    @classmethod
+    def get_member_by_value(cls, value: int) -> "HunterCreed":
+        """Find the corresponding enum member's name based on an integer value.
+
+        Args:
+            value (int): The integer value to look up.
+
+        Returns:
+            Optional[str]: The enum member if found, otherwise None.
+        """
+        for member in cls:
+            min_val, max_val = member.value["range"]
+            if min_val <= value <= max_val:
+                return member
+        return None
+
+    @classmethod
+    def random_member(cls) -> "HunterCreed":
+        """Select a random member from the enum.
+
+        Returns:
+            HunterCreed: A random enum member.
+        """
+        return choice(list(cls))
+
+
 # CHANNEL_PERMISSIONS: Dictionary containing a mapping of channel permissions.
 #     Format:
 #         default role permission,

@@ -11,6 +11,7 @@ from valentina.constants import (
     CharClassType,
     CharConcept,
     CharSheetSection,
+    HunterCreed,
     RNGCharLevel,
     TraitCategories,
     VampireClanType,
@@ -49,7 +50,6 @@ class CharacterTraitRandomizer:
         ctx (discord.ApplicationContext): The context related to the discord interaction.
     """
 
-    # TODO: Edges for Hunters
     # TODO: Merits and Flaws
     # TODO: Ghouls
     # TODO: Changelings
@@ -209,20 +209,13 @@ class CharacterTraitRandomizer:
         logger.debug(f"CHARGEN: Set virtues: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
-    def _assign_willpower_humanity_conviction(self) -> list[tuple[Trait, int]]:
-        """Assign willpower, humanity, and conviction for the character based on the Virtue values."""
-        logger.debug(f"CHARGEN: Generate willpower, humanity, and conviction for {self.character}")
+    def _assign_willpower_humanity(self) -> list[tuple[Trait, int]]:
+        """Assign willpower, humanity for the character based on the Virtue values."""
+        logger.debug(f"CHARGEN: Generate willpower and humanity for {self.character}")
         trait_values = []
 
-        if self.char_class == CharClassType.HUNTER:
-            zeal = next(y for x, y in self.trait_values if x.name == "Zeal")
-            vision = next(y for x, y in self.trait_values if x.name == "Vision")
-            mercy = next(y for x, y in self.trait_values if x.name == "Mercy")
-            trait_values = [
-                (Trait.get(name="Willpower"), zeal + vision),
-                (Trait.get(name="Conviction"), mercy),
-            ]
-        elif "Self-Control" in TraitCategories.VIRTUES.value[self.char_class.name]:  # type: ignore [literal-required]
+        # Don't assign willpower, humanity if the character has no virtues
+        if "Self-Control" in TraitCategories.VIRTUES.value[self.char_class.name]:  # type: ignore [literal-required]
             courage = next(y for x, y in self.trait_values if x.name == "Courage")
             self_control = next(y for x, y in self.trait_values if x.name == "Self-Control")
             conscience = next(y for x, y in self.trait_values if x.name == "Conscience")
@@ -237,6 +230,48 @@ class CharacterTraitRandomizer:
         logger.debug(
             f"CHARGEN: Set willpower, humanity, and conviction: {[(x.name, y) for x, y in trait_values]}"
         )
+        return trait_values
+
+    def _hunter_class(self) -> list[tuple[Trait, int]]:
+        """Assign trait values for a Hunter character."""
+        if self.char_class != CharClassType.HUNTER:
+            return []
+
+        try:
+            creed = HunterCreed[self.character.data.get("creed", None)]
+        except KeyError:
+            creed = HunterCreed.random_member()
+
+        # Set willpower and conviction
+        trait_values = [
+            (Trait.get(name="Willpower"), 3),  # Hunters always start with 3 willpower
+            (Trait.get(name="Conviction"), creed.value["conviction"]),
+        ]
+
+        # Assign Edges
+        edges = creed.value["edges"]
+        starting_dots = 5
+        extra_dots_map = {
+            RNGCharLevel.NEW: 0,
+            RNGCharLevel.INTERMEDIATE: 0,
+            RNGCharLevel.ADVANCED: 1,
+            RNGCharLevel.ELITE: 2,
+        }
+        total_dots = starting_dots + extra_dots_map[self.level]
+
+        # Generate initial random distribution for the traits in the category
+        mean, distribution = self.level.value
+        initial_values = [
+            max(min(x, 3), 0) for x in _rng.normal(mean, distribution, len(edges)).astype(int32)
+        ]
+
+        # Adjust the sum of the list to match the total dots for the category
+        values = adjust_sum_to_match_total(values=initial_values, total=total_dots, max_value=3)
+
+        # Create a list of tuples for the traits and their corresponding values
+        trait_values.extend([(Trait.get(name=e), values.pop(0)) for e in edges])
+
+        logger.debug(f"CHARGEN: Set hunter edges: {[(x.name, y) for x, y in trait_values]}")
         return trait_values
 
     def _randomly_assign_abilities(
@@ -547,7 +582,10 @@ class CharacterTraitRandomizer:
         self.custom_sections.extend(sections)
 
         # Extend trait_values with generated willpower, humanity, and conviction values
-        self.trait_values.extend(self._assign_willpower_humanity_conviction())
+        self.trait_values.extend(self._assign_willpower_humanity())
+
+        # Class specific trait values
+        self.trait_values.extend(self._hunter_class())
 
         # Update the character
         for trait, value in self.trait_values:
@@ -854,6 +892,11 @@ class CharacterService:
 
         if char_class == CharClassType.VAMPIRE and not vampire_clan:
             vampire_clan = VampireClanType.random_member()
+
+        if char_class == CharClassType.HUNTER:
+            percentile = _rng.integers(1, 101)
+            creed = HunterCreed.get_member_by_value(percentile)
+            data["creed"] = creed.name
 
         data["player_character"] = player_character
         data["storyteller_character"] = storyteller_character

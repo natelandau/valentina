@@ -2,7 +2,7 @@
 import discord
 from discord.ui import InputText, Modal
 
-from valentina.constants import MAX_FIELD_COUNT, EmbedColor
+from valentina.constants import MAX_FIELD_COUNT, CharClassType, EmbedColor
 from valentina.models.db_tables import CampaignChapter, CampaignNote, CampaignNPC, Character
 from valentina.views import ConfirmCancelButtons
 
@@ -421,6 +421,7 @@ class ProfileModal(Modal):
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
         self.character: Character = character
+        self.char_class: CharClassType = CharClassType[character.char_class.name]
         self.results: dict[str, str] = {
             "concept": "",
             "demeanor": "",
@@ -445,7 +446,7 @@ class ProfileModal(Modal):
             )
         )
 
-        if self.character.char_class.name == "Vampire":
+        if self.char_class == CharClassType.VAMPIRE:
             self.add_item(
                 InputText(
                     label="generation",
@@ -468,7 +469,7 @@ class ProfileModal(Modal):
                 )
             )
 
-        if self.character.char_class.name == "Mage":
+        if self.char_class == CharClassType.MAGE:
             self.add_item(
                 InputText(
                     label="essence",
@@ -490,7 +491,7 @@ class ProfileModal(Modal):
                 )
             )
 
-        if self.character.char_class.name == "Werewolf":
+        if self.char_class == CharClassType.WEREWOLF:
             self.add_item(
                 InputText(
                     label="breed",
@@ -519,6 +520,18 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="auspice",
+                )
+            )
+
+        if self.char_class == CharClassType.HUNTER:
+            self.add_item(
+                InputText(
+                    label="creed",
+                    value=self.character.data.get("creed", None),
+                    placeholder="Your creed",
+                    required=False,
+                    style=discord.InputTextStyle.short,
+                    custom_id="creed",
                 )
             )
 

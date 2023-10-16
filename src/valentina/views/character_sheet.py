@@ -5,7 +5,7 @@ import arrow
 import discord
 from discord.ext import pages
 
-from valentina.constants import CharSheetSection, Emoji, TraitCategories
+from valentina.constants import CharClassType, CharSheetSection, Emoji, TraitCategories
 from valentina.models.db_tables import Character
 from valentina.models.statistics import Statistics
 from valentina.utils import errors
@@ -60,6 +60,8 @@ def __embed1(  # noqa: C901, PLR0912
     show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
+    char_class = CharClassType[character.class_name]
+
     modified = arrow.get(character.data["modified"]).humanize()
 
     if title is None:
@@ -91,22 +93,33 @@ def __embed1(  # noqa: C901, PLR0912
 
     if character.data.get("concept_readable", None):
         embed.add_field(
-            name="Concept", value=character.data.get("concept_readable", ""), inline=True
+            name="Concept", value=character.data.get("concept_readable", "").title(), inline=True
         )
 
-    if character.class_name.lower() == "vampire":
+    if char_class == CharClassType.HUNTER:
+        embed.add_field(name="Creed", value=character.data.get("creed", "").title(), inline=True)
+
+    if char_class == CharClassType.VAMPIRE:
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
-        embed.add_field(name="Generation", value=character.data.get("generation", ""), inline=True)
-        embed.add_field(name="Sire", value=character.data.get("sire", ""), inline=True)
+        embed.add_field(
+            name="Generation", value=character.data.get("generation", "").title(), inline=True
+        )
+        embed.add_field(name="Sire", value=character.data.get("sire", "").title(), inline=True)
 
-    if character.class_name.lower() == "mage":
-        embed.add_field(name="Tradition", value=character.data.get("tradition", ""), inline=True)
-        embed.add_field(name="Essence", value=character.data.get("essence", ""), inline=True)
+    if char_class == CharClassType.MAGE:
+        embed.add_field(
+            name="Tradition", value=character.data.get("tradition", "").title(), inline=True
+        )
+        embed.add_field(
+            name="Essence", value=character.data.get("essence", "").title(), inline=True
+        )
 
-    if character.class_name.lower() == "werewolf":
-        embed.add_field(name="Tribe", value=character.data.get("tribe", ""), inline=True)
-        embed.add_field(name="Auspice", value=character.data.get("auspice", ""), inline=True)
-        embed.add_field(name="Breed", value=character.data.get("breed", ""), inline=True)
+    if char_class == CharClassType.WEREWOLF:
+        embed.add_field(name="Tribe", value=character.data.get("tribe", "").title(), inline=True)
+        embed.add_field(
+            name="Auspice", value=character.data.get("auspice", "").title(), inline=True
+        )
+        embed.add_field(name="Breed", value=character.data.get("breed", "").title(), inline=True)
 
     # Add the trait sections to the sheet
     for section in sorted(CharSheetSection, key=lambda x: x.value["order"]):

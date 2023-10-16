@@ -1,8 +1,21 @@
 # mypy: disable-error-code="name-defined"
 """Custom Types for Valentina."""
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 ### TypedDicts ###
+
+
+class HunterCreedDict(TypedDict):
+    """Type for Hunter Creed sub-dictionary."""
+
+    name: str
+    description: str
+    conviction: int
+    specific_abilities: list[str]
+    ability_specialty: "CharacterClass"  # noqa: F821 # type: ignore
+    attribute_specialty: "CharacterClass"  # noqa: F821 # type: ignore
+    edges: list[str]
+    range: tuple[int, int]
 
 
 class CharacterClassDict(TypedDict):
