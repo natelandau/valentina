@@ -5,7 +5,7 @@ default_stages: [commit, manual]
 fail_fast: true
 repos:
     - repo: "https://github.com/commitizen-tools/commitizen"
-      rev: 3.10.0
+      rev: 3.10.1
       hooks:
           - id: commitizen
           #   - id: commitizen-branch
@@ -71,7 +71,7 @@ repos:
           - id: vulture
 
     - repo: "https://github.com/crate-ci/typos"
-      rev: v1.16.18
+      rev: v1.16.19
       hooks:
           - id: typos
 
