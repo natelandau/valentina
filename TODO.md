@@ -6,8 +6,13 @@
 -   [ ] Campaign: Renumber chapters
 -   [ ] Campaign: Rework campaigns to be the backbone of gameplay
 -   [ ] Campaign: View any campaign, not just active one
--   [ ] Character: Add class/concept generator
--   [ ] Character: Add full character generator
+-   [ ] CharGen: Add backgrounds to freebie point picker
+-   [ ] CharGen: Add edges for hunters
+-   [ ] CharGen: Add merits/flaws to freebie point picker
+-   [ ] CharGen: Add mages
+-   [ ] CharGen: Add werewolfs
+-   [ ] CharGen: Add ghouls
+-   [ ] CharGen: Add changelings
 -   [ ] Database: Move classes and clans to constants
 -   [ ] Gameplay: Button to create macro from rolling traits
 -   [ ] Refactor: Centralize pagination for long responses

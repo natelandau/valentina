@@ -68,6 +68,7 @@ class MigrateDatabase:
             "1.5.0": self.__1_5_0,
             "1.8.0": self.__1_8_0,
             "1.11.0": self.__1_11_0,
+            "1.13.0": self.__1_13_0,
         }
 
         current_version = Version.parse(self.db_version)
@@ -775,6 +776,61 @@ class MigrateDatabase:
                     del character.data["experience_total"]
                     character.save()
 
+    @staticmethod
+    def __1_13_0() -> None:  # noqa: PLR0912, C901
+        """Migrate from version 1.13.0."""
+        logger.warning("DATABASE: Migrate from 1.13.0")
+
+        logger.info("DATABASE: Migrate Character Classes")
+        if not CharacterClass.get_or_none(name="VAMPIRE"):
+            for c in CharacterClass.select():
+                try:
+                    # Attempt to find the corresponding enum member
+                    enum_member = CharClassType[c.name.upper()]
+                except KeyError:  # noqa: PERF203
+                    logger.warning(f"No matching enum member for {c.name}")
+                else:
+                    # Update the name and save the record
+                    logger.debug(f"Rename {c.name} to {enum_member.name}")
+                    c.name = enum_member.name
+                    c.save()
+
+        logger.info("DATABASE: Migrate Trait Categories")
+        if not TraitCategory.get_or_none(name="PHYSICAL"):
+            for c in TraitCategory.select():
+                try:
+                    # Attempt to find the corresponding enum member
+                    tc = TraitCategories[c.name.upper()]
+                except KeyError:  # noqa: PERF203
+                    logger.warning(f"No matching enum member for {c.name}")
+                else:
+                    # Update the name and save the record
+                    logger.debug(f"Rename {c.name} to {tc.name}")
+                    c.name = tc.name
+                    c.save()
+
+        logger.info("DATABASE: Migrate Vampire Clans")
+        if not VampireClan.get_or_none(name="BRUJAH"):
+            for c in VampireClan.select():
+                try:
+                    # Attempt to find the corresponding enum member
+                    vc = VampireClanType[c.name.upper().replace(" ", "_")]
+                except KeyError:  # noqa: PERF203
+                    logger.warning(f"No matching enum member for {c.name}")
+                else:
+                    # Update the name and save the record
+                    logger.debug(f"Rename {c.name} to {vc.name}")
+                    c.name = vc.name
+                    c.save()
+
+        logger.info("Migrate Reputation")
+        old_reputation = Trait.get_or_none(
+            name="Reputation", category=TraitCategory.get_or_none(name="OTHER")
+        )
+        if old_reputation:
+            logger.warning("DATABASE: Delete old reputation trait")
+            old_reputation.delete_instance(delete_nullable=True, recursive=True)
+
 
 class PopulateDatabase:
     """A class that handles the populating data in a database.
@@ -798,20 +854,7 @@ class PopulateDatabase:
 
     def _character_classes(self) -> None:
         """Create the initial character classes."""
-        # TODO: This is a migration from 1.13.0. Remove this after a few releases
-        if not CharacterClass.get_or_none(name="VAMPIRE"):
-            for c in CharacterClass.select():
-                try:
-                    # Attempt to find the corresponding enum member
-                    enum_member = CharClassType[c.name.upper()]
-                except KeyError:  # noqa: PERF203
-                    logger.warning(f"No matching enum member for {c.name}")
-                else:
-                    # Update the name and save the record
-                    logger.debug(f"Rename {c.name} to {enum_member.name}")
-                    c.name = enum_member.name
-                    c.save()
-
+        logger.debug("DATABASE: Populate character classes")
         # Ensure all character classes are in the database
         with self.db.atomic():
             for charclass in CharClassType.playable_classes():
@@ -832,20 +875,7 @@ class PopulateDatabase:
 
     def _vampire_clans(self) -> None:
         """Create the initial character classes."""
-        # TODO: This if statement is a migration from 1.13.0. Remove this after a few releases
-        if not VampireClan.get_or_none(name="BRUJAH"):
-            for c in VampireClan.select():
-                try:
-                    # Attempt to find the corresponding enum member
-                    enum_member = VampireClanType[c.name.upper().replace(" ", "_")]
-                except KeyError:  # noqa: PERF203
-                    logger.warning(f"No matching enum member for {c.name}")
-                else:
-                    # Update the name and save the record
-                    logger.debug(f"Rename {c.name} to {enum_member.name}")
-                    c.name = enum_member.name
-                    c.save()
-
+        logger.debug("DATABASE: Populate vampire clans")
         # Ensure all clans are in the database
         with self.db.atomic():
             for clan in VampireClanType:
@@ -870,29 +900,7 @@ class PopulateDatabase:
         This method associates predefined character classes to each category. If a category
         is associated with the 'Common' class, it will be linked with all character classes.
         """
-        # TODO: This if statement is a migration from 1.13.0. Remove this after a few releases
-
-        old_reputation = Trait.get_or_none(
-            name="Reputation", category=TraitCategory.get_or_none(name="OTHER")
-        )
-        if old_reputation:
-            logger.warning("DATABASE: Delete old reputation trait")
-            old_reputation.delete_instance(delete_nullable=True, recursive=True)
-
-        # TODO: This if statement is a migration from 1.13.0. Remove this after a few releases
-        if not TraitCategory.get_or_none(name="PHYSICAL"):
-            for c in TraitCategory.select():
-                try:
-                    # Attempt to find the corresponding enum member
-                    enum_member = TraitCategories[c.name.upper()]
-                except KeyError:  # noqa: PERF203
-                    logger.warning(f"No matching enum member for {c.name}")
-                else:
-                    # Update the name and save the record
-                    logger.debug(f"Rename {c.name} to {enum_member.name}")
-                    c.name = enum_member.name
-                    c.save()
-
+        logger.debug("DATABASE: Populate trait categories")
         # Always reset lookup tables, this keeps database in sync with TraitCategories enum
         for tcc in TraitCategoryClass.select():
             tcc.delete_instance()

@@ -68,8 +68,9 @@ class DatabaseService:
         await db_backup.clean_old_backups()
         return backup_file
 
-    def create_tables(self) -> None:
+    def _create_tables(self) -> None:
         """Create tables in the database if they do not exist."""
+        logger.debug("DATABASE: Begin create Tables")
         with self.db:
             self.db.create_tables(
                 [
@@ -123,11 +124,33 @@ class DatabaseService:
         columns = [row[1] for row in cursor.fetchall()]
         return column in columns
 
-    def initialize_database(self, bot_version: str) -> None:
-        """Initialize or migrate the database to the bot's current version.
+    def _get_tables(self) -> list[str]:
+        """Get all tables in the Database."""
+        with self.db:
+            cursor = self.db.execute_sql("SELECT name FROM sqlite_master WHERE type='table';")
+            return [row[0] for row in cursor.fetchall()]
 
-        Populate the database first. Then, either create a new database with
-        the current bot version or migrate an existing one to that version.
+    def perform_database_migration(self, bot_version: str) -> None:
+        """Migrate the database before populating it. This method should only be called when a database migration must be performed before populating the database."""
+        # Confirm there is a database version column
+        if not self._get_tables() or not self._column_exists("databaseversion", "version"):
+            logger.info("DATABASE: New database, skip migration")
+            return
+
+        # Fetch the current database version
+        current_db_version = self.fetch_current_version()
+
+        # Migrate the database
+        MigrateDatabase(
+            self.db,
+            bot_version=bot_version,
+            db_version=current_db_version,
+        ).migrate()
+
+    def initialize_database(self, bot_version: str) -> None:
+        """Populate the database with initial data and update the database version.
+
+        Populate the database first. Then, either create a new database with the current bot version
 
         Args:
             bot_version (str): Current version of the bot.
@@ -135,10 +158,16 @@ class DatabaseService:
         Returns:
             None
         """
-        # Step 1: Populate the database
+        # Perform any database migrations before populating the database, if a database exists
+        self.perform_database_migration(bot_version)
+
+        # Create tables if they do not exist
+        self._create_tables()
+
+        # Populate the database with up-to-date data
         PopulateDatabase(self.db).populate()
 
-        # Step 2: Check or create the database version
+        # Check or create the database version
         _, new_db_created = DatabaseVersion.get_or_create(
             defaults={"version": bot_version},
         )
@@ -148,17 +177,10 @@ class DatabaseService:
             logger.info(f"DATABASE: Create new database v{bot_version}")
             return
 
-        # Step 3: Fetch current database version
+        # Fetch current database version
         current_db_version = self.fetch_current_version()
 
-        # Step 4: Migrate existing database (does nothing if no migration is needed)
-        MigrateDatabase(
-            self.db,
-            bot_version=bot_version,
-            db_version=current_db_version,
-        ).migrate()
-
-        # Step 5: Update the database version
+        # Update the database version
         if current_db_version != bot_version:
             DatabaseVersion.create(version=bot_version)
 
