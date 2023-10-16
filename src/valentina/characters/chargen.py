@@ -199,8 +199,6 @@ class UpdateCharacterButtons(discord.ui.View):
         self.updated: bool = False
         self.done: bool = False
 
-        # TODO: Allow the user to select their special ability when a choice is available
-
     def _disable_all(self) -> None:
         """Disable all buttons in the view."""
         for child in self.children:
@@ -339,6 +337,10 @@ class CharGenWizard:
     Attributes:
         paginator (pages.Paginator): Container for the paginator.
     """
+
+    # TODO: Allow the user to select their special ability when a choice is available
+    # TODO: Edges for hunters
+    # TODO: Improve mages, changelings, werewolves, and ghouls
 
     def __init__(
         self,

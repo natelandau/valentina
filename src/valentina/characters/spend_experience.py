@@ -22,6 +22,8 @@ from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons
 class SpendFreebiePoints(discord.ui.View):
     """Guide the user through spending freebie points."""
 
+    # TODO: Add merits/flaws/backgrounds or other areas not on sheet
+
     def __init__(
         self,
         ctx: discord.ApplicationContext,
@@ -184,7 +186,7 @@ class SpendFreebiePoints(discord.ui.View):
         # Guard statement, cannot spend more points than available
         if self.upgrade_cost >= self.character.freebie_points:
             await self._cancel_wizard(
-                msg=f"Can not update `{self.trait.name}`. Not enough freebie points."
+                msg=f"Not enough freebie points, can not update `{self.trait.name}`.\n\nNeeded `{self.upgrade_cost}` and you have `{self.character.freebie_points}` freebie points remaining."
             )
             return None
 
@@ -192,6 +194,23 @@ class SpendFreebiePoints(discord.ui.View):
         self.character.data["freebie_points"] -= self.upgrade_cost
         self.character.save()
         self.character.set_trait_value(self.trait, self.value + 1)
+
+        # Compute conviction, humanity, and willpower
+        if self.trait in [
+            Trait.get(name="Courage"),
+            Trait.get(name="Self-Control"),
+            Trait.get(name="Zeal"),
+            Trait.get(name="Vision"),
+        ]:
+            willpower = self.character.get_trait_value(Trait.get(name="Willpower"))
+            self.character.set_trait_value(Trait.get(name="Willpower"), willpower + 1)
+        if self.trait == Trait.get(name="Conscience"):
+            humanity = self.character.get_trait_value(Trait.get(name="Humanity"))
+            self.character.set_trait_value(Trait.get(name="Humanity"), humanity + 1)
+        if self.trait == Trait.get(name="Mercy"):
+            conviction = self.character.get_trait_value(Trait.get(name="Conviction"))
+            self.character.set_trait_value(Trait.get(name="Conviction"), conviction + 1)
+
         self.bot.user_svc.purge_cache(self.ctx)
 
         # Return the result based on the state of self.cancelled

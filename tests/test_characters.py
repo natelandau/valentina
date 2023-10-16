@@ -235,7 +235,7 @@ class TestCharacterTraitRandomizer:
             ("WEREWOLF", "NEW", 0),
             ("MORTAL", "NEW", 0),
             ("VAMPIRE", "INTERMEDIATE", 0),
-            ("VAMPIRE", "ADVANCED", 1),
+            ("HUNTER", "ADVANCED", 1),
             ("VAMPIRE", "ELITE", 2),
         ],
     )
@@ -262,13 +262,17 @@ class TestCharacterTraitRandomizer:
         result = rng._randomly_assign_virtues()
 
         # THEN assert the result is correct
-        if char_class != "WEREWOLF":
-            assert len(result) == 5
+        if char_class in ["MORTAL", "VAMPIRE"]:
+            assert len(result) == 3
             assert result[0][0].name == "Conscience"
             assert result[1][0].name == "Self-Control"
             assert result[2][0].name == "Courage"
-            assert result[3][1] == result[1][1] + result[2][1]
-            assert result[4][1] == result[0][1]
+            assert result[0][1] + result[1][1] + result[2][1] == 7 + modifier
+        elif char_class in ["HUNTER"]:
+            assert len(result) == 3
+            assert result[0][0].name == "Mercy"
+            assert result[1][0].name == "Vision"
+            assert result[2][0].name == "Zeal"
             assert result[0][1] + result[1][1] + result[2][1] == 7 + modifier
         else:
             assert not result
