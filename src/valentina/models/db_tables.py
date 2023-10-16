@@ -390,6 +390,11 @@ class Character(BaseModel):
         return display_name
 
     @property
+    def freebie_points(self) -> int:
+        """Return the number of freebie points the character has available."""
+        return self.data.get("freebie_points", 0)
+
+    @property
     def class_name(self) -> str:
         """Return the character's class from the char_class table."""
         return self.char_class.name

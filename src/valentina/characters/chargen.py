@@ -24,6 +24,7 @@ from valentina.models.db_tables import (
 from valentina.views import ChangeNameModal, sheet_embed
 
 from .reallocate_dots import DotsReallocationWizard
+from .spend_experience import SpendFreebiePoints
 
 p = inflect.engine()
 p.defnoun("Ability", "Abilities")
@@ -199,7 +200,6 @@ class UpdateCharacterButtons(discord.ui.View):
         self.done: bool = False
 
         # TODO: Allow the user to select their special ability
-        # TODO: Allow the user update their trait values
 
     def _disable_all(self) -> None:
         """Disable all buttons in the view."""
@@ -248,7 +248,68 @@ class UpdateCharacterButtons(discord.ui.View):
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.YES.value} Done",
+        label=f"{Emoji.YES.value} Done Reallocating Dots",
+        style=discord.ButtonStyle.success,
+        custom_id="done",
+        row=3,
+    )
+    async def done_callback(self, button: Button, interaction: discord.Interaction) -> None:
+        """Callback for the done button."""
+        await interaction.response.defer()
+        button.disabled = True
+        self._disable_all()
+        self.done = True
+        self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Disables buttons for everyone except the user who created the embed."""
+        return interaction.user.id == self.ctx.author.id
+
+
+class FreebiePointsButtons(discord.ui.View):
+    """Manage buttons for spending freebie points."""
+
+    def __init__(
+        self,
+        ctx: discord.ApplicationContext,
+        character: Character,
+    ):
+        super().__init__()
+        self.ctx = ctx
+        self.character = character
+        self.updated: bool = False
+        self.done: bool = False
+
+        button: Button = Button(
+            label=f"💪 Spend {self.character.freebie_points} Freebie Points",
+            style=discord.ButtonStyle.primary,
+            custom_id="freebie_points",
+            row=2,
+        )
+        button.callback = self.freebie_callback  # type: ignore [method-assign]
+        self.add_item(button)
+
+    def _disable_all(self) -> None:
+        """Disable all buttons in the view."""
+        for child in self.children:
+            if isinstance(child, Button | discord.ui.Select):
+                child.disabled = True
+
+    async def freebie_callback(self, interaction: discord.Interaction) -> None:
+        """Callback for the reallocate button."""
+        await interaction.response.defer()
+        self._disable_all()
+
+        freebie_wizard = SpendFreebiePoints(self.ctx, self.character)
+        updated, character = await freebie_wizard.start_wizard()
+        if updated:
+            self.character = character
+
+        self.updated = True
+        self.stop()
+
+    @discord.ui.button(
+        label=f"{Emoji.YES.value} Done Spending Freebie Points",
         style=discord.ButtonStyle.success,
         custom_id="done",
         row=3,
@@ -307,6 +368,7 @@ class CharGenWizard:
         character: Character,
         title: str | None = None,
         prefix: str | None = None,
+        show_special_abilities: bool = True,
     ) -> discord.Embed:
         """Create an embed for the character sheet.
 
@@ -314,6 +376,7 @@ class CharGenWizard:
             character (Character): The character for which to create the embed.
             title (str | None, optional): The title of the embed. Defaults to None.
             prefix (str | None, optional): The prefix for the description. Defaults to None.
+            show_special_abilities (bool, optional): Whether to show special abilities. Defaults to True.
 
         Returns:
             discord.Embed: The created embed.
@@ -342,7 +405,9 @@ class CharGenWizard:
             character,
             title=title if title else f"{character.name}",
             desc_prefix=prefix,
-            desc_suffix=suffix if character.char_class.name == CharClassType.MORTAL.name else None,
+            desc_suffix=suffix
+            if character.char_class.name == CharClassType.MORTAL.name and show_special_abilities
+            else None,
         )
 
     async def _cancel_character_generation(self, msg: str | None = None) -> None:
@@ -443,7 +508,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
         Returns:
             None: This method returns nothing.
         """
-        logger.debug("CHARGEN: Starting the character selection process.")
+        logger.debug("CHARGEN: Starting the character selection process")
 
         # Generate 3 characters
         characters = [await self._generate_random_character() for _ in range(3)]
@@ -523,13 +588,14 @@ Once you select a character you can re-allocate dots and change the name, but yo
                     data: dict[str, str | int | bool] = {
                         "chargen_character": False,
                         "player_character": True,
+                        "freebie_points": 21,
                     }
                     await self.bot.char_svc.update_or_add(self.ctx, character=c, data=data)
 
             # Post-process the character
-            await self.finalize_character_selection(selected_character)
+            await self.finalize_character_selection(Character.get(selected_character.id))
 
-    async def finalize_character_selection(self, character: Character) -> Character:
+    async def finalize_character_selection(self, character: Character) -> None:
         """Review and finalize the selected character.
 
         This method presents the user with an updated character sheet.
@@ -537,9 +603,6 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
         Args:
             character (Character): The selected character to review.
-
-        Returns:
-            Optional[Character]: The finalized character, or None if the process was cancelled.
         """
         logger.debug(f"CHARGENL Update the character: {character.full_name}")
 
@@ -563,7 +626,43 @@ Once you select a character you can re-allocate dots and change the name, but yo
             await self.finalize_character_selection(view.character)
 
         if view.done:
-            # TODO: Spend 21 freebie points
+            await self.spend_freebie_points(character)
+
+    async def spend_freebie_points(self, character: Character) -> Character:
+        """Spend freebie points.
+
+        Args:
+            character (Character): The character for which to spend freebie points.
+
+        Returns:
+            Character: The created character.
+        """
+        logger.debug(f"CHARGEN: Spending freebie points for {character.full_name}")
+
+        # Create the character sheet embed
+        title = f"Spend freebie points on {character.full_name}\n"
+        prefix = f"Use the buttons below to chose where you want to spend your `{character.data.get('freebie_points', 0)}` remaining freebie points.\n"
+        embed = await self._generate_character_sheet_embed(
+            character, title=title, prefix=prefix, show_special_abilities=False
+        )
+
+        # Update the paginator
+        view = FreebiePointsButtons(self.ctx, character=character)
+        await self.paginator.update(
+            pages=[embed],  # type: ignore [arg-type]
+            custom_view=view,
+            show_disabled=False,
+            show_indicator=False,
+            timeout=600,
+        )
+
+        await view.wait()
+        if view.updated:
+            # Restart the view and show the changes
+            await self.spend_freebie_points(view.character)
+
+        if view.done:
+            # End the wizard
             embed = discord.Embed(
                 title=f"{Emoji.SUCCESS.value} Created {character.name}",
                 description="Thanks for using my character generation wizard.",
@@ -572,6 +671,4 @@ Once you select a character you can re-allocate dots and change the name, but yo
             embed.set_thumbnail(url=self.ctx.bot.user.display_avatar)
             await self.paginator.cancel(page=embed, include_custom=True)
 
-            return character
-
-        return None
+        return character

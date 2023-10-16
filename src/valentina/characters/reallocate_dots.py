@@ -1,138 +1,12 @@
 """A wizard that walks the user through the character creation process."""
 import discord
-from discord.ui import Button
 
 from valentina.constants import EmbedColor, Emoji, TraitCategories
 from valentina.models.db_tables import Character, Trait
 from valentina.utils.helpers import get_max_trait_value
 from valentina.views import IntegerButtons
 
-
-class SelectTraitCategoryButtons(discord.ui.View):
-    """Buttons to select a trait category."""
-
-    def __init__(self, ctx: discord.ApplicationContext, character: Character):
-        super().__init__(timeout=300)
-        self.ctx = ctx
-        self.character = character
-        self.cancelled: bool = False
-        self.selected_category: TraitCategories = None
-
-        # Create a button for each trait category
-        all_trait_categories = [
-            TraitCategories[trait.category.name] for trait in self.character.traits_list
-        ]
-        self.all_categories = list(set(all_trait_categories))
-
-        # Create a button for each category
-        for i, category in enumerate(self.all_categories):
-            button: Button = Button(
-                label=f"{i + 1}. {category.name.title()}",
-                custom_id=f"{i}",
-                style=discord.ButtonStyle.primary,
-            )
-            button.callback = self.button_callback  # type: ignore [method-assign]
-            self.add_item(button)
-
-        cancel_button: Button = Button(
-            label=f"{Emoji.CANCEL.value} Cancel",
-            style=discord.ButtonStyle.secondary,
-            custom_id="cancel",
-        )
-        cancel_button.callback = self.cancel_callback  # type: ignore [method-assign]
-        self.add_item(cancel_button)
-
-    def _disable_all(self) -> None:
-        """Disable all buttons in the view."""
-        for child in self.children:
-            if isinstance(child, Button | discord.ui.Select):
-                child.disabled = True
-
-    async def button_callback(self, interaction: discord.Interaction) -> None:
-        """Respond to selecting a category."""
-        await interaction.response.defer()
-        # Disable the interaction and grab the setting name
-        self._disable_all()
-
-        # Return the selected character based on the custom_id of the button that was pressed
-        index = int(interaction.data.get("custom_id", None))  # type: ignore
-        self.selected_category = self.all_categories[index]
-
-        self.stop()
-
-    async def cancel_callback(self, interaction: discord.Interaction) -> None:
-        """Disable all buttons and stop the view."""
-        await interaction.response.defer()
-        self._disable_all()
-        self.cancelled = True
-        self.stop()
-
-
-class SelectCharacterTraitButtons(discord.ui.View):
-    """Buttons to select a specific trait."""
-
-    def __init__(
-        self,
-        ctx: discord.ApplicationContext,
-        character: Character,
-        category: TraitCategories,
-        positive_values_only: bool = False,
-    ):
-        super().__init__(timeout=300)
-        self.ctx = ctx
-        self.positive_values_only = positive_values_only
-        self.character = character
-        self.category = category
-        self.cancelled: bool = False
-        self.selected_trait: Trait = None
-        self.traits = [
-            trait
-            for trait in self.character.traits_list
-            if trait.category.name == self.category.name
-        ]
-
-        # Create a button for each trait
-        for i, trait in enumerate(self.traits):
-            if self.positive_values_only and self.character.get_trait_value(trait) < 1:
-                continue
-            button: Button = Button(
-                label=f"{i + 1}. {trait.name.title()}",
-                custom_id=f"{i}",
-                style=discord.ButtonStyle.primary,
-            )
-            button.callback = self.button_callback  # type: ignore [method-assign]
-            self.add_item(button)
-
-        cancel_button: Button = Button(
-            label=f"{Emoji.CANCEL.value} Cancel",
-            style=discord.ButtonStyle.secondary,
-            custom_id="cancel",
-        )
-        cancel_button.callback = self.cancel_callback  # type: ignore [method-assign]
-        self.add_item(cancel_button)
-
-    def _disable_all(self) -> None:
-        """Disable all buttons in the view."""
-        for child in self.children:
-            if isinstance(child, Button | discord.ui.Select):
-                child.disabled = True
-
-    async def button_callback(self, interaction: discord.Interaction) -> None:
-        """Respond to selecting a trait."""
-        await interaction.response.defer()
-        self._disable_all()
-
-        # Return the selected character based on the custom_id of the button that was pressed
-        index = int(interaction.data.get("custom_id", None))  # type: ignore
-        self.selected_trait = self.traits[index]
-        self.stop()
-
-    async def cancel_callback(self, interaction: discord.Interaction) -> None:
-        """Disable all buttons and stop the view."""
-        await interaction.response.defer()
-        self._disable_all()
-        self.cancelled = True
-        self.stop()
+from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons
 
 
 class DotsReallocationWizard:
@@ -209,7 +83,7 @@ class DotsReallocationWizard:
             color=EmbedColor.WARNING.value,
         )
         await self.msg.edit(embed=embed, view=None)
-        await self.msg.delete(delay=10.0)
+        await self.msg.delete(delay=5.0)
         self.cancelled = True
 
     async def _prompt_for_trait_category(self) -> TraitCategories:
@@ -255,10 +129,16 @@ class DotsReallocationWizard:
         if self.cancelled:
             return None
 
+        # Determine the traits that can be used as a source
+        available_traits = [
+            trait
+            for trait in self.character.traits_list
+            if trait.category.name == self.trait_category.name
+            and self.character.get_trait_value(trait) > 0
+        ]
+
         # Set up the view and embed to prompt the user to select a trait
-        view = SelectCharacterTraitButtons(
-            self.ctx, self.character, self.trait_category, positive_values_only=True
-        )
+        view = SelectCharacterTraitButtons(self.ctx, self.character, traits=available_traits)
         embed = discord.Embed(
             title="Reallocate Dots",
             description=f"Select the {self.trait_category.name} **trait** you want to _take dots from_",
@@ -301,8 +181,17 @@ class DotsReallocationWizard:
         if self.cancelled:
             return None
 
+        # Determine the traits that can be used as a target
+        available_traits = [
+            trait
+            for trait in self.character.traits_list
+            if trait.category.name == self.trait_category.name
+            and self.character.get_trait_value(trait)
+            < get_max_trait_value(trait.name, self.trait_category.name)
+        ]
+
         # Set up the view and embed to prompt the user to select a trait
-        view = SelectCharacterTraitButtons(self.ctx, self.character, self.trait_category)
+        view = SelectCharacterTraitButtons(self.ctx, self.character, traits=available_traits)
         embed = discord.Embed(
             title="Reallocate Dots",
             description=f"{Emoji.SUCCESS.value} You are taking dots from `{self.source_trait.name}`\n\n**Select the **trait** you want to _add dots to_**",
@@ -410,6 +299,6 @@ class DotsReallocationWizard:
         await self.msg.edit(embed=embed, view=None)
 
         # Delete the embed after a short delay
-        await self.msg.delete(delay=10.0)
+        await self.msg.delete(delay=5.0)
 
         return Character.get_by_id(self.character.id)

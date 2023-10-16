@@ -49,6 +49,12 @@ class CharacterTraitRandomizer:
         ctx (discord.ApplicationContext): The context related to the discord interaction.
     """
 
+    # TODO: Edges for Hunters
+    # TODO: Merits and Flaws
+    # TODO: Ghouls
+    # TODO: Changelings
+    # TODO: Special class
+
     def __init__(
         self,
         ctx: discord.ApplicationContext,
@@ -491,8 +497,6 @@ class CharacterTraitRandomizer:
         # Initialize the containers for trait values and custom sections
         trait_values: list[tuple[Trait, int]] = []
         custom_sections: list[tuple[str, str]] = []
-
-        ##################################################################################
 
         # Extend trait_values with generated ability values
         trait_values.extend(
