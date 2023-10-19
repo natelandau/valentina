@@ -17,6 +17,7 @@ COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
 DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
 MAX_BUTTONS_PER_ROW = 5
 MAX_CHARACTER_COUNT = 1990  # truncate text to fit in embeds
+MAX_DOT_DISPLAY = 5  # number of dots to display on a character sheet before converting to text
 MAX_FIELD_COUNT = 1010
 MAX_OPTION_LIST_SIZE = 25  # maximum number of options in a discord select menu
 MAX_PAGE_CHARACTER_COUNT = 1950
@@ -221,7 +222,8 @@ class CharSheetSection(Enum):
 
     ATTRIBUTES: ClassVar[types.CharSheetSectionDict] = {"name": "Attributes", "order": 1}
     ABILITIES: ClassVar[types.CharSheetSectionDict] = {"name": "Abilities", "order": 2}
-    NONE: ClassVar[types.CharSheetSectionDict] = {"name": "None", "order": 3}
+    ADVANTAGES: ClassVar[types.CharSheetSectionDict] = {"name": "Advantages", "order": 3}
+    NONE: ClassVar[types.CharSheetSectionDict] = {"name": "None", "order": 4}
 
 
 # Enums linked to the Database
@@ -478,7 +480,7 @@ class TraitCategories(Enum):
     SPHERES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MAGE],
         "name": "Spheres",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 7,
         "show_zero": False,
         "COMMON": [],
@@ -506,7 +508,7 @@ class TraitCategories(Enum):
         "name": "Disciplines",
         "order": 8,
         "show_zero": False,
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "COMMON": [],
         "MORTAL": [],
         "VAMPIRE": [
@@ -556,7 +558,7 @@ class TraitCategories(Enum):
     NUMINA: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MORTAL, CharClassType.MAGE, CharClassType.HUNTER],
         "name": "Numina",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 9,
         "show_zero": False,
         "COMMON": [],
@@ -572,7 +574,7 @@ class TraitCategories(Enum):
     BACKGROUNDS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Backgrounds",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 10,
         "show_zero": False,
         "COMMON": [
@@ -600,7 +602,7 @@ class TraitCategories(Enum):
     MERITS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Merits",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 11,
         "show_zero": False,
         "COMMON": [],
@@ -616,7 +618,7 @@ class TraitCategories(Enum):
     FLAWS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Flaws",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 12,
         "show_zero": False,
         "COMMON": [],
@@ -632,7 +634,7 @@ class TraitCategories(Enum):
     VIRTUES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Virtues",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 13,
         "show_zero": True,
         "COMMON": [],
@@ -648,7 +650,7 @@ class TraitCategories(Enum):
     RESONANCE: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.MAGE],
         "name": "Resonance",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 14,
         "show_zero": False,
         "COMMON": [],
@@ -664,7 +666,7 @@ class TraitCategories(Enum):
     GIFTS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.WEREWOLF, CharClassType.CHANGELING],
         "name": "Gifts",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 15,
         "show_zero": False,
         "COMMON": [],
@@ -680,7 +682,7 @@ class TraitCategories(Enum):
     RENOWN: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.WEREWOLF],
         "name": "Renown",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 16,
         "show_zero": False,
         "COMMON": [],
@@ -696,7 +698,7 @@ class TraitCategories(Enum):
     EDGES: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.HUNTER],
         "name": "Edges",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 17,
         "show_zero": False,
         "COMMON": [],
@@ -748,7 +750,7 @@ class TraitCategories(Enum):
     PATHS: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Paths",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 18,
         "show_zero": False,
         "COMMON": [],
@@ -764,7 +766,7 @@ class TraitCategories(Enum):
     OTHER: ClassVar[types.TraitCategoriesDict] = {
         "classes": [CharClassType.COMMON],
         "name": "Other",
-        "section": CharSheetSection.NONE,
+        "section": CharSheetSection.ADVANTAGES,
         "order": 19,
         "show_zero": True,
         "COMMON": ["Willpower", "Desperation"],
@@ -775,22 +777,6 @@ class TraitCategories(Enum):
         "GHOUL": ["Humanity"],
         "CHANGELING": [],
         "HUNTER": ["Conviction"],
-        "SPECIAL": [],
-    }
-    ADVANTAGES: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Advantages",
-        "section": CharSheetSection.NONE,
-        "order": 20,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
         "SPECIAL": [],
     }
 

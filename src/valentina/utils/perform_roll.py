@@ -4,8 +4,8 @@ from typing import cast
 import discord
 
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import Character, CustomTrait, Trait
 from valentina.models.dicerolls import DiceRoll
+from valentina.models.sqlite_models import Character, CustomTrait, Trait
 from valentina.views import ReRollButton, RollDisplay
 
 

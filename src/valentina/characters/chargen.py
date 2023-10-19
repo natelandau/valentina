@@ -16,7 +16,7 @@ from valentina.constants import (
     VampireClanType,
 )
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import (
+from valentina.models.sqlite_models import (
     Campaign,
     Character,
     GuildUser,

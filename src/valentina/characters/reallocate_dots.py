@@ -2,7 +2,7 @@
 import discord
 
 from valentina.constants import EmbedColor, Emoji, TraitCategories
-from valentina.models.db_tables import Character, Trait
+from valentina.models.sqlite_models import Character, Trait
 from valentina.utils.helpers import get_max_trait_value
 from valentina.views import IntegerButtons
 

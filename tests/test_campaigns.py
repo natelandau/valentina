@@ -4,7 +4,7 @@ import pytest
 from rich.console import Console
 
 from valentina.models import CampaignService
-from valentina.models.db_tables import (
+from valentina.models.sqlite_models import (
     Campaign,
     CampaignChapter,
     CampaignNote,

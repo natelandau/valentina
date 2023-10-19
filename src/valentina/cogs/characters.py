@@ -1,6 +1,7 @@
 # mypy: disable-error-code="valid-type"
 """Gameplay cog for Valentina."""
 
+import contextlib
 from pathlib import Path
 
 import discord
@@ -16,7 +17,9 @@ from valentina.constants import (
     EmbedColor,
     Emoji,
 )
-from valentina.models.bot import Valentina
+from valentina.models.aws import AWSService
+from valentina.models.bot import Valentina, ValentinaContext
+from valentina.models.mongo_collections import CharacterSheetSection, User
 from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterClass,
@@ -62,6 +65,7 @@ class Characters(commands.Cog, name="Character"):
 
     def __init__(self, bot: Valentina) -> None:
         self.bot: Valentina = bot
+        self.aws_svc = AWSService()
 
     chars = discord.SlashCommandGroup("character", "Work with characters")
     bio = chars.create_subgroup("bio", "Add or update a character's biography")
@@ -73,7 +77,7 @@ class Characters(commands.Cog, name="Character"):
     @chars.command(name="add", description="Add a character to Valentina from a sheet")
     async def add_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         char_class: Option(
             ValidCharacterClass,
             name="char_class",
@@ -150,15 +154,15 @@ class Characters(commands.Cog, name="Character"):
         for trait, value in trait_values_from_chargen:
             character.set_trait_value(trait, value)
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Created player character: `{character.full_name}` as a `{char_class.name}`"
+        await ctx.post_to_audit_log(
+            f"Created player character: `{character.name}` as a `{char_class.name}`"
         )
         logger.info(f"CHARACTER: Create character {character}")
 
     @chars.command(name="create", description="Create a new character from scratch")
     async def create_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the interaction only visible to you (default true).",
@@ -194,7 +198,7 @@ class Characters(commands.Cog, name="Character"):
     @chars.command(name="set_active", description="Select a character as your active character")
     async def set_active_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to view",
@@ -219,14 +223,15 @@ class Characters(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        await self.bot.user_svc.set_active_character(ctx, character)
+        user = await User.get(ctx.interaction.user.id, fetch_links=True)
+        await user.set_active_character(ctx.guild, character)
 
         await confirmation_response_msg
 
     @chars.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to view",
@@ -245,7 +250,7 @@ class Characters(commands.Cog, name="Character"):
     @chars.command(name="list", description="List all characters")
     async def list_characters(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         scope: Option(
             str,
             description="Scope of characters to list",
@@ -259,15 +264,19 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """List all player characters in this guild."""
-        if scope == "all":
-            characters = self.bot.char_svc.fetch_all_player_characters(ctx)
-            title_prefix = "All player"
-        elif scope == "mine":
-            user = await self.bot.user_svc.fetch_user(ctx)
-            characters = self.bot.char_svc.fetch_all_player_characters(ctx, owned_by=user)
-            title_prefix = "Your"
+        users = await User.find_many(User.guilds == ctx.guild.id, fetch_links=True).to_list()
+        character_users = []
+        active_character_ids = []
+        for user in users:
+            if scope == "mine" and user.id != ctx.user.id:
+                continue
+            character_users.extend(
+                [(x, user) for x in user.all_characters(ctx.guild) if x.type_player]
+            )
+            with contextlib.suppress(errors.NoActiveCharacterError):
+                active_character_ids.append(user.active_character(ctx.guild).id)
 
-        if len(characters) == 0:
+        if len(character_users) == 0:
             await present_embed(
                 ctx,
                 title="No Characters",
@@ -277,17 +286,19 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        text = (
-            f"## {title_prefix} {p.plural_noun('character', len(characters))} on {ctx.guild.name}\n"
-        )
+        title_prefix = "All player" if scope == "all" else "Your"
+        text = f"## {title_prefix} {p.plural_noun('character', len(character_users))} on {ctx.guild.name}\n"
 
-        for character in sorted(characters, key=lambda x: x.name):
-            alive = Emoji.ALIVE.value if character.is_alive else Emoji.DEAD.value
+        for character, user in sorted(character_users, key=lambda x: x[0].name):
+            alive_emoji = Emoji.ALIVE.value if character.is_alive else Emoji.DEAD.value
+            active = "True" if character.id in active_character_ids else "False"
+
             text += f"**{character.name}**\n"
             text += "```\n"
-            text += f"Class: {character.char_class.name:<20}  Created On: {character.created.split(' ')[0]}\n"
-            text += f"Alive: {alive:<20} Active: {bool(character.is_active)}\n"
-            text += f"Owner: {character.owned_by.data['display_name']:<20}\n"
+            text += f"Class: {character.char_class.name:<20}  Created On: {character.date_created.strftime('%Y-%m-%d')}\n"
+            text += f"Alive: {alive_emoji:<20} Active: {active}\n"
+
+            text += f"Owner: {user.name:<20}\n"
             text += "```\n"
 
         embed = discord.Embed(description=text, color=EmbedColor.INFO.value)
@@ -296,7 +307,7 @@ class Characters(commands.Cog, name="Character"):
     @chars.command(name="transfer", description="Transfer one of your characters to another user")
     async def transfer_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to view",
@@ -311,20 +322,35 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Transfer one of your characters to another user."""
+        if new_owner == ctx.author:
+            await present_embed(
+                ctx,
+                title="Cannot transfer to yourself",
+                description="You cannot transfer a character to yourself",
+                level="error",
+                ephemeral=hidden,
+            )
+            return
+
         title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_owner.display_name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
             return
 
-        await self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
+        current_user = await User.get(ctx.author.id, fetch_links=True)
+        new_user = await User.get(new_owner.id, fetch_links=True)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await current_user.remove_character(character)
+        new_user.characters.append(character)
+        await new_user.save()
+
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     @chars.command(name="kill", description="Kill a character")
     async def kill_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to view",
@@ -342,7 +368,7 @@ class Characters(commands.Cog, name="Character"):
             await present_embed(
                 ctx,
                 title="Permission error",
-                description=f"You do not have permissions to kill {character.full_name}\nSpeak to an administrator",
+                description=f"You do not have permissions to kill {character.name}\nSpeak to an administrator",
                 level="error",
                 ephemeral=True,
                 delete_after=30,
@@ -357,14 +383,14 @@ class Characters(commands.Cog, name="Character"):
         character.kill()
         self.bot.user_svc.purge_cache(ctx)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     ### IMAGE COMMANDS ####################################################################
     @image.command(name="add", description="Add an image to a character")
     async def add_image(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         file: Option(
             discord.Attachment,
             description="Location of the image on your local computer",
@@ -408,36 +434,35 @@ class Characters(commands.Cog, name="Character"):
                 )
                 return
 
-        # Fetch active character
-        character = await self.bot.user_svc.fetch_active_character(ctx)
-
-        # Upload the image to S3
-        # We upload the image prior to the confirmation step to allow us to display the image to the user.  If the user cancels the confirmation, we must delete the image from S3.
+        # Fetch the active character
+        user_object = await User.get(ctx.author.id, fetch_links=True)
+        character = user_object.active_character(ctx.guild)
 
         # Determine image extension and read data
         extension = file_extension if file else url.split(".")[-1].lower()
         data = await file.read() if file else await fetch_data_from_url(url)
 
-        # Add image to character
-        image_key = await self.bot.char_svc.add_character_image(ctx, character, extension, data)
-        image_url = self.bot.aws_svc.get_url(image_key)
+        # Upload image and add to character
+        # We upload the image prior to the confirmation step to allow us to display the image to the user.  If the user cancels the confirmation, we must delete the image from S3 and from the character object.
+        image_key = await character.add_image(extension=extension, data=data)
+        image_url = self.aws_svc.get_url(image_key)
 
         title = f"Add image to `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(
             ctx, title, hidden=hidden, image=image_url
         )
         if not is_confirmed:
-            await self.bot.char_svc.delete_character_image(ctx, character, image_key)
+            await character.delete_image(image_key)
             return
 
         # Update audit log and original response
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     @image.command(name="delete", description="Delete an image from a character")
     async def delete_image(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the interaction only visible to you (default true).",
@@ -455,22 +480,22 @@ class Characters(commands.Cog, name="Character"):
         Returns:
             None
         """
-        # Fetch the active character for the user
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        # Fetch the active character
+        user_object = await User.get(ctx.author.id, fetch_links=True)
+        character = user_object.active_character(ctx.guild)
 
         # Generate the key prefix for the character's images
-        key_prefix = self.bot.aws_svc.get_key_prefix(
-            ctx, "character", character_id=character.id
-        ).rstrip("/")
+        key_prefix = f"{ctx.guild.id}/characters/{character.id}"
 
         # Initiate an S3ImageReview to allow the user to review and delete images
-        await S3ImageReview(ctx, key_prefix, review_type="character", hidden=hidden).send(ctx)
+        s3_review = S3ImageReview(ctx, key_prefix, known_images=character.images, hidden=hidden)
+        await s3_review.send(ctx)
 
     ### TRAIT COMMANDS ####################################################################
     @trait.command(name="add", description="Add a trait to a character")
     async def add_custom_trait(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         name: Option(str, "Name of of trait to add.", required=True),
         category: Option(
             ValidTraitCategory,
@@ -498,7 +523,7 @@ class Characters(commands.Cog, name="Character"):
         """Add a custom trait to a character."""
         character = await self.bot.user_svc.fetch_active_character(ctx)
 
-        title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
+        title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.name}"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
             return
@@ -511,13 +536,13 @@ class Characters(commands.Cog, name="Character"):
             description=description,
         )
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     @trait.command(name="update", description="Update the value of a trait for a character")
     async def update_trait(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         trait: Option(
             ValidCharTrait,
             description="Trait to update",
@@ -549,9 +574,7 @@ class Characters(commands.Cog, name="Character"):
 
         old_value = character.get_trait_value(trait)
 
-        title = (
-            f"Update `{trait.name}` from `{old_value}` to `{new_value}` for `{character.full_name}`"
-        )
+        title = f"Update `{trait.name}` from `{old_value}` to `{new_value}` for `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
         if not is_confirmed:
@@ -559,13 +582,13 @@ class Characters(commands.Cog, name="Character"):
 
         character.set_trait_value(trait, new_value)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     @trait.command(name="delete", description="Delete a custom trait from a character")
     async def delete_custom_trait(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         trait: Option(
             ValidCustomTrait,
             description="Trait to delete",
@@ -589,7 +612,7 @@ class Characters(commands.Cog, name="Character"):
 
         trait.delete_instance()
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     ### SECTION COMMANDS ####################################################################
@@ -597,7 +620,7 @@ class Characters(commands.Cog, name="Character"):
     @section.command(name="add", description="Add a new custom section to the character sheet")
     async def add_custom_section(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",
@@ -605,36 +628,35 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom section to the character sheet."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        # Fetch the active character
+        user_object = await User.get(ctx.author.id, fetch_links=True)
+        character = user_object.active_character(ctx.guild)
 
         modal = CustomSectionModal(
-            title=truncate_string(f"Custom section for {character.full_name}", 45)
+            title=truncate_string(f"Custom section for {character.name}", 45)
         )
         await ctx.send_modal(modal)
         await modal.wait()
 
         section_title = modal.section_title.strip().title()
-        section_description = modal.section_description.strip()
+        section_content = modal.section_content.strip()
 
-        existing_sections = character.custom_sections
         if section_title.replace("-", "_").replace(" ", "_").lower() in [
-            x.title.replace("-", "_").replace(" ", "_").lower() for x in existing_sections
+            x.title.replace("-", "_").replace(" ", "_").lower() for x in character.sheet_sections
         ]:
-            msg = "Custom section already exists"
+            msg = f"Custom section `{section_title}`already exists"
             raise errors.ValidationError(msg)
 
-        self.bot.char_svc.custom_section_update_or_add(
-            ctx, character, section_title, section_description
+        character.sheet_sections.append(
+            CharacterSheetSection(title=section_title, content=section_content)
         )
+        await character.save()
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Add section `{section_title}` to `{character.name}`"
-        )
-
+        await ctx.post_to_audit_log(f"Add section `{section_title}` to `{character.name}`")
         await present_embed(
             ctx,
             f"Add section `{section_title}` to `{character.name}`",
-            description=f"**{section_title}**\n{section_description}",
+            description=f"**{section_title}**\n{section_content}",
             ephemeral=hidden,
             level="success",
         )
@@ -642,10 +664,11 @@ class Characters(commands.Cog, name="Character"):
     @section.command(name="update", description="Update a custom section")
     async def update_custom_section(
         self,
-        ctx: discord.ApplicationContext,
-        custom_section: Option(
+        ctx: ValentinaContext,
+        input_info: Option(
             ValidCustomSection,
             description="Custom section to update",
+            name="custom_section",
             required=True,
             autocomplete=select_custom_section,
         ),
@@ -656,33 +679,28 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a custom section."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        section, index, character = input_info
 
         modal = CustomSectionModal(
-            section_title=custom_section.title,
-            section_description=custom_section.description,
-            title=truncate_string(f"Custom section for {character.full_name}", 45),
+            section_title=section.title,
+            section_content=section.content,
+            title=truncate_string("Edit custom section", 45),
         )
         await ctx.send_modal(modal)
         await modal.wait()
 
-        section_title = modal.section_title.strip().title()
-        section_description = modal.section_description.strip()
+        section.title = modal.section_title.strip().title()
+        section.content = modal.section_content.strip()
 
-        self.bot.char_svc.custom_section_update_or_add(
-            ctx,
-            character,
-            section_title=section_title,
-            section_description=section_description,
-            section_id=custom_section.id,
-        )
+        character.sheet_sections[index] = section
+        await character.save()
 
-        title = f"Update section `{section_title}` for `{character.name}`"
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        title = f"Update section `{section.title}` for `{character.name}`"
+        await ctx.post_to_audit_log(title)
         await present_embed(
             ctx,
             title=title,
-            description=f"**{section_title}**\n{section_description}",
+            description=f"**{section.title}**\n{section.content}",
             ephemeral=hidden,
             level="success",
         )
@@ -690,10 +708,11 @@ class Characters(commands.Cog, name="Character"):
     @section.command(name="delete", description="Delete a custom section from a character")
     async def delete_custom_section(
         self,
-        ctx: discord.ApplicationContext,
-        custom_section: Option(
+        ctx: ValentinaContext,
+        input_info: Option(
             ValidCustomSection,
             description="Custom section to delete",
+            name="custom_section",
             required=True,
             autocomplete=select_custom_section,
         ),
@@ -703,16 +722,18 @@ class Characters(commands.Cog, name="Character"):
             default=True,
         ),
     ) -> None:
-        """Delete a custom trait from a character."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        """Delete a custom section from a character."""
+        section, index, character = input_info
 
-        title = f"Delete section `{custom_section.title}` from `{character.full_name}`"
+        title = f"Delete section `{section.title}` from `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
             return
 
-        custom_section.delete_instance()
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        character.sheet_sections.pop(index)
+        await character.save()
+
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     ### BIO COMMANDS ####################################################################
@@ -720,7 +741,7 @@ class Characters(commands.Cog, name="Character"):
     @bio.command(name="update", description="Add or update a character's bio")
     async def update_bio(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",
@@ -728,20 +749,22 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's bio."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        # Fetch the active character
+        user_object = await User.get(ctx.author.id, fetch_links=True)
+        character = user_object.active_character(ctx.guild)
 
         modal = BioModal(
-            title=truncate_string(f"Enter the biography for {character.full_name}", 45),
-            current_bio=character.data["bio"],
+            title=truncate_string(f"Enter the biography for {character.name}", 45),
+            current_bio=character.bio,
         )
         await ctx.send_modal(modal)
         await modal.wait()
         biography = modal.bio.strip()
 
-        await self.bot.char_svc.update_or_add(ctx, character=character, data={"bio": biography})
+        character.bio = biography
+        await character.save()
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, f"Update biography for `{character.name}`")
-
+        await ctx.post_to_audit_log(f"Update biography for `{character.name}`")
         await present_embed(
             ctx,
             title=f"Update biography for `{character.name}`",
@@ -755,7 +778,7 @@ class Characters(commands.Cog, name="Character"):
     @profile.command(name="date_of_birth")
     async def date_of_birth(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         dob: Option(ValidYYYYMMDD, description="DOB in the format of YYYY-MM-DD", required=True),
         hidden: Option(
             bool,
@@ -764,13 +787,14 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Set the DOB of a character."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        # Fetch the active character
+        user_object = await User.get(ctx.author.id, fetch_links=True)
+        character = user_object.active_character(ctx.guild)
 
-        await self.bot.char_svc.update_or_add(ctx, character=character, data={"date_of_birth": dob})
+        character.dob = dob
+        await character.save()
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`"
-        )
+        await ctx.post_to_audit_log(f"`{character.name}` DOB set to `{dob:%Y-%m-%d}`")
         await present_embed(
             ctx,
             title="Date of Birth Updated",
@@ -782,7 +806,7 @@ class Characters(commands.Cog, name="Character"):
     @profile.command(name="update", description="Update a character's profile")
     async def update_profile(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",
@@ -790,7 +814,11 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        # Fetch the active character
+        user_object = await User.get(ctx.author.id, fetch_links=True)
+        character = user_object.active_character(ctx.guild)
+
+        ############################################
 
         modal = ProfileModal(
             title=truncate_string(f"Profile for {character}", 45), character=character
@@ -798,14 +826,13 @@ class Characters(commands.Cog, name="Character"):
         await ctx.send_modal(modal)
         await modal.wait()
         if modal.confirmed:
-            update_data: dict = {k: v for k, v in modal.results.items() if v}
+            for k, v in modal.results.items():
+                if v:
+                    character.__dict__[k] = v
 
-            await self.bot.char_svc.update_or_add(ctx, character=character, data=update_data)
+            await character.save()
 
-            await self.bot.guild_svc.send_to_audit_log(
-                ctx, f"Update profile for `{character.name}`"
-            )
-
+            await ctx.post_to_audit_log(f"Update profile for `{character.name}`")
             await present_embed(
                 ctx,
                 title=f"Update profile for `{character.name}`",

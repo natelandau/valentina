@@ -5,7 +5,7 @@ from discord.ext import pages
 from discord.ui import Button
 
 from valentina.constants import ChannelPermission, EmbedColor, Emoji, RollResultType
-from valentina.models.db_tables import RollThumbnail
+from valentina.models.sqlite_models import RollThumbnail
 
 
 class DeleteOrCategorizeThumbnails(discord.ui.View):

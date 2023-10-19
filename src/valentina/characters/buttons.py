@@ -3,7 +3,7 @@ import discord
 from discord.ui import Button
 
 from valentina.constants import Emoji, TraitCategories
-from valentina.models.db_tables import Character, Trait
+from valentina.models.sqlite_models import Character, Trait
 
 
 class SelectTraitCategoryButtons(discord.ui.View):

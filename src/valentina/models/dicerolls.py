@@ -7,7 +7,7 @@ from loguru import logger
 from numpy.random import default_rng
 
 from valentina.constants import DiceType, EmbedColor, RollResultType
-from valentina.models.db_tables import Character, RollStatistic
+from valentina.models.sqlite_models import Character, RollStatistic
 from valentina.utils import errors
 from valentina.utils.helpers import diceroll_thumbnail
 

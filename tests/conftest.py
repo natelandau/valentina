@@ -23,7 +23,7 @@ from loguru import logger
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
 from valentina.constants import CharClassType, VampireClanType
-from valentina.models.db_tables import (
+from valentina.models.sqlite_models import (
     Campaign,
     CampaignChapter,
     CampaignNote,

@@ -2,8 +2,8 @@
 """Tests for the dicerolls module."""
 import pytest
 
-from valentina.models.db_tables import Guild, GuildUser, RollStatistic
 from valentina.models.dicerolls import DiceRoll, RollResultType
+from valentina.models.sqlite_models import Guild, GuildUser, RollStatistic
 from valentina.utils import errors
 
 

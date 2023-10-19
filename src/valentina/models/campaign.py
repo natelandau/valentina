@@ -5,7 +5,7 @@ from discord import AutocompleteContext
 from loguru import logger
 from peewee import DoesNotExist, IntegrityError
 
-from valentina.models.db_tables import (
+from valentina.models.sqlite_models import (
     Campaign,
     CampaignChapter,
     CampaignNote,

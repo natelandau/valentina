@@ -16,10 +16,17 @@ from valentina.constants import (
     TraitCategories,
     VampireClanType,
 )
-from valentina.models.db_tables import (
+from valentina.models.mongo_collections import (
     Campaign,
     Character,
-    CustomSection,
+    CharacterSheetSection,
+    CharacterTrait,
+    User,
+    UserMacro,
+)
+from valentina.models.sqlite_models import (
+    # Campaign,
+    # Character,
     CustomTrait,
     Macro,
     Trait,
@@ -128,17 +135,18 @@ class ValidCharacterObject(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> Character:  # noqa: ARG002
         """Return a character object from a character id."""
-        try:
-            return Character.get_by_id(int(argument))
-        except DoesNotExist as e:
-            msg = f"No character found in database with id `{argument}`"
-            raise errors.DatabaseError(msg) from e
+        character = await Character.get(argument, fetch_links=True)
+        if character:
+            return character
+
+        msg = f"No character found in database with id `{argument}`"
+        raise errors.DatabaseError(msg)
 
 
 class ValidCharTrait(Converter):
     """A converter that ensures a requested trait is a valid character trait or custom trait."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> Trait | CustomTrait:
+    async def convert(self, ctx: commands.Context, argument: str) -> CharacterTrait:
         """Validate and normalize traits."""
         # Certain autocomplete options prefix a character id to the trait name
         match = re.match(r"(\d+)_(.*)", argument)
@@ -189,13 +197,24 @@ class ValidClan(Converter):
 class ValidCustomSection(Converter):
     """Converter to ensure a custom section is valid."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> CustomSection:  # noqa: ARG002
-        """Validate and return a custom section."""
+    async def convert(
+        self, ctx: commands.Context, argument: str
+    ) -> tuple[CharacterSheetSection, int, Character]:
+        """Validate a given index.
+
+        Returns:
+            tuple[CharacterSheetSection, int, Character]: The custom section, the index, and the character
+        """
+        # TODO: Completed
+        arg = int(argument)
+
+        user_object = await User.get(ctx.user.id, fetch_links=True)  # type: ignore [attr-defined]
+        active_character = user_object.active_character(ctx.guild)
         try:
-            return CustomSection.get_by_id(int(argument))
-        except DoesNotExist as e:
-            msg = f"No custom section found in database with id `{argument}`"
-            raise errors.DatabaseError(msg) from e
+            return active_character.sheet_sections[arg], arg, active_character
+        except IndexError as e:
+            msg = f"`{arg}` is not a valid custom section"
+            raise BadArgument(msg) from e
 
 
 class ValidCustomTrait(Converter):

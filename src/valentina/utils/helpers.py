@@ -191,10 +191,6 @@ def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False
 
         >>> get_max_trait_value("xxx", "xxx")
         5
-
-        >>> get_max_trait_value("xxx", "xxx", True)
-
-
     """
     # Some traits have their own max value. Check for those first.
     if trait.upper() in MaxTraitValue.__members__:
@@ -203,9 +199,6 @@ def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False
     # Try to find the max value by looking up the category of the trait
     if category.upper() in MaxTraitValue.__members__:
         return MaxTraitValue[category.upper()].value
-
-    if is_custom_trait:
-        return None
 
     return MaxTraitValue.DEFAULT.value
 

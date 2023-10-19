@@ -3,10 +3,8 @@
 Note, due to ForeignKey constraints, the Guild database model is defined in database.py.
 """
 from datetime import datetime
-from typing import cast
 
 import discord
-import semver
 from discord.ext import commands
 from loguru import logger
 
@@ -16,7 +14,6 @@ from valentina.constants import (
     EmbedColor,
 )
 from valentina.utils import errors
-from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.discord_utils import (
     create_player_role,
     create_storyteller_role,
@@ -24,7 +21,7 @@ from valentina.utils.discord_utils import (
 )
 from valentina.utils.helpers import time_now
 
-from .db_tables import DatabaseVersion, Guild, RollThumbnail
+from .sqlite_models import Guild, RollThumbnail
 
 
 class GuildService:
@@ -175,73 +172,6 @@ class GuildService:
 
         return channel_object
 
-    def fetch_changelog_versions(self) -> list[str]:
-        """Fetch a list of versions from the changelog."""
-        if not self.changelog_versions_cache:
-            self.changelog_versions_cache = ChangelogParser(self.bot).list_of_versions()
-
-        return self.changelog_versions_cache
-
-    def fetch_audit_log_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
-        """Retrieve the audit log channel for the guild from the settings.
-
-        Fetch the guild's settings to determine if an audit log channel has been set.
-        If set, return the corresponding TextChannel object; otherwise, return None.
-
-        Args:
-            guild (discord.Guild): The guild to fetch the audit log channel for.
-
-        Returns:
-            discord.TextChannel|None: The audit log channel, if it exists and is set; otherwise, None.
-        """
-        settings = self.fetch_guild_settings(guild)
-        db_id = settings.get("audit_log_channel_id", None)
-
-        if db_id:
-            return discord.utils.get(guild.text_channels, id=settings["audit_log_channel_id"])
-
-        return None
-
-    def fetch_changelog_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
-        """Retrieve the changelog channel for the guild from the settings.
-
-        Fetch the guild's settings to determine if a changelog channel has been set.
-        If set, return the corresponding TextChannel object; otherwise, return None.
-
-        Args:
-            guild (discord.Guild): The guild to fetch the changelog channel for.
-
-        Returns:
-            discord.TextChannel|None: The changelog channel, if it exists and is set; otherwise, None.
-        """
-        settings = self.fetch_guild_settings(guild)
-        db_id = settings.get("changelog_channel_id", None)
-
-        if db_id:
-            return discord.utils.get(guild.text_channels, id=settings["changelog_channel_id"])
-
-        return None
-
-    def fetch_error_log_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
-        """Retrieve the error log channel for the guild from the settings.
-
-        Fetch the guild's settings to determine if an error log channel has been set.
-        If set, return the corresponding TextChannel object; otherwise, return None.
-
-        Args:
-            guild (discord.Guild): The guild to fetch the error log channel for.
-
-        Returns:
-            discord.TextChannel|None: The error log channel, if it exists and is set; otherwise, None.
-        """
-        settings = self.fetch_guild_settings(guild)
-        db_id = settings.get("error_log_channel_id", None)
-
-        if db_id:
-            return discord.utils.get(guild.text_channels, id=settings["error_log_channel_id"])
-
-        return None
-
     def fetch_storyteller_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         """Retrieve the storyteller channel for the guild from the settings.
 
@@ -318,14 +248,6 @@ class GuildService:
 
         return self.roll_result_thumbs[ctx.guild.id]
 
-    async def update_guild_users(self, guild: discord.Guild) -> None:
-        """Update all users in a guild. Used in bot on_ready."""
-        for member in guild.members:
-            if member.bot:
-                continue
-            logger.debug(f"DATABASE: Update user: {member.display_name}")
-            await self.bot.user_svc.update_or_add(guild=guild, user=member, data={"display_name": member.display_name})  # type: ignore [attr-defined] # it really is defined
-
     async def prepare_guild(self, guild: discord.Guild) -> None:
         """Prepares a guild for use by the bot. This method is called when the bot joins a guild. This method is idempotent, and can be called multiple times without issue if the default roles need to be recreated.
 
@@ -345,78 +267,6 @@ class GuildService:
         # Create roles
         await create_storyteller_role(guild)
         await create_player_role(guild)
-
-    async def post_changelog(self, guild: discord.Guild, bot: commands.Bot) -> None:
-        """Post a changelog to the guild's changelog channel.
-
-        This function fetches the changelog channel for the guild and posts the changelog
-        if there are any updates since the last posted version. It also updates the last
-        posted version in the guild settings.
-
-        Args:
-            guild (discord.Guild): The guild to which the changelog will be posted.
-            bot (commands.Bot): The bot instance.
-
-        Returns:
-            None
-        """
-        # Fetch the changelog channel for the guild
-        changelog_channel = self.fetch_changelog_channel(guild)
-        if not changelog_channel:
-            logger.debug(f"CHANGELOG: No changelog channel found for {guild.name}")
-            return
-
-        # Fetch the latest database version
-        db_version = DatabaseVersion.select().order_by(DatabaseVersion.id.desc()).get().version
-
-        # Fetch the last posted changelog version from guild settings
-        settings = self.fetch_guild_settings(guild)
-        last_posted_version = cast(str, settings.get("changelog_posted_version", None))
-
-        # If no version has been posted yet in the guild, get the second latest version
-        if not last_posted_version:
-            last_posted_version = self.fetch_changelog_versions()[1]
-
-        # Check if there are any updates to post
-        if semver.compare(last_posted_version, db_version) == 0:
-            logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
-            return
-
-        # Add 1 to the last posted version to get the next version to post
-        version_to_post = db_version
-        for v in self.fetch_changelog_versions():
-            if v == last_posted_version:
-                break
-            version_to_post = v
-
-        # Initialize the changelog parser
-        changelog = ChangelogParser(
-            bot,
-            version_to_post,
-            db_version,
-            exclude_categories=[
-                "docs",
-                "refactor",
-                "style",
-                "test",
-                "chore",
-                "perf",
-                "ci",
-                "build",
-            ],
-        )
-        if not changelog.has_updates():
-            logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
-            return
-
-        # Send the changelog embed to the channel
-        embed = changelog.get_embed_personality()
-        await changelog_channel.send(embed=embed)
-        logger.debug(f"CHANGELOG: Post changelog to {guild.name}")
-
-        # Update the last posted version in guild settings
-        updates = {"changelog_posted_version": db_version}
-        self.update_or_add(guild=guild, updates=updates)
 
     def purge_cache(
         self,
@@ -468,38 +318,6 @@ class GuildService:
                 await audit_log_channel.send(embed=embed)
             except discord.HTTPException as e:
                 raise errors.MessageTooLongError from e
-
-    async def send_to_error_log(
-        self, ctx: discord.ApplicationContext, message: str | discord.Embed, error: Exception
-    ) -> None:  # pragma: no cover
-        """Send an error message or embed to the guild's error log channel.
-
-        If the error log channel exists, convert the input message to an embed if it's a string and send it to the guild's error log channel.
-
-        Args:
-            ctx (discord.ApplicationContext): The context for the discord command.
-            message (str|discord.Embed): The error message or embed to send to the channel.
-            error (Exception): The exception that triggered the error log message.
-
-        Raises:
-            discord.DiscordException: If the error message could not be sent to the channel.
-        """
-        # Confirm the channel exists
-        error_log_channel = self.fetch_error_log_channel(ctx.guild)
-
-        # Log to the error log channel if it exists and is enabled
-        if error_log_channel:
-            embed = self._message_to_embed(message, ctx) if isinstance(message, str) else message
-            try:
-                await error_log_channel.send(embed=embed)
-            except discord.HTTPException:
-                embed = discord.Embed(
-                    title=f"A {error.__class__.__name__} exception was raised",
-                    description="The error was too long to fit! Check the logs for full traceback",
-                    color=EmbedColor.ERROR.value,
-                    timestamp=discord.utils.utcnow(),
-                )
-                await error_log_channel.send(embed=embed)
 
     def update_or_add(
         self,

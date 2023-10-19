@@ -10,9 +10,7 @@ import typer
 from dotenv import dotenv_values
 from loguru import logger
 
-from valentina.models import DatabaseService
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import DATABASE
 from valentina.utils import InterceptHandler
 
 from .__version__ import __version__
@@ -60,7 +58,8 @@ logger.add(
 logger.add(
     CONFIG["VALENTINA_LOG_FILE"],
     level=CONFIG["VALENTINA_LOG_LEVEL"].upper(),
-    rotation="5 MB",
+    rotation="1 week",
+    retention="2 weeks",
     compression="zip",
     enqueue=True,
 )
@@ -76,10 +75,6 @@ def main(
     ),
 ) -> None:
     """Run Valentina."""
-    # Setup database
-    db = DatabaseService(DATABASE)
-    db.initialize_database(__version__)
-
     # Instantiate the bot
     intents = discord.Intents.all()
     bot = Valentina(

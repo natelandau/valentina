@@ -8,7 +8,7 @@ from rich.console import Console
 
 from valentina.constants import GUILD_DEFAULTS
 from valentina.models import GuildService
-from valentina.models.db_tables import Guild
+from valentina.models.sqlite_models import Guild
 
 # ARG001
 

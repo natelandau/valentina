@@ -12,8 +12,9 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
-from valentina.models.bot import Valentina
-from valentina.models.db_tables import (
+from valentina.models.bot import Valentina, ValentinaContext
+from valentina.models.mongo_collections import Guild
+from valentina.models.sqlite_models import (
     Character,
     RollProbability,
 )
@@ -223,7 +224,7 @@ class Developer(commands.Cog):
     @commands.guild_only()
     async def repost_changelog(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         oldest_version: Option(str, autocomplete=select_changelog_version_1, required=True),
         newest_version: Option(str, autocomplete=select_changelog_version_2, required=True),
     ) -> None:
@@ -234,7 +235,8 @@ class Developer(commands.Cog):
             )
             raise commands.BadArgument(msg)
 
-        changelog_channel = self.bot.guild_svc.fetch_changelog_channel(ctx.guild)
+        guild = await Guild.get(ctx.guild.id)
+        changelog_channel = guild.fetch_changelog_channel(ctx.guild)
         if not changelog_channel:
             await ctx.respond(
                 embed=discord.Embed(
@@ -272,8 +274,8 @@ class Developer(commands.Cog):
             return
 
         # Update the last posted version in guild settings
-        updates = {"changelog_posted_version": newest_version}
-        self.bot.guild_svc.update_or_add(guild=ctx.guild, updates=updates)
+        guild.changelog_posted_version = newest_version
+        await guild.save()
 
         # Post the changelog
         embed = changelog.get_embed_personality()
@@ -281,7 +283,7 @@ class Developer(commands.Cog):
 
         await ctx.respond(
             embed=discord.Embed(
-                description=f"Changelog reposted and settings`[changelog_posted_version]` updated to `{newest_version}`",
+                description=f"Changelog reposted and `guild.changelog_posted_version` updated to `{newest_version}`",
                 color=EmbedColor.SUCCESS.value,
             ),
             ephemeral=True,

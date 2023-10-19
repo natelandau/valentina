@@ -4,7 +4,7 @@ from __future__ import annotations
 import discord
 from loguru import logger
 
-from valentina.models.db_tables import CustomTrait, GuildUser, Macro, MacroTrait, Trait
+from valentina.models.sqlite_models import CustomTrait, GuildUser, Macro, MacroTrait, Trait
 from valentina.utils import errors
 
 

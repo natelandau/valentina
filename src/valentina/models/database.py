@@ -8,7 +8,7 @@ import inflect
 from loguru import logger
 from playhouse.sqlite_ext import CSqliteExtDatabase
 
-from valentina.models.db_tables import (
+from valentina.models.sqlite_models import (
     DATABASE,
     Campaign,
     CampaignChapter,

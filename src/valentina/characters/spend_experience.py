@@ -13,7 +13,7 @@ from valentina.constants import (
     XPMultiplier,
 )
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import Character, Trait
+from valentina.models.sqlite_models import Character, Trait
 from valentina.utils.helpers import get_max_trait_value, get_trait_multiplier, get_trait_new_value
 
 from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons

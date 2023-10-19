@@ -17,6 +17,7 @@ from valentina.constants import (
     PermissionsKillCharacter,
 )
 from valentina.models.bot import Valentina
+from valentina.models.mongo_collections import Guild
 from valentina.views import CancelButton
 
 
@@ -171,7 +172,7 @@ class SettingsChannelSelect(discord.ui.View):
 
             # Post changelog to the channel when the changelog channel is set
             if self.key == "changelog_channel_id":
-                await self.bot.guild_svc.post_changelog(guild=self.ctx.guild, bot=self.bot)
+                await self.bot.post_changelog_to_guild(self.ctx.guild)
 
         else:
             # Update the settings in the database
@@ -260,8 +261,15 @@ class SettingsManager:
         self.bot = cast(Valentina, ctx.bot)
 
         self.current_settings = self.bot.guild_svc.fetch_guild_settings(self.ctx.guild)
-        self.page_group: list[pages.PageGroup] = [
-            self._home_embed(),
+
+    async def _get_pages(self) -> list[pages.PageGroup]:
+        """Get the pages for the settings manager.
+
+        Returns:
+            list[pages.PageGroup]: A list of PageGroup objects containing the pages for the settings manager.
+        """
+        return [
+            await self._home_embed(),
             self._channel_audit_log(),
             self._channel_changelog(),
             self._channel_error_log(),
@@ -371,7 +379,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _home_embed(self) -> pages.PageGroup:
+    async def _home_embed(self) -> pages.PageGroup:
         """Create the home page group embed.
 
         Constructs an embed that serves as the home page for guild settings, displaying
@@ -381,12 +389,12 @@ class SettingsManager:
             pages.PageGroup: A PageGroup object containing the embed and custom view for the home page.
         """
         settings_home_embed = discord.Embed(title="", color=EmbedColor.DEFAULT.value)
-
+        guild = await Guild.get(self.ctx.guild)
         # Gather information
-        error_log_channel = self.bot.guild_svc.fetch_error_log_channel(self.ctx.guild)
-        audit_log_channel = self.bot.guild_svc.fetch_audit_log_channel(self.ctx.guild)
-        storyteller_channel = self.bot.guild_svc.fetch_storyteller_channel(self.ctx.guild)
-        changelog_channel = self.bot.guild_svc.fetch_changelog_channel(self.ctx.guild)
+        error_log_channel = await guild.fetch_error_log_channel(self.ctx.guild)
+        audit_log_channel = await guild.fetch_audit_log_channel(self.ctx.guild)
+        storyteller_channel = await guild.fetch_storyteller_channel(self.ctx.guild)
+        changelog_channel = await guild.fetch_changelog_channel(self.ctx.guild)
 
         settings_home_embed.description = "\n".join(
             [
@@ -629,7 +637,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def display_settings_manager(self) -> pages.Paginator:
+    async def display_settings_manager(self) -> pages.Paginator:
         """Display the settings manager.
 
         Display the settings manager as a paginator to navigate through different settings.
@@ -638,7 +646,7 @@ class SettingsManager:
             pages.Paginator: The paginator object containing all the settings pages.
         """
         return pages.Paginator(
-            pages=self.page_group,
+            pages=await self._get_pages(),
             show_menu=True,
             menu_placeholder="Navigate To Setting",
             show_disabled=False,

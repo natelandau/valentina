@@ -19,7 +19,7 @@ from valentina.constants import (
 )
 from valentina.models import CharacterService
 from valentina.models.characters import CharacterTraitRandomizer
-from valentina.models.db_tables import (
+from valentina.models.sqlite_models import (
     Character,
     CharacterClass,
     CustomTrait,

@@ -5,7 +5,7 @@ import pytest
 from dirty_equals import IsStr
 
 from valentina.models import Probability
-from valentina.models.db_tables import RollProbability
+from valentina.models.sqlite_models import RollProbability
 
 
 @pytest.mark.usefixtures("mock_db")

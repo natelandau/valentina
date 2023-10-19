@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from valentina.models import MacroService
-from valentina.models.db_tables import CustomTrait, GuildUser, Macro, MacroTrait, Trait
+from valentina.models.sqlite_models import CustomTrait, GuildUser, Macro, MacroTrait, Trait
 from valentina.utils import errors
 
 
@@ -107,7 +107,7 @@ class TestMacroService:
         """
         # Mock the MacroTrait.create_from_trait_name method
         mocker.patch(
-            "valentina.models.db_tables.MacroTrait.create_from_trait_name", return_value=None
+            "valentina.models.sqlite_models.MacroTrait.create_from_trait_name", return_value=None
         )
 
         # Grab a database object to use
@@ -132,7 +132,7 @@ class TestMacroService:
         """
         # Mock the MacroTrait.create_from_trait_name method
         mocker.patch(
-            "valentina.models.db_tables.MacroTrait.create_from_trait_name", return_value=None
+            "valentina.models.sqlite_models.MacroTrait.create_from_trait_name", return_value=None
         )
 
         # Grab a database object to use

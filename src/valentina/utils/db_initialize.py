@@ -15,7 +15,7 @@ from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 from semver import Version
 
 from valentina.constants import CharClassType, TraitCategories, VampireClanType
-from valentina.models.db_tables import (
+from valentina.models.sqlite_models import (
     Campaign,
     CampaignNote,
     Character,
@@ -499,7 +499,7 @@ class MigrateDatabase:
             # #################
 
             # Create new tables
-            from valentina.models.db_tables import (
+            from valentina.models.sqlite_models import (
                 Campaign,
                 CampaignChapter,
                 CampaignNote,

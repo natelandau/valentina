@@ -12,7 +12,7 @@ from peewee import DoesNotExist, fn
 from valentina.constants import CharClassType, TraitCategories
 from valentina.utils import errors
 
-from .db_tables import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass
+from .sqlite_models import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass
 
 
 class TraitService:

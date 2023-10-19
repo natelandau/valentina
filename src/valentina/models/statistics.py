@@ -5,7 +5,7 @@ from loguru import logger
 from peewee import fn
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models.db_tables import Character, GuildUser, RollStatistic
+from valentina.models.sqlite_models import Character, GuildUser, RollStatistic
 
 
 class Statistics:

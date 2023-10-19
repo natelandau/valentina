@@ -5,8 +5,8 @@ import discord
 from loguru import logger
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models.db_tables import RollProbability
 from valentina.models.dicerolls import DiceRoll
+from valentina.models.sqlite_models import RollProbability
 
 # Constants for emoji thresholds
 SUCCESS_HIGHEST_THRESHOLD = 90

@@ -2,8 +2,8 @@
 import discord
 import inflect
 
-from valentina.models.db_tables import CustomTrait, Trait
 from valentina.models.dicerolls import DiceRoll
+from valentina.models.sqlite_models import CustomTrait, Trait
 
 p = inflect.engine()
 

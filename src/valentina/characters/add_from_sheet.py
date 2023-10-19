@@ -8,7 +8,7 @@ from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor
-from valentina.models.db_tables import Trait
+from valentina.models.sqlite_models import Trait
 from valentina.utils.helpers import get_max_trait_value
 
 

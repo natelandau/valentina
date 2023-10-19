@@ -12,7 +12,7 @@ from discord.ext import commands
 from valentina.constants import DiceType, EmbedColor
 from valentina.models import Probability, Statistics
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import Character, Macro
+from valentina.models.sqlite_models import Character, Macro
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.helpers import fetch_random_name

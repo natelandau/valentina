@@ -4,7 +4,7 @@ import pytest
 
 from valentina.constants import CharClassType
 from valentina.models import TraitService
-from valentina.models.db_tables import Trait
+from valentina.models.sqlite_models import Trait
 from valentina.utils import errors
 
 

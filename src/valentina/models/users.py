@@ -18,7 +18,7 @@ from valentina.constants import (
     PermissionsEditXP,
     PermissionsKillCharacter,
 )
-from valentina.models.db_tables import Character, GuildUser
+from valentina.models.sqlite_models import Character, GuildUser
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 

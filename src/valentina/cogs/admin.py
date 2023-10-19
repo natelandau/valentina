@@ -263,7 +263,7 @@ class Admin(commands.Cog):
     ) -> None:
         """Manage Guild Settings."""
         manager = SettingsManager(ctx)
-        paginator = manager.display_settings_manager()
+        paginator = await manager.display_settings_manager()
         await paginator.respond(ctx.interaction, ephemeral=hidden)
         await paginator.wait()
 

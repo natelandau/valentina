@@ -151,7 +151,7 @@ class ErrorReporter:
             log_method = logger.opt(exception=error).error if show_traceback else logger.warning
             log_method(log_msg)
             embed = await self.error_log_embed(ctx, log_msg, error)
-            await ctx.bot.guild_svc.send_to_error_log(ctx, embed, error)  # type: ignore [attr-defined] # It exists, really
+            await ctx.post_to_error_log(embed, error)  # type: ignore [attr-defined]
 
         if show_traceback:
             logger.opt(exception=error).error(f"ERROR: {error}")

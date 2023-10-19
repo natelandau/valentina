@@ -8,7 +8,7 @@ from discord import ApplicationContext, Role
 
 from valentina.constants import PermissionManageCampaign, PermissionsEditTrait, PermissionsEditXP
 from valentina.models import UserService
-from valentina.models.db_tables import Character, Guild, GuildUser
+from valentina.models.sqlite_models import Character, Guild, GuildUser
 from valentina.utils import errors
 
 
