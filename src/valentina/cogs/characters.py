@@ -1,5 +1,5 @@
 # mypy: disable-error-code="valid-type"
-"""Gameplay cog for Valentina."""
+"""Character cog for Valentina."""
 
 import contextlib
 from pathlib import Path
@@ -19,16 +19,14 @@ from valentina.constants import (
 )
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import CharacterSheetSection, User
+from valentina.models.mongo_collections import Character, CharacterSheetSection, User
 from valentina.utils import errors
 from valentina.utils.converters import (
-    ValidCharacterClass,
     ValidCharacterName,
     ValidCharacterObject,
-    ValidCharTrait,
+    ValidCharClassType,
     ValidClan,
     ValidCustomSection,
-    ValidCustomTrait,
     ValidImageURL,
     ValidTraitCategory,
     ValidYYYYMMDD,
@@ -42,7 +40,6 @@ from valentina.utils.options import (
     select_char_class,
     select_char_trait,
     select_custom_section,
-    select_custom_trait,
     select_player_character,
     select_trait_category,
     select_vampire_clan,
@@ -74,12 +71,17 @@ class Characters(commands.Cog, name="Character"):
     section = chars.create_subgroup("section", "Work with character custom sections")
     trait = chars.create_subgroup("trait", "Work with character traits")
 
+    async def _fetch_active_character(self, ctx: ValentinaContext) -> Character:
+        """Fetch the active character for the user."""
+        user = await User.get(ctx.author.id, fetch_links=True)
+        return user.active_character(ctx.guild)
+
     @chars.command(name="add", description="Add a character to Valentina from a sheet")
     async def add_character(
         self,
         ctx: ValentinaContext,
         char_class: Option(
-            ValidCharacterClass,
+            ValidCharClassType,
             name="char_class",
             description="The character's class",
             autocomplete=select_char_class,
@@ -107,9 +109,6 @@ class Characters(commands.Cog, name="Character"):
             nickname (str, optional): The character's nickname. Defaults to None.
             vampire_clan (VampireClan, optional): The character's vampire clan. Defaults to None.
         """
-        # Ensure the user is in the database
-        await self.bot.user_svc.update_or_add(ctx)
-
         # Require a clan for vampires
         if char_class == CharClassType.VAMPIRE and not vampire_clan:
             await present_embed(
@@ -120,44 +119,21 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        # Fetch all traits and set them
-        fetched_traits = self.bot.trait_svc.fetch_all_class_traits(char_class)
-
-        wizard = AddFromSheetWizard(
-            ctx,
-            fetched_traits,
-            first_name=first_name,
-            last_name=last_name,
-            nickname=nickname,
+        user = await User.get(ctx.author.id, fetch_links=True)
+        character = Character(
+            guild=ctx.guild.id,
+            name_first=first_name,
+            name_last=last_name,
+            name_nick=nickname,
+            char_class_name=char_class.name,
+            clan_name=vampire_clan.name if vampire_clan else None,
+            type_player=True,
+            user_creator=user,
+            user_owner=user,
         )
+
+        wizard = AddFromSheetWizard(ctx, character=character, user=user)
         await wizard.begin_chargen()
-        trait_values_from_chargen = await wizard.wait_until_done()
-
-        # Create the character and traits in the db
-        data: dict[str, str | int | bool] = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "nickname": nickname,
-            "player_character": True,
-        }
-
-        # Make character active if user does not have an active character
-        try:
-            await self.bot.user_svc.fetch_active_character(ctx)
-        except errors.NoActiveCharacterError:
-            data["is_active"] = True
-
-        character = await self.bot.char_svc.update_or_add(
-            ctx, data=data, char_class=char_class, clan=vampire_clan
-        )
-
-        for trait, value in trait_values_from_chargen:
-            character.set_trait_value(trait, value)
-
-        await ctx.post_to_audit_log(
-            f"Created player character: `{character.name}` as a `{char_class.name}`"
-        )
-        logger.info(f"CHARACTER: Create character {character}")
 
     @chars.command(name="create", description="Create a new character from scratch")
     async def create_character(
@@ -364,24 +340,25 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Kill a character."""
-        if not self.bot.user_svc.can_kill_character(ctx, character):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description=f"You do not have permissions to kill {character.name}\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
-            return
+        # Guard statement: check permissions
+        # if not self.bot.user_svc.can_kill_character(ctx, character):
+        #     await present_embed(
+        #         ctx,
+        #         title="Permission error",
+        #         description=f"You do not have permissions to kill {character.name}\nSpeak to an administrator",
+        #         level="error",
+        #         ephemeral=True,
+        #         delete_after=30,
+        #     )
+        #     return
 
         title = f"Kill `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
             return
 
-        character.kill()
-        self.bot.user_svc.purge_cache(ctx)
+        character.is_alive = False
+        await character.save()
 
         await ctx.post_to_audit_log(title)
         await confirmation_response_msg
@@ -435,8 +412,7 @@ class Characters(commands.Cog, name="Character"):
                 return
 
         # Fetch the active character
-        user_object = await User.get(ctx.author.id, fetch_links=True)
-        character = user_object.active_character(ctx.guild)
+        character = await self._fetch_active_character(ctx)
 
         # Determine image extension and read data
         extension = file_extension if file else url.split(".")[-1].lower()
@@ -481,8 +457,7 @@ class Characters(commands.Cog, name="Character"):
             None
         """
         # Fetch the active character
-        user_object = await User.get(ctx.author.id, fetch_links=True)
-        character = user_object.active_character(ctx.guild)
+        character = await self._fetch_active_character(ctx)
 
         # Generate the key prefix for the character's images
         key_prefix = f"{ctx.guild.id}/characters/{character.id}"
@@ -493,7 +468,7 @@ class Characters(commands.Cog, name="Character"):
 
     ### TRAIT COMMANDS ####################################################################
     @trait.command(name="add", description="Add a trait to a character")
-    async def add_custom_trait(
+    async def add_trait(
         self,
         ctx: ValentinaContext,
         name: Option(str, "Name of of trait to add.", required=True),
@@ -511,9 +486,8 @@ class Characters(commands.Cog, name="Character"):
             required=False,
             min_value=1,
             max_value=20,
-            default=5,
+            default=None,
         ),
-        description: Option(str, "A description of the trait", required=False),
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",
@@ -521,20 +495,14 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom trait to a character."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        character = await self._fetch_active_character(ctx)
 
-        title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.name}"
+        title = f"Add trait: `{name.title()}` at `{value}` dots for {character.name}"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
             return
 
-        character.add_custom_trait(
-            name=name,
-            category=category,
-            value=value,
-            max_value=max_value,
-            description=description,
-        )
+        await character.add_trait(category, name, value, max_value=max_value)
 
         await ctx.post_to_audit_log(title)
         await confirmation_response_msg
@@ -543,11 +511,12 @@ class Characters(commands.Cog, name="Character"):
     async def update_trait(
         self,
         ctx: ValentinaContext,
-        trait: Option(
-            ValidCharTrait,
+        trait_index: Option(
+            int,  # Index of the trait in character.traits
             description="Trait to update",
             required=True,
             autocomplete=select_char_trait,
+            name="trait",
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
@@ -559,41 +528,56 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update the value of a trait."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        # Guard statement: check permissions
+        # if not self.bot.user_svc.can_update_traits(ctx, character):
+        #     await present_embed(
+        #         ctx,
+        #         title="Permission error",
+        #         description="You do not have permissions to update traits on this character\nSpeak to an administrator",
+        #         level="error",
+        #         ephemeral=True,
+        #         delete_after=30,
+        #     )
+        #     return
 
-        if not self.bot.user_svc.can_update_traits(ctx, character):
+        # Fetch the active character and trait
+        character = await self._fetch_active_character(ctx)
+        trait = character.traits[trait_index]
+
+        if new_value not in range(0, trait.max_value):
             await present_embed(
                 ctx,
-                title="Permission error",
-                description="You do not have permissions to update traits on this character\nSpeak to an administrator",
+                title="Invalid value",
+                description=f"Value must be less than or equal to {trait.max_value}",
                 level="error",
-                ephemeral=True,
-                delete_after=30,
+                ephemeral=hidden,
             )
             return
 
-        old_value = character.get_trait_value(trait)
-
-        title = f"Update `{trait.name}` from `{old_value}` to `{new_value}` for `{character.name}`"
+        title = (
+            f"Update `{trait.name}` from `{trait.value}` to `{new_value}` for `{character.name}`"
+        )
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
 
         if not is_confirmed:
             return
 
-        character.set_trait_value(trait, new_value)
+        trait.value = new_value
+        await trait.save()
 
         await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
-    @trait.command(name="delete", description="Delete a custom trait from a character")
+    @trait.command(name="delete", description="Delete a trait from a character")
     async def delete_custom_trait(
         self,
         ctx: ValentinaContext,
-        trait: Option(
-            ValidCustomTrait,
+        trait_index: Option(
+            int,
             description="Trait to delete",
             required=True,
-            autocomplete=select_custom_trait,
+            name="trait",
+            autocomplete=select_char_trait,
         ),
         hidden: Option(
             bool,
@@ -602,7 +586,9 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom trait from a character."""
-        character = await self.bot.user_svc.fetch_active_character(ctx)
+        # Fetch the active character and trait
+        character = await self._fetch_active_character(ctx)
+        trait = character.traits[trait_index]
 
         title = f"Delete custom trait `{trait.name}` from `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
@@ -610,7 +596,10 @@ class Characters(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        trait.delete_instance()
+        character.traits.pop(trait_index)
+        await character.save()
+
+        await trait.delete()
 
         await ctx.post_to_audit_log(title)
         await confirmation_response_msg
@@ -628,9 +617,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom section to the character sheet."""
-        # Fetch the active character
-        user_object = await User.get(ctx.author.id, fetch_links=True)
-        character = user_object.active_character(ctx.guild)
+        character = await self._fetch_active_character(ctx)
 
         modal = CustomSectionModal(
             title=truncate_string(f"Custom section for {character.name}", 45)
@@ -749,9 +736,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's bio."""
-        # Fetch the active character
-        user_object = await User.get(ctx.author.id, fetch_links=True)
-        character = user_object.active_character(ctx.guild)
+        character = await self._fetch_active_character(ctx)
 
         modal = BioModal(
             title=truncate_string(f"Enter the biography for {character.name}", 45),
@@ -787,9 +772,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Set the DOB of a character."""
-        # Fetch the active character
-        user_object = await User.get(ctx.author.id, fetch_links=True)
-        character = user_object.active_character(ctx.guild)
+        character = await self._fetch_active_character(ctx)
 
         character.dob = dob
         await character.save()
@@ -814,11 +797,7 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
-        # Fetch the active character
-        user_object = await User.get(ctx.author.id, fetch_links=True)
-        character = user_object.active_character(ctx.guild)
-
-        ############################################
+        character = await self._fetch_active_character(ctx)
 
         modal = ProfileModal(
             title=truncate_string(f"Profile for {character}", 45), character=character

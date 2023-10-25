@@ -12,13 +12,13 @@ class HunterCreedDict(TypedDict):
     description: str
     conviction: int
     specific_abilities: list[str]
-    ability_specialty: "CharacterClass"  # noqa: F821 # type: ignore
-    attribute_specialty: "CharacterClass"  # noqa: F821 # type: ignore
+    ability_specialty: "CharClassType"  # noqa: F821 # type: ignore
+    attribute_specialty: "CharClassType"  # noqa: F821 # type: ignore
     edges: list[str]
     range: tuple[int, int]
 
 
-class CharacterClassDict(TypedDict):
+class CharClassTypeDict(TypedDict):
     """Type for CharClassType info sub-dictionary."""
 
     name: str
@@ -38,7 +38,7 @@ class CharSheetSectionDict(TypedDict):
 class TraitCategoriesDict(TypedDict):
     """Type for TraitCategories Enum."""
 
-    classes: list["CharacterClass"]  # noqa: F821 # type: ignore
+    classes: list["CharClassType"]  # noqa: F821 # type: ignore
     name: str
     order: int
     section: "CharSheetSection"  # noqa: F821 # type: ignore
@@ -54,12 +54,12 @@ class TraitCategoriesDict(TypedDict):
     SPECIAL: list[str]
 
 
-class CharConceptDict(TypedDict):
+class CharacterConceptDict(TypedDict):
     """Type for concept info Enum."""
 
     abilities: list[dict[str, str | int | list[tuple[str, str | int]]]]
-    ability_specialty: "CharacterClass"  # noqa: F821 # type: ignore
-    attribute_specialty: "CharacterClass"  # noqa: F821 # type: ignore
+    ability_specialty: "CharClassType"  # noqa: F821 # type: ignore
+    attribute_specialty: "CharClassType"  # noqa: F821 # type: ignore
     description: str
     examples: str
     name: str

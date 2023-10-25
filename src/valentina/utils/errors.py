@@ -140,24 +140,6 @@ class S3ObjectExistsError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
-class URLNotAvailableError(DiscordException):
-    """Raised when a URL is not available."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "The requested URL is not available."
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
 class ServiceDisabledError(DiscordException):
     """Raised when a service is disabled."""
 
@@ -173,6 +155,42 @@ class ServiceDisabledError(DiscordException):
         else:
             msg = f"The requested service is disabled: {msg}"
 
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class TraitExistsError(DiscordException):
+    """Raised when adding a trait that already exists on a character."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "This trait already exists on this character."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class URLNotAvailableError(DiscordException):
+    """Raised when a URL is not available."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The requested URL is not available."
         if e:
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 

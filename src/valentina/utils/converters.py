@@ -10,11 +10,11 @@ from peewee import DoesNotExist, fn
 
 from valentina.constants import (
     VALID_IMAGE_EXTENSIONS,
+    CharacterConcept,
     CharClassType,
-    CharConcept,
     RNGCharLevel,
-    TraitCategories,
-    VampireClanType,
+    TraitCategory,
+    VampireClan,
 )
 from valentina.models.mongo_collections import (
     Campaign,
@@ -72,7 +72,7 @@ class ValidChannelName(Converter):
         return argument
 
 
-class ValidCharacterClass(Converter):
+class ValidCharClassType(Converter):
     """A converter that ensures a requested character class name is valid."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> CharClassType:  # noqa: ARG002
@@ -85,12 +85,12 @@ class ValidCharacterClass(Converter):
 
 
 class ValidCharacterConcept(Converter):
-    """A converter that converts a character concept name to a CharConcept enum."""
+    """A converter that converts a character concept name to a CharacterConcept enum."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> CharConcept:  # noqa: ARG002
+    async def convert(self, ctx: commands.Context, argument: str) -> CharacterConcept:
         """Validate and normalize character concepts."""
         try:
-            return CharConcept[argument]
+            return CharacterConcept[argument]
         except KeyError as e:
             msg = f"`{argument}` is not a valid character class"
             raise BadArgument(msg) from e
@@ -183,12 +183,10 @@ class ValidCampaign(Converter):
 class ValidClan(Converter):
     """A converter that ensures a requested vampire clan is valid."""
 
-    async def convert(
-        self, ctx: commands.Context, argument: str  # noqa: ARG002
-    ) -> VampireClanType:
+    async def convert(self, ctx: commands.Context, argument: str) -> VampireClan:  # noqa: ARG002
         """Validate and normalize vampire clan."""
         try:
-            return VampireClanType[argument]
+            return VampireClan[argument]
         except KeyError as e:
             msg = f"`{argument}` is not a valid vampire clan"
             raise BadArgument(msg) from e
@@ -215,21 +213,6 @@ class ValidCustomSection(Converter):
         except IndexError as e:
             msg = f"`{arg}` is not a valid custom section"
             raise BadArgument(msg) from e
-
-
-class ValidCustomTrait(Converter):
-    """Converter to ensure a custom trait is valid."""
-
-    async def convert(self, ctx: commands.Context, argument: str) -> CustomTrait:
-        """Validate and return a custom trait."""
-        character = await ctx.bot.user_svc.fetch_active_character(ctx)
-
-        for ct in CustomTrait.select().where(CustomTrait.character == character):
-            if argument.lower() == ct.name.lower():
-                return ct
-
-        msg = f"`{argument}` is not a valid vampire clan"
-        raise BadArgument(msg)
 
 
 class ValidImageURL(Converter):
@@ -261,12 +244,10 @@ class ValidImageURL(Converter):
 class ValidTraitCategory(Converter):
     """A converter that ensures a requested trait category is valid."""
 
-    async def convert(
-        self, ctx: commands.Context, argument: str  # noqa: ARG002
-    ) -> TraitCategories:
+    async def convert(self, ctx: commands.Context, argument: str) -> TraitCategory:  # noqa: ARG002
         """Validate and normalize trait categories."""
         try:
-            return TraitCategories[argument]
+            return TraitCategory[argument]
         except KeyError as e:
             msg = f"`{argument}` is not a valid trait category"
             raise BadArgument(msg) from e

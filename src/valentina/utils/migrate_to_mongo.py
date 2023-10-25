@@ -8,7 +8,7 @@ from valentina.constants import (
     PermissionsEditTrait,
     PermissionsEditXP,
     PermissionsKillCharacter,
-    TraitCategories,
+    TraitCategory,
 )
 from valentina.models.mongo_collections import (
     Campaign,
@@ -262,20 +262,20 @@ class Migrate:
 
             # Assign trait values
             all_trait_categories = [
-                TraitCategories[trait.category.name]
+                TraitCategory[trait.category.name]
                 for trait in sqlchar.traits_list
                 if trait.category.name != "ADVANTAGES"
             ]
-            all_categories = sorted(set(all_trait_categories), key=lambda x: x.value["order"])
+            all_categories = sorted(set(all_trait_categories), key=lambda x: x.value.order)
 
             for category in all_categories:
                 for trait in sqlchar.traits_list:
                     if trait.category.name == category.name:
                         # Check if the trait is custom
-                        if (
-                            trait.name not in TraitCategories[category.name].value["COMMON"]
-                            and trait.name
-                            not in TraitCategories[category.name].value[character.char_class_name]  # type: ignore
+                        if trait.name not in TraitCategory[
+                            category.name
+                        ].value.COMMON and trait.name not in getattr(
+                            TraitCategory[category.name].value, character.char_class_name
                         ):
                             is_custom = True
                         else:
@@ -284,6 +284,7 @@ class Migrate:
                         # Create the new trait
                         new_trait = CharacterTrait(
                             category_name=trait.category.name,
+                            character=str(character.id),
                             name=trait.name,
                             value=sqlchar.get_trait_value(trait),
                             is_custom=is_custom,
@@ -327,6 +328,6 @@ class Migrate:
 
         if not await Character.find().to_list():
             logger.info("MIGRATION: Migrate Characters")
-            await self._migrate_characters()
+            # await self._migrate_characters()
         else:
             logger.info("MIGRATION: Characters already migrated")

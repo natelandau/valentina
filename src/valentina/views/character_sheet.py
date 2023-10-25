@@ -11,7 +11,7 @@ from valentina.constants import (
     CharSheetSection,
     EmbedColor,
     Emoji,
-    TraitCategories,
+    TraitCategory,
 )
 from valentina.models.aws import AWSService
 from valentina.models.mongo_collections import Character, CharacterTrait
@@ -20,7 +20,6 @@ from valentina.utils import errors
 
 
 def __embed1(  # noqa: C901
-    ctx: discord.ApplicationContext,
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
@@ -29,14 +28,13 @@ def __embed1(  # noqa: C901
     show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
-    modified = arrow.get(character.date_modified).humanize()
-
     if title is None:
         title = character.full_name
 
     embed = discord.Embed(title=title, description=desc_prefix, color=EmbedColor.INFO.value)
 
     if show_footer:
+        modified = arrow.get(character.date_modified).humanize()
         footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
         footer += f"Last updated: {modified}"
         embed.set_footer(text=footer)
@@ -111,6 +109,7 @@ def __embed1(  # noqa: C901
         )
 
     # Add the trait sections to the sheet
+    # Sort by character sheet section
     for section in sorted(CharSheetSection, key=lambda x: x.value["order"]):
         if section != CharSheetSection.NONE:
             embed.add_field(
@@ -119,17 +118,21 @@ def __embed1(  # noqa: C901
                 inline=False,
             )
 
+        # Sort by trait category
         for cat in sorted(
-            [x for x in TraitCategories if x.value["section"] == section],
-            key=lambda x: x.value["order"],
+            [x for x in TraitCategory if x.value.section == section],
+            key=lambda x: x.value.order,
         ):
+            # Find all character traits which match this trait category
             trait_values = [
                 f"`{x.name:14}: {x.dots}`"
-                if x.value <= MAX_DOT_DISPLAY
+                if x.max_value <= MAX_DOT_DISPLAY
                 else f"`{x.name:14}: {x.value}/{x.max_value}`"
                 for x in cast(list[CharacterTrait], character.traits)
-                if x.category_name == cat.name and not (cat.value["show_zero"] and x.value == 0)
+                if x.category_name == cat.name and not (x.value == 0 and not cat.value.show_zero)
             ]
+
+            # If traits were found, add them to the embed
             if trait_values:
                 embed.add_field(name=cat.name.title(), value="\n".join(trait_values), inline=True)
 
@@ -140,7 +143,6 @@ def __embed1(  # noqa: C901
 
 
 def __embed2(
-    ctx: discord.ApplicationContext,
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
@@ -148,7 +150,6 @@ def __embed2(
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
     custom_sections = character.sheet_sections
-    modified = arrow.get(character.date_modified).humanize()
 
     if title is None:
         title = f"{character.full_name} - Page 2"
@@ -156,6 +157,7 @@ def __embed2(
     embed = discord.Embed(title=title, description="", color=EmbedColor.INFO.value)
 
     if show_footer:
+        modified = arrow.get(character.date_modified).humanize()
         footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
         footer += f"Last updated: {modified}"
         embed.set_footer(text=footer)
@@ -186,14 +188,13 @@ def __image_embed(
     show_footer: bool = True,
 ) -> discord.Embed:
     """Builds the second embed of a character sheet. This embed contains the character's bio and custom sections."""
-    modified = arrow.get(character.date_modified).humanize()
-
     if title is None:
         title = f"{character.full_name} - Images"
 
     embed = discord.Embed(title=title, description="", color=0x7777FF)
 
     if show_footer:
+        modified = arrow.get(character.date_modified).humanize()
         footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
         footer += f"Last updated: {modified}"
         embed.set_footer(text=footer)
@@ -217,8 +218,8 @@ async def show_sheet(
     embeds = []
     embeds.extend(
         [
-            __embed1(ctx, character, owned_by_user, show_footer=show_footer),
-            __embed2(ctx, character, owned_by_user, show_footer=show_footer),
+            __embed1(character, owned_by_user, show_footer=show_footer),
+            __embed2(character, owned_by_user, show_footer=show_footer),
         ]
     )
 
@@ -248,7 +249,6 @@ async def sheet_embed(
     """Return the first page of the sheet as an embed."""
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner.id)  # type: ignore [attr-defined] # it exists
     return __embed1(
-        ctx,
         character,
         owned_by_user=owned_by_user,
         title=title,

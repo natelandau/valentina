@@ -8,12 +8,12 @@ from discord.commands import OptionChoice
 
 from valentina.constants import (
     MAX_OPTION_LIST_SIZE,
+    CharacterConcept,
     CharClassType,
-    CharConcept,
     Emoji,
     RNGCharLevel,
-    TraitCategories,
-    VampireClanType,
+    TraitCategory,
+    VampireClan,
 )
 from valentina.models.bot import Valentina
 from valentina.models.mongo_collections import Campaign, Character, CharacterSheetSection, User
@@ -114,7 +114,7 @@ async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionCh
     # Filter and return character class names
     return [
         OptionChoice(c.value["name"], c.name)
-        for c in CharConcept
+        for c in CharacterConcept
         if c.value["name"] and c.value["name"].lower().startswith(ctx.options["concept"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -139,8 +139,8 @@ async def select_char_level(ctx: discord.AutocompleteContext) -> list[OptionChoi
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_char_trait(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available common and custom traits for a character.
+async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of traits and their index for a character.
 
     This function fetches the active character from the bot's user service,
     retrieves the argument (either "trait" or "trait_one") from the context options,
@@ -152,22 +152,22 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[str]:
         ctx (discord.AutocompleteContext): The context in which the function is called.
 
     Returns:
-        list[str]: A list of available common and custom trait names.
+        list[OptionChoice]: A list of available common and custom trait names and their index in character.traits.
     """
     # Fetch the active character
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
     active_character = user_object.active_character(ctx.interaction.guild)
 
     if not active_character:
-        return ["No active character"]
+        return [OptionChoice("No active character", "")]
 
     # Determine the option to retrieve the argument
     argument = ctx.options.get("trait") or ctx.options.get("trait_one") or ""
 
     # Filter and return the character's traits
     return [
-        t.name
-        for t in sorted(active_character.traits, key=lambda x: x.name)
+        OptionChoice(t.name, i)
+        for i, t in sorted(enumerate(active_character.traits), key=lambda x: x[1].name)
         if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -255,36 +255,6 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
         return [OptionChoice(f"Too many sections to display. {instructions}", "")]
 
     return options
-
-
-async def select_custom_trait(ctx: discord.AutocompleteContext) -> list[str]:
-    """Return a list containing names of active character's custom traits filtered based on initial string in user's suggestion.
-
-    Attempt to retrieve an active character for the user. Once obtained, filter the
-    custom traits and spill out their names that match the initial string in
-    `ctx.options["trait"]`. Stop adding names when the maximum limit is met or
-    all traits are processed.
-
-    Args:
-        ctx (discord.AutocompleteContext): The autocomplete context from Discord.
-
-    Returns:
-        List[str]: List containing names of filtered traits up to a predefined limit.
-                   If no character is active, return a list with 'No active character'.
-    """
-    # Fetch the active character
-    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-    active_character = user_object.active_character(ctx.interaction.guild)
-
-    if not active_character:
-        return ["No active character"]
-
-    # Generate list of trait names that start with the string in `ctx.options["trait"]`, up to MAX_OPTION_LIST_SIZE
-    return [
-        trait.name
-        for trait in active_character.traits
-        if trait.is_custom and trait.name.lower().startswith(ctx.options["trait"].lower())
-    ][:MAX_OPTION_LIST_SIZE]
 
 
 async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: ARG001
@@ -601,8 +571,8 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[Option
         list[str]: A list of trait category names for the autocomplete list.
     """
     return [
-        OptionChoice(category.value["name"], category.name)
-        for category in TraitCategories
+        OptionChoice(category.value.name, category.name)
+        for category in TraitCategory
         if category.name.lower().startswith(ctx.options["category"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -621,6 +591,6 @@ async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[OptionCh
     """
     return [
         OptionChoice(c.value["name"], c.name)
-        for c in VampireClanType
+        for c in VampireClan
         if c.value["name"].lower().startswith(ctx.options["vampire_clan"].lower())
     ][:MAX_OPTION_LIST_SIZE]

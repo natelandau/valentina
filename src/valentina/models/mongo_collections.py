@@ -20,19 +20,20 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from valentina.constants import (
+    CharacterConcept,
     CharClassType,
-    CharConcept,
     HunterCreed,
     PermissionManageCampaign,
     PermissionsEditTrait,
     PermissionsEditXP,
     PermissionsKillCharacter,
-    VampireClanType,
+    TraitCategory,
+    VampireClan,
 )
 from valentina.models.aws import AWSService
-from valentina.utils import errors
+from valentina.utils import errors, types
 from valentina.utils.discord_utils import create_player_role, create_storyteller_role
-from valentina.utils.helpers import num_to_circles
+from valentina.utils.helpers import get_max_trait_value, num_to_circles
 
 
 def time_now() -> datetime:
@@ -382,25 +383,25 @@ class Character(Document):
         return None
 
     @property
-    def concept(self) -> CharConcept | None:
+    def concept(self) -> CharacterConcept | None:
         """Return the character's concept as an enum value if available, else a string.
 
         Returns:
-            CharConcept|None: The character's concept, if it exists; otherwise, None.
+            CharacterConcept|None: The character's concept, if it exists; otherwise, None.
         """
         if self.__dict__.get("concept_name", None):
             try:
-                return CharConcept[self.concept_name.title()]
+                return CharacterConcept[self.concept_name.title()]
             except KeyError:
                 return None
 
         return None
 
     @property
-    def clan(self) -> VampireClanType:
+    def clan(self) -> VampireClan:
         """Return the character's clan."""
         if self.__dict__.get("clan_name", None):
-            return VampireClanType[self.clan_name]
+            return VampireClan[self.clan_name]
         return None
 
     @property
@@ -467,12 +468,52 @@ class Character(Document):
         aws_svc.delete_object(key)  # type: ignore [attr-defined]
         logger.info(f"S3: Deleted {key} from {self.name}")
 
+    async def add_trait(
+        self,
+        category: TraitCategory,
+        name: str,
+        value: int,
+        max_value: int | None = None,
+        display_on_sheet: bool = True,
+        is_custom: bool = True,
+    ) -> "CharacterTrait":
+        """Create a new trait."""
+        # Check if the trait already exists
+        for trait in cast(list[CharacterTrait], self.traits):
+            if trait.name == name and trait.category_name == category.name:
+                raise errors.TraitExistsError
+
+        # Check if the trait is custom
+        if name.lower() in [x.lower() for x in category.value.COMMON] + [
+            x.lower() for x in getattr(category.value, self.char_class_name, [])
+        ]:
+            is_custom = False
+
+        # Create the new trait
+        new_trait = CharacterTrait(
+            category_name=category.name,
+            character=str(self.id),
+            name=name,
+            value=value,
+            display_on_sheet=display_on_sheet,
+            is_custom=is_custom,
+            max_value=max_value if max_value else get_max_trait_value(name, category.name),
+        )
+        await new_trait.save()
+
+        # Add the new trait to the character
+        self.traits.append(new_trait)
+        await self.save()
+
+        return new_trait
+
 
 class CharacterTrait(Document):
     """Represents a character trait value as a subdocument within Character."""
 
-    category_name: str
-    display_on_sheet: bool = False
+    category_name: str  # TraitCategory enum name
+    character: Indexed(str)  # type: ignore [valid-type]
+    display_on_sheet: bool = True
     is_custom: bool = False
     max_value: int
     name: str

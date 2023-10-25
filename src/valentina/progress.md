@@ -46,9 +46,10 @@
 -   [x] options
 -   [ ] converters
 
-## Todo
+## Other
 
 -   [ ] Macros become a pydantic model with links to traits in DB
+-   [ ] Review utils.errors for unused error types
 
 ## AWS
 
