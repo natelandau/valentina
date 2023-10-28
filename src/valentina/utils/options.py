@@ -9,7 +9,7 @@ from discord.commands import OptionChoice
 from valentina.constants import (
     MAX_OPTION_LIST_SIZE,
     CharacterConcept,
-    CharClassType,
+    CharClass,
     Emoji,
     RNGCharLevel,
     TraitCategory,
@@ -92,9 +92,9 @@ async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoi
     """
     # Filter and return character class names
     return [
-        OptionChoice(c.value["name"], c.name)
-        for c in CharClassType.playable_classes()
-        if c.value["name"] and c.value["name"].lower().startswith(ctx.options["char_class"].lower())
+        OptionChoice(c.value.name, c.name)
+        for c in CharClass.playable_classes()
+        if c.value.name and c.value.name.lower().startswith(ctx.options["char_class"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -571,7 +571,7 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[Option
         list[str]: A list of trait category names for the autocomplete list.
     """
     return [
-        OptionChoice(category.value.name, category.name)
+        OptionChoice(category.name, category.name)
         for category in TraitCategory
         if category.name.lower().startswith(ctx.options["category"].lower())
     ][:MAX_OPTION_LIST_SIZE]
@@ -590,7 +590,7 @@ async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[OptionCh
         list[str]: A list of vampire clan names for the autocomplete list.
     """
     return [
-        OptionChoice(c.value["name"], c.name)
+        OptionChoice(c.name, c.name)
         for c in VampireClan
-        if c.value["name"].lower().startswith(ctx.options["vampire_clan"].lower())
+        if c.value.name.lower().startswith(ctx.options["vampire_clan"].lower())
     ][:MAX_OPTION_LIST_SIZE]

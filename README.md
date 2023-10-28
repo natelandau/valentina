@@ -131,6 +131,17 @@ There are two ways to contribute to this project.
 -   Run `poetry remove {package}` from within the development environment to uninstall a runtime dependency and remove it from `pyproject.toml` and `poetry.lock`.
 -   Run `poetry update` from within the development environment to upgrade all dependencies to the latest versions allowed by `pyproject.toml`.
 
+## Testing MongoDB locally
+
+To run the tests associated with the MongoDB database, you must have MongoDB installed locally. The easiest way to do this is with Docker. Set two additional environment variables to allow the tests to connect to the local MongoDB instance.
+
+| Variable                   | Default Value               | Usage         |
+| -------------------------- | --------------------------- | ------------- |
+| VALENTINA_TEST_MONGODB_URI | `mongodb://localhost:27017` | MongoDB URI   |
+| VALENTINA_TEST_MONGODB_DB  | `valentina-test-db`         | Database name |
+
+Github CI integrations will ignore these variables and run the tests against a Mongo instance within the workflows.
+
 ## Troubleshooting
 
 If connecting to Discord with the bot fails due to a certificate error, run `scripts/install_certifi.py` to install the latest certificate bundle.

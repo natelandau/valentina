@@ -33,19 +33,22 @@ from valentina.utils.changelog_parser import ChangelogParser
 async def init_database(config: dict) -> None:
     """Initialize the database."""
     # Create Motor client
-    client = AsyncIOMotorClient(config["VALENTINA_MONGODB_URI"], tz_aware=True)
+    client = AsyncIOMotorClient(
+        f"{config['VALENTINA_MONGO_URI']}/{config['VALENTINA_MONGO_DATABASE_NAME']}",
+        tz_aware=True,
+    )
 
     # FIXME: Drop the database on every startup while in development
     logger.warning("Dropping database on startup")
-    await client.drop_database(config["VALENTINA_MONGODB_DB"])
+    await client.drop_database(config["VALENTINA_MONGO_DATABASE_NAME"])
 
     # Initialize beanie with the Sample document class and a database
     await init_beanie(
-        database=client[config["VALENTINA_MONGODB_DB"]],
+        database=client[config["VALENTINA_MONGO_DATABASE_NAME"]],
         document_models=[
             Campaign,
             CampaignChapter,
-            CampaignExperience,
+            # CampaignExperience,
             CampaignNote,
             CampaignNPC,
             Character,

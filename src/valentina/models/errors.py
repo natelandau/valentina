@@ -53,9 +53,11 @@ class ErrorReporter:
             | errors.NoMatchingItemsError
             | errors.NoActiveCharacterError
             | errors.NotEnoughExperienceError
+            | errors.NoExperienceInCampaignError
             | errors.URLNotAvailableError
             | errors.ServiceDisabledError
-            | errors.S3ObjectExistsError,
+            | errors.S3ObjectExistsError
+            | errors.TraitExistsError,
         ):
             user_msg = str(error)
 

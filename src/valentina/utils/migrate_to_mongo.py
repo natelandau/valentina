@@ -96,6 +96,9 @@ class Migrate:
     async def _migrate_campaigns(self) -> None:
         """Migrate campaigns."""
         for sqlcampaign in SqliteCampaign.select():
+            # fetch the guild object
+            guild = await Guild.get(sqlcampaign.guild.id)
+
             mongo_campaign = Campaign(
                 guild=sqlcampaign.guild.id,
                 name=sqlcampaign.name if sqlcampaign.name else "",
@@ -103,9 +106,15 @@ class Migrate:
                 date_modified=datetime.strptime(sqlcampaign.created, "%Y-%m-%d %H:%M:%S%z"),
                 description=sqlcampaign.description if sqlcampaign.description else "",
                 date_in_game=datetime.strptime(sqlcampaign.current_date, "%Y-%m-%d %H:%M:%S"),
-                is_active=sqlcampaign.is_active,
             )
             await mongo_campaign.insert()
+
+            # associate the campaign with the guild
+            guild.campaigns.append(mongo_campaign)
+            if sqlcampaign.is_active:
+                guild.active_campaign = mongo_campaign
+
+            await guild.save()
 
             # Create mapping to be used for user experience
             self.campaign_map.append((sqlcampaign.id, str(mongo_campaign.id)))
@@ -159,17 +168,14 @@ class Migrate:
             mongo_user.guilds.append(sqluser.guild.id)
 
             # Add campaign experience
-            campaign_xp_objects = []
             for old, new in self.campaign_map:
                 if sqluser.data.get(f"{old}_experience", None):
                     xp_object = CampaignExperience(
-                        campaign=new,
                         xp_current=sqluser.data.get(f"{old}_experience", None),
                         cool_points=sqluser.data.get(f"{old}_total_cool_points", None),
                         xp_total=sqluser.data.get(f"{old}_total_experience", None),
                     )
-                    campaign_xp_objects.append(xp_object)
-            mongo_user.campaign_experience = campaign_xp_objects
+                    mongo_user.campaign_experience[new] = xp_object
 
             # add macros
             macro_objects = []
@@ -222,8 +228,8 @@ class Migrate:
                 type_developer=sqlchar.data.get("developer_character", False),
                 type_player=sqlchar.data.get("player_character", False),
                 type_storyteller=sqlchar.data.get("storyteller_character", False),
-                user_creator=creator_user,
-                user_owner=owned_by_user,
+                user_creator=creator_user.id,
+                user_owner=owned_by_user.id,
                 bio=sqlchar.data.get("bio", None),
                 age=sqlchar.data.get("age", None),
                 auspice=sqlchar.data.get("auspice", None),
@@ -246,7 +252,7 @@ class Migrate:
 
             # Mark characters as active
             if sqlchar.data.get("is_active", None):
-                owned_by_user.active_characters.append(character)
+                owned_by_user.active_characters[str(character.guild)] = character
 
             # Add character to user character list
             owned_by_user.characters.append(character)

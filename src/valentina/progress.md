@@ -34,6 +34,11 @@
 -   [x] post changelog
 -   [x] provision guilds on connect
 
+## README
+
+-   [ ] Update README.md to reflect mongodb and env variables
+-   [ ] Remove the mongo section of .env
+
 ## Guilds
 
 -   [x] post to error log

@@ -1,9 +1,10 @@
 """A wizard that walks the user through the character creation process."""
+from typing import cast
+
 import discord
 
-from valentina.constants import EmbedColor, Emoji, TraitCategories
-from valentina.models.sqlite_models import Character, Trait
-from valentina.utils.helpers import get_max_trait_value
+from valentina.constants import EmbedColor, Emoji, TraitCategory
+from valentina.models.mongo_collections import Character, CharacterTrait
 from valentina.views import IntegerButtons
 
 from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons
@@ -25,11 +26,9 @@ class DotsReallocationWizard:
         self.character = character
 
         # Character and traits attributes
-        self.trait_category: TraitCategories = None
-        self.source_trait: Trait = None
-        self.source_value: int = None
-        self.target_trait: Trait = None
-        self.target_value: int = None
+        self.category: TraitCategory = None
+        self.source: CharacterTrait = None
+        self.target: CharacterTrait = None
 
         # Wizard state
         self.msg: discord.WebhookMessage = None
@@ -51,23 +50,24 @@ class DotsReallocationWizard:
             tuple (bool, Character): A boolean indicating if the reallocation was successful, and the updated character object.
         """
         # Prompt user for trait category
-        self.trait_category = await self._prompt_for_trait_category()
+        if not self.cancelled:
+            self.category = await self._prompt_for_category()
 
         # Prompt user for source trait and its value
-        self.source_trait, self.source_value = await self._prompt_for_source_trait()
+        if not self.cancelled:
+            self.source = await self._prompt_for_source()
 
         # Prompt user for target trait, its value, and its maximum allowable value
-        (
-            self.target_trait,
-            self.target_value,
-            self.max_value,
-        ) = await self._prompt_for_target_trait()
+        if not self.cancelled:
+            self.target = await self._prompt_for_target()
 
         # Ask user the number of dots they want to reallocate
-        num_dots = await self._prompt_for_dots_to_reallocate()
+        if not self.cancelled:
+            num_dots = await self._prompt_for_dots_to_reallocate()
 
         # Perform the reallocation
-        self.character = await self._reallocate(num_dots)
+        if not self.cancelled:
+            self.character = await self._reallocate(num_dots)
 
         # Return the result based on the state of self.cancelled
         return (not self.cancelled, self.character)
@@ -86,7 +86,7 @@ class DotsReallocationWizard:
         await self.msg.delete(delay=5.0)
         self.cancelled = True
 
-    async def _prompt_for_trait_category(self) -> TraitCategories:
+    async def _prompt_for_category(self) -> TraitCategory:
         """Terminate the reallocation wizard and inform the user.
 
         This method updates the Discord embed with a cancellation message, deletes the embed after a short delay, and sets the internal state as cancelled.
@@ -94,10 +94,6 @@ class DotsReallocationWizard:
         Args:
             msg (str | None): Optional custom message for the cancellation. If not provided, a default is used.
         """
-        # Exit early if the wizard is already cancelled
-        if self.cancelled:
-            return None
-
         # Set up the view and embed to prompt the user to select a trait category
         view = SelectTraitCategoryButtons(self.ctx, self.character)
         embed = discord.Embed(
@@ -117,31 +113,27 @@ class DotsReallocationWizard:
 
         return view.selected_category
 
-    async def _prompt_for_source_trait(self) -> tuple[Trait, int]:
+    async def _prompt_for_source(self) -> CharacterTrait:
         """Prompt the user to choose a trait from which dots will be taken.
 
         If the user cancels the selection or if the chosen trait has no dots, the wizard is cancelled.
 
         Returns:
-            tuple (Trait, int): The selected source trait and its current value, or None if cancelled or if trait has no dots.
+            CharacterTrait: The trait the user chose.
         """
-        # Exit early if the wizard is already cancelled
-        if self.cancelled:
-            return None
-
         # Determine the traits that can be used as a source
+        # Determine the traits that can be used as a target
         available_traits = [
             trait
-            for trait in self.character.traits_list
-            if trait.category.name == self.trait_category.name
-            and self.character.get_trait_value(trait) > 0
+            for trait in cast(list[CharacterTrait], self.character.traits)
+            if trait.category == self.category and trait.value > 0
         ]
 
         # Set up the view and embed to prompt the user to select a trait
-        view = SelectCharacterTraitButtons(self.ctx, self.character, traits=available_traits)
+        view = SelectCharacterTraitButtons(self.ctx, traits=available_traits)
         embed = discord.Embed(
             title="Reallocate Dots",
-            description=f"Select the {self.trait_category.name} **trait** you want to _take dots from_",
+            description=f"Select the {self.category.name} **trait** you want to _take dots from_",
             color=EmbedColor.INFO.value,
         )
 
@@ -154,47 +146,29 @@ class DotsReallocationWizard:
             await self._cancel_wizard()
             return None
 
-        # Store the user's trait selection and its current value
-        self.source_trait = view.selected_trait
-        self.source_value = self.character.get_trait_value(self.source_trait)
+        return view.selected_trait
 
-        # If the selected trait has no dots, cancel the wizard and inform the user
-        if self.source_value == 0:
-            await self._cancel_wizard(
-                f"Cannot take dots from `{self.source_trait.name}` because it has no dots"
-            )
-            return None
-
-        return self.source_trait, self.source_value
-
-    async def _prompt_for_target_trait(self) -> tuple[Trait, int, int]:
+    async def _prompt_for_target(self) -> CharacterTrait:
         """Prompt the user to choose a trait to which dots will be added.
 
-        After user selection, the method verifies if the chosen trait has reached its maximum value.
-        If so, the wizard is cancelled.
+        After user selection, the method verifies if the chosen trait has reached its maximum value.  If so, the wizard is cancelled.
 
         Returns:
             tuple: The selected target trait, its current value, and its max value.
             None if the wizard is cancelled or if the trait is maxed out.
         """
-        # Exit early if the wizard is already cancelled
-        if self.cancelled:
-            return None
-
         # Determine the traits that can be used as a target
         available_traits = [
             trait
-            for trait in self.character.traits_list
-            if trait.category.name == self.trait_category.name
-            and self.character.get_trait_value(trait)
-            < get_max_trait_value(trait.name, self.trait_category.name)
+            for trait in cast(list[CharacterTrait], self.character.traits)
+            if trait.category == self.category and trait.value < trait.max_value
         ]
 
         # Set up the view and embed to prompt the user to select a trait
-        view = SelectCharacterTraitButtons(self.ctx, self.character, traits=available_traits)
+        view = SelectCharacterTraitButtons(self.ctx, traits=available_traits)
         embed = discord.Embed(
             title="Reallocate Dots",
-            description=f"{Emoji.SUCCESS.value} You are taking dots from `{self.source_trait.name}`\n\n**Select the **trait** you want to _add dots to_**",
+            description=f"{Emoji.SUCCESS.value} You are taking dots from `{self.source.name}`\n\n**Select the **trait** you want to _add dots to_**",
             color=EmbedColor.INFO.value,
         )
 
@@ -208,18 +182,7 @@ class DotsReallocationWizard:
             return None
 
         # Store the user's trait selection and its current value and max value
-        self.target_trait = view.selected_trait
-        self.target_value = self.character.get_trait_value(self.target_trait)
-        self.max_value = get_max_trait_value(self.target_trait.name, self.trait_category.name)
-
-        # If the selected trait is maxed out, cancel the wizard and inform the user
-        if self.target_value >= self.max_value:
-            await self._cancel_wizard(
-                f"Cannot add dots to {self.target_trait.name} because it is maxed out"
-            )
-            return None
-
-        return self.target_trait, self.target_value, self.max_value
+        return view.selected_trait
 
     async def _prompt_for_dots_to_reallocate(self) -> int:
         """Prompt the user to select the quantity of dots to reallocate from the source to the target trait.
@@ -229,21 +192,17 @@ class DotsReallocationWizard:
         Returns:
             int: The number of dots chosen for reallocation, or None if the process is cancelled or no dots are available.
         """
-        # Exit early if the wizard is already cancelled
-        if self.cancelled:
-            return None
-
         # Determine the number of dots that can be reallocated
         available_dots = [
             i
-            for i in range(1, self.source_value + 1)
-            if (self.source_value - i >= 0) and (self.target_value + i <= self.max_value)
+            for i in range(1, self.source.value + 1)
+            if (self.source.value - i >= 0) and (self.target.value + i <= self.target.max_value)
         ]
 
         # If no dots are available, cancel the wizard and inform the user
         if not available_dots:
             await self._cancel_wizard(
-                f"Cannot add dots to {self.target_trait.name} because no dots are available"
+                f"Cannot add dots to {self.target.name} because no dots are available"
             )
             return None
 
@@ -255,7 +214,7 @@ class DotsReallocationWizard:
         view = IntegerButtons(available_dots)
         embed = discord.Embed(
             title="Reallocate Dots",
-            description=f"Select the number of dots to reallocate from `{self.source_trait.name}` to `{self.target_trait.name}`",  # noqa: S608
+            description=f"Select the number of dots to reallocate from `{self.source.name}` to `{self.target.name}`",  # noqa: S608
             color=EmbedColor.INFO.value,
         )
         await self.msg.edit(embed=embed, view=view)
@@ -287,13 +246,16 @@ class DotsReallocationWizard:
             return None
 
         # Update the character's trait values in the database
-        self.character.set_trait_value(self.source_trait, self.source_value - num_dots)
-        self.character.set_trait_value(self.target_trait, self.target_value + num_dots)
+        self.source.value -= num_dots
+        self.target.value += num_dots
+        await self.source.save()
+        await self.target.save()
+        await self.character.save()
 
         # Update the embed to inform the user of the success
         embed = discord.Embed(
             title="Reallocate Dots",
-            description=f"{Emoji.SUCCESS.value} Reallocated `{num_dots}` dots from `{self.source_trait.name}` to `{self.target_trait.name}`",
+            description=f"{Emoji.SUCCESS.value} Reallocated `{num_dots}` dots from `{self.source.name}` to `{self.target.name}`",
             color=EmbedColor.SUCCESS.value,
         )
         await self.msg.edit(embed=embed, view=None)
@@ -301,4 +263,4 @@ class DotsReallocationWizard:
         # Delete the embed after a short delay
         await self.msg.delete(delay=5.0)
 
-        return Character.get_by_id(self.character.id)
+        return await Character.get(self.character.id, fetch_links=True)

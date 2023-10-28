@@ -33,7 +33,8 @@ from valentina.models.sqlite_models import (
     TraitValue,
     VampireClan,
 )
-from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
+
+# from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
 
 p = inflect.engine()
 
@@ -141,11 +142,11 @@ class DatabaseService:
         current_db_version = self.fetch_current_version()
 
         # Migrate the database
-        MigrateDatabase(
-            self.db,
-            bot_version=bot_version,
-            db_version=current_db_version,
-        ).migrate()
+        # # MigrateDatabase(
+        #     self.db,
+        #     bot_version=bot_version,
+        #     db_version=current_db_version,
+        # ).migrate()
 
     def initialize_database(self, bot_version: str) -> None:
         """Populate the database with initial data and update the database version.
@@ -165,7 +166,7 @@ class DatabaseService:
         self._create_tables()
 
         # Populate the database with up-to-date data
-        PopulateDatabase(self.db).populate()
+        # PopulateDatabase(self.db).populate()
 
         # Check or create the database version
         _, new_db_created = DatabaseVersion.get_or_create(

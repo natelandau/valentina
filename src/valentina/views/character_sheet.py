@@ -7,7 +7,7 @@ from discord.ext import pages
 
 from valentina.constants import (
     MAX_DOT_DISPLAY,
-    CharClassType,
+    CharClass,
     CharSheetSection,
     EmbedColor,
     Emoji,
@@ -65,14 +65,14 @@ def __embed1(  # noqa: C901
         inline=True,
     )
 
-    if character.char_class == CharClassType.HUNTER:
+    if character.char_class == CharClass.HUNTER:
         embed.add_field(
             name="Creed",
             value=character.creed_name.title() if character.creed_name else "-",
             inline=True,
         )
 
-    if character.char_class == CharClassType.VAMPIRE:
+    if character.char_class == CharClass.VAMPIRE:
         embed.add_field(name="Clan", value=character.clan.name, inline=True)
         embed.add_field(
             name="Generation",
@@ -83,7 +83,7 @@ def __embed1(  # noqa: C901
             name="Sire", value=character.sire.title() if character.sire else "-", inline=True
         )
 
-    if character.char_class == CharClassType.MAGE:
+    if character.char_class == CharClass.MAGE:
         embed.add_field(
             name="Tradition",
             value=character.tradition.title() if character.tradition else "-",
@@ -95,7 +95,7 @@ def __embed1(  # noqa: C901
             inline=True,
         )
 
-    if character.char_class == CharClassType.WEREWOLF:
+    if character.char_class == CharClass.WEREWOLF:
         embed.add_field(
             name="Tribe", value=character.tribe.title() if character.tribe else "-", inline=True
         )
@@ -213,7 +213,7 @@ async def show_sheet(
     show_footer: bool = True,
 ) -> Any:
     """Show a character sheet."""
-    owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner.id)  # type: ignore [attr-defined] # it exists
+    owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)  # type: ignore [attr-defined] # it exists
 
     embeds = []
     embeds.extend(
@@ -247,7 +247,7 @@ async def sheet_embed(
     show_footer: bool = True,
 ) -> discord.Embed:
     """Return the first page of the sheet as an embed."""
-    owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner.id)  # type: ignore [attr-defined] # it exists
+    owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)  # type: ignore [attr-defined] # it exists
     return __embed1(
         character,
         owned_by_user=owned_by_user,

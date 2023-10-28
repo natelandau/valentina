@@ -36,6 +36,7 @@
 
     [tool.poetry.group.test.dependencies]
         dirty-equals           = "^0.6.0"
+        faker                  = "^19.12.0"
         mongomock-motor        = "^0.0.21"
         pytest                 = "^7.4.2"
         pytest-asyncio         = "^0.21.1"
@@ -130,7 +131,9 @@
     warn_unused_ignores = true
 
 [tool.pytest.ini_options]
+
     addopts        = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --verbosity=2 --junitxml=reports/pytest.xml --ignore=src/valentina/cogs/test_cog.py"
+    asyncio_mode   = "auto"
     filterwarnings = ["error", "ignore::DeprecationWarning"]
     testpaths      = ["src", "tests"]
     xfail_strict   = true
@@ -192,6 +195,8 @@
         "PLR0912",
         "PLR0913",
     ], "tests/*.py" = [
+        "A002",
+        "A003",
         "PLR0913",
         "PLR2004",
         "S101",

@@ -1,25 +1,39 @@
 """A RNG character generator for Valentina."""
-from typing import cast
+import random
+from typing import Literal, cast
 
 import discord
 import inflect
+from beanie import DeleteRules
 from discord.ext import pages
 from discord.ui import Button
 from loguru import logger
+from numpy import int32
 from numpy.random import default_rng
 
 from valentina.constants import (
-    CharClassType,
-    CharConcept,
+    CharacterConcept,
+    CharClass,
     EmbedColor,
     Emoji,
-    VampireClanType,
+    HunterCreed,
+    RNGCharLevel,
+    TraitCategory,
+    VampireClan,
 )
-from valentina.models.bot import Valentina
-from valentina.models.sqlite_models import (
+from valentina.models.bot import Valentina, ValentinaContext
+from valentina.models.mongo_collections import (
     Campaign,
     Character,
-    GuildUser,
+    CharacterSheetSection,
+    CharacterTrait,
+    User,
+)
+from valentina.utils.helpers import (
+    adjust_sum_to_match_total,
+    divide_into_three,
+    fetch_random_name,
+    get_max_trait_value,
 )
 from valentina.views import ChangeNameModal, sheet_embed
 
@@ -188,7 +202,7 @@ class UpdateCharacterButtons(discord.ui.View):
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Character,
         author: discord.User | discord.Member | None = None,
     ):
@@ -215,11 +229,12 @@ class UpdateCharacterButtons(discord.ui.View):
         self, button: Button, interaction: discord.Interaction  # noqa: ARG002
     ) -> None:
         """Callback for the rename button."""
-        await interaction.response.defer()
         self._disable_all()
-        modal = ChangeNameModal(ctx=self.ctx, character=self.character, title="Rename Character")
+
+        modal = ChangeNameModal(character=self.character, title="Rename Character")
         await interaction.response.send_modal(modal)
         await modal.wait()
+
         self.character = modal.character
         self.updated = True
         self.stop()
@@ -325,6 +340,620 @@ class FreebiePointsButtons(discord.ui.View):
         return interaction.user.id == self.ctx.author.id
 
 
+class RNGCharGen:
+    """Randomly generate different parts of a character."""
+
+    def __init__(
+        self, ctx: ValentinaContext, user: User, experience_level: RNGCharLevel = None
+    ) -> None:
+        self.experience_level = (
+            experience_level if experience_level else RNGCharLevel.random_member()
+        )
+        self.user = user
+        self.ctx = ctx
+
+    @staticmethod
+    def _redistribute_trait_values(
+        traits: list[CharacterTrait], concept: CharacterConcept
+    ) -> list[CharacterTrait]:
+        """Redistribute trait values based on the concept. This method ensures that specific traits associated with a concept have high values for the specified traits.
+
+        Args:
+            traits (list[CharacterTrait]): The traits to redistribute.
+            concept (CharacterConcept): The concept to use for redistribution.
+
+        Returns:
+            list[CharacterTrait]: The updated list of CharacterTrait objects after redistribution.
+        """
+        while any(
+            t
+            for t in traits
+            if t.name in concept.value.specific_abilities and t.value < 3  # noqa: PLR2004
+        ):
+            # Stop iterating if there are no dots to be redistributed
+            if not any(
+                x for x in traits if x.name not in concept.value.specific_abilities and x.value >= 1
+            ):
+                break
+
+            # Subtract 1 from the lowest value non-specific trait.
+            unimportant_trait = next(
+                x for x in traits if x.name not in concept.value.specific_abilities and x.value >= 1
+            )
+            unimportant_trait.value -= 1
+
+            # Add 1 to the lowest value specific trait
+            specified_trait = next(
+                x
+                for x in traits
+                if x.name in concept.value.specific_abilities and x.value < 3  # noqa: PLR2004
+            )
+            specified_trait.value += 1
+
+        return traits
+
+    def _adjust_value_based_on_level(self, value: int) -> int:
+        """Adjust the discipline value based on the character's level.
+
+        For advanced and elite levels, the value is incremented by 1.
+        For new characters, the value is capped at 3.
+        The final value is constrained between 1 and 5.
+
+        Args:
+            value (int): The initial discipline value.
+
+        Returns:
+            int: The adjusted discipline value.
+        """
+        # Increment value for advanced and elite levels
+        if self.experience_level in {RNGCharLevel.ADVANCED, RNGCharLevel.ELITE}:
+            value += 1
+
+        # Cap values based on character level
+        if self.experience_level == RNGCharLevel.NEW and value > 2:  # noqa: PLR2004
+            value = 2
+
+        if self.experience_level == RNGCharLevel.INTERMEDIATE and value > 3:  # noqa: PLR2004
+            value = 3
+
+        # Constrain the final value between 1 and 5
+        return max(min(value, 5), 1)
+
+    async def generate_base_character(
+        self,
+        char_class: CharClass | None = None,
+        concept: CharacterConcept | None = None,
+        clan: VampireClan | None = None,
+        creed: HunterCreed | None = None,
+        player_character: bool = False,
+        storyteller_character: bool = False,
+        developer_character: bool = False,
+        chargen_character: bool = False,
+        gender: Literal["male", "female"] | None = None,
+        nationality: str = "us",
+        nickname_is_class: bool = False,
+    ) -> Character:
+        """Generate's the base character based on random values.
+
+        A base character consists of a combination of the following:
+
+        - A random class
+        - A random concept
+        - A random clan (if applicable)
+        - A random creed (if applicable)
+        - A random name
+
+        Traits and customizations are to be added later.
+
+        Returns:
+            Character: The generated character.
+        """
+        # Grab random name
+        name_first, name_last = await fetch_random_name(gender=gender, country=nationality)
+
+        # Grab a random class
+        if char_class is None:
+            percentile = _rng.integers(1, 101)
+            char_class = CharClass.get_member_by_value(percentile)
+
+        name_nick = char_class.value.name if nickname_is_class else None
+
+        # Grab a random concept
+        if concept is None:
+            percentile = _rng.integers(1, 101)
+            concept = CharacterConcept.get_member_by_value(percentile)
+
+        # Grab class specific information
+        if char_class == CharClass.VAMPIRE and not clan:
+            clan = VampireClan.random_member()
+
+        if char_class == CharClass.HUNTER and not creed:
+            percentile = _rng.integers(1, 101)
+            creed = HunterCreed.get_member_by_value(percentile)
+
+        character = Character(
+            name_first=name_first,
+            name_last=name_last,
+            name_nick=name_nick,
+            char_class_name=char_class.name,
+            concept_name=concept.name,
+            clan_name=clan.name if clan else None,
+            creed_name=creed.name if creed else None,
+            guild=self.ctx.guild.id,
+            type_chargen=chargen_character,
+            type_player=player_character,
+            type_storyteller=storyteller_character,
+            type_developer=developer_character,
+            user_creator=self.user.id,
+            user_owner=self.user.id,
+        )
+
+        await character.insert()
+        return character
+
+    async def random_attributes(self, character: Character) -> Character:
+        """Randomly generate attributes for the character.
+
+        Args:
+            character (Character): The character for which to generate attributes.
+        """
+        logger.debug(f"CHARGEN: Generate attribute values for {character.name}")
+
+        concept = CharacterConcept[character.concept_name] if character.concept_name else None
+        char_class = CharClass[character.char_class_name]
+
+        # Initialize dot distribution based on character level
+        starting_dot_distribution = (
+            [9, 8, 6] if char_class in (CharClass.MORTAL, CharClass.HUNTER) else [10, 8, 6]
+        )
+        extra_dots_map = {
+            RNGCharLevel.NEW: [0, 0, 0],
+            RNGCharLevel.INTERMEDIATE: [1, 0, 0],
+            RNGCharLevel.ADVANCED: [2, 1, 0],
+            RNGCharLevel.ELITE: [3, 2, 1],
+        }
+        total_dots = [
+            a + b
+            for a, b in zip(
+                starting_dot_distribution, extra_dots_map[self.experience_level], strict=True
+            )
+        ]
+
+        # Initialize category priority
+        attributes = [TraitCategory.PHYSICAL, TraitCategory.SOCIAL, TraitCategory.MENTAL]
+
+        primary_category = (
+            concept.value.attribute_specialty if concept else random.choice(attributes)
+        )
+        attributes.remove(primary_category)
+        secondary_category = random.choice(attributes)
+        attributes.remove(secondary_category)
+        tertiary_category = random.choice(attributes)
+
+        # Assign dots to each attribute
+        for cat in [primary_category, secondary_category, tertiary_category]:
+            category_dots = total_dots.pop(0)
+
+            category_traits = cat.get_trait_list(CharClass[character.char_class_name])
+
+            # Generate initial random distribution for the traits in the category
+            mean, distribution = self.experience_level.value
+            random_values = [
+                max(min(x, 5), 0)
+                for x in _rng.normal(mean, distribution, len(category_traits)).astype(int32)
+            ]
+
+            # Adjust the sum of the list to match the total dots for the category
+            final_values = adjust_sum_to_match_total(
+                random_values, category_dots, max_value=5, min_value=1
+            )
+
+            # Create the attributes and assign them to the character
+            for t in category_traits:
+                trait = CharacterTrait(
+                    name=t,
+                    value=final_values.pop(0),
+                    max_value=get_max_trait_value(t, cat.name),
+                    character=str(character.id),
+                    category_name=cat.name,
+                )
+
+                await trait.insert()
+
+                character.traits.append(trait)
+
+        await character.save()
+        return character
+
+    async def random_abilities(self, character: Character) -> Character:
+        """Randomly generate abilities for the character.
+
+        Args:
+            character (Character): The character for which to generate abilities.
+        """
+        logger.debug(f"CHARGEN: Generate ability values for {character.name}")
+
+        concept = CharacterConcept[character.concept_name] if character.concept_name else None
+
+        # Initialize dot distribution based on character level
+        starting_dot_distribution = [13, 9, 5]
+        extra_dots_map = {
+            RNGCharLevel.NEW: [0, 0, 0],
+            RNGCharLevel.INTERMEDIATE: [5, 3, 1],
+            RNGCharLevel.ADVANCED: [10, 6, 3],
+            RNGCharLevel.ELITE: [15, 9, 5],
+        }
+        total_dots = [
+            a + b
+            for a, b in zip(
+                starting_dot_distribution, extra_dots_map[self.experience_level], strict=True
+            )
+        ]
+
+        # Initialize category priority
+        abilities = [TraitCategory.TALENTS, TraitCategory.SKILLS, TraitCategory.KNOWLEDGES]
+
+        primary_category = concept.value.ability_specialty if concept else random.choice(abilities)
+        abilities.remove(primary_category)
+        secondary_category = random.choice(abilities)
+        abilities.remove(secondary_category)
+        tertiary_category = random.choice(abilities)
+
+        # Assign dots to each attribute
+        for cat in [primary_category, secondary_category, tertiary_category]:
+            category_dots = total_dots.pop(0)
+
+            category_traits = cat.get_trait_list(CharClass[character.char_class_name])
+
+            # Generate initial random distribution for the traits in the category
+            mean, distribution = self.experience_level.value
+            random_values = [
+                max(min(x, 5), 0)
+                for x in _rng.normal(mean, distribution, len(category_traits)).astype(int32)
+            ]
+
+            # Adjust the sum of the list to match the total dots for the category
+            final_values = adjust_sum_to_match_total(random_values, category_dots, max_value=5)
+
+            # Create the attributes and assign them to the character
+            traits = [
+                CharacterTrait(
+                    name=t,
+                    value=final_values.pop(0),
+                    max_value=get_max_trait_value(t, cat.name),
+                    character=str(character.id),
+                    category_name=cat.name,
+                )
+                for t in category_traits
+            ]
+
+            traits = self._redistribute_trait_values(traits, concept)
+
+            for trait in traits:
+                await trait.insert()
+                character.traits.append(trait)
+
+        await character.save()
+        return character
+
+    async def random_disciplines(self, character: Character) -> Character:
+        """Randomly generate disciplines for the character.
+
+        Args:
+            character (Character): The character for which to generate disciplines.
+
+        Returns:
+            Character: The updated character.
+        """
+        logger.debug(f"CHARGEN: Generate discipline values for {character.name}")
+
+        # TODO: Work with Ghouls which have no clan
+        try:
+            clan = VampireClan[character.clan_name]
+        except KeyError:
+            return character
+
+        extra_disciplines_map = {
+            RNGCharLevel.NEW: 0,
+            RNGCharLevel.INTERMEDIATE: 1,
+            RNGCharLevel.ADVANCED: 2,
+            RNGCharLevel.ELITE: 3,
+        }
+
+        disciplines_to_set = clan.value.disciplines
+        other_disciplines = TraitCategory.DISCIPLINES.get_trait_list(
+            CharClass[character.char_class_name]
+        )
+        disciplines_to_set.extend(
+            random.sample(
+                [x for x in other_disciplines if x not in disciplines_to_set],
+                extra_disciplines_map.get(self.experience_level, 0),
+            )
+        )
+
+        # Generate trait values from a normal distribution
+        mean, distribution = self.experience_level.value
+        values = [
+            self._adjust_value_based_on_level(x)
+            for x in _rng.normal(mean, distribution, len(disciplines_to_set)).astype(int32)
+        ]
+
+        # Create the attributes and assign them to the character
+        for t in disciplines_to_set:
+            trait = CharacterTrait(
+                name=t,
+                value=values.pop(0),
+                max_value=get_max_trait_value(t, TraitCategory.DISCIPLINES.name),
+                character=str(character.id),
+                category_name=TraitCategory.DISCIPLINES.name,
+            )
+            await trait.insert()
+            character.traits.append(trait)
+
+        await character.save()
+        return character
+
+    async def random_virtues(self, character: Character) -> Character:
+        """Randomly generate virtues for the character.
+
+        Args:
+            character (Character): The character for which to generate virtues.
+
+        Returns:
+            Character: The updated character.
+        """
+        logger.debug(f"CHARGEN: Generate virtue values for {character.name}")
+
+        if not (
+            virtues := TraitCategory.VIRTUES.get_trait_list(CharClass[character.char_class_name])
+        ):
+            return character
+
+        starting_dots = 7
+        extra_dots_map = {
+            RNGCharLevel.NEW: 0,
+            RNGCharLevel.INTERMEDIATE: 0,
+            RNGCharLevel.ADVANCED: 1,
+            RNGCharLevel.ELITE: 2,
+        }
+        total_dots = starting_dots + extra_dots_map[self.experience_level]
+
+        # Divide total dots for each category into three to produce a value for each attribute
+        dots_for_each = divide_into_three(total_dots)
+
+        # Adjust the sum of the list to match the total dots for the category
+        values = adjust_sum_to_match_total(dots_for_each, total_dots, max_value=5, min_value=1)
+
+        # Create the traits and assign them to the character
+        for v in virtues:
+            trait = CharacterTrait(
+                name=v,
+                value=values.pop(0),
+                max_value=get_max_trait_value(v, TraitCategory.VIRTUES.name),
+                character=str(character.id),
+                category_name=TraitCategory.VIRTUES.name,
+            )
+            await trait.insert()
+            character.traits.append(trait)
+
+        await character.save()
+        return character
+
+    async def random_backgrounds(self, character: Character) -> Character:
+        """Randomly generate backgrounds for the character.
+
+        Args:
+            character (Character): The character for which to generate backgrounds.
+
+        Returns:
+            Character: The updated character.
+        """
+        logger.debug(f"CHARGEN: Generate background values for {character.name}")
+
+        char_class = CharClass[character.char_class_name]
+
+        if not (backgrounds := TraitCategory.BACKGROUNDS.get_trait_list(char_class)):
+            return character
+
+        extra_dots_map = {
+            RNGCharLevel.NEW: 0,
+            RNGCharLevel.INTERMEDIATE: 1,
+            RNGCharLevel.ADVANCED: 3,
+            RNGCharLevel.ELITE: 5,
+        }
+        total_dots = (
+            char_class.value.chargen_background_dots + extra_dots_map[self.experience_level]
+        )
+        if total_dots == 0:
+            return character
+
+        # Generate initial random distribution for the traits in the category
+        mean, distribution = self.experience_level.value
+        initial_values = [
+            max(min(x, 5), 0)
+            for x in _rng.normal(mean, distribution, len(backgrounds)).astype(int32)
+        ]
+
+        # Adjust the sum of the list to match the total dots for the category
+        values = adjust_sum_to_match_total(initial_values, total_dots, max_value=5)
+
+        # Create the backgrounds and assign them to the character
+        for b in backgrounds:
+            trait = CharacterTrait(
+                name=b,
+                value=values.pop(0),
+                max_value=get_max_trait_value(b, TraitCategory.BACKGROUNDS.name),
+                character=str(character.id),
+                category_name=TraitCategory.BACKGROUNDS.name,
+            )
+            await trait.insert()
+            character.traits.append(trait)
+
+        await character.save()
+        return character
+
+    async def random_willpower(self, character: Character) -> Character:  # noqa: PLR6301
+        """Randomly generate willpower for the character.
+
+        Args:
+            character (Character): The character for which to generate willpower.
+
+        Returns:
+            Character: The updated character.
+        """
+        logger.debug(f"CHARGEN: Generate willpower values for {character.name}")
+
+        if not any(x.name for x in character.traits if x.name == "Self-Control"):  # type: ignore [attr-defined]
+            return character
+
+        courage = next(
+            x for x in cast(list[CharacterTrait], character.traits) if x.name == "Courage"
+        )
+        self_control = next(
+            x for x in cast(list[CharacterTrait], character.traits) if x.name == "Self-Control"
+        )
+        conscience = next(
+            x for x in cast(list[CharacterTrait], character.traits) if x.name == "Conscience"
+        )
+
+        willpower = CharacterTrait(
+            name="Willpower",
+            value=self_control.value + courage.value,
+            character=str(character.id),
+            category_name=TraitCategory.OTHER.name,
+            max_value=10,
+        )
+        await willpower.insert()
+        character.traits.append(willpower)
+
+        if "Humanity" in TraitCategory.OTHER.get_trait_list(character.char_class):
+            humanity = CharacterTrait(
+                name="Humanity",
+                value=conscience.value,
+                character=str(character.id),
+                category_name=TraitCategory.OTHER.name,
+                max_value=10,
+            )
+            await humanity.insert()
+            character.traits.append(humanity)
+
+        await character.save()
+        return character
+
+    async def random_hunter_traits(self, character: Character) -> Character:
+        """Randomly generate hunter traits for the character.
+
+        Args:
+            character (Character): The character for which to generate hunter traits.
+
+        Returns:
+            Character: The updated character.
+        """
+        if character.char_class != CharClass.HUNTER:
+            return character
+
+        logger.debug(f"CHARGEN: Generate hunter trait values for {character.name}")
+
+        try:
+            creed = HunterCreed[character.creed_name]
+        except KeyError:
+            creed = HunterCreed.random_member()
+            character.creed_name = creed.name
+
+        willpower = CharacterTrait(
+            name="Willpower",
+            value=3,  # Hunter willpower is always 3
+            character=str(character.id),
+            category_name=TraitCategory.OTHER.name,
+            max_value=10,
+        )
+        await willpower.insert()
+        character.traits.append(willpower)
+
+        conviction = CharacterTrait(
+            name="Conviction",
+            value=creed.value["conviction"],
+            character=str(character.id),
+            category_name=TraitCategory.OTHER.name,
+            max_value=get_max_trait_value("Conviction", TraitCategory.OTHER.name),
+        )
+        await conviction.insert()
+        character.traits.append(conviction)
+
+        # Assign Edges
+        edges = creed.value["edges"]
+        starting_dots = 5
+        extra_dots_map = {
+            RNGCharLevel.NEW: 0,
+            RNGCharLevel.INTERMEDIATE: 0,
+            RNGCharLevel.ADVANCED: 1,
+            RNGCharLevel.ELITE: 2,
+        }
+        total_dots = starting_dots + extra_dots_map[self.experience_level]
+
+        # Generate initial random distribution for the traits in the category
+        mean, distribution = self.experience_level.value
+        initial_values = [
+            max(min(x, 3), 0) for x in _rng.normal(mean, distribution, len(edges)).astype(int32)
+        ]
+
+        # Adjust the sum of the list to match the total dots for the category
+        values = adjust_sum_to_match_total(values=initial_values, total=total_dots, max_value=3)
+
+        # Create the edges and assign them to the character
+        for e in edges:
+            trait = CharacterTrait(
+                name=e,
+                value=values.pop(0),
+                max_value=get_max_trait_value(e, TraitCategory.EDGES.name),
+                character=str(character.id),
+                category_name=TraitCategory.EDGES.name,
+            )
+            await trait.insert()
+            character.traits.append(trait)
+
+        await character.save()
+        return character
+
+    async def concept_special_abilities(self, character: Character) -> Character:  # noqa: PLR6301
+        """Assign special abilities based on the character's concept.
+
+        Args:
+            character (Character): The character for which to assign special abilities.
+
+        Returns:
+            Character: The updated character.
+        """
+        if character.char_class != CharClass.MORTAL:
+            return character
+
+        logger.debug(f"CHARGEN: Assign special abilities for {character.name}")
+
+        # Assign Traits
+        for ability in character.concept.value.abilities:
+            if isinstance(ability["traits"], list):
+                for name, value, category in ability["traits"]:
+                    trait = CharacterTrait(
+                        name=name,
+                        value=value,
+                        max_value=get_max_trait_value(name, category),
+                        character=str(character.id),
+                        category_name=category,
+                    )
+                    await trait.insert()
+                    character.traits.append(trait)
+
+            if isinstance(ability["custom_sections"], list):
+                character.sheet_sections.extend(
+                    [
+                        CharacterSheetSection(title=title, content=content)
+                        for title, content in ability["custom_sections"]
+                    ]
+                )
+        await character.save()
+        return character
+
+
 class CharGenWizard:
     """Guide the user through a step-by-step character generation process.
 
@@ -344,45 +973,42 @@ class CharGenWizard:
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         campaign: Campaign,
-        user: GuildUser,
+        user: User,
+        experience_level: RNGCharLevel = None,
         hidden: bool = True,
     ) -> None:
         self.ctx = ctx
         self.interaction = ctx.interaction
         self.bot = cast(Valentina, ctx.bot)
+
         self.user = user
         self.campaign = campaign
+        self.experience_level = experience_level
         self.hidden = hidden
+
         self.paginator: pages.Paginator = None  # Initialize paginator to None
-
-    async def _generate_random_character(self) -> Character:
-        """Generate a random character.
-
-        Returns:
-            Character: The generated character.
-        """
-        return await self.bot.char_svc.rng_creator(self.ctx, chargen_character=True)
+        self.engine = RNGCharGen(ctx, user, experience_level)
 
     @staticmethod
     def _special_ability_char_sheet_text(character: Character) -> str:
         """Generate the special abilities text for the character sheet."""
         # Extract concept information for mortals
-        if character.char_class.name == CharClassType.MORTAL.name:
-            concept_info = CharConcept[character.data["concept_db"]].value
+        if character.char_class.name == CharClass.MORTAL.name:
+            concept_info = CharacterConcept[character.concept_name].value
 
             # Generate special abilities list
             special_abilities = [
                 f"{i}. **{ability['name']}:** {ability['description']}\n"
-                for i, ability in enumerate(concept_info["abilities"], start=1)
+                for i, ability in enumerate(concept_info.abilities, start=1)
             ]
 
             return f"""
-    **{character.full_name} is a {concept_info["name"]}**
-    {concept_info["description"]}
+    **{character.name} is a {concept_info.name}**
+    {concept_info.description}
 
-    **Special {p.plural_noun("Ability", len(concept_info["abilities"]))}: **
+    **Special {p.plural_noun("Ability", len(concept_info.abilities))}: **
     {"".join(special_abilities)}
     """
         # Return None unless the character is a mortal
@@ -459,8 +1085,8 @@ Once you select a character you can re-allocate dots and change the name, but yo
             title="Classes",
             description="\n".join(
                 [
-                    f"- **`{c.value['range'][1] - c.value['range'][0]}%` {c.value['name']}** {c.value['description']}"
-                    for c in CharClassType.playable_classes()
+                    f"- **`{c.value.percentile_range[1] - c.value.percentile_range[0]}%` {c.value.name}** {c.value.description}"
+                    for c in CharClass.playable_classes()
                 ]
             ),
             color=EmbedColor.INFO.value,
@@ -469,9 +1095,9 @@ Once you select a character you can re-allocate dots and change the name, but yo
             title="Concepts",
             description="\n".join(
                 [
-                    f"- **{c.value['name']}** {c.value['description']}"
-                    for c in CharConcept
-                    if c.value["range"] is not None
+                    f"- **{c.value.name}** {c.value.description}"
+                    for c in CharacterConcept
+                    if c.value.percentile_range is not None
                 ]
             ),
             color=EmbedColor.INFO.value,
@@ -499,7 +1125,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
             return
 
         # Spend 10 XP
-        self.user.spend_experience(self.campaign.id, 10)
+        await self.user.spend_campaign_xp(self.campaign, 10)
 
         # Move on reviewing three options
         await self.present_character_choices()
@@ -517,12 +1143,25 @@ Once you select a character you can re-allocate dots and change the name, but yo
         logger.debug("CHARGEN: Starting the character selection process")
 
         # Generate 3 characters
-        characters = [await self._generate_random_character() for _ in range(3)]
+        characters = [
+            await self.engine.generate_base_character(chargen_character=True) for _ in range(3)
+        ]
+
+        # TODO: Add traits to each character
+        for character in characters:
+            await self.engine.random_attributes(character)
+            await self.engine.random_abilities(character)
+            await self.engine.random_disciplines(character)
+            await self.engine.random_virtues(character)
+            await self.engine.random_backgrounds(character)
+            await self.engine.random_willpower(character)
+            await self.engine.random_hunter_traits(character)
+            await self.engine.concept_special_abilities(character)
 
         # Add the pages to the paginator
         description = f"## Created {len(characters)} {p.plural_noun('character', len(characters))} for you to choose from\n"
         character_list = [
-            f"{i}. **{c.full_name}:**  A {CharConcept[c.data['concept_db']].value['name']} {VampireClanType[c.clan.name].value['name'] if c.clan else ''} {CharClassType[c.char_class.name].value['name']}"
+            f"{i}. **{c.name}:**  A {CharacterConcept[c.concept_name].value.name} {VampireClan[c.clan_name].value.name if c.clan_name else ''} {CharClass[c.char_class.name].value.name}"
             for i, c in enumerate(characters)
         ]
         description += "\n".join(character_list)
@@ -566,18 +1205,12 @@ Once you select a character you can re-allocate dots and change the name, but yo
             return
 
         if view.reroll:
-            (
-                campaign_xp,
-                _,
-                _,
-                _,
-                _,
-            ) = self.user.fetch_experience(self.campaign.id)
+            campaign_xp, _, _ = self.user.fetch_campaign_xp(self.campaign)
 
             # Delete the previously created characters
             logger.debug("CHARGEN: Rerolling characters and deleting old ones.")
             for character in characters:
-                character.delete_instance(delete_nullable=True, recursive=True)
+                await character.delete(link_rule=DeleteRules.DELETE_LINKS)
 
             # Check if the user has enough XP to reroll
             if campaign_xp < 10:  # noqa: PLR2004
@@ -593,18 +1226,22 @@ Once you select a character you can re-allocate dots and change the name, but yo
             for c in characters:
                 if c.id != selected_character.id:
                     # Delete the characters the user did not select
-                    c.delete_instance(delete_nullable=True, recursive=True)
+                    await c.delete(link_rule=DeleteRules.DELETE_LINKS)
+
                 if c.id == selected_character.id:
-                    # Add the selected character to the player's character list
-                    data: dict[str, str | int | bool] = {
-                        "chargen_character": False,
-                        "player_character": True,
-                        "freebie_points": 21,
-                    }
-                    await self.bot.char_svc.update_or_add(self.ctx, character=c, data=data)
+                    # Add the player into the database
+                    c.freebie_points = 21
+                    c.type_player = True
+                    c.type_chargen = False
+                    await c.save()
+
+                    self.user.characters.append(c)
+                    await self.user.save()
+
+                    selected_character = c
 
             # Post-process the character
-            await self.finalize_character_selection(Character.get(selected_character.id))
+            await self.finalize_character_selection(selected_character)
 
     async def finalize_character_selection(self, character: Character) -> None:
         """Review and finalize the selected character.
@@ -650,11 +1287,11 @@ Once you select a character you can re-allocate dots and change the name, but yo
         Returns:
             Character: The created character.
         """
-        logger.debug(f"CHARGEN: Spending freebie points for {character.full_name}")
+        logger.debug(f"CHARGEN: Spending freebie points for {character.name}")
 
         # Create the character sheet embed
-        title = f"Spend freebie points on {character.full_name}\n"
-        suffix = f"Use the buttons below to chose where you want to spend your `{character.data.get('freebie_points', 0)}` remaining freebie points.\n"
+        title = f"Spend freebie points on {character.name}\n"
+        suffix = f"Use the buttons below to chose where you want to spend your `{character.freebie_points}` remaining freebie points.\n"
         embed = await self._generate_character_sheet_embed(character, title=title, suffix=suffix)
 
         # Update the paginator

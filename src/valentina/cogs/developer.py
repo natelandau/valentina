@@ -19,7 +19,7 @@ from valentina.models.sqlite_models import (
     RollProbability,
 )
 from valentina.utils.changelog_parser import ChangelogParser
-from valentina.utils.converters import ValidCharacterClass
+from valentina.utils.converters import ValidCharClass
 from valentina.utils.options import (
     select_aws_object_from_guild,
     select_changelog_version_1,
@@ -145,7 +145,7 @@ class Developer(commands.Cog):
             int, description="The number of characters to create (default 1)", default=1
         ),
         character_class: Option(
-            ValidCharacterClass,
+            ValidCharClass,
             name="char_class",
             description="The character's class",
             autocomplete=select_char_class,

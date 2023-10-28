@@ -2,43 +2,43 @@
 import discord
 from discord.ui import InputText, Modal
 
-from valentina.constants import MAX_FIELD_COUNT, CharClassType, EmbedColor
-from valentina.models.sqlite_models import CampaignChapter, CampaignNote, CampaignNPC, Character
+from valentina.constants import MAX_FIELD_COUNT, CharClass, EmbedColor
+from valentina.models.mongo_collections import Character
+from valentina.models.sqlite_models import CampaignChapter, CampaignNote, CampaignNPC
 from valentina.views import ConfirmCancelButtons
 
 
 class ChangeNameModal(Modal):
     """A modal for changing the name of a character."""
 
-    def __init__(self, ctx: discord.ApplicationContext, character: Character, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, character: Character, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.character = character
         self.name = None
-        self.ctx = ctx
 
         self.add_item(
             InputText(
-                label="first name",
+                label="First name",
                 placeholder="Enter a first name for the character",
-                value=self.character.data.get("first_name", None),
+                value=self.character.name_first,
                 style=discord.InputTextStyle.short,
                 required=True,
             )
         )
         self.add_item(
             InputText(
-                label="last name",
+                label="Last name",
                 placeholder="Enter a last name for the character",
-                value=self.character.data.get("last_name", None),
+                value=self.character.name_last,
                 style=discord.InputTextStyle.short,
                 required=True,
             )
         )
         self.add_item(
             InputText(
-                label="nickname",
+                label="Nickname",
                 placeholder="Enter a nickname for the character",
-                value=self.character.data.get("nickname", None),
+                value=self.character.name_nick if self.character.name_nick else None,
                 style=discord.InputTextStyle.short,
                 required=False,
             )
@@ -49,17 +49,15 @@ class ChangeNameModal(Modal):
         self.first_name = self.children[0].value
         self.last_name = self.children[1].value
         self.nickname = self.children[2].value
-        data = {}
-        if self.first_name:
-            data["first_name"] = self.first_name
-        if self.last_name:
-            data["last_name"] = self.last_name
-        if self.nickname:
-            data["nickname"] = self.nickname
 
-        self.character = await self.ctx.bot.char_svc.update_or_add(  # type: ignore [attr-defined]
-            self.ctx, character=self.character, data=data
-        )
+        if self.first_name:
+            self.character.name_first = self.first_name
+        if self.last_name:
+            self.character.name_last = self.last_name
+        if self.nickname:
+            self.character.name_nick = self.nickname
+
+        await self.character.save()
 
         embed = discord.Embed(title="Name Updated", color=EmbedColor.SUCCESS.value)
         await interaction.response.send_message(embeds=[embed], ephemeral=True, delete_after=0)
@@ -448,7 +446,7 @@ class ProfileModal(Modal):
             )
         )
 
-        if self.character.char_class == CharClassType.VAMPIRE:
+        if self.character.char_class == CharClass.VAMPIRE:
             self.add_item(
                 InputText(
                     label="generation",
@@ -471,7 +469,7 @@ class ProfileModal(Modal):
                 )
             )
 
-        if self.character.char_class == CharClassType.MAGE:
+        if self.character.char_class == CharClass.MAGE:
             self.add_item(
                 InputText(
                     label="essence",
@@ -493,7 +491,7 @@ class ProfileModal(Modal):
                 )
             )
 
-        if self.character.char_class == CharClassType.WEREWOLF:
+        if self.character.char_class == CharClass.WEREWOLF:
             self.add_item(
                 InputText(
                     label="breed",
@@ -525,7 +523,7 @@ class ProfileModal(Modal):
                 )
             )
 
-        if self.character.char_class == CharClassType.HUNTER:
+        if self.character.char_class == CharClass.HUNTER:
             self.add_item(
                 InputText(
                     label="creed_name",

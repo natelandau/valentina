@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from valentina.constants import (
     CharacterConcept,
-    CharClassType,
+    CharClass,
     HunterCreed,
     PermissionManageCampaign,
     PermissionsEditTrait,
@@ -31,7 +31,7 @@ from valentina.constants import (
     VampireClan,
 )
 from valentina.models.aws import AWSService
-from valentina.utils import errors, types
+from valentina.utils import errors
 from valentina.utils.discord_utils import create_player_role, create_storyteller_role
 from valentina.utils.helpers import get_max_trait_value, num_to_circles
 
@@ -44,10 +44,9 @@ def time_now() -> datetime:
 # #### Sub-Documents
 
 
-class CampaignExperience(Document):
+class CampaignExperience(BaseModel):
     """Dictionary representing a character's campaign experience as a subdocument attached to a User."""
 
-    campaign: PydanticObjectId
     xp_current: int = 0
     xp_total: int = 0
     cool_points: int = 0
@@ -123,6 +122,8 @@ class Guild(Document):
 
     id: int  # type: ignore [assignment]  # noqa: A003
 
+    campaigns: list[Link["Campaign"]] = Field(default_factory=list)
+    active_campaign: Link["Campaign"] = None
     changelog_posted_version: str | None = None
     channel_id_audit_log: int | None = None
     channel_id_changelog: int | None = None
@@ -225,9 +226,10 @@ class User(Document):
     """Represents a user in the database."""
 
     id: int  # type: ignore [assignment]  # noqa: A003
-    active_characters: list[Link["Character"]] = Field(default_factory=list)
+
+    active_characters: dict[str, Link["Character"]] = Field(default_factory=dict)
     characters: list[Link["Character"]] = Field(default_factory=list)
-    campaign_experience: list[CampaignExperience] = Field(default_factory=list)
+    campaign_experience: dict[str, CampaignExperience] = Field(default_factory=dict)
     date_created: datetime = Field(default_factory=time_now)
     date_modified: datetime = Field(default_factory=time_now)
     macros: list[UserMacro] = Field(default_factory=list)
@@ -242,52 +244,149 @@ class User(Document):
     @property
     def lifetime_experience(self) -> int:
         """Return the user's lifetime experience level."""
-        return sum([xp.xp_total for xp in self.campaign_experience])
+        xp = 0
+
+        for obj in self.campaign_experience.values():
+            xp += obj.xp_total
+
+        return xp
 
     @property
     def lifetime_cool_points(self) -> int:
         """Return the user's lifetime cool points."""
-        return sum([xp.cool_points for xp in self.campaign_experience])
+        cool_points = 0
+
+        for obj in self.campaign_experience.values():
+            cool_points += obj.cool_points
+
+        return cool_points
+
+    def _find_campaign_xp(self, campaign: "Campaign") -> CampaignExperience | None:
+        """Return the user's campaign experience for a given campaign.
+
+        Args:
+            campaign (Campaign): The campaign to fetch experience for.
+
+        Returns:
+            CampaignExperience|None: The user's campaign experience if it exists; otherwise, None.
+        """
+        try:
+            return self.campaign_experience[str(campaign.id)]
+        except KeyError as e:
+            raise errors.NoExperienceInCampaignError from e
+
+    def fetch_campaign_xp(self, campaign: "Campaign") -> tuple[int, int, int]:
+        """Return the user's campaign experience for a given campaign.
+
+        Args:
+            campaign (Campaign): The campaign to fetch experience for.
+
+        Returns:
+            tuple[int, int, int]: Tuple of (current xp, total xp, cool points) if the user has experience for the campaign; otherwise, None.
+        """
+        campaign_experience = self._find_campaign_xp(campaign)
+
+        return (
+            campaign_experience.xp_current,
+            campaign_experience.xp_total,
+            campaign_experience.cool_points,
+        )
+
+    async def spend_campaign_xp(self, campaign: "Campaign", amount: int) -> int:
+        """Spend experience for a campaign.
+
+        Args:
+            campaign (Campaign): The campaign to spend experience for.
+            amount (int): The amount of experience to spend.
+
+        Returns:
+            int: The new campaign experience.
+        """
+        campaign_experience = self._find_campaign_xp(campaign)
+
+        new_xp = campaign_experience.xp_current - amount
+
+        if new_xp < 0:
+            msg = f"Can not spend {amount} xp with only {campaign_experience.xp_current} available"
+            raise errors.NotEnoughExperienceError(msg)
+
+        campaign_experience.xp_current = new_xp
+        await self.save()
+
+        return new_xp
+
+    async def add_campaign_xp(self, campaign: "Campaign", amount: int) -> int:
+        """Add experience for a campaign.
+
+        Args:
+            campaign (Campaign): The campaign to add experience for.
+            amount (int): The amount of experience to add.
+
+        Returns:
+            int: The new campaign experience.
+        """
+        try:
+            campaign_experience = self._find_campaign_xp(campaign)
+        except errors.NoExperienceInCampaignError:
+            campaign_experience = CampaignExperience()
+            self.campaign_experience[str(campaign.id)] = campaign_experience
+
+        campaign_experience.xp_current += amount
+        campaign_experience.xp_total += amount
+        await self.save()
+
+        return campaign_experience.xp_current
+
+    async def add_campaign_cool_points(self, campaign: "Campaign", amount: int) -> int:
+        """Add cool points for a campaign.
+
+        Args:
+            campaign (Campaign): The campaign to add cool points for.
+            amount (int): The amount of cool points to add.
+
+        Returns:
+            int: The new campaign cool points.
+        """
+        campaign_experience = self._find_campaign_xp(campaign)
+
+        campaign_experience.cool_points += amount
+        await self.save()
+
+        return campaign_experience.cool_points
 
     def active_character(self, guild: discord.Guild) -> "Character":
         """Return the active character for the user in the guild."""
         try:
-            return next(
-                x for x in cast(list["Character"], self.active_characters) if x.guild == guild.id
-            )
-        except StopIteration as e:
+            return self.active_characters[str(guild.id)]  # type: ignore [return-value]
+        except KeyError as e:
             raise errors.NoActiveCharacterError from e
 
     def all_characters(self, guild: discord.Guild) -> list["Character"]:
         """Return all characters for the user in the guild."""
         return [x for x in cast(list["Character"], self.characters) if x.guild == guild.id]
 
-    async def set_active_character(self, guild: discord.Guild, character: "Character") -> None:
+    async def set_active_character(self, character: "Character") -> None:
         """Set the active character for the user in the guild.
 
         Args:
-            guild (discord.Guild): The guild to set the active character for.
             character (Character): The character to set as active.
         """
-        # Remove current active character for the guild, if any
-        for c in cast(list["Character"], self.active_characters):
-            if c.guild == guild.id:
-                self.active_characters.remove(c)
-                break
-
-        # Set new active character
-        self.active_characters.append(character)
+        self.active_characters[str(character.guild)] = character
         await self.save()
 
     async def remove_character(self, character: "Character") -> None:
         """Remove a character from the user's list of characters."""
+        # Remove the character from the active characters list if it is active
+        if (
+            str(character.guild) in self.active_characters
+            and self.active_characters[str(character.guild)].id == character.id  # type: ignore [attr-defined]
+        ):
+            del self.active_characters[str(character.guild)]
+
+        # Remove the character from the list of characters
         for c in cast(list["Character"], self.characters):
             if c.id == character.id:
                 self.characters.remove(c)
-
-        for c in cast(list["Character"], self.active_characters):
-            if c.id == character.id:
-                self.active_characters.remove(c)
 
         await self.save()
 
@@ -300,15 +399,11 @@ class Campaign(Document):
     date_in_game: Optional[datetime] = None
     description: str | None = None
     guild: int
-    is_active: bool = False
     name: str
     # FIXME: Decide between Links or objects
     chapters: list[CampaignChapter] = Field(default_factory=list)
     notes: list[CampaignNote] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)
-    # chapters: list[Link[CampaignChapter]] = Field(default_factory=list)
-    # notes: list[Link[CampaignNote]] = Field(default_factory=list)
-    # npcs: list[Link[CampaignNPC]] = Field(default_factory=list)
 
     @before_event(Insert, Replace, Save, Update, SaveChanges)
     async def update_modified_date(self) -> None:
@@ -319,7 +414,7 @@ class Campaign(Document):
 class Character(Document):
     """Represents a character in the database."""
 
-    char_class_name: str
+    char_class_name: str  # CharClass enum name
     date_created: datetime = Field(default_factory=time_now)
     date_modified: datetime = Field(default_factory=time_now)
     guild: Indexed(int)  # type: ignore [valid-type]
@@ -337,16 +432,18 @@ class Character(Document):
     type_storyteller: bool = False
     type_player: bool = False
     type_developer: bool = False
-    user_creator: Link[User]
-    user_owner: Link[User]
+    user_creator: int  # id of the user who created the character
+    user_owner: int  # id of the user who owns the character
+    freebie_points: int = 0
+
     # Profile
     bio: str | None = None
     age: int | None = None
     auspice: str | None = None
     breed: str | None = None
-    clan_name: str | None = None
-    concept_name: str | None = None
-    creed_name: str | None = None
+    clan_name: str | None = None  # VampireClan enum name
+    concept_name: str | None = None  # CharacterConcept enum name
+    creed_name: str | None = None  # HunterCreed enum name
     demeanor: str | None = None
     dob: Optional[datetime] = None
     essence: str | None = None
@@ -375,12 +472,9 @@ class Character(Document):
         return f"{self.name_first}{nick}{last}".strip()
 
     @property
-    def char_class(self) -> CharClassType:
+    def char_class(self) -> CharClass:
         """Return the character's class."""
-        if self.__dict__.get("char_class_name", None):
-            return CharClassType[self.char_class_name]
-
-        return None
+        return CharClass[self.char_class_name] if self.concept_name else None
 
     @property
     def concept(self) -> CharacterConcept | None:
@@ -389,27 +483,17 @@ class Character(Document):
         Returns:
             CharacterConcept|None: The character's concept, if it exists; otherwise, None.
         """
-        if self.__dict__.get("concept_name", None):
-            try:
-                return CharacterConcept[self.concept_name.title()]
-            except KeyError:
-                return None
-
-        return None
+        return CharacterConcept[self.concept_name] if self.concept_name else None
 
     @property
     def clan(self) -> VampireClan:
         """Return the character's clan."""
-        if self.__dict__.get("clan_name", None):
-            return VampireClan[self.clan_name]
-        return None
+        return VampireClan[self.clan_name] if self.clan_name else None
 
     @property
     def creed(self) -> HunterCreed:
         """Return the user who created the character."""
-        if self.__dict__.get("creed_name", None):
-            return HunterCreed[self.creed_name]
-        return None
+        return HunterCreed[self.creed_name] if self.creed_name else None
 
     async def add_image(self, extension: str, data: bytes) -> str:
         """Add an image to a character and upload it to Amazon S3.
@@ -523,3 +607,8 @@ class CharacterTrait(Document):
     def dots(self) -> str:
         """Return the trait's value as a string of dots."""
         return num_to_circles(self.value, self.max_value)
+
+    @property
+    def category(self) -> TraitCategory:
+        """Return the trait's category."""
+        return TraitCategory[self.category_name] if self.category_name else None

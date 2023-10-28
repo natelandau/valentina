@@ -1,9 +1,11 @@
 """Buttons for character creation."""
+from typing import cast
+
 import discord
 from discord.ui import Button
 
-from valentina.constants import Emoji, TraitCategories
-from valentina.models.sqlite_models import Character, Trait
+from valentina.constants import Emoji, TraitCategory
+from valentina.models.mongo_collections import Character, CharacterTrait
 
 
 class SelectTraitCategoryButtons(discord.ui.View):
@@ -18,13 +20,13 @@ class SelectTraitCategoryButtons(discord.ui.View):
         self.ctx = ctx
         self.character = character
         self.cancelled: bool = False
-        self.selected_category: TraitCategories = None
+        self.selected_category: TraitCategory = None
 
-        # Create a button for each trait category
-        all_trait_categories = [
-            TraitCategories[trait.category.name] for trait in self.character.traits_list
-        ]
-        self.all_categories = sorted(set(all_trait_categories), key=lambda x: x.value["order"])
+        # Create a button for all trait categories on the character
+        self.all_categories = sorted(
+            {t.category for t in cast(list[CharacterTrait], self.character.traits) if t.category},
+            key=lambda x: x.value.order,
+        )
 
         # Create a button for each category
         for i, category in enumerate(self.all_categories):
@@ -76,16 +78,14 @@ class SelectCharacterTraitButtons(discord.ui.View):
     def __init__(
         self,
         ctx: discord.ApplicationContext,
-        character: Character,
-        traits: list[Trait],
+        traits: list[CharacterTrait],
         not_maxed_only: bool = False,
     ):
         super().__init__(timeout=300)
         self.ctx = ctx
         self.not_maxed_only = not_maxed_only
-        self.character = character
         self.cancelled: bool = False
-        self.selected_trait: Trait = None
+        self.selected_trait: CharacterTrait = None
         self.traits = traits
 
         # Create a button for each trait

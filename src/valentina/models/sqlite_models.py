@@ -24,7 +24,7 @@ from valentina.constants import (
     CHARACTER_DEFAULTS,
     GUILD_DEFAULTS,
     GUILDUSER_DEFAULTS,
-    TraitCategories,
+    TraitCategory,
 )
 from valentina.utils import errors
 
@@ -472,7 +472,7 @@ class Character(BaseModel):
         return all_traits
 
     def add_custom_trait(
-        self, name: str, description: str, category: TraitCategories, value: int, max_value: int
+        self, name: str, description: str, category: TraitCategory, value: int, max_value: int
     ) -> None:
         """Add a custom trait to the character."""
         # Confirm the custom trait name is unique for this character

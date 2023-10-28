@@ -5,7 +5,7 @@ import inflect
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import COOL_POINT_VALUE, CharClassType, VampireClanType, XPMultiplier
+from valentina.constants import COOL_POINT_VALUE, CharClass, VampireClan, XPMultiplier
 from valentina.models.bot import Valentina
 from valentina.utils.converters import (
     ValidCharacterObject,
@@ -162,9 +162,9 @@ class Experience(commands.Cog):
         old_trait_value = character.get_trait_value(trait)
         category = trait.category.name
 
-        char_class = CharClassType[character.char_class.name]
+        char_class = CharClass[character.char_class.name]
         try:
-            clan = VampireClanType[character.clan.name] if character.clan else None
+            clan = VampireClan[character.clan.name] if character.clan else None
         except KeyError:
             clan = None
 

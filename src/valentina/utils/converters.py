@@ -11,7 +11,7 @@ from peewee import DoesNotExist, fn
 from valentina.constants import (
     VALID_IMAGE_EXTENSIONS,
     CharacterConcept,
-    CharClassType,
+    CharClass,
     RNGCharLevel,
     TraitCategory,
     VampireClan,
@@ -72,13 +72,13 @@ class ValidChannelName(Converter):
         return argument
 
 
-class ValidCharClassType(Converter):
+class ValidCharClass(Converter):
     """A converter that ensures a requested character class name is valid."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> CharClassType:  # noqa: ARG002
+    async def convert(self, ctx: commands.Context, argument: str) -> CharClass:  # noqa: ARG002
         """Validate and normalize character classes."""
         try:
-            return CharClassType[argument]
+            return CharClass[argument]
         except KeyError as e:
             msg = f"`{argument}` is not a valid character class"
             raise BadArgument(msg) from e
@@ -157,7 +157,7 @@ class ValidCharTrait(Converter):
         else:
             character = await ctx.bot.user_svc.fetch_active_character(ctx)
 
-        for trait in character.traits_list:
+        for trait in character.traits:
             if argument.lower() == trait.name.lower():
                 return trait
 
@@ -296,7 +296,7 @@ class ValidTraitOrCustomTrait(Converter):
         """Validate and normalize traits."""
         character = await ctx.bot.user_svc.fetch_active_character(ctx)
 
-        for trait in character.traits_list:
+        for trait in character.traits:
             if argument.lower() == trait.name.lower():
                 return trait
 

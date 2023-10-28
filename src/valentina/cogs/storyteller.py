@@ -12,17 +12,17 @@ from valentina.characters import AddFromSheetWizard
 from valentina.constants import (
     DEFAULT_DIFFICULTY,
     VALID_IMAGE_EXTENSIONS,
-    CharClassType,
+    CharClass,
     DiceType,
     EmbedColor,
 )
 from valentina.models.bot import Valentina
 from valentina.utils.converters import (
-    ValidCharacterClass,
     ValidCharacterConcept,
     ValidCharacterLevel,
     ValidCharacterName,
     ValidCharacterObject,
+    ValidCharClass,
     ValidClan,
     ValidImageURL,
     ValidTraitCategory,
@@ -89,7 +89,7 @@ class StoryTeller(commands.Cog):
         self,
         ctx: discord.ApplicationContext,
         char_class: Option(
-            ValidCharacterClass,
+            ValidCharClass,
             name="char_class",
             description="The character's class",
             autocomplete=select_char_class,
@@ -112,7 +112,7 @@ class StoryTeller(commands.Cog):
         await self.bot.user_svc.update_or_add(ctx)
 
         # Require a clan for vampires
-        if char_class == CharClassType.VAMPIRE and not vampire_clan:
+        if char_class == CharClass.VAMPIRE and not vampire_clan:
             await present_embed(
                 ctx,
                 title="Vampire clan required",
@@ -169,7 +169,7 @@ class StoryTeller(commands.Cog):
             required=True,
         ),
         character_class: Option(
-            ValidCharacterClass,
+            ValidCharClass,
             name="char_class",
             description="The character's class",
             autocomplete=select_char_class,
@@ -321,7 +321,7 @@ class StoryTeller(commands.Cog):
         """Update the value of a trait for a storyteller or player character."""
         # Get trait object from name
         found_trait = False
-        for t in character.traits_list:
+        for t in character.traits:
             if trait.lower() == t.name.lower():
                 found_trait = True
                 trait = t
@@ -621,7 +621,7 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
         # Get trait object from name
-        for t in character.traits_list:
+        for t in character.traits:
             if trait.lower() == t.name.lower():
                 trait = t
                 break
@@ -678,12 +678,12 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Roll traits for a storyteller character."""
         # Get trait objects from names
-        for t in character.traits_list:
+        for t in character.traits:
             if trait_one.lower() == t.name.lower():
                 trait_one = t
                 break
 
-        for t in character.traits_list:
+        for t in character.traits:
             if trait_two.lower() == t.name.lower():
                 trait_two = t
                 break

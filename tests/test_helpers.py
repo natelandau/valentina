@@ -2,24 +2,13 @@
 """Tests for helper utilities."""
 import pytest
 
-from valentina.constants import RollResultType, VampireClanType
+from valentina.constants import RollResultType
 from valentina.utils.helpers import (
     adjust_sum_to_match_total,
     diceroll_thumbnail,
     divide_into_three,
     num_to_circles,
 )
-
-
-@pytest.mark.usefixtures("mock_db")
-class TestsWithDatabase:
-    """Tests which require the a mock database."""
-
-    @staticmethod
-    def test_random_vampire_clan():
-        """Test the random_vampire_clan function."""
-        result = VampireClanType.random_member()
-        assert result.name in VampireClanType.__members__
 
 
 @pytest.mark.parametrize(

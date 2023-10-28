@@ -9,7 +9,7 @@ import discord
 from loguru import logger
 from peewee import DoesNotExist, fn
 
-from valentina.constants import CharClassType, TraitCategories
+from valentina.constants import CharClass, TraitCategories
 from valentina.utils import errors
 
 from .sqlite_models import Character, CharacterClass, CustomTrait, Trait, TraitCategory, TraitClass
@@ -56,7 +56,7 @@ class TraitService:
 
         return all_traits
 
-    def fetch_all_class_traits(self, char_class: CharClassType) -> list[Trait]:
+    def fetch_all_class_traits(self, char_class: CharClass) -> list[Trait]:
         """Fetch all traits for a specified character class.
 
         Checks if the traits for the character class are already cached.
@@ -65,7 +65,7 @@ class TraitService:
         sorts them by the `TraitCategories[].value["order"]`, caches them, and then returns the traits.
 
         Args:
-            char_class (CharClassType): Name of the character class to fetch traits for.
+            char_class (CharClass): Name of the character class to fetch traits for.
 
         Returns:
             list[Trait]: List of traits for the specified character class, sorted by `TraitCategories[].value["order"]`.

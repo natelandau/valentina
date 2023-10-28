@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from random import choice
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 import inflect
 
@@ -219,7 +219,7 @@ class XPMultiplier(Enum):
 
 
 class CharSheetSection(Enum):
-    """Enum for character sheet sections. Rollups of TraitCategories."""
+    """Enum for character sheet sections. Rollups of TraitCategory."""
 
     ATTRIBUTES: ClassVar[types.CharSheetSectionDict] = {"name": "Attributes", "order": 1}
     ABILITIES: ClassVar[types.CharSheetSectionDict] = {"name": "Abilities", "order": 2}
@@ -231,89 +231,100 @@ class CharSheetSection(Enum):
 # Updates may require a database migration
 
 
-class CharClassType(Enum):
+@dataclass(frozen=True, eq=True)
+class CharClassValue:
+    """A value object for the CharClass enum."""
+
+    name: str
+    percentile_range: tuple[int, int]
+    description: str
+    playable: bool
+    chargen_background_dots: int
+
+
+class CharClass(Enum):
     """Character classes for character generation."""
 
-    MORTAL: ClassVar[types.CharClassTypeDict] = {
-        "name": "Mortal",
-        "range": (0, 60),
-        "description": "Receive special abilities based on their concept",
-        "playable": True,
-        "chargen_background_dots": 0,
-    }
-    VAMPIRE: ClassVar[types.CharClassTypeDict] = {
-        "name": "Vampire",
-        "range": (61, 66),
-        "description": "Receive a clan and disciplines",
-        "playable": True,
-        "chargen_background_dots": 5,
-    }
-    WEREWOLF: ClassVar[types.CharClassTypeDict] = {
-        "name": "Werewolf",
-        "range": (67, 72),
-        "description": "Receive a tribe and gifts",
-        "playable": True,
-        "chargen_background_dots": 0,
-    }
-    MAGE: ClassVar[types.CharClassTypeDict] = {
-        "name": "Mage",
-        "range": (73, 78),
-        "description": "Receive a tradition and spheres",
-        "playable": True,
-        "chargen_background_dots": 0,
-    }
-    GHOUL: ClassVar[types.CharClassTypeDict] = {
-        "name": "Ghoul",
-        "range": (79, 84),
-        "description": "Receive disciplines and a master",
-        "playable": True,
-        "chargen_background_dots": 0,
-    }
-    CHANGELING: ClassVar[types.CharClassTypeDict] = {
-        "name": "Changeling",
-        "range": (85, 90),
-        "description": "",
-        "playable": True,
-        "chargen_background_dots": 0,
-    }
-    HUNTER: ClassVar[types.CharClassTypeDict] = {
-        "name": "Hunter",
-        "range": (91, 96),
-        "description": "Receive a creed and edges",
-        "playable": True,
-        "chargen_background_dots": 0,
-    }
-    SPECIAL: ClassVar[types.CharClassTypeDict] = {
-        "name": "Special",
-        "range": (97, 100),
-        "description": "Examples: Demon, Angel, Exalted, Titan, Mummy, etc. You choose.",
-        "playable": True,
-        "chargen_background_dots": 0,
-    }
-    OTHER: ClassVar[types.CharClassTypeDict] = {
-        "name": "Other",
-        "range": None,
-        "description": None,
-        "playable": False,
-        "chargen_background_dots": 0,
-    }
-    NONE: ClassVar[types.CharClassTypeDict] = {
-        "name": "None",
-        "range": None,
-        "description": None,
-        "playable": False,
-        "chargen_background_dots": 0,
-    }
-    COMMON: ClassVar[types.CharClassTypeDict] = {
-        "name": "Common",
-        "range": None,
-        "description": None,
-        "playable": False,
-        "chargen_background_dots": 0,
-    }
+    MORTAL = CharClassValue(
+        name="Mortal",
+        percentile_range=(0, 60),
+        description="Receive special abilities based on their concept",
+        playable=True,
+        chargen_background_dots=1,
+    )
+    VAMPIRE = CharClassValue(
+        name="Vampire",
+        percentile_range=(61, 66),
+        description="Receive a clan and disciplines",
+        playable=True,
+        chargen_background_dots=5,
+    )
+    WEREWOLF = CharClassValue(
+        name="Werewolf",
+        percentile_range=(67, 72),
+        description="Receive a tribe and gifts",
+        playable=True,
+        chargen_background_dots=1,
+    )
+    MAGE = CharClassValue(
+        name="Mage",
+        percentile_range=(73, 78),
+        description="Receive a tradition and spheres",
+        playable=True,
+        chargen_background_dots=1,
+    )
+    GHOUL = CharClassValue(
+        name="Ghoul",
+        percentile_range=(79, 84),
+        description="Receive disciplines and a master",
+        playable=True,
+        chargen_background_dots=1,
+    )
+    CHANGELING = CharClassValue(
+        name="Changeling",
+        percentile_range=(85, 90),
+        description="",
+        playable=True,
+        chargen_background_dots=1,
+    )
+    HUNTER = CharClassValue(
+        name="Hunter",
+        percentile_range=(91, 96),
+        description="Receive a creed and edges",
+        playable=True,
+        chargen_background_dots=1,
+    )
+    SPECIAL = CharClassValue(
+        name="Special",
+        percentile_range=(97, 100),
+        description="Examples: Demon, Angel, Exalted, Titan, Mummy, etc. You choose.",
+        playable=True,
+        chargen_background_dots=3,
+    )
+    OTHER = CharClassValue(
+        name="Other",
+        percentile_range=None,
+        description=None,
+        playable=False,
+        chargen_background_dots=0,
+    )
+    NONE = CharClassValue(
+        name="None",
+        percentile_range=None,
+        description=None,
+        playable=False,
+        chargen_background_dots=0,
+    )
+    COMMON = CharClassValue(
+        name="Common",
+        percentile_range=None,
+        description=None,
+        playable=False,
+        chargen_background_dots=0,
+    )
 
     @classmethod
-    def get_member_by_value(cls, value: int) -> "CharClassType":
+    def get_member_by_value(cls, value: int) -> "CharClass":
         """Find the corresponding enum member's name based on an integer value found in the range value.
 
         Args:
@@ -323,35 +334,35 @@ class CharClassType(Enum):
             Optional[str]: The name of the enum member if found, otherwise None.
         """
         for member in cls:
-            min_val, max_val = member.value["range"]
+            min_val, max_val = member.value.percentile_range
             if min_val <= value <= max_val:
                 return member
         return None
 
     @classmethod
-    def random_member(cls) -> "CharClassType":
+    def random_member(cls) -> "CharClass":
         """Select a random member from the enum.
 
         Returns:
-            CharClassType: A random enum member.
+            CharClass: A random enum member.
         """
-        return choice([x for x in cls if x.value["playable"]])
+        return choice([x for x in cls if x.value.playable])
 
     @classmethod
-    def playable_classes(cls) -> list["CharClassType"]:
+    def playable_classes(cls) -> list["CharClass"]:
         """Return a list of playable classes.
 
         Returns:
-            list[CharClassType]: A list of playable classes.
+            list[CharClass]: A list of playable classes.
         """
-        return [x for x in cls if x.value["playable"]]
+        return [x for x in cls if x.value.playable]
 
 
 @dataclass(frozen=True, eq=True)
 class TraitCategoryValue:
     """A value object for a trait category."""
 
-    classes: list[CharClassType]
+    classes: list[CharClass]
     name: str
     order: int
     section: CharSheetSection
@@ -371,7 +382,7 @@ class TraitCategory(Enum):
     """Enum for categories of traits."""
 
     PHYSICAL = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Physical",
         section=CharSheetSection.ATTRIBUTES,
         order=1,
@@ -379,7 +390,7 @@ class TraitCategory(Enum):
         COMMON=["Strength", "Dexterity", "Stamina"],
     )
     SOCIAL = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Social",
         section=CharSheetSection.ATTRIBUTES,
         order=2,
@@ -387,7 +398,7 @@ class TraitCategory(Enum):
         COMMON=["Charisma", "Manipulation", "Appearance"],
     )
     MENTAL = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Mental",
         section=CharSheetSection.ATTRIBUTES,
         order=3,
@@ -395,7 +406,7 @@ class TraitCategory(Enum):
         COMMON=["Perception", "Intelligence", "Wits"],
     )
     TALENTS = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Talents",
         section=CharSheetSection.ABILITIES,
         order=4,
@@ -417,7 +428,7 @@ class TraitCategory(Enum):
         HUNTER=["Awareness", "Insight", "Persuasion"],
     )
     SKILLS = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Skills",
         section=CharSheetSection.ABILITIES,
         order=5,
@@ -438,7 +449,7 @@ class TraitCategory(Enum):
         HUNTER=["Crafts", "Demolitions", "Larceny", "Technology", "Repair"],
     )
     KNOWLEDGES = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Knowledges",
         section=CharSheetSection.ABILITIES,
         order=6,
@@ -459,7 +470,7 @@ class TraitCategory(Enum):
         MAGE=["Cosmology", "Enigmas"],
     )
     SPHERES = TraitCategoryValue(
-        classes=[CharClassType.MAGE],
+        classes=[CharClass.MAGE],
         name="Spheres",
         section=CharSheetSection.ADVANTAGES,
         order=7,
@@ -478,7 +489,7 @@ class TraitCategory(Enum):
         ],
     )
     DISCIPLINES = TraitCategoryValue(
-        classes=[CharClassType.VAMPIRE, CharClassType.GHOUL],
+        classes=[CharClass.VAMPIRE, CharClass.GHOUL],
         name="Disciplines",
         order=8,
         show_zero=False,
@@ -524,7 +535,7 @@ class TraitCategory(Enum):
         ],
     )
     NUMINA = TraitCategoryValue(
-        classes=[CharClassType.MORTAL, CharClassType.MAGE, CharClassType.HUNTER],
+        classes=[CharClass.MORTAL, CharClass.MAGE, CharClass.HUNTER],
         name="Numina",
         section=CharSheetSection.ADVANTAGES,
         order=9,
@@ -532,7 +543,7 @@ class TraitCategory(Enum):
         COMMON=[],
     )
     BACKGROUNDS = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Backgrounds",
         section=CharSheetSection.ADVANTAGES,
         order=10,
@@ -554,7 +565,7 @@ class TraitCategory(Enum):
         HUNTER=["Bystanders", "Destiny", "Exposure", "Patron"],
     )
     MERITS = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Merits",
         section=CharSheetSection.ADVANTAGES,
         order=11,
@@ -562,7 +573,7 @@ class TraitCategory(Enum):
         COMMON=[],
     )
     FLAWS = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Flaws",
         section=CharSheetSection.ADVANTAGES,
         order=12,
@@ -570,7 +581,7 @@ class TraitCategory(Enum):
         COMMON=[],
     )
     VIRTUES = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Virtues",
         section=CharSheetSection.ADVANTAGES,
         order=13,
@@ -585,7 +596,7 @@ class TraitCategory(Enum):
         SPECIAL=["Conscience", "Self-Control", "Courage"],
     )
     RESONANCE = TraitCategoryValue(
-        classes=[CharClassType.MAGE],
+        classes=[CharClass.MAGE],
         name="Resonance",
         section=CharSheetSection.ADVANTAGES,
         order=14,
@@ -594,7 +605,7 @@ class TraitCategory(Enum):
         MAGE=["Dynamic", "Entropic", "Static"],
     )
     GIFTS = TraitCategoryValue(
-        classes=[CharClassType.WEREWOLF, CharClassType.CHANGELING],
+        classes=[CharClass.WEREWOLF, CharClass.CHANGELING],
         name="Gifts",
         section=CharSheetSection.ADVANTAGES,
         order=15,
@@ -602,7 +613,7 @@ class TraitCategory(Enum):
         COMMON=[],
     )
     RENOWN = TraitCategoryValue(
-        classes=[CharClassType.WEREWOLF],
+        classes=[CharClass.WEREWOLF],
         name="Renown",
         section=CharSheetSection.ADVANTAGES,
         order=16,
@@ -612,7 +623,7 @@ class TraitCategory(Enum):
         CHANGELING=["Glory", "Honor", "Wisdom"],
     )
     EDGES = TraitCategoryValue(
-        classes=[CharClassType.HUNTER],
+        classes=[CharClass.HUNTER],
         name="Edges",
         section=CharSheetSection.ADVANTAGES,
         order=17,
@@ -657,19 +668,19 @@ class TraitCategory(Enum):
         ],
     )
     PATHS = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Paths",
         section=CharSheetSection.ADVANTAGES,
         order=18,
         show_zero=False,
     )
     OTHER = TraitCategoryValue(
-        classes=[CharClassType.COMMON],
+        classes=[CharClass.COMMON],
         name="Other",
         section=CharSheetSection.ADVANTAGES,
         order=19,
         show_zero=True,
-        COMMON=["Willpower", "Desperation"],
+        COMMON=["Willpower"],
         MORTAL=["Humanity"],
         VAMPIRE=["Blood Pool", "Humanity"],
         WEREWOLF=["Gnosis", "Rage"],
@@ -678,497 +689,81 @@ class TraitCategory(Enum):
         HUNTER=["Conviction"],
     )
 
+    def get_trait_list(self, char_class: CharClass) -> list[str]:
+        """Return a list of traits for the given character class.
 
-class TraitCategories(Enum):
-    """Enum for categories of traits."""
+        Args:
+            char_class (CharClass): The character class.
 
-    PHYSICAL: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Physical",
-        "section": CharSheetSection.ATTRIBUTES,
-        "order": 1,
-        "show_zero": True,
-        "COMMON": ["Strength", "Dexterity", "Stamina"],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    SOCIAL: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Social",
-        "section": CharSheetSection.ATTRIBUTES,
-        "order": 2,
-        "show_zero": True,
-        "COMMON": ["Charisma", "Manipulation", "Appearance"],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    MENTAL: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Mental",
-        "section": CharSheetSection.ATTRIBUTES,
-        "order": 3,
-        "show_zero": True,
-        "COMMON": ["Perception", "Intelligence", "Wits"],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    TALENTS: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Talents",
-        "section": CharSheetSection.ABILITIES,
-        "order": 4,
-        "show_zero": True,
-        "COMMON": [
-            "Alertness",
-            "Athletics",
-            "Brawl",
-            "Dodge",
-            "Empathy",
-            "Expression",
-            "Intimidation",
-            "Leadership",
-            "Streetwise",
-            "Subterfuge",
-        ],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": ["Primal-Urge"],
-        "MAGE": ["Awareness"],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": ["Awareness", "Insight", "Persuasion"],
-        "SPECIAL": [],
-    }
-    SKILLS: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Skills",
-        "section": CharSheetSection.ABILITIES,
-        "order": 5,
-        "show_zero": True,
-        "COMMON": [
-            "Animal Ken",
-            "Drive",
-            "Etiquette",
-            "Firearms",
-            "Melee",
-            "Performance",
-            "Security",
-            "Stealth",
-            "Survival",
-        ],
-        "MORTAL": ["Crafts", "Larceny", "Repair"],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": ["Crafts", "Technology"],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": ["Crafts", "Demolitions", "Larceny", "Technology", "Repair"],
-        "SPECIAL": [],
-    }
-    KNOWLEDGES: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Knowledges",
-        "section": CharSheetSection.ABILITIES,
-        "order": 6,
-        "show_zero": True,
-        "COMMON": [
-            "Academics",
-            "Computer",
-            "Finance",
-            "Investigation",
-            "Law",
-            "Linguistics",
-            "Medicine",
-            "Occult",
-            "Politics",
-            "Science",
-        ],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": ["Rituals", "Enigmas"],
-        "MAGE": ["Cosmology", "Enigmas"],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    SPHERES: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.MAGE],
-        "name": "Spheres",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 7,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [
-            "Correspondence",
-            "Entropy",
-            "Forces",
-            "Life",
-            "Matter",
-            "Mind",
-            "Prime",
-            "Spirit",
-            "Time",
-        ],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    DISCIPLINES: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.VAMPIRE, CharClassType.GHOUL],
-        "name": "Disciplines",
-        "order": 8,
-        "show_zero": False,
-        "section": CharSheetSection.ADVANTAGES,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [
-            "Animalism",
-            "Auspex",
-            "Blood Sorcery",
-            "Celerity",
-            "Chimerstry",
-            "Dominate",
-            "Fortitude",
-            "Necromancy",
-            "Obeah",
-            "Obfuscate",
-            "Oblivion",
-            "Potence",
-            "Presence",
-            "Protean",
-            "Serpentis",
-            "Thaumaturgy",
-            "Vicissitude",
-        ],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [
-            "Animalism",
-            "Auspex",
-            "Blood Sorcery",
-            "Celerity",
-            "Chimerstry",
-            "Dominate",
-            "Fortitude",
-            "Necromancy",
-            "Obeah",
-            "Obfuscate",
-            "Oblivion",
-            "Potence",
-            "Presence",
-            "Protean",
-            "Serpentis",
-            "Thaumaturgy",
-            "Vicissitude",
-        ],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    NUMINA: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.MORTAL, CharClassType.MAGE, CharClassType.HUNTER],
-        "name": "Numina",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 9,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    BACKGROUNDS: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Backgrounds",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 10,
-        "show_zero": False,
-        "COMMON": [
-            "Allies",
-            "Arcane",
-            "Arsenal",
-            "Contacts",
-            "Fame",
-            "Influence",
-            "Mentor",
-            "Resources",
-            "Retainers",
-            "Status",
-            "Reputation",
-        ],
-        "MORTAL": [],
-        "VAMPIRE": ["Generation", "Herd"],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": ["Bystanders", "Destiny", "Exposure", "Patron"],
-        "SPECIAL": [],
-    }
-    MERITS: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Merits",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 11,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    FLAWS: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Flaws",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 12,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    VIRTUES: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Virtues",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 13,
-        "show_zero": True,
-        "COMMON": [],
-        "MORTAL": ["Conscience", "Self-Control", "Courage"],
-        "VAMPIRE": ["Conscience", "Self-Control", "Courage"],
-        "WEREWOLF": [],
-        "MAGE": ["Conscience", "Self-Control", "Courage"],
-        "GHOUL": ["Conscience", "Self-Control", "Courage"],
-        "CHANGELING": ["Conscience", "Self-Control", "Courage"],
-        "HUNTER": ["Mercy", "Vision", "Zeal"],
-        "SPECIAL": ["Conscience", "Self-Control", "Courage"],
-    }
-    RESONANCE: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.MAGE],
-        "name": "Resonance",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 14,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": ["Dynamic", "Entropic", "Static"],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    GIFTS: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.WEREWOLF, CharClassType.CHANGELING],
-        "name": "Gifts",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 15,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    RENOWN: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.WEREWOLF],
-        "name": "Renown",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 16,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": ["Glory", "Honor", "Wisdom"],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": ["Glory", "Honor", "Wisdom"],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    EDGES: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.HUNTER],
-        "name": "Edges",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 17,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [
-            "Hide",  # Innocence
-            "Illuminate",
-            "Radiate",
-            "Confront",
-            "Blaze",
-            "Demand",  # Martyrdom
-            "Witness",
-            "Ravage",
-            "Donate",
-            "Payback",
-            "Bluster",  # Redemption
-            "Insinuate",
-            "Respire",
-            "Becalm",
-            "Suspend",
-            "Foresee",  # Visionary
-            "Pinpoint",
-            "Delve",
-            "Restore",
-            "Augur",
-            "Ward",  # Defense
-            "Rejuvenate",
-            "Brand",
-            "Champion",
-            "Burn",
-            "Discern",  # Judgment
-            "Burden",
-            "Balance",
-            "Pierce",
-            "Expose",
-            "Cleave",  # Vengeance
-            "Trail",
-            "Smolder",
-            "Surge",
-            "Smite",
-        ],
-        "SPECIAL": [],
-    }
-    PATHS: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Paths",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 18,
-        "show_zero": False,
-        "COMMON": [],
-        "MORTAL": [],
-        "VAMPIRE": [],
-        "WEREWOLF": [],
-        "MAGE": [],
-        "GHOUL": [],
-        "CHANGELING": [],
-        "HUNTER": [],
-        "SPECIAL": [],
-    }
-    OTHER: ClassVar[types.TraitCategoriesDict] = {
-        "classes": [CharClassType.COMMON],
-        "name": "Other",
-        "section": CharSheetSection.ADVANTAGES,
-        "order": 19,
-        "show_zero": True,
-        "COMMON": ["Willpower", "Desperation"],
-        "MORTAL": ["Humanity"],
-        "VAMPIRE": ["Blood Pool", "Humanity"],
-        "WEREWOLF": ["Gnosis", "Rage"],
-        "MAGE": ["Humanity", "Arete", "Quintessence"],
-        "GHOUL": ["Humanity"],
-        "CHANGELING": [],
-        "HUNTER": ["Conviction"],
-        "SPECIAL": [],
-    }
+        Returns:
+            list[str]: A list of traits.
+        """
+        return self.value.COMMON + getattr(self.value, char_class.name)
+
+
+@dataclass(frozen=True, eq=True)
+class VampireClanValue:
+    """A value object for the VampireClan enum."""
+
+    name: str
+    disciplines: list[str]
 
 
 class VampireClan(Enum):
     """Vampire clans for character generation."""
 
-    ASSAMITE: ClassVar[types.VampireClanDict] = {
-        "name": "Assamite",
-        "disciplines": ["Celerity", "Obfuscate", "Quietus"],
-    }
-    BRUJAH: ClassVar[types.VampireClanDict] = {
-        "name": "Brujah",
-        "disciplines": ["Celerity", "Potence", "Presence"],
-    }
-    FOLLOWERS_OF_SET: ClassVar[types.VampireClanDict] = {
-        "name": "Followers of Set",
-        "disciplines": ["Obfuscate", "Presence", "Serpentis"],
-    }
-    GANGREL: ClassVar[types.VampireClanDict] = {
-        "name": "Gangrel",
-        "disciplines": ["Animalism", "Fortitude", "Protean"],
-    }
-    GIOVANNI: ClassVar[types.VampireClanDict] = {
-        "name": "Giovanni",
-        "disciplines": ["Dominate", "Necromancy", "Potence"],
-    }
-    LASOMBRA: ClassVar[types.VampireClanDict] = {
-        "name": "Lasombra",
-        "disciplines": ["Dominate", "Obfuscate", "Potence"],
-    }
-    MALKAVIAN: ClassVar[types.VampireClanDict] = {
-        "name": "Malkavian",
-        "disciplines": ["Auspex", "Dominate", "Obfuscate"],
-    }
-    NOSFERATU: ClassVar[types.VampireClanDict] = {
-        "name": "Nosferatu",
-        "disciplines": ["Animalism", "Obfuscate", "Potence"],
-    }
-    RAVNOS: ClassVar[types.VampireClanDict] = {
-        "name": "Ravnos",
-        "disciplines": ["Animalism", "Chimerstry", "Fortitude"],
-    }
-    TOREADOR: ClassVar[types.VampireClanDict] = {
-        "name": "Toreador",
-        "disciplines": ["Auspex", "Celerity", "Presence"],
-    }
-    TREMERE: ClassVar[types.VampireClanDict] = {
-        "name": "Tremere",
-        "disciplines": ["Auspex", "Dominate", "Thaumaturgy"],
-    }
-    TZIMISCE: ClassVar[types.VampireClanDict] = {
-        "name": "Tzimisce",
-        "disciplines": ["Animalism", "Auspex", "Vicissitude"],
-    }
-    VENTRUE: ClassVar[types.VampireClanDict] = {
-        "name": "Ventrue",
-        "disciplines": ["Dominate", "Fortitude", "Presence"],
-    }
+    ASSAMITE = VampireClanValue(
+        name="Assamite",
+        disciplines=["Celerity", "Obfuscate", "Quietus"],
+    )
+    BRUJAH = VampireClanValue(
+        name="Brujah",
+        disciplines=["Celerity", "Potence", "Presence"],
+    )
+    FOLLOWERS_OF_SET = VampireClanValue(
+        name="Followers of Set",
+        disciplines=["Obfuscate", "Presence", "Serpentis"],
+    )
+    GANGREL = VampireClanValue(
+        name="Gangrel",
+        disciplines=["Animalism", "Fortitude", "Protean"],
+    )
+    GIOVANNI = VampireClanValue(
+        name="Giovanni",
+        disciplines=["Dominate", "Necromancy", "Potence"],
+    )
+    LASOMBRA = VampireClanValue(
+        name="Lasombra",
+        disciplines=["Dominate", "Obfuscate", "Potence"],
+    )
+    MALKAVIAN = VampireClanValue(
+        name="Malkavian",
+        disciplines=["Auspex", "Dominate", "Obfuscate"],
+    )
+    NOSFERATU = VampireClanValue(
+        name="Nosferatu",
+        disciplines=["Animalism", "Obfuscate", "Potence"],
+    )
+    RAVNOS = VampireClanValue(
+        name="Ravnos",
+        disciplines=["Animalism", "Chimerstry", "Fortitude"],
+    )
+    TOREADOR = VampireClanValue(
+        name="Toreador",
+        disciplines=["Auspex", "Celerity", "Presence"],
+    )
+    TREMERE = VampireClanValue(
+        name="Tremere",
+        disciplines=["Auspex", "Dominate", "Thaumaturgy"],
+    )
+    TZIMISCE = VampireClanValue(
+        name="Tzimisce",
+        disciplines=["Animalism", "Auspex", "Vicissitude"],
+    )
+    VENTRUE = VampireClanValue(
+        name="Ventrue",
+        disciplines=["Dominate", "Fortitude", "Presence"],
+    )
 
     @classmethod
     def random_member(cls) -> "VampireClan":
@@ -1226,25 +821,40 @@ class RNGCharLevel(Enum):
         """Select a random member from the enum.
 
         Returns:
-            CharClassType: A random enum member.
+            CharClass: A random enum member.
         """
         return choice(list(cls))
+
+
+@dataclass(frozen=True, eq=True)
+class CharacterConceptValue:
+    """Class for the values of the CharacterConcept enum."""
+
+    name: str
+    description: str
+    examples: str
+    percentile_range: tuple[int, int]
+    num_abilities: int
+    ability_specialty: TraitCategory
+    attribute_specialty: TraitCategory
+    abilities: list[types.ConceptAbilityDict] = field(default_factory=list)
+    specific_abilities: list[str] = field(default_factory=list)
 
 
 class CharacterConcept(Enum):
     """Enum for RNG character generation of concepts."""
 
-    BERSERKER: ClassVar[types.CharacterConceptDict] = {
-        "name": "Berserker",
-        "description": "Fierce warriors who tap into their primal rage to gain incredible strength and combat prowess.",
-        "examples": "Gang member, Hooligan, Anarchist, Rebel, Terrorist, Underground Fight League Member, Flame Jumper, Mole people, Goon",
-        "range": (1, 9),
-        "num_abilities": 1,
-        "abilities": [
+    BERSERKER = CharacterConceptValue(
+        name="Berserker",
+        description="Fierce warriors who tap into their primal rage to gain incredible strength and combat prowess.",
+        examples="Gang member, Hooligan, Anarchist, Rebel, Terrorist, Underground Fight League Member, Flame Jumper, Mole people, Goon",
+        percentile_range=(1, 9),
+        num_abilities=1,
+        abilities=[
             {
                 "name": "Frenzy",
                 "description": "Ignore the first inflicted health levels of damage with no penalty up until `Mauled`, and cannot be stunned.  Barbarians also gain an automatic success on any strength roll once per turn, equal to a permanent dot in Potence.",
-                "traits": [("Potence", 1)],
+                "traits": [("Potence", 1, "DISCIPLINES")],
                 "custom_sections": [
                     (
                         "Frenzy",
@@ -1253,9 +863,9 @@ class CharacterConcept(Enum):
                 ],
             }
         ],
-        "ability_specialty": TraitCategories.TALENTS,
-        "attribute_specialty": TraitCategories.PHYSICAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.TALENTS,
+        attribute_specialty=TraitCategory.PHYSICAL,
+        specific_abilities=[
             "Melee",
             "Firearms",
             "Alertness",
@@ -1264,14 +874,14 @@ class CharacterConcept(Enum):
             "Dodge",
             "Stealth",
         ],
-    }
-    PERFORMER: ClassVar[types.CharacterConceptDict] = {
-        "name": "Performer",
-        "description": "Charismatic performers and spellcasters who use their artistry and magic to inspire and manipulate. ",
-        "examples": "Musician, Online Influencer, Street Poet, Stand-up Comic, Performance Artist, Visual Artist, Fine Artist",
-        "num_abilities": 1,
-        "range": (10, 18),
-        "abilities": [
+    )
+    PERFORMER = CharacterConceptValue(
+        name="Performer",
+        description="Charismatic performers and spellcasters who use their artistry and magic to inspire and manipulate. ",
+        examples="Musician, Online Influencer, Street Poet, Stand-up Comic, Performance Artist, Visual Artist, Fine Artist",
+        num_abilities=1,
+        percentile_range=(10, 18),
+        abilities=[
             {
                 "name": "Fast Talk",
                 "description": "Performers have an automatic success on any `charisma`, `expression` or `performance` roll, and can immediately command attention. This works even in combat, functionally freezing enemies, including groups, for the first turn. Note that the bard needs to keep doing their act for this to work, they can't drop their guitar and pick up a gun without ruining the effect.",
@@ -1284,9 +894,9 @@ class CharacterConcept(Enum):
                 ],
             }
         ],
-        "ability_specialty": TraitCategories.SKILLS,
-        "attribute_specialty": TraitCategories.SOCIAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.SKILLS,
+        attribute_specialty=TraitCategory.SOCIAL,
+        specific_abilities=[
             "Expression",
             "Empathy",
             "Subterfuge",
@@ -1295,14 +905,14 @@ class CharacterConcept(Enum):
             "Performance",
             "Intimidation",
         ],
-    }
-    HEALER: ClassVar[types.CharacterConceptDict] = {
-        "name": "Healer",
-        "description": "Devout servants of gods or higher powers, with the ability to heal and protect.",
-        "examples": "Doctor, Veterinarian, Mortician, Priest, Rabbi, Medicine Man, EMT, Lifeguard, RN, Dentist, Clinician, Masseuse, Chemical Hacker, New-Ager",
-        "num_abilities": 1,
-        "range": (19, 27),
-        "abilities": [
+    )
+    HEALER = CharacterConceptValue(
+        name="Healer",
+        description="Devout servants of gods or higher powers, with the ability to heal and protect.",
+        examples="Doctor, Veterinarian, Mortician, Priest, Rabbi, Medicine Man, EMT, Lifeguard, RN, Dentist, Clinician, Masseuse, Chemical Hacker, New-Ager",
+        num_abilities=1,
+        percentile_range=(19, 27),
+        abilities=[
             {
                 "name": "Heal",
                 "description": "Heal 3 health levels to a target once per turn.  Any First Aid/medicine roles are also automatically granted one success.",
@@ -1326,9 +936,9 @@ class CharacterConcept(Enum):
                 ],
             },
         ],
-        "ability_specialty": TraitCategories.KNOWLEDGES,
-        "attribute_specialty": TraitCategories.MENTAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.KNOWLEDGES,
+        attribute_specialty=TraitCategory.MENTAL,
+        specific_abilities=[
             "Academics",
             "Empathy",
             "Investigation",
@@ -1337,14 +947,14 @@ class CharacterConcept(Enum):
             "Science",
             "Survival",
         ],
-    }
-    SHAMAN: ClassVar[types.CharacterConceptDict] = {
-        "name": "Shaman",
-        "description": "Nature-focused spiritualists who wield the power of the natural world.",
-        "examples": "Environmentalist, Tribal, New Age, Artist, Riverkeeper, Green Warden, Nature Guide, Photographer, Self-Documentarian",
-        "num_abilities": 2,
-        "range": (28, 36),
-        "abilities": [
+    )
+    SHAMAN = CharacterConceptValue(
+        name="Shaman",
+        description="Nature-focused spiritualists who wield the power of the natural world.",
+        examples="Environmentalist, Tribal, New Age, Artist, Riverkeeper, Green Warden, Nature Guide, Photographer, Self-Documentarian",
+        num_abilities=2,
+        percentile_range=(28, 36),
+        abilities=[
             {
                 "name": "Familiar",
                 "description": "A trained animal that can carry out simple commands",
@@ -1356,7 +966,7 @@ class CharacterConcept(Enum):
             {
                 "name": "Friend of Animals",
                 "description": "Per `Animalism` level `1`.",
-                "traits": [("Animalism", 1)],
+                "traits": [("Animalism", 1, "DISCIPLINES")],
                 "custom_sections": [],
             },
             {
@@ -1398,9 +1008,9 @@ class CharacterConcept(Enum):
                 ],
             },
         ],
-        "ability_specialty": TraitCategories.KNOWLEDGES,
-        "attribute_specialty": TraitCategories.MENTAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.KNOWLEDGES,
+        attribute_specialty=TraitCategory.MENTAL,
+        specific_abilities=[
             "Alertness",
             "Animal Ken",
             "Empathy",
@@ -1410,14 +1020,14 @@ class CharacterConcept(Enum):
             "Occult",
             "Survival",
         ],
-    }
-    SOLDIER: ClassVar[types.CharacterConceptDict] = {
-        "name": "Soldier",
-        "description": "Skilled warriors with a wide range of combat abilities and weapon expertise.",
-        "examples": "Marine, Veteran, Mercenary, Hired Muscle, Hitman, Amateur/Pro Fighter, Martial Artist, Police, Security",
-        "num_abilities": 1,
-        "range": (37, 44),
-        "abilities": [
+    )
+    SOLDIER = CharacterConceptValue(
+        name="Soldier",
+        description="Skilled warriors with a wide range of combat abilities and weapon expertise.",
+        examples="Marine, Veteran, Mercenary, Hired Muscle, Hitman, Amateur/Pro Fighter, Martial Artist, Police, Security",
+        num_abilities=1,
+        percentile_range=(37, 44),
+        abilities=[
             {
                 "name": "Firearms",
                 "description": "Can re-roll any single Firearms roll once per turn. Can also specialize in new firearms at `3`, `4` and `5` dots, granting an additional dice whenever a specialized weapon is used.",
@@ -1452,9 +1062,9 @@ class CharacterConcept(Enum):
                 ],
             },
         ],
-        "ability_specialty": TraitCategories.TALENTS,
-        "attribute_specialty": TraitCategories.PHYSICAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.TALENTS,
+        attribute_specialty=TraitCategory.PHYSICAL,
+        specific_abilities=[
             "Alertness",
             "Athletics",
             "Brawl",
@@ -1465,14 +1075,14 @@ class CharacterConcept(Enum):
             "Stealth",
             "Survival",
         ],
-    }
-    ASCETIC: ClassVar[types.CharacterConceptDict] = {
-        "name": "Ascetic",
-        "description": "Disciplined martial artists who harnesses their inner chi to perform incredible feats and attacks.",
-        "examples": "Martial Artist, Dojo Owner, Competitor, Athlete, Bodybuilder, Body Hacker",
-        "num_abilities": 2,
-        "range": (45, 52),
-        "abilities": [
+    )
+    ASCETIC = CharacterConceptValue(
+        name="Ascetic",
+        description="Disciplined martial artists who harnesses their inner chi to perform incredible feats and attacks.",
+        examples="Martial Artist, Dojo Owner, Competitor, Athlete, Bodybuilder, Body Hacker",
+        num_abilities=2,
+        percentile_range=(45, 52),
+        abilities=[
             {
                 "name": "Focus",
                 "description": "Gathering their Chi, the monk can resist gases, poisons, psionic attacks, and hold their breath one turn per existing `stamina`+ `willpower`.  Monks are immune to the vampiric discipline of `Dominate`.",
@@ -1496,17 +1106,17 @@ class CharacterConcept(Enum):
                 ],
             },
         ],
-        "ability_specialty": TraitCategories.TALENTS,
-        "attribute_specialty": TraitCategories.PHYSICAL,
-        "specific_abilities": ["Alertness", "Athletics", "Brawl", "Dodge", "Melee", "Stealth"],
-    }
-    CRUSADER: ClassVar[types.CharacterConceptDict] = {
-        "name": "Crusader",
-        "description": "Dedicated sentinels sworn to a code of conduct, armed with divine, academic, and martial skills.",
-        "examples": "Government Agent, Lawyer, Judge, Zealot, Terrorist, Inquisitor",
-        "num_abilities": 1,
-        "range": (53, 60),
-        "abilities": [
+        ability_specialty=TraitCategory.TALENTS,
+        attribute_specialty=TraitCategory.PHYSICAL,
+        specific_abilities=["Alertness", "Athletics", "Brawl", "Dodge", "Melee", "Stealth"],
+    )
+    CRUSADER = CharacterConceptValue(
+        name="Crusader",
+        description="Dedicated sentinels sworn to a code of conduct, armed with divine, academic, and martial skills.",
+        examples="Government Agent, Lawyer, Judge, Zealot, Terrorist, Inquisitor",
+        num_abilities=1,
+        percentile_range=(53, 60),
+        abilities=[
             {
                 "name": "Incorruptible",
                 "description": "Crusaders gain the Healer's `Heal` and `Faith` ability but gain only one dot for it.  Crusaders gain the Fighters specialization and choose a single weapon they are loyal to and stick with it.",
@@ -1527,9 +1137,9 @@ class CharacterConcept(Enum):
                 ],
             },
         ],
-        "ability_specialty": TraitCategories.KNOWLEDGES,
-        "attribute_specialty": TraitCategories.MENTAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.KNOWLEDGES,
+        attribute_specialty=TraitCategory.MENTAL,
+        specific_abilities=[
             "Academics",
             "Investigation",
             "Occult",
@@ -1539,14 +1149,14 @@ class CharacterConcept(Enum):
             "Leadership",
             "Etiquette",
         ],
-    }
-    URBAN_TRACKER: ClassVar[types.CharacterConceptDict] = {
-        "name": "Urban Tracker",
-        "description": "Skilled hunters and trackers with a deep connection to the wilderness and survival skills, or the equivalent for the urban jungle.",
-        "examples": "Hunter, Tracker, Long Range Recon Patrol, Sniper, Wildlife Photographer, Park Ranger, Paparazzo",
-        "num_abilities": 2,
-        "range": (61, 68),
-        "abilities": [
+    )
+    URBAN_TRACKER = CharacterConceptValue(
+        name="Urban Tracker",
+        description="Skilled hunters and trackers with a deep connection to the wilderness and survival skills, or the equivalent for the urban jungle.",
+        examples="Hunter, Tracker, Long Range Recon Patrol, Sniper, Wildlife Photographer, Park Ranger, Paparazzo",
+        num_abilities=2,
+        percentile_range=(61, 68),
+        abilities=[
             {
                 "name": "Camouflage",
                 "description": "The Ranger can camouflage into their preferred environment given 1 turn of preparation.  This is not invisibility!  They can be detected on a `Perception` (or `Focus`) roll with a difficulty of `8`. Any attacks made from this position are considered surprise attacks.",
@@ -1570,9 +1180,9 @@ class CharacterConcept(Enum):
                 ],
             },
         ],
-        "ability_specialty": TraitCategories.SKILLS,
-        "attribute_specialty": TraitCategories.MENTAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.SKILLS,
+        attribute_specialty=TraitCategory.MENTAL,
+        specific_abilities=[
             "Alertness",
             "Animal Ken",
             "Athletics",
@@ -1581,14 +1191,14 @@ class CharacterConcept(Enum):
             "Streetwise",
             "Survival",
         ],
-    }
-    UNDER_WORLDER: ClassVar[types.CharacterConceptDict] = {
-        "name": "Under-worlder",
-        "description": "Sneaky and dexterous individuals skilled in stealth, lock picking, and traps.",
-        "examples": "Burglar, Lockpicker, Hacker, Safe-Cracker, Getaway Car Driver, Forger, Fence, Spy",
-        "num_abilities": 3,
-        "range": (69, 76),
-        "abilities": [
+    )
+    UNDER_WORLDER = CharacterConceptValue(
+        name="Under-worlder",
+        description="Sneaky and dexterous individuals skilled in stealth, lock picking, and traps.",
+        examples="Burglar, Lockpicker, Hacker, Safe-Cracker, Getaway Car Driver, Forger, Fence, Spy",
+        num_abilities=3,
+        percentile_range=(69, 76),
+        abilities=[
             {
                 "name": "Tools of the Trade",
                 "description": "The character has an object: (a set of lockpicks, a laser drill, a getaway car, a printing press) -- when used, decreases the difficulty by `2`. This means, for example, a Forger will have a standard difficulty of 4 to attempt any forgery, provided they have their printing press, and a cat burglar can get in anywhere, with his rope and lockpicks.",
@@ -1604,7 +1214,7 @@ class CharacterConcept(Enum):
             {
                 "name": "Lay Low",
                 "description": "They give off no paper trail, have multiple alternative identities, and their documents will stand up to anything short of a sustained FBI investigation.",
-                "traits": [("Arcane", 2)],
+                "traits": [("Arcane", 2, "BACKGROUNDS")],
                 "custom_sections": [
                     (
                         "Lay Low",
@@ -1613,9 +1223,9 @@ class CharacterConcept(Enum):
                 ],
             },
         ],
-        "ability_specialty": TraitCategories.SKILLS,
-        "attribute_specialty": TraitCategories.SOCIAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.SKILLS,
+        attribute_specialty=TraitCategory.SOCIAL,
+        specific_abilities=[
             "Alertness",
             "Investigation",
             "Larceny",
@@ -1624,14 +1234,14 @@ class CharacterConcept(Enum):
             "Streetwise",
             "Subterfuge",
         ],
-    }
-    SCIENTIST: ClassVar[types.CharacterConceptDict] = {
-        "name": "Scientist",
-        "description": "Experts who draw power from their study of esoteric knowledge, with unique and potent abilities and gear.",
-        "examples": "Debunker, Psychologist, Egyptologist, Filmographer, Data Scientist, Hematologist, Cryptozoologist, Grad Student, Weird Physicist",
-        "num_abilities": 1,
-        "range": (77, 84),
-        "abilities": [
+    )
+    SCIENTIST = CharacterConceptValue(
+        name="Scientist",
+        description="Experts who draw power from their study of esoteric knowledge, with unique and potent abilities and gear.",
+        examples="Debunker, Psychologist, Egyptologist, Filmographer, Data Scientist, Hematologist, Cryptozoologist, Grad Student, Weird Physicist",
+        num_abilities=1,
+        percentile_range=(77, 84),
+        abilities=[
             {
                 "name": "Delicate Equipment",
                 "description": "Choose any Thaumaturgical Paths from the Vampire or Sorcerer book. Apply `3` dots spread however. These should be represented as Tools or scientific equipment that generate the effect. The Lure of Flames might be an experimental flamethrower or backpack-mounted Laser, Lightning might be some weather equipment, and so on. The equipment can be carried gear, but must be present to create the effect.",
@@ -1639,9 +1249,9 @@ class CharacterConcept(Enum):
                 "custom_sections": [],
             },
         ],
-        "ability_specialty": TraitCategories.KNOWLEDGES,
-        "attribute_specialty": TraitCategories.MENTAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.KNOWLEDGES,
+        attribute_specialty=TraitCategory.MENTAL,
+        specific_abilities=[
             "Academics",
             "Computer",
             "Etiquette",
@@ -1650,50 +1260,50 @@ class CharacterConcept(Enum):
             "Occult",
             "Science",
         ],
-    }
-    TRADESMAN: ClassVar[types.CharacterConceptDict] = {
-        "name": "Tradesman",
-        "description": "Skilled artisans or laborers who excel in a specific trade or craft, such as blacksmithing, carpentry, or alchemy, often creating items of great value.",
-        "examples": "Construction, Carpenter, Plumber, Key Grip, Truck Driver, Uber Driver, Union Man",
-        "num_abilities": 2,
-        "range": (85, 92),
-        "abilities": [
+    )
+    TRADESMAN = CharacterConceptValue(
+        name="Tradesman",
+        description="Skilled artisans or laborers who excel in a specific trade or craft, such as blacksmithing, carpentry, or alchemy, often creating items of great value.",
+        examples="Construction, Carpenter, Plumber, Key Grip, Truck Driver, Uber Driver, Union Man",
+        num_abilities=2,
+        percentile_range=(85, 92),
+        abilities=[
             {
                 "name": "Hardiness",
                 "description": "The equivalent of `Fortitude` `1`.  All attacks sustained automatically soak `1` success at no cost.",
-                "traits": [("Fortitude", 1)],
+                "traits": [("Fortitude", 1, "DISCIPLINES")],
                 "custom_sections": [],
             },
             {
                 "name": "Handy",
                 "description": "Free dot in `Repair` and `Crafts`.",
-                "traits": [("Repair", 1), ("Crafts", 1)],
+                "traits": [("Repair", 1, "SKILLS"), ("Crafts", 1, "SKILLS")],
                 "custom_sections": [],
             },
         ],
-        "ability_specialty": TraitCategories.SKILLS,
-        "attribute_specialty": TraitCategories.PHYSICAL,
-        "specific_abilities": ["Crafts", "Drive", "Repair", "Survival", "Brawl", "Leadership"],
-    }
-    BUSINESSMAN: ClassVar[types.CharacterConceptDict] = {
-        "name": "Businessman",
-        "description": "Astute and savvy individuals focused on commerce and negotiation, skilled in the art of deal-making and resource management.",
-        "examples": "Professional, Salesman, Girlboss, Entrepreneur, Small Business Owner, Finance Bro, LinkedIn Influencer, Middle Manager, Storekeeper, Barista, In Marketing",
-        "num_abilities": 1,
-        "range": (93, 100),
-        "abilities": [
+        ability_specialty=TraitCategory.SKILLS,
+        attribute_specialty=TraitCategory.PHYSICAL,
+        specific_abilities=["Crafts", "Drive", "Repair", "Survival", "Brawl", "Leadership"],
+    )
+    BUSINESSMAN = CharacterConceptValue(
+        name="Businessman",
+        description="Astute and savvy individuals focused on commerce and negotiation, skilled in the art of deal-making and resource management.",
+        examples="Professional, Salesman, Girlboss, Entrepreneur, Small Business Owner, Finance Bro, LinkedIn Influencer, Middle Manager, Storekeeper, Barista, In Marketing",
+        num_abilities=1,
+        percentile_range=(93, 100),
+        abilities=[
             {
                 "name": "Persuasion",
                 "description": "The Businessman can enthrall his enemies and win them over with her powers of facts and logic.  This is less of a fast power and more of a sustained one.",
-                "traits": [("Resources", 2)],
+                "traits": [("Resources", 2, "BACKGROUNDS")],
                 "custom_sections": [
                     ("Persuasion", "`1` automatic success to `Leadership` or `Subterfuge` rolls.")
                 ],
             },
         ],
-        "ability_specialty": TraitCategories.KNOWLEDGES,
-        "attribute_specialty": TraitCategories.SOCIAL,
-        "specific_abilities": [
+        ability_specialty=TraitCategory.KNOWLEDGES,
+        attribute_specialty=TraitCategory.SOCIAL,
+        specific_abilities=[
             "Finance",
             "Leadership",
             "Subterfuge",
@@ -1703,7 +1313,7 @@ class CharacterConcept(Enum):
             "Intimidation",
             "Performance",
         ],
-    }
+    )
 
     @classmethod
     def get_member_by_value(cls, value: int) -> "CharacterConcept":
@@ -1716,7 +1326,7 @@ class CharacterConcept(Enum):
             Optional[str]: The name of the enum member if found, otherwise None.
         """
         for member in cls:
-            min_val, max_val = member.value["range"]
+            min_val, max_val = member.value.percentile_range
             if min_val <= value <= max_val:
                 return member
         return None
@@ -1726,7 +1336,7 @@ class CharacterConcept(Enum):
         """Select a random member from the enum.
 
         Returns:
-            CharClassType: A random enum member.
+            CharClass: A random enum member.
         """
         return choice(list(cls))
 
@@ -1738,8 +1348,8 @@ class HunterCreed(Enum):
         "name": "Defender",
         "description": "Protectors and _Defenders_ who seek to salvage or preserve what they can in the war against the unknown, perhaps to prove that the fight is worthwhile.",
         "conviction": 3,
-        "attribute_specialty": TraitCategories.MENTAL,
-        "ability_specialty": TraitCategories.TALENTS,
+        "attribute_specialty": TraitCategory.MENTAL,
+        "ability_specialty": TraitCategory.TALENTS,
         "specific_abilities": ["Empathy"],
         "edges": ["Ward", "Rejuvenate", "Brand", "Champion", "Burn"],
         "range": (1, 14),
@@ -1748,8 +1358,8 @@ class HunterCreed(Enum):
         "name": "Innocent",
         "description": "The curious, unabashed and wide-eyed, the _Innocent_ accept monsters on their own terms and seek simple resolution between creatures and humanity.",
         "conviction": 3,
-        "attribute_specialty": TraitCategories.SOCIAL,
-        "ability_specialty": TraitCategories.TALENTS,
+        "attribute_specialty": TraitCategory.SOCIAL,
+        "ability_specialty": TraitCategory.TALENTS,
         "specific_abilities": ["Empathy", "Subterfuge"],
         "edges": ["Hide", "Illuminate", "Radiate", "Confront", "Blaze"],
         "range": (15, 28),
@@ -1758,8 +1368,8 @@ class HunterCreed(Enum):
         "name": "Judge",
         "description": "The eyes and ears of the battle against monsters, _Judges_ seek to uphold the greater good, whether it means destroying creatures or sparing them and questioning other hunters' motives",
         "conviction": 3,
-        "attribute_specialty": TraitCategories.MENTAL,
-        "ability_specialty": TraitCategories.KNOWLEDGES,
+        "attribute_specialty": TraitCategory.MENTAL,
+        "ability_specialty": TraitCategory.KNOWLEDGES,
         "specific_abilities": ["Investigation", "Law"],
         "edges": ["Discern", "Burden", "Balance", "Pierce", "Expose"],
         "range": (29, 42),
@@ -1768,8 +1378,8 @@ class HunterCreed(Enum):
         "name": "Martyr",
         "description": "Acting out of desperate passion, _Martyrs_ put themselves in harm's way to protect others or to alleviate some all-consuming guilt.",
         "conviction": 4,
-        "attribute_specialty": TraitCategories.PHYSICAL,
-        "ability_specialty": TraitCategories.TALENTS,
+        "attribute_specialty": TraitCategory.PHYSICAL,
+        "ability_specialty": TraitCategory.TALENTS,
         "specific_abilities": ["Empathy", "Intimidation"],
         "edges": ["Demand", "Witness", "Ravage", "Donate", "Payback"],
         "range": (43, 56),
@@ -1778,8 +1388,8 @@ class HunterCreed(Enum):
         "name": "Redeemer",
         "description": "Piercing the souls of the enemy, _Redeemers_ offer the hand of salvation to the deserving and strike down the irredeemable.",
         "conviction": 3,
-        "attribute_specialty": TraitCategories.PHYSICAL,
-        "ability_specialty": TraitCategories.SKILLS,
+        "attribute_specialty": TraitCategory.PHYSICAL,
+        "ability_specialty": TraitCategory.SKILLS,
         "specific_abilities": ["Empathy"],
         "edges": ["Bluster", "Insinuate", "Respire", "Becalm", "Suspend"],
         "range": (57, 71),
@@ -1788,8 +1398,8 @@ class HunterCreed(Enum):
         "name": "Avenger",
         "description": "Holy terror personified, _Avengers_ accept only one end to the war: the destruction of the enemy.",
         "conviction": 4,
-        "attribute_specialty": TraitCategories.PHYSICAL,
-        "ability_specialty": TraitCategories.SKILLS,
+        "attribute_specialty": TraitCategory.PHYSICAL,
+        "ability_specialty": TraitCategory.SKILLS,
         "specific_abilities": ["Firearms", "Dodge", "Brawl", "Melee"],
         "edges": ["Cleave", "Trail", "Smolder", "Surge", "Smite"],
         "range": (72, 85),
@@ -1798,8 +1408,8 @@ class HunterCreed(Enum):
         "name": "Visionary",
         "description": "Introspective, questioning and doubtful, _Visionaries_ seek the ultimate goals of the war against the unknown, and they seek purpose for hunters as a whole.",
         "conviction": 3,
-        "attribute_specialty": TraitCategories.MENTAL,
-        "ability_specialty": TraitCategories.SKILLS,
+        "attribute_specialty": TraitCategory.MENTAL,
+        "ability_specialty": TraitCategory.SKILLS,
         "specific_abilities": ["Leadership", "Expression", "Subterfuge", "Intimidation", "Occult"],
         "edges": ["Foresee", "Pinpoint", "Delve", "Restore", "Augur"],
         "range": (86, 100),

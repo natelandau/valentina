@@ -117,13 +117,16 @@ def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) 
 
 async def fetch_random_name(
     gender: str | None = None, country: str = "us", results: int = 1
-) -> list[tuple[str, str]]:
+) -> list[tuple[str, str]] | tuple[str, str]:
     """Fetch a random name from the randomuser.me API.
 
     Args:
         country (str, optional): The country to fetch the name from. Defaults to "us".
         results (int, optional): The number of results to fetch. Defaults to 1.
         gender (str, optional): The gender of the name to fetch. Defaults to None
+
+    Returns:
+        list[tuple[str, str]] | tuple[str, str]: A list of tuples containing the first and last name. If only one result, a single tuple is returned.
 
     """
     if not gender:
@@ -135,7 +138,15 @@ async def fetch_random_name(
     async with ClientSession() as session, session.get(url) as res:
         if 300 > res.status >= 200:  # noqa: PLR2004
             data = await res.json()
-            return [(result["name"]["first"], result["name"]["last"]) for result in data["results"]]
+
+            result = [
+                (result["name"]["first"], result["name"]["last"]) for result in data["results"]
+            ]
+
+            if len(result) == 1:
+                return result[0]
+
+            return result
 
     return [("John", "Doe")]
 
@@ -171,7 +182,7 @@ def divide_into_three(total: int) -> list[int]:
     return [segment1, segment2, segment3]
 
 
-def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False) -> int | None:
+def get_max_trait_value(trait: str, category: str) -> int | None:
     """Get the maximum value for a trait by looking up the trait in the XPMultiplier enum.
 
     Args:

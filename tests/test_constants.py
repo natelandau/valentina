@@ -1,37 +1,41 @@
 # type: ignore
-"""Test Constants."""
+"""Test the constants module."""
 
-from valentina import constants
+from valentina.constants import CharacterConcept, CharClass, TraitCategory, VampireClan
 
 
-def test_CharClassType():  # noqa: N802
-    """Test CharClassType."""
-    for _ in range(100):
-        # WHEN a random member of CharClassType is selected
-        result = constants.CharClassType.random_member()
+def test_random_vampire_clan() -> None:
+    """Test the random_vampire_clan function."""
+    result = VampireClan.random_member()
+    assert result.name in VampireClan.__members__
 
-        # THEN return a CharClassType
-        assert isinstance(result, constants.CharClassType)
-        assert result != constants.CharClassType.NONE
-        assert result != constants.CharClassType.OTHER
 
-        # GIVEN a CharClassType member
-        value_map: dict[int, constants.CharClassType] = {
-            1: constants.CharClassType.MORTAL,
-            32: constants.CharClassType.MORTAL,
-            62: constants.CharClassType.VAMPIRE,
-            71: constants.CharClassType.WEREWOLF,
-            75: constants.CharClassType.MAGE,
-            80: constants.CharClassType.GHOUL,
-            85: constants.CharClassType.CHANGELING,
-            93: constants.CharClassType.HUNTER,
-            98: constants.CharClassType.SPECIAL,
-        }
+def test_character_concept_enum():
+    """Test the CharacterConcept enum."""
+    assert CharacterConcept.get_member_by_value(8) == CharacterConcept.BERSERKER
 
-        # WHEN member is selected by a number between 1-100
-        for value, member in value_map.items():
-            result = constants.CharClassType.get_member_by_value(value)
+    random = CharacterConcept.random_member()
+    assert CharacterConcept[random.name] == random
 
-            # THEN return the correct member
-            assert isinstance(result, constants.CharClassType)
-            assert result == member
+
+def test_trait_category_enum():
+    """Test the TraitCategory enum."""
+    assert TraitCategory.PHYSICAL.get_trait_list(CharClass.MORTAL) == [
+        "Strength",
+        "Dexterity",
+        "Stamina",
+    ]
+
+    assert TraitCategory.TALENTS.get_trait_list(CharClass.WEREWOLF) == [
+        "Alertness",
+        "Athletics",
+        "Brawl",
+        "Dodge",
+        "Empathy",
+        "Expression",
+        "Intimidation",
+        "Leadership",
+        "Streetwise",
+        "Subterfuge",
+        "Primal-Urge",
+    ]

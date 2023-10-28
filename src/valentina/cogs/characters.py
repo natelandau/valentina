@@ -13,18 +13,25 @@ from loguru import logger
 from valentina.characters import AddFromSheetWizard, CharGenWizard
 from valentina.constants import (
     VALID_IMAGE_EXTENSIONS,
-    CharClassType,
+    CharClass,
     EmbedColor,
     Emoji,
+    RNGCharLevel,
 )
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import Character, CharacterSheetSection, User
+from valentina.models.mongo_collections import (
+    Campaign,
+    Character,
+    CharacterSheetSection,
+    Guild,
+    User,
+)
 from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterName,
     ValidCharacterObject,
-    ValidCharClassType,
+    ValidCharClass,
     ValidClan,
     ValidCustomSection,
     ValidImageURL,
@@ -76,12 +83,21 @@ class Characters(commands.Cog, name="Character"):
         user = await User.get(ctx.author.id, fetch_links=True)
         return user.active_character(ctx.guild)
 
+    async def _fetch_active_campaign(self, ctx: ValentinaContext) -> Campaign:
+        """Fetch the active campaign for the user."""
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        campaign = guild.active_campaign
+        if not campaign:
+            raise errors.NoActiveCampaignError
+
+        return campaign
+
     @chars.command(name="add", description="Add a character to Valentina from a sheet")
     async def add_character(
         self,
         ctx: ValentinaContext,
         char_class: Option(
-            ValidCharClassType,
+            ValidCharClass,
             name="char_class",
             description="The character's class",
             autocomplete=select_char_class,
@@ -102,7 +118,7 @@ class Characters(commands.Cog, name="Character"):
         """Add a character from a character sheet using the chargen wizard.
 
         Args:
-            char_class (CharClassType): The character's class
+            char_class (CharClass): The character's class
             ctx (discord.ApplicationContext): The context of the command
             first_name (str): The character's first name
             last_name (str, optional): The character's last name. Defaults to None.
@@ -110,7 +126,7 @@ class Characters(commands.Cog, name="Character"):
             vampire_clan (VampireClan, optional): The character's vampire clan. Defaults to None.
         """
         # Require a clan for vampires
-        if char_class == CharClassType.VAMPIRE and not vampire_clan:
+        if char_class == CharClass.VAMPIRE and not vampire_clan:
             await present_embed(
                 ctx,
                 title="Vampire clan required",
@@ -128,14 +144,14 @@ class Characters(commands.Cog, name="Character"):
             char_class_name=char_class.name,
             clan_name=vampire_clan.name if vampire_clan else None,
             type_player=True,
-            user_creator=user,
-            user_owner=user,
+            user_creator=user.id,
+            user_owner=user.id,
         )
 
         wizard = AddFromSheetWizard(ctx, character=character, user=user)
         await wizard.begin_chargen()
 
-    @chars.command(name="create", description="Create a new character from scratch")
+    @chars.command(name="create", description="Create a new randomized character")
     async def create_character(
         self,
         ctx: ValentinaContext,
@@ -146,16 +162,10 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Create a new character from scratch."""
-        campaign = self.bot.campaign_svc.fetch_active(ctx)
-        user = await self.bot.user_svc.fetch_user(ctx)
-
-        (
-            campaign_xp,
-            _,
-            _,
-            _,
-            _,
-        ) = user.fetch_experience(campaign.id)
+        # Grab the current user and campaign experience
+        user = await User.get(ctx.author.id, fetch_links=True)
+        campaign = await self._fetch_active_campaign(ctx)
+        campaign_xp, _, _ = user.fetch_campaign_xp(campaign)
 
         # Abort if user does not have enough xp
         if campaign_xp < 10:  # noqa: PLR2004
@@ -168,7 +178,9 @@ class Characters(commands.Cog, name="Character"):
             )
             return
 
-        wizard = CharGenWizard(ctx, campaign=campaign, user=user, hidden=hidden)
+        wizard = CharGenWizard(
+            ctx, campaign=campaign, user=user, experience_level=RNGCharLevel.NEW, hidden=hidden
+        )
         await wizard.start()
 
     @chars.command(name="set_active", description="Select a character as your active character")
