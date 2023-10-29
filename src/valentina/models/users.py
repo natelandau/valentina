@@ -2,22 +2,12 @@
 
 Note, due to ForeignKey constraints, models are defined in database.py.
 """
-from collections.abc import Callable
-from datetime import timedelta
-
-import arrow
 import discord
 from discord.ext import commands
 from loguru import logger
 from peewee import DoesNotExist
 
-from valentina.constants import (
-    GUILDUSER_DEFAULTS,
-    PermissionManageCampaign,
-    PermissionsEditTrait,
-    PermissionsEditXP,
-    PermissionsKillCharacter,
-)
+from valentina.constants import GUILDUSER_DEFAULTS
 from valentina.models.sqlite_models import Character, GuildUser
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
@@ -103,171 +93,6 @@ class UserService:
             discord_guild = guild
 
         return member, discord_guild
-
-    @staticmethod
-    def can_manage_campaign(ctx: discord.ApplicationContext) -> bool:
-        """Check if the user has permissions to manage campaigns.
-
-        The function checks the following conditions in order:
-        - If the author is an administrator, return True.
-        - Fetch the guild settings. If they cannot be fetched, return False.
-        - Use a mapping from trait permissions to functions to check the corresponding permission type and return the result.
-
-        Args:
-            ctx (ApplicationContext): The application context.
-
-
-        Returns:
-            bool: True if the user has permissions to update traits, False otherwise.
-        """
-        permissions_dict: dict[
-            PermissionManageCampaign, Callable[[discord.ApplicationContext], bool]
-        ] = {
-            PermissionManageCampaign.UNRESTRICTED: lambda x: True,  # noqa: ARG005
-            PermissionManageCampaign.STORYTELLER_ONLY: lambda ctx: "Storyteller"
-            in [x.name for x in ctx.author.roles],
-        }
-
-        if ctx.author.guild_permissions.administrator:
-            return True
-
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx.guild)  # type: ignore [attr-defined]
-        if not settings:
-            return False
-
-        permission = PermissionManageCampaign(settings["permissions_manage_campaigns"])
-        check_permission = permissions_dict.get(permission)
-        if check_permission:
-            return check_permission(ctx)
-
-        return False
-
-    @staticmethod
-    def can_kill_character(ctx: discord.ApplicationContext, character: Character = None) -> bool:
-        """Check if the user has permissions to mark a character as dead.
-
-        The function checks the following conditions in order:
-        - If the author is an administrator, return True.
-        - Fetch the guild settings. If they cannot be fetched, return False.
-        - Use a mapping from PermissionsKillCharacter to functions to check the corresponding permission type and return the result.
-
-        Args:
-            ctx (ApplicationContext): The application context.
-            character (Character, optional): The character to check permissions for. Defaults to None.
-
-        Returns:
-            bool: True if the user has permissions to kill a character, False otherwise.
-        """
-        permissions_dict: dict[
-            PermissionsKillCharacter, Callable[[discord.ApplicationContext, Character], bool]
-        ] = {
-            PermissionsKillCharacter.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
-            PermissionsKillCharacter.CHARACTER_OWNER_ONLY: lambda ctx, character: character
-            and character.owned_by.user == ctx.author.id,
-            PermissionsKillCharacter.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
-            in [x.name for x in ctx.author.roles],
-        }
-
-        if ctx.author.guild_permissions.administrator:
-            return True
-
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx.guild)  # type: ignore [attr-defined]
-        if not settings:
-            return False
-
-        permission = PermissionsKillCharacter(settings["permissions_kill_character"])
-        check_permission = permissions_dict.get(permission)
-        if check_permission:
-            return check_permission(ctx, character)
-
-        return False
-
-    @staticmethod
-    def can_update_traits(ctx: discord.ApplicationContext, character: Character = None) -> bool:
-        """Check if the user has permissions to update character trait values.
-
-        The function checks the following conditions in order:
-        - If the author is an administrator, return True.
-        - Fetch the guild settings. If they cannot be fetched, return False.
-        - Use a mapping from trait permissions to functions to check the corresponding permission type and return the result.
-
-        Args:
-            ctx (ApplicationContext): The application context.
-            character (Character, optional): The character to check permissions for. Defaults to None.
-
-        Returns:
-            bool: True if the user has permissions to update traits, False otherwise.
-        """
-        permissions_dict: dict[
-            PermissionsEditTrait, Callable[[discord.ApplicationContext, Character], bool]
-        ] = {
-            PermissionsEditTrait.UNRESTRICTED: lambda ctx, character: True,  # noqa: ARG005
-            PermissionsEditTrait.CHARACTER_OWNER_ONLY: lambda ctx, character: character
-            and character.created_by.id == ctx.author.id,
-            PermissionsEditTrait.WITHIN_24_HOURS: lambda ctx, character: character
-            and character.created_by.id == ctx.author.id
-            and (arrow.utcnow() - arrow.get(character.created) <= timedelta(hours=24)),
-            PermissionsEditTrait.STORYTELLER_ONLY: lambda ctx, character: "Storyteller"  # noqa: ARG005
-            in [x.name for x in ctx.author.roles],
-        }
-
-        if ctx.author.guild_permissions.administrator:
-            return True
-
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx.guild)  # type: ignore [attr-defined]
-        if not settings:
-            return False
-
-        permission = PermissionsEditTrait(settings["permissions_edit_trait"])
-        check_permission = permissions_dict.get(permission)
-        if check_permission:
-            return check_permission(ctx, character)
-
-        return False
-
-    async def can_update_xp(self, ctx: discord.ApplicationContext, user: GuildUser = None) -> bool:
-        """Check if the user has permissions to add grant experience to themselves or other users.
-
-        The function checks the following conditions in order:
-        - If the author is an administrator, return True.
-        - Fetch the guild settings. If they cannot be fetched, return False.
-        - Use a mapping from PermissionsEditXP to check the corresponding permission type and return the result.
-
-        Args:
-            ctx (ApplicationContext): The application context.
-            user (GuildUser, optional): The user to grant experience to. Defaults to ctx.author.
-
-        Returns:
-            bool: True if the user has permissions to add xp, False otherwise.
-        """
-        ctx_user = await self.fetch_user(ctx)
-
-        if not user:
-            user = ctx_user
-
-        permissions_dict: dict[
-            PermissionsEditXP, Callable[[discord.ApplicationContext, GuildUser], bool]
-        ] = {
-            PermissionsEditXP.UNRESTRICTED: lambda ctx, user: True,  # noqa: ARG005
-            PermissionsEditXP.PLAYER_ONLY: lambda ctx, user: user == ctx_user
-            or "Storyteller" in [x.name for x in ctx.author.roles],
-            PermissionsEditXP.STORYTELLER_ONLY: lambda ctx, user: "Storyteller"  # noqa: ARG005
-            in [x.name for x in ctx.author.roles],
-        }
-
-        if ctx.author.guild_permissions.administrator:
-            return True
-
-        settings = ctx.bot.guild_svc.fetch_guild_settings(ctx.guild)  # type: ignore [attr-defined]
-        if not settings:
-            return False
-
-        permission = PermissionsEditXP(settings["permissions_edit_xp"])
-        check_permission = permissions_dict.get(permission)
-        if check_permission:
-            return check_permission(ctx, user)
-
-        return False
 
     async def fetch_player_characters(
         self,
@@ -439,64 +264,6 @@ class UserService:
             self.user_cache = {}
             self.active_character_cache = {}
             logger.debug("CACHE: Purge all user caches")
-
-    async def set_active_character(
-        self, ctx: discord.ApplicationContext, character: Character
-    ) -> None:
-        """Switch the active character for the user in the given guild.
-
-        Args:
-            ctx (discord.ApplicationContext): The Discord application context.
-            character (Character): The character object to set as active.
-
-        Returns:
-            None
-        """
-        user = await self.fetch_user(ctx=ctx)
-        key = self.__get_user_key(ctx.guild.id, user.id)
-
-        # Deactivate all characters for the user in the guild
-        Character.update(data=Character.data["is_active"].set(False)).where(
-            Character.owned_by == user,
-            Character.guild == ctx.guild.id,
-            Character.data["player_character"] == True,  # noqa: E712
-        ).execute()
-
-        # Activate the selected character
-        Character.update(data=Character.data["is_active"].set(True)).where(
-            Character.id == character.id
-        ).execute()
-
-        self.active_character_cache[key] = character
-
-        logger.debug(f"DATABASE: Set active character for {user} to '{character.id}'")
-
-    async def transfer_character_owner(
-        self, ctx: discord.ApplicationContext, character: Character, new_owner: GuildUser
-    ) -> None:
-        """Transfer ownership of a character to another user.
-
-        This method transfers the ownership of a character from the current user to a new user.
-        It updates the 'owned_by' field of the character, saves the changes, and purges the cache.
-
-        Args:
-            ctx (discord.ApplicationContext): The application context containing the current user.
-            character (Character): The character object whose ownership is to be transferred.
-            new_owner (User): The new owner of the character.
-
-        Returns:
-            None
-        """
-        current_user = await self.fetch_user(ctx)
-        new_user = await self.fetch_user(ctx, new_owner)
-
-        character.owned_by = new_user
-        character.save()
-
-        self.purge_cache()
-        logger.debug(
-            f"DATABASE: '{current_user}' transferred ownership of '{character.id}' to '{new_user}'"
-        )
 
     async def update_or_add(
         self,

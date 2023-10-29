@@ -126,7 +126,7 @@ class MaxTraitValue(Enum):
     RENOWN = 5
 
 
-class PermissionsEditTrait(Enum):
+class PermissionsManageTraits(Enum):
     """Permissions for updating character trait values."""
 
     UNRESTRICTED = 0
@@ -143,7 +143,7 @@ class PermissionsKillCharacter(Enum):
     STORYTELLER_ONLY = 2
 
 
-class PermissionsEditXP(Enum):
+class PermissionsGrantXP(Enum):
     """Permissions for adding xp to a character."""
 
     UNRESTRICTED = 0

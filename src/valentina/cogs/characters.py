@@ -1,7 +1,5 @@
 # mypy: disable-error-code="valid-type"
 """Character cog for Valentina."""
-
-import contextlib
 from pathlib import Path
 
 import discord
@@ -354,16 +352,16 @@ class Characters(commands.Cog, name="Character"):
     ) -> None:
         """Kill a character."""
         # Guard statement: check permissions
-        # if not self.bot.user_svc.can_kill_character(ctx, character):
-        #     await present_embed(
-        #         ctx,
-        #         title="Permission error",
-        #         description=f"You do not have permissions to kill {character.name}\nSpeak to an administrator",
-        #         level="error",
-        #         ephemeral=True,
-        #         delete_after=30,
-        #     )
-        #     return
+        if not await ctx.can_kill_character(character):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description=f"You do not have permissions to kill {character.name}\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
 
         title = f"Kill `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
@@ -510,6 +508,17 @@ class Characters(commands.Cog, name="Character"):
         """Add a trait to a character."""
         character = await self._fetch_active_character(ctx)
 
+        if not await ctx.can_manage_traits(character):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to add traits to this character\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
+
         title = f"Add trait: `{name.title()}` at `{value}` dots for {character.name}"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
@@ -541,20 +550,22 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update the value of a trait."""
-        # Guard statement: check permissions
-        # if not self.bot.user_svc.can_update_traits(ctx, character):
-        #     await present_embed(
-        #         ctx,
-        #         title="Permission error",
-        #         description="You do not have permissions to update traits on this character\nSpeak to an administrator",
-        #         level="error",
-        #         ephemeral=True,
-        #         delete_after=30,
-        #     )
-        #     return
-
         # Fetch the active character and trait
         character = await self._fetch_active_character(ctx)
+
+        # Guard statement: check permissions
+        if not await ctx.can_manage_traits(character):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to update traits on this character\nSpeak to an administrator or spend xp.",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
+
+        # Grab the CharacterTrait object
         trait = character.traits[trait_index]
 
         if not 0 <= new_value <= trait.max_value:
@@ -602,6 +613,18 @@ class Characters(commands.Cog, name="Character"):
         # Fetch the active character and trait
         character = await self._fetch_active_character(ctx)
         trait = character.traits[trait_index]
+
+        # Guard statement: check permissions
+        if not await ctx.can_manage_traits(character):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to delete traits from this character",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return
 
         title = f"Delete trait `{trait.name}` from `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(

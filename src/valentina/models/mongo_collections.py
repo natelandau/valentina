@@ -9,7 +9,6 @@ from beanie import (
     Indexed,
     Insert,
     Link,
-    PydanticObjectId,
     Replace,
     Save,
     SaveChanges,
@@ -24,9 +23,9 @@ from valentina.constants import (
     CharClass,
     HunterCreed,
     PermissionManageCampaign,
-    PermissionsEditTrait,
-    PermissionsEditXP,
+    PermissionsGrantXP,
     PermissionsKillCharacter,
+    PermissionsManageTraits,
     TraitCategory,
     VampireClan,
 )
@@ -42,6 +41,24 @@ def time_now() -> datetime:
 
 
 # #### Sub-Documents
+
+
+class GuildPermissions(BaseModel):
+    """Representation of a guild's permission settings as a subdocument attached to a Guild."""
+
+    manage_traits: PermissionsManageTraits = PermissionsManageTraits.WITHIN_24_HOURS
+    grant_xp: PermissionsGrantXP = PermissionsGrantXP.PLAYER_ONLY
+    kill_character: PermissionsKillCharacter = PermissionsKillCharacter.CHARACTER_OWNER_ONLY
+    manage_campaigns: PermissionManageCampaign = PermissionManageCampaign.STORYTELLER_ONLY
+
+
+class GuildChannels(BaseModel):
+    """Representation of a guild's channel ids as a subdocument attached to a Guild."""
+
+    audit_log: int | None = None
+    changelog: int | None = None
+    error_log: int | None = None
+    storyteller: int | None = None
 
 
 class CampaignExperience(BaseModel):
@@ -122,24 +139,14 @@ class Guild(Document):
 
     id: int  # type: ignore [assignment]  # noqa: A003
 
-    campaigns: list[Link["Campaign"]] = Field(default_factory=list)
     active_campaign: Link["Campaign"] = None
+    campaigns: list[Link["Campaign"]] = Field(default_factory=list)
     changelog_posted_version: str | None = None
-    channel_id_audit_log: int | None = None
-    channel_id_changelog: int | None = None
-    channel_id_error_log: int | None = None
-    channel_id_storyteller: int | None = None
+    channels: GuildChannels = GuildChannels()
     date_created: datetime = Field(default_factory=time_now)
     date_modified: datetime = Field(default_factory=time_now)
     name: str
-    permissions_edit_trait: PermissionsEditTrait = PermissionsEditTrait.WITHIN_24_HOURS
-    permissions_edit_xp: PermissionsEditXP = PermissionsEditXP.PLAYER_ONLY
-    permissions_kill_character: PermissionsKillCharacter = (
-        PermissionsKillCharacter.CHARACTER_OWNER_ONLY
-    )
-    permissions_manage_campaigns: PermissionManageCampaign = (
-        PermissionManageCampaign.STORYTELLER_ONLY
-    )
+    permissions: GuildPermissions = GuildPermissions()
 
     @before_event(Insert, Replace, Save, Update, SaveChanges)
     async def update_modified_date(self) -> None:
@@ -157,8 +164,8 @@ class Guild(Document):
         Returns:
             discord.TextChannel|None: The changelog channel, if it exists and is set; otherwise, None.
         """
-        if self.channel_id_changelog:
-            return discord.utils.get(guild.text_channels, id=self.channel_id_changelog)
+        if self.channels.changelog:
+            return discord.utils.get(guild.text_channels, id=self.channels.changelog)
 
         return None
 
@@ -173,8 +180,8 @@ class Guild(Document):
         Returns:
             discord.TextChannel|None: The storyteller channel, if it exists and is set; otherwise, None.
         """
-        if self.channel_id_storyteller:
-            return discord.utils.get(guild.text_channels, id=self.channel_id_storyteller)
+        if self.channels.storyteller:
+            return discord.utils.get(guild.text_channels, id=self.channels.storyteller)
 
         return None
 
@@ -189,8 +196,8 @@ class Guild(Document):
         Returns:
             discord.TextChannel|None: The audit log channel, if it exists and is set; otherwise, None.
         """
-        if self.channel_id_audit_log:
-            return discord.utils.get(guild.text_channels, id=self.channel_id_audit_log)
+        if self.channels.audit_log:
+            return discord.utils.get(guild.text_channels, id=self.channels.audit_log)
 
         return None
 
@@ -205,8 +212,8 @@ class Guild(Document):
         Returns:
             discord.TextChannel|None: The error log channel, if it exists and is set; otherwise, None.
         """
-        if self.channel_id_error_log:
-            return discord.utils.get(guild.text_channels, id=self.channel_id_error_log)
+        if self.channels.error_log:
+            return discord.utils.get(guild.text_channels, id=self.channels.error_log)
 
         return None
 

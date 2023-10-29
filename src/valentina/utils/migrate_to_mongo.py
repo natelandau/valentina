@@ -5,9 +5,9 @@ from loguru import logger
 
 from valentina.constants import (
     PermissionManageCampaign,
-    PermissionsEditTrait,
-    PermissionsEditXP,
+    PermissionsGrantXP,
     PermissionsKillCharacter,
+    PermissionsManageTraits,
     TraitCategory,
 )
 from valentina.models.mongo_collections import (
@@ -21,6 +21,8 @@ from valentina.models.mongo_collections import (
     CharacterTrait,
     GlobalProperty,
     Guild,
+    GuildChannels,
+    GuildPermissions,
     User,
     UserMacro,
 )
@@ -63,30 +65,35 @@ class Migrate:
         # Get all guilds
         guilds = SqliteGuild.select()
         for sqlguild in guilds:
+            # Create permissions object
+            permissions = GuildPermissions(
+                manage_traits=PermissionsManageTraits(
+                    sqlguild.data.get("permissions_edit_trait", None)
+                ),
+                grant_xp=PermissionsGrantXP(sqlguild.data.get("permissions_edit_xp", None)),
+                manage_campaigns=PermissionManageCampaign(
+                    sqlguild.data.get("permissions_manage_campaigns", None)
+                ),
+                kill_character=PermissionsKillCharacter(
+                    sqlguild.data.get("permissions_kill_character", None)
+                ),
+            )
+
+            channels = GuildChannels(
+                audit_log=sqlguild.data.get("audit_log_channel_id", None),
+                changelog=sqlguild.data.get("changelog_channel_id", None),
+                error_log=sqlguild.data.get("error_log_channel_id", None),
+                storyteller=sqlguild.data.get("storyteller_channel_id", None),
+            )
+
             # Create mongo guild object
             mongo_guild = Guild(
                 id=sqlguild.id,
                 name=sqlguild.name,
                 changelog_posted_version=sqlguild.data.get("changelog_posted_version", None),
                 date_created=datetime.strptime(sqlguild.created, "%Y-%m-%d %H:%M:%S%z"),
-                trait_permissions=sqlguild.data.get("trait_permissions", None),
-                xp_permissions=sqlguild.data.get("xp_permissions", None),
-                permissions_edit_trait=PermissionsEditTrait(
-                    sqlguild.data.get("permissions_edit_trait", None)
-                ),
-                permissions_edit_xp=PermissionsEditXP(
-                    sqlguild.data.get("permissions_edit_xp", None)
-                ),
-                permissions_manage_campaigns=PermissionManageCampaign(
-                    sqlguild.data.get("permissions_manage_campaigns", None)
-                ),
-                permissions_kill_character=PermissionsKillCharacter(
-                    sqlguild.data.get("permissions_kill_character", None)
-                ),
-                channel_id_audit_log=sqlguild.data.get("audit_log_channel_id", None),
-                channel_id_changelog=sqlguild.data.get("changelog_channel_id", None),
-                channel_id_error_log=sqlguild.data.get("error_log_channel_id", None),
-                channel_id_storyteller=sqlguild.data.get("storyteller_channel_id", None),
+                permissions=permissions,
+                channels=channels,
             )
 
             # insert guild into mongo

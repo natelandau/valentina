@@ -1,9 +1,10 @@
 """The main file for the Valentina bot."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+import arrow
 import discord
 import semver
 from beanie import UpdateResponse, init_beanie
@@ -12,7 +13,13 @@ from discord.ext import commands
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from valentina.constants import EmbedColor
+from valentina.constants import (
+    EmbedColor,
+    PermissionManageCampaign,
+    PermissionsGrantXP,
+    PermissionsKillCharacter,
+    PermissionsManageTraits,
+)
 from valentina.models.mongo_collections import (
     Campaign,
     CampaignChapter,
@@ -164,6 +171,141 @@ class ValentinaContext(discord.ApplicationContext):
                 await audit_log_channel.send(embed=embed)
             except discord.HTTPException as e:
                 raise errors.MessageTooLongError from e
+
+    async def can_kill_character(self, character: Character) -> bool:
+        """Check if the user can kill the character.
+
+        Args:
+            character (Character): The character to check.
+
+        Returns:
+            bool: True if the user can kill the character, False otherwise.
+        """
+        # Always allow administrators to kill characters
+        if self.author.guild_permissions.administrator:
+            return True
+
+        # Grab the setting from the guild
+        guild = await Guild.get(self.guild.id)
+        try:
+            setting = PermissionsKillCharacter(guild.permissions.kill_character)
+        except KeyError:
+            setting = PermissionsKillCharacter.CHARACTER_OWNER_ONLY
+
+        if setting == PermissionsKillCharacter.UNRESTRICTED:
+            return True
+
+        if setting == PermissionsKillCharacter.CHARACTER_OWNER_ONLY:
+            return self.author.id == character.user_owner or "Storyteller" in [
+                x.name for x in self.author.roles
+            ]
+
+        if setting == PermissionsKillCharacter.STORYTELLER_ONLY:
+            return "Storyteller" in [x.name for x in self.author.roles]
+
+        return True  # type: ignore [unreachable]
+
+    async def can_manage_traits(self, character: Character) -> bool:
+        """Check if the user can manage traits for the character.
+
+        Args:
+            character (Character): The character to check.
+
+        Returns:
+            bool: True if the user can manage traits for the character, False otherwise.
+        """
+        # Always allow administrators to manage traits
+        if self.author.guild_permissions.administrator:
+            return True
+
+        # Grab the setting from the guild
+        guild = await Guild.get(self.guild.id)
+        try:
+            setting = PermissionsManageTraits(guild.permissions.manage_traits)
+        except KeyError:
+            setting = PermissionsManageTraits.WITHIN_24_HOURS
+
+            # Check permissions based on the setting
+        if setting == PermissionsManageTraits.UNRESTRICTED:
+            return True
+
+        if setting == PermissionsManageTraits.CHARACTER_OWNER_ONLY:
+            is_character_owner = self.author.id == character.user_owner
+            is_storyteller = "Storyteller" in [role.name for role in self.author.roles]
+            return is_character_owner or is_storyteller
+
+        if setting == PermissionsManageTraits.WITHIN_24_HOURS:
+            is_storyteller = "Storyteller" in [role.name for role in self.author.roles]
+            is_character_owner = self.author.id == character.user_owner
+            is_within_24_hours = arrow.utcnow() - arrow.get(character.created) <= timedelta(
+                hours=24
+            )
+            return is_storyteller or (is_character_owner and is_within_24_hours)
+
+        if setting == PermissionsManageTraits.STORYTELLER_ONLY:
+            return "Storyteller" in [role.name for role in self.author.roles]
+
+        return True  # type: ignore [unreachable]
+
+    async def can_grant_xp(self, user: User) -> bool:
+        """Check if the user can grant xp to the user.
+
+        Args:
+            user (User): The user to check.
+
+        Returns:
+            bool: True if the user can grant xp to the user, False otherwise.
+        """
+        # Always allow administrators to manage traits
+        if self.author.guild_permissions.administrator:
+            return True
+
+        # Grab the setting from the guild
+        guild = await Guild.get(self.guild.id)
+        try:
+            setting = PermissionsGrantXP(guild.permissions.grant_xp)
+        except KeyError:
+            setting = PermissionsGrantXP.PLAYER_ONLY
+
+            # Check permissions based on the setting
+        if setting == PermissionsGrantXP.UNRESTRICTED:
+            return True
+
+        if setting == PermissionsGrantXP.PLAYER_ONLY:
+            is_user = self.author.id == user.id
+            is_storyteller = "Storyteller" in [role.name for role in self.author.roles]
+            return is_user or is_storyteller
+
+        if setting == PermissionsGrantXP.STORYTELLER_ONLY:
+            return "Storyteller" in [role.name for role in self.author.roles]
+
+        return True  # type: ignore [unreachable]
+
+    async def can_manage_campaign(self) -> bool:
+        """Check if the user can manage the campaign.
+
+        Returns:
+            bool: True if the user can manage the campaign, False otherwise.
+        """
+        # Always allow administrators to manage traits
+        if self.author.guild_permissions.administrator:
+            return True
+
+        # Grab the setting from the guild
+        guild = await Guild.get(self.guild.id)
+        try:
+            setting = PermissionManageCampaign(guild.permissions.manage_campaign)
+        except KeyError:
+            setting = PermissionManageCampaign.STORYTELLER_ONLY
+
+        # Check permissions based on the setting
+        if setting == PermissionManageCampaign.UNRESTRICTED:
+            return True
+
+        if setting == PermissionManageCampaign.STORYTELLER_ONLY:
+            return "Storyteller" in [role.name for role in self.author.roles]
+
+        return True  # type: ignore [unreachable]
 
 
 class Valentina(commands.Bot):
