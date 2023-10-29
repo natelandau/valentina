@@ -156,10 +156,12 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     """
     # Fetch the active character
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-    active_character = user_object.active_character(ctx.interaction.guild)
-
-    if not active_character:
-        return [OptionChoice("No active character", "")]
+    if not (
+        active_character := await user_object.active_character(
+            ctx.interaction.guild, raise_error=False
+        )
+    ):
+        return [OptionChoice("No active character", 0)]
 
     # Determine the option to retrieve the argument
     argument = ctx.options.get("trait") or ctx.options.get("trait_one") or ""
@@ -167,7 +169,7 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     # Filter and return the character's traits
     return [
         OptionChoice(t.name, i)
-        for i, t in sorted(enumerate(active_character.traits), key=lambda x: x[1].name)
+        for i, t in sorted(enumerate(active_character.traits), key=lambda t: t[1].name)
         if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -189,7 +191,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     """
     # Fetch the active character
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-    active_character = user_object.active_character(ctx.interaction.guild)
+    active_character = await user_object.active_character(ctx.interaction.guild, raise_error=False)
 
     if not active_character:
         return ["No active character"]
@@ -239,7 +241,7 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
     """
     # Fetch the active character
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-    active_character = user_object.active_character(ctx.interaction.guild)
+    active_character = await user_object.active_character(ctx.interaction.guild, raise_error=False)
 
     if not active_character:
         return [OptionChoice("No active character", "")]
@@ -471,28 +473,29 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
     # Fetch and prepare player characters
-    all_chars = [
-        (
-            f"{character.name} [@{character.user_owner.name}]"
+    all_chars_owners = sorted(
+        [
+            (x, await x.fetch_owner(fetch_links=False))
+            async for x in Character.find(
+                And(
+                    Character.guild == ctx.interaction.guild.id,
+                    Character.type_player == True,  # noqa: E712
+                    Character.is_alive == True,  # noqa: E712
+                ),
+                fetch_links=True,
+            )
+        ],
+        key=lambda x: x[0].name,
+    )
+
+    options = [
+        OptionChoice(
+            f"{character.name} [@{owner.name}]"
             if character.is_alive
-            else f"{Emoji.DEAD.value} {character.name} [@{character.user_owner.name}]",
+            else f"{Emoji.DEAD.value} {character.name} [@{owner.name}]",
             str(character.id),
         )
-        async for character in Character.find(
-            And(
-                Character.guild == ctx.interaction.guild.id,
-                Character.type_player == True,  # noqa: E712
-                Character.is_alive == True,  # noqa: E712
-            ),
-            fetch_links=True,
-        )
-    ]
-
-    # Generate options
-    options = [
-        OptionChoice(name, char_id)
-        for name, char_id in sorted(all_chars, key=lambda x: x[0])
-        if name.lower().startswith(ctx.value.lower())
+        for character, owner in all_chars_owners
     ]
 
     # Check if the number of options exceeds the maximum allowed
@@ -571,7 +574,7 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[Option
         list[str]: A list of trait category names for the autocomplete list.
     """
     return [
-        OptionChoice(category.name, category.name)
+        OptionChoice(category.name.title(), category.name)
         for category in TraitCategory
         if category.name.lower().startswith(ctx.options["category"].lower())
     ][:MAX_OPTION_LIST_SIZE]

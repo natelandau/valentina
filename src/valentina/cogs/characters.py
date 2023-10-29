@@ -8,7 +8,6 @@ import discord
 import inflect
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 
 from valentina.characters import AddFromSheetWizard, CharGenWizard
 from valentina.constants import (
@@ -81,7 +80,7 @@ class Characters(commands.Cog, name="Character"):
     async def _fetch_active_character(self, ctx: ValentinaContext) -> Character:
         """Fetch the active character for the user."""
         user = await User.get(ctx.author.id, fetch_links=True)
-        return user.active_character(ctx.guild)
+        return await user.active_character(ctx.guild)
 
     async def _fetch_active_campaign(self, ctx: ValentinaContext) -> Campaign:
         """Fetch the active campaign for the user."""
@@ -211,8 +210,8 @@ class Characters(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        user = await User.get(ctx.interaction.user.id, fetch_links=True)
-        await user.set_active_character(ctx.guild, character)
+        user = await User.get(ctx.author.id)
+        await user.set_active_character(character)
 
         await confirmation_response_msg
 
@@ -252,19 +251,14 @@ class Characters(commands.Cog, name="Character"):
         ),
     ) -> None:
         """List all player characters in this guild."""
-        users = await User.find_many(User.guilds == ctx.guild.id, fetch_links=True).to_list()
-        character_users = []
-        active_character_ids = []
-        for user in users:
-            if scope == "mine" and user.id != ctx.user.id:
-                continue
-            character_users.extend(
-                [(x, user) for x in user.all_characters(ctx.guild) if x.type_player]
-            )
-            with contextlib.suppress(errors.NoActiveCharacterError):
-                active_character_ids.append(user.active_character(ctx.guild).id)
+        all_characters = await Character.find_many(
+            Character.guild == ctx.guild.id, Character.type_player == True  # noqa: E712
+        ).to_list()
 
-        if len(character_users) == 0:
+        if scope == "mine":
+            all_characters = [x for x in all_characters if x.user_owner == ctx.user.id]
+
+        if len(all_characters) == 0:
             await present_embed(
                 ctx,
                 title="No Characters",
@@ -275,11 +269,15 @@ class Characters(commands.Cog, name="Character"):
             return
 
         title_prefix = "All player" if scope == "all" else "Your"
-        text = f"## {title_prefix} {p.plural_noun('character', len(character_users))} on {ctx.guild.name}\n"
+        text = f"## {title_prefix} {p.plural_noun('character', len(all_characters))} on {ctx.guild.name}\n"
 
-        for character, user in sorted(character_users, key=lambda x: x[0].name):
+        for character in sorted(all_characters, key=lambda x: x.name):
+            user = await character.fetch_owner()
             alive_emoji = Emoji.ALIVE.value if character.is_alive else Emoji.DEAD.value
-            active = "True" if character.id in active_character_ids else "False"
+            if user_active_character := await user.active_character(ctx.guild, raise_error=False):
+                active = "True" if character.id == user_active_character.id else "False"
+            else:
+                active = "False"
 
             text += f"**{character.name}**\n"
             text += "```\n"
@@ -331,6 +329,9 @@ class Characters(commands.Cog, name="Character"):
         await current_user.remove_character(character)
         new_user.characters.append(character)
         await new_user.save()
+
+        character.user_owner = new_user.id
+        await character.save()
 
         await ctx.post_to_audit_log(title)
         await confirmation_response_msg
@@ -506,7 +507,7 @@ class Characters(commands.Cog, name="Character"):
             default=True,
         ),
     ) -> None:
-        """Add a custom trait to a character."""
+        """Add a trait to a character."""
         character = await self._fetch_active_character(ctx)
 
         title = f"Add trait: `{name.title()}` at `{value}` dots for {character.name}"
@@ -514,7 +515,7 @@ class Characters(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        await character.add_trait(category, name, value, max_value=max_value)
+        await character.add_trait(category, name.title(), value, max_value=max_value)
 
         await ctx.post_to_audit_log(title)
         await confirmation_response_msg
@@ -556,7 +557,7 @@ class Characters(commands.Cog, name="Character"):
         character = await self._fetch_active_character(ctx)
         trait = character.traits[trait_index]
 
-        if new_value not in range(0, trait.max_value):
+        if not 0 <= new_value <= trait.max_value:
             await present_embed(
                 ctx,
                 title="Invalid value",
@@ -581,7 +582,7 @@ class Characters(commands.Cog, name="Character"):
         await confirmation_response_msg
 
     @trait.command(name="delete", description="Delete a trait from a character")
-    async def delete_custom_trait(
+    async def delete_trait(
         self,
         ctx: ValentinaContext,
         trait_index: Option(
@@ -597,13 +598,18 @@ class Characters(commands.Cog, name="Character"):
             default=True,
         ),
     ) -> None:
-        """Delete a custom trait from a character."""
+        """Delete a trait from a character."""
         # Fetch the active character and trait
         character = await self._fetch_active_character(ctx)
         trait = character.traits[trait_index]
 
-        title = f"Delete custom trait `{trait.name}` from `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        title = f"Delete trait `{trait.name}` from `{character.name}`"
+        is_confirmed, confirmation_response_msg = await confirm_action(
+            ctx,
+            title,
+            description="This is a destructive action that can not be undone.",
+            hidden=hidden,
+        )
 
         if not is_confirmed:
             return

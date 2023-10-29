@@ -36,6 +36,7 @@ class ErrorReporter:
         log_msg = None
         show_traceback = False
 
+        # Logged and reported to users but not shown in traceback
         if isinstance(
             error,
             commands.errors.MissingAnyRole
@@ -46,6 +47,7 @@ class ErrorReporter:
             user_msg = "Sorry, you don't have permission to run this command!"
             log_msg = f"COMMAND: `{ctx.user.display_name}` tried to run `/{ctx.command}` without the correct permissions"
 
+        # Reported to users but suppressed from logs and traceback
         if isinstance(
             error,
             errors.NoActiveCampaignError
@@ -66,6 +68,11 @@ class ErrorReporter:
                 "Sorry, I couldn't find that file. This is likely a bug and has been reported."
             )
             log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a file was not found"
+            show_traceback = True
+
+        if isinstance(error, errors.NoCharacterClassError):
+            user_msg = "Sorry, something went wrong. This has been reported"
+            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a character class was not found"
             show_traceback = True
 
         if isinstance(error, errors.DatabaseError):

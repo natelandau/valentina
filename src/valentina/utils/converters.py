@@ -203,11 +203,10 @@ class ValidCustomSection(Converter):
         Returns:
             tuple[CharacterSheetSection, int, Character]: The custom section, the index, and the character
         """
-        # TODO: Completed
         arg = int(argument)
 
         user_object = await User.get(ctx.user.id, fetch_links=True)  # type: ignore [attr-defined]
-        active_character = user_object.active_character(ctx.guild)
+        active_character = await user_object.active_character(ctx.guild)
         try:
             return active_character.sheet_sections[arg], arg, active_character
         except IndexError as e:
@@ -247,7 +246,7 @@ class ValidTraitCategory(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> TraitCategory:  # noqa: ARG002
         """Validate and normalize trait categories."""
         try:
-            return TraitCategory[argument]
+            return TraitCategory[argument.upper()]
         except KeyError as e:
             msg = f"`{argument}` is not a valid trait category"
             raise BadArgument(msg) from e

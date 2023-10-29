@@ -2,18 +2,7 @@
 
 ## New Features
 
--   [ ] Poll all character traits and update `custom` status for traits in enums
-
-## Possible Schema
-
--   Add each trait to a "traits" collection and link the traits back to characters and macros. If there is no chance of two traits sharing the same name this is likely more complicated than it's worth
-    -   Pros:
-        -   common trait information (category, max_value, etc.) can be stored in one place
-        -   linking traits to characters and macros won't rely on the trait name as a key allowing names to be changed without breaking links and allowing multiple traits with the same name
-    -   Cons:
-        -   more complex queries
-        -   more complex migrations
-        -   Traits can be added by editing Enums
+-   [ ] On bot load, poll all character traits and update `custom` status and max value for traits in enums. This will keep database in-sync with the codebase.
 
 ## Migration
 
@@ -48,7 +37,7 @@
 
 ## utils
 
--   [x] options
+-   [ ] options
 -   [ ] converters
 
 ## Other

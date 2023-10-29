@@ -120,6 +120,8 @@ class AddFromSheetWizard:
         """
         # Create a CharacterTrait from the first trait in the list, and remove it from the list
         trait_name, trait_category = self.trait_list.pop(0)
+
+        # Append to dict to be turned into Character Traits later
         self.completed_traits.append(
             {
                 "name": trait_name,
@@ -129,15 +131,15 @@ class AddFromSheetWizard:
             }
         )
 
-        if len(self.trait_list) > 0:
+        if not self.trait_list:
+            # We're finished; create the character
+            await self.__finalize_character()
+        else:
             # Rate the next trait
             await self.__send_messages(
                 message=f"`{trait_name} set to {rating}`",
                 interaction=interaction,
             )
-        else:
-            # We're finished; create the character
-            await self.__finalize_character()
 
     async def __finalize_character(
         self,
@@ -168,9 +170,9 @@ class AddFromSheetWizard:
 
         # Make the user active if the user has no active character
         try:
-            self.user.active_character(self.ctx.guild)
+            await self.user.active_character(self.ctx.guild)
         except errors.NoActiveCharacterError:
-            await self.user.set_active_character(self.ctx.guild, self.character)
+            await self.user.set_active_character(self.character)
 
         # Respond to the user
         embed = discord.Embed(

@@ -86,6 +86,24 @@ class NoActiveCampaignError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class NoCharacterClassError(Exception):
+    """Raised when a character's class is not a valid CharClass enum value."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The character class is not valid."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class NoExperienceInCampaignError(Exception):
     """Raised when a no experience is found for a campaign."""
 

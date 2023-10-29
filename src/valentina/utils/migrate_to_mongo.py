@@ -334,6 +334,6 @@ class Migrate:
 
         if not await Character.find().to_list():
             logger.info("MIGRATION: Migrate Characters")
-            # await self._migrate_characters()
+            await self._migrate_characters()
         else:
             logger.info("MIGRATION: Characters already migrated")

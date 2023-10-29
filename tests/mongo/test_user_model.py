@@ -61,9 +61,9 @@ async def test_campaign_experience(create_user, create_campaign) -> None:
         await user.spend_campaign_xp(campaign, 100)
 
 
-async def test_user_characters(create_user, create_character, mock_guild1):
+async def test_all_user_characters(create_user, create_character, mock_guild1):
     """Test methods related to working with characters associated with the user."""
-    # GIVEN a users and two characters
+    # GIVEN a users and three characters
     user = await create_user(guilds=[mock_guild1.id, 223344])
     character1 = await create_character(
         guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
@@ -83,30 +83,62 @@ async def test_user_characters(create_user, create_character, mock_guild1):
     assert result[0] == character1
     assert result[1] == character2
 
+
+async def test_active_character(create_user, create_character, mock_guild1):
+    """Test methods related to working with the active character."""
+    # Given a user and two characters
+    user = await create_user(guilds=[mock_guild1.id, 223344])
+    character1 = await create_character(
+        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    )
+    character2 = await create_character(
+        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    )
+
     # WHEN fetching an active character for a guild with no active character
     # THEN check that a NoActiveCharacterError is raised
     with pytest.raises(errors.NoActiveCharacterError):
-        user.active_character(mock_guild1)
+        await user.active_character(mock_guild1)
+
+    # WHEN fetching an active character for a guild with no active character and not raising an error
+    # THEN check that a None is returned
+    assert await user.active_character(mock_guild1, raise_error=False) is None
 
     # WHEN adding an active character
     await user.set_active_character(character1)
 
     # THEN check that the active character is set
-    assert user.active_character(mock_guild1).id == character1.id
+    active_char = await user.active_character(mock_guild1)
+    assert active_char.id == character1.id
+    assert active_char.traits[0].name == "Strength"
 
     # WHEN adding a different active character
     await user.set_active_character(character2)
 
     # THEN make sure the active character is switched
-    assert user.active_character(mock_guild1).id == character2.id
+    new_active_char = await user.active_character(mock_guild1)
+    assert new_active_char.id == character2.id
+
+
+async def test_remove_character(create_user, create_character, mock_guild1):
+    """Test the remove_character method."""
+    # GIVEN a user and two characters, one of which is active
+    user = await create_user(guilds=[mock_guild1.id, 223344])
+    character1 = await create_character(
+        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    )
+    character2 = await create_character(
+        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    )
+    await user.set_active_character(character2)
+    assert await user.active_character(mock_guild1) == character2
 
     # WHEN removing a character
     await user.remove_character(character2)
 
     # THEN check that the character is removed
-    assert len(user.characters) == 2
+    assert len(user.characters) == 1
     assert character1 in user.characters
-    assert character3 in user.characters
     assert character2 not in user.characters
     with pytest.raises(errors.NoActiveCharacterError):
-        user.active_character(mock_guild1)
+        await user.active_character(mock_guild1)

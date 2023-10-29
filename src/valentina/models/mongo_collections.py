@@ -354,12 +354,16 @@ class User(Document):
 
         return campaign_experience.cool_points
 
-    def active_character(self, guild: discord.Guild) -> "Character":
+    async def active_character(self, guild: discord.Guild, raise_error: bool = True) -> "Character":
         """Return the active character for the user in the guild."""
         try:
-            return self.active_characters[str(guild.id)]  # type: ignore [return-value]
+            active_char_id = self.active_characters[str(guild.id)].id  # type: ignore [attr-defined]
         except KeyError as e:
-            raise errors.NoActiveCharacterError from e
+            if raise_error:
+                raise errors.NoActiveCharacterError from e
+            return None
+
+        return await Character.get(active_char_id, fetch_links=True)  # type: ignore [attr-defined]
 
     def all_characters(self, guild: discord.Guild) -> list["Character"]:
         """Return all characters for the user in the guild."""
@@ -466,7 +470,7 @@ class Character(Document):
     @property
     def full_name(self) -> str:
         """Return the character's full name."""
-        nick = f" ({self.name_nick})" if self.name_nick else ""
+        nick = f" '{self.name_nick}'" if self.name_nick else ""
         last = f" {self.name_last}" if self.name_last else ""
 
         return f"{self.name_first}{nick}{last}".strip()
@@ -474,7 +478,10 @@ class Character(Document):
     @property
     def char_class(self) -> CharClass:
         """Return the character's class."""
-        return CharClass[self.char_class_name] if self.concept_name else None
+        try:
+            return CharClass[self.char_class_name.upper()] if self.char_class_name else None
+        except KeyError as e:
+            raise errors.NoCharacterClassError from e
 
     @property
     def concept(self) -> CharacterConcept | None:
@@ -483,17 +490,26 @@ class Character(Document):
         Returns:
             CharacterConcept|None: The character's concept, if it exists; otherwise, None.
         """
-        return CharacterConcept[self.concept_name] if self.concept_name else None
+        try:
+            return CharacterConcept[self.concept_name] if self.concept_name else None
+        except KeyError:
+            return None
 
     @property
     def clan(self) -> VampireClan:
         """Return the character's clan."""
-        return VampireClan[self.clan_name] if self.clan_name else None
+        try:
+            return VampireClan[self.clan_name] if self.clan_name else None
+        except KeyError:
+            return None
 
     @property
     def creed(self) -> HunterCreed:
         """Return the user who created the character."""
-        return HunterCreed[self.creed_name] if self.creed_name else None
+        try:
+            return HunterCreed[self.creed_name] if self.creed_name else None
+        except KeyError:
+            return None
 
     async def add_image(self, extension: str, data: bytes) -> str:
         """Add an image to a character and upload it to Amazon S3.
@@ -564,7 +580,7 @@ class Character(Document):
         """Create a new trait."""
         # Check if the trait already exists
         for trait in cast(list[CharacterTrait], self.traits):
-            if trait.name == name and trait.category_name == category.name:
+            if trait.name == name and trait.category_name == category.name.upper():
                 raise errors.TraitExistsError
 
         # Check if the trait is custom
@@ -572,6 +588,7 @@ class Character(Document):
             x.lower() for x in getattr(category.value, self.char_class_name, [])
         ]:
             is_custom = False
+            max_value = get_max_trait_value(name, category.name)
 
         # Create the new trait
         new_trait = CharacterTrait(
@@ -590,6 +607,10 @@ class Character(Document):
         await self.save()
 
         return new_trait
+
+    async def fetch_owner(self, fetch_links: bool = True) -> User:
+        """Fetch the user who owns the character."""
+        return await User.get(self.user_owner, fetch_links=fetch_links)
 
 
 class CharacterTrait(Document):

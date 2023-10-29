@@ -122,12 +122,13 @@ def create_character(create_user):
         )
         await character.insert()
 
+        trait_names = ["Strength", "Dexterity", "Stamina"]
         if not no_traits:
-            for i in range(1, 3):
+            for i in range(0, 2):
                 trait = CharacterTrait(
                     category_name="PHYSICAL",
                     character=str(character.id),
-                    name=fake.word(),
+                    name=trait_names[i],
                     value=i,
                     max_value=5,
                 )
