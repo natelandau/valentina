@@ -15,6 +15,7 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
+from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina
 from valentina.models.mongo_collections import (
     Campaign,
@@ -291,10 +292,11 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
 
 async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate the autocomplete list for the aws_object option based on the user's input."""
-    bot = cast(Valentina, ctx.bot)
+    aws_svc = AWSService()
+
     guild_prefix = f"{ctx.interaction.guild.id}/"
 
-    return [OptionChoice(x.strip(guild_prefix), x) for x in bot.aws_svc.list_objects(guild_prefix)][
+    return [OptionChoice(x.strip(guild_prefix), x) for x in aws_svc.list_objects(guild_prefix)][
         :MAX_OPTION_LIST_SIZE
     ]
 

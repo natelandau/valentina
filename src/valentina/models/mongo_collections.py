@@ -162,6 +162,7 @@ class GlobalProperty(Document):
         """Update the last_update field."""
         self.last_update = time_now()
 
+    @property
     def most_recent_version(self) -> str:
         """Return the most recent version."""
         return max(self.versions, key=semver.Version.parse)
@@ -698,3 +699,27 @@ class CharacterTrait(Document):
     def category(self) -> TraitCategory:
         """Return the trait's category."""
         return TraitCategory[self.category_name] if self.category_name else None
+
+
+class RollProbability(Document):
+    """Represents a roll probability in the database."""
+
+    # Metadata
+    pool: int
+    difficulty: int
+    dice_size: int
+    created: datetime = Field(default_factory=time_now)
+
+    # Results
+    critical_success: float
+    critical_dice: float
+    success: float
+    success_dice: float
+    failure: float
+    failure_dice: float
+    botch: float
+    botch_dice: float
+    n_a: float = 0.0
+    total_failures: float
+    total_results: float
+    total_successes: float

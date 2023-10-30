@@ -31,16 +31,13 @@ from valentina.models.mongo_collections import (
     CharacterTrait,
     GlobalProperty,
     Guild,
+    RollProbability,
     User,
     UserMacro,
 )
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
-from valentina.utils.discord_utils import (
-    create_player_role,
-    create_storyteller_role,
-    set_channel_perms,
-)
+from valentina.utils.discord_utils import set_channel_perms
 
 
 async def init_database(config: dict) -> None:
@@ -70,6 +67,7 @@ async def init_database(config: dict) -> None:
             Guild,
             User,
             UserMacro,
+            RollProbability,
         ],
     )
 
@@ -435,19 +433,21 @@ class Valentina(commands.Bot):
 
         # Find the most recent version
         global_properties = await GlobalProperty.find_one()
-        server_version = global_properties.most_recent_version()
 
         # if no changelog has been posted, only post the most recent version
         if not guild.changelog_posted_version:
-            guild.changelog_posted_version = global_properties.versions[-2]
+            guild.changelog_posted_version = global_properties.most_recent_version.versions[-2]
 
         # Check if there are any updates to post
-        if semver.compare(guild.changelog_posted_version, server_version) == 0:
+        if (
+            semver.compare(guild.changelog_posted_version, global_properties.most_recent_version)
+            == 0
+        ):
             logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
             return
 
         # Add 1 to the last posted version to get the next version to post
-        version_to_post = server_version
+        version_to_post = global_properties.most_recent_version
         for v in ChangelogParser(self).list_of_versions():
             if v == guild.changelog_posted_version:
                 break
@@ -457,7 +457,7 @@ class Valentina(commands.Bot):
         changelog = ChangelogParser(
             self,
             version_to_post,
-            server_version,
+            global_properties.most_recent_version,
             exclude_categories=[
                 "docs",
                 "refactor",
@@ -479,7 +479,7 @@ class Valentina(commands.Bot):
         logger.debug(f"CHANGELOG: Post changelog to {guild.name}")
 
         # Update the guild's last posted version
-        guild.changelog_posted_version = server_version
+        guild.changelog_posted_version = global_properties.most_recent_version
         await guild.save()
 
     async def _provision_guild(self, guild: discord.Guild) -> None:

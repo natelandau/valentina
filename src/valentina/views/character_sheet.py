@@ -73,7 +73,7 @@ def __embed1(  # noqa: C901
         )
 
     if character.char_class == CharClass.VAMPIRE:
-        embed.add_field(name="Clan", value=character.clan.name, inline=True)
+        embed.add_field(name="Clan", value=character.clan.name.title(), inline=True)
         embed.add_field(
             name="Generation",
             value=character.generation.title() if character.generation else "-",

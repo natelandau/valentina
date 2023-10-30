@@ -346,11 +346,11 @@ class RNGCharGen:
     def __init__(
         self, ctx: ValentinaContext, user: User, experience_level: RNGCharLevel = None
     ) -> None:
+        self.ctx = ctx
+        self.user = user
         self.experience_level = (
             experience_level if experience_level else RNGCharLevel.random_member()
         )
-        self.user = user
-        self.ctx = ctx
 
     @staticmethod
     def _redistribute_trait_values(
@@ -490,6 +490,33 @@ class RNGCharGen:
 
         await character.insert()
         return character
+
+    async def generate_full_character(
+        self,
+        char_class: CharClass | None = None,
+        concept: CharacterConcept | None = None,
+        clan: VampireClan | None = None,
+        creed: HunterCreed | None = None,
+        player_character: bool = False,
+        storyteller_character: bool = False,
+        developer_character: bool = False,
+        chargen_character: bool = False,
+        gender: Literal["male", "female"] | None = None,
+        nationality: str = "us",
+        nickname_is_class: bool = False,
+    ) -> Character:
+        """Generate a full character with random values."""
+        filtered_locals = {k: v for k, v in locals().items() if k != "self"}
+
+        character = await self.generate_base_character(**filtered_locals)
+        character = await self.random_attributes(character)
+        character = await self.random_abilities(character)
+        character = await self.random_disciplines(character)
+        character = await self.random_virtues(character)
+        character = await self.random_backgrounds(character)
+        character = await self.random_willpower(character)
+        character = await self.random_hunter_traits(character)
+        return await self.concept_special_abilities(character)
 
     async def random_attributes(self, character: Character) -> Character:
         """Randomly generate attributes for the character.
