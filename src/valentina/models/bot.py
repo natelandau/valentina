@@ -66,7 +66,7 @@ async def init_database(config: dict) -> None:
             GlobalProperty,
             Guild,
             User,
-            UserMacro,
+            # UserMacro,
             RollProbability,
         ],
     )

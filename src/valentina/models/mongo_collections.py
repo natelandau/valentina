@@ -136,14 +136,12 @@ class CharacterSheetSection(BaseModel):
     content: str
 
 
-class UserMacro(Document):
+class UserMacro(BaseModel):
     """Represents a user macro as a subdocument within User."""
 
     abbreviation: str
     date_created: datetime = Field(default_factory=time_now)
-    date_modified: datetime = Field(default_factory=time_now)
     description: str | None = None
-    guild: int
     name: str
     trait_one: str | None = None
     trait_two: str | None = None

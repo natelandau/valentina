@@ -198,28 +198,6 @@ class Migrate:
                     )
                     mongo_user.campaign_experience[new] = xp_object
 
-            # add macros
-            macro_objects = []
-            for sqlmacro in SqliteMacro().select().where(SqliteMacro.user == sqluser):
-                macro_traits = [
-                    x.trait.name
-                    for x in SqliteMacroTrait.select().where(SqliteMacroTrait.macro == sqlmacro)
-                ]
-
-                macro_objects.append(
-                    UserMacro(
-                        name=sqlmacro.name,
-                        abbreviation=sqlmacro.abbreviation,
-                        description=sqlmacro.description,
-                        date_created=datetime.strptime(sqlmacro.created, "%Y-%m-%d %H:%M:%S%z"),
-                        date_modified=datetime.strptime(sqlmacro.modified, "%Y-%m-%d %H:%M:%S%z"),
-                        guild=sqlmacro.guild_id,
-                        trait_one=macro_traits[0],
-                        trait_two=macro_traits[1],
-                    )
-                )
-                mongo_user.macros = macro_objects
-
             # Save user
             await mongo_user.save()
             logger.debug(f"MIGRATION: Insert user `{mongo_user.name}` into mongo")

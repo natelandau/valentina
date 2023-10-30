@@ -156,7 +156,7 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
         ctx (discord.AutocompleteContext): The context in which the function is called.
 
     Returns:
-        list[OptionChoice]: A list of available common and custom trait names and their index in character.traits.
+        list[OptionChoice]: A list of available names and their index in character.traits.
     """
     # Fetch the active character
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
@@ -173,12 +173,12 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     # Filter and return the character's traits
     return [
         OptionChoice(t.name, i)
-        for i, t in sorted(enumerate(active_character.traits), key=lambda t: t[1].name)
+        for i, t in enumerate(active_character.traits)
         if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available common and custom traits for a character.
 
     This function fetches the active character from the bot's user service,
@@ -191,19 +191,20 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
         ctx (discord.AutocompleteContext): The context in which the function is called.
 
     Returns:
-        list[str]: A list of available common and custom trait names.
+        list[OptionChoice]: A list of available trait names and their index in character.traits.
     """
-    # Fetch the active character
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-    active_character = await user_object.active_character(ctx.interaction.guild, raise_error=False)
-
-    if not active_character:
-        return ["No active character"]
+    if not (
+        active_character := await user_object.active_character(
+            ctx.interaction.guild, raise_error=False
+        )
+    ):
+        return [OptionChoice("No active character", 0)]
 
     # Filter and return the character's traits
     return [
-        t.name
-        for t in active_character.traits
+        OptionChoice(t.name, i)
+        for i, t in enumerate(active_character.traits)
         if t.name.lower().startswith(ctx.options["trait_two"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -313,25 +314,21 @@ async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     Returns:
         list[OptionChoice]: A list of OptionChoice objects to populate the select list.
     """
-    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
+    user_object = await User.get(ctx.interaction.user.id)
 
-    # Filter macros based on user input
-    filtered_macros = [
-        macro
-        for macro in user_object.macros
-        if macro.abbreviation.lower().startswith(ctx.options["macro"].lower())
-    ]
+    macros = [(macro, index) for index, macro in enumerate(user_object.macros)]
 
     # Create OptionChoice objects
     options = [
-        OptionChoice(f"{macro.abbreviation} ({macro.name})", str(macro.id))
-        for macro in filtered_macros
+        OptionChoice(f"{macro.abbreviation} ({macro.name})", index)
+        for macro, index in macros
+        if macro.abbreviation.lower().startswith(ctx.options["macro"].lower())
     ]
 
     # Check if the number of options exceeds the maximum allowed
     if len(options) >= MAX_OPTION_LIST_SIZE:
         instructions = "Keep typing ..." if ctx.value else "Start typing a name."
-        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
+        return [OptionChoice(f"Too many macros to display. {instructions}", "")]
 
     return options
 
@@ -552,7 +549,7 @@ async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) ->
     # Fetch and filter traits
     # Filter and return the character's traits
     options = [
-        OptionChoice(t.name, f"{character.id}_{t.name}")
+        OptionChoice(t.name, str(t.id))
         for t in character.traits
         if t.name.lower().startswith(ctx.options["trait_two"].lower())
     ][:MAX_OPTION_LIST_SIZE]
