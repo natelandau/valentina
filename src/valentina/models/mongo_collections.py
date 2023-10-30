@@ -5,6 +5,7 @@ from typing import Optional, cast
 import discord
 import semver
 from beanie import (
+    DeleteRules,
     Document,
     Indexed,
     Insert,
@@ -69,7 +70,7 @@ class CampaignExperience(BaseModel):
     cool_points: int = 0
 
 
-class CampaignChapter(Document):
+class CampaignChapter(BaseModel):
     """Represents a chapter as a subdocument within Campaign."""
 
     description_long: str = None
@@ -78,21 +79,43 @@ class CampaignChapter(Document):
     number: int
     date_created: datetime = Field(default_factory=time_now)
 
+    def campaign_display(self) -> str:
+        """Return the display for campaign overview."""
+        display = f"**{self.number}: __{self.name}__**"
+        display += f"\n{self.description_long}" if self.description_long else ""
 
-class CampaignNPC(Document):
+        return display
+
+
+class CampaignNPC(BaseModel):
     """Represents a campaign NPC as a subdocument within Campaign."""
 
     description: str
     name: str
     npc_class: str
 
+    def campaign_display(self) -> str:
+        """Return the display for campaign overview."""
+        display = f"**{self.name}**"
+        display += f" ({self.npc_class})" if self.npc_class else ""
+        display += f"\n{self.description}" if self.description else ""
 
-class CampaignNote(Document):
+        return display
+
+
+class CampaignNote(BaseModel):
     """Represents a campaign note as a subdocument within Campaign."""
 
     # TODO: Remove user-specific notes from cogs/views
     description: str
     name: str
+
+    def campaign_display(self) -> str:
+        """Return the display for campaign overview."""
+        display = f"**{self.name}**\n"
+        display += f"{self.description}" if self.description else ""
+
+        return display
 
 
 class CharacterSheetSection(BaseModel):
@@ -227,6 +250,30 @@ class Guild(Document):
         await create_storyteller_role(guild)
         await create_player_role(guild)
         logger.debug(f"GUILD: Roles created/updated on {self.name}")
+
+    async def fetch_active_campaign(self) -> "Campaign":
+        """Fetch the active campaign for the guild."""
+        try:
+            return await Campaign.get(self.active_campaign.id, fetch_links=True)  # type: ignore [attr-defined]
+        except AttributeError as e:
+            raise errors.NoActiveCampaignError from e
+
+    async def delete_campaign(self, campaign: "Campaign") -> None:
+        """Delete a campaign from the guild. Remove the campaign from the guild's list of campaigns and delete the campaign from the database.
+
+        Args:
+            campaign (Campaign): The campaign to delete.
+        """
+        # Remove the campaign from the active campaign if it is active
+        if self.active_campaign and self.active_campaign == campaign:
+            self.active_campaign = None
+
+        if campaign in self.campaigns:
+            self.campaigns.remove(campaign)
+
+        await campaign.delete(link_rule=DeleteRules.DELETE_LINKS)
+
+        await self.save()
 
 
 class User(Document):

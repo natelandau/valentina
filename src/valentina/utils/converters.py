@@ -168,16 +168,15 @@ class ValidCharTrait(Converter):
 class ValidCampaign(Converter):
     """A converter to grab a campaign object from it's name."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> Campaign:
-        """Convert from name to campaign object."""
-        campaign = Campaign.get_or_none(
-            (fn.lower(Campaign.name) == argument.lower()) & (Campaign.guild_id == ctx.guild.id)
-        )
+    async def convert(self, ctx: commands.Context, argument: str) -> Campaign:  # noqa: ARG002
+        """Convert from mongo db id to campaign object."""
+        campaign = await Campaign.get(argument)
+
         if campaign:
             return campaign
 
         msg = f"Campaign {argument} not found"
-        raise (BadArgument(msg))
+        raise BadArgument(msg)
 
 
 class ValidClan(Converter):

@@ -16,7 +16,12 @@ from valentina.constants import (
     VampireClan,
 )
 from valentina.models.bot import Valentina
-from valentina.models.mongo_collections import Campaign, Character, CharacterSheetSection, User
+from valentina.models.mongo_collections import (
+    Campaign,
+    Character,
+    Guild,
+    User,
+)
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.helpers import truncate_string
@@ -44,7 +49,7 @@ async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[s
     ]
 
 
-async def select_chapter(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate the autocomplete for the chapter option.
 
     This function fetches the active campaign from the bot's campaign service,
@@ -60,21 +65,19 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[str]:
         list[str]: A list of strings representing the chapters.
     """
     # Fetch the active campaign
-    campaign = await Campaign.find_one(
-        Campaign.guild == ctx.interaction.guild.id, Campaign.is_active == True  # noqa: E712
-    )
-    if not campaign:
-        return ["No active campaign"]
+    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
+    active_campaign = await guild.fetch_active_campaign()
 
-    # Fetch, sort and filter the chapters
-    return [
-        f"{chapter.number}: {chapter.name}"
-        for chapter in sorted(
-            campaign.chapters,
-            key=lambda c: c.number,
-        )
+    if not active_campaign:
+        return [OptionChoice("No active campaign", 1000)]
+
+    choices = [
+        OptionChoice(f"{chapter.number}. {chapter.name}", index)
+        for index, chapter in enumerate(active_campaign.chapters)
         if chapter.name.lower().startswith(ctx.options["chapter"].lower())
     ][:MAX_OPTION_LIST_SIZE]
+
+    return choices if choices else [OptionChoice("No chapers", 1000)]
 
 
 async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -204,22 +207,17 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[str]:
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_campaign(ctx: discord.AutocompleteContext) -> list[str]:
-    """Generate a list of available campaigns.
-
-    This function fetches all campaigns from the bot's campaign service,
-    filters them based on the starting string of the campaign name,
-    and returns a list of campaign names.
-    If the number of campaigns reaches a maximum size, it stops appending more campaigns.
+async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of available campaigns for the guilds.
 
     Args:
         ctx (discord.AutocompleteContext): The context in which the function is called.
 
     Returns:
-        list[str]: A list of available campaign names.
+        list[OptionChoice]: A list of available campaign names and db ids.
     """
     return [
-        c.name
+        OptionChoice(c.name, str(c.id))
         for c in await Campaign.find(Campaign.guild == ctx.interaction.guild.id).to_list()
         if c.name.lower().startswith(ctx.options["campaign"].lower())
     ][:MAX_OPTION_LIST_SIZE]
@@ -336,7 +334,7 @@ async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     return options
 
 
-async def select_note(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_note(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate the autocomplete list for the note option based on the user's input.
 
     This function fetches all notes for the active campaign, filters them based on the user's input,
@@ -346,26 +344,25 @@ async def select_note(ctx: discord.AutocompleteContext) -> list[str]:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
 
     Returns:
-        list[str]: A list of note IDs and names for the autocomplete list.
+        list[OptionChoice]: A list of note IDs and names for the autocomplete list.
     """
     # Fetch the active campaign
-    campaign = await Campaign.find_one(
-        Campaign.guild == ctx.interaction.guild.id, Campaign.is_active == True  # noqa: E712
-    )
-    if not campaign:
-        return ["No active campaign"]
+    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
+    active_campaign = await guild.fetch_active_campaign()
 
-    # Fetch and filter notes
-    notes = [
-        f"{i}: {note.name}"
-        for i, note in enumerate(campaign.notes, start=1)
+    if not active_campaign:
+        return [OptionChoice("No active campaign", 1000)]
+
+    choices = [
+        OptionChoice(note.name, index)
+        for index, note in enumerate(active_campaign.notes)
         if note.name.lower().startswith(ctx.options["note"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return notes if notes else ["No Notes"]
+    return choices if choices else [OptionChoice("No notes", 1000)]
 
 
-async def select_npc(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate the autocomplete list for the NPC option based on the user's input.
 
     This function fetches all NPCs for the active campaign, filters them based on the user's input,
@@ -375,23 +372,22 @@ async def select_npc(ctx: discord.AutocompleteContext) -> list[str]:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
 
     Returns:
-        list[str]: A list of NPC names for the autocomplete list.
+        list[OptionChoice]: A list of NPC names and associated ids for the autocomplete list.
     """
     # Fetch the active campaign
-    campaign = await Campaign.find_one(
-        Campaign.guild == ctx.interaction.guild.id, Campaign.is_active == True  # noqa: E712
-    )
-    if not campaign:
-        return ["No active campaign"]
+    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
+    active_campaign = await guild.fetch_active_campaign()
 
-    # Fetch and filter NPCs
-    npcs = [
-        npc.name
-        for npc in sorted(campaign.npcs, key=lambda x: x.name)
+    if not active_campaign:
+        return [OptionChoice("No active campaign", 1000)]
+
+    npc_choices = [
+        OptionChoice(npc.name, index)
+        for index, npc in enumerate(active_campaign.npcs)
         if npc.name.lower().startswith(ctx.options["npc"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return npcs if npcs else ["No NPCs"]
+    return npc_choices if npc_choices else [OptionChoice("No npcs", 1000)]
 
 
 async def select_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:

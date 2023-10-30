@@ -74,7 +74,7 @@ class Macro(commands.Cog):
             ctx, user, name, trait_one, trait_two, abbreviation, description
         )
 
-        await self.bot.guild_svc.send_to_audit_log(
+        await self.bot.guild_svc.post_to_audit_log(
             ctx, f"Create macro: `{name}`(`{trait_one.name}` + `{trait_two.name}`)"
         )
         await present_embed(
@@ -158,7 +158,7 @@ class Macro(commands.Cog):
 
         self.bot.macro_svc.delete_macro(ctx, macro)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
 

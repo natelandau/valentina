@@ -3,8 +3,7 @@ import discord
 from discord.ui import InputText, Modal
 
 from valentina.constants import MAX_FIELD_COUNT, CharClass, EmbedColor
-from valentina.models.mongo_collections import Character
-from valentina.models.sqlite_models import CampaignChapter, CampaignNote, CampaignNPC
+from valentina.models.mongo_collections import CampaignChapter, CampaignNote, CampaignNPC, Character
 from valentina.views import ConfirmCancelButtons
 
 
@@ -101,8 +100,8 @@ class ChapterModal(Modal):
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
         self.name: str = ""
-        self.short_description: str = ""
-        self.description: str = ""
+        self.description_short: str = ""
+        self.description_long: str = ""
 
         self.add_item(
             InputText(
@@ -115,9 +114,9 @@ class ChapterModal(Modal):
         )
         self.add_item(
             InputText(
-                label="short_description",
+                label="description_short",
                 placeholder="A short description for the chapter",
-                value=chapter.short_description if chapter else None,
+                value=chapter.description_short if chapter else None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=500,
@@ -125,9 +124,9 @@ class ChapterModal(Modal):
         )
         self.add_item(
             InputText(
-                label="chapter",
+                label="description_long",
                 placeholder="Write the chapter",
-                value=chapter.description if chapter else None,
+                value=chapter.description_long if chapter else None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
@@ -138,17 +137,17 @@ class ChapterModal(Modal):
         """Callback for the modal."""
         view = ConfirmCancelButtons(interaction.user)
         self.name = self.children[0].value
-        self.short_description = self.children[1].value
-        self.description = self.children[2].value
+        self.description_short = self.children[1].value
+        self.description_long = self.children[2].value
 
         embed = discord.Embed(title="Confirm Chapter", color=EmbedColor.INFO.value)
         embed.add_field(name="Chapter Name", value=self.name, inline=True)
-        embed.add_field(name="Short Description", value=self.short_description, inline=True)
+        embed.add_field(name="Short Description", value=self.description_short, inline=True)
         embed.add_field(
             name="Chapter",
-            value=(self.description[:MAX_FIELD_COUNT] + " ...")
-            if len(self.description) > MAX_FIELD_COUNT
-            else self.description,
+            value=(self.description_long[:MAX_FIELD_COUNT] + " ...")
+            if len(self.description_long) > MAX_FIELD_COUNT
+            else self.description_long,
             inline=False,
         )
 

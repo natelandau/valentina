@@ -42,7 +42,7 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         self.ctx.bot.guild_svc.purge_cache(self.ctx)  # type: ignore [attr-defined]
 
         # Log to audit log
-        await self.ctx.bot.guild_svc.send_to_audit_log(  # type: ignore [attr-defined]
+        await self.ctx.bot.guild_svc.post_to_audit_log(  # type: ignore [attr-defined]
             self.ctx, f"Deleted thumbnail id `{self.thumbnail_id}`\n{self.thumbnail_url}"
         )
 
@@ -86,7 +86,7 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         self.ctx.bot.guild_svc.purge_cache(self.ctx)  # type: ignore [attr-defined]
 
         # Log to audit log
-        await self.ctx.bot.guild_svc.send_to_audit_log(  # type: ignore [attr-defined]
+        await self.ctx.bot.guild_svc.post_to_audit_log(  # type: ignore [attr-defined]
             self.ctx,
             f"Thumbnail id `{self.thumbnail_id}` categorized to {select.values[0]} \n{self.thumbnail_url}",
         )

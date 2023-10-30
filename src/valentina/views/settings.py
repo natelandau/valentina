@@ -12,9 +12,9 @@ from valentina.constants import (
     EmbedColor,
     Emoji,
     PermissionManageCampaign,
-    PermissionsEditTrait,
-    PermissionsEditXP,
+    PermissionsGrantXP,
     PermissionsKillCharacter,
+    PermissionsManageTraits,
 )
 from valentina.models.bot import Valentina
 from valentina.models.mongo_collections import Guild
@@ -405,9 +405,9 @@ class SettingsManager:
                 "### Current Settings",
                 "```yaml",
                 "# Permissions",
-                f"Grant experience   : {PermissionsEditXP(self.current_settings['permissions_edit_xp']).name.title()}",
+                f"Grant experience   : {PermissionsGrantXP(self.current_settings['permissions_edit_xp']).name.title()}",
                 f"Manage campaign    : {PermissionManageCampaign(self.current_settings['permissions_manage_campaigns']).name.title()}",
-                f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
+                f"Update trait values: {PermissionsManageTraits(self.current_settings['permissions_edit_trait']).name.title()}",
                 f"Kill Character     : {PermissionsKillCharacter(self.current_settings['permissions_kill_character']).name.title()}",
                 "",
                 "# Channel Settings:",
@@ -579,7 +579,7 @@ class SettingsManager:
         # Build options for the buttons and the view
         options = [
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
-            for x in PermissionsEditTrait
+            for x in PermissionsManageTraits
         ]
         view = SettingsFlags(
             self.ctx,
@@ -621,7 +621,7 @@ class SettingsManager:
         # Build options for the buttons and the view
         options = [
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
-            for x in PermissionsEditXP
+            for x in PermissionsGrantXP
         ]
         view = SettingsFlags(
             self.ctx,

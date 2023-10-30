@@ -78,6 +78,22 @@ async def _init_database():
 
 
 @pytest.fixture()
+def create_guild():
+    """Factory to create a guild object in the database."""
+
+    async def make():
+        """Create a guild object in the test database."""
+        guild = Guild(
+            name=fake.name(),
+            id=randint(1, 9999999999),
+        )
+        await guild.insert()
+        return guild
+
+    return make
+
+
+@pytest.fixture()
 def create_character(create_user):
     """Factory to create a character object in the database."""
 

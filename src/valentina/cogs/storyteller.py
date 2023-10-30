@@ -152,7 +152,7 @@ class StoryTeller(commands.Cog):
         for trait, value in trait_values_from_chargen:
             character.set_trait_value(trait, value)
 
-        await self.bot.guild_svc.send_to_audit_log(
+        await self.bot.guild_svc.post_to_audit_log(
             ctx, f"Created storyteller character: `{character.full_name}` as a `{char_class.name}`"
         )
         logger.info(f"CHARACTER: Create character {character}")
@@ -245,7 +245,7 @@ class StoryTeller(commands.Cog):
                 color=EmbedColor.SUCCESS.value,
             ),
         )
-        await self.bot.guild_svc.send_to_audit_log(
+        await self.bot.guild_svc.post_to_audit_log(
             ctx,
             discord.Embed(
                 title="Storyteller character created", description=f"Created {character.full_name}"
@@ -347,7 +347,7 @@ class StoryTeller(commands.Cog):
 
         character.set_trait_value(trait, new_value)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     @character.command(name="sheet", description="View a character sheet")
@@ -389,7 +389,7 @@ class StoryTeller(commands.Cog):
 
         character.delete_instance(delete_nullable=True, recursive=True)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     @character.command(name="add_trait", description="Add a trait to a storyteller character")
@@ -441,7 +441,7 @@ class StoryTeller(commands.Cog):
             description=description,
         )
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     @character.command(name="image_add", description="Add an image to a storyteller character")
@@ -518,7 +518,7 @@ class StoryTeller(commands.Cog):
             return
 
         # Update audit log and original response
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     @character.command(
@@ -591,7 +591,7 @@ class StoryTeller(commands.Cog):
 
         await self.bot.user_svc.transfer_character_owner(ctx, character, new_owner)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     @player.command(name="update", description="Update a player character")
@@ -636,7 +636,7 @@ class StoryTeller(commands.Cog):
 
         character.set_trait_value(trait, new_value)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     ### ROLL COMMANDS ####################################################################

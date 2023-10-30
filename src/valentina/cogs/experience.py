@@ -78,7 +78,7 @@ class Experience(commands.Cog):
         self.bot.user_svc.purge_cache(ctx)
 
         # Send the confirmation message
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     @xp.command(name="add_cool_point", description="Add a cool point to a user")
@@ -132,7 +132,7 @@ class Experience(commands.Cog):
         self.bot.user_svc.purge_cache(ctx)
 
         # Send the confirmation message
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     @xp.command(name="spend", description="Spend experience points")
@@ -204,7 +204,7 @@ class Experience(commands.Cog):
         self.bot.user_svc.purge_cache(ctx)
 
         # Send the confirmation message
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
 

@@ -185,7 +185,7 @@ class Roll(commands.Cog):
 
         await self.bot.guild_svc.add_roll_result_thumb(ctx, roll_type, url)
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
 

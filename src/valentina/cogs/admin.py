@@ -327,7 +327,7 @@ class Admin(commands.Cog):
         await ctx.guild.create_custom_emoji(name=name, image=data)
 
         # Send confirmation
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await self.bot.guild_svc.post_to_audit_log(title)
         await confirmation_response_msg
 
     @guild.command(name="emoji_delete")
@@ -353,7 +353,7 @@ class Admin(commands.Cog):
             if emoji.name == name:
                 await emoji.delete(reason=reason)
 
-                await self.bot.guild_svc.send_to_audit_log(
+                await self.bot.guild_svc.post_to_audit_log(
                     ctx, f"Delete emoji from guild: `:{name}:`"
                 )
 

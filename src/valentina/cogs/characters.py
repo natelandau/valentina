@@ -61,7 +61,7 @@ from valentina.views import (
 p = inflect.engine()
 
 
-class Characters(commands.Cog, name="Character"):
+class CharactersCog(commands.Cog, name="Character"):
     """Create, manage, and update characters."""
 
     def __init__(self, bot: Valentina) -> None:
@@ -863,4 +863,4 @@ class Characters(commands.Cog, name="Character"):
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
-    bot.add_cog(Characters(bot))
+    bot.add_cog(CharactersCog(bot))

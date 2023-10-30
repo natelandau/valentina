@@ -295,7 +295,7 @@ class GuildService:
             self.changelog_versions_cache = []
             logger.debug("CACHE: Purge all guild caches")
 
-    async def send_to_audit_log(
+    async def post_to_audit_log(
         self, ctx: discord.ApplicationContext, message: str | discord.Embed
     ) -> None:  # pragma: no cover
         """Send a message to the audit log channel for a guild.

@@ -54,10 +54,10 @@ async def init_database(config: dict) -> None:
         database=client[config["VALENTINA_MONGO_DATABASE_NAME"]],
         document_models=[
             Campaign,
-            CampaignChapter,
+            # CampaignChapter,
             # CampaignExperience,
-            CampaignNote,
-            CampaignNPC,
+            # CampaignNote,
+            # CampaignNPC,
             Character,
             CharacterTrait,
             GlobalProperty,
