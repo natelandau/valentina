@@ -1,6 +1,6 @@
 """MongoDB collections for Valentina."""
 from datetime import datetime, timezone
-from typing import Optional, cast
+from typing import Optional, Union, cast
 
 import discord
 import semver
@@ -679,6 +679,14 @@ class Character(Document):
         """Fetch the user who owns the character."""
         return await User.get(self.user_owner, fetch_links=fetch_links)
 
+    async def fetch_trait_by_name(self, name: str) -> Union["CharacterTrait", None]:
+        """Fetch a CharacterTrait by name."""
+        for trait in cast(list[CharacterTrait], self.traits):
+            if trait.name == name:
+                return trait
+
+        return None
+
 
 class CharacterTrait(Document):
     """Represents a character trait value as a subdocument within Character."""
@@ -724,3 +732,16 @@ class RollProbability(Document):
     total_failures: float
     total_results: float
     total_successes: float
+
+
+class RollStatistic(Document):
+    """Track roll results for statistics."""
+
+    user: Indexed(int)  # type: ignore [valid-type]
+    guild: Indexed(int)  # type: ignore [valid-type]
+    character: Indexed(str) | None = None  # type: ignore [valid-type]
+    result: RollResultType
+    pool: int
+    difficulty: int
+    date_rolled: datetime = Field(default_factory=time_now)
+    traits: list[str] = Field(default_factory=list)

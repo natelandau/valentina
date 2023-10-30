@@ -60,8 +60,7 @@ class Experience(commands.Cog):
             )
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
 
         title = f"Add `{amount}` xp to `{user.name}`"
         description = "View experience with `/user_info`"
@@ -111,8 +110,7 @@ class Experience(commands.Cog):
             )
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
 
         title = f"Add `{amount}` cool {p.plural_noun('point', amount)} to `{user.name}`"
         description = "View cool points with `/user_info`"
@@ -190,8 +188,7 @@ class Experience(commands.Cog):
 
         # Make the updates
         user = await User.get(ctx.author.id)
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
 
         await user.spend_campaign_xp(active_campaign, upgrade_cost)
         trait.value = new_trait_value

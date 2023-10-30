@@ -32,6 +32,7 @@ from valentina.models.mongo_collections import (
     GlobalProperty,
     Guild,
     RollProbability,
+    RollStatistic,
     User,
     UserMacro,
 )
@@ -64,6 +65,7 @@ async def init_database(config: dict) -> None:
             Character,
             CharacterTrait,
             GlobalProperty,
+            RollStatistic,
             Guild,
             User,
             # UserMacro,
@@ -368,6 +370,34 @@ class ValentinaContext(discord.ApplicationContext):
         await channel_object.edit(overwrites=overwrites, topic=topic)
 
         return channel_object
+
+    async def fetch_active_character(self, raise_error: bool = True) -> Character | None:
+        """Fetch the active character for the user.
+
+        Args:
+            raise_error (bool, optional): Whether to raise an error if no active character is found. Defaults to True. Returns None if False.
+
+        Returns:
+            Character | None: The active character for the user or None if no active character is found.
+        """
+        user = await User.get(self.author.id, fetch_links=True)
+        return await user.active_character(self.guild, raise_error=raise_error)
+
+    async def fetch_active_campaign(self, raise_error: bool = True) -> Campaign:
+        """Fetch the active campaign for the user.
+
+        Args:
+            raise_error (bool, optional): Whether to raise an error if no active campaign is found. Defaults to True. Returns None if False.
+
+        Returns:
+            Campaign: The active campaign for the user.
+        """
+        guild = await Guild.get(self.guild.id, fetch_links=True)
+        campaign = guild.active_campaign
+        if not campaign and raise_error:
+            raise errors.NoActiveCampaignError
+
+        return campaign
 
 
 class Valentina(commands.Bot):

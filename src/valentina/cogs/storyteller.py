@@ -155,7 +155,7 @@ class StoryTeller(commands.Cog):
         await self.bot.guild_svc.post_to_audit_log(
             ctx, f"Created storyteller character: `{character.full_name}` as a `{char_class.name}`"
         )
-        logger.info(f"CHARACTER: Create character {character}")
+        logger.info(f"CHARACTER: Create character {character.name}")
 
     @character.command(name="create_rng", description="Create a random new npc character")
     async def create_rng_char(

@@ -5,14 +5,11 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 import aiohttp
-import discord
 from aiohttp import ClientSession
 from loguru import logger
 
 from valentina.constants import (
-    DICEROLL_THUBMS,
     MaxTraitValue,
-    RollResultType,
     XPMultiplier,
     XPNew,
 )
@@ -80,39 +77,6 @@ def adjust_sum_to_match_total(
             values[random.choice(valid_indices)] += 1
 
     return values
-
-
-def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
-    """Take a string and return a random gif url.
-
-    Args:
-        ctx (discord.ApplicationContext): The application context.
-        result (RollResultType): The roll result type.
-
-    Returns:
-    Optional[str]: The thumbnail URL, or None if no thumbnail is found.
-    """
-    # Get the list of default thumbnails for the result type
-    thumb_list = DICEROLL_THUBMS.get(result.name, [])
-
-    # Get the list of thumbnails from the database
-    database_thumbs = ctx.bot.guild_svc.fetch_roll_result_thumbs(ctx)  # type: ignore [attr-defined]
-
-    # Find the matching category in the database thumbnails (case insensitive)
-    matching_category = next(
-        (category for category in database_thumbs if category.lower() == result.name.lower()), None
-    )
-
-    # If a matching category was found, extend the list of thumbnails with the database thumbnails
-    if matching_category:
-        thumb_list.extend(database_thumbs[matching_category])
-
-    # If there are no thumbnails, return None
-    if not thumb_list:
-        return None
-
-    # Return a random thumbnail
-    return random.choice(thumb_list)
 
 
 async def fetch_random_name(

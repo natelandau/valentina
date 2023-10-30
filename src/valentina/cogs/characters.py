@@ -75,20 +75,6 @@ class CharactersCog(commands.Cog, name="Character"):
     section = chars.create_subgroup("section", "Work with character custom sections")
     trait = chars.create_subgroup("trait", "Work with character traits")
 
-    async def _fetch_active_character(self, ctx: ValentinaContext) -> Character:
-        """Fetch the active character for the user."""
-        user = await User.get(ctx.author.id, fetch_links=True)
-        return await user.active_character(ctx.guild)
-
-    async def _fetch_active_campaign(self, ctx: ValentinaContext) -> Campaign:
-        """Fetch the active campaign for the user."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        campaign = guild.active_campaign
-        if not campaign:
-            raise errors.NoActiveCampaignError
-
-        return campaign
-
     @chars.command(name="add", description="Add a character to Valentina from a sheet")
     async def add_character(
         self,
@@ -161,7 +147,7 @@ class CharactersCog(commands.Cog, name="Character"):
         """Create a new character from scratch."""
         # Grab the current user and campaign experience
         user = await User.get(ctx.author.id, fetch_links=True)
-        campaign = await self._fetch_active_campaign(ctx)
+        campaign = await ctx.fetch_active_campaign()
         campaign_xp, _, _ = user.fetch_campaign_xp(campaign)
 
         # Abort if user does not have enough xp
@@ -423,7 +409,7 @@ class CharactersCog(commands.Cog, name="Character"):
                 return
 
         # Fetch the active character
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
 
         # Determine image extension and read data
         extension = file_extension if file else url.split(".")[-1].lower()
@@ -468,7 +454,7 @@ class CharactersCog(commands.Cog, name="Character"):
             None
         """
         # Fetch the active character
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
 
         # Generate the key prefix for the character's images
         key_prefix = f"{ctx.guild.id}/characters/{character.id}"
@@ -506,7 +492,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a trait to a character."""
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
 
         if not await ctx.can_manage_traits(character):
             await present_embed(
@@ -551,7 +537,7 @@ class CharactersCog(commands.Cog, name="Character"):
     ) -> None:
         """Update the value of a trait."""
         # Fetch the active character and trait
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
 
         # Guard statement: check permissions
         if not await ctx.can_manage_traits(character):
@@ -611,7 +597,7 @@ class CharactersCog(commands.Cog, name="Character"):
     ) -> None:
         """Delete a trait from a character."""
         # Fetch the active character and trait
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
         trait = character.traits[trait_index]
 
         # Guard statement: check permissions
@@ -658,7 +644,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom section to the character sheet."""
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
 
         modal = CustomSectionModal(
             title=truncate_string(f"Custom section for {character.name}", 45)
@@ -777,7 +763,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's bio."""
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
 
         modal = BioModal(
             title=truncate_string(f"Enter the biography for {character.name}", 45),
@@ -813,7 +799,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Set the DOB of a character."""
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
 
         character.dob = dob
         await character.save()
@@ -838,10 +824,10 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
-        character = await self._fetch_active_character(ctx)
+        character = await ctx.fetch_active_character()
 
         modal = ProfileModal(
-            title=truncate_string(f"Profile for {character}", 45), character=character
+            title=truncate_string(f"Profile for {character.name}", 45), character=character
         )
         await ctx.send_modal(modal)
         await modal.wait()

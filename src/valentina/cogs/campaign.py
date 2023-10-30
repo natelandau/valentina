@@ -97,8 +97,7 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Set current date of a campaign."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        campaign = await guild.fetch_active_campaign()
+        campaign = await ctx.fetch_active_campaign()
 
         campaign.date_in_game = date
         await campaign.save()
@@ -146,10 +145,8 @@ class CampaignCog(commands.Cog):
     @campaign.command(name="view", description="View a campaign")
     async def view_campaign(self, ctx: ValentinaContext) -> None:
         """View a campaign."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        campaign = await guild.fetch_active_campaign()
+        campaign = await ctx.fetch_active_campaign()
 
-        #################################
         chapter_list = sorted(campaign.chapters, key=lambda c: c.number)
         npc_list = sorted(campaign.npcs, key=lambda n: n.name)
         note_list = sorted(campaign.notes, key=lambda n: n.name)
@@ -341,8 +338,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Create a new NPC."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
 
         modal = NPCModal(title=truncate_string("Create new NPC", 45))
         await ctx.send_modal(modal)
@@ -387,8 +383,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """List all NPCs."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
 
         if len(active_campaign.npcs) == 0:
             await present_embed(
@@ -434,8 +429,7 @@ An overview of {campaign.name}.
         if not await self.check_permissions(ctx):
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
         try:
             npc = active_campaign.npcs[index]
         except IndexError:
@@ -498,8 +492,7 @@ An overview of {campaign.name}.
         if not await self.check_permissions(ctx):
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
         try:
             npc = active_campaign.npcs[index]
         except IndexError:
@@ -537,8 +530,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Create a new chapter."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
 
         modal = ChapterModal(title=truncate_string("Create new chapter", 45))
         await ctx.send_modal(modal)
@@ -582,8 +574,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """List all chapters."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
 
         if len(active_campaign.chapters) == 0:
             await present_embed(
@@ -627,8 +618,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Edit a chapter."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
         chapter = active_campaign.chapters[index]
 
         modal = ChapterModal(title=truncate_string("Edit chapter", 45), chapter=chapter)
@@ -677,8 +667,7 @@ An overview of {campaign.name}.
         if not await self.check_permissions(ctx):
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
         chapter = active_campaign.chapters[index]
 
         title = f"Delete Chapter `{chapter.number}. {chapter.name}` from `{active_campaign.name}`"
@@ -706,8 +695,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Create a new note."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
 
         modal = NoteModal(title=truncate_string("Create new note", 45))
         await ctx.send_modal(modal)
@@ -791,8 +779,7 @@ An overview of {campaign.name}.
         ),
     ) -> None:
         """Edit a note."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
         note = active_campaign.notes[index]
 
         modal = NoteModal(title=truncate_string("Edit note", 45), note=note)
@@ -841,8 +828,7 @@ An overview of {campaign.name}.
         if not await self.check_permissions(ctx):
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await ctx.fetch_active_campaign()
         note = active_campaign.notes[index]
 
         title = f"Delete note: `{note.name}` from `{active_campaign.name}`"

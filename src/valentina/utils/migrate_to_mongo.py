@@ -25,8 +25,8 @@ from valentina.models.mongo_collections import (
     GuildChannels,
     GuildPermissions,
     GuildRollResultThumbnail,
+    RollStatistic,
     User,
-    UserMacro,
 )
 from valentina.models.sqlite_models import Campaign as SqliteCampaign
 from valentina.models.sqlite_models import CampaignChapter as SqliteCampaignChapter
@@ -39,6 +39,7 @@ from valentina.models.sqlite_models import Guild as SqliteGuild
 from valentina.models.sqlite_models import GuildUser as SqliteUser
 from valentina.models.sqlite_models import Macro as SqliteMacro
 from valentina.models.sqlite_models import MacroTrait as SqliteMacroTrait
+from valentina.models.sqlite_models import RollStatistic as SqliteRollStatistic
 from valentina.models.sqlite_models import RollThumbnail as SqliteRollThumbnail
 from valentina.utils.helpers import get_max_trait_value
 
@@ -305,6 +306,33 @@ class Migrate:
             await character.save()
             logger.debug(f"MIGRATION: Insert character `{character.name}` into mongo")
 
+    @staticmethod
+    async def _migrate_roll_statistics() -> None:
+        """Migrate roll statistics."""
+        for stat in SqliteRollStatistic.select():
+            try:
+                sqlcharacter = stat.character if stat.character else None
+            except SqliteCharacter.DoesNotExist:
+                sqlcharacter = None
+
+            if sqlcharacter:
+                character = await Character.find_one(
+                    Character.name_first == sqlcharacter.data.get("first_name", "")
+                )
+            else:
+                character = None
+
+            new_stat = RollStatistic(
+                user=SqliteUser.get(SqliteUser.id == stat.user).user,
+                guild=stat.guild.id,
+                character=str(character.id) if character else None,
+                result=RollResultType[stat.result],
+                pool=stat.pool,
+                difficulty=stat.difficulty,
+                date_rolled=datetime.strptime(stat.date_rolled, "%Y-%m-%d %H:%M:%S%z"),
+            )
+            await new_stat.insert()
+
     async def do_migration(self) -> None:
         """Perform the migration."""
         if not await GlobalProperty.find().to_list():
@@ -336,3 +364,9 @@ class Migrate:
             await self._migrate_characters()
         else:
             logger.info("MIGRATION: Characters already migrated")
+
+        if not await RollStatistic.find().to_list():
+            logger.info("MIGRATION: Migrate RollStatistic")
+            await self._migrate_roll_statistics()
+        else:
+            logger.info("MIGRATION: RollStatistic already migrated")
