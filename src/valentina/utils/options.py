@@ -505,7 +505,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
 
 
 async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of available traits for a storyteller character.
+    """Generate a list of available traits for a character.
 
     This function takes a character id defined in a previous discord command option, and fetches all the common and custom traits available for that character to populate the autocomplete list.
 
@@ -527,7 +527,7 @@ async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> lis
     # Filter and return the character's traits
 
     options = [
-        OptionChoice(t.name, f"{character.id}_{t.name}")
+        OptionChoice(t.name, str(t.id))
         for t in character.traits
         if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]

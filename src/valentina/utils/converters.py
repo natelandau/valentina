@@ -29,7 +29,6 @@ from valentina.models.sqlite_models import (
     # Character,
     CustomTrait,
     Macro,
-    Trait,
 )
 from valentina.utils import errors
 
@@ -144,22 +143,13 @@ class ValidCharacterObject(Converter):
 
 
 class ValidCharTrait(Converter):
-    """A converter that ensures a requested trait is a valid character trait or custom trait."""
+    """A converter that converts a CharacterTrait id to a CharacterTrait object."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> CharacterTrait:
+    async def convert(self, ctx: commands.Context, argument: str) -> CharacterTrait:  # noqa: ARG002
         """Validate and normalize traits."""
-        # Certain autocomplete options prefix a character id to the trait name
-        match = re.match(r"(\d+)_(.*)", argument)
-        if match:
-            integer_part, string_part = match.groups()
-            character = Character.get_by_id(int(integer_part))
-            argument = string_part
-        else:
-            character = await ctx.bot.user_svc.fetch_active_character(ctx)
-
-        for trait in character.traits:
-            if argument.lower() == trait.name.lower():
-                return trait
+        trait = await CharacterTrait.get(argument)
+        if trait:
+            return trait
 
         msg = f"`{argument}` is not a valid trait"
         raise BadArgument(msg)
@@ -274,23 +264,10 @@ class ValidMacroFromID(Converter):
             raise errors.DatabaseError from e
 
 
-class ValidTrait(Converter):
-    """A converter that ensures a requested trait is a valid character trait or custom trait."""
-
-    async def convert(self, ctx: commands.Context, argument: str) -> Trait:  # noqa: ARG002
-        """Validate and normalize traits."""
-        for trait in Trait.select().order_by(Trait.name.asc()):
-            if argument.lower() == trait.name.lower():
-                return trait
-
-        msg = f"`{argument}` is not a valid trait"
-        raise BadArgument(msg)
-
-
 class ValidTraitOrCustomTrait(Converter):
     """A converter to ensure a requested trait is a valid character trait or custom trait."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> Trait | CustomTrait:
+    async def convert(self, ctx: commands.Context, argument: str) -> CharacterTrait:
         """Validate and normalize traits."""
         character = await ctx.bot.user_svc.fetch_active_character(ctx)
 

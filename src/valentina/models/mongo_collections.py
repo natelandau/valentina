@@ -20,6 +20,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from valentina.constants import (
+    COOL_POINT_VALUE,
     CharacterConcept,
     CharClass,
     HunterCreed,
@@ -404,7 +405,7 @@ class User(Document):
         return campaign_experience.xp_current
 
     async def add_campaign_cool_points(self, campaign: "Campaign", amount: int) -> int:
-        """Add cool points for a campaign.
+        """Add cool points and increase experience for the current campaign.
 
         Args:
             campaign (Campaign): The campaign to add cool points for.
@@ -416,6 +417,8 @@ class User(Document):
         campaign_experience = self._find_campaign_xp(campaign)
 
         campaign_experience.cool_points += amount
+        campaign_experience.xp_total += amount * COOL_POINT_VALUE
+        campaign_experience.xp_current += amount * COOL_POINT_VALUE
         await self.save()
 
         return campaign_experience.cool_points
