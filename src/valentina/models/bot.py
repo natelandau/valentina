@@ -14,6 +14,7 @@ from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from valentina.constants import (
+    ChannelPermission,
     EmbedColor,
     PermissionManageCampaign,
     PermissionsGrantXP,
@@ -35,6 +36,11 @@ from valentina.models.mongo_collections import (
 )
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
+from valentina.utils.discord_utils import (
+    create_player_role,
+    create_storyteller_role,
+    set_channel_perms,
+)
 
 
 async def init_database(config: dict) -> None:
@@ -306,6 +312,64 @@ class ValentinaContext(discord.ApplicationContext):
             return "Storyteller" in [role.name for role in self.author.roles]
 
         return True  # type: ignore [unreachable]
+
+    async def channel_update_or_add(
+        self,
+        channel: str | discord.TextChannel,
+        topic: str,
+        permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
+    ) -> discord.TextChannel:  # pragma: no cover
+        """Create or update a channel in the guild.
+
+        Either create a new text channel in the guild or update an existing onebased on the name. Set permissions for default role, player role, and storyteller role. If a member is a bot, set permissions to manage.
+
+        Args:
+            channel (str|discord.TextChannel): Channel name or object.
+            topic (str): Channel topic.
+            permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]): Tuple containing channel permissions for default_role, player_role, storyteller_role.
+
+        Returns:
+            discord.TextChannel: The created or updated text channel.
+        """
+        # Fetch roles
+        player_role = discord.utils.get(self.guild.roles, name="Player")
+        storyteller_role = discord.utils.get(self.guild.roles, name="Storyteller")
+
+        # Initialize permission overwrites
+        overwrites = {  # type:ignore [misc]
+            self.guild.default_role: set_channel_perms(permissions[0]),
+            player_role: set_channel_perms(permissions[1]),
+            storyteller_role: set_channel_perms(permissions[2]),
+            **{
+                user: set_channel_perms(ChannelPermission.MANAGE)
+                for user in self.guild.members
+                if user.bot
+            },
+        }
+
+        # Determine channel object and name
+        if isinstance(channel, discord.TextChannel):
+            channel_object = channel
+        elif isinstance(channel, str):
+            channel_name = channel.lower().strip()
+            channel_object = discord.utils.get(self.guild.text_channels, name=channel_name)
+
+            # Create the channel if it doesn't exist
+            if not channel_object:
+                logger.debug(
+                    f"GUILD: Create channel '{channel_object.name}' on '{self.guild.name}'"
+                )
+                return await self.guild.create_text_channel(
+                    channel_name,
+                    overwrites=overwrites,
+                    topic=topic,
+                )
+
+        # Update existing channel
+        logger.debug(f"GUILD: Update channel '{channel_object.name}' on '{self.guild.name}'")
+        await channel_object.edit(overwrites=overwrites, topic=topic)
+
+        return channel_object
 
 
 class Valentina(commands.Bot):

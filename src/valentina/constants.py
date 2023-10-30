@@ -161,11 +161,11 @@ class PermissionManageCampaign(Enum):
 class RollResultType(Enum):
     """Enum for results of a roll."""
 
-    SUCCESS = "Success"
-    FAILURE = "Failure"
-    BOTCH = "Botch"
-    CRITICAL = "Critical Success"
-    OTHER = "n/a"
+    SUCCESS = 0
+    FAILURE = 1
+    BOTCH = 2
+    CRITICAL = 3
+    OTHER = 4
 
 
 class XPNew(Enum):

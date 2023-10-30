@@ -4,20 +4,22 @@ import discord
 from discord.ext import pages
 from discord.ui import Button
 
-from valentina.constants import ChannelPermission, EmbedColor, Emoji, RollResultType
-from valentina.models.sqlite_models import RollThumbnail
+from valentina.constants import EmbedColor, Emoji, RollResultType
+from valentina.models.bot import ValentinaContext
+from valentina.models.mongo_collections import Guild, GuildRollResultThumbnail
 
 
 class DeleteOrCategorizeThumbnails(discord.ui.View):
     """A view for deleting or categorizing a roll result thumbnails."""
 
     def __init__(
-        self, ctx: discord.ApplicationContext, thumbnail_id: int, thumbnail_url: str
+        self, ctx: ValentinaContext, guild: Guild, index: int, thumbnail: GuildRollResultThumbnail
     ) -> None:
         super().__init__()
         self.ctx = ctx
-        self.thumbnail_id = thumbnail_id
-        self.thumbnail_url = thumbnail_url
+        self.guild = guild
+        self.index = index
+        self.thumbnail = thumbnail
 
     def _disable_all(self) -> None:
         """Disable all buttons in the view."""
@@ -38,19 +40,19 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         self._disable_all()
 
         # Delete from database
-        RollThumbnail.delete_by_id(self.thumbnail_id)
-        self.ctx.bot.guild_svc.purge_cache(self.ctx)  # type: ignore [attr-defined]
+        self.guild.roll_result_thumbnails.pop(self.index)
+        await self.guild.save()
 
         # Log to audit log
-        await self.ctx.bot.guild_svc.post_to_audit_log(  # type: ignore [attr-defined]
-            self.ctx, f"Deleted thumbnail id `{self.thumbnail_id}`\n{self.thumbnail_url}"
+        await self.ctx.post_to_audit_log(
+            f"Deleted thumbnail id `{self.index}`\n{self.thumbnail.url}"
         )
 
         # Respond to user
         await interaction.response.edit_message(
             embed=discord.Embed(
-                title=f"Deleted thumbnail id `{self.thumbnail_id}`", color=EmbedColor.SUCCESS.value
-            ).set_thumbnail(url=self.thumbnail_url),
+                title=f"Deleted thumbnail id `{self.index}`", color=EmbedColor.SUCCESS.value
+            ).set_thumbnail(url=self.thumbnail.url),
             view=None,
         )  # view=None removes all buttons
         self.stop()
@@ -77,26 +79,28 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         row=2,
         min_values=1,
         max_values=1,
-        options=[discord.SelectOption(label=x.name, value=x.name) for x in RollResultType],
+        options=[discord.SelectOption(label=x.name.title(), value=x.name) for x in RollResultType],
     )
     async def select_callback(self, select, interaction: discord.Interaction) -> None:  # type: ignore [no-untyped-def]
         """Callback for the select menu."""
         # Update the thumbnail in the database
-        RollThumbnail.set_by_id(self.thumbnail_id, {"roll_type": select.values[0]})
-        self.ctx.bot.guild_svc.purge_cache(self.ctx)  # type: ignore [attr-defined]
+        new_cat = select.values[0]
+
+        self.thumbnail.roll_type = RollResultType[new_cat]
+        self.guild.roll_result_thumbnails[self.index] = self.thumbnail
+        await self.guild.save()
 
         # Log to audit log
-        await self.ctx.bot.guild_svc.post_to_audit_log(  # type: ignore [attr-defined]
-            self.ctx,
-            f"Thumbnail id `{self.thumbnail_id}` categorized to {select.values[0]} \n{self.thumbnail_url}",
+        await self.ctx.post_to_audit_log(
+            f"Thumbnail id `{self.index}` categorized to {new_cat} \n{self.thumbnail.url}",
         )
 
         # Respond to user
         await interaction.response.edit_message(
             embed=discord.Embed(
-                title=f"Thumbnail id `{self.thumbnail_id}` categorized to {select.values[0]} \n",
+                title=f"Thumbnail id `{self.index}` categorized to {new_cat} \n",
                 color=EmbedColor.SUCCESS.value,
-            ).set_thumbnail(url=self.thumbnail_url),
+            ).set_thumbnail(url=self.thumbnail.url),
             view=None,
         )
         self.stop()
@@ -105,30 +109,34 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
 class ThumbnailReview:
     """A paginated view of all the thumbnails in the database."""
 
-    def __init__(self, ctx: discord.ApplicationContext, roll_type: ChannelPermission) -> None:
+    def __init__(self, ctx: ValentinaContext, guild: Guild, roll_type: RollResultType) -> None:
         """Initialize the thumbnail review."""
         self.ctx = ctx
+        self.guild = guild
         self.roll_type = roll_type
         self.thumbnails = self._get_thumbnails()
 
-    def _get_thumbnails(self) -> dict[int, str]:
+    def _get_thumbnails(self) -> dict[int, GuildRollResultThumbnail]:
         """Get all the thumbnails in the database.
 
         Return:
-            A dictionary of thumbnail IDs and URLs.
+            A dictionary of thumbnail indexes and GuildRollResultThumbnail.
         """
-        return {
-            x.id: x.url
-            for x in RollThumbnail.select().where(
-                (RollThumbnail.roll_type == self.roll_type.name)
-                & (RollThumbnail.guild == self.ctx.guild.id)
-            )
-        }
+        filtered_thumbs = {}
+        original_index = 0
+
+        for thumbnail in self.guild.roll_result_thumbnails:
+            if thumbnail.roll_type == self.roll_type:
+                filtered_thumbs[original_index] = thumbnail
+
+            original_index += 1
+
+        return filtered_thumbs
 
     @staticmethod
-    async def _get_embed(db_id: int, url: str) -> discord.Embed:
+    async def _get_embed(index: int, url: str) -> discord.Embed:
         """Get an embed for a thumbnail."""
-        embed = discord.Embed(title=f"Thumbnail id `{db_id}`", color=EmbedColor.DEFAULT.value)
+        embed = discord.Embed(title=f"Thumbnail id `{index}`", color=EmbedColor.DEFAULT.value)
         embed.set_image(url=url)
         return embed
 
@@ -136,15 +144,17 @@ class ThumbnailReview:
         """Build the pages for the paginator. Create an embed for each thumbnail and add it to a single page paginator with a custom view allowing it to be deleted/categorized.  Then return a list of all the paginators."""
         pages_to_send: list[pages.Page] = []
 
-        for db_id, url in self.thumbnails.items():
-            view = DeleteOrCategorizeThumbnails(ctx=self.ctx, thumbnail_id=db_id, thumbnail_url=url)
+        for index, thumbnail in self.thumbnails.items():
+            view = DeleteOrCategorizeThumbnails(
+                ctx=self.ctx, guild=self.guild, index=index, thumbnail=thumbnail
+            )
 
-            embed = await self._get_embed(db_id, url)
+            embed = await self._get_embed(index, thumbnail.url)
 
             pages_to_send.append(
                 pages.Page(
                     embeds=[embed],
-                    label=f"Database Id: {db_id}",
+                    label=f"Index: {index}",
                     description="Pages for Things",
                     use_default_buttons=False,
                     custom_view=view,
@@ -153,7 +163,7 @@ class ThumbnailReview:
 
         return pages_to_send
 
-    async def send(self, ctx: discord.ApplicationContext) -> None:
+    async def send(self, ctx: ValentinaContext) -> None:
         """Send the paginator."""
         if not self.thumbnails:
             await self.ctx.respond(

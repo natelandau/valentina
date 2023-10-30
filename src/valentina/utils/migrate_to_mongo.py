@@ -8,6 +8,7 @@ from valentina.constants import (
     PermissionsGrantXP,
     PermissionsKillCharacter,
     PermissionsManageTraits,
+    RollResultType,
     TraitCategory,
 )
 from valentina.models.mongo_collections import (
@@ -23,6 +24,7 @@ from valentina.models.mongo_collections import (
     Guild,
     GuildChannels,
     GuildPermissions,
+    GuildRollResultThumbnail,
     User,
     UserMacro,
 )
@@ -37,6 +39,7 @@ from valentina.models.sqlite_models import Guild as SqliteGuild
 from valentina.models.sqlite_models import GuildUser as SqliteUser
 from valentina.models.sqlite_models import Macro as SqliteMacro
 from valentina.models.sqlite_models import MacroTrait as SqliteMacroTrait
+from valentina.models.sqlite_models import RollThumbnail as SqliteRollThumbnail
 from valentina.utils.helpers import get_max_trait_value
 
 
@@ -86,6 +89,19 @@ class Migrate:
                 storyteller=sqlguild.data.get("storyteller_channel_id", None),
             )
 
+            # Get roll thumbnails
+            roll_thumbnails = [
+                GuildRollResultThumbnail(
+                    url=thumbnail.url,
+                    roll_type=RollResultType[thumbnail.roll_type],
+                    user=SqliteUser.get(SqliteUser.id == thumbnail.user).user,
+                    date_created=datetime.strptime(thumbnail.created, "%Y-%m-%d %H:%M:%S%z"),
+                )
+                for thumbnail in SqliteRollThumbnail.select().where(
+                    SqliteRollThumbnail.guild == sqlguild
+                )
+            ]
+
             # Create mongo guild object
             mongo_guild = Guild(
                 id=sqlguild.id,
@@ -94,6 +110,7 @@ class Migrate:
                 date_created=datetime.strptime(sqlguild.created, "%Y-%m-%d %H:%M:%S%z"),
                 permissions=permissions,
                 channels=channels,
+                roll_result_thumbnails=roll_thumbnails,
             )
 
             # insert guild into mongo
@@ -137,21 +154,18 @@ class Migrate:
                     number=sqlchapter.chapter_number,
                     date_created=datetime.strptime(sqlchapter.created, "%Y-%m-%d %H:%M:%S%z"),
                 )
-                # await chapter.insert()
                 mongo_campaign.chapters.append(chapter)
 
             for npc in SqliteCampaignNPC.select().where(SqliteCampaignNPC.campaign == sqlcampaign):
                 new_npc = CampaignNPC(
                     description=npc.description, name=npc.name, npc_class=npc.npc_class
                 )
-                # await new_npc.insert()
                 mongo_campaign.npcs.append(new_npc)
 
             for note in SqliteCampaignNote.select().where(
                 SqliteCampaignNote.campaign == sqlcampaign
             ):
                 new_note = CampaignNote(description=note.description, name=note.name)
-                # await new_note.insert()
                 mongo_campaign.notes.append(new_note)
             await mongo_campaign.save()
 

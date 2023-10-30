@@ -27,6 +27,7 @@ from valentina.constants import (
     PermissionsGrantXP,
     PermissionsKillCharacter,
     PermissionsManageTraits,
+    RollResultType,
     TraitCategory,
     VampireClan,
 )
@@ -42,6 +43,15 @@ def time_now() -> datetime:
 
 
 # #### Sub-Documents
+
+
+class GuildRollResultThumbnail(BaseModel):
+    """Represents a thumbnail for a roll result as a subdocument attached to a Guild."""
+
+    url: str
+    roll_type: RollResultType
+    user: int
+    date_created: datetime = Field(default_factory=time_now)
 
 
 class GuildPermissions(BaseModel):
@@ -170,6 +180,7 @@ class Guild(Document):
     date_modified: datetime = Field(default_factory=time_now)
     name: str
     permissions: GuildPermissions = GuildPermissions()
+    roll_result_thumbnails: list[GuildRollResultThumbnail] = Field(default_factory=list)
 
     @before_event(Insert, Replace, Save, Update, SaveChanges)
     async def update_modified_date(self) -> None:
