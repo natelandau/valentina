@@ -34,8 +34,6 @@ from valentina.models.sqlite_models import (
     VampireClan,
 )
 
-# from valentina.utils.db_initialize import MigrateDatabase, PopulateDatabase
-
 p = inflect.engine()
 
 

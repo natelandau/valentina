@@ -286,6 +286,24 @@ class Guild(Document):
 
         await self.save()
 
+    async def add_roll_result_thumb(
+        self, ctx: discord.ApplicationContext, roll_type: RollResultType, url: str
+    ) -> None:
+        """Add a roll result thumbnail to the database."""
+        for thumb in self.roll_result_thumbnails:
+            if thumb.url == url:
+                msg = "That thumbnail already exists"
+                raise errors.ValidationError(msg)
+
+        self.roll_result_thumbnails.append(
+            GuildRollResultThumbnail(url=url, roll_type=roll_type, user=ctx.author.id)
+        )
+        await self.save()
+
+        logger.info(
+            f"DATABASE: Add '{RollResultType.name}' roll result thumbnail for '{ctx.guild.name}'"
+        )
+
 
 class User(Document):
     """Represents a user in the database."""

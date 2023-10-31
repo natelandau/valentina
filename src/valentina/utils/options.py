@@ -23,7 +23,6 @@ from valentina.models.mongo_collections import (
     Guild,
     User,
 )
-from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.helpers import truncate_string
 

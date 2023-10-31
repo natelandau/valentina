@@ -6,7 +6,6 @@ from datetime import datetime
 import aiohttp
 from discord.ext import commands
 from discord.ext.commands import BadArgument, Converter
-from peewee import DoesNotExist, fn
 
 from valentina.constants import (
     VALID_IMAGE_EXTENSIONS,
@@ -22,13 +21,6 @@ from valentina.models.mongo_collections import (
     CharacterSheetSection,
     CharacterTrait,
     User,
-    UserMacro,
-)
-from valentina.models.sqlite_models import (
-    # Campaign,
-    # Character,
-    CustomTrait,
-    Macro,
 )
 from valentina.utils import errors
 
@@ -86,9 +78,7 @@ class ValidCharClass(Converter):
 class ValidCharacterConcept(Converter):
     """A converter that converts a character concept name to a CharacterConcept enum."""
 
-    async def convert(
-        self, ctx: commands.Context, argument: str
-    ) -> CharacterConcept:  # noqa: ARG002
+    async def convert(self, ctx: commands.Context, argument: str) -> CharacterConcept:
         """Validate and normalize character concepts."""
         try:
             return CharacterConcept[argument]
@@ -253,17 +243,6 @@ class ValidYYYYMMDD(Converter):
 
         msg = f"`{argument}` is not a valid trait"
         raise BadArgument(msg)
-
-
-class ValidMacroFromID(Converter):
-    """A converter that ensures a requested macro is valid."""
-
-    async def convert(self, ctx: commands.Context, argument: str) -> Macro:  # noqa: ARG002
-        """Convert a macro id to a Macro object."""
-        try:
-            return Macro.get_by_id(int(argument))
-        except DoesNotExist as e:
-            raise errors.DatabaseError from e
 
 
 class ValidTraitOrCustomTrait(Converter):

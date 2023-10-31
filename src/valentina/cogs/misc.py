@@ -9,18 +9,19 @@ import semver
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import DiceType, EmbedColor
+from valentina.constants import DiceType, EmbedColor, RollResultType
 from valentina.models import Probability, Statistics
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.models.mongo_collections import Character, Guild, User
-from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
+from valentina.utils.converters import ValidImageURL
 from valentina.utils.helpers import fetch_random_name
 from valentina.utils.options import (
     select_changelog_version_1,
     select_changelog_version_2,
     select_country,
 )
+from valentina.views import confirm_action
 
 p = inflect.engine()
 
@@ -363,6 +364,40 @@ Roll Macros      : {num_macros}
             ),
             ephemeral=True,
         )
+
+    @commands.slash_command(
+        name="add_roll_result_image", description="Add images to roll result embeds"
+    )
+    async def upload_thumbnail(
+        self,
+        ctx: ValentinaContext,
+        roll_type: Option(
+            str,
+            description="Type of roll to add the image to",
+            required=True,
+            choices=[roll_type.name.title() for roll_type in RollResultType],
+        ),
+        url: Option(ValidImageURL, description="URL to the image", required=True),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Add a roll result thumbnail to the bot."""
+        title = f"Add roll result image for {roll_type.title()}\n{url}"
+        is_confirmed, confirmation_response_msg = await confirm_action(
+            ctx, title, hidden=hidden, image=url
+        )
+
+        if not is_confirmed:
+            return
+
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        await guild.add_roll_result_thumb(ctx, RollResultType[roll_type.upper()], url)
+
+        await ctx.post_to_audit_log(title)
+        await confirmation_response_msg
 
 
 def setup(bot: Valentina) -> None:

@@ -2,9 +2,8 @@
 """Custom Types for Valentina."""
 from typing import TypedDict
 
+
 ### TypedDicts ###
-
-
 class HunterCreedDict(TypedDict):
     """Type for Hunter Creed sub-dictionary."""
 
@@ -44,35 +43,7 @@ class CharSheetSectionDict(TypedDict):
     order: int
 
 
-class CharacterConceptDict(TypedDict):
-    """Type for concept info Enum."""
-
-    abilities: list[dict[str, str | int | list[tuple[str, str | int]]]]
-    ability_specialty: "CharClass"  # noqa: F821 # type: ignore
-    attribute_specialty: "CharClass"  # noqa: F821 # type: ignore
-    description: str
-    examples: str
-    name: str
-    num_abilities: int
-    range: tuple[int, int]
-    specific_abilities: list[str]
-
-
 class RNGSpecialtyDict(TypedDict):
     """Type for RNG specialty sub-dictionary."""
 
     traits: list[str]
-
-
-class VampireClanDict(TypedDict):
-    """Type for vampire clan sub-dictionary."""
-
-    name: str
-    disciplines: list[str]
-
-
-class CharGenCategoryDict(TypedDict):
-    """Type for character generation category sub-dictionary used in CharacterTraitRandomizer."""
-
-    total_dots: int
-    category: str

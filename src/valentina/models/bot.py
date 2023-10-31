@@ -23,10 +23,6 @@ from valentina.constants import (
 )
 from valentina.models.mongo_collections import (
     Campaign,
-    CampaignChapter,
-    CampaignExperience,
-    CampaignNote,
-    CampaignNPC,
     Character,
     CharacterTrait,
     GlobalProperty,
@@ -34,7 +30,6 @@ from valentina.models.mongo_collections import (
     RollProbability,
     RollStatistic,
     User,
-    UserMacro,
 )
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
