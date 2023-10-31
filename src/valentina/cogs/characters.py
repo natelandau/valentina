@@ -6,6 +6,7 @@ import discord
 import inflect
 from discord.commands import Option
 from discord.ext import commands
+from loguru import logger
 
 from valentina.characters import AddFromSheetWizard, CharGenWizard
 from valentina.constants import (
@@ -17,13 +18,7 @@ from valentina.constants import (
 )
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import (
-    Campaign,
-    Character,
-    CharacterSheetSection,
-    Guild,
-    User,
-)
+from valentina.models.mongo_collections import Character, CharacterSheetSection, User
 from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterName,
@@ -133,6 +128,9 @@ class CharactersCog(commands.Cog, name="Character"):
 
         wizard = AddFromSheetWizard(ctx, character=character, user=user)
         await wizard.begin_chargen()
+
+        await ctx.post_to_audit_log(f"Created player character: `{character.name}`")
+        logger.info(f"CHARACTER: Create player character {character.name}")
 
     @chars.command(name="create", description="Create a new randomized character")
     async def create_character(

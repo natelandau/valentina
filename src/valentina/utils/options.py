@@ -117,9 +117,9 @@ async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionCh
     """
     # Filter and return character class names
     return [
-        OptionChoice(c.value["name"], c.name)
+        OptionChoice(c.name.title(), c.name)
         for c in CharacterConcept
-        if c.value["name"] and c.value["name"].lower().startswith(ctx.options["concept"].lower())
+        if c.name and c.name.lower().startswith(ctx.options["concept"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -442,16 +442,16 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
     Returns:
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
-    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-
     # Prepare character data
     all_chars = [
         (
             f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
             character.id,
         )
-        for character in user_object.all_characters(ctx.interaction.guild)
-        if character.type_storyteller
+        async for character in Character.find_many(
+            Character.guild == ctx.interaction.guild.id,
+            Character.type_storyteller == True,  # noqa: E712
+        )
     ]
 
     # Generate options

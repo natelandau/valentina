@@ -86,7 +86,9 @@ class ValidCharClass(Converter):
 class ValidCharacterConcept(Converter):
     """A converter that converts a character concept name to a CharacterConcept enum."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> CharacterConcept:
+    async def convert(
+        self, ctx: commands.Context, argument: str
+    ) -> CharacterConcept:  # noqa: ARG002
         """Validate and normalize character concepts."""
         try:
             return CharacterConcept[argument]
@@ -130,7 +132,7 @@ class ValidCharacterName(Converter):
 
 
 class ValidCharacterObject(Converter):
-    """A converter that ensures a character exists."""
+    """A converter that returns a Character object from the database.from it's id."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> Character:  # noqa: ARG002
         """Return a character object from a character id."""
