@@ -5,6 +5,7 @@ import discord
 from discord.ui import Button
 
 from valentina.constants import Emoji, TraitCategory
+from valentina.models.bot import ValentinaContext
 from valentina.models.mongo_collections import Character, CharacterTrait
 
 
@@ -13,7 +14,7 @@ class SelectTraitCategoryButtons(discord.ui.View):
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Character,
     ):
         super().__init__(timeout=300)
@@ -77,7 +78,7 @@ class SelectCharacterTraitButtons(discord.ui.View):
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         traits: list[CharacterTrait],
         not_maxed_only: bool = False,
     ):

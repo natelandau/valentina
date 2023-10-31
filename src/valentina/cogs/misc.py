@@ -112,6 +112,26 @@ Storyteller Characters: {storyteller_characters}
         )
         await ctx.respond(embed=embed, ephemeral=hidden)
 
+    @commands.slash_command(description="View roll statistics")
+    async def statistics(
+        self,
+        ctx: ValentinaContext,
+        member: Option(discord.Member, required=False),
+        hidden: Option(
+            bool,
+            description="Make the statistics only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Display roll statistics for the guild or a specific user."""
+        stats = Statistics(ctx)
+        if member:
+            embed = await stats.user_statistics(member, as_embed=True)
+        else:
+            embed = await stats.guild_statistics(as_embed=True)
+
+        await ctx.respond(embed=embed, ephemeral=hidden)
+
     @commands.slash_command(name="probability", description="Calculate the probability of a roll")
     async def probability(
         self,

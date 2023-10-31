@@ -102,7 +102,7 @@ class CharactersCog(commands.Cog, name="Character"):
 
         Args:
             char_class (CharClass): The character's class
-            ctx (discord.ApplicationContext): The context of the command
+            ctx (ValentinaContext): The context of the command
             first_name (str): The character's first name
             last_name (str, optional): The character's last name. Defaults to None.
             nickname (str, optional): The character's nickname. Defaults to None.

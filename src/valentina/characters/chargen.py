@@ -49,7 +49,7 @@ class CharacterPickerButtons(discord.ui.View):
     """Manage buttons for selecting a character in the CharGenWizard paginator.
 
     Args:
-        ctx (discord.ApplicationContext): The context of the Discord application.
+        ctx (ValentinaContext): The context of the Discord application.
         characters (list[Character]): List of characters to choose from.
 
     Attributes:
@@ -59,7 +59,7 @@ class CharacterPickerButtons(discord.ui.View):
         cancelled (bool): Whether the selection was cancelled.
     """
 
-    def __init__(self, ctx: discord.ApplicationContext, characters: list[Character]):
+    def __init__(self, ctx: ValentinaContext, characters: list[Character]):
         super().__init__(timeout=3000)
         self.ctx = ctx
         self.characters = characters
@@ -191,7 +191,7 @@ class UpdateCharacterButtons(discord.ui.View):
     """Manage buttons for updating a character's attributes.
 
     Args:
-        ctx (discord.ApplicationContext): The context of the Discord application.
+        ctx (ValentinaContext): The context of the Discord application.
         character (Character): The character to update.
         author (Union[discord.User, discord.Member, None]): The author of the interaction.
 
@@ -284,7 +284,7 @@ class FreebiePointsButtons(discord.ui.View):
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Character,
     ):
         super().__init__()
@@ -985,7 +985,7 @@ class CharGenWizard:
     """Guide the user through a step-by-step character generation process.
 
     Args:
-        ctx (discord.ApplicationContext): The context of the Discord application.
+        ctx (ValentinaContext): The context of the Discord application.
         campaign (Campaign): The campaign for which the character is being created.
         user (GuildUser): The user who is creating the character.
         hidden (bool, optional): Whether the interaction is hidden. Defaults to True.

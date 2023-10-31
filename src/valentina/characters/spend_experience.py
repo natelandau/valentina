@@ -11,6 +11,7 @@ from valentina.constants import (
     TraitCategory,
     XPMultiplier,
 )
+from valentina.models.bot import ValentinaContext
 from valentina.models.mongo_collections import Character, CharacterTrait
 from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
 
@@ -24,7 +25,7 @@ class SpendFreebiePoints(discord.ui.View):
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Character,
     ):
         self.ctx = ctx

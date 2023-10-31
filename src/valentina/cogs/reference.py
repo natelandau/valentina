@@ -8,7 +8,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.models.bot import Valentina
+from valentina.models.bot import Valentina, ValentinaContext
 from valentina.models.statistics import Statistics
 from valentina.views import present_embed
 
@@ -21,30 +21,10 @@ class Reference(commands.Cog):
 
     reference = discord.SlashCommandGroup("reference", "Get information about the game")
 
-    @reference.command(description="View roll statistics")
-    async def statistics(
-        self,
-        ctx: discord.ApplicationContext,
-        member: Option(discord.Member, required=False),
-        hidden: Option(
-            bool,
-            description="Make the statistics only visible to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Display roll statistics for the guild or a specific user."""
-        stats = Statistics(ctx)
-        if member:
-            embed = await stats.user_statistics(member, as_embed=True)
-        else:
-            embed = await stats.guild_statistics(as_embed=True)
-
-        await ctx.respond(embed=embed, ephemeral=hidden)
-
     @reference.command(description="See health levels")
     async def health(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response only visible to you (default true).",
@@ -78,7 +58,7 @@ class Reference(commands.Cog):
     @reference.command(description="See health levels")
     async def xp(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response only visible to you (default true).",
@@ -119,7 +99,7 @@ class Reference(commands.Cog):
     @reference.command(description="Disciplines")
     async def disciplines(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response only visible to you (default true).",
@@ -204,7 +184,7 @@ class Reference(commands.Cog):
     @reference.command(description="Spheres")
     async def magic(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response only visible to you (default true).",
@@ -233,7 +213,7 @@ class Reference(commands.Cog):
     @reference.command(name="thaumaturgy", description="Thaumaturgy")
     async def thaumaturgy(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response only visible to you (default true).",

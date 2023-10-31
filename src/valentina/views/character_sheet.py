@@ -243,7 +243,7 @@ async def show_sheet(
 
 
 async def sheet_embed(
-    ctx: discord.ApplicationContext,
+    ctx: ValentinaContext,
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,

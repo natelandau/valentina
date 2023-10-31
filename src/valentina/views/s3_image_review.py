@@ -153,7 +153,7 @@ class S3ImageReview:
 
         return pages_to_send
 
-    async def send(self, ctx: discord.ApplicationContext) -> None:
+    async def send(self, ctx: ValentinaContext) -> None:
         """Send the paginator."""
         if not self.images:
             await self.ctx.respond(

@@ -23,7 +23,7 @@ class Probability:
         """Initialize the Probability class.
 
         Args:
-            ctx (discord.ApplicationContext): Context for the discord app.
+            ctx (ValentinaContext): Context for the discord app.
             pool (int): Pool of dice.
             difficulty (int): Difficulty level.
             dice_size (int): Size of the dice.

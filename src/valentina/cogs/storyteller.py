@@ -16,7 +16,7 @@ from valentina.constants import (
     DiceType,
     EmbedColor,
 )
-from valentina.models.bot import Valentina
+from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.converters import (
     ValidCharacterConcept,
     ValidCharacterLevel,
@@ -87,7 +87,7 @@ class StoryTeller(commands.Cog):
     @character.command(name="create_full", description="Create a full npc character")
     async def create_story_char(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         char_class: Option(
             ValidCharClass,
             name="char_class",
@@ -160,7 +160,7 @@ class StoryTeller(commands.Cog):
     @character.command(name="create_rng", description="Create a random new npc character")
     async def create_rng_char(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         gender: Option(
             str,
             name="gender",
@@ -255,7 +255,7 @@ class StoryTeller(commands.Cog):
     @character.command(name="list", description="List all characters")
     async def list_characters(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
     ) -> None:
         """List all storyteller characters."""
         characters = self.bot.char_svc.fetch_all_storyteller_characters(ctx)
@@ -296,7 +296,7 @@ class StoryTeller(commands.Cog):
     @character.command(name="update", description="Update a storyteller character")
     async def update_storyteller_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to update",
@@ -353,7 +353,7 @@ class StoryTeller(commands.Cog):
     @character.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to view",
@@ -367,7 +367,7 @@ class StoryTeller(commands.Cog):
     @character.command(name="delete", description="Delete a storyteller character")
     async def delete_storyteller_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to delete",
@@ -395,7 +395,7 @@ class StoryTeller(commands.Cog):
     @character.command(name="add_trait", description="Add a trait to a storyteller character")
     async def add_custom_trait(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to delete",
@@ -447,7 +447,7 @@ class StoryTeller(commands.Cog):
     @character.command(name="image_add", description="Add an image to a storyteller character")
     async def add_image(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to add the image to",
@@ -526,7 +526,7 @@ class StoryTeller(commands.Cog):
     )
     async def delete_image(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to delete the image from",
@@ -566,7 +566,7 @@ class StoryTeller(commands.Cog):
     )
     async def transfer_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to transfer",
@@ -597,7 +597,7 @@ class StoryTeller(commands.Cog):
     @player.command(name="update", description="Update a player character")
     async def update_player_character(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to update",
@@ -644,7 +644,7 @@ class StoryTeller(commands.Cog):
     @roll.command(name="roll_traits", description="Roll traits for a character")
     async def roll_traits(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to roll traits for",

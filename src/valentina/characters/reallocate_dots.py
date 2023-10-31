@@ -4,6 +4,7 @@ from typing import cast
 import discord
 
 from valentina.constants import EmbedColor, Emoji, TraitCategory
+from valentina.models.bot import ValentinaContext
 from valentina.models.mongo_collections import Character, CharacterTrait
 from valentina.views import IntegerButtons
 
@@ -21,7 +22,7 @@ class DotsReallocationWizard:
     - Executing the reallocation and updating the character's trait values.
     """
 
-    def __init__(self, ctx: discord.ApplicationContext, character: Character):
+    def __init__(self, ctx: ValentinaContext, character: Character):
         self.ctx = ctx
         self.character = character
 

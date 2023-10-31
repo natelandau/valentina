@@ -6,10 +6,11 @@ from typing import Any
 import discord
 
 from valentina.constants import EmbedColor
+from valentina.models.bot import ValentinaContext
 
 
 async def error_log_embed(
-    ctx: discord.ApplicationContext | discord.Interaction, msg: str, error: Exception
+    ctx: ValentinaContext | discord.Interaction, msg: str, error: Exception
 ) -> discord.Embed:
     """Create an embed for logging errors.
 
@@ -26,7 +27,7 @@ async def error_log_embed(
 
     # If we can, we use the command name to try to pinpoint where the error
     # took place. The stack trace usually makes this clear, but not always!
-    if isinstance(ctx, discord.ApplicationContext):
+    if isinstance(ctx, ValentinaContext):
         command_name = ctx.command.qualified_name.upper()
     else:
         command_name = "INTERACTION"
@@ -52,11 +53,11 @@ async def error_log_embed(
     return embed
 
 
-def user_error_embed(ctx: discord.ApplicationContext, msg: str, error: str) -> discord.Embed:
+def user_error_embed(ctx: ValentinaContext, msg: str, error: str) -> discord.Embed:
     """Create an embed for user errors.
 
     Args:
-        ctx (discord.ApplicationContext): The context of the command.
+        ctx (ValentinaContext): The context of the command.
         msg (str): The message to display in the embed.
         error (str): The error to display in the embed.
 
@@ -75,7 +76,7 @@ def user_error_embed(ctx: discord.ApplicationContext, msg: str, error: str) -> d
 
 
 async def present_embed(
-    ctx: discord.ApplicationContext,
+    ctx: ValentinaContext,
     title: str = "",
     description: str = "",
     footer: str | None = None,

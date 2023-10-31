@@ -129,7 +129,7 @@ class SettingsChannelSelect(discord.ui.View):
     Permissions are a tuple of (default, player, storyteller) permissions taken from constants.CHANNEL_PERMISSIONS.
 
     Attributes:
-        ctx (discord.ApplicationContext): The application context for the command invocation.
+        ctx (ValentinaContext): The application context for the command invocation.
         key (str): The database key for storing the channel ID.
         permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]):
             A tuple containing permissions for various roles.
