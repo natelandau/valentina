@@ -1,11 +1,9 @@
 """Compute and display statistics."""
 
 import discord
-from loguru import logger
-from peewee import fn
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models.sqlite_models import Character, GuildUser, RollStatistic
+from valentina.models.mongo_collections import Character, RollStatistic
 
 
 class Statistics:
@@ -14,12 +12,8 @@ class Statistics:
     def __init__(
         self,
         ctx: discord.ApplicationContext,
-        user: discord.Member = None,
-        character: Character | None = None,
     ) -> None:
         self.ctx = ctx
-        self.user = user
-        self.character = character
         self.botches = 0
         self.successes = 0
         self.failures = 0
@@ -28,78 +22,9 @@ class Statistics:
         self.average_difficulty = 0
         self.average_pool = 0
         self.title = "Roll Statistics"
+        self.thumbnail = ""
 
-        # Pull statistics
-        if self.user:
-            db_user = GuildUser.get_or_none(user=self.user.id, guild=self.ctx.guild.id)
-            self._pull_statistics("user", db_user.id)
-            self.title += f" for `{self.user.display_name}`"
-            self.thumbnail = self.user.display_avatar.url
-        elif self.character:
-            self._pull_statistics("character", self.character)
-            self.title += f" for `{self.character.name}`"
-            self.thumbnail = ""
-        else:
-            self._pull_statistics("guild", self.ctx.guild.id)
-            self.title += f" for guild `{self.ctx.guild.name}`"
-            self.thumbnail = self.ctx.guild.icon or ""
-
-    def _pull_statistics(self, field_name: str, value: int) -> None:
-        """Pull statistics from the database based on the given field and value."""
-        # Initialize counts
-        statistics = {}
-
-        for result_type in RollResultType:
-            statistics[result_type.name] = 0
-
-        # Determine the field to filter on
-        filter_field = getattr(RollStatistic, field_name)
-
-        # Confirm there are statistics to pull
-        if not RollStatistic.select().where(filter_field == value).exists():
-            logger.debug(f"No statistics found for `{field_name}: {value}`")
-            return
-
-        # Query for all statistics for the specific field and value
-        logger.debug(f"Pulling statistics for `{field_name}: {value}`")
-        query = (
-            RollStatistic.select(
-                RollStatistic.result, fn.COUNT(RollStatistic.result).alias("count")
-            )
-            .where(filter_field == value)
-            .group_by(RollStatistic.result)
-        )
-
-        # Update counts based on query results
-        for stat in query:
-            statistics[stat.result] = stat.count
-
-        self.botches = statistics[RollResultType.BOTCH.name]
-        self.successes = statistics[RollResultType.SUCCESS.name]
-        self.failures = statistics[RollResultType.FAILURE.name]
-        self.criticals = statistics[RollResultType.CRITICAL.name]
-        self.other = statistics[RollResultType.OTHER.name]
-
-        # Query for average difficulty and pool
-        self.average_difficulty = round(
-            RollStatistic.select(fn.AVG(RollStatistic.difficulty).alias("average_difficulty"))
-            .where(filter_field == value)
-            .scalar()
-        )
-        self.average_pool = round(
-            RollStatistic.select(fn.AVG(RollStatistic.pool).alias("average_pool"))
-            .where(filter_field == value)
-            .scalar()
-        )
-
-        # Calculate total rolls
-        self.total_rolls = (
-            self.botches + self.successes + self.failures + self.criticals + self.other
-        )
-        logger.debug(f"Total rolls: {self.total_rolls}")
-        return
-
-    def get_text(self, with_title: bool = True, with_help: bool = True) -> str:
+    def _get_text(self, with_title: bool = True, with_help: bool = True) -> str:
         """Return a string with the statistics.
 
         Args:
@@ -139,7 +64,7 @@ Average Pool Size: {'.':.<{25 - 18}} {self.average_pool}
 """
         return msg
 
-    async def get_embed(self) -> discord.Embed:
+    async def _get_embed(self, with_title: bool = True, with_help: bool = True) -> discord.Embed:
         """Return an embed with the statistics.
 
         Returns:
@@ -147,7 +72,7 @@ Average Pool Size: {'.':.<{25 - 18}} {self.average_pool}
         """
         embed = discord.Embed(
             title="",
-            description=self.get_text(),
+            description=self._get_text(with_title=with_title, with_help=with_help),
             color=EmbedColor.INFO.value,
             timestamp=discord.utils.utcnow(),
         )
@@ -157,3 +82,192 @@ Average Pool Size: {'.':.<{25 - 18}} {self.average_pool}
             icon_url=self.ctx.author.display_avatar.url,
         )
         return embed
+
+    async def guild_statistics(
+        self, as_embed: bool = False, with_title: bool = True, with_help: bool = True
+    ) -> discord.Embed | str:
+        """Compute and display guild statistics.
+
+        Args:
+            as_embed (bool, optional): Whether to return an embed. Defaults to False. When False, returns a string.
+            with_title (bool, optional): Whether to include the title. Defaults to True.
+            with_help (bool, optional): Whether to include the help text. Defaults to True.
+
+        Returns:
+            discord.Embed | str: Embed or string with the statistics.
+        """
+        self.title = f"Roll statistics for guild `{self.ctx.guild.name}`"
+        self.thumbnail = self.ctx.guild.icon.url if self.ctx.guild.icon else ""
+
+        # Grab the data from the database
+        self.botches = await RollStatistic.find(
+            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.result == RollResultType.BOTCH,
+        ).count()
+        self.successes = await RollStatistic.find(
+            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.result == RollResultType.SUCCESS,
+        ).count()
+        self.criticals = await RollStatistic.find(
+            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.result == RollResultType.CRITICAL,
+        ).count()
+        self.failures = await RollStatistic.find(
+            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.result == RollResultType.FAILURE,
+        ).count()
+        self.other = await RollStatistic.find(
+            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.result == RollResultType.OTHER,
+        ).count()
+
+        avg_diff = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+            RollStatistic.difficulty
+        )
+        if avg_diff:
+            self.average_difficulty = round(avg_diff)
+
+        avg_pool = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+            RollStatistic.pool
+        )
+        if avg_pool:
+            self.average_pool = round(avg_pool)
+
+        # Calculate total rolls
+        self.total_rolls = (
+            self.botches + self.successes + self.failures + self.criticals + self.other
+        )
+
+        if as_embed:
+            return await self._get_embed(with_title=with_title, with_help=with_help)
+
+        return self._get_text(with_title=with_title, with_help=with_help)
+
+    async def user_statistics(
+        self,
+        user: discord.Member,
+        as_embed: bool = False,
+        with_title: bool = True,
+        with_help: bool = True,
+    ) -> discord.Embed | str:
+        """Compute and display user statistics.
+
+        Args:
+            user (discord.Member): The user to get statistics for.
+            as_embed (bool, optional): Whether to return an embed. Defaults to False. When False, returns a string.
+            with_title (bool, optional): Whether to include the title. Defaults to True.
+            with_help (bool, optional): Whether to include the help text. Defaults to True.
+
+        Returns:
+            discord.Embed | str: Embed or string with the statistics.
+        """
+        self.title = f"Roll statistics for @{user.display_name}"
+        self.thumbnail = user.display_avatar.url
+
+        # Grab the data from the database
+        self.botches = await RollStatistic.find(
+            RollStatistic.user == user.id,
+            RollStatistic.result == RollResultType.BOTCH,
+        ).count()
+        self.successes = await RollStatistic.find(
+            RollStatistic.user == user.id,
+            RollStatistic.result == RollResultType.SUCCESS,
+        ).count()
+        self.criticals = await RollStatistic.find(
+            RollStatistic.user == user.id,
+            RollStatistic.result == RollResultType.CRITICAL,
+        ).count()
+        self.failures = await RollStatistic.find(
+            RollStatistic.user == user.id,
+            RollStatistic.result == RollResultType.FAILURE,
+        ).count()
+        self.other = await RollStatistic.find(
+            RollStatistic.user == user.id,
+            RollStatistic.result == RollResultType.OTHER,
+        ).count()
+
+        avg_diff = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+            RollStatistic.difficulty
+        )
+        if avg_diff:
+            self.average_difficulty = round(avg_diff)
+
+        avg_pool = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+            RollStatistic.pool
+        )
+        if avg_pool:
+            self.average_pool = round(avg_pool)
+
+        # Calculate total rolls
+        self.total_rolls = (
+            self.botches + self.successes + self.failures + self.criticals + self.other
+        )
+
+        if as_embed:
+            return await self._get_embed(with_title=with_title, with_help=with_help)
+
+        return self._get_text(with_title=with_title, with_help=with_help)
+
+    async def character_statistics(
+        self,
+        character: Character,
+        as_embed: bool = False,
+        with_title: bool = True,
+        with_help: bool = True,
+    ) -> discord.Embed | str:
+        """Compute and display character statistics.
+
+        Args:
+            character (Character): The character to get statistics for.
+            as_embed (bool, optional): Whether to return an embed. Defaults to False. When False, returns a string.
+            with_title (bool, optional): Whether to include the title. Defaults to True.
+            with_help (bool, optional): Whether to include the help text. Defaults to True.
+
+        Returns:
+            discord.Embed | str: Embed or string with the statistics.
+        """
+        self.title = f"Roll statistics for {character.name}"
+
+        # Grab the data from the database
+        self.botches = await RollStatistic.find(
+            RollStatistic.character == str(character.id),
+            RollStatistic.result == RollResultType.BOTCH,
+        ).count()
+        self.successes = await RollStatistic.find(
+            RollStatistic.character == str(character.id),
+            RollStatistic.result == RollResultType.SUCCESS,
+        ).count()
+        self.criticals = await RollStatistic.find(
+            RollStatistic.character == str(character.id),
+            RollStatistic.result == RollResultType.CRITICAL,
+        ).count()
+        self.failures = await RollStatistic.find(
+            RollStatistic.character == str(character.id),
+            RollStatistic.result == RollResultType.FAILURE,
+        ).count()
+        self.other = await RollStatistic.find(
+            RollStatistic.character == str(character.id),
+            RollStatistic.result == RollResultType.OTHER,
+        ).count()
+
+        avg_diff = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+            RollStatistic.difficulty
+        )
+        if avg_diff:
+            self.average_difficulty = round(avg_diff)
+
+        avg_pool = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+            RollStatistic.pool
+        )
+        if avg_pool:
+            self.average_pool = round(avg_pool)
+
+        # Calculate total rolls
+        self.total_rolls = (
+            self.botches + self.successes + self.failures + self.criticals + self.other
+        )
+
+        if as_embed:
+            return await self._get_embed(with_title=with_title, with_help=with_help)
+
+        return self._get_text(with_title=with_title, with_help=with_help)

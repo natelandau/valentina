@@ -44,6 +44,7 @@ logging.getLogger("discord.gateway").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_
 logging.getLogger("discord.webhook").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
 logging.getLogger("discord.client").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
 logging.getLogger("peewee").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_DB"].upper())
+logging.getLogger("faker.factory").setLevel(level="ERROR")
 for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
     logging.getLogger(service).setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_AWS"].upper())
 

@@ -11,8 +11,8 @@ from discord.ext import commands
 
 from valentina.constants import DiceType, EmbedColor
 from valentina.models import Probability, Statistics
-from valentina.models.bot import Valentina
-from valentina.models.sqlite_models import Character, Macro
+from valentina.models.bot import Valentina, ValentinaContext
+from valentina.models.mongo_collections import Character, Guild, User
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.helpers import fetch_random_name
@@ -34,7 +34,7 @@ class Misc(commands.Cog):
     @commands.slash_command(name="server_info", description="View information about the server")
     async def server_info(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the probability only visible to you (default False)",
@@ -42,17 +42,21 @@ class Misc(commands.Cog):
         ),
     ) -> None:
         """View information about the server."""
+        # Load db objects
+        guild = await Guild.get(ctx.guild.id)
+
         # Compute data
         created_on = arrow.get(ctx.guild.created_at)
-        player_characters = self.bot.char_svc.fetch_all_player_characters(ctx)
-        storyteller_characters = self.bot.char_svc.fetch_all_storyteller_characters(ctx)
-        num_characters = len(player_characters) + len(storyteller_characters)
-        campaigns = self.bot.campaign_svc.fetch_all(ctx)
-        num_campaigns = len(campaigns)
-        try:
-            active_campaign = self.bot.campaign_svc.fetch_active(ctx)
-        except errors.NoActiveCampaignError:
-            active_campaign = None
+        player_characters = await Character.find(
+            Character.guild == ctx.guild.id,
+            Character.type_player == True,  # noqa: E712
+        ).count()
+        storyteller_characters = await Character.find(
+            Character.guild == ctx.guild.id,
+            Character.type_storyteller == True,  # noqa: E712
+        ).count()
+        num_campaigns = len(guild.campaigns)
+        active_campaign = await ctx.fetch_active_campaign(raise_error=False)
         roll_stats = Statistics(ctx)
 
         # Build the Embed
@@ -87,9 +91,9 @@ Active Campaign: {active_campaign.name if active_campaign else 'None'}
             name="Characters",
             value=f"""\
 ```scala
-Total Characters      : {num_characters}
-Player Characters     : {len(player_characters)}
-Storyteller Characters: {len(storyteller_characters)}
+Total Characters      : {player_characters + storyteller_characters}
+Player Characters     : {player_characters}
+Storyteller Characters: {storyteller_characters}
 ```
 """,
             inline=True,
@@ -97,7 +101,9 @@ Storyteller Characters: {len(storyteller_characters)}
 
         embed.add_field(
             name="Roll Statistics",
-            value=roll_stats.get_text(with_title=False, with_help=True),
+            value=await roll_stats.guild_statistics(
+                as_embed=False, with_title=False, with_help=True  # type: ignore [arg-type]
+            ),
             inline=False,
         )
         embed.set_footer(
@@ -109,7 +115,7 @@ Storyteller Characters: {len(storyteller_characters)}
     @commands.slash_command(name="probability", description="Calculate the probability of a roll")
     async def probability(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         pool: discord.Option(int, "The number of dice to roll", required=True),
         difficulty: Option(
             int,
@@ -126,7 +132,7 @@ Storyteller Characters: {len(storyteller_characters)}
 
         Args:
             hidden (bool, optional): Make the statistics only visible to you (default true). Defaults to True.
-            ctx (discord.ApplicationContext): The context of the command
+            ctx (ValentinaContext): The context of the command
             difficulty (int): The difficulty of the roll
             pool (int): The number of dice to roll
         """
@@ -139,7 +145,7 @@ Storyteller Characters: {len(storyteller_characters)}
     @commands.slash_command(name="user_info", description="View information about a user")
     async def user_info(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         user: Option(
             discord.User,
             description="The user to view information for",
@@ -153,21 +159,11 @@ Storyteller Characters: {len(storyteller_characters)}
     ) -> None:
         """View information about a user."""
         target = user or ctx.author
-        db_user = await self.bot.user_svc.fetch_user(ctx=ctx, user=target)
-        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        db_user = await User.get(target.id, fetch_links=True)
+        active_campaign = await ctx.fetch_active_campaign(raise_error=False)
         # Variables for embed
-        num_characters = (
-            Character.select()
-            .where(
-                Character.guild == ctx.guild.id,
-                Character.data["player_character"] == True,  # noqa: E712
-                Character.owned_by == db_user,
-            )
-            .count()
-        )
-        num_macros = (
-            Macro.select().where(Macro.guild == ctx.guild.id, Macro.user == db_user).count()
-        )
+        num_characters = len([x for x in db_user.characters if x.type_player])
+        num_macros = len(db_user.macros)
 
         roles = (
             ", ".join(
@@ -177,14 +173,10 @@ Storyteller Characters: {len(storyteller_characters)}
             )
             or "No roles"
         )
-        roll_stats = Statistics(ctx, user=target)
-        (
-            campaign_xp,
-            campaign_total_xp,
-            lifetime_xp,
-            campaign_cp,
-            lifetime_cp,
-        ) = db_user.fetch_experience(campaign.id)
+        stats_engine = Statistics(ctx)
+        campaign_xp, campaign_total_xp, campaign_cp = db_user.fetch_campaign_xp(active_campaign)
+        lifetime_xp = db_user.lifetime_experience
+        lifetime_cp = db_user.lifetime_cool_points
 
         # Build the Embed
         embed = discord.Embed(
@@ -210,7 +202,7 @@ Roles: {roles}
 Lifetime Experience : {lifetime_xp}
 Lifetime Cool Points: {lifetime_cp}
 
-"{campaign.name}" (active campaign)
+"{active_campaign.name}" (active campaign)
 Available Experience: {campaign_xp}
 Total Earned        : {campaign_total_xp}
 Cool Points         : {campaign_cp}
@@ -230,7 +222,9 @@ Roll Macros      : {num_macros}
         )
         embed.add_field(
             name="Roll Statistics",
-            value=roll_stats.get_text(with_title=False, with_help=False),
+            value=await stats_engine.user_statistics(  # type: ignore [arg-type]
+                target, as_embed=False, with_title=False, with_help=False
+            ),
             inline=False,
         )
         embed.set_thumbnail(url=target.display_avatar.url)
@@ -246,7 +240,7 @@ Roll Macros      : {num_macros}
     @commands.slash_command(name="changelog", description="Display the bot's changelog")
     async def post_changelog(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         oldest_version: Option(str, autocomplete=select_changelog_version_1, required=True),
         newest_version: Option(str, autocomplete=select_changelog_version_2, required=True),
         hidden: Option(
@@ -267,7 +261,7 @@ Roll Macros      : {num_macros}
         await ctx.respond(embed=embed, ephemeral=hidden)
 
     @commands.slash_command(name="coinflip", help="Flip a coin")
-    async def coinflip(self, ctx: discord.ApplicationContext) -> None:
+    async def coinflip(self, ctx: ValentinaContext) -> None:
         """Coinflip!"""
         coin_sides = ["Heads", "Tails"]
         await ctx.respond(
@@ -277,7 +271,7 @@ Roll Macros      : {num_macros}
     @commands.slash_command(name="name_generator", help="Generate a random name")
     async def name_gen(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         gender: Option(
             str,
             name="gender",
@@ -290,13 +284,52 @@ Roll Macros      : {num_macros}
             name="country",
             description="The country for the character's name (default 'US')",
             autocomplete=select_country,
-            default="us",
+            default="en-GB,en-US",
         ),
         number: Option(
             int, name="number", description="The number of names to generate (default 5)", default=5
         ),
     ) -> None:
         """Generate a random name."""
+        # import re
+
+        # from faker import Faker
+
+        # locale = country.split(",")
+
+        # fake = Faker(locale)
+
+        # name_list = []
+        # for _i in range(number):
+        #     if gender == "male":
+        #         if "zh-CN" in locale or "ja-JP" in locale:
+        #             name = fake.romanized_name()
+        #         else:
+        #             name = fake.name_male()
+
+        #     if gender == "female":
+        #         if "zh-CN" in locale or "ja-JP" in locale:
+        #             name = fake.romanized_name()
+        #         else:
+        #             name = fake.name_female()
+
+        #     splitname = name.split(" ")
+        #     if len(splitname) > 2 and re.match(
+        #         r"^(mr|ms|mrs|dr|sr|sir|miss|herr|Univ\.Prof\.|ing\.|Prof\.|dipl\.|lic\.|sig\.|dott\.|Fru)",
+        #         splitname[0],
+        #         re.I,
+        #     ):
+        #         first, last = splitname[1], splitname[2]
+        #     elif (
+        #         len(splitname) > 2
+        #         and re.match(r"^(du|le|de)", splitname[1], re.I)
+        #         and "fr-FR" in locale
+        #     ):
+        #         name, last = splitname[0], f"{splitname[1]} {splitname[2]}"
+        #     else:
+        #         first, last = splitname[0], splitname[1]
+        #     name_list.append(f"- {first.title()} {last.title()}\n")
+
         name_list = [
             f"- {name[0].title()} {name[1].title()}\n"
             for name in await fetch_random_name(gender=gender, country=country, results=number)

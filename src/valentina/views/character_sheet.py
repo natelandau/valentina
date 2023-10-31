@@ -14,6 +14,7 @@ from valentina.constants import (
     TraitCategory,
 )
 from valentina.models.aws import AWSService
+from valentina.models.bot import ValentinaContext
 from valentina.models.mongo_collections import Character, CharacterTrait
 from valentina.models.statistics import Statistics
 from valentina.utils import errors
@@ -142,7 +143,8 @@ def __embed1(  # noqa: C901
     return embed
 
 
-def __embed2(
+async def __embed2(
+    ctx: ValentinaContext,
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
@@ -172,10 +174,13 @@ def __embed2(
                 name=f"__**{section.title.title()}**__", value=section.content, inline=True
             )
 
-    # # stats = Statistics(ctx, character=character)
-    # embed.add_field(
-    #     name="\u200b", value=f"**ROLL STATISTICS**{stats.get_text(with_title=False)}", inline=False
-    # )
+    stats = Statistics(ctx)
+    statistic_text = await stats.character_statistics(character, as_embed=False, with_title=False)
+    embed.add_field(
+        name="\u200b",
+        value=f"**ROLL STATISTICS**\n{statistic_text}",
+        inline=False,
+    )
 
     return embed
 
@@ -207,7 +212,7 @@ def __image_embed(
 
 
 async def show_sheet(
-    ctx: discord.ApplicationContext,
+    ctx: ValentinaContext,
     character: Character,
     ephemeral: Any = False,
     show_footer: bool = True,
@@ -219,7 +224,7 @@ async def show_sheet(
     embeds.extend(
         [
             __embed1(character, owned_by_user, show_footer=show_footer),
-            __embed2(character, owned_by_user, show_footer=show_footer),
+            await __embed2(ctx, character, owned_by_user, show_footer=show_footer),
         ]
     )
 

@@ -714,24 +714,25 @@ class RollProbability(Document):
     """Represents a roll probability in the database."""
 
     # Metadata
-    pool: int
-    difficulty: int
-    dice_size: int
+    pool: Indexed(int)  # type: ignore [valid-type]
+    difficulty: Indexed(int)  # type: ignore [valid-type]
+    dice_size: Indexed(int)  # type: ignore [valid-type]
     created: datetime = Field(default_factory=time_now)
 
     # Results
-    critical_success: float
-    critical_dice: float
-    success: float
-    success_dice: float
-    failure: float
-    failure_dice: float
-    botch: float
-    botch_dice: float
-    n_a: float = 0.0
-    total_failures: float
     total_results: float
+    botch_dice: float
+    success_dice: float
+    failure_dice: float
+    critical_dice: float
     total_successes: float
+    total_failures: float
+    # The name of each value in the RollResultType enum
+    BOTCH: float
+    CRITICAL: float
+    FAILURE: float
+    SUCCESS: float
+    OTHER: float
 
 
 class RollStatistic(Document):
@@ -740,7 +741,7 @@ class RollStatistic(Document):
     user: Indexed(int)  # type: ignore [valid-type]
     guild: Indexed(int)  # type: ignore [valid-type]
     character: Indexed(str) | None = None  # type: ignore [valid-type]
-    result: RollResultType
+    result: RollResultType  # type: ignore [valid-type]
     pool: int
     difficulty: int
     date_rolled: datetime = Field(default_factory=time_now)

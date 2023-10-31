@@ -272,8 +272,18 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
     return [
+        # OptionChoice("English", "en-GB,en-US"),
+        # OptionChoice("German", "de-DE"),
+        # OptionChoice("Spanish", "es-ES,es-MX"),
+        # OptionChoice("French", "fr-FR"),
+        # OptionChoice("Italian", "it-IT"),
+        # OptionChoice("Portuguese", "pt-BR"),
+        # OptionChoice("Scaninavian", "sv-SE,da-DK,no-NO"),
+        # OptionChoice("Turkish", "tr-TR"),
+        # OptionChoice("Chinese", "zh-CN"),
+        # OptionChoice("Japanese", "ja-JP"),
+        # # #####################
         OptionChoice("United States", "us"),
-        OptionChoice("African", "ng,ke,za"),
         OptionChoice("Arabia", "da,mn,ta,jo,tn,ma,eg"),
         OptionChoice("Asian", "cn,jp,kr"),
         OptionChoice("Brazil", "br"),
@@ -287,7 +297,6 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
         OptionChoice("Scaninavia", "nl,se,no,dk,fi"),
         OptionChoice("South American", "ar,cl,co,pe,ve"),
         OptionChoice("Spain", "es"),
-        OptionChoice("Turkey", "tr"),
     ]
 
 

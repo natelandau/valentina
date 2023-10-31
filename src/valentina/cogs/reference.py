@@ -33,8 +33,12 @@ class Reference(commands.Cog):
         ),
     ) -> None:
         """Display roll statistics for the guild or a specific user."""
-        stats = Statistics(ctx) if not member else Statistics(ctx, user=member)
-        embed = await stats.get_embed()
+        stats = Statistics(ctx)
+        if member:
+            embed = await stats.user_statistics(member, as_embed=True)
+        else:
+            embed = await stats.guild_statistics(as_embed=True)
+
         await ctx.respond(embed=embed, ephemeral=hidden)
 
     @reference.command(description="See health levels")
