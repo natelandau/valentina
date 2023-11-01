@@ -82,7 +82,6 @@ class Campaign(Document):
     description: str | None = None
     guild: int
     name: str
-    # FIXME: Decide between Links or objects
     chapters: list[CampaignChapter] = Field(default_factory=list)
     notes: list[CampaignNote] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)

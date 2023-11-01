@@ -51,6 +51,9 @@ async def _init_database(request):
         # when '@pytest.mark.no_db()' is called, this fixture will not run
         yield
     else:
+        # Allow active connections to close
+        await asyncio.sleep(0.02)
+
         # Create Motor client
         client = AsyncIOMotorClient(
             f"{CONFIG['VALENTINA_TEST_MONGO_URI']}/{CONFIG['VALENTINA_TEST_MONGO_DATABASE_NAME']}",

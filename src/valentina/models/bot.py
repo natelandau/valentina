@@ -44,10 +44,6 @@ async def init_database(config: dict) -> None:
         tz_aware=True,
     )
 
-    # FIXME: Drop the database on every startup while in development
-    logger.warning("Dropping database on startup")
-    await client.drop_database(config["VALENTINA_MONGO_DATABASE_NAME"])
-
     # Initialize beanie with the Sample document class and a database
     await init_beanie(
         database=client[config["VALENTINA_MONGO_DATABASE_NAME"]],

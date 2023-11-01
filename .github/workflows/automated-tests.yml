@@ -27,6 +27,8 @@ on:
 env:
     VALENTINA_LOG_FILE: "/tmp/valentina.log"
     VALENTINA_DB_PATH: "/tmp/valentina.sqlite"
+    VALENTINA_TEST_MONGO_URI: "mongodb://localhost:27017"
+    VALENTINA_TEST_MONGO_DATABASE_NAME: "valentina-test"
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
@@ -39,11 +41,12 @@ jobs:
             fail-fast: true
             matrix:
                 python-version: ["3.11", "3.12"]
+                mongodb-version: ["7.0.2"]
         steps:
             - name: Harden Security Runner
               uses: step-security/harden-runner@v2
               with:
-                  egress-policy: block
+                  egress-policy: audit
                   disable-sudo: true
                   allowed-endpoints: >
                       api.github.com:443
@@ -64,6 +67,11 @@ jobs:
             # ----------------------------------------------
             #    install dependencies
             # ----------------------------------------------
+
+            - name: Start MongoDB
+              uses: supercharge/mongodb-github-action@1.10.0
+              with:
+                  mongodb-version: ${{ matrix.mongodb-version }}
 
             - name: Setup Python and Poetry
               uses: ./.github/actions/setup-poetry
