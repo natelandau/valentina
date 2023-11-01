@@ -324,20 +324,24 @@ class CharClass(Enum):
     )
 
     @classmethod
-    def get_member_by_value(cls, value: int) -> "CharClass":
+    def get_member_by_value(cls, number: int) -> "CharClass":
         """Find the corresponding enum member's name based on an integer value found in the range value.
 
         Args:
-            value (int): The integer value to look up.
+            number (int): The integer value to look up.
 
         Returns:
             Optional[str]: The name of the enum member if found, otherwise None.
         """
         for member in cls:
+            if not member.value.percentile_range:
+                continue
             min_val, max_val = member.value.percentile_range
-            if min_val <= value <= max_val:
+            if min_val <= number <= max_val:
                 return member
-        return None
+
+        msg = f"Value {number} not found in any CharClass range"
+        raise ValueError(msg)
 
     @classmethod
     def random_member(cls) -> "CharClass":
@@ -1326,6 +1330,8 @@ class CharacterConcept(Enum):
             Optional[str]: The name of the enum member if found, otherwise None.
         """
         for member in cls:
+            if not member.value.percentile_range:
+                continue
             min_val, max_val = member.value.percentile_range
             if min_val <= value <= max_val:
                 return member

@@ -2,15 +2,10 @@
 """Tests for helper utilities."""
 import pytest
 
-from valentina.constants import RollResultType
-from valentina.utils.helpers import (
-    adjust_sum_to_match_total,
-    # diceroll_thumbnail,
-    divide_into_three,
-    num_to_circles,
-)
+from valentina.utils.helpers import adjust_sum_to_match_total, divide_into_three, num_to_circles
 
 
+@pytest.mark.no_db()
 @pytest.mark.parametrize(
     (
         "values",
@@ -45,6 +40,7 @@ def test_adjust_sum_to_match_total(values, total, max_value, min_value) -> None:
         assert not any(x < min_value for x in result)
 
 
+@pytest.mark.no_db()
 def test_divide_into_three() -> None:
     """Test divide_into_three()."""
     for i in range(3, 100):
@@ -55,6 +51,7 @@ def test_divide_into_three() -> None:
         divide_into_three(2)
 
 
+@pytest.mark.no_db()
 @pytest.mark.parametrize(
     ("num", "maximum", "expected"),
     [(0, 5, "○○○○○"), (3, 5, "●●●○○"), (5, None, "●●●●●"), (6, 5, "●●●●●●"), (0, 10, "○○○○○○○○○○")],

@@ -52,8 +52,8 @@ class Macro(commands.Cog):
 
         Args:
             ctx (ValentinaContext): The context of the application.
-            index1 (Option[ValidTraitOrCustomTrait]): The index for the first trait.
-            index2 (Option[ValidTraitOrCustomTrait]): The index for the second trait.
+            index1 (int): The index for the first trait.
+            index2 (int): The index for the second trait.
             hidden (Option[bool]): Whether to make the result only to you (default true).
         """
         user = await User.get(ctx.author.id, fetch_links=True)

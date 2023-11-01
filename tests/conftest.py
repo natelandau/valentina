@@ -1,6 +1,7 @@
 # type: ignore
 """Shared fixtures for tests."""
 import asyncio
+import logging
 import os
 from pathlib import Path
 from random import randint
@@ -8,10 +9,12 @@ from unittest.mock import MagicMock
 
 import discord
 import pytest
+import pytest_asyncio
 from beanie import init_beanie
 from discord.ext import commands
 from dotenv import dotenv_values
 from faker import Faker
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from valentina.models import (
@@ -37,37 +40,45 @@ CONFIG = {
 }
 for k, v in CONFIG.items():
     CONFIG[k] = v.replace('"', "").replace("'", "").replace(" ", "")
+from rich import print
 
 
-@pytest.fixture(autouse=True)
-async def _init_database():
+# @pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
+async def _init_database(request):
     """Initialize the database."""
-    # Create Motor client
-    client = AsyncIOMotorClient(
-        f"{CONFIG['VALENTINA_TEST_MONGO_URI']}/{CONFIG['VALENTINA_TEST_MONGO_DATABASE_NAME']}",
-        tz_aware=True,
-    )
+    if "no_db" in request.keywords:
+        # when '@pytest.mark.no_db()' is called, this fixture will not run
+        yield
+    else:
+        # Create Motor client
+        client = AsyncIOMotorClient(
+            f"{CONFIG['VALENTINA_TEST_MONGO_URI']}/{CONFIG['VALENTINA_TEST_MONGO_DATABASE_NAME']}",
+            tz_aware=True,
+        )
 
-    # Initialize beanie with the Sample document class and a database
-    await init_beanie(
-        database=client[CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"]],
-        document_models=[
-            Campaign,
-            Character,
-            CharacterTrait,
-            GlobalProperty,
-            Guild,
-            RollProbability,
-            RollStatistic,
-            User,
-        ],
-    )
+        # Initialize beanie with the Sample document class and a database
+        await init_beanie(
+            database=client[CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"]],
+            document_models=[
+                Campaign,
+                Character,
+                CharacterTrait,
+                GlobalProperty,
+                Guild,
+                RollProbability,
+                RollStatistic,
+                User,
+            ],
+        )
 
-    yield
+        yield
 
-    # Drop the database after the test
-    await asyncio.sleep(0.04)  # Ensure we cleanup before running the next test
-    await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
+        # Drop the database after the test
+        await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
+
+        # Allow active connections to close
+        await asyncio.sleep(0.05)
 
 
 @pytest.fixture()
@@ -320,3 +331,21 @@ def mock_ctx1(mocker, mock_member, mock_guild1):
     mock_ctx.__class__ = discord.ApplicationContext
 
     return mock_ctx
+
+
+@pytest.fixture()
+def caplog(caplog):
+    """Override and wrap the caplog fixture with one of our own. This fixes a problem where loguru logs could not be captured by caplog."""
+    logger.remove()  # remove default handler, if it exists
+    # logger.enable("")  # enable all logs from all modules
+    # logging.addLevelName(5, "TRACE")  # tell python logging how to interpret TRACE logs
+
+    class PropagateHandler(logging.Handler):
+        def emit(self, record):
+            logging.getLogger(record.name).handle(record)
+
+    logger.add(
+        PropagateHandler(), format="{message}"
+    )  # shunt logs into the standard python logging machinery
+    # caplog.set_level(0)  # Tell logging to handle all log levels
+    return caplog

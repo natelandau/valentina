@@ -8,7 +8,7 @@ from .user import User, UserMacro
 
 from .statistics import Statistics, RollStatistic  # isort: skip
 from .probability import Probability, RollProbability  # isort: skip
-
+from .dicerolls import DiceRoll  # isort: skip
 
 __all__ = [
     "Campaign",
@@ -18,6 +18,7 @@ __all__ = [
     "CampaignNPC",
     "Character",
     "CharacterTrait",
+    "DiceRoll",
     "GlobalProperty",
     "Guild",
     "GuildChannels",

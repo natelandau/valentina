@@ -52,7 +52,6 @@ class ErrorReporter:
             error,
             errors.NoActiveCampaignError
             | errors.ValidationError
-            | errors.NoMatchingItemsError
             | errors.NoActiveCharacterError
             | errors.NotEnoughExperienceError
             | errors.NoExperienceInCampaignError
@@ -73,13 +72,6 @@ class ErrorReporter:
         if isinstance(error, errors.NoCharacterClassError):
             user_msg = "Sorry, something went wrong. This has been reported"
             log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a character class was not found"
-            show_traceback = True
-
-        if isinstance(error, errors.DatabaseError):
-            user_msg = (
-                "Sorry, there was a database error. This is likely a bug and has been reported."
-            )
-            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and no object was found in the database"
             show_traceback = True
 
         if isinstance(error, DoesNotExist):

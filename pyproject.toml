@@ -135,6 +135,7 @@
     addopts        = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --verbosity=2 --junitxml=reports/pytest.xml --ignore=src/valentina/cogs/test_cog.py"
     asyncio_mode   = "auto"
     filterwarnings = ["error", "ignore::DeprecationWarning"]
+    markers        = ["no_db: marks tests as not needing a database", "serial"]
     testpaths      = ["src", "tests"]
     xfail_strict   = true
 

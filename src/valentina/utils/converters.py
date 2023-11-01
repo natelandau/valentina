@@ -58,7 +58,7 @@ class ValidChannelName(Converter):
 
 
 class ValidCharClass(Converter):
-    """A converter that ensures a requested character class name is valid."""
+    """Convert a CharClass name to a CharClass enum."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> CharClass:  # noqa: ARG002
         """Validate and normalize character classes."""
@@ -70,7 +70,7 @@ class ValidCharClass(Converter):
 
 
 class ValidCharacterConcept(Converter):
-    """A converter that converts a character concept name to a CharacterConcept enum."""
+    """Convert a CharacterConcept name to a CharacterConcept enum."""
 
     async def convert(
         self, ctx: commands.Context, argument: str  # noqa: ARG002
@@ -84,14 +84,14 @@ class ValidCharacterConcept(Converter):
 
 
 class ValidCharacterLevel(Converter):
-    """A converter that converts a character level name to a RNGCharLevel enum."""
+    """Convert a RNGCharLevel name to a RNGCharLevel enum."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> RNGCharLevel:  # noqa: ARG002
         """Validate and normalize character levels."""
         try:
             return RNGCharLevel[argument]
         except KeyError as e:
-            msg = f"`{argument}` is not a valid character class"
+            msg = f"`{argument}` is not a valid rng character level"
             raise BadArgument(msg) from e
 
 
@@ -127,7 +127,7 @@ class ValidCharacterObject(Converter):
             return character
 
         msg = f"No character found in database with id `{argument}`"
-        raise errors.DatabaseError(msg)
+        raise BadArgument(msg)
 
 
 class ValidCharTrait(Converter):
@@ -158,7 +158,7 @@ class ValidCampaign(Converter):
 
 
 class ValidClan(Converter):
-    """A converter that ensures a requested vampire clan is valid."""
+    """Converter a VampireClan name to a VampireClan enum."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> VampireClan:  # noqa: ARG002
         """Validate and normalize vampire clan."""
@@ -170,7 +170,7 @@ class ValidClan(Converter):
 
 
 class ValidCustomSection(Converter):
-    """Converter to ensure a custom section is valid."""
+    """Converts a list index to a custom section."""
 
     async def convert(
         self, ctx: commands.Context, argument: str
@@ -218,7 +218,7 @@ class ValidImageURL(Converter):
 
 
 class ValidTraitCategory(Converter):
-    """A converter that ensures a requested trait category is valid."""
+    """Convert a TraitCategory name to a TraitCategory enum."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> TraitCategory:  # noqa: ARG002
         """Validate and normalize trait categories."""
@@ -230,27 +230,12 @@ class ValidTraitCategory(Converter):
 
 
 class ValidYYYYMMDD(Converter):
-    """A converter that ensures a requested trait is a valid character trait or custom trait."""
+    """Convert a string in the form of YYYY-MM-DD to a datetime object."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> datetime:  # noqa: ARG002
         """Validate and normalize traits."""
         if re.match(r"^\d{4}-\d{2}-\d{2}$", argument):
             return datetime.strptime(argument, "%Y-%m-%d")
-
-        msg = f"`{argument}` is not a valid trait"
-        raise BadArgument(msg)
-
-
-class ValidTraitOrCustomTrait(Converter):
-    """A converter to ensure a requested trait is a valid character trait or custom trait."""
-
-    async def convert(self, ctx: commands.Context, argument: str) -> CharacterTrait:
-        """Validate and normalize traits."""
-        character = await ctx.bot.user_svc.fetch_active_character(ctx)
-
-        for trait in character.traits:
-            if argument.lower() == trait.name.lower():
-                return trait
 
         msg = f"`{argument}` is not a valid trait"
         raise BadArgument(msg)
