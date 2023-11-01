@@ -1,4 +1,5 @@
 """MongoDB collections for Valentina."""
+import random
 from datetime import datetime, timezone
 from typing import Optional, Union, cast
 
@@ -21,6 +22,7 @@ from pydantic import BaseModel, Field
 
 from valentina.constants import (
     COOL_POINT_VALUE,
+    DICEROLL_THUMBS,
     CharacterConcept,
     CharClass,
     HunterCreed,
@@ -286,7 +288,7 @@ class Guild(Document):
 
         await self.save()
 
-    async def add_roll_result_thumb(
+    async def add_roll_result_thumbnail(
         self, ctx: discord.ApplicationContext, roll_type: RollResultType, url: str
     ) -> None:
         """Add a roll result thumbnail to the database."""
@@ -301,8 +303,32 @@ class Guild(Document):
         await self.save()
 
         logger.info(
-            f"DATABASE: Add '{RollResultType.name}' roll result thumbnail for '{ctx.guild.name}'"
+            f"DATABASE: Add '{roll_type.name}' roll result thumbnail for '{ctx.guild.name}'"
         )
+
+    async def fetch_diceroll_thumbnail(self, result: RollResultType) -> str:
+        """Take a string and return a random gif url.
+
+        Args:
+            ctx (): The application context.
+            result (RollResultType): The roll result type.
+
+        Returns:
+        Optional[str]: The thumbnail URL, or None if no thumbnail is found.
+        """
+        # Get the list of default thumbnails for the result type
+        thumb_list = DICEROLL_THUMBS.get(result.name, [])
+
+        # Find the matching category in the database thumbnails (case insensitive)
+
+        thumb_list.extend([x.url for x in self.roll_result_thumbnails if x.roll_type == result])
+
+        # If there are no thumbnails, return None
+        if not thumb_list:
+            return None
+
+        # Return a random thumbnail
+        return random.choice(thumb_list)
 
 
 class User(Document):
@@ -430,7 +456,11 @@ class User(Document):
         Returns:
             int: The new campaign cool points.
         """
-        campaign_experience = self._find_campaign_xp(campaign)
+        try:
+            campaign_experience = self._find_campaign_xp(campaign)
+        except errors.NoExperienceInCampaignError:
+            campaign_experience = CampaignExperience()
+            self.campaign_experience[str(campaign.id)] = campaign_experience
 
         campaign_experience.cool_points += amount
         campaign_experience.xp_total += amount * COOL_POINT_VALUE
@@ -461,6 +491,9 @@ class User(Document):
             character (Character): The character to set as active.
         """
         self.active_characters[str(character.guild)] = character
+        if character not in self.characters:
+            self.characters.append(character)
+
         await self.save()
 
     async def remove_character(self, character: "Character") -> None:

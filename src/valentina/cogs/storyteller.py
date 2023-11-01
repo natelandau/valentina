@@ -40,7 +40,6 @@ from valentina.utils.options import (
     select_char_concept,
     select_char_level,
     select_country,
-    select_player_character,
     select_storyteller_character,
     select_trait_category,
     select_trait_from_char_option,

@@ -9,7 +9,6 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.statistics import Statistics
 from valentina.views import present_embed
 
 

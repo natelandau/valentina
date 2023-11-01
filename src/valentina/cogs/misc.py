@@ -394,7 +394,7 @@ Roll Macros      : {num_macros}
             return
 
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        await guild.add_roll_result_thumb(ctx, RollResultType[roll_type.upper()], url)
+        await guild.add_roll_result_thumbnail(ctx, RollResultType[roll_type.upper()], url)
 
         await ctx.post_to_audit_log(title)
         await confirmation_response_msg

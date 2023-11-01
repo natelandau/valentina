@@ -37,8 +37,6 @@ from valentina.models.sqlite_models import CustomSection as SqliteCustomSection
 from valentina.models.sqlite_models import DatabaseVersion as SQLVersion
 from valentina.models.sqlite_models import Guild as SqliteGuild
 from valentina.models.sqlite_models import GuildUser as SqliteUser
-from valentina.models.sqlite_models import Macro as SqliteMacro
-from valentina.models.sqlite_models import MacroTrait as SqliteMacroTrait
 from valentina.models.sqlite_models import RollStatistic as SqliteRollStatistic
 from valentina.models.sqlite_models import RollThumbnail as SqliteRollThumbnail
 from valentina.utils.helpers import get_max_trait_value

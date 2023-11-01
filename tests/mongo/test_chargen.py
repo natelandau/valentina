@@ -1,7 +1,6 @@
 # type: ignore
 """Test the chargen module."""
 
-
 import pytest
 from rich import print
 
@@ -77,7 +76,7 @@ def test__redistribute_trait_values(primary_values, non_primary_values):
 )
 async def test_rngchargen_generate_base_character(
     create_user,
-    mock_ctx,
+    mock_ctx1,
     char_class,
     concept,
     clan,
@@ -88,7 +87,7 @@ async def test_rngchargen_generate_base_character(
     # GIVEN a user and a character generator
 
     user = await create_user()
-    char_gen = RNGCharGen(mock_ctx, user)
+    char_gen = RNGCharGen(mock_ctx1, user)
 
     # WHEN generate_base is called
     character = await char_gen.generate_base_character(
@@ -159,7 +158,7 @@ async def test_rngchargen_generate_base_character(
 )
 async def test_random_attributes(
     create_user,
-    mock_ctx,
+    mock_ctx1,
     char_class,
     concept,
     level,
@@ -169,7 +168,7 @@ async def test_random_attributes(
     """Test the random_abilities method."""
     # GIVEN a character and a character generator
     user = await create_user()
-    char_gen = RNGCharGen(mock_ctx, user, experience_level=level)
+    char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
 
     # WHEN random_abilities is called with a character
     character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
@@ -227,7 +226,7 @@ async def test_random_attributes(
 )
 async def test_random_abilities(
     create_user,
-    mock_ctx,
+    mock_ctx1,
     char_class,
     concept,
     level,
@@ -237,7 +236,7 @@ async def test_random_abilities(
     """Test the random_abilities method."""
     # GIVEN a character and a character generator
     user = await create_user()
-    char_gen = RNGCharGen(mock_ctx, user, experience_level=level)
+    char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
 
     # WHEN random_abilities is called with a character
@@ -282,7 +281,7 @@ async def test_random_abilities(
 )
 async def test_random_disciplines(
     create_user,
-    mock_ctx,
+    mock_ctx1,
     char_class,
     clan,
     level,
@@ -291,7 +290,7 @@ async def test_random_disciplines(
     """Test the random_disciplines method."""
     # GIVEN a character and a character generator
     user = await create_user()
-    char_gen = RNGCharGen(mock_ctx, user, experience_level=level)
+    char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class, clan=clan)
 
     # WHEN random_disciplines is called with a character
@@ -321,7 +320,7 @@ async def test_random_disciplines(
 )
 async def test_random_virtues(
     create_user,
-    mock_ctx,
+    mock_ctx1,
     char_class,
     level,
     modifier,
@@ -329,7 +328,7 @@ async def test_random_virtues(
     """Test the andom_virtues method."""
     # GIVEN a character and a character generator
     user = await create_user()
-    char_gen = RNGCharGen(mock_ctx, user, experience_level=level)
+    char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class)
 
     # WHEN random_virtues is called with a character
@@ -358,12 +357,12 @@ async def test_random_virtues(
     ],
 )
 async def test_concept_special_abilities(
-    create_user, mock_ctx, char_class, concept, section_titles, trait_names
+    create_user, mock_ctx1, char_class, concept, section_titles, trait_names
 ):
     """Test the concept_special_abilities method."""
     # GIVEN a character and a character generator
     user = await create_user()
-    char_gen = RNGCharGen(mock_ctx, user)
+    char_gen = RNGCharGen(mock_ctx1, user)
     character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
 
     # WHEN concept_special_abilities is called with a character

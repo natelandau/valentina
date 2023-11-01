@@ -6,7 +6,7 @@ from discord.commands import Option
 from discord.ext import commands
 
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import CharacterTrait, User, UserMacro
+from valentina.models.mongo_collections import User, UserMacro
 from valentina.utils.helpers import truncate_string
 from valentina.utils.options import (
     select_char_trait,

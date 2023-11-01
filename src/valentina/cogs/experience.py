@@ -7,7 +7,7 @@ from discord.ext import commands
 
 from valentina.constants import TraitCategory, XPMultiplier
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import Guild, User
+from valentina.models.mongo_collections import User
 from valentina.utils.converters import (
     ValidCharacterObject,
     ValidCharTrait,

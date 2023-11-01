@@ -6,7 +6,7 @@ import inflect
 from loguru import logger
 from numpy.random import default_rng
 
-from valentina.constants import DICEROLL_THUBMS, DiceType, EmbedColor, RollResultType
+from valentina.constants import DiceType, EmbedColor, RollResultType
 from valentina.models.bot import ValentinaContext
 from valentina.models.mongo_collections import Character, Guild, RollStatistic
 from valentina.utils import errors
@@ -14,31 +14,6 @@ from valentina.utils import errors
 p = inflect.engine()
 _rng = default_rng()
 _max_pool_size = 100
-
-
-async def diceroll_thumbnail(ctx: ValentinaContext, result: RollResultType) -> str:
-    """Take a string and return a random gif url.
-
-    Args:
-        ctx (): The application context.
-        result (RollResultType): The roll result type.
-
-    Returns:
-    Optional[str]: The thumbnail URL, or None if no thumbnail is found.
-    """
-    # Get the list of default thumbnails for the result type
-    thumb_list = DICEROLL_THUBMS.get(result.name, [])
-
-    # Find the matching category in the database thumbnails (case insensitive)
-    guild = await Guild.get(ctx.guild.id)
-    thumb_list.extend([x.url for x in guild.roll_result_thumbnails if x.roll_type == result])
-
-    # If there are no thumbnails, return None
-    if not thumb_list:
-        return None
-
-    # Return a random thumbnail
-    return random.choice(thumb_list)
 
 
 class DiceRoll:
@@ -240,7 +215,8 @@ class DiceRoll:
 
     async def thumbnail_url(self) -> str:  # pragma: no cover
         """Determine the thumbnail to use for the Discord embed."""
-        return await diceroll_thumbnail(self.ctx, self.result_type)
+        guild = await Guild.get(self.ctx.guild.id)
+        return await guild.fetch_diceroll_thumbnail(self.result_type)
 
     @property
     def embed_color(self) -> int:  # pragma: no cover

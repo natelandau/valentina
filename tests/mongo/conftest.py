@@ -12,8 +12,6 @@ from beanie import init_beanie
 from discord.ext import commands
 from dotenv import dotenv_values
 from faker import Faker
-
-# from mongomock_motor import AsyncMongoMockClient
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from valentina.models.mongo_collections import (
@@ -26,6 +24,8 @@ from valentina.models.mongo_collections import (
     CharacterTrait,
     GlobalProperty,
     Guild,
+    RollProbability,
+    RollStatistic,
     User,
     UserMacro,
 )
@@ -57,23 +57,20 @@ async def _init_database():
         database=client[CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"]],
         document_models=[
             Campaign,
-            CampaignChapter,
-            # CampaignExperience,
-            CampaignNote,
-            CampaignNPC,
             Character,
             CharacterTrait,
             GlobalProperty,
             Guild,
+            RollProbability,
+            RollStatistic,
             User,
-            UserMacro,
         ],
     )
 
     yield
 
     # Drop the database after the test
-    await asyncio.sleep(0.03)  # Ensure we cleanup before running the next test
+    await asyncio.sleep(0.04)  # Ensure we cleanup before running the next test
     await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
 
 
@@ -221,7 +218,7 @@ def create_user():
         )
 
         user.campaign_experience["1"] = CampaignExperience(
-            xp_current=10, xp_total=10, cool_points=0
+            xp_current=20, xp_total=20, cool_points=1
         )
 
         # TODO: Add macros
@@ -312,7 +309,7 @@ def mock_guild2(mocker):
 
 
 @pytest.fixture()
-def mock_ctx(mocker, mock_member, mock_guild1):
+def mock_ctx1(mocker, mock_member, mock_guild1):
     """Create a mock context object with user 1."""
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()

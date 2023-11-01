@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from random import choice
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import inflect
 
@@ -1504,7 +1504,7 @@ GUILDUSER_DEFAULTS: dict[str, int | bool | None | str] = {
 
 ### More Constants ###
 
-DICEROLL_THUBMS = {
+DICEROLL_THUMBS = {
     "BOTCH": [
         "https://em-content.zobj.net/source/animated-noto-color-emoji/356/face-vomiting_1f92e.gif",
     ],

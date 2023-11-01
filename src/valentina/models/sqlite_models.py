@@ -16,7 +16,6 @@ from peewee import (
     IntegerField,
     Model,
     TextField,
-    fn,
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 

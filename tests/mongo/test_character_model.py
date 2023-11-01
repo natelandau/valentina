@@ -168,3 +168,20 @@ async def test_add_trait_already_exists(create_character):
     # THEN a TraitExistsError is raised
     with pytest.raises(errors.TraitExistsError):
         await character.add_trait(TraitCategory.PHYSICAL, "Strength", 2, 10)
+
+
+async def test_fetch_trait_by_name(create_character):
+    """Test the fetch_trait_by_name method."""
+    # GIVEN a character with traits
+    character = await create_character()
+
+    # WHEN fetching a trait by name
+    trait = await character.fetch_trait_by_name("Strength")
+
+    # THEN the correct trait is returned
+    assert trait.name == "Strength"
+    assert trait.max_value == 5
+
+    # WHEN fetching a trait by name that doesn't exist
+    # THEN None is returned
+    assert await character.fetch_trait_by_name("Not a trait") is None
