@@ -9,8 +9,8 @@ from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
 from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
+from valentina.models import Guild
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import Guild
 from valentina.utils import errors
 from valentina.utils.converters import ValidImageURL
 from valentina.utils.discord_utils import assert_permissions

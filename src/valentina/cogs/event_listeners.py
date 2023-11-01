@@ -8,9 +8,9 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import BAD_WORD_PATTERN, BOT_DESCRIPTIONS, EmbedColor
+from valentina.models import Guild, User
 from valentina.models.bot import Valentina
 from valentina.models.errors import reporter
-from valentina.models.mongo_collections import Guild, User
 from valentina.utils.helpers import time_now
 
 

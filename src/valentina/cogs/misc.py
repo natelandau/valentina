@@ -10,9 +10,8 @@ from discord.commands import Option
 from discord.ext import commands
 
 from valentina.constants import DiceType, EmbedColor, RollResultType
-from valentina.models import Probability, Statistics
+from valentina.models import Character, Guild, Probability, Statistics, User
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import Character, Guild, User
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidImageURL
 from valentina.utils.helpers import fetch_random_name

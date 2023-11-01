@@ -16,9 +16,9 @@ from valentina.constants import (
     Emoji,
     RNGCharLevel,
 )
+from valentina.models import Character, CharacterSheetSection, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import Character, CharacterSheetSection, User
 from valentina.utils import errors
 from valentina.utils.converters import (
     ValidCharacterName,
@@ -254,7 +254,8 @@ class CharactersCog(commands.Cog, name="Character"):
         text = f"## {title_prefix} {p.plural_noun('character', len(all_characters))} on {ctx.guild.name}\n"
 
         for character in sorted(all_characters, key=lambda x: x.name):
-            user = await character.fetch_owner()
+            user = await User.get(character.user_owner, fetch_links=True)
+
             alive_emoji = Emoji.ALIVE.value if character.is_alive else Emoji.DEAD.value
             if user_active_character := await user.active_character(ctx.guild, raise_error=False):
                 active = "True" if character.id == user_active_character.id else "False"

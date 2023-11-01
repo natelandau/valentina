@@ -3,7 +3,7 @@
 import pytest
 
 from valentina.constants import DICEROLL_THUMBS, RollResultType
-from valentina.models.mongo_collections import Campaign, GuildRollResultThumbnail
+from valentina.models import Campaign, GuildRollResultThumbnail
 from valentina.utils import errors
 
 

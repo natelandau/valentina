@@ -13,9 +13,9 @@ from valentina.constants import (
     Emoji,
     TraitCategory,
 )
+from valentina.models import Character, CharacterTrait
 from valentina.models.aws import AWSService
 from valentina.models.bot import ValentinaContext
-from valentina.models.mongo_collections import Character, CharacterTrait
 from valentina.models.statistics import Statistics
 from valentina.utils import errors
 

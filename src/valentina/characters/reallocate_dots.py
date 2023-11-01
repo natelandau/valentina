@@ -4,8 +4,8 @@ from typing import cast
 import discord
 
 from valentina.constants import EmbedColor, Emoji, TraitCategory
+from valentina.models import Character, CharacterTrait
 from valentina.models.bot import ValentinaContext
-from valentina.models.mongo_collections import Character, CharacterTrait
 from valentina.views import IntegerButtons
 
 from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons

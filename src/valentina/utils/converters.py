@@ -15,13 +15,7 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models.mongo_collections import (
-    Campaign,
-    Character,
-    CharacterSheetSection,
-    CharacterTrait,
-    User,
-)
+from valentina.models import Campaign, Character, CharacterSheetSection, CharacterTrait, User
 from valentina.utils import errors
 
 

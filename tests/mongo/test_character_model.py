@@ -5,7 +5,7 @@ import pytest
 from rich import print
 
 from valentina.constants import CharacterConcept, CharClass, HunterCreed, TraitCategory, VampireClan
-from valentina.models.mongo_collections import Character, CharacterTrait
+from valentina.models import Character, CharacterTrait
 from valentina.utils import errors
 
 
@@ -98,18 +98,6 @@ async def test_full_name(create_user):
 
     # THEN the correct value is returned
     assert character.full_name == "John 'JD' Doe"
-
-
-async def test_fetch_owner(create_character):
-    """Test the fetch_owner method."""
-    # GIVEN a character
-    character = await create_character()
-
-    # WHEN fetching the owner
-    owner = await character.fetch_owner()
-
-    # THEN the correct user is returned
-    assert owner.id == character.user_owner
 
 
 async def test_add_custom_trait(create_character):

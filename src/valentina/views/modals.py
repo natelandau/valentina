@@ -3,7 +3,7 @@ import discord
 from discord.ui import InputText, Modal
 
 from valentina.constants import MAX_FIELD_COUNT, CharClass, EmbedColor
-from valentina.models.mongo_collections import CampaignChapter, CampaignNote, CampaignNPC, Character
+from valentina.models import CampaignChapter, CampaignNote, CampaignNPC, Character
 from valentina.views import ConfirmCancelButtons
 
 

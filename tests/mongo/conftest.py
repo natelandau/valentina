@@ -14,12 +14,9 @@ from dotenv import dotenv_values
 from faker import Faker
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from valentina.models.mongo_collections import (
+from valentina.models import (
     Campaign,
-    CampaignChapter,
     CampaignExperience,
-    CampaignNote,
-    CampaignNPC,
     Character,
     CharacterTrait,
     GlobalProperty,
@@ -27,7 +24,6 @@ from valentina.models.mongo_collections import (
     RollProbability,
     RollStatistic,
     User,
-    UserMacro,
 )
 
 fake = Faker()

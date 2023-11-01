@@ -5,8 +5,8 @@ from discord.ext import pages
 from discord.ui import Button
 
 from valentina.constants import EmbedColor, Emoji, RollResultType
+from valentina.models import Guild, GuildRollResultThumbnail
 from valentina.models.bot import ValentinaContext
-from valentina.models.mongo_collections import Guild, GuildRollResultThumbnail
 
 
 class DeleteOrCategorizeThumbnails(discord.ui.View):

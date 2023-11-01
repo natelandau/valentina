@@ -11,8 +11,8 @@ from valentina.constants import (
     TraitCategory,
     XPMultiplier,
 )
+from valentina.models import Character, CharacterTrait
 from valentina.models.bot import ValentinaContext
-from valentina.models.mongo_collections import Character, CharacterTrait
 from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
 
 from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons

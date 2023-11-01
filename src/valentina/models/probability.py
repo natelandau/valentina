@@ -1,13 +1,15 @@
 """Utilities for diceroll probability calculations."""
 from collections import defaultdict
+from datetime import datetime
 
 import discord
+from beanie import Document, Indexed
 from loguru import logger
+from pydantic import Field
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models.bot import ValentinaContext
 from valentina.models.dicerolls import DiceRoll
-from valentina.models.mongo_collections import RollProbability
+from valentina.utils.helpers import time_now
 
 # Constants for emoji thresholds
 SUCCESS_HIGHEST_THRESHOLD = 90
@@ -16,14 +18,41 @@ SUCCESS_MEDIUM_THRESHOLD = 45
 SUCCESS_LOW_THRESHOLD = 15
 
 
+class RollProbability(Document):
+    """Represents a roll probability in the database."""
+
+    # Metadata
+    pool: Indexed(int)  # type: ignore [valid-type]
+    difficulty: Indexed(int)  # type: ignore [valid-type]
+    dice_size: Indexed(int)  # type: ignore [valid-type]
+    created: datetime = Field(default_factory=time_now)
+
+    # Results
+    total_results: float
+    botch_dice: float
+    success_dice: float
+    failure_dice: float
+    critical_dice: float
+    total_successes: float
+    total_failures: float
+    # The name of each value in the RollResultType enum
+    BOTCH: float
+    CRITICAL: float
+    FAILURE: float
+    SUCCESS: float
+    OTHER: float
+
+
 class Probability:
     """Probability utility class used for generating probabilities of success for different dice rolls."""
 
-    def __init__(self, ctx: ValentinaContext, pool: int, difficulty: int, dice_size: int) -> None:
+    def __init__(
+        self, ctx: discord.ApplicationContext, pool: int, difficulty: int, dice_size: int
+    ) -> None:
         """Initialize the Probability class.
 
         Args:
-            ctx (ValentinaContext): Context for the discord app.
+            ctx (discord.ApplicationContext): Context for the discord app.
             pool (int): Pool of dice.
             difficulty (int): Difficulty level.
             dice_size (int): Size of the dice.
@@ -65,7 +94,7 @@ class Probability:
 
         for _ in range(self.trials):
             roll = DiceRoll(
-                self.ctx,
+                self.ctx,  # type: ignore [arg-type]
                 pool=self.pool,
                 difficulty=self.difficulty,
                 dice_size=self.dice_size,

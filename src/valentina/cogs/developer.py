@@ -14,15 +14,9 @@ from loguru import logger
 
 from valentina.characters import RNGCharGen
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
+from valentina.models import Character, GlobalProperty, Guild, RollProbability, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import (
-    Character,
-    GlobalProperty,
-    Guild,
-    RollProbability,
-    User,
-)
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharClass
 from valentina.utils.options import (

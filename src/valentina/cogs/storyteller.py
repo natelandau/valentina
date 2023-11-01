@@ -17,9 +17,9 @@ from valentina.constants import (
     DiceType,
     EmbedColor,
 )
+from valentina.models import Character, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import Character, User
 from valentina.utils.converters import (
     ValidCharacterConcept,
     ValidCharacterLevel,
@@ -558,7 +558,7 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
-        old_owner = character.fetch_owner(fetch_links=True)
+        old_owner = await User.get(character.user_owner, fetch_links=True)
         new_owner = await User.get(new_user.id, fetch_links=True)
 
         # Guard against transferring to the same user

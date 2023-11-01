@@ -8,9 +8,9 @@ from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import EmbedColor, Emoji
+from valentina.models import Character
 from valentina.models.aws import AWSService
 from valentina.models.bot import ValentinaContext
-from valentina.models.mongo_collections import Character
 
 
 class DeleteS3Images(discord.ui.View):

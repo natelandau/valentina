@@ -2,9 +2,9 @@
 import discord
 import inflect
 
+from valentina.models import CharacterTrait
 from valentina.models.bot import ValentinaContext
 from valentina.models.dicerolls import DiceRoll
-from valentina.models.mongo_collections import CharacterTrait
 
 p = inflect.engine()
 

@@ -1,0 +1,214 @@
+"""User models for Valentina."""
+from datetime import datetime
+from typing import cast
+
+import discord
+from beanie import (
+    Document,
+    Insert,
+    Link,
+    Replace,
+    Save,
+    SaveChanges,
+    Update,
+    before_event,
+)
+from pydantic import BaseModel, Field
+
+from valentina.constants import COOL_POINT_VALUE
+from valentina.models import Campaign, CampaignExperience, Character
+from valentina.utils import errors
+from valentina.utils.helpers import time_now
+
+
+class UserMacro(BaseModel):
+    """Represents a user macro as a subdocument within User."""
+
+    abbreviation: str
+    date_created: datetime = Field(default_factory=time_now)
+    description: str | None = None
+    name: str
+    trait_one: str | None = None
+    trait_two: str | None = None
+
+
+class User(Document):
+    """Represents a user in the database."""
+
+    id: int  # type: ignore [assignment]  # noqa: A003
+
+    active_characters: dict[str, Link[Character]] = Field(default_factory=dict)
+    characters: list[Link[Character]] = Field(default_factory=list)
+    campaign_experience: dict[str, CampaignExperience] = Field(default_factory=dict)
+    date_created: datetime = Field(default_factory=time_now)
+    date_modified: datetime = Field(default_factory=time_now)
+    macros: list[UserMacro] = Field(default_factory=list)
+    name: str | None = None
+    guilds: list[int] = Field(default_factory=list)
+
+    @before_event(Insert, Replace, Save, Update, SaveChanges)
+    async def update_modified_date(self) -> None:
+        """Update the date_modified field."""
+        self.date_modified = time_now()
+
+    @property
+    def lifetime_experience(self) -> int:
+        """Return the user's lifetime experience level."""
+        xp = 0
+
+        for obj in self.campaign_experience.values():
+            xp += obj.xp_total
+
+        return xp
+
+    @property
+    def lifetime_cool_points(self) -> int:
+        """Return the user's lifetime cool points."""
+        cool_points = 0
+
+        for obj in self.campaign_experience.values():
+            cool_points += obj.cool_points
+
+        return cool_points
+
+    def _find_campaign_xp(self, campaign: Campaign) -> CampaignExperience | None:
+        """Return the user's campaign experience for a given campaign.
+
+        Args:
+            campaign (Campaign): The campaign to fetch experience for.
+
+        Returns:
+            CampaignExperience|None: The user's campaign experience if it exists; otherwise, None.
+        """
+        try:
+            return self.campaign_experience[str(campaign.id)]
+        except KeyError as e:
+            raise errors.NoExperienceInCampaignError from e
+
+    def fetch_campaign_xp(self, campaign: Campaign) -> tuple[int, int, int]:
+        """Return the user's campaign experience for a given campaign.
+
+        Args:
+            campaign (Campaign): The campaign to fetch experience for.
+
+        Returns:
+            tuple[int, int, int]: Tuple of (current xp, total xp, cool points) if the user has experience for the campaign; otherwise, None.
+        """
+        campaign_experience = self._find_campaign_xp(campaign)
+
+        return (
+            campaign_experience.xp_current,
+            campaign_experience.xp_total,
+            campaign_experience.cool_points,
+        )
+
+    async def spend_campaign_xp(self, campaign: Campaign, amount: int) -> int:
+        """Spend experience for a campaign.
+
+        Args:
+            campaign (Campaign): The campaign to spend experience for.
+            amount (int): The amount of experience to spend.
+
+        Returns:
+            int: The new campaign experience.
+        """
+        campaign_experience = self._find_campaign_xp(campaign)
+
+        new_xp = campaign_experience.xp_current - amount
+
+        if new_xp < 0:
+            msg = f"Can not spend {amount} xp with only {campaign_experience.xp_current} available"
+            raise errors.NotEnoughExperienceError(msg)
+
+        campaign_experience.xp_current = new_xp
+        await self.save()
+
+        return new_xp
+
+    async def add_campaign_xp(self, campaign: Campaign, amount: int) -> int:
+        """Add experience for a campaign.
+
+        Args:
+            campaign (Campaign): The campaign to add experience for.
+            amount (int): The amount of experience to add.
+
+        Returns:
+            int: The new campaign experience.
+        """
+        try:
+            campaign_experience = self._find_campaign_xp(campaign)
+        except errors.NoExperienceInCampaignError:
+            campaign_experience = CampaignExperience()
+            self.campaign_experience[str(campaign.id)] = campaign_experience
+
+        campaign_experience.xp_current += amount
+        campaign_experience.xp_total += amount
+        await self.save()
+
+        return campaign_experience.xp_current
+
+    async def add_campaign_cool_points(self, campaign: Campaign, amount: int) -> int:
+        """Add cool points and increase experience for the current campaign.
+
+        Args:
+            campaign (Campaign): The campaign to add cool points for.
+            amount (int): The amount of cool points to add.
+
+        Returns:
+            int: The new campaign cool points.
+        """
+        try:
+            campaign_experience = self._find_campaign_xp(campaign)
+        except errors.NoExperienceInCampaignError:
+            campaign_experience = CampaignExperience()
+            self.campaign_experience[str(campaign.id)] = campaign_experience
+
+        campaign_experience.cool_points += amount
+        campaign_experience.xp_total += amount * COOL_POINT_VALUE
+        campaign_experience.xp_current += amount * COOL_POINT_VALUE
+        await self.save()
+
+        return campaign_experience.cool_points
+
+    async def active_character(self, guild: discord.Guild, raise_error: bool = True) -> Character:
+        """Return the active character for the user in the guild."""
+        try:
+            active_char_id = self.active_characters[str(guild.id)].id  # type: ignore [attr-defined]
+        except KeyError as e:
+            if raise_error:
+                raise errors.NoActiveCharacterError from e
+            return None
+
+        return await Character.get(active_char_id, fetch_links=True)  # type: ignore [attr-defined]
+
+    def all_characters(self, guild: discord.Guild) -> list[Character]:
+        """Return all characters for the user in the guild."""
+        return [x for x in cast(list[Character], self.characters) if x.guild == guild.id]
+
+    async def set_active_character(self, character: Character) -> None:
+        """Set the active character for the user in the guild.
+
+        Args:
+            character (Character): The character to set as active.
+        """
+        self.active_characters[str(character.guild)] = character
+        if character not in self.characters:
+            self.characters.append(character)
+
+        await self.save()
+
+    async def remove_character(self, character: Character) -> None:
+        """Remove a character from the user's list of characters."""
+        # Remove the character from the active characters list if it is active
+        if (
+            str(character.guild) in self.active_characters
+            and self.active_characters[str(character.guild)].id == character.id  # type: ignore [attr-defined]
+        ):
+            del self.active_characters[str(character.guild)]
+
+        # Remove the character from the list of characters
+        for c in cast(list[Character], self.characters):
+            if c.id == character.id:
+                self.characters.remove(c)
+
+        await self.save()

@@ -21,14 +21,8 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
+from valentina.models import Campaign, Character, CharacterSheetSection, CharacterTrait, User
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import (
-    Campaign,
-    Character,
-    CharacterSheetSection,
-    CharacterTrait,
-    User,
-)
 from valentina.utils.helpers import (
     adjust_sum_to_match_total,
     divide_into_three,

@@ -16,8 +16,8 @@ from valentina.constants import (
     PermissionsKillCharacter,
     PermissionsManageTraits,
 )
+from valentina.models import Guild
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.models.mongo_collections import Guild
 from valentina.views import CancelButton
 
 

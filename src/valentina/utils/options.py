@@ -15,14 +15,9 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
+from valentina.models import Campaign, Character, Guild, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina
-from valentina.models.mongo_collections import (
-    Campaign,
-    Character,
-    Guild,
-    User,
-)
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.helpers import truncate_string
 
@@ -478,7 +473,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     # Fetch and prepare player characters
     all_chars_owners = sorted(
         [
-            (x, await x.fetch_owner(fetch_links=False))
+            (x, await User.get(x.user_owner))
             async for x in Character.find(
                 And(
                     Character.guild == ctx.interaction.guild.id,

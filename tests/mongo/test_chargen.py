@@ -13,7 +13,7 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models.mongo_collections import CharacterTrait
+from valentina.models import CharacterTrait
 
 
 @pytest.mark.parametrize(

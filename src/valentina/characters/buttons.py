@@ -5,8 +5,8 @@ import discord
 from discord.ui import Button
 
 from valentina.constants import Emoji, TraitCategory
+from valentina.models import Character, CharacterTrait
 from valentina.models.bot import ValentinaContext
-from valentina.models.mongo_collections import Character, CharacterTrait
 
 
 class SelectTraitCategoryButtons(discord.ui.View):

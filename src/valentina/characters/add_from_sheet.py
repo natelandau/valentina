@@ -9,8 +9,8 @@ from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor, TraitCategory
+from valentina.models import Character, CharacterTrait, User
 from valentina.models.bot import ValentinaContext
-from valentina.models.mongo_collections import Character, CharacterTrait, User
 from valentina.utils import errors
 from valentina.utils.helpers import get_max_trait_value
 

@@ -21,7 +21,7 @@ from valentina.constants import (
     PermissionsKillCharacter,
     PermissionsManageTraits,
 )
-from valentina.models.mongo_collections import (
+from valentina.models import (
     Campaign,
     Character,
     CharacterTrait,

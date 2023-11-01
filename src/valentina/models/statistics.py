@@ -1,9 +1,27 @@
 """Compute and display statistics."""
 
+from datetime import datetime
+
 import discord
+from beanie import Document, Indexed
+from pydantic import Field
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models.mongo_collections import Character, RollStatistic
+from valentina.models import Character
+from valentina.utils.helpers import time_now
+
+
+class RollStatistic(Document):
+    """Track roll results for statistics."""
+
+    user: Indexed(int)  # type: ignore [valid-type]
+    guild: Indexed(int)  # type: ignore [valid-type]
+    character: Indexed(str) | None = None  # type: ignore [valid-type]
+    result: RollResultType  # type: ignore [valid-type]
+    pool: int
+    difficulty: int
+    date_rolled: datetime = Field(default_factory=time_now)
+    traits: list[str] = Field(default_factory=list)
 
 
 class Statistics:

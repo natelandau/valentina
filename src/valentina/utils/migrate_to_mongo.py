@@ -11,7 +11,7 @@ from valentina.constants import (
     RollResultType,
     TraitCategory,
 )
-from valentina.models.mongo_collections import (
+from valentina.models import (
     Campaign,
     CampaignChapter,
     CampaignExperience,
