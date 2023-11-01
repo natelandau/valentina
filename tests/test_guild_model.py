@@ -78,7 +78,7 @@ async def test_fetch_active_campaign(create_guild, create_campaign):
     assert active_campaign == campaign
 
 
-async def test_delete_campagin(create_guild, create_campaign):
+async def test_delete_campaign(create_guild, create_campaign):
     """Test the delete_campaign method."""
     # GIVEN a guild with a campaign
     guild = await create_guild()

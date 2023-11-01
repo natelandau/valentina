@@ -16,7 +16,6 @@ from valentina.constants import (
     VampireClan,
 )
 from valentina.models import Campaign, Character, CharacterSheetSection, CharacterTrait, User
-from valentina.utils import errors
 
 
 class ValidChannelName(Converter):

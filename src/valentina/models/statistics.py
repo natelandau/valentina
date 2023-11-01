@@ -17,7 +17,7 @@ class RollStatistic(Document):
     user: Indexed(int)  # type: ignore [valid-type]
     guild: Indexed(int)  # type: ignore [valid-type]
     character: Indexed(str) | None = None  # type: ignore [valid-type]
-    result: RollResultType  # type: ignore [valid-type]
+    result: RollResultType
     pool: int
     difficulty: int
     date_rolled: datetime = Field(default_factory=time_now)

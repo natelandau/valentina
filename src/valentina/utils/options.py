@@ -266,31 +266,14 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
     return [
-        # OptionChoice("English", "en-GB,en-US"),
-        # OptionChoice("German", "de-DE"),
-        # OptionChoice("Spanish", "es-ES,es-MX"),
-        # OptionChoice("French", "fr-FR"),
-        # OptionChoice("Italian", "it-IT"),
-        # OptionChoice("Portuguese", "pt-BR"),
-        # OptionChoice("Scaninavian", "sv-SE,da-DK,no-NO"),
-        # OptionChoice("Turkish", "tr-TR"),
-        # OptionChoice("Chinese", "zh-CN"),
-        # OptionChoice("Japanese", "ja-JP"),
-        # # #####################
-        OptionChoice("United States", "us"),
-        OptionChoice("Arabia", "da,mn,ta,jo,tn,ma,eg"),
-        OptionChoice("Asian", "cn,jp,kr"),
-        OptionChoice("Brazil", "br"),
-        OptionChoice("France", "fr"),
-        OptionChoice("Germany", "de"),
-        OptionChoice("Greece", "gr"),
-        OptionChoice("India", "in"),
-        OptionChoice("Italy", "it"),
-        OptionChoice("Mexico", "mx"),
-        OptionChoice("Russia", "ru"),
-        OptionChoice("Scaninavia", "nl,se,no,dk,fi"),
-        OptionChoice("South American", "ar,cl,co,pe,ve"),
-        OptionChoice("Spain", "es"),
+        OptionChoice("English", "us,gb"),
+        OptionChoice("German", "de"),
+        OptionChoice("Spanish", "es,mx"),
+        OptionChoice("French", "fr"),
+        OptionChoice("Indian", "in"),
+        OptionChoice("Scandinavian", "dk,no"),
+        OptionChoice("Portuguese", "br"),
+        OptionChoice("Slavic", "rs,ua"),
     ]
 
 

@@ -331,7 +331,7 @@ class ValentinaContext(discord.ApplicationContext):
         storyteller_role = discord.utils.get(self.guild.roles, name="Storyteller")
 
         # Initialize permission overwrites
-        overwrites = {  # type:ignore [misc]
+        overwrites = {
             self.guild.default_role: set_channel_perms(permissions[0]),
             player_role: set_channel_perms(permissions[1]),
             storyteller_role: set_channel_perms(permissions[2]),

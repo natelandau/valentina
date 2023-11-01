@@ -179,7 +179,7 @@ class User(Document):
                 raise errors.NoActiveCharacterError from e
             return None
 
-        return await Character.get(active_char_id, fetch_links=True)  # type: ignore [attr-defined]
+        return await Character.get(active_char_id, fetch_links=True)
 
     def all_characters(self, guild: discord.Guild) -> list[Character]:
         """Return all characters for the user in the guild."""

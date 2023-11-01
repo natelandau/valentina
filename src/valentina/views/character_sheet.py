@@ -17,7 +17,6 @@ from valentina.models import Character, CharacterTrait
 from valentina.models.aws import AWSService
 from valentina.models.bot import ValentinaContext
 from valentina.models.statistics import Statistics
-from valentina.utils import errors
 
 
 def __embed1(  # noqa: C901
@@ -39,15 +38,6 @@ def __embed1(  # noqa: C901
         footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
         footer += f"Last updated: {modified}"
         embed.set_footer(text=footer)
-
-    # FIXME: This needs to be migrated to mongodb
-    # try:
-    #     campaign = ctx.bot.campaign_svc.fetch_active(ctx)  # type: ignore [attr-defined] # it exists
-    #     if campaign.current_date and character.data.get("date_of_birth"):
-    #         age = arrow.get(campaign.current_date) - arrow.get(character.data["date_of_birth"])
-    #         embed.add_field(name="Age", value=f"`{age.days // 365}`", inline=True)
-    # except errors.NoActiveCampaignError:
-    #     pass
 
     embed.add_field(
         name="Alive",
@@ -218,7 +208,7 @@ async def show_sheet(
     show_footer: bool = True,
 ) -> Any:
     """Show a character sheet."""
-    owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)  # type: ignore [attr-defined] # it exists
+    owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)
 
     embeds = []
     embeds.extend(
@@ -252,7 +242,7 @@ async def sheet_embed(
     show_footer: bool = True,
 ) -> discord.Embed:
     """Return the first page of the sheet as an embed."""
-    owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)  # type: ignore [attr-defined] # it exists
+    owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)
     return __embed1(
         character,
         owned_by_user=owned_by_user,

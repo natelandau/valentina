@@ -134,13 +134,13 @@ class ErrorReporter:
 
         # Send the messages
         if user_msg:
-            embed_message = user_error_embed(ctx, user_msg, str(error))
+            embed_message = user_error_embed(ctx, user_msg, str(error))  # type: ignore [arg-type]
             try:
                 await respond(embed=embed_message, ephemeral=True, delete_after=15)
             except discord.HTTPException:
                 await respond(
                     embed=user_error_embed(
-                        ctx, "Message too long to send", "This is a bug has been reported"
+                        ctx, "Message too long to send", "This is a bug has been reported"  # type: ignore [arg-type]
                     ),
                     ephemeral=True,
                     delete_after=15,

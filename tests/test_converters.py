@@ -43,7 +43,7 @@ async def test_valid_char_class():
 
 
 @pytest.mark.no_db()
-async def test_valid_chararcter_concept():
+async def test_valid_character_concept():
     """Test the ValidCharacterConcept converter."""
     # GIVEN a ctx objext
 

@@ -293,7 +293,7 @@ class Migrate:
                             value=sqlchar.get_trait_value(trait),
                             is_custom=is_custom,
                             display_on_sheet=True,
-                            max_value=get_max_trait_value(trait.name, trait.category.name),  # type: ignore
+                            max_value=get_max_trait_value(trait.name, trait.category.name),
                         )
                         await new_trait.insert()
 

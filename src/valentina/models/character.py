@@ -185,7 +185,7 @@ class Character(Document):
             logger.debug(f"DATA: Removed image key '{key}' from character '{self.name}'")
 
         # Delete the image from Amazon S3
-        aws_svc.delete_object(key)  # type: ignore [attr-defined]
+        aws_svc.delete_object(key)
         logger.info(f"S3: Deleted {key} from {self.name}")
 
     async def add_trait(

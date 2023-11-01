@@ -112,28 +112,6 @@ class Developer(commands.Cog):
 
         await confirmation_response_msg
 
-    ### DATABASE COMMANDS ################################################################
-    # @database.command(name="backup", description="Create a backup of the database")
-    # @commands.is_owner()
-    # async def backup_db(
-    #     self,
-    #     ctx: ValentinaContext,
-    #     hidden: Option(
-    #         bool,
-    #         description="Make the response only visible to you (default true).",
-    #         default=True,
-    #     ),
-    # ) -> None:
-    #     """Create a backup of the database."""
-    #     title = "Create backup of the database"
-    #     is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
-    #     if not is_confirmed:
-    #         return
-
-    #     db_file = await self.bot.db_svc.backup_database(self.bot.config)
-    #     logger.info(f"ADMIN: Database backup created: {db_file}")
-    #     await confirmation_response_msg
-
     ### GUILD COMMANDS ################################################################
 
     @guild.command()

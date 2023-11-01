@@ -301,55 +301,16 @@ Roll Macros      : {num_macros}
         ),
         country: Option(
             str,
-            name="country",
+            name="language",
             description="The country for the character's name (default 'US')",
             autocomplete=select_country,
-            default="en-GB,en-US",
+            default="us,gb",
         ),
         number: Option(
             int, name="number", description="The number of names to generate (default 5)", default=5
         ),
     ) -> None:
         """Generate a random name."""
-        # import re
-
-        # from faker import Faker
-
-        # locale = country.split(",")
-
-        # fake = Faker(locale)
-
-        # name_list = []
-        # for _i in range(number):
-        #     if gender == "male":
-        #         if "zh-CN" in locale or "ja-JP" in locale:
-        #             name = fake.romanized_name()
-        #         else:
-        #             name = fake.name_male()
-
-        #     if gender == "female":
-        #         if "zh-CN" in locale or "ja-JP" in locale:
-        #             name = fake.romanized_name()
-        #         else:
-        #             name = fake.name_female()
-
-        #     splitname = name.split(" ")
-        #     if len(splitname) > 2 and re.match(
-        #         r"^(mr|ms|mrs|dr|sr|sir|miss|herr|Univ\.Prof\.|ing\.|Prof\.|dipl\.|lic\.|sig\.|dott\.|Fru)",
-        #         splitname[0],
-        #         re.I,
-        #     ):
-        #         first, last = splitname[1], splitname[2]
-        #     elif (
-        #         len(splitname) > 2
-        #         and re.match(r"^(du|le|de)", splitname[1], re.I)
-        #         and "fr-FR" in locale
-        #     ):
-        #         name, last = splitname[0], f"{splitname[1]} {splitname[2]}"
-        #     else:
-        #         first, last = splitname[0], splitname[1]
-        #     name_list.append(f"- {first.title()} {last.title()}\n")
-
         name_list = [
             f"- {name[0].title()} {name[1].title()}\n"
             for name in await fetch_random_name(gender=gender, country=country, results=number)
