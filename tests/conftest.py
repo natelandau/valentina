@@ -52,7 +52,7 @@ async def _init_database(request):
         yield
     else:
         # Allow active connections to close
-        await asyncio.sleep(0.02)
+        # await asyncio.sleep(0.02)
 
         # Create Motor client
         client = AsyncIOMotorClient(
@@ -81,7 +81,7 @@ async def _init_database(request):
         await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
 
         # Allow active connections to close
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.01)
 
 
 @pytest.fixture()

@@ -1,6 +1,8 @@
 # type: ignore
 """Test the chargen module."""
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from rich import print
 
@@ -75,15 +77,13 @@ def test__redistribute_trait_values(primary_values, non_primary_values):
     ],
 )
 async def test_rngchargen_generate_base_character(
-    create_user,
-    mock_ctx1,
-    char_class,
-    concept,
-    clan,
-    creed,
-    nick_is_class,
+    create_user, mock_ctx1, char_class, concept, clan, creed, nick_is_class, mocker
 ):
     """Test the generate_base_character method."""
+    # MOCK the call the fetch_random_name
+    async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
+    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+
     # GIVEN a user and a character generator
 
     user = await create_user()
@@ -100,6 +100,8 @@ async def test_rngchargen_generate_base_character(
 
     # THEN check that the character is created correctly
     assert character.guild == 1
+    assert character.name_first == "mock_first"
+    assert character.name_last == "mock_last"
     assert character.concept_name in CharacterConcept.__members__
     assert character.char_class_name in CharClass.__members__
 
@@ -157,15 +159,13 @@ async def test_rngchargen_generate_base_character(
     ],
 )
 async def test_random_attributes(
-    create_user,
-    mock_ctx1,
-    char_class,
-    concept,
-    level,
-    primary_dots,
-    non_primary_dots,
+    create_user, mock_ctx1, char_class, concept, level, primary_dots, non_primary_dots, mocker
 ):
     """Test the random_abilities method."""
+    # MOCK the call the fetch_random_name
+    async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
+    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+
     # GIVEN a character and a character generator
     user = await create_user()
     char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
@@ -225,15 +225,13 @@ async def test_random_attributes(
     ],
 )
 async def test_random_abilities(
-    create_user,
-    mock_ctx1,
-    char_class,
-    concept,
-    level,
-    primary_dots,
-    non_primary_dots,
+    create_user, mock_ctx1, char_class, concept, level, primary_dots, non_primary_dots, mocker
 ):
     """Test the random_abilities method."""
+    # MOCK the call the fetch_random_name
+    async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
+    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+
     # GIVEN a character and a character generator
     user = await create_user()
     char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
@@ -280,14 +278,13 @@ async def test_random_abilities(
     ],
 )
 async def test_random_disciplines(
-    create_user,
-    mock_ctx1,
-    char_class,
-    clan,
-    level,
-    num_disciplines,
+    create_user, mock_ctx1, char_class, clan, level, num_disciplines, mocker
 ):
     """Test the random_disciplines method."""
+    # MOCK the call the fetch_random_name
+    async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
+    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+
     # GIVEN a character and a character generator
     user = await create_user()
     char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
@@ -318,14 +315,12 @@ async def test_random_disciplines(
         (CharClass.VAMPIRE, RNGCharLevel.ELITE, 2),
     ],
 )
-async def test_random_virtues(
-    create_user,
-    mock_ctx1,
-    char_class,
-    level,
-    modifier,
-):
+async def test_random_virtues(create_user, mock_ctx1, char_class, level, modifier, mocker):
     """Test the andom_virtues method."""
+    # MOCK the call the fetch_random_name
+    async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
+    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+
     # GIVEN a character and a character generator
     user = await create_user()
     char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
@@ -357,9 +352,13 @@ async def test_random_virtues(
     ],
 )
 async def test_concept_special_abilities(
-    create_user, mock_ctx1, char_class, concept, section_titles, trait_names
+    create_user, mock_ctx1, char_class, concept, section_titles, trait_names, mocker
 ):
     """Test the concept_special_abilities method."""
+    # MOCK the call the fetch_random_name
+    async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
+    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+
     # GIVEN a character and a character generator
     user = await create_user()
     char_gen = RNGCharGen(mock_ctx1, user)
