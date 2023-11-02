@@ -525,7 +525,7 @@ class RNGCharGen:
 
         # Initialize dot distribution based on character level
         starting_dot_distribution = (
-            [9, 8, 6] if char_class in (CharClass.MORTAL, CharClass.HUNTER) else [10, 8, 6]
+            [9, 8, 6] if char_class in {CharClass.MORTAL, CharClass.HUNTER} else [10, 8, 6]
         )
         extra_dots_map = {
             RNGCharLevel.NEW: [0, 0, 0],

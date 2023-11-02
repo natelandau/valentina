@@ -5,7 +5,7 @@ default_stages: [commit, manual]
 fail_fast: true
 repos:
     - repo: "https://github.com/commitizen-tools/commitizen"
-      rev: 3.10.1
+      rev: 3.12.0
       hooks:
           - id: commitizen
           #   - id: commitizen-branch
@@ -59,10 +59,10 @@ repos:
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.0.292"
+      rev: "v0.1.3"
       hooks:
           - id: ruff
-            args: ["--extend-ignore", "I001,D301,D401", "--preview"]
+            args: ["--extend-ignore", "I001,D301,D401"]
             exclude: tests/
 
     - repo: "https://github.com/jendrikseipp/vulture"
@@ -71,7 +71,7 @@ repos:
           - id: vulture
 
     - repo: "https://github.com/crate-ci/typos"
-      rev: v1.16.19
+      rev: v1.16.22
       hooks:
           - id: typos
 

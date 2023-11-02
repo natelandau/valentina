@@ -39,6 +39,9 @@ jobs:
                       pypi.org:443
                       python-poetry.org:443
                       uploads.github.com:443
+                      docker.io:443
+                      githubapp.com:443
+                      docker.com:443
 
             - name: Checkout repository
               uses: actions/checkout@v4

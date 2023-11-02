@@ -567,7 +567,7 @@ class Valentina(commands.Bot):
 
     # Define a custom application context class
     async def get_application_context(  # type: ignore
-        self, interaction: discord.Interaction, cls=ValentinaContext  # noqa: PLR6301
+        self, interaction: discord.Interaction, cls=ValentinaContext
     ) -> discord.ApplicationContext:
         """Override the get_application_context method to use my custom context."""
         return await super().get_application_context(interaction, cls=cls)

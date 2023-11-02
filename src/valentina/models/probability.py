@@ -106,9 +106,9 @@ class Probability:
             critical_dice += roll.criticals
             result_counts[roll.result_type] += 1
 
-            if roll.result_type in (RollResultType.SUCCESS, RollResultType.CRITICAL):
+            if roll.result_type in {RollResultType.SUCCESS, RollResultType.CRITICAL}:
                 total_successes += 1
-            if roll.result_type in (RollResultType.FAILURE, RollResultType.BOTCH):
+            if roll.result_type in {RollResultType.FAILURE, RollResultType.BOTCH}:
                 total_failures += 1
 
         probabilities: dict[str, float] = defaultdict(int)
