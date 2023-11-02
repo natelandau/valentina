@@ -17,6 +17,8 @@ from valentina.constants import (
 )
 from valentina.models import CharacterTrait
 
+from .factories import *
+
 
 @pytest.mark.parametrize(
     ("primary_values", "non_primary_values"),
@@ -77,7 +79,7 @@ def test__redistribute_trait_values(primary_values, non_primary_values):
     ],
 )
 async def test_rngchargen_generate_base_character(
-    create_user, mock_ctx1, char_class, concept, clan, creed, nick_is_class, mocker
+    user_factory, mock_ctx1, char_class, concept, clan, creed, nick_is_class, mocker
 ):
     """Test the generate_base_character method."""
     # MOCK the call the fetch_random_name
@@ -86,7 +88,7 @@ async def test_rngchargen_generate_base_character(
 
     # GIVEN a user and a character generator
 
-    user = await create_user()
+    user = user_factory.build()
     char_gen = RNGCharGen(mock_ctx1, user)
 
     # WHEN generate_base is called
@@ -159,7 +161,14 @@ async def test_rngchargen_generate_base_character(
     ],
 )
 async def test_random_attributes(
-    create_user, mock_ctx1, char_class, concept, level, primary_dots, non_primary_dots, mocker
+    user_factory,
+    mock_ctx1,
+    char_class,
+    concept,
+    level,
+    primary_dots,
+    non_primary_dots,
+    mocker,
 ):
     """Test the random_abilities method."""
     # MOCK the call the fetch_random_name
@@ -167,11 +176,11 @@ async def test_random_attributes(
     mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
-    user = await create_user()
+    user = user_factory.build()
     char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
+    character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
 
     # WHEN random_abilities is called with a character
-    character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
     await char_gen.random_attributes(character)
 
     # THEN check that the character has attributes
@@ -225,7 +234,14 @@ async def test_random_attributes(
     ],
 )
 async def test_random_abilities(
-    create_user, mock_ctx1, char_class, concept, level, primary_dots, non_primary_dots, mocker
+    user_factory,
+    mock_ctx1,
+    char_class,
+    concept,
+    level,
+    primary_dots,
+    non_primary_dots,
+    mocker,
 ):
     """Test the random_abilities method."""
     # MOCK the call the fetch_random_name
@@ -233,7 +249,7 @@ async def test_random_abilities(
     mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
-    user = await create_user()
+    user = user_factory.build()
     char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
 
@@ -278,7 +294,7 @@ async def test_random_abilities(
     ],
 )
 async def test_random_disciplines(
-    create_user, mock_ctx1, char_class, clan, level, num_disciplines, mocker
+    user_factory, mock_ctx1, char_class, clan, level, num_disciplines, mocker
 ):
     """Test the random_disciplines method."""
     # MOCK the call the fetch_random_name
@@ -286,7 +302,7 @@ async def test_random_disciplines(
     mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
-    user = await create_user()
+    user = user_factory.build()
     char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class, clan=clan)
 
@@ -315,14 +331,14 @@ async def test_random_disciplines(
         (CharClass.VAMPIRE, RNGCharLevel.ELITE, 2),
     ],
 )
-async def test_random_virtues(create_user, mock_ctx1, char_class, level, modifier, mocker):
+async def test_random_virtues(user_factory, mock_ctx1, char_class, level, modifier, mocker):
     """Test the andom_virtues method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
     mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
-    user = await create_user()
+    user = user_factory.build()
     char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class)
 
@@ -352,7 +368,7 @@ async def test_random_virtues(create_user, mock_ctx1, char_class, level, modifie
     ],
 )
 async def test_concept_special_abilities(
-    create_user, mock_ctx1, char_class, concept, section_titles, trait_names, mocker
+    user_factory, mock_ctx1, char_class, concept, section_titles, trait_names, mocker
 ):
     """Test the concept_special_abilities method."""
     # MOCK the call the fetch_random_name
@@ -360,7 +376,7 @@ async def test_concept_special_abilities(
     mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
-    user = await create_user()
+    user = user_factory.build()
     char_gen = RNGCharGen(mock_ctx1, user)
     character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
 

@@ -1,6 +1,5 @@
 # type: ignore
 """Test the Statistics module."""
-import re
 
 import discord
 import pytest
@@ -8,7 +7,10 @@ import pytest
 from valentina.constants import RollResultType
 from valentina.models import RollStatistic, Statistics
 
+from .factories import *
 
+
+@pytest.mark.drop_db()
 async def test_guild_statistics_no_results(mock_ctx1):
     """Test pulling guild statistics."""
     # GIVEN a guild with no statistics
@@ -74,6 +76,7 @@ async def test_guild_statistics_results(mock_ctx1):
     assert "Successful Rolls: ........ 1   (50.00%)" in result.description
 
 
+@pytest.mark.drop_db()
 async def test_user_statistics_no_results(mock_ctx1):
     """Test pulling user statistics."""
     # GIVEN a user with no statistics
@@ -139,10 +142,11 @@ async def test_user_statistics_results(mock_ctx1):
     assert "Definitions:" not in result.description
 
 
-async def test_character_statistics_no_results(mock_ctx1, create_character):
+@pytest.mark.drop_db()
+async def test_character_statistics_no_results(mock_ctx1, character_factory):
     """Test pulling character_statistics."""
     # GIVEN a character with no statistics
-    character = await create_character()
+    character = character_factory.build(traits=[])
 
     # WHEN statistics are pulled for a character
     s = Statistics(mock_ctx1)
@@ -159,10 +163,10 @@ async def test_character_statistics_no_results(mock_ctx1, create_character):
     assert result == "\nNo statistics found"
 
 
-async def test_character_statistics_results(mock_ctx1, create_character):
+async def test_character_statistics_results(mock_ctx1, character_factory):
     """Test pulling character_statistics."""
     # GIVEN a character with statistics
-    character = await create_character()
+    character = character_factory.build(traits=[])
     stat1 = RollStatistic(
         user=1,
         guild=1,

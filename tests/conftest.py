@@ -4,7 +4,6 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from random import randint
 from unittest.mock import MagicMock
 
 import discord
@@ -13,13 +12,12 @@ import pytest_asyncio
 from beanie import init_beanie
 from discord.ext import commands
 from dotenv import dotenv_values
-from faker import Faker
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
+from rich import print
 
 from valentina.models import (
     Campaign,
-    CampaignExperience,
     Character,
     CharacterTrait,
     GlobalProperty,
@@ -28,8 +26,6 @@ from valentina.models import (
     RollStatistic,
     User,
 )
-
-fake = Faker()
 
 # Import configuration from environment variables
 DIR = Path(__file__).parents[2].absolute()
@@ -40,25 +36,26 @@ CONFIG = {
 }
 for k, v in CONFIG.items():
     CONFIG[k] = v.replace('"', "").replace("'", "").replace(" ", "")
-from rich import print
 
 
-# @pytest.fixture(autouse=True)
 @pytest_asyncio.fixture(autouse=True)
 async def _init_database(request):
     """Initialize the database."""
     if "no_db" in request.keywords:
         # when '@pytest.mark.no_db()' is called, this fixture will not run
         yield
-    else:
-        # Allow active connections to close
-        # await asyncio.sleep(0.02)
-
-        # Create Motor client
+    else:  # Create Motor client
         client = AsyncIOMotorClient(
             f"{CONFIG['VALENTINA_TEST_MONGO_URI']}/{CONFIG['VALENTINA_TEST_MONGO_DATABASE_NAME']}",
             tz_aware=True,
         )
+
+        if "drop_db" in request.keywords:
+            # Drop the database after the test
+            await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
+
+            # Allow active connections to close
+            # await asyncio.sleep(0.01)
 
         # Initialize beanie with the Sample document class and a database
         await init_beanie(
@@ -76,168 +73,6 @@ async def _init_database(request):
         )
 
         yield
-
-        # Drop the database after the test
-        await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
-
-        # Allow active connections to close
-        await asyncio.sleep(0.01)
-
-
-@pytest.fixture()
-def create_guild():
-    """Factory to create a guild object in the database."""
-
-    async def make():
-        """Create a guild object in the test database."""
-        guild = Guild(
-            name=fake.name(),
-            id=randint(1, 9999999999),
-        )
-        await guild.insert()
-        return guild
-
-    return make
-
-
-@pytest.fixture()
-def create_character(create_user):
-    """Factory to create a character object in the database."""
-
-    async def make(
-        no_traits: bool = False,
-        add_to_user: bool = False,
-        guild: int = randint(1, 9999999999),
-        char_class_name: str = "MORTAL",
-        type_chargen: bool = False,
-        type_debug: bool = False,
-        type_storyteller: bool = False,
-        type_player: bool = False,
-        user: User = None,
-    ) -> Character:
-        """Create a character object in the test database.
-
-        Args:
-            add_to_user (bool, optional): If true, add the character to the user. Defaults to False.
-            guild (int, optional): The guild id of the character. Defaults to randint(1, 9999999999).
-            char_class_name (str, optional): The class of the character. Defaults to "MORTAL".
-            type_chargen (bool, optional): If true, the character is a chargen character. Defaults to False.
-            type_debug (bool, optional): If true, the character is a debug character. Defaults to False.
-            type_storyteller (bool, optional): If true, the character is a storyteller character. Defaults to False.
-            type_player (bool, optional): If true, the character is a player character. Defaults to False.
-            user (User, optional): The user to add the character to. Defaults to None.
-            no_traits (bool, optional): If true, do not add any traits to the character. Defaults to False.
-        """
-        if not user:
-            user = await create_user()
-
-        character = Character(
-            name_first=fake.first_name(),
-            name_last=fake.last_name(),
-            guild=guild,
-            char_class_name=char_class_name,
-            type_chargen=type_chargen,
-            type_debug=type_debug,
-            type_storyteller=type_storyteller,
-            type_player=type_player,
-            user_creator=user.id,
-            user_owner=user.id,
-        )
-        await character.insert()
-
-        trait_names = ["Strength", "Dexterity", "Stamina"]
-        if not no_traits:
-            for i in range(0, 2):
-                trait = CharacterTrait(
-                    category_name="PHYSICAL",
-                    character=str(character.id),
-                    name=trait_names[i],
-                    value=i,
-                    max_value=5,
-                )
-                await trait.insert()
-                character.traits.append(trait)
-
-            await character.save()
-
-        if add_to_user:
-            user.characters.append(character)
-            await user.save()
-
-        return character
-
-    return make
-
-
-@pytest.fixture()
-def create_campaign():
-    """Factory to create a campaign object in the database."""
-
-    async def make(
-        name: str = fake.name(),
-        guild: int = randint(1, 9999999999),
-        description: str = fake.sentence(nb_words=10),
-    ) -> Campaign:
-        campaign = Campaign(
-            name=name,
-            guild=guild,
-            description=description,
-        )
-        await campaign.insert()
-        return campaign
-
-    # TODO: chapters: list[CampaignChapter] = Field(default_factory=list)
-    # TODO: notes: list[CampaignNote] = Field(default_factory=list)
-    # TODO: npcs: list[CampaignNPC] = Field(default_factory=list)
-
-    return make
-
-
-@pytest.fixture()
-def create_user():
-    """Factory to create a user object in the database."""
-
-    async def make(
-        new: bool = False,
-        name: str = fake.name(),
-        id: int = randint(1, 9999999999),
-        guilds: list[int] = [randint(1, 9999999999)],
-    ) -> User:
-        """Create a user object in the test database.
-
-        Args:
-            new (bool, optional): If true, create's a new user with only a name and id and guild. Defaults to False.
-            name (str, optional): The name of the user. Defaults to fake.name().
-            id (int, optional): The id of the user. Defaults to randint(1, 9999999999).
-            guilds (list[int], optional): The guilds the user is a member of. Defaults to [randint(1, 9999999999)].
-
-        """
-        if new:
-            user = User(
-                name=name,
-                id=id,
-                guilds=guilds,
-            )
-            await user.insert()
-            return user
-
-        user = User(
-            name=name,
-            id=id,
-            guilds=guilds,
-        )
-
-        user.campaign_experience["1"] = CampaignExperience(
-            xp_current=20, xp_total=20, cool_points=1
-        )
-
-        # TODO: Add macros
-        # TODO: Add characters
-
-        await user.insert()
-        return user
-
-    return make
 
 
 ### Mock discord.py objects ###
@@ -352,3 +187,6 @@ def caplog(caplog):
     )  # shunt logs into the standard python logging machinery
     # caplog.set_level(0)  # Tell logging to handle all log levels
     return caplog
+
+
+### Factories for Database Classes ###

@@ -35,12 +35,35 @@ class CharacterSheetSection(BaseModel):
     content: str
 
 
+class CharacterTrait(Document):
+    """Represents a character trait value as a subdocument within Character."""
+
+    category_name: str  # TraitCategory enum name
+    character: Indexed(str)  # type: ignore [valid-type]
+    display_on_sheet: bool = True
+    is_custom: bool = False
+    max_value: int
+    name: str
+    value: int
+
+    @property
+    def dots(self) -> str:
+        """Return the trait's value as a string of dots."""
+        return num_to_circles(self.value, self.max_value)
+
+    @property
+    def category(self) -> TraitCategory:
+        """Return the trait's category."""
+        return TraitCategory[self.category_name] if self.category_name else None
+
+
 class Character(Document):
     """Represents a character in the database."""
 
     char_class_name: str  # CharClass enum name
     date_created: datetime = Field(default_factory=time_now)
     date_modified: datetime = Field(default_factory=time_now)
+    freebie_points: int = 0
     guild: Indexed(int)  # type: ignore [valid-type]
     images: list[str] = Field(default_factory=list)
     is_alive: bool = True
@@ -49,7 +72,7 @@ class Character(Document):
     name_nick: str | None = None
 
     sheet_sections: list[CharacterSheetSection] = Field(default_factory=list)
-    traits: list[Link["CharacterTrait"]] = Field(default_factory=list)
+    traits: list[Link[CharacterTrait]] = Field(default_factory=list)
 
     type_chargen: bool = False
     type_debug: bool = False
@@ -58,7 +81,6 @@ class Character(Document):
     type_developer: bool = False
     user_creator: int  # id of the user who created the character
     user_owner: int  # id of the user who owns the character
-    freebie_points: int = 0
 
     # Profile
     bio: str | None = None
@@ -235,25 +257,3 @@ class Character(Document):
                 return trait
 
         return None
-
-
-class CharacterTrait(Document):
-    """Represents a character trait value as a subdocument within Character."""
-
-    category_name: str  # TraitCategory enum name
-    character: Indexed(str)  # type: ignore [valid-type]
-    display_on_sheet: bool = True
-    is_custom: bool = False
-    max_value: int
-    name: str
-    value: int
-
-    @property
-    def dots(self) -> str:
-        """Return the trait's value as a string of dots."""
-        return num_to_circles(self.value, self.max_value)
-
-    @property
-    def category(self) -> TraitCategory:
-        """Return the trait's category."""
-        return TraitCategory[self.category_name] if self.category_name else None

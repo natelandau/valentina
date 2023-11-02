@@ -17,13 +17,13 @@ class PermissionOverwriteMock(MagicMock):
 
     def __setattr__(self, name, value):
         """Set the attributes on the mock object."""
-        if name in (
+        if name in {
             "send_messages",
             "read_messages",
             "manage_messages",
             "add_reactions",
             "view_channel",
-        ):
+        }:
             self._attributes[name] = value
         else:
             super().__setattr__(name, value)

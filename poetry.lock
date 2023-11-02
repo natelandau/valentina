@@ -1259,6 +1259,30 @@ tomli = ">=1.2.2"
 poetry-plugin = ["poetry (>=1.0,<2.0)"]
 
 [[package]]
+name = "polyfactory"
+version = "2.11.0"
+description = "Mock data generation factories"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "polyfactory-2.11.0-py3-none-any.whl", hash = "sha256:f1146ee171b55575a50c93cb36d0d68c5ab69b85ab747d7791bcf986a1be1253"},
+    {file = "polyfactory-2.11.0.tar.gz", hash = "sha256:b31b4997cc8128568f73f641b6858ed64be0fd3fd3627071c027b619c5b14d88"},
+]
+
+[package.dependencies]
+faker = "*"
+typing-extensions = "*"
+
+[package.extras]
+attrs = ["attrs (>=22.2.0)"]
+beanie = ["beanie", "pydantic[email]"]
+full = ["attrs", "beanie", "msgspec", "odmantic", "pydantic", "sqlalchemy"]
+msgspec = ["msgspec"]
+odmantic = ["odmantic", "pydantic[email]"]
+pydantic = ["pydantic[email]"]
+sqlalchemy = ["sqlalchemy (>=1.4.29)"]
+
+[[package]]
 name = "pprintpp"
 version = "0.4.0"
 description = "A drop-in replacement for pprint that's actually pretty"
@@ -2209,4 +2233,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "44b7e64070181c3b2e860d08b356a1b499fd73a212cd691d69d1746858b1412b"
+content-hash = "a1cda41e404fe2c519878276d65024480f8b348cbf711873005b67aa25eae751"

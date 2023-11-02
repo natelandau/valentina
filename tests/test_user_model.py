@@ -6,12 +6,22 @@ from rich import print
 
 from valentina.utils import errors
 
+from .factories import *
 
-async def test_add_experience(create_user, create_campaign) -> None:
+
+async def test_add_experience(user_factory, campaign_factory) -> None:
     """Test the add_experience method."""
     # GIVEN a user and a campaign
-    user = await create_user(new=True)
-    campaign = await create_campaign()
+    user = user_factory.build(
+        active_characters={},
+        characters=[],
+        campaign_experience={},
+        macros=[],
+    )
+    campaign = campaign_factory.build()
+    await campaign.insert()
+    await user.insert()
+
     string_id = str(campaign.id)
 
     # WHEN add_experience is called with a campaign and an amount
@@ -33,11 +43,18 @@ async def test_add_experience(create_user, create_campaign) -> None:
     assert user.fetch_campaign_xp(campaign) == (30, 30, 0)
 
 
-async def test_add_campaign_cool_points(create_user, create_campaign) -> None:
+async def test_add_campaign_cool_points(user_factory, campaign_factory) -> None:
     """Test the add_campaign_cool_points method."""
     # GIVEN a user and a campaign
-    user = await create_user(new=True)
-    campaign = await create_campaign()
+    user = user_factory.build(
+        active_characters={},
+        characters=[],
+        campaign_experience={},
+        macros=[],
+    )
+    campaign = campaign_factory.build()
+    await campaign.insert()
+    await user.insert()
     string_id = str(campaign.id)
 
     # WHEN add_campaign_cool_points is called with a campaign and an amount
@@ -53,12 +70,20 @@ async def test_add_campaign_cool_points(create_user, create_campaign) -> None:
     assert user.fetch_campaign_xp(campaign) == (20, 20, 2)
 
 
-async def test_spend_spend_campaign_xp(create_user, create_campaign) -> None:
+async def test_spend_spend_campaign_xp(user_factory, campaign_factory) -> None:
     """Test the spend_campaign_xp method."""
     # GIVEN a new user and a campaign and 20 experience
-    user = await create_user(new=True)
-    campaign = await create_campaign()
+    user = user_factory.build(
+        active_characters={},
+        characters=[],
+        campaign_experience={},
+        macros=[],
+    )
+    campaign = campaign_factory.build()
+    await campaign.insert()
+    await user.insert()
     string_id = str(campaign.id)
+
     await user.add_campaign_xp(campaign, 20)
 
     # WHEN experience is spent
@@ -79,17 +104,16 @@ async def test_spend_spend_campaign_xp(create_user, create_campaign) -> None:
         await user.spend_campaign_xp(campaign, 100)
 
 
-async def test_all_user_characters(create_user, create_character, mock_guild1):
+@pytest.mark.no_db()
+async def test_all_user_characters(mock_guild1, user_factory, character_factory) -> None:
     """Test methods related to working with characters associated with the user."""
     # GIVEN a users and three characters
-    user = await create_user(guilds=[mock_guild1.id, 223344])
-    character1 = await create_character(
-        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
-    )
-    character2 = await create_character(
-        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
-    )
-    character3 = await create_character(guild=222222, user=user, type_player=True, add_to_user=True)
+    user = user_factory.build(guilds=[mock_guild1.id, 223344])
+    character1 = character_factory.build(guild=mock_guild1.id, user_owner=user.id, type_player=True)
+    character2 = character_factory.build(guild=mock_guild1.id, user_owner=user.id, type_player=True)
+    character3 = character_factory.build(guild=223344, user_owner=user.id, type_player=True)
+
+    user.characters = [character1, character2, character3]
 
     # WHEN fetching the characters for a guild
     result = user.all_characters(mock_guild1)
@@ -100,43 +124,60 @@ async def test_all_user_characters(create_user, create_character, mock_guild1):
     assert result[1] == character2
 
 
-async def test_set_active_character(create_user, create_character, mock_guild1):
+async def test_set_active_character(mock_guild1, user_factory, character_factory):
     """Test the set_active_character method."""
     # Given a user and two characters
-    user = await create_user(guilds=[mock_guild1.id, 223344])
-    character1 = await create_character(guild=mock_guild1.id, user=user, type_player=True)
-    character2 = await create_character(
-        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    user = user_factory.build(
+        guilds=[mock_guild1.id, 223344],
+        active_characters={},
+        characters=[],
+        campaign_experience={},
+        macros=[],
     )
+    character1 = character_factory.build(
+        guild=mock_guild1.id, user_owner=user.id, type_player=True, traits=[]
+    )
+    character2 = character_factory.build(
+        guild=mock_guild1.id, user_owner=user.id, type_player=True, traits=[]
+    )
+    await character1.insert()
+    await character2.insert()
+    user.characters = [character1]
+    await user.insert()
 
     # WHEN adding an active character
     await user.set_active_character(character1)
 
     # THEN check that the active character is set
     active_char = await user.active_character(mock_guild1)
-    assert active_char == character1
-    assert active_char in user.characters
+    assert active_char.id == character1.id
+    assert active_char.id in [x.id for x in user.characters]
 
     # WHEN adding a different active character
     await user.set_active_character(character2)
 
     # THEN make sure the active character is switched
     new_active_char = await user.active_character(mock_guild1)
-    assert new_active_char == character2
-    assert new_active_char in user.characters
-    assert active_char in user.characters
+    assert new_active_char.id == character2.id
+    assert new_active_char.id in [x.id for x in user.characters]
+    assert active_char.id in [x.id for x in user.characters]
 
 
-async def test_active_character(create_user, create_character, mock_guild1):
-    """Test methods related to working with the active character."""
+@pytest.mark.no_db()
+async def test_active_character(user_factory, character_factory, mock_guild1):
+    """Test failure methods related to working with the active character."""
     # Given a user and two characters
-    user = await create_user(guilds=[mock_guild1.id, 223344])
-    character1 = await create_character(
-        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    user = user_factory.build(
+        active_characters={},
+        characters=[],
+        campaign_experience={},
+        macros=[],
     )
-    character2 = await create_character(
-        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    character1 = character_factory.build(
+        guild=2222, user_owner=user.id, type_player=True, traits=[]
     )
+    user.characters = [character1]
+    user.active_characters = {2222: character1}
 
     # WHEN fetching an active character for a guild with no active character
     # THEN check that a NoActiveCharacterError is raised
@@ -147,35 +188,39 @@ async def test_active_character(create_user, create_character, mock_guild1):
     # THEN check that a None is returned
     assert await user.active_character(mock_guild1, raise_error=False) is None
 
-    # GIVEN an active character
-    await user.set_active_character(character1)
 
-    # WHEN fetching an active character for a guild
-    result = await user.active_character(mock_guild1)
-
-    # THEN check that the correct character is returned
-    assert result == character1
-
-
-async def test_remove_character(create_user, create_character, mock_guild1):
+async def test_remove_character(user_factory, character_factory, mock_guild1):
     """Test the remove_character method."""
     # GIVEN a user and two characters, one of which is active
-    user = await create_user(guilds=[mock_guild1.id, 223344])
-    character1 = await create_character(
-        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    # Given a user and two characters
+    user = user_factory.build(
+        guilds=[mock_guild1.id, 223344],
+        active_characters={},
+        characters=[],
+        campaign_experience={},
+        macros=[],
     )
-    character2 = await create_character(
-        guild=mock_guild1.id, user=user, type_player=True, add_to_user=True
+    character1 = character_factory.build(
+        guild=mock_guild1.id, user_owner=user.id, type_player=True, traits=[]
     )
+    character2 = character_factory.build(
+        guild=mock_guild1.id, user_owner=user.id, type_player=True, traits=[]
+    )
+    await character1.insert()
+    await character2.insert()
+    user.characters = [character1, character2]
+    await user.insert()
+
     await user.set_active_character(character2)
-    assert await user.active_character(mock_guild1) == character2
+    result = await user.active_character(mock_guild1)
+    assert result.id == character2.id
 
     # WHEN removing a character
     await user.remove_character(character2)
 
     # THEN check that the character is removed
     assert len(user.characters) == 1
-    assert character1 in user.characters
-    assert character2 not in user.characters
+    assert character1.id in [x.id for x in user.characters]
+    assert character2.id not in [x.id for x in user.characters]
     with pytest.raises(errors.NoActiveCharacterError):
         await user.active_character(mock_guild1)

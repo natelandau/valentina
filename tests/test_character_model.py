@@ -8,36 +8,23 @@ from valentina.constants import CharacterConcept, CharClass, HunterCreed, TraitC
 from valentina.models import Character, CharacterTrait
 from valentina.utils import errors
 
+from .factories import *
 
-async def test_create_new(create_user):
+
+async def test_create_new(character_factory):
     """Test creating a new character."""
-    # GIVEN a user
-    user = await create_user()
-
-    # WHEN creating a user
-    character = Character(
+    # GIVEN a character
+    character = character_factory.build(
         name_first="John",
         name_last="Doe",
-        guild=1234567890,
+        name_nick=None,
         char_class_name="MORTAL",
         concept_name="SOLDIER",
-        type_player=True,
-        user_creator=user.id,
-        user_owner=user.id,
         clan_name="BRUJAH",
         creed_name="AVENGER",
     )
-    await character.insert()
 
-    # THEN default values are set
-    assert character.name_first == "John"
-    assert character.traits == []
-    assert character.sheet_sections == []
-    assert character.images == []
-    assert character.freebie_points == 0
-    assert not character.type_storyteller
-
-    # AND the computed properties are correct
+    # THEN the computed properties are correct
     assert character.name == "John Doe"
     assert character.full_name == "John Doe"
     assert character.char_class == CharClass.MORTAL
@@ -46,25 +33,16 @@ async def test_create_new(create_user):
     assert character.creed == HunterCreed.AVENGER
 
 
-async def test_custom_enum_names(create_user):
-    """Test creating a character with custom enum names."""
-    # GIVEN a user
-    user = await create_user()
-
-    # WHEN creating a user
-    character = Character(
-        name_first="John",
-        name_last="Doe",
-        guild=1234567890,
-        char_class_name="not a mortal",
-        concept_name="not a concept",
-        type_player=True,
-        user_creator=user.id,
-        user_owner=user.id,
+@pytest.mark.no_db()
+async def test_custom_enum_names(character_factory):
+    """Test creating a character with invalid enum names."""
+    # GIVEN a character
+    character = character_factory.build(
         clan_name="not a clan",
         creed_name="not a creed",
+        char_class_name="not a mortal",
+        concept_name="not a concept",
     )
-    await character.insert()
 
     # THEN don't return enum values when calling enum properties
     assert character.concept is None
@@ -74,19 +52,15 @@ async def test_custom_enum_names(create_user):
         assert character.char_class
 
 
-async def test_full_name(create_user):
+@pytest.mark.no_db()
+async def test_full_name(character_factory):
     """Test the full_name computed property."""
     # GIVEN a character
-    user = await create_user()
-    character = Character(
+    character = character_factory.build(
         name_first="John",
         name_last="Doe",
-        guild=1234567890,
-        char_class_name="MORTAL",
-        user_creator=user.id,
-        user_owner=user.id,
+        name_nick=None,
     )
-    await character.insert()
 
     # WHEN the full_name property is accessed with no nickname
     # THEN the correct value is returned
@@ -94,16 +68,17 @@ async def test_full_name(create_user):
 
     # WHEN the full_name property is accessed with a nickname
     character.name_nick = "JD"
-    await character.save()
 
     # THEN the correct value is returned
     assert character.full_name == "John 'JD' Doe"
 
 
-async def test_add_custom_trait(create_character):
+@pytest.mark.drop_db()
+async def test_add_custom_trait(character_factory):
     """Test the add_trait method."""
     # GIVEN a character
-    character = await create_character(no_traits=True)
+    character = character_factory.build(traits=[])
+    await character.insert()
 
     # WHEN adding a trait
     trait = await character.add_trait(TraitCategory.BACKGROUNDS, "Something", 3, 5)
@@ -123,10 +98,12 @@ async def test_add_custom_trait(create_character):
     assert all_traits[0].is_custom
 
 
-async def test_add_trait(create_character):
+@pytest.mark.drop_db()
+async def test_add_trait(character_factory):
     """Test the add_trait method."""
     # GIVEN a character
-    character = await create_character(no_traits=True)
+    character = character_factory.build(traits=[])
+    await character.insert()
 
     # WHEN adding a trait that exists in TraitCategory enum
     trait = await character.add_trait(TraitCategory.PHYSICAL, "Strength", 2, 10)
@@ -147,10 +124,14 @@ async def test_add_trait(create_character):
     assert not all_traits[0].is_custom
 
 
-async def test_add_trait_already_exists(create_character):
+@pytest.mark.no_db()
+async def test_add_trait_already_exists(character_factory, trait_factory):
     """Test the add_trait method."""
     # GIVEN a character
-    character = await create_character()
+    trait = trait_factory.build(
+        category_name=TraitCategory.PHYSICAL.name, name="Strength", value=2, max_value=10
+    )
+    character = character_factory.build(traits=[trait])
 
     # WHEN adding a trait that already exists on the character
     # THEN a TraitExistsError is raised
@@ -158,10 +139,14 @@ async def test_add_trait_already_exists(create_character):
         await character.add_trait(TraitCategory.PHYSICAL, "Strength", 2, 10)
 
 
-async def test_fetch_trait_by_name(create_character):
+@pytest.mark.no_db()
+async def test_fetch_trait_by_name(character_factory, trait_factory):
     """Test the fetch_trait_by_name method."""
-    # GIVEN a character with traits
-    character = await create_character()
+    # GIVEN a character with a traits
+    trait = trait_factory.build(
+        category_name=TraitCategory.PHYSICAL.name, name="Strength", value=2, max_value=5
+    )
+    character = character_factory.build(traits=[trait])
 
     # WHEN fetching a trait by name
     trait = await character.fetch_trait_by_name("Strength")

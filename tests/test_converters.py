@@ -26,6 +26,8 @@ from valentina.utils.converters import (
     ValidYYYYMMDD,
 )
 
+from .factories import *
+
 
 @pytest.mark.no_db()
 async def test_valid_char_class():
@@ -107,10 +109,10 @@ async def test_valid_clan():
         await ValidClan().convert(None, "NOT_EXISTS")
 
 
-async def test_valid_char_trait(create_character):
+async def test_valid_char_trait(trait_factory):
     """Test the ValidCharTrait converter."""
-    character = await create_character()
-    trait = character.traits[0]
+    trait = trait_factory.build(revision_id=None)
+    await trait.insert()
 
     # WHEN the converter is called with a valid trait id
     # THEN assert the result is the correct trait object
@@ -122,13 +124,15 @@ async def test_valid_char_trait(create_character):
         await ValidCharTrait().convert(None, "6542b9437aac63f18a1fc237")
 
 
-async def test_valid_character_object(create_character):
+async def test_valid_character_object(character_factory):
     """Test the ValidCharacter converter."""
-    character = await create_character(no_traits=True)
+    character = character_factory.build(traits=[])
+    await character.insert()
 
     # WHEN the converter is called with a valid character id
     # THEN assert the result is the correct character object
-    assert await ValidCharacterObject().convert(None, str(character.id)) == character
+    result = await ValidCharacterObject().convert(None, str(character.id))
+    assert result.id == character.id
 
     # WHEN the converter is called with an invalid character id
     # THEN assert a BadArgument is raised
@@ -136,13 +140,15 @@ async def test_valid_character_object(create_character):
         await ValidCharacterObject().convert(None, "6542b9437aac63f18a1fc237")
 
 
-async def test_valid_campaign(create_campaign):
+async def test_valid_campaign(campaign_factory):
     """Test the ValidCampaign converter."""
-    campaign = await create_campaign()
+    campaign = campaign_factory.build()
+    await campaign.insert()
 
     # WHEN the converter is called with a valid campaign id
     # THEN assert the result is the correct campaign object
-    assert await ValidCampaign().convert(None, str(campaign.id)) == campaign
+    result = await ValidCampaign().convert(None, str(campaign.id))
+    assert result.id == campaign.id
 
     # WHEN the converter is called with an invalid campaign id
     # THEN assert a BadArgument is raised

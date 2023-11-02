@@ -36,6 +36,7 @@ async def test_calculate_no_db(mock_ctx1):
     assert round(result.CRITICAL) in range(3, 6)
 
 
+@pytest.mark.drop_db()
 async def test_calculate_with_db(mock_ctx1):
     """Test the calculate method."""
     # GIVEN a RollProbability collection with a result
