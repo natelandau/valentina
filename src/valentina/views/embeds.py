@@ -6,10 +6,11 @@ from typing import Any
 import discord
 
 from valentina.constants import EmbedColor
+from valentina.models.bot import ValentinaContext
 
 
 async def error_log_embed(
-    ctx: discord.ApplicationContext | discord.Interaction, msg: str, error: Exception
+    ctx: ValentinaContext | discord.Interaction, msg: str, error: Exception
 ) -> discord.Embed:
     """Create an embed for logging errors.
 
@@ -26,7 +27,7 @@ async def error_log_embed(
 
     # If we can, we use the command name to try to pinpoint where the error
     # took place. The stack trace usually makes this clear, but not always!
-    if isinstance(ctx, discord.ApplicationContext):
+    if isinstance(ctx, ValentinaContext):
         command_name = ctx.command.qualified_name.upper()
     else:
         command_name = "INTERACTION"
@@ -52,11 +53,11 @@ async def error_log_embed(
     return embed
 
 
-def user_error_embed(ctx: discord.ApplicationContext, msg: str, error: str) -> discord.Embed:
+def user_error_embed(ctx: ValentinaContext, msg: str, error: str) -> discord.Embed:
     """Create an embed for user errors.
 
     Args:
-        ctx (discord.ApplicationContext): The context of the command.
+        ctx (ValentinaContext): The context of the command.
         msg (str): The message to display in the embed.
         error (str): The error to display in the embed.
 
@@ -74,11 +75,10 @@ def user_error_embed(ctx: discord.ApplicationContext, msg: str, error: str) -> d
     return embed
 
 
-async def present_embed(  # noqa: C901
-    ctx: discord.ApplicationContext,
+async def present_embed(
+    ctx: ValentinaContext,
     title: str = "",
     description: str = "",
-    log: str | bool = False,
     footer: str | None = None,
     level: str = "INFO",
     ephemeral: bool = False,
@@ -91,7 +91,7 @@ async def present_embed(  # noqa: C901
     show_author: bool = False,
     timestamp: bool = False,
     view: Any = None,
-    delete_after: float = 120,  # 2 minutes by default
+    delete_after: float = 120.0,  # 2 minutes by default
 ) -> discord.Interaction:
     """Display a nice embed.
 
@@ -101,7 +101,6 @@ async def present_embed(  # noqa: C901
         description: The description of the embed.
         ephemeral: Whether the embed should be ephemeral.
         level: The level of the embed. Effects the color.(INFO, ERROR, WARNING, SUCCESS)
-        log(str | bool): Whether to log the embed to the guild log channel. If a string is sent, it will be used as the log message.
         fields: list(tuple(str,  str)): Fields to add to the embed. (fields.0 is name; fields.1 is value)
         delete_after (optional, float): Number of seconds to wait before deleting the message.
         footer (str): Footer text to display.
@@ -142,9 +141,6 @@ async def present_embed(  # noqa: C901
     if timestamp:
         embed.timestamp = datetime.now()
 
-    if log:
-        await log_to_channel(ctx, log, embed)
-
     respond_kwargs = {
         "embed": embed,
         "ephemeral": ephemeral,
@@ -153,38 +149,3 @@ async def present_embed(  # noqa: C901
     if view:
         respond_kwargs["view"] = view
     return await ctx.respond(**respond_kwargs)  # type: ignore [return-value]
-
-
-async def log_to_channel(
-    ctx: discord.ApplicationContext,
-    log: str | bool,
-    embed: discord.Embed | None = None,
-) -> None:
-    """Log an event to the guild audit log channel.
-
-    Args:
-        ctx: The context object for the command invocation.
-        log: The message to log to the audit log channel. If True, a default message will be used.
-        embed: An optional embed to include in the log message.
-
-
-    Examples:
-        To log a message to the audit log channel:
-        ```
-        await log_to_channel(ctx, "User banned.")
-        ```
-        To log an embed to the audit log channel:
-        ```
-        embed = create_success_embed("Success!", "The operation was successful.")
-        await log_to_channel(ctx, True, embed=embed)
-        ```
-    """
-    if embed is not None:
-        log_embed = embed.copy()
-        log_embed.timestamp = datetime.now()
-        log_embed.set_footer(
-            text=f"Command invoked by {ctx.author.display_name} in #{ctx.channel.name}"
-        )
-        await ctx.bot.guild_svc.send_to_audit_log(ctx, log_embed)  # type: ignore [attr-defined]
-    else:
-        await ctx.bot.guild_svc.send_to_audit_log(ctx, log)  # type: ignore [attr-defined]

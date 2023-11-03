@@ -7,7 +7,8 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.models.bot import Valentina
+from valentina.constants import CONFIG
+from valentina.models.bot import Valentina, ValentinaContext
 from valentina.views import present_embed
 
 
@@ -17,15 +18,15 @@ class Help(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot: Valentina = bot
 
-    def __build_command_list(self, ctx: discord.ApplicationContext) -> list:
+    def __build_command_list(self, ctx: ValentinaContext) -> list:
         """Build a list of commands for the help command."""
         unsorted_commands: list = []
 
         # build user specific list of commands to hide
         hidden_commands = ["Owner"]  # Always hide the "Owner" cog
 
-        if self.bot.config["VALENTINA_OWNER_IDS"]:
-            owners = [int(x) for x in self.bot.config["VALENTINA_OWNER_IDS"].split(",")]
+        if CONFIG["VALENTINA_OWNER_IDS"]:
+            owners = [int(x) for x in CONFIG["VALENTINA_OWNER_IDS"].split(",")]
             if ctx.author.id not in owners:
                 hidden_commands.append("Developer")
 
@@ -72,7 +73,7 @@ class Help(commands.Cog):
 
     @help.command(name="commands", description="Help information for Valentina's commands")
     async def command_help(
-        self, ctx: discord.ApplicationContext, command: Option(str, required=False)  # type: ignore
+        self, ctx: ValentinaContext, command: Option(str, required=False)  # type: ignore
     ) -> None:
         """Provide help information."""
         commands = self.__build_command_list(ctx)
@@ -139,7 +140,7 @@ class Help(commands.Cog):
     @help.command(name="user_guide", description="A guide on how to use Valentina Noir")
     async def user_guide(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the user guide only visible to you (default true).",

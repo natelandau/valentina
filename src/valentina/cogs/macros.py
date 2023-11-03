@@ -5,8 +5,8 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.models.bot import Valentina
-from valentina.utils.converters import ValidMacroFromID, ValidTraitOrCustomTrait
+from valentina.models import User, UserMacro
+from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.helpers import truncate_string
 from valentina.utils.options import (
     select_char_trait,
@@ -27,15 +27,17 @@ class Macro(commands.Cog):
     @macro.command(name="create", description="Create a new macro")
     async def create(
         self,
-        ctx: discord.ApplicationContext,
-        trait_one: Option(
-            ValidTraitOrCustomTrait,
+        ctx: ValentinaContext,
+        index1: Option(
+            int,
+            name="trait_one",
             description="First trait to roll",
             required=True,
             autocomplete=select_char_trait,
         ),
-        trait_two: Option(
-            ValidTraitOrCustomTrait,
+        index2: Option(
+            int,
+            name="trait_two",
             description="Second trait to roll",
             required=True,
             autocomplete=select_char_trait_two,
@@ -49,12 +51,16 @@ class Macro(commands.Cog):
         """Create a new macro.
 
         Args:
-            ctx (discord.ApplicationContext): The context of the application.
-            trait_one (Option[ValidTraitOrCustomTrait]): The first trait to roll.
-            trait_two (Option[ValidTraitOrCustomTrait]): The second trait to roll.
+            ctx (ValentinaContext): The context of the application.
+            index1 (int): The index for the first trait.
+            index2 (int): The index for the second trait.
             hidden (Option[bool]): Whether to make the result only to you (default true).
         """
-        user = await self.bot.user_svc.fetch_user(ctx)
+        user = await User.get(ctx.author.id, fetch_links=True)
+        character = await user.active_character(ctx.guild)
+
+        trait_one = character.traits[index1]
+        trait_two = character.traits[index2]
 
         modal = MacroCreateModal(
             title=truncate_string("Enter the details for your macro", 45),
@@ -70,12 +76,18 @@ class Macro(commands.Cog):
         abbreviation = modal.abbreviation.strip() if modal.abbreviation else None
         description = modal.description.strip() if modal.description else None
 
-        self.bot.macro_svc.create_macro(
-            ctx, user, name, trait_one, trait_two, abbreviation, description
+        macro = UserMacro(
+            name=name,
+            abbreviation=abbreviation,
+            description=description,
+            trait_one=trait_one.name,
+            trait_two=trait_two.name,
         )
+        user.macros.append(macro)
+        await user.save()
 
-        await self.bot.guild_svc.send_to_audit_log(
-            ctx, f"Create macro: `{name}`(`{trait_one.name}` + `{trait_two.name}`)"
+        await ctx.post_to_audit_log(
+            f"Create macro: `{name}`(`{trait_one.name}` + `{trait_two.name}`)"
         )
         await present_embed(
             ctx,
@@ -93,7 +105,7 @@ class Macro(commands.Cog):
     @macro.command(name="list", description="List macros associated with your account")
     async def list_macros(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the list only visible only to you (default true).",
@@ -101,17 +113,15 @@ class Macro(commands.Cog):
         ),
     ) -> None:
         """List all macros associated with a user account."""
-        user = await self.bot.user_svc.fetch_user(ctx)
-        macros = self.bot.macro_svc.fetch_macros(user)
+        user = await User.get(ctx.author.id, fetch_links=True)
 
-        if len(macros) > 0:
+        if len(user.macros) > 0:
             fields = [
                 (
-                    f"{macro.name} ({macro.abbreviation}): `{trait_one.name}` + `{trait_two.name}`",
+                    f"{macro.name} ({macro.abbreviation}): `{macro.trait_one}` + `{macro.trait_two}`",
                     f"{macro.description}" if macro.description else "",
                 )
-                for macro in macros
-                for trait_one, trait_two in [self.bot.macro_svc.fetch_macro_traits(macro)]
+                for macro in user.macros
             ]
 
             await present_embed(
@@ -134,9 +144,10 @@ class Macro(commands.Cog):
     @macro.command(name="delete", description="Delete a macro")
     async def delete_macro(
         self,
-        ctx: discord.ApplicationContext,
-        macro: Option(
-            ValidMacroFromID,
+        ctx: ValentinaContext,
+        index: Option(
+            int,
+            name="macro",
             description="Macro to delete",
             required=True,
             autocomplete=select_macro,
@@ -148,6 +159,9 @@ class Macro(commands.Cog):
         ),
     ) -> None:
         """Delete a macro from a user."""
+        user = await User.get(ctx.author.id, fetch_links=True)
+        macro = user.macros[index]
+
         title = f"Delete macro `{macro.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(
             ctx, title, hidden=hidden, footer="This action is irreversible."
@@ -156,9 +170,10 @@ class Macro(commands.Cog):
         if not is_confirmed:
             return
 
-        self.bot.macro_svc.delete_macro(ctx, macro)
+        del user.macros[index]
+        await user.save()
 
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
 

@@ -5,17 +5,14 @@ import inflect
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import COOL_POINT_VALUE, CharClassType, VampireClanType, XPMultiplier
-from valentina.models.bot import Valentina
+from valentina.constants import TraitCategory, XPMultiplier
+from valentina.models import User
+from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.converters import (
     ValidCharacterObject,
     ValidCharTrait,
 )
-from valentina.utils.helpers import (
-    get_max_trait_value,
-    get_trait_multiplier,
-    get_trait_new_value,
-)
+from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
 from valentina.utils.options import select_player_character, select_trait_from_char_option
 from valentina.views import confirm_action, present_embed
 
@@ -33,7 +30,7 @@ class Experience(commands.Cog):
     @xp.command(name="add", description="Add experience to a user")
     async def xp_add(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         amount: Option(int, description="The amount of experience to add", required=True),
         user: Option(
             discord.User,
@@ -49,11 +46,11 @@ class Experience(commands.Cog):
     ) -> None:
         """Add experience to a user."""
         if not user:
-            user = await self.bot.user_svc.fetch_user(ctx)
+            user = await User.get(ctx.author.id)
         else:
-            user = await self.bot.user_svc.fetch_user(ctx, user=user)
+            user = await User.get(user.id)
 
-        if not await self.bot.user_svc.can_update_xp(ctx, user):
+        if not await ctx.can_grant_xp(user):
             await present_embed(
                 ctx,
                 title="You do not have permission to add experience to this user",
@@ -63,9 +60,9 @@ class Experience(commands.Cog):
             )
             return
 
-        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        active_campaign = await ctx.fetch_active_campaign()
 
-        title = f"Add `{amount}` xp to `{user.data['display_name']}`"
+        title = f"Add `{amount}` xp to `{user.name}`"
         description = "View experience with `/user_info`"
         is_confirmed, confirmation_response_msg = await confirm_action(
             ctx, title, description=description, hidden=hidden
@@ -74,17 +71,16 @@ class Experience(commands.Cog):
             return
 
         # Make the database updates
-        user.add_experience(campaign.id, amount)
-        self.bot.user_svc.purge_cache(ctx)
+        await user.add_campaign_xp(active_campaign, amount)
 
         # Send the confirmation message
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     @xp.command(name="add_cool_point", description="Add a cool point to a user")
     async def cp_add(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         amount: Option(int, description="The amount of experience to add (default 1)", default=1),
         user: Option(
             discord.User,
@@ -100,11 +96,11 @@ class Experience(commands.Cog):
     ) -> None:
         """Add cool points to a user."""
         if not user:
-            user = await self.bot.user_svc.fetch_user(ctx)
+            user = await User.get(ctx.author.id)
         else:
-            user = await self.bot.user_svc.fetch_user(ctx, user=user)
+            user = await User.get(user.id)
 
-        if not await self.bot.user_svc.can_update_xp(ctx, user):
+        if not await ctx.can_grant_xp(user):
             await present_embed(
                 ctx,
                 title="You do not have permission to add experience to this user",
@@ -114,11 +110,9 @@ class Experience(commands.Cog):
             )
             return
 
-        campaign = self.bot.campaign_svc.fetch_active(ctx)
+        active_campaign = await ctx.fetch_active_campaign()
 
-        title = (
-            f"Add `{amount}` cool {p.plural_noun('point', amount)} to `{user.data['display_name']}`"
-        )
+        title = f"Add `{amount}` cool {p.plural_noun('point', amount)} to `{user.name}`"
         description = "View cool points with `/user_info`"
         is_confirmed, confirmation_response_msg = await confirm_action(
             ctx, title, description=description, hidden=hidden
@@ -127,18 +121,16 @@ class Experience(commands.Cog):
             return
 
         # Make the database updates
-        user.add_cool_points(campaign.id, amount)
-        user.add_experience(campaign.id, amount * COOL_POINT_VALUE)
-        self.bot.user_svc.purge_cache(ctx)
+        await user.add_campaign_cool_points(active_campaign, amount)
 
         # Send the confirmation message
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     @xp.command(name="spend", description="Spend experience points")
     async def xp_spend(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
             description="The character to view",
@@ -158,53 +150,52 @@ class Experience(commands.Cog):
         ),
     ) -> None:
         """Spend experience points."""
-        campaign = self.bot.campaign_svc.fetch_active(ctx)
-        old_trait_value = character.get_trait_value(trait)
-        category = trait.category.name
-
-        char_class = CharClassType[character.char_class.name]
-        try:
-            clan = VampireClanType[character.clan.name] if character.clan else None
-        except KeyError:
-            clan = None
-
-        # Compute the cost of the upgrade
-        if char_class == char_class.VAMPIRE and trait.name in clan.value["disciplines"]:
-            multiplier = XPMultiplier.CLAN_DISCIPLINE.value
-        else:
-            multiplier = get_trait_multiplier(trait.name, category)
-
-        if old_trait_value > 0:
-            upgrade_cost = (old_trait_value + 1) * multiplier
-
-        if old_trait_value == 0:
-            upgrade_cost = get_trait_new_value(trait.name, category)
-
-        if old_trait_value >= get_max_trait_value(trait.name, category):
+        # Guard statement: fail if the trait is already at max value
+        if trait.value >= trait.max_value:
             await present_embed(
                 ctx,
                 title=f"Error: {trait.name} at max value",
-                description=f"**{trait.name}** is already at max value of `{old_trait_value}`",
+                description=f"**{trait.name}** is already at max value of `{trait.value}`",
                 level="error",
                 ephemeral=True,
             )
             return
 
-        new_trait_value = old_trait_value + 1
+        # Find the multiplier for the trait
+        if (
+            trait.category == TraitCategory.DISCIPLINES
+            and character.clan
+            and trait.name in character.clan.value.disciplines
+        ):
+            # Clan disciplines are cheaper
+            multiplier = XPMultiplier.CLAN_DISCIPLINE.value
+        else:
+            multiplier = get_trait_multiplier(trait.name, trait.category.name)
 
-        title = f"Upgrade `{trait.name}` from `{old_trait_value}` {p.plural_noun('dot', old_trait_value)} to `{new_trait_value}` {p.plural_noun('dot', new_trait_value)} for `{upgrade_cost}` xp"
+        # Compute the cost of the upgrade
+        if trait.value == 0:
+            # First dots sometimes have a different cost
+            upgrade_cost = get_trait_new_value(trait.name, trait.category.name)
+        else:
+            upgrade_cost = (trait.value + 1) * multiplier
+
+        new_trait_value = trait.value + 1
+
+        title = f"Upgrade `{trait.name}` from `{trait.value}` {p.plural_noun('dot', trait.value)} to `{trait.value + 1}` {p.plural_noun('dot', trait.value + 1)} for `{upgrade_cost}` xp"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
             return
 
-        # Make the database updates
-        user = character.owned_by
-        user.spend_experience(campaign.id, upgrade_cost)
-        character.set_trait_value(trait, new_trait_value)
-        self.bot.user_svc.purge_cache(ctx)
+        # Make the updates
+        user = await User.get(ctx.author.id)
+        active_campaign = await ctx.fetch_active_campaign()
+
+        await user.spend_campaign_xp(active_campaign, upgrade_cost)
+        trait.value = new_trait_value
+        await trait.save()
 
         # Send the confirmation message
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
 

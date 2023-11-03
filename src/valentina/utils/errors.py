@@ -14,24 +14,6 @@ class BotMissingPermissionsError(DiscordException):
         super().__init__(f"I require {sub} permissions to run this command.")
 
 
-class DatabaseError(Exception):
-    """Raised when a database error occurs or when items are not found."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "A database error occurred, the requested item may not exist"
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
 class MessageTooLongError(Exception):
     """Raised when a message is too long to send."""
 
@@ -51,7 +33,7 @@ class MessageTooLongError(Exception):
 
 
 class NoActiveCharacterError(Exception):
-    """Raised when a no active campaign is found."""
+    """Raised when a no active character is found."""
 
     def __init__(
         self,
@@ -86,8 +68,8 @@ class NoActiveCampaignError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
-class NoMatchingItemsError(Exception):
-    """Raised when no matching items are found in the database."""
+class NoCharacterClassError(Exception):
+    """Raised when a character's class is not a valid CharClass enum value."""
 
     def __init__(
         self,
@@ -97,7 +79,25 @@ class NoMatchingItemsError(Exception):
         **kwargs: int | str | bool,
     ):
         if not msg:
-            msg = "No matching records were found in the database."
+            msg = "The character class is not valid."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class NoExperienceInCampaignError(Exception):
+    """Raised when a no experience is found for a campaign."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "This user has no experience in this campaign."
         if e:
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 
@@ -140,24 +140,6 @@ class S3ObjectExistsError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
-class URLNotAvailableError(DiscordException):
-    """Raised when a URL is not available."""
-
-    def __init__(
-        self,
-        msg: str | None = None,
-        e: Exception | None = None,
-        *args: str | int,
-        **kwargs: int | str | bool,
-    ):
-        if not msg:
-            msg = "The requested URL is not available."
-        if e:
-            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
-
-        super().__init__(msg, *args, **kwargs)
-
-
 class ServiceDisabledError(DiscordException):
     """Raised when a service is disabled."""
 
@@ -173,6 +155,42 @@ class ServiceDisabledError(DiscordException):
         else:
             msg = f"The requested service is disabled: {msg}"
 
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class TraitExistsError(DiscordException):
+    """Raised when adding a trait that already exists on a character."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "This trait already exists on this character."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class URLNotAvailableError(DiscordException):
+    """Raised when a URL is not available."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The requested URL is not available."
         if e:
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 

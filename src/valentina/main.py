@@ -10,9 +10,7 @@ import typer
 from dotenv import dotenv_values
 from loguru import logger
 
-from valentina.models import DatabaseService
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import DATABASE
 from valentina.utils import InterceptHandler
 
 from .__version__ import __version__
@@ -45,7 +43,7 @@ logging.getLogger("discord.http").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTT
 logging.getLogger("discord.gateway").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
 logging.getLogger("discord.webhook").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
 logging.getLogger("discord.client").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
-logging.getLogger("peewee").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_DB"].upper())
+logging.getLogger("peewee").setLevel(level="INFO")
 for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
     logging.getLogger(service).setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_AWS"].upper())
 
@@ -60,7 +58,8 @@ logger.add(
 logger.add(
     CONFIG["VALENTINA_LOG_FILE"],
     level=CONFIG["VALENTINA_LOG_LEVEL"].upper(),
-    rotation="5 MB",
+    rotation="1 week",
+    retention="2 weeks",
     compression="zip",
     enqueue=True,
 )
@@ -76,10 +75,6 @@ def main(
     ),
 ) -> None:
     """Run Valentina."""
-    # Setup database
-    db = DatabaseService(DATABASE)
-    db.initialize_database(__version__)
-
     # Instantiate the bot
     intents = discord.Intents.all()
     bot = Valentina(
@@ -87,7 +82,6 @@ def main(
         intents=intents,
         owner_ids=[int(o) for o in CONFIG["VALENTINA_OWNER_IDS"].split(",")],
         parent_dir=DIR,
-        config=CONFIG,
         command_prefix="∑",  # Effectively remove the command prefix by setting it to 'sigma'
         version=__version__,
     )

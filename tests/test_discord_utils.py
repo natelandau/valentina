@@ -2,6 +2,8 @@
 """Tests for discord_utils.py helper utilities."""
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from valentina.constants import ChannelPermission
 from valentina.utils.discord_utils import set_channel_perms
 
@@ -15,19 +17,20 @@ class PermissionOverwriteMock(MagicMock):
 
     def __setattr__(self, name, value):
         """Set the attributes on the mock object."""
-        if name in (
+        if name in {
             "send_messages",
             "read_messages",
             "manage_messages",
             "add_reactions",
             "view_channel",
-        ):
+        }:
             self._attributes[name] = value
         else:
             super().__setattr__(name, value)
 
 
 @patch("discord.PermissionOverwrite", new_callable=PermissionOverwriteMock)
+@pytest.mark.no_db()
 def test_set_channel_perms(mock_permission_overwrite):
     """Test the set_channel_perms function.
 

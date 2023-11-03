@@ -1,6 +1,6 @@
 """A paginated view of all the thumbnails in the database."""
 
-from typing import cast
+import re
 
 import discord
 from discord.ext import pages
@@ -8,22 +8,19 @@ from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import EmbedColor, Emoji
-from valentina.models.bot import Valentina
-from valentina.models.db_tables import Character
+from valentina.models import Character
+from valentina.models.aws import AWSService
+from valentina.models.bot import ValentinaContext
 
 
 class DeleteS3Images(discord.ui.View):
     """A view for deleting S3 Images."""
 
-    def __init__(
-        self, ctx: discord.ApplicationContext, key: str, url: str, review_type: str
-    ) -> None:
+    def __init__(self, ctx: ValentinaContext, key: str, url: str) -> None:
         super().__init__()
         self.ctx = ctx
         self.key = key
         self.url = url
-        self.review_type = review_type
-        self.bot = cast(Valentina, ctx.bot)
 
     def _disable_all(self) -> None:
         """Disable all buttons in the view."""
@@ -43,17 +40,12 @@ class DeleteS3Images(discord.ui.View):
         button.style = discord.ButtonStyle.secondary
         self._disable_all()
 
-        # Delete from database
-        if self.review_type == "character":
-            # Delete the image from the character's data
-            character_id = self.key.split("/")[-2]
-            character = Character.get_by_id(character_id)
-            await self.bot.char_svc.delete_character_image(
-                self.ctx, character=character, key=self.key
-            )
-
-        # Log to audit log
-        await self.bot.guild_svc.send_to_audit_log(self.ctx, f"Delete image from {character.name}")
+        # If a character image, delete it from character.images
+        char_id = re.search(r"characters?\/(.*)\/", self.key)
+        if char_id:
+            character = await Character.get(char_id.group(1))
+            await character.delete_image(self.key)
+            await self.ctx.post_to_audit_log(f"Delete image from {character.name}")
 
         # Respond to user
         await interaction.response.edit_message(
@@ -85,24 +77,30 @@ class S3ImageReview:
     """A paginated view of all the images in S3 matching a key prefix."""
 
     def __init__(
-        self, ctx: discord.ApplicationContext, prefix: str, review_type: str, hidden: bool = True
+        self,
+        ctx: ValentinaContext,
+        prefix: str,
+        known_images: list[str] = [],
+        hidden: bool = True,
     ) -> None:
         """Initialize the thumbnail review.
 
         Args:
-            ctx (discord.ApplicationContext): The application context.
+            ctx (ValentinaContext): The application context.
             prefix (str): The prefix to match in S3.
+            known_images (list[str]): A list of known images to include in the review.
             review_type (str): The type of review being performed (character, campaign, etc.)
             hidden (bool, optional): Whether or not the paginator should be hidden. Defaults to True.
         """
+        self.aws_svc = AWSService()
         self.ctx = ctx
-        self.bot = cast(Valentina, ctx.bot)
         self.prefix = prefix
-        self.review_type = review_type
-        self.images = self._get_images()
+        self.known_images = {x: self.aws_svc.get_url(x) for x in known_images}
+        self.images_by_prefix = self._get_images_by_prefix()
+        self.images = self.images_by_prefix | self.known_images
         self.hidden = hidden
 
-    def _get_images(self) -> dict[str, str]:
+    def _get_images_by_prefix(self) -> dict[str, str]:
         """Retrieve all the images in the database that match the specified prefix.
 
         This function queries the AWS service to list all objects with the given prefix and then fetches their URLs.
@@ -117,7 +115,9 @@ class S3ImageReview:
         try:
             # Use dictionary comprehension to build the images dictionary
             return {
-                x: self.bot.aws_svc.get_url(x) for x in self.bot.aws_svc.list_objects(self.prefix)
+                x: self.aws_svc.get_url(x)
+                for x in self.aws_svc.list_objects(self.prefix)
+                if x not in self.known_images
             }
         except Exception as e:
             logger.error(f"An error occurred while fetching image URLs: {e}")
@@ -137,7 +137,7 @@ class S3ImageReview:
         for key, url in self.images.items():
             image_name = key.split("/")[-1]
 
-            view = DeleteS3Images(ctx=self.ctx, key=key, url=url, review_type=self.review_type)
+            view = DeleteS3Images(ctx=self.ctx, key=key, url=url)
 
             embed = await self._get_embed(image_name, url)
 
@@ -153,7 +153,7 @@ class S3ImageReview:
 
         return pages_to_send
 
-    async def send(self, ctx: discord.ApplicationContext) -> None:
+    async def send(self, ctx: ValentinaContext) -> None:
         """Send the paginator."""
         if not self.images:
             await self.ctx.respond(

@@ -2,43 +2,42 @@
 import discord
 from discord.ui import InputText, Modal
 
-from valentina.constants import MAX_FIELD_COUNT, CharClassType, EmbedColor
-from valentina.models.db_tables import CampaignChapter, CampaignNote, CampaignNPC, Character
+from valentina.constants import MAX_FIELD_COUNT, CharClass, EmbedColor
+from valentina.models import CampaignChapter, CampaignNote, CampaignNPC, Character
 from valentina.views import ConfirmCancelButtons
 
 
 class ChangeNameModal(Modal):
     """A modal for changing the name of a character."""
 
-    def __init__(self, ctx: discord.ApplicationContext, character: Character, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, character: Character, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.character = character
         self.name = None
-        self.ctx = ctx
 
         self.add_item(
             InputText(
-                label="first name",
+                label="First name",
                 placeholder="Enter a first name for the character",
-                value=self.character.data.get("first_name", None),
+                value=self.character.name_first,
                 style=discord.InputTextStyle.short,
                 required=True,
             )
         )
         self.add_item(
             InputText(
-                label="last name",
+                label="Last name",
                 placeholder="Enter a last name for the character",
-                value=self.character.data.get("last_name", None),
+                value=self.character.name_last,
                 style=discord.InputTextStyle.short,
                 required=True,
             )
         )
         self.add_item(
             InputText(
-                label="nickname",
+                label="Nickname",
                 placeholder="Enter a nickname for the character",
-                value=self.character.data.get("nickname", None),
+                value=self.character.name_nick if self.character.name_nick else None,
                 style=discord.InputTextStyle.short,
                 required=False,
             )
@@ -49,17 +48,15 @@ class ChangeNameModal(Modal):
         self.first_name = self.children[0].value
         self.last_name = self.children[1].value
         self.nickname = self.children[2].value
-        data = {}
-        if self.first_name:
-            data["first_name"] = self.first_name
-        if self.last_name:
-            data["last_name"] = self.last_name
-        if self.nickname:
-            data["nickname"] = self.nickname
 
-        self.character = await self.ctx.bot.char_svc.update_or_add(  # type: ignore [attr-defined]
-            self.ctx, character=self.character, data=data
-        )
+        if self.first_name:
+            self.character.name_first = self.first_name
+        if self.last_name:
+            self.character.name_last = self.last_name
+        if self.nickname:
+            self.character.name_nick = self.nickname
+
+        await self.character.save()
 
         embed = discord.Embed(title="Name Updated", color=EmbedColor.SUCCESS.value)
         await interaction.response.send_message(embeds=[embed], ephemeral=True, delete_after=0)
@@ -103,8 +100,8 @@ class ChapterModal(Modal):
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
         self.name: str = ""
-        self.short_description: str = ""
-        self.description: str = ""
+        self.description_short: str = ""
+        self.description_long: str = ""
 
         self.add_item(
             InputText(
@@ -117,9 +114,9 @@ class ChapterModal(Modal):
         )
         self.add_item(
             InputText(
-                label="short_description",
+                label="description_short",
                 placeholder="A short description for the chapter",
-                value=chapter.short_description if chapter else None,
+                value=chapter.description_short if chapter else None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=500,
@@ -127,9 +124,9 @@ class ChapterModal(Modal):
         )
         self.add_item(
             InputText(
-                label="chapter",
+                label="description_long",
                 placeholder="Write the chapter",
-                value=chapter.description if chapter else None,
+                value=chapter.description_long if chapter else None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
@@ -140,17 +137,17 @@ class ChapterModal(Modal):
         """Callback for the modal."""
         view = ConfirmCancelButtons(interaction.user)
         self.name = self.children[0].value
-        self.short_description = self.children[1].value
-        self.description = self.children[2].value
+        self.description_short = self.children[1].value
+        self.description_long = self.children[2].value
 
         embed = discord.Embed(title="Confirm Chapter", color=EmbedColor.INFO.value)
         embed.add_field(name="Chapter Name", value=self.name, inline=True)
-        embed.add_field(name="Short Description", value=self.short_description, inline=True)
+        embed.add_field(name="Short Description", value=self.description_short, inline=True)
         embed.add_field(
             name="Chapter",
-            value=(self.description[:MAX_FIELD_COUNT] + " ...")
-            if len(self.description) > MAX_FIELD_COUNT
-            else self.description,
+            value=(self.description_long[:MAX_FIELD_COUNT] + " ...")
+            if len(self.description_long) > MAX_FIELD_COUNT
+            else self.description_long,
             inline=False,
         )
 
@@ -171,10 +168,10 @@ class ChapterModal(Modal):
 class CustomSectionModal(Modal):
     """A modal for adding or editing a custom section."""
 
-    def __init__(self, section_title: str | None = None, section_description: str | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, section_title: str | None = None, section_content: str | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.section_title = section_title
-        self.section_description = section_description
+        self.section_content = section_content
         self.update_existing = bool(section_title)
 
         self.add_item(
@@ -190,7 +187,7 @@ class CustomSectionModal(Modal):
             InputText(
                 label="description",
                 placeholder="Description of the section",
-                value=self.section_description if self.section_description else None,
+                value=self.section_content if self.section_content else None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
@@ -200,12 +197,12 @@ class CustomSectionModal(Modal):
     async def callback(self, interaction: discord.Interaction) -> None:
         """Callback for the modal."""
         self.section_title = self.children[0].value
-        self.section_description = self.children[1].value
+        self.section_content = self.children[1].value
 
         embed_title = "Custom Section Updated" if self.update_existing else "Custom Section Added"
         embed = discord.Embed(title=embed_title, color=EmbedColor.SUCCESS.value)
         embed.add_field(name="Name", value=self.section_title)
-        embed.add_field(name="Description", value=self.section_description)
+        embed.add_field(name="Description", value=self.section_content)
         await interaction.response.send_message(embeds=[embed], ephemeral=True, delete_after=0)
         self.stop()
 
@@ -421,36 +418,38 @@ class ProfileModal(Modal):
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
         self.character: Character = character
-        self.char_class: CharClassType = CharClassType[character.char_class.name]
         self.results: dict[str, str] = {
-            "concept": "",
-            "demeanor": "",
-            "nature": "",
-            "generation": "",
-            "sire": "",
-            "essence": "",
-            "tradition": "",
-            "breed": "",
-            "tribe": "",
             "auspice": "",
+            "creed_name": "",
+            "breed": "",
+            "concept_name": "",
+            "demeanor": "",
+            "essence": "",
+            "generation": "",
+            "nature": "",
+            "sire": "",
+            "tradition": "",
+            "tribe": "",
         }
 
         self.add_item(
             InputText(
                 label="concept",
-                value=self.character.data.get("concept_readable", None),
+                value=self.character.concept_name.capitalize()
+                if self.character.concept_name
+                else None,
                 placeholder="Enter a concept",
                 required=False,
                 style=discord.InputTextStyle.short,
-                custom_id="concept_readable",
+                custom_id="concept_name",
             )
         )
 
-        if self.char_class == CharClassType.VAMPIRE:
+        if self.character.char_class == CharClass.VAMPIRE:
             self.add_item(
                 InputText(
                     label="generation",
-                    value=self.character.data.get("generation", None),
+                    value=self.character.generation,
                     placeholder="Enter a generation (integer, e.g. 13 or 3)",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -461,7 +460,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="sire",
-                    value=self.character.data.get("sire", None),
+                    value=self.character.sire,
                     placeholder="Name of your sire",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -469,11 +468,11 @@ class ProfileModal(Modal):
                 )
             )
 
-        if self.char_class == CharClassType.MAGE:
+        if self.character.char_class == CharClass.MAGE:
             self.add_item(
                 InputText(
                     label="essence",
-                    value=self.character.data.get("essence", None),
+                    value=self.character.essence,
                     placeholder="Your essence",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -483,7 +482,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="tradition",
-                    value=self.character.data.get("tradition", None),
+                    value=self.character.tradition,
                     placeholder="Your tradition",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -491,11 +490,11 @@ class ProfileModal(Modal):
                 )
             )
 
-        if self.char_class == CharClassType.WEREWOLF:
+        if self.character.char_class == CharClass.WEREWOLF:
             self.add_item(
                 InputText(
                     label="breed",
-                    value=self.character.data.get("breed", None),
+                    value=self.character.breed,
                     placeholder="Your breed",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -505,7 +504,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="tribe",
-                    value=self.character.data.get("tribe", None),
+                    value=self.character.tribe,
                     placeholder="Your tribe",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -515,7 +514,7 @@ class ProfileModal(Modal):
             self.add_item(
                 InputText(
                     label="auspice",
-                    value=self.character.data.get("auspice", None),
+                    value=self.character.auspice,
                     placeholder="Your auspice",
                     required=False,
                     style=discord.InputTextStyle.short,
@@ -523,15 +522,17 @@ class ProfileModal(Modal):
                 )
             )
 
-        if self.char_class == CharClassType.HUNTER:
+        if self.character.char_class == CharClass.HUNTER:
             self.add_item(
                 InputText(
-                    label="creed",
-                    value=self.character.data.get("creed", None),
+                    label="creed_name",
+                    value=self.character.creed_name.capitalize()
+                    if self.character.creed_name
+                    else None,
                     placeholder="Your creed",
                     required=False,
                     style=discord.InputTextStyle.short,
-                    custom_id="creed",
+                    custom_id="creed_name",
                 )
             )
 
@@ -542,15 +543,10 @@ class ProfileModal(Modal):
             self.results[c.custom_id] = c.value
 
         embed = discord.Embed(title="Confirm Profile", color=EmbedColor.INFO.value)
-        for k, v in self.results.items():
-            if v:
-                if k == "concept_readable":
-                    embed.add_field(name="Concept", value=v, inline=True)
-                else:
-                    embed.add_field(name=k.capitalize(), value=v, inline=True)
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
         await view.wait()
+
         if view.confirmed:
             self.confirmed = True
             await interaction.delete_original_response()
