@@ -15,7 +15,6 @@ env:
     REGISTRY: ghcr.io
     IMAGE_NAME: ${{ github.repository }}
     VALENTINA_LOG_FILE: "/tmp/valentina.log" # Pass tests
-    VALENTINA_DB_PATH: "/tmp/valentina.sqlite" # Pass tests
 
 jobs:
     build-and-push-image:
@@ -51,17 +50,6 @@ jobs:
 
             - name: Checkout repository
               uses: actions/checkout@v4
-
-            - name: Setup Python and Poetry
-              uses: ./.github/actions/setup-poetry
-
-            # ----------------------------------------------
-            # Test before building and uploading the container
-            # ----------------------------------------------
-            - name: run poetry checks
-              run: |
-                  poetry run poetry check
-                  poetry run coverage run
 
             # ----------------------------------------------
             # Publish the container

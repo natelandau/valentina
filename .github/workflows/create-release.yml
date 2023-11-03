@@ -8,7 +8,6 @@ on:
 
 env:
     VALENTINA_LOG_FILE: "/tmp/valentina.log" # pass tests
-    VALENTINA_DB_PATH: "/tmp/valentina.sqlite" # pass tests
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
@@ -48,8 +47,16 @@ jobs:
               with:
                   fetch-depth: 0
 
+            # ----------------------------------------------
+            #    Install poetry and project dependencies
+            # ----------------------------------------------
+
             - name: Setup Python and Poetry
               uses: ./.github/actions/setup-poetry
+
+            # ----------------------------------------------
+            #    Grab version number
+            # ----------------------------------------------
 
             - name: Add version to environment vars
               run: |

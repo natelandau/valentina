@@ -2,6 +2,7 @@
 name: "Automated Tests"
 
 on:
+    workflow_call:
     workflow_dispatch:
     push:
         paths:
@@ -26,7 +27,6 @@ on:
 
 env:
     VALENTINA_LOG_FILE: "/tmp/valentina.log"
-    VALENTINA_DB_PATH: "/tmp/valentina.sqlite"
     VALENTINA_TEST_MONGO_URI: "mongodb://localhost:27017"
     VALENTINA_TEST_MONGO_DATABASE_NAME: "valentina-test"
 
