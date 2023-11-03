@@ -40,6 +40,7 @@
         pytest                 = "^7.4.3"
         pytest-asyncio         = "^0.21.1"
         pytest-clarity         = "^1.0.1"
+        pytest-env             = "^1.1.1"
         pytest-mock            = "^3.12.0"
         pytest-pretty-terminal = "^1.1.0"
         pytest-xdist           = "^3.3.1"
@@ -133,6 +134,11 @@
 
     addopts = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --verbosity=2 --junitxml=reports/pytest.xml --ignore=src/valentina/cogs/test_cog.py"
     asyncio_mode = "auto"
+    env = [
+        "VALENTINA_AWS_ACCESS_KEY_ID=access_key",
+        "VALENTINA_AWS_SECRET_ACCESS_KEY=secred_access_key",
+        "VALENTINA_S3_BUCKET_NAME=bucket",
+    ]
     filterwarnings = ["error", "ignore::DeprecationWarning"]
     markers = [
         "drop_db: drops the database before the test creating fresh data",

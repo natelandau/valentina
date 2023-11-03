@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import dotenv_values
-from loguru import logger
 from peewee import (
     BooleanField,
     DateTimeField,
@@ -19,11 +18,6 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
-from valentina.constants import (
-    CHARACTER_DEFAULTS,
-    GUILD_DEFAULTS,
-    GUILDUSER_DEFAULTS,
-)
 from valentina.utils import errors
 
 
@@ -88,29 +82,6 @@ class Guild(BaseModel):
     def __str__(self) -> str:
         """Return the string representation of the model."""
         return f"[{self.id}] {self.name}"
-
-    def set_default_data_values(self) -> Guild:
-        """Verify that the guild's JSONField defaults are set.  If any keys are missing, they are added to the character's data with default values.
-
-        Returns:
-            Guild: The guild object with defaults verified and potentially updated.
-        """
-        updated = False
-        default_values = GUILD_DEFAULTS.copy()
-        default_values["modified"] = str(time_now())
-
-        for default_key, default_value in default_values.items():
-            if default_key not in self.data:
-                self.data[default_key] = default_value
-                updated = True
-
-        if updated:
-            self.save()
-            logger.info(f"DATABASE: Update defaults for {self}")
-        else:
-            logger.debug(f"DATABASE: {self}'s defaults are up to date")
-
-        return self
 
     class Meta:
         """Meta class for the model."""
@@ -224,46 +195,6 @@ class GuildUser(BaseModel):
         self.save()
 
         return new_xp
-
-    def set_default_data_values(self) -> GuildUser:
-        """Verify that the GuildUser's JSONField defaults are set.  If any keys are missing, they are added to the data column with default values.
-
-        Returns:
-            GuildUser: The GuildUser object with defaults verified and potentially updated.
-        """
-        updated = False
-        default_values = GUILDUSER_DEFAULTS.copy()
-        default_values["modified"] = str(time_now())
-
-        if not self.data:
-            self.data = {}
-
-        # Add default values for any missing keys
-        for default_key, default_value in default_values.items():
-            if default_key not in self.data:
-                self.data[default_key] = default_value
-                updated = True
-
-        # Remove errant keys
-        search_keys: list[str] = []  # Add keys to remove here
-        keys_to_remove = []
-
-        if search_keys:
-            for key in self.data:
-                if key in search_keys:
-                    keys_to_remove.append(key)
-                    updated = True
-
-        if updated:
-            if search_keys:
-                for key in keys_to_remove:
-                    del self.data[key]
-            self.save()
-            logger.info(f"DATABASE: Update defaults for GuildUser: `{self.id}`")
-        else:
-            logger.debug(f"DATABASE: Default values up to date for GuildUser: `{self.id}`")
-
-        return self
 
 
 class CharacterClass(BaseModel):
@@ -518,45 +449,6 @@ class Character(BaseModel):
 
         self.data["modified"] = str(time_now())
         self.save()
-
-    def set_default_data_values(self) -> Character:
-        """Verify that the character JSONField defaults are set.  If any keys are missing, they are added to the character's data with default values.
-
-        Returns:
-            Character: The character with defaults verified and potentially updated.
-        """
-        updated = False
-        default_values = CHARACTER_DEFAULTS.copy()
-        default_values["modified"] = str(time_now())
-
-        # Add default values for any missing keys
-        for default_key, default_value in default_values.items():
-            if default_key not in self.data:
-                self.data[default_key] = default_value
-                updated = True
-
-        # Remove errant keys
-        search_keys: list[str] = []  # Add keys to remove here
-        keys_to_remove = []
-
-        if search_keys:
-            for key in self.data:
-                if key in search_keys:
-                    keys_to_remove.append(key)
-                    updated = True
-
-        if updated:
-            if search_keys:
-                for key in keys_to_remove:
-                    del self.data[key]
-
-            # Save the updated character
-            self.save()
-            logger.info(f"DATABASE: Update defaults for {self}")
-        else:
-            logger.debug(f"DATABASE: {self}'s defaults are up to date")
-
-        return self
 
     def __str__(self) -> str:
         """Return the string representation of the model."""

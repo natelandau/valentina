@@ -7,6 +7,7 @@ from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
+from valentina.constants import CONFIG
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.views import present_embed
 
@@ -24,8 +25,8 @@ class Help(commands.Cog):
         # build user specific list of commands to hide
         hidden_commands = ["Owner"]  # Always hide the "Owner" cog
 
-        if self.bot.config["VALENTINA_OWNER_IDS"]:
-            owners = [int(x) for x in self.bot.config["VALENTINA_OWNER_IDS"].split(",")]
+        if CONFIG["VALENTINA_OWNER_IDS"]:
+            owners = [int(x) for x in CONFIG["VALENTINA_OWNER_IDS"].split(",")]
             if ctx.author.id not in owners:
                 hidden_commands.append("Developer")
 

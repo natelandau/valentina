@@ -1,4 +1,5 @@
 """Constants for Valentina models."""
+import os
 import re
 from dataclasses import dataclass, field
 from enum import Enum
@@ -7,13 +8,25 @@ from random import choice
 from typing import ClassVar
 
 import inflect
+from dotenv import dotenv_values
 
 from valentina.utils import types
 
 # Create an inflect engine to pluralize words.
 p = inflect.engine()
 
-# Single constants
+### CONFIGURATION FROM ENVIRONMENT ###
+
+DIR = Path(__file__).parents[3].absolute()
+CONFIG = {
+    **dotenv_values(DIR / ".env"),  # load shared variables
+    **dotenv_values(DIR / ".env.secrets"),  # load sensitive variables
+    **os.environ,  # override loaded values with environment variables
+}
+for k, v in CONFIG.items():
+    CONFIG[k] = v.replace('"', "").replace("'", "").replace(" ", "")
+
+### Single constants ###
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
 DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
 MAX_BUTTONS_PER_ROW = 5
@@ -1476,39 +1489,7 @@ CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, Chann
     ),
 }
 
-### Database Data Default Values ###
-CHARACTER_DEFAULTS: dict[str, int | bool | None | str | list] = {
-    "is_alive": True,
-    "bio": None,
-    "date_of_birth": None,
-    "developer_character": False,
-    "first_name": None,
-    "is_active": False,
-    "last_name": None,
-    "nickname": None,
-    "player_character": False,
-    "storyteller_character": False,
-    "chargen_character": False,
-    "images": [],
-}
-
-GUILD_DEFAULTS: dict[str, int | bool | None | str] = {
-    "audit_log_channel_id": None,
-    "changelog_channel_id": None,
-    "error_log_channel_id": None,
-    "permissions_edit_trait": PermissionsManageTraits.WITHIN_24_HOURS.value,
-    "permissions_edit_xp": PermissionsGrantXP.PLAYER_ONLY.value,
-    "permissions_kill_character": PermissionsKillCharacter.CHARACTER_OWNER_ONLY.value,
-    "permissions_manage_campaigns": PermissionManageCampaign.STORYTELLER_ONLY.value,
-    "storyteller_channel_id": None,
-}
-
-GUILDUSER_DEFAULTS: dict[str, int | bool | None | str] = {
-    "lifetime_experience": 0,
-    "lifetime_cool_points": 0,
-}
-
-### More Constants ###
+### Dictionaries  ###
 
 DICEROLL_THUMBS = {
     "BOTCH": [

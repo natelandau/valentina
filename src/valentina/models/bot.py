@@ -7,11 +7,10 @@ from typing import Any
 import arrow
 import discord
 import semver
-from beanie import UpdateResponse, init_beanie
+from beanie import UpdateResponse
 from beanie.operators import Set
 from discord.ext import commands
 from loguru import logger
-from motor.motor_asyncio import AsyncIOMotorClient
 
 from valentina.constants import (
     ChannelPermission,
@@ -24,45 +23,14 @@ from valentina.constants import (
 from valentina.models import (
     Campaign,
     Character,
-    CharacterTrait,
     GlobalProperty,
     Guild,
-    RollProbability,
-    RollStatistic,
     User,
 )
 from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
+from valentina.utils.database import init_database
 from valentina.utils.discord_utils import set_channel_perms
-
-
-async def init_database(config: dict) -> None:
-    """Initialize the database."""
-    # Create Motor client
-    client = AsyncIOMotorClient(
-        f"{config['VALENTINA_MONGO_URI']}/{config['VALENTINA_MONGO_DATABASE_NAME']}",
-        tz_aware=True,
-    )
-
-    # Initialize beanie with the Sample document class and a database
-    await init_beanie(
-        database=client[config["VALENTINA_MONGO_DATABASE_NAME"]],
-        document_models=[
-            Campaign,
-            # CampaignChapter,
-            # CampaignExperience,
-            # CampaignNote,
-            # CampaignNPC,
-            Character,
-            CharacterTrait,
-            GlobalProperty,
-            RollStatistic,
-            Guild,
-            User,
-            # UserMacro,
-            RollProbability,
-        ],
-    )
 
 
 # Subclass discord.ApplicationContext to create custom application context
@@ -413,7 +381,7 @@ class Valentina(commands.Bot):
     async def on_connect(self) -> None:
         """Perform early setup."""
         # Initialize the mongodb database
-        await init_database(self.config)
+        await init_database()
 
         # TODO: BEGIN one-time migration code (remove after first run)
         from valentina.utils.migrate_to_mongo import Migrate

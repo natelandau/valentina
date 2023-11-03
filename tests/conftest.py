@@ -1,41 +1,19 @@
 # type: ignore
 """Shared fixtures for tests."""
-import asyncio
+
 import logging
-import os
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import discord
 import pytest
 import pytest_asyncio
-from beanie import init_beanie
 from discord.ext import commands
-from dotenv import dotenv_values
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from rich import print
 
-from valentina.models import (
-    Campaign,
-    Character,
-    CharacterTrait,
-    GlobalProperty,
-    Guild,
-    RollProbability,
-    RollStatistic,
-    User,
-)
-
-# Import configuration from environment variables
-DIR = Path(__file__).parents[2].absolute()
-CONFIG = {
-    **dotenv_values(DIR / ".env"),  # load shared variables
-    **dotenv_values(DIR / ".env.secrets"),  # load sensitive variables
-    **os.environ,  # override loaded values with environment variables
-}
-for k, v in CONFIG.items():
-    CONFIG[k] = v.replace('"', "").replace("'", "").replace(" ", "")
+from valentina.constants import CONFIG
+from valentina.utils.database import init_database
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -54,22 +32,9 @@ async def _init_database(request):
             # Drop the database after the test
             await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
 
-            # Allow active connections to close
-            # await asyncio.sleep(0.01)
-
         # Initialize beanie with the Sample document class and a database
-        await init_beanie(
-            database=client[CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"]],
-            document_models=[
-                Campaign,
-                Character,
-                CharacterTrait,
-                GlobalProperty,
-                Guild,
-                RollProbability,
-                RollStatistic,
-                User,
-            ],
+        await init_database(
+            client=client, database=client[CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"]]
         )
 
         yield

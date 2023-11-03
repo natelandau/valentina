@@ -1,26 +1,14 @@
 """Class for interacting with AWS services."""
-
-import os
 from pathlib import Path
 
 import boto3
 import discord
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from dotenv import dotenv_values
 from loguru import logger
 
+from valentina.constants import CONFIG
 from valentina.utils import errors
-
-# Import configuration from environment variables
-DIR = Path(__file__).parents[3].absolute()
-CONFIG = {
-    **dotenv_values(DIR / ".env"),  # load shared variables
-    **dotenv_values(DIR / ".env.secrets"),  # load sensitive variables
-    **os.environ,  # override loaded values with environment variables
-}
-for k, v in CONFIG.items():
-    CONFIG[k] = v.replace('"', "").replace("'", "").replace(" ", "")
 
 
 class AWSService:
@@ -168,6 +156,7 @@ class AWSService:
         Raises:
             KeyError: If the object_type is not recognized or if required additional arguments are missing.
         """
+        # TODO: Refactor to make kwargs more obvious
         guild_id = ctx.guild.id
         try:
             match object_type:
@@ -189,7 +178,7 @@ class AWSService:
 
                 case _:
                     logger.error(f"Invalid object_type: {object_type}")
-                    raise ValueError(object_type)
+                    raise errors.ValidationError(object_type)
 
         except KeyError as e:
             logger.error(f"Missing required argument to _key_error: {e}")

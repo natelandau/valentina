@@ -6,6 +6,7 @@ from valentina.constants import (
     CharacterConcept,
     CharClass,
     CharClassValue,
+    HunterCreed,
     TraitCategory,
     VampireClan,
 )
@@ -19,12 +20,39 @@ def test_random_vampire_clan() -> None:
 
 
 @pytest.mark.no_db()
-def test_character_concept_enum():
+def test_character_concept_random_member():
     """Test the CharacterConcept enum."""
-    assert CharacterConcept.get_member_by_value(8) == CharacterConcept.BERSERKER
+    for _ in range(50):
+        random = CharacterConcept.random_member()
+        assert CharacterConcept[random.name] == random
 
-    random = CharacterConcept.random_member()
-    assert CharacterConcept[random.name] == random
+
+@pytest.mark.no_db()
+def test_concept_get_member_by_value():
+    """Test the CharacterConcept enum get_member_by_value method."""
+    # GIVEN a CharacterConcept member
+    value_map: dict[int, CharClass] = {
+        1: CharacterConcept.BERSERKER,
+        11: CharacterConcept.PERFORMER,
+        25: CharacterConcept.HEALER,
+        31: CharacterConcept.SHAMAN,
+        39: CharacterConcept.SOLDIER,
+        50: CharacterConcept.ASCETIC,
+        54: CharacterConcept.CRUSADER,
+        66: CharacterConcept.URBAN_TRACKER,
+        72: CharacterConcept.UNDER_WORLDER,
+        83: CharacterConcept.SCIENTIST,
+        90: CharacterConcept.TRADESMAN,
+        98: CharacterConcept.BUSINESSMAN,
+    }
+
+    # WHEN member is selected by a number between 1-100
+    for value, member in value_map.items():
+        result = CharacterConcept.get_member_by_value(value)
+
+        # THEN return the correct member
+        assert isinstance(result, CharacterConcept)
+        assert result == member
 
 
 @pytest.mark.no_db()
@@ -106,3 +134,34 @@ def test_char_class_playable_classes():
     assert CharClass.OTHER not in result
     assert CharClass.SPECIAL in result
     assert CharClass.MORTAL in result
+
+
+@pytest.mark.no_db()
+def test_hunter_creed_random_member():
+    """Test the HunterCreed enum."""
+    for _ in range(50):
+        random = HunterCreed.random_member()
+        assert HunterCreed[random.name] == random
+
+
+@pytest.mark.no_db()
+def test_hunter_creed_get_member_by_value():
+    """Test the HunterCreed enum get_member_by_value method."""
+    # GIVEN a HunterCreed member
+    value_map: dict[int, CharClass] = {
+        1: HunterCreed.DEFENDER,
+        18: HunterCreed.INNOCENT,
+        35: HunterCreed.JUDGE,
+        51: HunterCreed.MARTYR,
+        65: HunterCreed.REDEEMER,
+        80: HunterCreed.AVENGER,
+        95: HunterCreed.VISIONARY,
+    }
+
+    # WHEN member is selected by a number between 1-100
+    for value, member in value_map.items():
+        result = HunterCreed.get_member_by_value(value)
+
+        # THEN return the correct member
+        assert isinstance(result, HunterCreed)
+        assert result == member

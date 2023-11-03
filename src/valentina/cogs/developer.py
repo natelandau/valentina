@@ -13,7 +13,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.characters import RNGCharGen
-from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
+from valentina.constants import CONFIG, MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models import Character, GlobalProperty, Guild, RollProbability, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
@@ -359,7 +359,7 @@ class Developer(commands.Cog):
         ),
     ) -> None:
         """Send the bot's logs to the user."""
-        file = discord.File(self.bot.config["VALENTINA_LOG_FILE"])
+        file = discord.File(CONFIG["VALENTINA_LOG_FILE"])
         await ctx.respond(file=file, ephemeral=hidden)
 
     @server.command(name="tail_logs", description="View last lines of the Valentina's logs")
@@ -378,7 +378,7 @@ class Developer(commands.Cog):
         max_lines_from_bottom = 20
         log_lines = []
 
-        async with aiofiles.open(self.bot.config["VALENTINA_LOG_FILE"], mode="r") as f:
+        async with aiofiles.open(CONFIG["VALENTINA_LOG_FILE"], mode="r") as f:
             async for line in f:
                 if "has connected to Gateway" not in line:
                     log_lines.append(line)

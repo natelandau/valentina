@@ -6,11 +6,13 @@ from .database import GlobalProperty
 from .guild import Guild, GuildChannels, GuildPermissions, GuildRollResultThumbnail
 from .user import User, UserMacro
 
+from .aws import AWSService  # isort: skip
 from .statistics import Statistics, RollStatistic  # isort: skip
 from .probability import Probability, RollProbability  # isort: skip
 from .dicerolls import DiceRoll  # isort: skip
 
 __all__ = [
+    "AWSService",
     "Campaign",
     "CampaignChapter",
     "CampaignExperience",

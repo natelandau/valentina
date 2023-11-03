@@ -1651,6 +1651,23 @@ pytest = ">=3.5.0"
 rich = ">=8.0.0"
 
 [[package]]
+name = "pytest-env"
+version = "1.1.1"
+description = "pytest plugin that allows you to add environment variables."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pytest_env-1.1.1-py3-none-any.whl", hash = "sha256:2b71b37c6810f28bec790a7b373c777af87352b3a359b3de0edb9d24df5cf8b3"},
+    {file = "pytest_env-1.1.1.tar.gz", hash = "sha256:1efb8acce1f6431196150f3b30673443ff05a6fabff64539a9495cd2248adf9e"},
+]
+
+[package.dependencies]
+pytest = ">=7.4.3"
+
+[package.extras]
+test = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "pytest-mock (>=3.12)"]
+
+[[package]]
 name = "pytest-mock"
 version = "3.12.0"
 description = "Thin-wrapper around the mock package for easier use with pytest"
@@ -2233,4 +2250,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "a1cda41e404fe2c519878276d65024480f8b348cbf711873005b67aa25eae751"
+content-hash = "104eab9eb6dd7b7fd7b22decd04656372e57a0e7d1dc17b5da201cc2edaaa1b2"
