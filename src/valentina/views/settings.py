@@ -12,11 +12,12 @@ from valentina.constants import (
     EmbedColor,
     Emoji,
     PermissionManageCampaign,
-    PermissionsEditTrait,
-    PermissionsEditXP,
+    PermissionsGrantXP,
     PermissionsKillCharacter,
+    PermissionsManageTraits,
 )
-from valentina.models.bot import Valentina
+from valentina.models import Guild
+from valentina.models.bot import Valentina, ValentinaContext
 from valentina.views import CancelButton
 
 
@@ -36,13 +37,15 @@ class SettingsFlags(discord.ui.View):
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
+        guild: Guild,
         key: str,
         options: list[tuple[str, int]] | None = None,
         current_value: int | None = None,
     ):
         super().__init__(timeout=300)
         self.ctx = ctx
+        self.guild = guild
         self.bot = cast(Valentina, ctx.bot)
         self.options = options
         self.key = key
@@ -98,10 +101,11 @@ class SettingsFlags(discord.ui.View):
 
         # Get the custom_id of the button that was pressed
         response = int(interaction.data.get("custom_id", None))  # type: ignore [call-overload]
-        logger.warning(f"SettingsFlags.button_callback: {self.key=}:{response=}")
+        logger.warning(f"SettingsFlags.button_callback: {self.key}: {response}")
 
         # Update the database
-        self.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: response})
+        setattr(self.guild.permissions, self.key, response)
+        await self.guild.save()
 
         # Edit the original message
         embed = interaction.message.embeds[0]
@@ -125,7 +129,7 @@ class SettingsChannelSelect(discord.ui.View):
     Permissions are a tuple of (default, player, storyteller) permissions taken from constants.CHANNEL_PERMISSIONS.
 
     Attributes:
-        ctx (discord.ApplicationContext): The application context for the command invocation.
+        ctx (ValentinaContext): The application context for the command invocation.
         key (str): The database key for storing the channel ID.
         permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]):
             A tuple containing permissions for various roles.
@@ -133,15 +137,17 @@ class SettingsChannelSelect(discord.ui.View):
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
+        guild: Guild,
         key: str,
         permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
         channel_topic: str,
     ):
         super().__init__(timeout=300)
         self.ctx = ctx
-        self.bot = cast(Valentina, ctx.bot)
+        self.guild = guild
         self.key = key
+        self.bot = cast(Valentina, ctx.bot)
         self.permissions = permissions
         self.channel_topic = channel_topic
 
@@ -158,25 +164,26 @@ class SettingsChannelSelect(discord.ui.View):
         """
         if enable and channel is not None:
             # Ensure the channel exists and has the right permissions
-            await self.bot.guild_svc.channel_update_or_add(
-                self.ctx.guild,
+            await self.ctx.channel_update_or_add(
                 channel=channel,
                 topic=self.channel_topic,
                 permissions=self.permissions,
             )
 
             # Update the settings in the database
-            self.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: channel.id})
-            logger.debug(f"SettingsManager: {self.key=}:{channel.name=}")
+            setattr(self.guild.channels, self.key, channel.id)
+            await self.guild.save()
+            logger.debug(f"SettingsManager: {self.key}: {channel.name=}")
 
             # Post changelog to the channel when the changelog channel is set
-            if self.key == "changelog_channel_id":
-                await self.bot.guild_svc.post_changelog(guild=self.ctx.guild, bot=self.bot)
+            if self.key == "changelog":
+                await self.bot.post_changelog_to_guild(self.ctx.guild)
 
         else:
-            # Update the settings in the database
-            self.bot.guild_svc.update_or_add(ctx=self.ctx, updates={self.key: None})
-            logger.debug(f"SettingsManager: {self.key=}:None")
+            # Remove the channel from the database
+            setattr(self.guild.channels, self.key, None)
+            await self.guild.save()
+            logger.debug(f"SettingsManager: {self.key}: None")
 
     @discord.ui.channel_select(
         placeholder="Select channel...",
@@ -191,8 +198,11 @@ class SettingsChannelSelect(discord.ui.View):
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
+
+        # Get the selected channel
         selected_channel = cast(discord.TextChannel, select.values[0])
 
+        # Update the database
         await self._update_guild_and_channel(enable=True, channel=selected_channel)
 
         # Edit the original message
@@ -255,13 +265,18 @@ class SettingsChannelSelect(discord.ui.View):
 class SettingsManager:
     """Manage guild settings."""
 
-    def __init__(self, ctx: discord.ApplicationContext) -> None:
-        self.ctx: discord.ApplicationContext = ctx
-        self.bot = cast(Valentina, ctx.bot)
+    def __init__(self, ctx: ValentinaContext, guild: Guild) -> None:
+        self.ctx: ValentinaContext = ctx
+        self.guild: Guild = guild
 
-        self.current_settings = self.bot.guild_svc.fetch_guild_settings(self.ctx.guild)
-        self.page_group: list[pages.PageGroup] = [
-            self._home_embed(),
+    async def _get_pages(self) -> list[pages.PageGroup]:
+        """Get the pages for the settings manager.
+
+        Returns:
+            list[pages.PageGroup]: A list of PageGroup objects containing the pages for the settings manager.
+        """
+        return [
+            await self._home_embed(),
             self._channel_audit_log(),
             self._channel_changelog(),
             self._channel_error_log(),
@@ -291,7 +306,8 @@ class SettingsManager:
 
         view = SettingsChannelSelect(
             self.ctx,
-            key="audit_log_channel_id",
+            self.guild,
+            key="audit_log",
             permissions=CHANNEL_PERMISSIONS["audit_log"],
             channel_topic="Valentina interaction audit reports",
         )
@@ -324,7 +340,8 @@ class SettingsManager:
 
         view = SettingsChannelSelect(
             self.ctx,
-            key="error_log_channel_id",
+            self.guild,
+            key="error_log",
             permissions=CHANNEL_PERMISSIONS["error_log_channel"],
             channel_topic="Valentina error reports",
         )
@@ -357,7 +374,8 @@ class SettingsManager:
 
         view = SettingsChannelSelect(
             self.ctx,
-            key="changelog_channel_id",
+            self.guild,
+            key="changelog",
             permissions=CHANNEL_PERMISSIONS["default"],
             channel_topic="Features and bug fixes for Valentina",
         )
@@ -371,7 +389,36 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def _home_embed(self) -> pages.PageGroup:
+    def _channel_storyteller(self) -> pages.PageGroup:
+        """Create a view for selecting the storyteller channel."""
+        description = [
+            "# Storyteller channel",
+            "Valentina can set up a channel for storytellers to use to communicate with each other and run commands in private. _IMPORTANT: The storyteller channel will be hidden from everyone except for administrators and storytellers._",
+            "### Instructions:",
+            "- Select a channel from the dropdown to select a storyteller channel and set it's permissions",
+            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
+        ]
+
+        embed = discord.Embed(
+            title="", description="\n".join(description), color=EmbedColor.INFO.value
+        )
+
+        view = SettingsChannelSelect(
+            self.ctx,
+            self.guild,
+            key="storyteller",
+            permissions=CHANNEL_PERMISSIONS["storyteller_channel"],
+            channel_topic="Private channel for storytellers",
+        )
+
+        return pages.PageGroup(
+            pages=[pages.Page(embeds=[embed], custom_view=view)],
+            label="Storyteller Channel",
+            description="Select the channel to use for storytellers",
+            use_default_buttons=False,
+        )
+
+    async def _home_embed(self) -> pages.PageGroup:
         """Create the home page group embed.
 
         Constructs an embed that serves as the home page for guild settings, displaying
@@ -381,12 +428,13 @@ class SettingsManager:
             pages.PageGroup: A PageGroup object containing the embed and custom view for the home page.
         """
         settings_home_embed = discord.Embed(title="", color=EmbedColor.DEFAULT.value)
+        guild = await Guild.get(self.ctx.guild.id)
 
         # Gather information
-        error_log_channel = self.bot.guild_svc.fetch_error_log_channel(self.ctx.guild)
-        audit_log_channel = self.bot.guild_svc.fetch_audit_log_channel(self.ctx.guild)
-        storyteller_channel = self.bot.guild_svc.fetch_storyteller_channel(self.ctx.guild)
-        changelog_channel = self.bot.guild_svc.fetch_changelog_channel(self.ctx.guild)
+        error_log_channel = guild.fetch_error_log_channel(self.ctx.guild)
+        audit_log_channel = guild.fetch_audit_log_channel(self.ctx.guild)
+        storyteller_channel = guild.fetch_storyteller_channel(self.ctx.guild)
+        changelog_channel = guild.fetch_changelog_channel(self.ctx.guild)
 
         settings_home_embed.description = "\n".join(
             [
@@ -397,10 +445,10 @@ class SettingsManager:
                 "### Current Settings",
                 "```yaml",
                 "# Permissions",
-                f"Grant experience   : {PermissionsEditXP(self.current_settings['permissions_edit_xp']).name.title()}",
-                f"Manage campaign    : {PermissionManageCampaign(self.current_settings['permissions_manage_campaigns']).name.title()}",
-                f"Update trait values: {PermissionsEditTrait(self.current_settings['permissions_edit_trait']).name.title()}",
-                f"Kill Character     : {PermissionsKillCharacter(self.current_settings['permissions_kill_character']).name.title()}",
+                f"Grant experience   : {self.guild.permissions.grant_xp.name.title()}",
+                f"Manage campaign    : {self.guild.permissions.manage_campaigns.name.title()}",
+                f"Update trait values: {self.guild.permissions.manage_traits.name.title()}",
+                f"Kill Character     : {self.guild.permissions.kill_character.name.title()}",
                 "",
                 "# Channel Settings:",
                 f"Changelog channel  : Enabled (#{changelog_channel.name})"
@@ -432,8 +480,7 @@ class SettingsManager:
     def _permissions_kill_character(self) -> pages.PageGroup:
         """Create a view for setting kill character permissions.
 
-        This method generates a Discord embed that provides options for setting permissions
-        on who can mark a character as dead. It also sets up buttons for the user to interact with.
+        This method generates a Discord embed that provides options for setting permissions on who can mark a character as dead. It also sets up buttons for the user to interact with.
 
         Returns:
             pages.PageGroup: A PageGroup object containing the embed and custom view for setting permissions.
@@ -458,9 +505,10 @@ class SettingsManager:
         ]
         view = SettingsFlags(
             self.ctx,
-            key="permissions_kill_character",
+            self.guild,
+            key="kill_character",
             options=options,
-            current_value=int(self.current_settings["permissions_kill_character"]),
+            current_value=self.guild.permissions.kill_character.value,
         )
 
         return pages.PageGroup(
@@ -504,43 +552,16 @@ class SettingsManager:
         ]
         view = SettingsFlags(
             self.ctx,
-            key="permissions_manage_campaigns",
+            self.guild,
+            key="manage_campaigns",
             options=options,
-            current_value=int(self.current_settings["permissions_manage_campaigns"]),
+            current_value=self.guild.permissions.manage_campaigns.value,
         )
 
         return pages.PageGroup(
             pages=[pages.Page(embeds=[embed], custom_view=view)],
             label="Manage Campaigns",
             description="Who can manage campaigns",
-            use_default_buttons=False,
-        )
-
-    def _channel_storyteller(self) -> pages.PageGroup:
-        """Create a view for selecting the storyteller channel."""
-        description = [
-            "# Storyteller channel",
-            "Valentina can set up a channel for storytellers to use to communicate with each other and run commands in private. _IMPORTANT: The storyteller channel will be hidden from everyone except for administrators and storytellers._",
-            "### Instructions:",
-            "- Select a channel from the dropdown to select a storyteller channel and set it's permissions",
-            "- If you don't see the channel you want to use in the list, create it first and then re-run this command",
-        ]
-
-        embed = discord.Embed(
-            title="", description="\n".join(description), color=EmbedColor.INFO.value
-        )
-
-        view = SettingsChannelSelect(
-            self.ctx,
-            key="storyteller_channel_id",
-            permissions=CHANNEL_PERMISSIONS["storyteller_channel"],
-            channel_topic="Private channel for storytellers",
-        )
-
-        return pages.PageGroup(
-            pages=[pages.Page(embeds=[embed], custom_view=view)],
-            label="Storyteller Channel",
-            description="Select the channel to use for storytellers",
             use_default_buttons=False,
         )
 
@@ -571,13 +592,14 @@ class SettingsManager:
         # Build options for the buttons and the view
         options = [
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
-            for x in PermissionsEditTrait
+            for x in PermissionsManageTraits
         ]
         view = SettingsFlags(
             self.ctx,
-            key="permissions_edit_trait",
+            self.guild,
+            key="manage_traits",
             options=options,
-            current_value=int(self.current_settings["permissions_edit_trait"]),
+            current_value=self.guild.permissions.manage_traits.value,
         )
 
         return pages.PageGroup(
@@ -613,13 +635,14 @@ class SettingsManager:
         # Build options for the buttons and the view
         options = [
             (f"{x.value + 1}. {x.name.title().replace('_', ' ')}", x.value)
-            for x in PermissionsEditXP
+            for x in PermissionsGrantXP
         ]
         view = SettingsFlags(
             self.ctx,
-            key="permissions_edit_xp",
+            self.guild,
+            key="grant_xp",
             options=options,
-            current_value=int(self.current_settings["permissions_edit_xp"]),
+            current_value=self.guild.permissions.grant_xp.value,
         )
 
         return pages.PageGroup(
@@ -629,7 +652,7 @@ class SettingsManager:
             use_default_buttons=False,
         )
 
-    def display_settings_manager(self) -> pages.Paginator:
+    async def display_settings_manager(self) -> pages.Paginator:
         """Display the settings manager.
 
         Display the settings manager as a paginator to navigate through different settings.
@@ -638,7 +661,7 @@ class SettingsManager:
             pages.Paginator: The paginator object containing all the settings pages.
         """
         return pages.Paginator(
-            pages=self.page_group,
+            pages=await self._get_pages(),
             show_menu=True,
             menu_placeholder="Navigate To Setting",
             show_disabled=False,

@@ -9,7 +9,8 @@ from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
 from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
-from valentina.models.bot import Valentina
+from valentina.models import Guild
+from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import errors
 from valentina.utils.converters import ValidImageURL
 from valentina.utils.discord_utils import assert_permissions
@@ -24,7 +25,7 @@ from valentina.views import (
 p = inflect.engine()
 
 
-class Admin(commands.Cog):
+class AdminCog(commands.Cog):
     """Valentina settings, debugging, and administration."""
 
     def __init__(self, bot: Valentina) -> None:
@@ -58,7 +59,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def add_role(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         member: discord.Member,
         role: discord.Role,
         reason: Option(str, description="Reason for adding role", default="No reason provided"),
@@ -86,7 +87,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def kick(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         member: discord.Member,
         *,
         reason: str = "No reason given",
@@ -122,7 +123,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(ban_members=True)
     async def ban(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         user: discord.User,
         *,
         reason: str = "No reason given",
@@ -162,7 +163,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def unban(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         user: discord.User,
         hidden: Option(
             bool,
@@ -195,7 +196,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def massban(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         members: Option(
             str, "The mentions, usernames, or IDs of the members to ban. Separated by spaces"
         ),
@@ -254,7 +255,7 @@ class Admin(commands.Cog):
     @admin.command(name="settings", description="Manage Guild Settings")
     async def settings_manager(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         hidden: Option(
             bool,
             description="Make the response visible only to you (default true).",
@@ -262,8 +263,9 @@ class Admin(commands.Cog):
         ),
     ) -> None:
         """Manage Guild Settings."""
-        manager = SettingsManager(ctx)
-        paginator = manager.display_settings_manager()
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        manager = SettingsManager(ctx, guild)
+        paginator = await manager.display_settings_manager()
         await paginator.respond(ctx.interaction, ephemeral=hidden)
         await paginator.wait()
 
@@ -273,15 +275,16 @@ class Admin(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def review_result_thumbnails(
-        self, ctx: discord.ApplicationContext, roll_type: Option(RollResultType, required=True)
+        self, ctx: ValentinaContext, roll_type: Option(RollResultType, required=True)
     ) -> None:
         """Review all result thumbnails for this guild."""
-        await ThumbnailReview(ctx, roll_type).send(ctx)
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        await ThumbnailReview(ctx, guild, roll_type).send(ctx)
 
     @guild.command(name="emoji_add")
     async def emoji_add(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         name: Option(str, description="The name of the emoji to add"),
         file: Option(
             discord.Attachment,
@@ -327,14 +330,14 @@ class Admin(commands.Cog):
         await ctx.guild.create_custom_emoji(name=name, image=data)
 
         # Send confirmation
-        await self.bot.guild_svc.send_to_audit_log(ctx, title)
+        await ctx.post_to_audit_log(title)
         await confirmation_response_msg
 
     @guild.command(name="emoji_delete")
     @discord.option("name", description="The name of the emoji to delete.")
     async def emoji_delete(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         name: str,
         reason: Option(
             str,
@@ -353,9 +356,7 @@ class Admin(commands.Cog):
             if emoji.name == name:
                 await emoji.delete(reason=reason)
 
-                await self.bot.guild_svc.send_to_audit_log(
-                    ctx, f"Delete emoji from guild: `:{name}:`"
-                )
+                await ctx.post_to_audit_log(f"Delete emoji from guild: `:{name}:`")
 
                 await present_embed(
                     ctx,
@@ -380,7 +381,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def slowmode(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         seconds: Option(int, description="The slowmode cooldown in seconds, 0 to disable slowmode"),
         hidden: Option(
             bool,
@@ -420,7 +421,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def lock(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         *,
         reason: Option(
             str,
@@ -464,7 +465,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def unlock(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         *,
         reason: Option(
             str,
@@ -511,7 +512,7 @@ class Admin(commands.Cog):
     )
     async def purge_old_messages(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         limit: int,
         *,
         reason: Option(
@@ -550,7 +551,7 @@ class Admin(commands.Cog):
     )
     async def purge_by_member(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         member: discord.Member,
         limit: int,
         *,
@@ -588,7 +589,7 @@ class Admin(commands.Cog):
     )
     async def purge_bot_messages(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         limit: int,
         *,
         reason: Option(
@@ -627,7 +628,7 @@ class Admin(commands.Cog):
     )
     async def purge_containing(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         phrase: str,
         limit: int,
         *,
@@ -658,4 +659,4 @@ class Admin(commands.Cog):
 
 def setup(bot: Valentina) -> None:
     """Add the cog to the bot."""
-    bot.add_cog(Admin(bot))
+    bot.add_cog(AdminCog(bot))

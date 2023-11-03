@@ -1,15 +1,13 @@
 """Models for dice rolls."""
 
-
 import discord
 import inflect
 from loguru import logger
 from numpy.random import default_rng
 
 from valentina.constants import DiceType, EmbedColor, RollResultType
-from valentina.models.db_tables import Character, RollStatistic
+from valentina.models import Character, Guild, RollStatistic
 from valentina.utils import errors
-from valentina.utils.helpers import diceroll_thumbnail
 
 p = inflect.engine()
 _rng = default_rng()
@@ -46,9 +44,9 @@ class DiceRoll:
         is_success (bool): Whether the roll is a success.
         embed_title (str): The title of the roll response embed.
         embed_description (str): The description of the roll response embed.
-        takeaway_type (str): The roll's takeaway type for logging statistics
         pool (int): The pool's total size, including hunger.
         result (int): The number of successes after accounting for botches and cancelling ones and tens.
+        result_type(RollResultType): The result type of the roll.
         roll (list[int]): A list of the result all rolled dice.
         successes (int): The number of successful dice not including criticals.
     """
@@ -118,22 +116,28 @@ class DiceRoll:
 
         return RollResultType.SUCCESS
 
-    async def log_roll(self) -> None:
-        """Log the roll to the database."""
+    async def log_roll(self, traits: list[str] = []) -> None:
+        """Log the roll to the database.
+
+        Args:
+            traits (list[str], optional): The traits to log the roll for. Defaults to [].
+
+        """
         # Ensure the user in the database to avoid foreign key errors
-        user = await self.ctx.bot.user_svc.fetch_user(self.ctx)  # type: ignore [attr-defined]
 
         # Log the roll to the database
         if self.dice_type == DiceType.D10:
-            fields_to_log = {
-                "guild": self.ctx.guild.id,
-                "user": user,
-                "character": self.character if self.character else None,
-                "result": self.result_type.name,
-                "pool": self.pool,
-                "difficulty": self.difficulty,
-            }
-            RollStatistic.create(**fields_to_log)
+            stat = RollStatistic(
+                guild=self.ctx.guild.id,
+                user=self.ctx.author.id,
+                character=str(self.character.id) if self.character else None,
+                result=self.result_type,
+                pool=self.pool,
+                difficulty=self.difficulty,
+                traits=traits,
+            )
+            await stat.insert()
+
             logger.debug(
                 f"DICEROLL: {self.ctx.author.display_name} rolled {self.roll} for {self.result_type.name}"
             )
@@ -207,10 +211,10 @@ class DiceRoll:
 
         return self._result
 
-    @property
-    def thumbnail_url(self) -> str:  # pragma: no cover
+    async def thumbnail_url(self) -> str:  # pragma: no cover
         """Determine the thumbnail to use for the Discord embed."""
-        return diceroll_thumbnail(self.ctx, self.result_type)
+        guild = await Guild.get(self.ctx.guild.id)
+        return await guild.fetch_diceroll_thumbnail(self.result_type)
 
     @property
     def embed_color(self) -> int:  # pragma: no cover
@@ -247,8 +251,3 @@ class DiceRoll:
             RollResultType.FAILURE: "",
         }
         return title_map[self.result_type]
-
-    @property
-    def takeaway_type(self) -> str:  # pragma: no cover
-        """The roll's takeaway type for logging statistics."""
-        return self.result_type.value

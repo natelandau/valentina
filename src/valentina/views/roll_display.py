@@ -2,7 +2,8 @@
 import discord
 import inflect
 
-from valentina.models.db_tables import CustomTrait, Trait
+from valentina.models import CharacterTrait
+from valentina.models.bot import ValentinaContext
 from valentina.models.dicerolls import DiceRoll
 
 p = inflect.engine()
@@ -16,21 +17,17 @@ class RollDisplay:
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: ValentinaContext,
         roll: DiceRoll,
         comment: str | None = None,
-        trait_one: Trait | CustomTrait | None = None,
-        trait_one_value: int = 0,
-        trait_two: Trait | CustomTrait | None = None,
-        trait_two_value: int = 0,
+        trait_one: CharacterTrait | None = None,
+        trait_two: CharacterTrait | None = None,
     ):
         self.ctx = ctx
         self.roll = roll
         self.comment = comment
         self.trait_one = trait_one
-        self.trait_one_value = trait_one_value
         self.trait_two = trait_two
-        self.trait_two_value = trait_two_value
 
     def _add_comment_field(self, embed: discord.Embed) -> discord.Embed:
         """Add the comment field to the embed."""
@@ -64,13 +61,13 @@ class RollDisplay:
         if self.trait_one and self.trait_two:
             embed.add_field(
                 name="**Rolled Traits**",
-                value=f"{self.trait_one.name}: `{self.trait_one_value} {p.plural_noun('die', self.trait_one_value)}`\n{self.trait_two.name}: `{self.trait_two_value} {p.plural_noun('die', self.trait_two_value)}`",
+                value=f"{self.trait_one.name}: `{self.trait_one.value} {p.plural_noun('die', self.trait_one.value)}`\n{self.trait_two.name}: `{self.trait_two.value} {p.plural_noun('die', self.trait_two.value)}`",
                 inline=False,
             )
         elif self.trait_one:
             embed.add_field(
                 name="**Rolled Traits**",
-                value=f"{self.trait_one.name}: `{self.trait_one_value} {p.plural_noun('die', self.trait_one_value)}`",
+                value=f"{self.trait_one.name}: `{self.trait_one.value} {p.plural_noun('die', self.trait_one.value)}`",
                 inline=False,
             )
 
@@ -85,7 +82,7 @@ class RollDisplay:
         )
 
         # Thumbnail
-        embed.set_thumbnail(url=self.roll.thumbnail_url)
+        embed.set_thumbnail(url=await self.roll.thumbnail_url())
 
         embed = self._add_roll_fields(embed)
         embed = self._add_trait_fields(embed)

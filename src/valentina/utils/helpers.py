@@ -5,14 +5,11 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 import aiohttp
-import discord
 from aiohttp import ClientSession
 from loguru import logger
 
 from valentina.constants import (
-    DICEROLL_THUBMS,
     MaxTraitValue,
-    RollResultType,
     XPMultiplier,
     XPNew,
 )
@@ -82,48 +79,18 @@ def adjust_sum_to_match_total(
     return values
 
 
-def diceroll_thumbnail(ctx: discord.ApplicationContext, result: RollResultType) -> str:
-    """Take a string and return a random gif url.
-
-    Args:
-        ctx (discord.ApplicationContext): The application context.
-        result (RollResultType): The roll result type.
-
-    Returns:
-    Optional[str]: The thumbnail URL, or None if no thumbnail is found.
-    """
-    # Get the list of default thumbnails for the result type
-    thumb_list = DICEROLL_THUBMS.get(result.name, [])
-
-    # Get the list of thumbnails from the database
-    database_thumbs = ctx.bot.guild_svc.fetch_roll_result_thumbs(ctx)  # type: ignore [attr-defined]
-
-    # Find the matching category in the database thumbnails (case insensitive)
-    matching_category = next(
-        (category for category in database_thumbs if category.lower() == result.name.lower()), None
-    )
-
-    # If a matching category was found, extend the list of thumbnails with the database thumbnails
-    if matching_category:
-        thumb_list.extend(database_thumbs[matching_category])
-
-    # If there are no thumbnails, return None
-    if not thumb_list:
-        return None
-
-    # Return a random thumbnail
-    return random.choice(thumb_list)
-
-
 async def fetch_random_name(
     gender: str | None = None, country: str = "us", results: int = 1
-) -> list[tuple[str, str]]:
+) -> list[tuple[str, str]] | tuple[str, str]:
     """Fetch a random name from the randomuser.me API.
 
     Args:
         country (str, optional): The country to fetch the name from. Defaults to "us".
         results (int, optional): The number of results to fetch. Defaults to 1.
         gender (str, optional): The gender of the name to fetch. Defaults to None
+
+    Returns:
+        list[tuple[str, str]] | tuple[str, str]: A list of tuples containing the first and last name. If only one result, a single tuple is returned.
 
     """
     if not gender:
@@ -135,7 +102,15 @@ async def fetch_random_name(
     async with ClientSession() as session, session.get(url) as res:
         if 300 > res.status >= 200:  # noqa: PLR2004
             data = await res.json()
-            return [(result["name"]["first"], result["name"]["last"]) for result in data["results"]]
+
+            result = [
+                (result["name"]["first"], result["name"]["last"]) for result in data["results"]
+            ]
+
+            if len(result) == 1:
+                return result[0]
+
+            return result
 
     return [("John", "Doe")]
 
@@ -171,7 +146,7 @@ def divide_into_three(total: int) -> list[int]:
     return [segment1, segment2, segment3]
 
 
-def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False) -> int | None:
+def get_max_trait_value(trait: str, category: str) -> int | None:
     """Get the maximum value for a trait by looking up the trait in the XPMultiplier enum.
 
     Args:
@@ -191,10 +166,6 @@ def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False
 
         >>> get_max_trait_value("xxx", "xxx")
         5
-
-        >>> get_max_trait_value("xxx", "xxx", True)
-
-
     """
     # Some traits have their own max value. Check for those first.
     if trait.upper() in MaxTraitValue.__members__:
@@ -203,9 +174,6 @@ def get_max_trait_value(trait: str, category: str, is_custom_trait: bool = False
     # Try to find the max value by looking up the category of the trait
     if category.upper() in MaxTraitValue.__members__:
         return MaxTraitValue[category.upper()].value
-
-    if is_custom_trait:
-        return None
 
     return MaxTraitValue.DEFAULT.value
 

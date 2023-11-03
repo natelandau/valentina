@@ -4,11 +4,12 @@ from collections.abc import Coroutine
 import discord
 
 from valentina.constants import EmbedColor, Emoji
+from valentina.models.bot import ValentinaContext
 from valentina.views import ConfirmCancelButtons, present_embed
 
 
 async def confirm_action(
-    ctx: discord.ApplicationContext,
+    ctx: ValentinaContext,
     title: str,
     description: str | None = None,
     hidden: bool = False,
@@ -20,7 +21,7 @@ async def confirm_action(
     """Prompt the user for confirmation.
 
     Args:
-        ctx (discord.ApplicationContext): The context object.
+        ctx (ValentinaContext): The context object.
         title (str): The title for the confirmation embed.
         description (str, optional): The description for the confirmation embed. Defaults to None.
         hidden (bool): Whether to make the response visible only to the user.

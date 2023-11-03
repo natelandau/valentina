@@ -1,172 +1,211 @@
 # type: ignore
-"""Test the CharacterService class."""
-import re
+"""Test the Statistics module."""
 
 import discord
 import pytest
-from dirty_equals import IsInstance, IsStr
 
 from valentina.constants import RollResultType
-from valentina.models import Statistics
-from valentina.models.db_tables import Character, RollStatistic
+from valentina.models import RollStatistic, Statistics
+
+from .factories import *
 
 
-@pytest.mark.usefixtures("mock_db")
-class TestStatistics:
-    """Test the Statistics class."""
+@pytest.mark.drop_db()
+async def test_guild_statistics_no_results(mock_ctx1):
+    """Test pulling guild statistics."""
+    # GIVEN a guild with no statistics
+    # WHEN statistics are pulled for a guild
+    s = Statistics(mock_ctx1)
+    result = await s.guild_statistics()
 
-    @pytest.mark.asyncio()
-    async def test_guild_statistics(self, mock_ctx):
-        """Test pulling guild statistics."""
-        # GIVEN no statistics in the db
-        for record in RollStatistic.select():
-            record.delete_instance(recursive=True, delete_nullable=True)
+    # THEN confirm no statistics are returned
+    assert s.botches == 0
+    assert s.successes == 0
+    assert s.failures == 0
+    assert s.criticals == 0
+    assert s.total_rolls == 0
+    assert s.average_difficulty == 0
+    assert s.average_pool == 0
+    assert result == "\n## Roll statistics for guild `Test Guild`\nNo statistics found"
 
-        # WHEN statistics are pulled for a guild
-        s = Statistics(mock_ctx)
-        embed = await s.get_embed()
 
-        # THEN confirm users are told there are no statistics to display
-        assert s.botches == 0
-        assert s.successes == 0
-        assert s.failures == 0
-        assert s.criticals == 0
-        assert s.total_rolls == 0
-        assert s.average_difficulty == 0
-        assert s.average_pool == 0
-        assert s.title == "Roll Statistics for guild `Test Guild`"
-        assert embed == IsInstance(discord.Embed)
-        assert embed.description == IsStr(regex=r".*No statistics found", regex_flags=re.S)
+# async def test_guild_statistics_with_results(mock_ctx1)
+async def test_guild_statistics_results(mock_ctx1):
+    """Test pulling guild statistics."""
+    # GIVEN a guild with statistics
+    stat1 = RollStatistic(
+        user=1,
+        guild=1,
+        character="1",
+        result=RollResultType.SUCCESS,
+        pool=1,
+        difficulty=1,
+    )
+    stat2 = RollStatistic(
+        user=1,
+        guild=1,
+        character="1",
+        result=RollResultType.BOTCH,
+        pool=1,
+        difficulty=3,
+    )
+    stat3 = RollStatistic(
+        user=2,
+        guild=2,
+        character="2",
+        result=RollResultType.BOTCH,
+        pool=1,
+        difficulty=1,
+    )
+    await stat1.insert()
+    await stat2.insert()
+    await stat3.insert()
 
-        # GIVEN rolls in the database
-        for result, pool, difficulty in zip(
-            RollResultType, [1, 2, 3, 4, 5], [5, 4, 3, 2, 1], strict=True
-        ):
-            RollStatistic.create(
-                user=1,
-                guild=1,
-                character=1,
-                result=result.name,
-                pool=pool,
-                difficulty=difficulty,
-            )
+    # WHEN statistics are pulled for a guild
+    s = Statistics(mock_ctx1)
+    result = await s.guild_statistics(as_embed=True)
 
-        # WHEN statistics are pulled for a guild
-        p = Statistics(mock_ctx)
-        embed = await p.get_embed()
+    # THEN confirm the statistics are returned to the user
+    assert s.botches == 1
+    assert s.successes == 1
+    assert s.failures == 0
+    assert s.criticals == 0
+    assert s.total_rolls == 2
+    assert s.average_difficulty == 2
+    assert isinstance(result, discord.Embed)
+    assert "Successful Rolls: ........ 1   (50.00%)" in result.description
 
-        # THEN confirm the statistics are returned to the user
-        assert p.title == "Roll Statistics for guild `Test Guild`"
-        assert p.botches == 1
-        assert p.successes == 1
-        assert p.failures == 1
-        assert p.criticals == 1
-        assert p.total_rolls == 5
-        assert p.average_difficulty == 3
-        assert p.average_pool == 3
-        assert embed == IsInstance(discord.Embed)
-        assert embed.description == IsStr(regex=r".*Total Rolls:[ \.]+5.*", regex_flags=re.S)
 
-    @pytest.mark.asyncio()
-    async def test_member_statistics(self, mock_ctx, mock_member):
-        """Test the pulling user statistics."""
-        # GIVEN no statistics in the db
-        for record in RollStatistic.select():
-            record.delete_instance(recursive=True, delete_nullable=True)
+@pytest.mark.drop_db()
+async def test_user_statistics_no_results(mock_ctx1):
+    """Test pulling user statistics."""
+    # GIVEN a user with no statistics
+    # WHEN statistics are pulled for a user
+    s = Statistics(mock_ctx1)
+    result = await s.user_statistics(mock_ctx1.author, with_title=False)
 
-        # WHEN statistics are pulled for a member
-        s = Statistics(mock_ctx, user=mock_member)
-        embed = await s.get_embed()
+    # THEN confirm no statistics are returned
+    assert s.botches == 0
+    assert s.successes == 0
+    assert s.failures == 0
+    assert s.criticals == 0
+    assert s.total_rolls == 0
+    assert s.average_difficulty == 0
+    assert s.average_pool == 0
+    assert result == "\nNo statistics found"
 
-        # THEN confirm users are told there are no statistics to display
-        assert s.botches == 0
-        assert s.successes == 0
-        assert s.failures == 0
-        assert s.criticals == 0
-        assert s.total_rolls == 0
-        assert s.average_difficulty == 0
-        assert s.average_pool == 0
-        assert s.title == "Roll Statistics for `Test User`"
-        assert embed == IsInstance(discord.Embed)
-        assert embed.description == IsStr(regex=r".*No statistics found", regex_flags=re.S)
 
-        # GIVEN rolls in the database
-        for result, pool, difficulty in zip(
-            RollResultType, [1, 2, 3, 4, 5], [5, 4, 3, 2, 1], strict=True
-        ):
-            RollStatistic.create(
-                user=1,
-                guild=1,
-                character=1,
-                result=result.name,
-                pool=pool,
-                difficulty=difficulty,
-            )
+async def test_user_statistics_results(mock_ctx1):
+    """Test pulling user statistics."""
+    # GIVEN a user with statistics
+    stat1 = RollStatistic(
+        user=1,
+        guild=1,
+        character="1",
+        result=RollResultType.SUCCESS,
+        pool=1,
+        difficulty=1,
+    )
+    stat2 = RollStatistic(
+        user=1,
+        guild=1,
+        character="1",
+        result=RollResultType.BOTCH,
+        pool=1,
+        difficulty=3,
+    )
+    stat3 = RollStatistic(
+        user=2,
+        guild=2,
+        character="2",
+        result=RollResultType.BOTCH,
+        pool=1,
+        difficulty=1,
+    )
+    await stat1.insert()
+    await stat2.insert()
+    await stat3.insert()
 
-        # WHEN statistics are pulled for a member
-        p = Statistics(mock_ctx, user=mock_member)
-        embed = await p.get_embed()
+    # WHEN statistics are pulled for a guild
+    s = Statistics(mock_ctx1)
+    result = await s.user_statistics(mock_ctx1.author, as_embed=True, with_help=False)
 
-        # THEN confirm the statistics are returned to the user
-        assert p.title == "Roll Statistics for `Test User`"
-        assert p.botches == 1
-        assert p.successes == 1
-        assert p.failures == 1
-        assert p.criticals == 1
-        assert p.total_rolls == 5
-        assert p.average_difficulty == 3
-        assert p.average_pool == 3
-        assert embed == IsInstance(discord.Embed)
-        assert embed.description == IsStr(regex=r".*Total Rolls:[ \.]+5.*", regex_flags=re.S)
+    # THEN confirm the statistics are returned to the user
+    assert s.botches == 1
+    assert s.successes == 1
+    assert s.failures == 0
+    assert s.criticals == 0
+    assert s.total_rolls == 2
+    assert s.average_difficulty == 2
+    assert isinstance(result, discord.Embed)
+    assert "Successful Rolls: ........ 1   (50.00%)" in result.description
+    assert "Definitions:" not in result.description
 
-    @pytest.mark.asyncio()
-    async def test_character_statistics(self, mock_ctx):
-        """Test the pulling character statistics."""
-        # GIVEN no statistics in the db
-        for record in RollStatistic.select():
-            record.delete_instance(recursive=True, delete_nullable=True)
 
-        # WHEN statistics are pulled for a character
-        s = Statistics(mock_ctx, character=Character.get_by_id(1))
-        embed = await s.get_embed()
+@pytest.mark.drop_db()
+async def test_character_statistics_no_results(mock_ctx1, character_factory):
+    """Test pulling character_statistics."""
+    # GIVEN a character with no statistics
+    character = character_factory.build(traits=[])
 
-        # THEN confirm users are told there are no statistics to display
-        assert s.botches == 0
-        assert s.successes == 0
-        assert s.failures == 0
-        assert s.criticals == 0
-        assert s.total_rolls == 0
-        assert s.average_difficulty == 0
-        assert s.average_pool == 0
-        assert s.title == "Roll Statistics for `Test (Testy) Character`"
-        assert embed == IsInstance(discord.Embed)
-        assert embed.description == IsStr(regex=r".*No statistics found", regex_flags=re.S)
+    # WHEN statistics are pulled for a character
+    s = Statistics(mock_ctx1)
+    result = await s.character_statistics(character, with_title=False)
 
-        # GIVEN rolls in the database
-        for result, pool, difficulty in zip(
-            RollResultType, [1, 2, 3, 4, 5], [5, 4, 3, 2, 1], strict=True
-        ):
-            RollStatistic.create(
-                user=1,
-                guild=1,
-                character=1,
-                result=result.name,
-                pool=pool,
-                difficulty=difficulty,
-            )
+    # THEN confirm no statistics are returned
+    assert s.botches == 0
+    assert s.successes == 0
+    assert s.failures == 0
+    assert s.criticals == 0
+    assert s.total_rolls == 0
+    assert s.average_difficulty == 0
+    assert s.average_pool == 0
+    assert result == "\nNo statistics found"
 
-        # WHEN statistics are pulled for a character
-        p = Statistics(mock_ctx, character=Character.get_by_id(1))
-        embed = await p.get_embed()
 
-        # THEN confirm the statistics are returned to the user
-        assert p.title == "Roll Statistics for `Test (Testy) Character`"
-        assert p.botches == 1
-        assert p.successes == 1
-        assert p.failures == 1
-        assert p.criticals == 1
-        assert p.total_rolls == 5
-        assert p.average_difficulty == 3
-        assert p.average_pool == 3
-        assert embed == IsInstance(discord.Embed)
-        assert embed.description == IsStr(regex=r".*Total Rolls:[ \.]+5.*", regex_flags=re.S)
+async def test_character_statistics_results(mock_ctx1, character_factory):
+    """Test pulling character_statistics."""
+    # GIVEN a character with statistics
+    character = character_factory.build(traits=[])
+    stat1 = RollStatistic(
+        user=1,
+        guild=1,
+        character=str(character.id),
+        result=RollResultType.SUCCESS,
+        pool=1,
+        difficulty=1,
+    )
+    stat2 = RollStatistic(
+        user=1,
+        guild=1,
+        character=str(character.id),
+        result=RollResultType.BOTCH,
+        pool=1,
+        difficulty=3,
+    )
+    stat3 = RollStatistic(
+        user=2,
+        guild=2,
+        character="not_for_this_character",
+        result=RollResultType.BOTCH,
+        pool=1,
+        difficulty=1,
+    )
+    await stat1.insert()
+    await stat2.insert()
+    await stat3.insert()
+
+    # WHEN statistics are pulled for a guild
+    s = Statistics(mock_ctx1)
+    result = await s.character_statistics(character, as_embed=True, with_help=False)
+
+    # THEN confirm the statistics are returned to the user
+    assert s.botches == 1
+    assert s.successes == 1
+    assert s.failures == 0
+    assert s.criticals == 0
+    assert s.total_rolls == 2
+    assert s.average_difficulty == 2
+    assert isinstance(result, discord.Embed)
+    assert "Successful Rolls: ........ 1   (50.00%)" in result.description
+    assert "Definitions:" not in result.description

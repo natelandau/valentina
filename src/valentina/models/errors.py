@@ -36,6 +36,7 @@ class ErrorReporter:
         log_msg = None
         show_traceback = False
 
+        # Logged and reported to users but not shown in traceback
         if isinstance(
             error,
             commands.errors.MissingAnyRole
@@ -46,16 +47,18 @@ class ErrorReporter:
             user_msg = "Sorry, you don't have permission to run this command!"
             log_msg = f"COMMAND: `{ctx.user.display_name}` tried to run `/{ctx.command}` without the correct permissions"
 
+        # Reported to users but suppressed from logs and traceback
         if isinstance(
             error,
             errors.NoActiveCampaignError
             | errors.ValidationError
-            | errors.NoMatchingItemsError
             | errors.NoActiveCharacterError
             | errors.NotEnoughExperienceError
+            | errors.NoExperienceInCampaignError
             | errors.URLNotAvailableError
             | errors.ServiceDisabledError
-            | errors.S3ObjectExistsError,
+            | errors.S3ObjectExistsError
+            | errors.TraitExistsError,
         ):
             user_msg = str(error)
 
@@ -66,11 +69,9 @@ class ErrorReporter:
             log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a file was not found"
             show_traceback = True
 
-        if isinstance(error, errors.DatabaseError):
-            user_msg = (
-                "Sorry, there was a database error. This is likely a bug and has been reported."
-            )
-            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and no object was found in the database"
+        if isinstance(error, errors.NoCharacterClassError):
+            user_msg = "Sorry, something went wrong. This has been reported"
+            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a character class was not found"
             show_traceback = True
 
         if isinstance(error, DoesNotExist):
@@ -133,13 +134,13 @@ class ErrorReporter:
 
         # Send the messages
         if user_msg:
-            embed_message = user_error_embed(ctx, user_msg, str(error))
+            embed_message = user_error_embed(ctx, user_msg, str(error))  # type: ignore [arg-type]
             try:
                 await respond(embed=embed_message, ephemeral=True, delete_after=15)
             except discord.HTTPException:
                 await respond(
                     embed=user_error_embed(
-                        ctx, "Message too long to send", "This is a bug has been reported"
+                        ctx, "Message too long to send", "This is a bug has been reported"  # type: ignore [arg-type]
                     ),
                     ephemeral=True,
                     delete_after=15,
@@ -151,7 +152,7 @@ class ErrorReporter:
             log_method = logger.opt(exception=error).error if show_traceback else logger.warning
             log_method(log_msg)
             embed = await self.error_log_embed(ctx, log_msg, error)
-            await ctx.bot.guild_svc.send_to_error_log(ctx, embed, error)  # type: ignore [attr-defined] # It exists, really
+            await ctx.post_to_error_log(embed, error)  # type: ignore [attr-defined]
 
         if show_traceback:
             logger.opt(exception=error).error(f"ERROR: {error}")

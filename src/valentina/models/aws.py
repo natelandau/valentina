@@ -1,5 +1,4 @@
 """Class for interacting with AWS services."""
-
 from pathlib import Path
 
 import boto3
@@ -8,20 +7,14 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from loguru import logger
 
+from valentina.constants import CONFIG
 from valentina.utils import errors
-
-CONFIG = Config(retries={"max_attempts": 10, "mode": "standard"})
 
 
 class AWSService:
     """Class for interacting with AWS services."""
 
-    def __init__(
-        self,
-        aws_access_key_id: str,
-        aws_secret_access_key: str,
-        bucket_name: str,
-    ):
+    def __init__(self) -> None:
         """Initialize the AWS Service class with credentials.
 
         Args:
@@ -29,21 +22,25 @@ class AWSService:
             aws_secret_access_key (str): AWS secret access key.
             bucket_name (str): Name of the S3 bucket to use.
         """
-        if not aws_access_key_id or not aws_secret_access_key or not bucket_name:
+        self.aws_access_key_id = CONFIG.get("VALENTINA_AWS_ACCESS_KEY_ID", False)
+        self.aws_secret_access_key = CONFIG.get("VALENTINA_AWS_SECRET_ACCESS_KEY", False)
+        self.bucket_name = CONFIG.get("VALENTINA_S3_BUCKET_NAME", False)
+
+        if not self.aws_access_key_id or not self.aws_secret_access_key or not self.bucket_name:
             self.disabled = True
         else:
             self.disabled = False
 
             self.s3 = boto3.client(
                 "s3",
-                aws_access_key_id=aws_access_key_id,
-                aws_secret_access_key=aws_secret_access_key,
-                config=CONFIG,
+                aws_access_key_id=self.aws_access_key_id,
+                aws_secret_access_key=self.aws_secret_access_key,
+                config=Config(retries={"max_attempts": 10, "mode": "standard"}),
             )
-            self.bucket = bucket_name
+            self.bucket = self.bucket_name
             self.location = self.s3.get_bucket_location(Bucket=self.bucket)  # Ex. us-east-1
 
-    def check_disabled(self) -> None:
+    def _check_disabled(self) -> None:
         """Check if the service is disabled and raise an error if it is."""
         if self.disabled:
             msg = "AWS"
@@ -59,7 +56,7 @@ class AWSService:
         Returns:
             bool: True if the copy is successful, False otherwise.
         """
-        self.check_disabled()
+        self._check_disabled()
 
         copy_source = {"Bucket": self.bucket, "Key": source_key}
         try:
@@ -82,7 +79,7 @@ class AWSService:
         Returns:
             bool: True if the deletion is successful, False otherwise.
         """
-        self.check_disabled()
+        self._check_disabled()
 
         try:
             # Attempt to delete the object from the S3 bucket
@@ -104,7 +101,7 @@ class AWSService:
         Returns:
             bool: True if the download is successful, False otherwise.
         """
-        self.check_disabled()
+        self._check_disabled()
 
         try:
             self.s3.download_file(Bucket=self.bucket, Key=key, Filename=download_path)
@@ -126,7 +123,7 @@ class AWSService:
         Returns:
             str | None: Presigned URL or None if the operation fails.
         """
-        self.check_disabled()
+        self._check_disabled()
 
         try:
             url = self.s3.generate_presigned_url(
@@ -159,13 +156,14 @@ class AWSService:
         Raises:
             KeyError: If the object_type is not recognized or if required additional arguments are missing.
         """
+        # TODO: Refactor to make kwargs more obvious
         guild_id = ctx.guild.id
         try:
             match object_type:
                 case "guild":
                     return f"{guild_id}"
 
-                case "author":
+                case "author" | "user":
                     return f"{guild_id}/users/{ctx.author.id}"
 
                 case "character":
@@ -180,7 +178,7 @@ class AWSService:
 
                 case _:
                     logger.error(f"Invalid object_type: {object_type}")
-                    raise ValueError(object_type)
+                    raise errors.ValidationError(object_type)
 
         except KeyError as e:
             logger.error(f"Missing required argument to _key_error: {e}")
@@ -201,7 +199,7 @@ class AWSService:
         Returns:
             list[str]: A list of object keys that start with the given prefix.
         """
-        self.check_disabled()
+        self._check_disabled()
 
         result = self.s3.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
         return [obj["Key"] for obj in result.get("Contents", [])]
@@ -220,12 +218,7 @@ class AWSService:
         """
         return key in self.list_objects(key)
 
-    def upload_image(
-        self,
-        data: bytes,
-        key: str,
-        overwrite: bool = False,
-    ) -> bool:
+    def upload_image(self, data: bytes, key: str, overwrite: bool = False) -> bool:
         """Upload a an image to an S3 bucket.
 
         Take the provided bytes data and attempt to upload it to the S3 bucket.
@@ -239,7 +232,7 @@ class AWSService:
         Returns:
             bool: True if the upload is successful, False otherwise.
         """
-        self.check_disabled()
+        self._check_disabled()
 
         # Check if the object exists and whether we should overwrite it
         if not overwrite and self.object_exist(key):
@@ -275,7 +268,7 @@ class AWSService:
         Returns:
             bool: True if the upload is successful, False otherwise.
         """
-        self.check_disabled()
+        self._check_disabled()
 
         # Determine the name of the file in the S3 bucket
         key = name or f"{ctx.guild.id}/{path.name}"

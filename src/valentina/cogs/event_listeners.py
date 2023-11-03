@@ -3,13 +3,15 @@
 import random
 
 import discord
+from beanie.operators import Set
 from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import BAD_WORD_PATTERN, BOT_DESCRIPTIONS, EmbedColor
+from valentina.models import Guild, User
 from valentina.models.bot import Valentina
-from valentina.models.db_tables import Guild
 from valentina.models.errors import reporter
+from valentina.utils.helpers import time_now
 
 
 class Events(commands.Cog, name="Events"):
@@ -115,23 +117,38 @@ class Events(commands.Cog, name="Events"):
     async def on_guild_update(self, before: discord.Guild, after: discord.Guild) -> None:
         """Log guild name changes and update the database."""
         if before.name != after.name:
-            logger.info(f"BOT: Rename guild `{before.name}` => `{after.name}`")
-            Guild.update(name=after.name).where(Guild.id == before.id).execute()
+            logger.info(f"DATABASE: Rename guild `{before.name}` => `{after.name}`")
+
+            await Guild.find_one(Guild.id == before.id).upsert(
+                Set({"date_modified": time_now, "name": after.name}),
+                on_insert=Guild(id=after.id, name=after.name),
+            )
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         """Called when a member joins the server."""
         logger.info(f"EVENT: {member.display_name} has joined the server")
-
-        # Add user to the database
-        await self.bot.user_svc.update_or_add(ctx=None, user=member)
+        logger.debug(f"DATABASE: Update user `{member.name}`")
+        await User.find_one(User.id == member.id).upsert(
+            Set(
+                {
+                    "date_modified": time_now(),
+                    "name": member.display_name,
+                }
+            ),
+            on_insert=User(id=member.id, name=member.display_name),
+        )
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """Called when the bot joins a guild."""
         logger.info(f"EVENT: Joined {guild.name} ({guild.id})")
 
-        await self.bot.guild_svc.prepare_guild(guild=guild)
+        logger.debug(f"DATABASE: Update guild `{guild.name}`")
+        await Guild.find_one(Guild.id == guild.id).upsert(
+            Set({"date_modified": time_now, "name": guild.name}),
+            on_insert=Guild(id=guild.id, name=guild.name),
+        )
 
 
 def setup(bot: Valentina) -> None:

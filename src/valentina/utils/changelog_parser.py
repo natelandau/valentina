@@ -186,7 +186,7 @@ class ChangelogParser:
             # Add each category
             for category, entries in data.items():
                 # Skip the version and date
-                if category in ["date"]:
+                if category == "date":
                     continue
 
                 # Add the category header
@@ -224,7 +224,7 @@ class ChangelogParser:
             # Add each category
             for category, entries in data.items():
                 # Skip the version and date
-                if category in ["date"]:
+                if category == "date":
                     continue
 
                 # Add the category header
