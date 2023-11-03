@@ -29,7 +29,6 @@ env:
     VALENTINA_DB_PATH: "/tmp/valentina.sqlite"
     VALENTINA_TEST_MONGO_URI: "mongodb://localhost:27017"
     VALENTINA_TEST_MONGO_DATABASE_NAME: "valentina-test"
-    POETRY_INSTALLER_MAX_WORKERS: 1
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
