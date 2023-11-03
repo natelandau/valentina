@@ -40,23 +40,25 @@ jobs:
         strategy:
             fail-fast: true
             matrix:
-                python-version: ["3.11", "3.12"]
+                python-version: ["3.11"]
         steps:
             - name: Harden Security Runner
               uses: step-security/harden-runner@v2
               with:
-                  egress-policy: audit
+                  egress-policy: block
                   disable-sudo: true
                   allowed-endpoints: >
                       api.github.com:443
                       api.snapcraft.io:443
+                      auth.docker.io:443
                       codecov.io:443
                       files.pythonhosted.org:443
                       github.com:443
                       install.python-poetry.org:443
+                      production.cloudflare.docker.com:443
                       pypi.org:443
                       python-poetry.org:443
-                      randomuser.me:443
+                      registry-1.docker.io:443
                       storage.googleapis.com:443
                       uploader.codecov.io:443
 
@@ -84,26 +86,9 @@ jobs:
             # ----------------------------------------------
             #    Install poetry and project dependencies
             # ----------------------------------------------
-            # poetry config installer.max-workers 1
-            - name: Install Poetry
-              uses: snok/install-poetry@v1
-              with:
-                  virtualenvs-create: true
-                  virtualenvs-in-project: true
-                  installer-parallel: true
 
-            # Load cached venv if cache exists
-            - name: Load cached venv
-              id: cached-poetry-dependencies
-              uses: actions/cache@v3
-              with:
-                  path: .venv
-                  key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-            # Install dependencies if cache does not exist
-            - name: Install dependencies
-              if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-              run: poetry install --all-extras
+            - name: Setup Python and Poetry
+              uses: ./.github/actions/setup-poetry
 
             # ----------------------------------------------
             #    run linters
