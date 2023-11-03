@@ -29,6 +29,7 @@ env:
     VALENTINA_LOG_FILE: "/tmp/valentina.log"
     VALENTINA_TEST_MONGO_URI: "mongodb://localhost:27017"
     VALENTINA_TEST_MONGO_DATABASE_NAME: "valentina-test"
+    VALENTINA_DB_PATH: "valentina.sqlite" # TODO: Depreciated
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
