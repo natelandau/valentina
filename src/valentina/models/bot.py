@@ -13,6 +13,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import (
+    CONFIG,
     ChannelPermission,
     EmbedColor,
     PermissionManageCampaign,
@@ -362,14 +363,13 @@ class ValentinaContext(discord.ApplicationContext):
 class Valentina(commands.Bot):
     """Subclass discord.Bot."""
 
-    def __init__(self, parent_dir: Path, config: dict, version: str, *args: Any, **kwargs: Any):
+    def __init__(self, parent_dir: Path, version: str, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
         self.parent_dir = parent_dir
-        self.config = config
         self.version = version
-        self.owner_channels = [int(x) for x in self.config["VALENTINA_OWNER_CHANNELS"].split(",")]
+        self.owner_channels = [int(x) for x in CONFIG["VALENTINA_OWNER_CHANNELS"].split(",")]
 
         # Load Cogs
         # #######################
@@ -386,7 +386,7 @@ class Valentina(commands.Bot):
         # TODO: BEGIN one-time migration code (remove after first run)
         from valentina.utils.migrate_to_mongo import Migrate
 
-        migrate = Migrate(config=self.config)
+        migrate = Migrate(config=CONFIG)
         await migrate.do_migration()
         # TODO: END: Remove one-time migration code
 

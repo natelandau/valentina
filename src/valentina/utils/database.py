@@ -25,10 +25,7 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
     """
     # Create Motor client
     if not client:
-        client = AsyncIOMotorClient(
-            f"{CONFIG['VALENTINA_MONGO_URI']}/{CONFIG['VALENTINA_MONGO_DATABASE_NAME']}",
-            tz_aware=True,
-        )
+        client = AsyncIOMotorClient(f"{CONFIG['VALENTINA_MONGO_URI']}", tz_aware=True)
 
     # Initialize beanie with the Sample document class and a database
     await init_beanie(

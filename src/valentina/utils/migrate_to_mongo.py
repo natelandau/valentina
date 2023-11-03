@@ -206,6 +206,8 @@ class Migrate:
         """Migrate characters."""
         for sqlchar in SqliteCharacter.select():
             # Grab the user object
+            logger.info(f"MIGRATION: Migrating character `{sqlchar}`")
+
             owned_by_user = await User.get(sqlchar.owned_by.user)
             creator_user = await User.get(sqlchar.created_by.user)
 
@@ -226,8 +228,8 @@ class Migrate:
                 type_developer=sqlchar.data.get("developer_character", False),
                 type_player=sqlchar.data.get("player_character", False),
                 type_storyteller=sqlchar.data.get("storyteller_character", False),
-                user_creator=creator_user.id,
-                user_owner=owned_by_user.id,
+                user_creator=creator_user.id if creator_user else None,
+                user_owner=owned_by_user.id if owned_by_user else None,
                 bio=sqlchar.data.get("bio", None),
                 age=sqlchar.data.get("age", None),
                 auspice=sqlchar.data.get("auspice", None),
@@ -253,8 +255,11 @@ class Migrate:
                 owned_by_user.active_characters[str(character.guild)] = character
 
             # Add character to user character list
-            owned_by_user.characters.append(character)
-            await owned_by_user.save()
+            if owned_by_user:
+                owned_by_user.characters.append(character)
+                await owned_by_user.save()
+            else:
+                logger.warning(f"MIGRATION: No owner for character `{character.name}`")
 
             # Migration custom sections
             for section in SqliteCustomSection.select().where(

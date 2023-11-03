@@ -1,11 +1,8 @@
 """Models for the database."""
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
-from pathlib import Path
 
-from dotenv import dotenv_values
 from peewee import (
     BooleanField,
     DateTimeField,
@@ -18,6 +15,7 @@ from peewee import (
 )
 from playhouse.sqlite_ext import CSqliteExtDatabase, JSONField
 
+from valentina.constants import CONFIG
 from valentina.utils import errors
 
 
@@ -27,20 +25,9 @@ def time_now() -> datetime:
     return datetime.now(timezone.utc).replace(microsecond=0)
 
 
-# Import configuration from environment variables
-env_dir = Path(__file__).parents[3].absolute()
-config = {
-    **dotenv_values(env_dir / ".env"),  # load shared variables
-    **dotenv_values(env_dir / ".env.secrets"),  # load sensitive variables
-    **os.environ,  # override loaded values with environment variables
-}
-for k, v in config.items():
-    config[k] = v.replace('"', "").replace("'", "").replace(" ", "")
-
-
 # Instantiate Database
 DATABASE = CSqliteExtDatabase(
-    config["VALENTINA_DB_PATH"],
+    CONFIG["VALENTINA_DB_PATH"],
     pragmas={
         "journal_mode": "wal",
         "cache_size": -1 * 64000,  # 64MB

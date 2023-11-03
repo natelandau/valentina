@@ -43,8 +43,7 @@ logging.getLogger("discord.http").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTT
 logging.getLogger("discord.gateway").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
 logging.getLogger("discord.webhook").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
 logging.getLogger("discord.client").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
-logging.getLogger("peewee").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_DB"].upper())
-logging.getLogger("faker.factory").setLevel(level="ERROR")
+logging.getLogger("peewee").setLevel(level="INFO")
 for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
     logging.getLogger(service).setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_AWS"].upper())
 
@@ -83,7 +82,6 @@ def main(
         intents=intents,
         owner_ids=[int(o) for o in CONFIG["VALENTINA_OWNER_IDS"].split(",")],
         parent_dir=DIR,
-        config=CONFIG,
         command_prefix="∑",  # Effectively remove the command prefix by setting it to 'sigma'
         version=__version__,
     )
