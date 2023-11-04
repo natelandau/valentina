@@ -1201,16 +1201,6 @@ pygments = ">=2.12.0"
 dev = ["black", "hypothesis", "mypy", "pygments (>=2.14.0)", "pytest", "pytest-cov", "pytest-timeout", "ruff", "tox", "types-pygments"]
 
 [[package]]
-name = "peewee"
-version = "3.17.0"
-description = "a little orm"
-optional = false
-python-versions = "*"
-files = [
-    {file = "peewee-3.17.0.tar.gz", hash = "sha256:3a56967f28a43ca7a4287f4803752aeeb1a57a08dee2e839b99868181dfb5df8"},
-]
-
-[[package]]
 name = "platformdirs"
 version = "3.11.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
@@ -2250,4 +2240,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "104eab9eb6dd7b7fd7b22decd04656372e57a0e7d1dc17b5da201cc2edaaa1b2"
+content-hash = "96cf6712f32eb0bcfc4fb4182035175482454f8d3ebac9c454951ec04c270328"

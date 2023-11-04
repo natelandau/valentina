@@ -4,7 +4,6 @@ import traceback
 import discord
 from discord.ext import commands
 from loguru import logger
-from peewee import DoesNotExist
 
 from valentina.constants import EmbedColor
 from valentina.utils import errors
@@ -20,7 +19,7 @@ class ErrorReporter:
         self.channel: discord.TextChannel = None
 
     @staticmethod
-    def _handle_known_exceptions(  # noqa: C901
+    def _handle_known_exceptions(
         ctx: discord.ApplicationContext, error: Exception
     ) -> tuple[str | None, str | None, bool]:
         """Handle known exceptions and return user message, log message, and traceback flag.
@@ -72,11 +71,6 @@ class ErrorReporter:
         if isinstance(error, errors.NoCharacterClassError):
             user_msg = "Sorry, something went wrong. This has been reported"
             log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a character class was not found"
-            show_traceback = True
-
-        if isinstance(error, DoesNotExist):
-            user_msg = "Sorry I couldn't find that. Potential bug has been reported."
-            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` with an invalid database ID"
             show_traceback = True
 
         if isinstance(error, errors.MessageTooLongError):

@@ -78,7 +78,6 @@ Before running Valentina, the following must be configured or installed.
 | VALENTINA_LOG_FILE              | `/valentina/valentina.log`  | Sets the file to write logs to.<br />Note, this is the directory used within the Docker container                                    |
 | VALENTINA_LOG_LEVEL             | `INFO`                      | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
 | VALENTINA_LOG_LEVEL_AWS         | `INFO`                      | Sets the log level for AWS S3. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                       |
-| VALENTINA_LOG_LEVEL_DB          | `INFO`                      | Sets the log level for database SQL queries. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                         |
 | VALENTINA_LOG_LEVEL_HTTP        | `INFO`                      | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | VALENTINA_OWNER_CHANNELS        |                             | Sets the Discord channels that are allowed to run bot admin commands. This is a comma separated string of Discord channel IDs.       |
 | VALENTINA_OWNER_IDS             |                             | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated string of Discord user IDs.          |

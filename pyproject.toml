@@ -24,7 +24,6 @@
         inflect       = "^7.0.0"
         loguru        = "^0.7.2"
         numpy         = "^1.26.1"
-        peewee        = "^3.17.0"
         py-cord       = "^2.4.1"
         pydantic      = "^2.4.2"
         python        = ">=3.11,<3.13"
