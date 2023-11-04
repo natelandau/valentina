@@ -371,7 +371,7 @@ class Character(BaseModel):
                 "SOCIAL": [("Persuasion", 1, 5, "●○○○○")]
             }
         """
-        from valentina.utils.helpers import get_max_trait_value, num_to_circles
+        from valentina.utils.helpers import get_max_trait_value, num_to_circles  # noqa: PLC0415
 
         all_traits: dict[str, list[tuple[str, int, int, str]]] = {}
 
