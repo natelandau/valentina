@@ -384,7 +384,7 @@ class Valentina(commands.Bot):
         await init_database()
 
         # TODO: BEGIN one-time migration code (remove after first run)
-        from valentina.utils.migrate_to_mongo import Migrate
+        from valentina.utils.migrate_to_mongo import Migrate  # noqa: PLC0415
 
         migrate = Migrate(config=CONFIG)
         await migrate.do_migration()
