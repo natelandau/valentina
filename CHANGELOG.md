@@ -1,3 +1,10 @@
+## v2.0.0 (2023-11-04)
+
+### Feat
+
+- migrate from Sqlite to MongoDB (#85)
+- **chargen**: major overhaul of `/character create` (#78)
+
 ## v1.13.0 (2023-10-02)
 
 ### Feat
