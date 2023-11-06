@@ -17,14 +17,14 @@ from valentina.constants import CONFIG, MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models import Character, GlobalProperty, Guild, RollProbability, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils.changelog_parser import ChangelogParser
-from valentina.utils.converters import ValidCharClass
-from valentina.utils.options import (
+from valentina.utils.autocomplete import (
     select_aws_object_from_guild,
     select_changelog_version_1,
     select_changelog_version_2,
     select_char_class,
 )
+from valentina.utils.changelog_parser import ChangelogParser
+from valentina.utils.converters import ValidCharClass
 from valentina.views import confirm_action, present_embed
 
 p = inflect.engine()

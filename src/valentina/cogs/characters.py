@@ -20,6 +20,15 @@ from valentina.models import Character, CharacterSheetSection, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import errors
+from valentina.utils.autocomplete import (
+    select_any_player_character,
+    select_char_class,
+    select_char_trait,
+    select_custom_section,
+    select_player_character,
+    select_trait_category,
+    select_vampire_clan,
+)
 from valentina.utils.converters import (
     ValidCharacterName,
     ValidCharacterObject,
@@ -33,15 +42,6 @@ from valentina.utils.converters import (
 from valentina.utils.helpers import (
     fetch_data_from_url,
     truncate_string,
-)
-from valentina.utils.options import (
-    select_any_player_character,
-    select_char_class,
-    select_char_trait,
-    select_custom_section,
-    select_player_character,
-    select_trait_category,
-    select_vampire_clan,
 )
 from valentina.views import (
     BioModal,

@@ -8,12 +8,12 @@ from discord.ext import commands
 from valentina.constants import TraitCategory, XPMultiplier
 from valentina.models import User
 from valentina.models.bot import Valentina, ValentinaContext
+from valentina.utils.autocomplete import select_player_character, select_trait_from_char_option
 from valentina.utils.converters import (
     ValidCharacterObject,
     ValidCharTrait,
 )
 from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
-from valentina.utils.options import select_player_character, select_trait_from_char_option
 from valentina.views import confirm_action, present_embed
 
 p = inflect.engine()

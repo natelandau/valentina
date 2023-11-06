@@ -9,9 +9,9 @@ from loguru import logger
 from valentina.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT
 from valentina.models import Campaign, CampaignChapter, CampaignNote, CampaignNPC, Guild
 from valentina.models.bot import Valentina, ValentinaContext
+from valentina.utils.autocomplete import select_campaign, select_chapter, select_note, select_npc
 from valentina.utils.converters import ValidCampaign, ValidYYYYMMDD
 from valentina.utils.helpers import truncate_string
-from valentina.utils.options import select_campaign, select_chapter, select_note, select_npc
 from valentina.views import ChapterModal, NoteModal, NPCModal, confirm_action, present_embed
 
 

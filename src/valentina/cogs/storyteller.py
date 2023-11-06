@@ -20,6 +20,18 @@ from valentina.constants import (
 from valentina.models import Character, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
+from valentina.utils.autocomplete import (
+    select_any_player_character,
+    select_char_class,
+    select_char_concept,
+    select_char_level,
+    select_country,
+    select_storyteller_character,
+    select_trait_category,
+    select_trait_from_char_option,
+    select_trait_from_char_option_two,
+    select_vampire_clan,
+)
 from valentina.utils.converters import (
     ValidCharacterConcept,
     ValidCharacterLevel,
@@ -33,18 +45,6 @@ from valentina.utils.converters import (
 )
 from valentina.utils.helpers import (
     fetch_data_from_url,
-)
-from valentina.utils.options import (
-    select_any_player_character,
-    select_char_class,
-    select_char_concept,
-    select_char_level,
-    select_country,
-    select_storyteller_character,
-    select_trait_category,
-    select_trait_from_char_option,
-    select_trait_from_char_option_two,
-    select_vampire_clan,
 )
 from valentina.utils.perform_roll import perform_roll
 from valentina.views import (

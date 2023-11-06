@@ -8,7 +8,7 @@ from discord.ext import commands
 from valentina.constants import DEFAULT_DIFFICULTY, DiceType
 from valentina.models import User
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils.options import select_char_trait, select_char_trait_two, select_macro
+from valentina.utils.autocomplete import select_char_trait, select_char_trait_two, select_macro
 from valentina.utils.perform_roll import perform_roll
 
 

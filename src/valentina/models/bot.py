@@ -378,6 +378,8 @@ class Valentina(commands.Bot):
                 logger.info(f"COGS: Loading - {cog.stem}")
                 self.load_extension(f"valentina.cogs.{cog.stem}")
 
+        logger.debug(f"COGS: Loaded {len(self.cogs)} cogs")
+
     async def on_connect(self) -> None:
         """Perform early setup."""
         # Initialize the mongodb database

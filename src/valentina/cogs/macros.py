@@ -7,12 +7,12 @@ from discord.ext import commands
 
 from valentina.models import User, UserMacro
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils.helpers import truncate_string
-from valentina.utils.options import (
+from valentina.utils.autocomplete import (
     select_char_trait,
     select_char_trait_two,
     select_macro,
 )
+from valentina.utils.helpers import truncate_string
 from valentina.views import MacroCreateModal, confirm_action, present_embed
 
 
