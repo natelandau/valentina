@@ -557,7 +557,7 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[Option
     return [
         OptionChoice(category.name.title(), category.name)
         for category in TraitCategory
-        if category.name.lower().startswith(ctx.options["category"].lower())
+        if category.name.startswith(ctx.options["category"].upper())
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -574,7 +574,7 @@ async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[OptionCh
         list[str]: A list of vampire clan names for the autocomplete list.
     """
     return [
-        OptionChoice(c.name, c.name)
+        OptionChoice(c.name.title(), c.name)
         for c in VampireClan
-        if c.value.name.lower().startswith(ctx.options["vampire_clan"].lower())
+        if c.name.startswith(ctx.options["vampire_clan"].upper())
     ][:MAX_OPTION_LIST_SIZE]

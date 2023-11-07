@@ -385,13 +385,6 @@ class Valentina(commands.Bot):
         # Initialize the mongodb database
         await init_database()
 
-        # TODO: BEGIN one-time migration code (remove after first run)
-        from valentina.utils.migrate_to_mongo import Migrate  # noqa: PLC0415
-
-        migrate = Migrate(config=CONFIG)
-        await migrate.do_migration()
-        # TODO: END: Remove one-time migration code
-
         # Connect to discord
         if not self.connected:
             logger.info(f"Logged in as {self.user.name} ({self.user.id})")

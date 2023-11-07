@@ -42,6 +42,19 @@ async def _init_database(request):
 
 ### Mock discord.py objects ###
 @pytest.fixture()
+def mock_interaction1(mocker, mock_guild1, mock_member):
+    """A mock of a discord.Interaction object."""
+    mock_interaction = mocker.MagicMock()
+    mock_interaction.id = 1
+    mock_interaction.guild = mock_guild1
+    mock_interaction.author = mock_member
+
+    mock_interaction.__class__ = discord.Interaction
+
+    return mock_interaction
+
+
+@pytest.fixture()
 def mock_member(mocker):
     """A mock of a discord.Member object."""
     mock_role_one = mocker.MagicMock()
@@ -119,15 +132,20 @@ def mock_guild2(mocker):
 
 
 @pytest.fixture()
-def mock_ctx1(mocker, mock_member, mock_guild1):
+def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1):
     """Create a mock context object with user 1."""
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()
     mock_bot.user_svc.update_or_add = MagicMock(return_value=mock_member)
     mock_bot.__class__ = commands.Bot
 
+    mock_options = mocker.MagicMock()
+    mock_options.__class__ = dict
+    mock_options = {}
+
     # Mock the ctx object
     mock_ctx = mocker.MagicMock()
+    mock_ctx.interaction = mock_interaction1
     mock_ctx.author = mock_member
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild1

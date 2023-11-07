@@ -1,6 +1,7 @@
 """Database utilities for Valentina."""
 
 from beanie import init_beanie
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from valentina.constants import CONFIG
@@ -23,6 +24,7 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
         client (AsyncIOMotorClient, optional): The database client. Defaults to None.
         database (AsyncIOMotorClient, optional): The database. Defaults to None.
     """
+    logger.debug("DB: Initializing...")
     # Create Motor client
     if not client:
         client = AsyncIOMotorClient(f"{CONFIG['VALENTINA_MONGO_URI']}", tz_aware=True)
@@ -43,3 +45,5 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
             RollProbability,
         ],
     )
+
+    logger.info("DB: Initialized")
