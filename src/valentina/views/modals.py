@@ -1,4 +1,5 @@
 """Modal windows for the application."""
+
 import discord
 from discord.ui import InputText, Modal
 
@@ -168,7 +169,13 @@ class ChapterModal(Modal):
 class CustomSectionModal(Modal):
     """A modal for adding or editing a custom section."""
 
-    def __init__(self, section_title: str | None = None, section_content: str | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(  # type: ignore [no-untyped-def]
+        self,
+        section_title: str | None = None,
+        section_content: str | None = None,
+        *args,
+        **kwargs,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.section_title = section_title
         self.section_content = section_content

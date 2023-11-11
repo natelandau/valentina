@@ -1,4 +1,5 @@
 """Utilities for diceroll probability calculations."""
+
 from collections import defaultdict
 from datetime import datetime
 

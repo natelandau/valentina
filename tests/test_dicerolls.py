@@ -1,5 +1,6 @@
 # type: ignore
 """Tests for the dicerolls module."""
+
 import pytest
 
 from valentina.constants import RollResultType

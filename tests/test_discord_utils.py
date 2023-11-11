@@ -1,5 +1,6 @@
 # type: ignore
 """Tests for discord_utils.py helper utilities."""
+
 from unittest.mock import MagicMock, patch
 
 import pytest

@@ -158,6 +158,7 @@ The core features of Valentina Noir are covered in the previous sections. These 
 -   **Roll Statistics**: Use `/reference statistics` to see the diceroll statistics for a guild, user, or character.
 -   **Reference Information**: Use `/reference` for information on various topics such as health, magic, disciplines, and more.
 -   **Adding Roll Result Images**: Use `/roll upload_thumbnail` to add an image or animated gif to a roll result.
+-   **Interact with Github**: Use `/github` to interact with the Valentina Noir GitHub repository. You can view open issues or add new ones right here on Discord.
 
 ## 8. ROLES IN VALENTINA NOIR
 
@@ -198,7 +199,7 @@ This section provides solutions to common problems and answers to frequently ask
 **A:** Use `/character update` to update the value of an existing trait. However, depending on your guild settings you may not have permissions to do so. If this occurs, please contact your storyteller or an admin.
 
 **Q: I found a bug. How do I report it?**
-**A:** Please report any bugs or issues on the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina). Provide as much detail as possible to help with troubleshooting.
+**A:** Use `/github issues add` to create a new issue on the Valentina Noir GitHub repository. Or visit the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina) and create a new issue.
 
 **Q: I have a feature request. Who do I tell?**
 **A:** Please file an issue on the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina). Provide as much detail as possible on the feature you would like to see.

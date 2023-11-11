@@ -1,4 +1,5 @@
 """Helper class for parsing changelogs."""
+
 import random
 import re
 

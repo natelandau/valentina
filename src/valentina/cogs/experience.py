@@ -1,5 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Experience commands."""
+
 import discord
 import inflect
 from discord.commands import Option

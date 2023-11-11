@@ -1,5 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Miscellaneous commands."""
+
 import random
 
 import arrow
@@ -102,7 +103,9 @@ Storyteller Characters: {storyteller_characters}
         embed.add_field(
             name="Roll Statistics",
             value=await roll_stats.guild_statistics(
-                as_embed=False, with_title=False, with_help=True  # type: ignore [arg-type]
+                as_embed=False,
+                with_title=False,
+                with_help=True,  # type: ignore [arg-type]
             ),
             inline=False,
         )

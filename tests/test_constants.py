@@ -1,5 +1,6 @@
 # type: ignore
 """Test the constants module."""
+
 import pytest
 
 from valentina.constants import (

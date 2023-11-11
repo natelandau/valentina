@@ -1,4 +1,5 @@
 """Logging utilities for Valentina."""
+
 import logging
 import sys
 

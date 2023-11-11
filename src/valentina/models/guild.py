@@ -1,4 +1,5 @@
 """Guild models for Valentina."""
+
 import random
 from datetime import datetime
 

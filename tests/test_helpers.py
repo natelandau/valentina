@@ -1,5 +1,6 @@
 # type: ignore
 """Tests for helper utilities."""
+
 import pytest
 
 from valentina.utils.helpers import adjust_sum_to_match_total, divide_into_three, num_to_circles

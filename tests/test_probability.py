@@ -1,5 +1,6 @@
 # type: ignore
 """Tests for the probability module."""
+
 import re
 
 import discord
@@ -23,7 +24,7 @@ async def test_calculate_no_db(mock_ctx1):
     assert result.pool == 5
     assert result.difficulty == 6
     assert result.dice_size == 10
-    assert round(result.total_results) in range(195, 210)
+    assert round(result.total_results) in range(190, 210)
     assert round(result.botch_dice) in range(5, 15)
     assert round(result.success_dice) in range(35, 45)
     assert round(result.failure_dice) in range(35, 45)

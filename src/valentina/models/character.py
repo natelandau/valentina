@@ -1,4 +1,5 @@
 """Character models for Valentina."""
+
 from datetime import datetime
 from typing import Optional, Union, cast
 

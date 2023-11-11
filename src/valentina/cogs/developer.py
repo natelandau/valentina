@@ -1,5 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Commands for bot development."""
+
 from datetime import datetime
 from pathlib import Path
 
@@ -183,7 +184,8 @@ class Developer(commands.Cog):
     ) -> None:
         """Delete all developer characters from the database."""
         dev_characters = await Character.find(
-            Character.type_developer == True, fetch_links=True  # noqa: E712
+            Character.type_developer == True,  # noqa: E712
+            fetch_links=True,
         ).to_list()
 
         title = f"Delete `{len(dev_characters)}` developer {p.plural_noun('character', len(dev_characters))} characters from `{ctx.guild.name}`"

@@ -1,4 +1,5 @@
 """Model for error handling."""
+
 import traceback
 
 import discord
@@ -134,7 +135,9 @@ class ErrorReporter:
             except discord.HTTPException:
                 await respond(
                     embed=user_error_embed(
-                        ctx, "Message too long to send", "This is a bug has been reported"  # type: ignore [arg-type]
+                        ctx,  # type: ignore [arg-type]
+                        "Message too long to send",
+                        "This is a bug has been reported",
                     ),
                     ephemeral=True,
                     delete_after=15,

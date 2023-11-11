@@ -1,4 +1,5 @@
 """Prebuilt embeds for Valentina."""
+
 import traceback
 from datetime import datetime
 from typing import Any

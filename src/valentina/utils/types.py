@@ -1,5 +1,6 @@
 # mypy: disable-error-code="name-defined"
 """Custom Types for Valentina."""
+
 from typing import TypedDict
 
 

@@ -1,4 +1,5 @@
 """Buttons for character creation."""
+
 from typing import cast
 
 import discord

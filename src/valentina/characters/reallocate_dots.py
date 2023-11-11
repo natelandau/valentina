@@ -1,4 +1,5 @@
 """A wizard that walks the user through the character creation process."""
+
 from typing import cast
 
 import discord

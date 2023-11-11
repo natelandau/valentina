@@ -1,4 +1,5 @@
 """Constants for Valentina models."""
+
 import os
 import re
 from dataclasses import dataclass, field
@@ -841,6 +842,14 @@ class RNGCharLevel(Enum):
             CharClass: A random enum member.
         """
         return choice(list(cls))
+
+
+class GithubIssueLabels(Enum):
+    """Enum for Github issue labels."""
+
+    BUG = "bug"
+    ENHANCEMENT = "enhancement"
+    QUESTION = "question"
 
 
 @dataclass(frozen=True, eq=True)

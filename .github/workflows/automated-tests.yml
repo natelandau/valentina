@@ -107,6 +107,7 @@ jobs:
                   poetry run coverage run
                   poetry run coverage report
                   poetry run coverage xml
+
             # ----------------------------------------------
             #             upload coverage stats
             # ----------------------------------------------

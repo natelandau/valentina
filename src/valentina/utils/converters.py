@@ -72,7 +72,9 @@ class ValidCharacterConcept(Converter):
     """Convert a CharacterConcept name to a CharacterConcept enum."""
 
     async def convert(
-        self, ctx: commands.Context, argument: str  # noqa: ARG002
+        self,
+        ctx: commands.Context,  # noqa: ARG002
+        argument: str,
     ) -> CharacterConcept:
         """Validate and normalize character concepts."""
         try:

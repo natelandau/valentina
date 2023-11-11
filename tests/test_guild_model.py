@@ -1,5 +1,6 @@
 # type: ignore
 """Test the Guild database model."""
+
 import pytest
 from rich import print
 

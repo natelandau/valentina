@@ -1,5 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Commands for the storyteller."""
+
 from pathlib import Path
 
 import discord
@@ -246,7 +247,8 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """List all storyteller characters."""
         all_characters = await Character.find_many(
-            Character.guild == ctx.guild.id, Character.type_storyteller == True  # noqa: E712
+            Character.guild == ctx.guild.id,
+            Character.type_storyteller == True,  # noqa: E712
         ).to_list()
 
         if len(all_characters) == 0:
