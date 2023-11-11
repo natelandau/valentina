@@ -5,6 +5,7 @@ Import into tests which need the fixtures with `from tests.factories import *`.
 
 Read more at https://polyfactory.litestar.dev/latest/index.html
 """
+
 from faker import Faker
 from polyfactory.factories.beanie_odm_factory import BeanieDocumentFactory
 from polyfactory.pytest_plugin import register_fixture

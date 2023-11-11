@@ -1,5 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Character cog for Valentina."""
+
 from pathlib import Path
 
 import discord
@@ -234,7 +235,8 @@ class CharactersCog(commands.Cog, name="Character"):
     ) -> None:
         """List all player characters in this guild."""
         all_characters = await Character.find_many(
-            Character.guild == ctx.guild.id, Character.type_player == True  # noqa: E712
+            Character.guild == ctx.guild.id,
+            Character.type_player == True,  # noqa: E712
         ).to_list()
 
         if scope == "mine":

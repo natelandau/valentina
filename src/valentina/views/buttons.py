@@ -1,4 +1,5 @@
 """Buttons and views for Valentina."""
+
 import discord
 from discord.ui import Button
 
@@ -184,7 +185,9 @@ class CancelButton(discord.ui.View):
         custom_id="cancel",
     )
     async def cancel_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Callback for the cancel button."""
         self._disable_all()

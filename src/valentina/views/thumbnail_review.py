@@ -64,7 +64,9 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         row=1,
     )
     async def done_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Callback for the re-roll button."""
         await interaction.response.edit_message(

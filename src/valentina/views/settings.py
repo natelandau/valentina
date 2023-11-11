@@ -1,4 +1,5 @@
 """Views for configuring guild settings."""
+
 from typing import cast
 
 import discord
@@ -70,7 +71,9 @@ class SettingsFlags(discord.ui.View):
         custom_id="cancel",
     )
     async def cancel_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Disable all buttons and stop the view."""
         for child in self.children:
@@ -219,7 +222,9 @@ class SettingsChannelSelect(discord.ui.View):
         custom_id="disable",
     )
     async def disable_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Disable all buttons and stop the view."""
         for child in self.children:
@@ -242,7 +247,9 @@ class SettingsChannelSelect(discord.ui.View):
         custom_id="cancel",
     )
     async def cancel_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Disable all buttons and stop the view."""
         for child in self.children:

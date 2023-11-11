@@ -1,4 +1,5 @@
 """User models for Valentina."""
+
 from datetime import datetime
 from typing import cast
 

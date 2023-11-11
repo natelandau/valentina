@@ -1,4 +1,5 @@
 """A RNG character generator for Valentina."""
+
 import random
 from typing import Literal, cast
 
@@ -94,7 +95,9 @@ class CharacterPickerButtons(discord.ui.View):
         row=2,
     )
     async def reroll_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Disable all buttons and stop the view."""
         await interaction.response.defer()
@@ -109,7 +112,9 @@ class CharacterPickerButtons(discord.ui.View):
         row=2,
     )
     async def cancel_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Disable all buttons and stop the view."""
         await interaction.response.defer()
@@ -220,7 +225,9 @@ class UpdateCharacterButtons(discord.ui.View):
         row=2,
     )
     async def rename_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Callback for the rename button."""
         self._disable_all()
@@ -240,7 +247,9 @@ class UpdateCharacterButtons(discord.ui.View):
         row=2,
     )
     async def reallocate_callback(
-        self, button: Button, interaction: discord.Interaction  # noqa: ARG002
+        self,
+        button: Button,  # noqa: ARG002
+        interaction: discord.Interaction,
     ) -> None:
         """Callback for the reallocate button."""
         await interaction.response.defer()

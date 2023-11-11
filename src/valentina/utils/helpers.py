@@ -1,4 +1,5 @@
 """Helper functions for Valentina."""
+
 import io
 import random
 from datetime import datetime, timezone

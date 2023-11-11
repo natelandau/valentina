@@ -1,5 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Help Command for Valentina."""
+
 from pathlib import Path
 
 import discord
@@ -73,7 +74,9 @@ class Help(commands.Cog):
 
     @help.command(name="commands", description="Help information for Valentina's commands")
     async def command_help(
-        self, ctx: ValentinaContext, command: Option(str, required=False)  # type: ignore
+        self,
+        ctx: ValentinaContext,
+        command: Option(str, required=False),  # type: ignore
     ) -> None:
         """Provide help information."""
         commands = self.__build_command_list(ctx)

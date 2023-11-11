@@ -1,4 +1,5 @@
 """Combinations of views and embeds for common actions."""
+
 from collections.abc import Coroutine
 
 import discord
@@ -60,13 +61,13 @@ async def confirm_action(
         title=title.rstrip("?"), description=description, color=EmbedColor.SUCCESS.value
     )
     if image is not None:
-        response_embed.set_image(url=image),
+        (response_embed.set_image(url=image),)
 
     if thumbnail is not None:
-        response_embed.set_thumbnail(url=thumbnail),
+        (response_embed.set_thumbnail(url=thumbnail),)
 
     if footer is not None:
-        response_embed.set_footer(text=footer),
+        (response_embed.set_footer(text=footer),)
 
     if delete_after_confirmation:
         response = msg.delete_original_response()

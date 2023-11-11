@@ -1,4 +1,5 @@
 """Class for interacting with AWS services."""
+
 from pathlib import Path
 
 import boto3

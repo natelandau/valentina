@@ -1,4 +1,5 @@
 """Custom error types for Valentina."""
+
 from discord import DiscordException
 
 

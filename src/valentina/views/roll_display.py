@@ -1,4 +1,5 @@
 """Display and manipulate roll outcomes."""
+
 import discord
 import inflect
 

@@ -1,5 +1,6 @@
 # mypy: disable-error-code="valid-type"
 """Administration commands for Valentina."""
+
 from pathlib import Path
 
 import discord
@@ -216,7 +217,8 @@ class AdminCog(commands.Cog):
         await assert_permissions(ctx, ban_members=True)
         converter = MemberConverter()
         converted_members = [
-            await converter.convert(ctx, member) for member in members.split()  # type: ignore # mismatching context type
+            await converter.convert(ctx, member)  # type: ignore # mismatching context type
+            for member in members.split()
         ]
         if (count := len(converted_members)) > 10:  # noqa: PLR2004
             await present_embed(

@@ -1,4 +1,5 @@
 """A wizard that walks the user through the character creation process."""
+
 import asyncio
 import uuid
 from typing import Any

@@ -46,21 +46,17 @@
         pytest-xdist           = "^3.3.1"
 
     [tool.poetry.group.dev.dependencies]
-        black          = "^23.11.0"
         commitizen     = "^3.12.0"
         coverage       = "^7.3.2"
         mypy           = "^1.6.1"
         pdoc           = "^14.0.0"
         poethepoet     = "^0.22.1"
         pre-commit     = "^3.5.0"
-        ruff           = "^0.1.4"
+        ruff           = "^0.1.5"
         shellcheck-py  = "^0.9.0.5"
         types-aiofiles = "^23.2.0.0"
         typos          = "^1.16.23"
         vulture        = "^2.10"
-
-[tool.black]
-    line-length = 100
 
 [tool.commitizen]
     bump_message               = "bump(release): v$current_version → v$new_version"
@@ -192,6 +188,7 @@
         "D413",
         "E266",
         "E501",
+        "ISC001",
         "N805",
         "PGH001",
         "PGH003",
@@ -329,7 +326,7 @@
             shell = "ruff --preview --no-fix src/"
 
         [[tool.poe.tasks.lint.sequence]]
-            shell = "black --check src/ tests/"
+            shell = "ruff format --check src/ tests/"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "poetry check"

@@ -1,4 +1,5 @@
 """View a character sheet."""
+
 from typing import Any, cast
 
 import arrow
