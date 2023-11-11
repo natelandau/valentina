@@ -83,6 +83,8 @@ Before running Valentina, the following must be configured or installed.
 | VALENTINA_OWNER_IDS             |                             | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated string of Discord user IDs.          |
 | VALENTINA_MONGO_URI             | `mongodb://localhost:27017` | Production MongoDB URI                                                                                                               |
 | VALENTINA_MONGO_DATABASE_NAME   | `valentina`                 | Production Database name                                                                                                             |
+| VALENTINA_GITHUB_REPO           |                             | Optional: Sets the Github repo to use for Github integration `username/repo`                                                         |
+| VALENTINA_GITHUB_TOKEN          |                             | Optional: Sets the Github API Access token to use for Github integration                                                             |
 
 ---
 
