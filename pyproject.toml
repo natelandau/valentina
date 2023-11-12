@@ -48,7 +48,7 @@
     [tool.poetry.group.dev.dependencies]
         commitizen     = "^3.12.0"
         coverage       = "^7.3.2"
-        mypy           = "^1.6.1"
+        mypy           = "^1.7.0"
         pdoc           = "^14.0.0"
         poethepoet     = "^0.22.1"
         pre-commit     = "^3.5.0"
@@ -267,7 +267,7 @@
         # "DTZ",   # flake8-datetimez
     ]
     src = ["src", "tests"]
-    target-version = "py310"
+    target-version = "py311"
     unfixable = ["E712", "ERA001", "F401", "F841", "UP007"]
 
     [tool.ruff.mccabe]

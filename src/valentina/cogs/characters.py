@@ -25,8 +25,8 @@ from valentina.utils.autocomplete import (
     select_any_player_character,
     select_char_class,
     select_char_trait,
+    select_character_from_user,
     select_custom_section,
-    select_player_character,
     select_trait_category,
     select_vampire_clan,
 )
@@ -35,7 +35,6 @@ from valentina.utils.converters import (
     ValidCharacterObject,
     ValidCharClass,
     ValidClan,
-    ValidCustomSection,
     ValidImageURL,
     ValidTraitCategory,
     ValidYYYYMMDD,
@@ -172,7 +171,7 @@ class CharactersCog(commands.Cog, name="Character"):
         character: Option(
             ValidCharacterObject,
             description="The character to view",
-            autocomplete=select_player_character,
+            autocomplete=select_character_from_user,
             required=True,
         ),
         hidden: Option(
@@ -282,7 +281,7 @@ class CharactersCog(commands.Cog, name="Character"):
         character: Option(
             ValidCharacterObject,
             description="The character to view",
-            autocomplete=select_player_character,
+            autocomplete=select_character_from_user,
             required=True,
         ),
         new_owner: Option(discord.User, description="The user to transfer the character to"),
@@ -680,8 +679,8 @@ class CharactersCog(commands.Cog, name="Character"):
     async def update_custom_section(
         self,
         ctx: ValentinaContext,
-        input_info: Option(
-            ValidCustomSection,
+        section_index: Option(
+            int,
             description="Custom section to update",
             name="custom_section",
             required=True,
@@ -694,7 +693,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a custom section."""
-        section, index, character = input_info
+        character = await ctx.fetch_active_character()
+        section = character.sheet_sections[section_index]
 
         modal = CustomSectionModal(
             section_title=section.title,
@@ -707,7 +707,7 @@ class CharactersCog(commands.Cog, name="Character"):
         section.title = modal.section_title.strip().title()
         section.content = modal.section_content.strip()
 
-        character.sheet_sections[index] = section
+        character.sheet_sections[section_index] = section
         await character.save()
 
         title = f"Update section `{section.title}` for `{character.name}`"
@@ -724,8 +724,8 @@ class CharactersCog(commands.Cog, name="Character"):
     async def delete_custom_section(
         self,
         ctx: ValentinaContext,
-        input_info: Option(
-            ValidCustomSection,
+        section_index: Option(
+            int,
             description="Custom section to delete",
             name="custom_section",
             required=True,
@@ -738,14 +738,15 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom section from a character."""
-        section, index, character = input_info
+        character = await ctx.fetch_active_character()
+        section = character.sheet_sections[section_index]
 
         title = f"Delete section `{section.title}` from `{character.name}`"
         is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
         if not is_confirmed:
             return
 
-        character.sheet_sections.pop(index)
+        character.sheet_sections.pop(section_index)
         await character.save()
 
         await ctx.post_to_audit_log(title)

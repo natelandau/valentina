@@ -113,7 +113,7 @@ async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionCh
     return [
         OptionChoice(c.name.title(), c.name)
         for c in CharacterConcept
-        if c.name and c.name.lower().startswith(ctx.options["concept"].lower())
+        if c.name.startswith(ctx.options["concept"].upper())
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -133,7 +133,7 @@ async def select_char_level(ctx: discord.AutocompleteContext) -> list[OptionChoi
     return [
         OptionChoice(c.name.title(), c.name)
         for c in RNGCharLevel
-        if c.name.lower().startswith(ctx.options["level"].lower())
+        if c.name.startswith(ctx.options["level"].upper())
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -230,8 +230,7 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
         ctx (discord.AutocompleteContext): The autocomplete context provided by discord.
 
     Returns:
-        list[OptionChoice]: A list of option choices for discord selection
-                            containing title and index pairs.
+        list[OptionChoice]: A list of option choices for discord selection containing title and index pairs.
     """
     # Fetch the active character
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
@@ -375,7 +374,7 @@ async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     return npc_choices if npc_choices else [OptionChoice("No npcs", 1000)]
 
 
-async def select_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_character_from_user(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of the user's available characters for autocomplete.
 
     This function fetches all alive player characters for the user, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
@@ -444,8 +443,7 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
 async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of all type_player characters in the guild for autocomplete.
 
-    This function fetches all player characters for the guild, filters them based on the user's input,
-    and returns a list of OptionChoice objects to populate the autocomplete list.
+    This function fetches all player characters for the guild, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
@@ -461,7 +459,6 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
                 And(
                     Character.guild == ctx.interaction.guild.id,
                     Character.type_player == True,  # noqa: E712
-                    Character.is_alive == True,  # noqa: E712
                 ),
                 fetch_links=True,
             )
@@ -477,6 +474,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
             str(character.id),
         )
         for character, owner in all_chars_owners
+        if character.name.lower().startswith(ctx.value.lower())
     ]
 
     # Check if the number of options exceeds the maximum allowed

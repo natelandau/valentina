@@ -166,7 +166,7 @@ async def test_set_active_character(mock_guild1, user_factory, character_factory
 @pytest.mark.no_db()
 async def test_active_character(user_factory, character_factory, mock_guild1):
     """Test failure methods related to working with the active character."""
-    # Given a user and two characters
+    # GIVEN a user and two characters
     user = user_factory.build(
         active_characters={},
         characters=[],

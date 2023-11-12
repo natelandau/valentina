@@ -9,7 +9,7 @@ from discord.ext import commands
 from valentina.constants import TraitCategory, XPMultiplier
 from valentina.models import User
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils.autocomplete import select_player_character, select_trait_from_char_option
+from valentina.utils.autocomplete import select_character_from_user, select_trait_from_char_option
 from valentina.utils.converters import (
     ValidCharacterObject,
     ValidCharTrait,
@@ -135,7 +135,7 @@ class Experience(commands.Cog):
         character: Option(
             ValidCharacterObject,
             description="The character to view",
-            autocomplete=select_player_character,
+            autocomplete=select_character_from_user,
             required=True,
         ),
         trait: Option(
