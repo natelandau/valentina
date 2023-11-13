@@ -2,7 +2,7 @@
 """Shared fixtures for tests."""
 
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock
 
 import discord
 import pytest
@@ -12,7 +12,7 @@ from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from rich import print
 
-from valentina.constants import CONFIG
+from valentina.utils.config import CONFIG
 from valentina.utils.database import init_database
 
 
@@ -28,6 +28,7 @@ async def _init_database(request):
             tz_aware=True,
         )
 
+        # when '@pytest.mark.drop_db()' is called, the database will be dropped before the test
         if "drop_db" in request.keywords:
             # Drop the database after the test
             await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
@@ -41,6 +42,14 @@ async def _init_database(request):
 
 
 ### Mock discord.py objects ###
+@pytest.fixture()
+def mock_bot(mocker):
+    """A mock of a discord.Bot object."""
+    mock_bot = mocker.MagicMock()
+    mock_bot.__class__ = commands.Bot
+    return mock_bot
+
+
 @pytest.fixture()
 def mock_interaction1(mocker, mock_guild1, mock_member):
     """A mock of a discord.Interaction object."""
@@ -131,12 +140,42 @@ def mock_guild2(mocker):
     return mock_guild
 
 
+@pytest_asyncio.fixture()
+async def async_mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1):
+    """Create an async mock context object with user 1."""
+    mock_bot = mocker.AsyncMock()
+    mock_bot.__class__ = commands.Bot
+
+    mock_options = mocker.AsyncMock()
+    mock_options.__class__ = dict
+    mock_options = {}
+
+    # Mock the ctx object
+    mock_ctx = mocker.AsyncMock()
+    mock_ctx.interaction = mock_interaction1
+    mock_ctx.author = mock_member
+    mock_ctx.bot = mock_bot
+    mock_ctx.guild = mock_guild1
+    mock_ctx.__class__ = discord.ApplicationContext
+
+    # Mock the methods which post to audit and error logs
+    mock_ctx.post_to_audit_log = AsyncMock()
+    mock_ctx.post_to_error_log = AsyncMock()
+
+    # Mock permissions as True
+    mock_ctx.can_grant_xp = AsyncMock(return_value=True)
+    mock_ctx.can_kill_character = AsyncMock(return_value=True)
+    mock_ctx.can_manage_traits = AsyncMock(return_value=True)
+    mock_ctx.can_manage_campaign = AsyncMock(return_value=True)
+
+    return mock_ctx
+
+
 @pytest.fixture()
 def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1):
     """Create a mock context object with user 1."""
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()
-    mock_bot.user_svc.update_or_add = MagicMock(return_value=mock_member)
     mock_bot.__class__ = commands.Bot
 
     mock_options = mocker.MagicMock()

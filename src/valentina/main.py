@@ -1,18 +1,17 @@
 """Main file which instantiates the bot and runs it."""
 
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import Optional
 
 import discord
 import typer
-from dotenv import dotenv_values
 from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.utils import InterceptHandler
+from valentina.utils.helpers import get_config_value
 
 from .__version__ import __version__
 
@@ -28,37 +27,29 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-# Import configuration from environment variables
-DIR = Path(__file__).parents[2].absolute()
-CONFIG = {
-    **dotenv_values(DIR / ".env"),  # load shared variables
-    **dotenv_values(DIR / ".env.secrets"),  # load sensitive variables
-    **os.environ,  # override loaded values with environment variables
-}
-for k, v in CONFIG.items():
-    CONFIG[k] = v.replace('"', "").replace("'", "").replace(" ", "")
-
+http_log_level = get_config_value("VALENTINA_LOG_LEVEL_HTTP", "INFO")
+aws_log_level = get_config_value("VALENTINA_LOG_LEVEL_AWS", "INFO")
 
 # Instantiate Logging
-logging.getLogger("discord.http").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
-logging.getLogger("discord.gateway").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
-logging.getLogger("discord.webhook").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
-logging.getLogger("discord.client").setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_HTTP"].upper())
+logging.getLogger("discord.http").setLevel(level=http_log_level.upper())
+logging.getLogger("discord.gateway").setLevel(level=http_log_level.upper())
+logging.getLogger("discord.webhook").setLevel(level=http_log_level.upper())
+logging.getLogger("discord.client").setLevel(level=http_log_level.upper())
 logging.getLogger("faker").setLevel(level="INFO")
 for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
-    logging.getLogger(service).setLevel(level=CONFIG["VALENTINA_LOG_LEVEL_AWS"].upper())
+    logging.getLogger(service).setLevel(level=aws_log_level.upper())
 
 logger.remove()
 logger.add(
     sys.stderr,
-    level=CONFIG["VALENTINA_LOG_LEVEL"].upper(),
+    level=get_config_value("VALENTINA_LOG_LEVEL", "INFO").upper(),
     colorize=True,
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>: <level>{message}</level>",
     enqueue=True,
 )
 logger.add(
-    CONFIG["VALENTINA_LOG_FILE"],
-    level=CONFIG["VALENTINA_LOG_LEVEL"].upper(),
+    get_config_value("VALENTINA_LOG_FILE", "valentina.log"),
+    level=get_config_value("VALENTINA_LOG_LEVEL", "INFO").upper(),
     rotation="1 week",
     retention="2 weeks",
     compression="zip",
@@ -77,14 +68,15 @@ def main(
 ) -> None:
     """Run Valentina."""
     # Instantiate the bot
+
     intents = discord.Intents.all()
     bot = Valentina(
-        debug_guilds=[int(g) for g in CONFIG["VALENTINA_GUILDS"].split(",")],
+        debug_guilds=[int(g) for g in get_config_value("VALENTINA_GUILDS", "").split(",")],
         intents=intents,
-        owner_ids=[int(o) for o in CONFIG["VALENTINA_OWNER_IDS"].split(",")],
-        parent_dir=DIR,
+        owner_ids=[int(o) for o in get_config_value("VALENTINA_OWNER_IDS", "").split(",")],
+        parent_dir=Path(__file__).parents[2].absolute(),
         command_prefix="∑",  # Effectively remove the command prefix by setting it to 'sigma'
         version=__version__,
     )
 
-    bot.run(CONFIG["VALENTINA_DISCORD_TOKEN"])  # run the bot
+    bot.run(get_config_value("VALENTINA_DISCORD_TOKEN"))  # run the bot

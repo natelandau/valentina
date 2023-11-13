@@ -3,12 +3,11 @@
 
 import pytest
 from rich import print
+from tests.factories import *
 
 from valentina.constants import CharacterConcept, CharClass, HunterCreed, TraitCategory, VampireClan
 from valentina.models import Character, CharacterTrait
 from valentina.utils import errors
-
-from .factories import *
 
 
 async def test_create_new(character_factory):

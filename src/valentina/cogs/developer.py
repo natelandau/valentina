@@ -14,7 +14,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.characters import RNGCharGen
-from valentina.constants import CONFIG, MAX_CHARACTER_COUNT, EmbedColor
+from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
 from valentina.models import Character, GlobalProperty, Guild, RollProbability, User
 from valentina.models.aws import AWSService
 from valentina.models.bot import Valentina, ValentinaContext
@@ -26,6 +26,7 @@ from valentina.utils.autocomplete import (
 )
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharClass
+from valentina.utils.helpers import get_config_value
 from valentina.views import confirm_action, present_embed
 
 p = inflect.engine()
@@ -100,9 +101,10 @@ class Developer(commands.Cog):
 
         # Confirm the deletion action
         title = f"Delete `{key}` from S3"
-        is_confirmed, confirmation_response_msg = await confirm_action(
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, image=url, thumbnail=self.bot.user.display_avatar.url
         )
+
         if not is_confirmed:
             return
 
@@ -111,7 +113,7 @@ class Developer(commands.Cog):
         self.aws_svc.delete_object(key)
         logger.info(f"Deleted object with key: {key} from S3")
 
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### GUILD COMMANDS ################################################################
 
@@ -142,7 +144,9 @@ class Developer(commands.Cog):
         title = (
             f"Create `{number}` of test {p.plural_noun('character', number)} on `{ctx.guild.name}`"
         )
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
@@ -168,7 +172,7 @@ class Developer(commands.Cog):
                 ephemeral=hidden,
             )
 
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @guild.command()
     @commands.is_owner()
@@ -189,7 +193,9 @@ class Developer(commands.Cog):
         ).to_list()
 
         title = f"Delete `{len(dev_characters)}` developer {p.plural_noun('character', len(dev_characters))} characters from `{ctx.guild.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
@@ -197,7 +203,7 @@ class Developer(commands.Cog):
             logger.debug(f"DEVELOPER: Deleting {c.name}")
             await c.delete(link_rule=DeleteRules.DELETE_LINKS)
 
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @guild.command(description="Repost the changelog (run in #changelog)")
     @commands.is_owner()
@@ -288,7 +294,9 @@ class Developer(commands.Cog):
         results = await RollProbability.find_all().to_list()
 
         title = f"Clear `{len(results)}` probability {p.plural_noun('statistic', len(results))} from the database"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
@@ -296,7 +304,7 @@ class Developer(commands.Cog):
             await result.delete()
 
         logger.info(f"DEVELOPER: {ctx.author.display_name} cleared probability data from the db")
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @server.command(name="reload", description="Reload all cogs")
     @commands.is_owner()
@@ -311,7 +319,9 @@ class Developer(commands.Cog):
     ) -> None:
         """Reloads all cogs."""
         title = "Reload all cogs"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
@@ -323,7 +333,7 @@ class Developer(commands.Cog):
                 self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
 
         logger.debug("Admin: Reload the bot's cogs")
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @server.command(name="shutdown", description="Shutdown the bot")
     @commands.is_owner()
@@ -338,13 +348,13 @@ class Developer(commands.Cog):
     ) -> None:
         """Shutdown the bot."""
         title = "Shutdown the bot and end all active sessions"
-        is_confirmed, confirmation_response_msg = await confirm_action(
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, footer="This is a destructive action that can not be undone."
         )
         if not is_confirmed:
             return
 
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
         logger.warning(f"DEVELOPER: {ctx.author.display_name} has shut down the bot")
 
         await self.bot.close()
@@ -361,7 +371,8 @@ class Developer(commands.Cog):
         ),
     ) -> None:
         """Send the bot's logs to the user."""
-        file = discord.File(CONFIG["VALENTINA_LOG_FILE"])
+        log_file = get_config_value("VALENTINA_LOG_FILE")
+        file = discord.File(log_file)
         await ctx.respond(file=file, ephemeral=hidden)
 
     @server.command(name="tail_logs", description="View last lines of the Valentina's logs")
@@ -380,7 +391,8 @@ class Developer(commands.Cog):
         max_lines_from_bottom = 20
         log_lines = []
 
-        async with aiofiles.open(CONFIG["VALENTINA_LOG_FILE"], mode="r") as f:
+        logfile = get_config_value("VALENTINA_LOG_FILE")
+        async with aiofiles.open(logfile, mode="r") as f:
             async for line in f:
                 if "has connected to Gateway" not in line:
                     log_lines.append(line)

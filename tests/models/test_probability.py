@@ -6,10 +6,9 @@ import re
 import discord
 import pytest
 from rich import print
+from tests.helpers import Regex
 
 from valentina.models import Probability, RollProbability
-
-from .helpers import Regex
 
 
 async def test_calculate_no_db(mock_ctx1):

@@ -2,87 +2,44 @@
 
 import io
 import random
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlencode
 
 import aiohttp
 from aiohttp import ClientSession
 from loguru import logger
 
-from valentina.constants import (
-    MaxTraitValue,
-    XPMultiplier,
-    XPNew,
-)
+from valentina.constants import MaxTraitValue, XPMultiplier, XPNew
 from valentina.utils import errors
+from valentina.utils.config import CONFIG
 
 
-def adjust_sum_to_match_total(
-    values: list[int], total: int, max_value: int | None = None, min_value: int = 0
-) -> list[int]:
-    """Adjust the sum of a list of integers to match a given total.
-
-    The function modifies the list values randomly to match the desired total, ensuring
-    individual values remain within set bounds.
+def get_config_value(key: str, default: str | None = None, pass_none: bool = False) -> str:
+    """Get an environment variable and check if it exists.
 
     Args:
-        values (List[int]): List of integers to adjust.
-        total (int): Desired sum of the list after adjustment.
-        max_value (int | None): Maximum allowable value for each integer. If None, there's no upper bound.
-        min_value (int): Minimum allowable value for each integer. Defaults to 0.
+        key (str): The name of the config variable.
+        default (str, optional): The default value to use if the key is not set. Defaults to None.
+        pass_none (bool, optional): Whether to pass None if the key does not exist. Defaults to False.
 
     Returns:
-        List[int]: Adjusted list with the sum matching the desired total.
+        str: The value of the config variable.
     """
-    current_sum = sum(values)
-    delta = total - current_sum
+    value = CONFIG.get(key, default)
 
-    # Adjust the sum to reach the desired total
-    while delta != 0:
-        if delta > 0:
-            # Identify indexes we can give a point to
-            valid_indices = [i for i, x in enumerate(values) if max_value is None or x < max_value]
-        else:
-            valid_indices = [i for i, x in enumerate(values) if x > min_value]
+    if value is None and not pass_none:
+        logger.error(f"Config variable {key} is not set.")
+        raise errors.MissingConfigurationError(key)
 
-        index_to_adjust = random.choice(valid_indices) if valid_indices else None
-        if index_to_adjust is not None:
-            values[index_to_adjust] += 1 if delta > 0 else -1
-            delta += -1 if delta > 0 else 1
-        else:
-            logger.warning("No valid index found to adjust. Breaking the loop.")
-            break
+    if not value:
+        return None
 
-    # Ensure the min_value is respected
-    while any(x < min_value for x in values):
-        # Identify indexes we can take a point from
-        valid_indices = [i for i, x in enumerate(values) if x > min_value]
-        if valid_indices:
-            # Identify the index we can give a point to
-            index_to_adjust = next((i for i, x in enumerate(values) if x < min_value), None)
-
-            # Adjust the values
-            values[index_to_adjust] += 1
-            values[random.choice(valid_indices)] -= 1
-
-    # Ensure the max_value is respected
-    while max_value is not None and any(x > max_value for x in values):
-        # Identify indexes we can give a point to
-        valid_indices = [i for i, x in enumerate(values) if x < max_value]
-        if valid_indices:
-            # Identify the index we can take a point from
-            index_to_adjust = next((i for i, x in enumerate(values) if x > max_value), None)
-
-            # Adjust the values
-            values[index_to_adjust] -= 1
-            values[random.choice(valid_indices)] += 1
-
-    return values
+    return value.strip().lstrip('"').rstrip('"')
 
 
 async def fetch_random_name(
     gender: str | None = None, country: str = "us", results: int = 1
-) -> list[tuple[str, str]] | tuple[str, str]:
+) -> list[tuple[str, str]] | tuple[str, str]:  # pragma: no cover
     """Fetch a random name from the randomuser.me API.
 
     Args:
@@ -116,35 +73,56 @@ async def fetch_random_name(
     return [("John", "Doe")]
 
 
-def divide_into_three(total: int) -> list[int]:
-    """Divide an integer into three randomly sized integers that add up to the original integer.
+def divide_total_randomly(
+    total: int, num: int, max_value: int | None = None, min_value: int = 0
+) -> list[int]:
+    """Divide a total into 'num' random segments whose sum equals the total.
+
+    This function divides a given 'total' into 'num' elements, each with a random value.
+    The sum of these elements will always equal 'total'. If 'max_value' is provided,
+    no single element will be greater than this value. Additionally, no element will ever
+    be less than or equal to 0.
 
     Args:
-        total (int): The original integer value to be divided.
+        total (int): The total sum to be divided.
+        num (int): The number of segments to divide the total into.
+        max_value (int | None): The maximum value any single element can have.
+        min_value (int): The minimum value any single element can have. Defaults to 0.
 
     Returns:
-        list[int, int, int]: A list containing three integers that add up to the original integer.
+        list[int]: A list of integers representing the divided segments.
+
+    Raises:
+        ValueError: If the total cannot be divided as per the given constraints.
     """
-    if total <= 2:  # noqa: PLR2004
-        msg = "Total should be greater than 2 to divide it into three integers."
+    if total < num * min_value or (max_value is not None and max_value < min_value):
+        msg = "Impossible to divide under given constraints."
         raise ValueError(msg)
 
-    # Generate split1
-    split1 = random.randint(1, total - 2)
-
-    # Generate split2 such that split1 + split2 is less than total
-    split2 = random.randint(1, total - split1)
-
-    # Calculate the three segments
-    segment1 = split1
-    segment2 = split2
-    segment3 = total - (split1 + split2)
-
-    if segment1 + segment2 + segment3 != total:
-        msg = f"Segments do not add up to total. Segments: {segment1}, {segment2}, {segment3}. Total: {total}"
+    if max_value is not None and num * max_value < total:
+        msg = "Impossible to divide under given constraints with max_value."
         raise ValueError(msg)
 
-    return [segment1, segment2, segment3]
+    # Generate initial random segments
+    segments = [random.randint(min_value, max_value or total) for _ in range(num)]
+    current_total = sum(segments)
+
+    # Adjust the segments iteratively
+    while current_total != total:
+        for i in range(num):
+            if current_total < total and (max_value is None or segments[i] < max_value):
+                increment = min(total - current_total, (max_value or total) - segments[i])
+                segments[i] += increment
+                current_total += increment
+            elif current_total > total and segments[i] > min_value:
+                decrement = min(current_total - total, segments[i] - min_value)
+                segments[i] -= decrement
+                current_total -= decrement
+
+            if current_total == total:
+                break
+
+    return segments
 
 
 def get_max_trait_value(trait: str, category: str) -> int | None:
@@ -235,7 +213,7 @@ def get_trait_new_value(trait: str, category: str) -> int:
     return XPNew.DEFAULT.value
 
 
-async def fetch_data_from_url(url: str) -> io.BytesIO:
+async def fetch_data_from_url(url: str) -> io.BytesIO:  # pragma: no cover
     """Fetch data from a URL to be used to upload to Amazon S3."""
     async with aiohttp.ClientSession() as session, session.get(url) as resp:
         if resp.status != 200:  # noqa: PLR2004
@@ -289,4 +267,4 @@ def truncate_string(text: str, max_length: int = 1000) -> str:
 
 def time_now() -> datetime:
     """Return the current time in UTC."""
-    return datetime.now(timezone.utc).replace(microsecond=0)
+    return datetime.now(UTC).replace(microsecond=0)

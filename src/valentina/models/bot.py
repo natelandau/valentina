@@ -1,6 +1,6 @@
 """The main file for the Valentina bot."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +13,6 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import (
-    CONFIG,
     ChannelPermission,
     EmbedColor,
     PermissionManageCampaign,
@@ -32,6 +31,7 @@ from valentina.utils import errors
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.database import init_database
 from valentina.utils.discord_utils import set_channel_perms
+from valentina.utils.helpers import get_config_value
 
 
 # Subclass discord.ApplicationContext to create custom application context
@@ -369,7 +369,9 @@ class Valentina(commands.Bot):
         self.welcomed = False
         self.parent_dir = parent_dir
         self.version = version
-        self.owner_channels = [int(x) for x in CONFIG["VALENTINA_OWNER_CHANNELS"].split(",")]
+        self.owner_channels = [
+            int(x) for x in get_config_value("VALENTINA_OWNER_CHANNELS").split(",")
+        ]
 
         # Load Cogs
         # #######################
@@ -475,7 +477,7 @@ class Valentina(commands.Bot):
         guild_object = await Guild.find_one(Guild.id == guild.id).upsert(
             Set(
                 {
-                    "date_modified": datetime.now(timezone.utc).replace(microsecond=0),
+                    "date_modified": datetime.now(UTC).replace(microsecond=0),
                     "name": guild.name,
                 }
             ),
@@ -490,7 +492,7 @@ class Valentina(commands.Bot):
                 user = await User.find_one(User.id == member.id).upsert(
                     Set(
                         {
-                            "date_modified": datetime.now(timezone.utc).replace(microsecond=0),
+                            "date_modified": datetime.now(UTC).replace(microsecond=0),
                             "name": member.display_name,
                         }
                     ),

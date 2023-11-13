@@ -20,7 +20,7 @@ class ErrorReporter:
         self.channel: discord.TextChannel = None
 
     @staticmethod
-    def _handle_known_exceptions(
+    def _handle_known_exceptions(  # noqa: C901
         ctx: discord.ApplicationContext, error: Exception
     ) -> tuple[str | None, str | None, bool]:
         """Handle known exceptions and return user message, log message, and traceback flag.
@@ -67,6 +67,11 @@ class ErrorReporter:
                 "Sorry, I couldn't find that file. This is likely a bug and has been reported."
             )
             log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a file was not found"
+            show_traceback = True
+
+        if isinstance(error, errors.MissingConfigurationError):
+            user_msg = "Sorry, something went wrong. This has been reported."
+            log_msg = f"ERROR: `{ctx.user.display_name}` tried to run `/{ctx.command}` and a configuration variable was not found"
             show_traceback = True
 
         if isinstance(error, errors.NoCharacterClassError):

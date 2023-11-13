@@ -3,11 +3,10 @@
 
 import discord
 import pytest
+from tests.factories import *
 
 from valentina.constants import RollResultType
 from valentina.models import RollStatistic, Statistics
-
-from .factories import *
 
 
 @pytest.mark.drop_db()

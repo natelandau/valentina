@@ -1,7 +1,5 @@
 """Combinations of views and embeds for common actions."""
 
-from collections.abc import Coroutine
-
 import discord
 
 from valentina.constants import EmbedColor, Emoji
@@ -17,8 +15,7 @@ async def confirm_action(
     image: str | None = None,
     thumbnail: str | None = None,
     footer: str | None = None,
-    delete_after_confirmation: bool = False,
-) -> tuple[bool, Coroutine]:
+) -> tuple[bool, discord.Interaction, discord.Embed]:
     """Prompt the user for confirmation.
 
     Args:
@@ -29,7 +26,6 @@ async def confirm_action(
         image (str, optional): The image URL for the confirmation embed. Defaults to None.
         thumbnail (str, optional): The thumbnail URL for the confirmation embed. Defaults to None.
         footer: str | None = None,
-        delete_after_confirmation (bool): Whether to delete the message after the user confirms. Useful for beginning new interactions. Defaults to False.
 
     Returns:
         tuple(bool, discord.InteractionMessage): A tuple containing the user's response and success response coroutine.
@@ -55,23 +51,18 @@ async def confirm_action(
             color=EmbedColor.WARNING.value,
         )
         await msg.edit_original_response(embed=embed, view=None)
-        return (False, None)
+        return (False, msg, None)
 
     response_embed = discord.Embed(
         title=title.rstrip("?"), description=description, color=EmbedColor.SUCCESS.value
     )
     if image is not None:
-        (response_embed.set_image(url=image),)
+        response_embed.set_image(url=image)
 
     if thumbnail is not None:
-        (response_embed.set_thumbnail(url=thumbnail),)
+        response_embed.set_thumbnail(url=thumbnail)
 
     if footer is not None:
-        (response_embed.set_footer(text=footer),)
+        response_embed.set_footer(text=footer)
 
-    if delete_after_confirmation:
-        response = msg.delete_original_response()
-    else:
-        response = msg.edit_original_response(embed=response_embed, view=None)  # type: ignore [assignment]
-
-    return (True, response)
+    return (True, msg, response_embed)

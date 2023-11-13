@@ -3,12 +3,11 @@
 
 import pytest
 from rich import print
+from tests.factories import *
 
 from valentina.constants import TraitCategory
 from valentina.models import CampaignChapter, CharacterSheetSection
 from valentina.utils import autocomplete
-
-from .factories import *
 
 
 @pytest.mark.drop_db()

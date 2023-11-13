@@ -8,7 +8,7 @@
 -   [ ] Campaign: View any campaign, not just active one
 -   [ ] CharGen: Add backgrounds to freebie point picker
 -   [ ] CharGen: Add changelings
--   [ ] CharGen: Add edges for hunters
+-   [x] CharGen: Add edges for hunters
 -   [ ] CharGen: Add ghouls
 -   [ ] CharGen: Add mages
 -   [ ] CharGen: Add merits/flaws to freebie point picker

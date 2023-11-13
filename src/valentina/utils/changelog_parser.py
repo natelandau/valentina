@@ -208,7 +208,7 @@ class ChangelogParser:
 
         return embed
 
-    def get_embed_personality(self) -> discord.Embed:
+    def get_embed_personality(self) -> discord.Embed:  # pragma: no cover
         """Generate an embed for the changelog.
 
         Returns:

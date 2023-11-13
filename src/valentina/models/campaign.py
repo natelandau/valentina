@@ -17,14 +17,6 @@ from pydantic import BaseModel, Field
 from valentina.utils.helpers import time_now
 
 
-class CampaignExperience(BaseModel):
-    """Dictionary representing a character's campaign experience as a subdocument attached to a User."""
-
-    xp_current: int = 0
-    xp_total: int = 0
-    cool_points: int = 0
-
-
 class CampaignChapter(BaseModel):
     """Represents a chapter as a subdocument within Campaign."""
 

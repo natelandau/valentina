@@ -3,12 +3,11 @@
 
 import pytest
 from rich import print
+from tests.factories import *
 
 from valentina.constants import DICEROLL_THUMBS, RollResultType
 from valentina.models import Campaign, GuildRollResultThumbnail
 from valentina.utils import errors
-
-from .factories import *
 
 
 async def test_add_roll_result_thumbnail(mock_ctx1, guild_factory):

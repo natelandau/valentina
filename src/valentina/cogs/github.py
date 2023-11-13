@@ -8,9 +8,10 @@ from github import Auth, Github
 from github.Repository import Repository
 from loguru import logger
 
-from valentina.constants import CONFIG, GithubIssueLabels
+from valentina.constants import GithubIssueLabels
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import errors
+from valentina.utils.helpers import get_config_value
 from valentina.views import present_embed
 
 
@@ -26,20 +27,19 @@ class GithubCog(commands.Cog):
         if self.repo:
             return self.repo
 
-        msg = "Github"
-        if "VALENTINA_GITHUB_TOKEN" not in CONFIG or CONFIG["VALENTINA_GITHUB_TOKEN"] is None:
-            raise errors.ServiceDisabledError(msg)
-        token = CONFIG["VALENTINA_GITHUB_TOKEN"]
-
-        if "VALENTINA_GITHUB_REPO" not in CONFIG or CONFIG["VALENTINA_GITHUB_REPO"] is None:
-            raise errors.ServiceDisabledError(msg)
-        repo_name = CONFIG["VALENTINA_GITHUB_REPO"]
+        try:
+            token = get_config_value("VALENTINA_GITHUB_TOKEN")
+            repo_name = get_config_value("VALENTINA_GITHUB_REPO")
+        except errors.MissingConfigurationError as e:
+            msg = "Github"
+            raise errors.ServiceDisabledError(msg) from e
 
         try:
             auth = Auth.Token(token)
             g = Github(auth=auth)
         except Exception as e:  # noqa: BLE001
             logger.error(f"Error fetching github repo: {e}")
+            msg = "Github"
             raise errors.ServiceDisabledError(msg) from e
 
         self.repo = g.get_repo(repo_name)

@@ -163,7 +163,7 @@ class Macro(commands.Cog):
         macro = user.macros[index]
 
         title = f"Delete macro `{macro.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, footer="This action is irreversible."
         )
 
@@ -174,7 +174,7 @@ class Macro(commands.Cog):
         await user.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
 
 def setup(bot: Valentina) -> None:

@@ -25,8 +25,7 @@ from valentina.constants import (
 from valentina.models import Campaign, Character, CharacterSheetSection, CharacterTrait, User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.helpers import (
-    adjust_sum_to_match_total,
-    divide_into_three,
+    divide_total_randomly,
     fetch_random_name,
     get_max_trait_value,
 )
@@ -566,23 +565,13 @@ class RNGCharGen:
 
             category_traits = cat.get_trait_list(CharClass[character.char_class_name])
 
-            # Generate initial random distribution for the traits in the category
-            mean, distribution = self.experience_level.value
-            random_values = [
-                max(min(x, 5), 0)
-                for x in _rng.normal(mean, distribution, len(category_traits)).astype(int32)
-            ]
-
-            # Adjust the sum of the list to match the total dots for the category
-            final_values = adjust_sum_to_match_total(
-                random_values, category_dots, max_value=5, min_value=1
-            )
+            trait_values = divide_total_randomly(category_dots, len(category_traits), 5, 1)
 
             # Create the attributes and assign them to the character
             for t in category_traits:
                 trait = CharacterTrait(
                     name=t,
-                    value=final_values.pop(0),
+                    value=trait_values.pop(0),
                     max_value=get_max_trait_value(t, cat.name),
                     character=str(character.id),
                     category_name=cat.name,
@@ -634,22 +623,13 @@ class RNGCharGen:
             category_dots = total_dots.pop(0)
 
             category_traits = cat.get_trait_list(CharClass[character.char_class_name])
-
-            # Generate initial random distribution for the traits in the category
-            mean, distribution = self.experience_level.value
-            random_values = [
-                max(min(x, 5), 0)
-                for x in _rng.normal(mean, distribution, len(category_traits)).astype(int32)
-            ]
-
-            # Adjust the sum of the list to match the total dots for the category
-            final_values = adjust_sum_to_match_total(random_values, category_dots, max_value=5)
+            trait_values = divide_total_randomly(category_dots, len(category_traits), 5, 0)
 
             # Create the attributes and assign them to the character
             traits = [
                 CharacterTrait(
                     name=t,
-                    value=final_values.pop(0),
+                    value=trait_values.pop(0),
                     max_value=get_max_trait_value(t, cat.name),
                     character=str(character.id),
                     category_name=cat.name,
@@ -748,11 +728,8 @@ class RNGCharGen:
         }
         total_dots = starting_dots + extra_dots_map[self.experience_level]
 
-        # Divide total dots for each category into three to produce a value for each attribute
-        dots_for_each = divide_into_three(total_dots)
-
-        # Adjust the sum of the list to match the total dots for the category
-        values = adjust_sum_to_match_total(dots_for_each, total_dots, max_value=5, min_value=1)
+        # Divide total dots to produce a value for each attribute
+        values = divide_total_randomly(total_dots, len(virtues), max_value=5, min_value=1)
 
         # Create the traits and assign them to the character
         for v in virtues:
@@ -797,21 +774,13 @@ class RNGCharGen:
         if total_dots == 0:
             return character
 
-        # Generate initial random distribution for the traits in the category
-        mean, distribution = self.experience_level.value
-        initial_values = [
-            max(min(x, 5), 0)
-            for x in _rng.normal(mean, distribution, len(backgrounds)).astype(int32)
-        ]
-
-        # Adjust the sum of the list to match the total dots for the category
-        values = adjust_sum_to_match_total(initial_values, total_dots, max_value=5)
+        trait_values = divide_total_randomly(total_dots, len(backgrounds), 5, 0)
 
         # Create the backgrounds and assign them to the character
         for b in backgrounds:
             trait = CharacterTrait(
                 name=b,
-                value=values.pop(0),
+                value=trait_values.pop(0),
                 max_value=get_max_trait_value(b, TraitCategory.BACKGROUNDS.name),
                 character=str(character.id),
                 category_name=TraitCategory.BACKGROUNDS.name,
@@ -920,21 +889,13 @@ class RNGCharGen:
             RNGCharLevel.ELITE: 2,
         }
         total_dots = starting_dots + extra_dots_map[self.experience_level]
-
-        # Generate initial random distribution for the traits in the category
-        mean, distribution = self.experience_level.value
-        initial_values = [
-            max(min(x, 3), 0) for x in _rng.normal(mean, distribution, len(edges)).astype(int32)
-        ]
-
-        # Adjust the sum of the list to match the total dots for the category
-        values = adjust_sum_to_match_total(values=initial_values, total=total_dots, max_value=3)
+        trait_values = divide_total_randomly(total_dots, len(edges), 5, 0)
 
         # Create the edges and assign them to the character
         for e in edges:
             trait = CharacterTrait(
                 name=e,
-                value=values.pop(0),
+                value=trait_values.pop(0),
                 max_value=get_max_trait_value(e, TraitCategory.EDGES.name),
                 character=str(character.id),
                 category_name=TraitCategory.EDGES.name,

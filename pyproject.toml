@@ -34,16 +34,16 @@
         typer         = { extras = ["all"], version = "^0.9.0" }
 
     [tool.poetry.group.test.dependencies]
-        dirty-equals           = "^0.6.0"
-        faker                  = "^19.13.0"
-        polyfactory            = "^2.11.0"
-        pytest                 = "^7.4.3"
-        pytest-asyncio         = "^0.21.1"
-        pytest-clarity         = "^1.0.1"
-        pytest-env             = "^1.1.1"
-        pytest-mock            = "^3.12.0"
-        pytest-pretty-terminal = "^1.1.0"
-        pytest-xdist           = "^3.3.1"
+        dirty-equals   = "^0.6.0"
+        faker          = "^19.13.0"
+        polyfactory    = "^2.11.0"
+        pytest         = "^7.4.3"
+        pytest-asyncio = "^0.21.1"
+        pytest-clarity = "^1.0.1"
+        pytest-env     = "^1.1.1"
+        pytest-mock    = "^3.12.0"
+        pytest-sugar   = "^0.9.7"
+        pytest-xdist   = "^3.3.1"
 
     [tool.poetry.group.dev.dependencies]
         commitizen     = "^3.12.0"
@@ -94,10 +94,19 @@
     data_file = "reports/.coverage"
     omit = [
         "src/valentina/__version__.py",
-        "src/valentina/bot.py",
-        "src/valentina/cogs/*",
+        "src/valentina/characters/add_from_sheet.py",
+        "src/valentina/characters/buttons.py",
+        "src/valentina/characters/reallocate_dots.py",
+        "src/valentina/characters/spend_experience.py",
         "src/valentina/main.py",
+        "src/valentina/models/bot.py",
+        "src/valentina/models/errors.py",
+        "src/valentina/utils/discord_utils.py",
+        "src/valentina/utils/errors.py",
+        "src/valentina/utils/logging.py",
+        "src/valentina/utils/types.py",
         "src/valentina/views/*",
+        "tests/*",
     ]
     source = ["src"]
 
@@ -128,12 +137,13 @@
 
 [tool.pytest.ini_options]
 
-    addopts = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --verbosity=2 --junitxml=reports/pytest.xml --ignore=src/valentina/cogs/test_cog.py"
+    addopts = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=reports/pytest.xml --ignore=src/valentina/cogs/test_cog.py"
     asyncio_mode = "auto"
     env = [
         "VALENTINA_AWS_ACCESS_KEY_ID=access_key",
         "VALENTINA_AWS_SECRET_ACCESS_KEY=secred_access_key",
         "VALENTINA_S3_BUCKET_NAME=bucket",
+        "VALENTINA_TEST_CONFIG_KEY=testing",
     ]
     filterwarnings = ["error", "ignore::DeprecationWarning"]
     markers = [

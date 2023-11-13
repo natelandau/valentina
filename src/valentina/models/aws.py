@@ -8,8 +8,8 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from loguru import logger
 
-from valentina.constants import CONFIG
 from valentina.utils import errors
+from valentina.utils.helpers import get_config_value
 
 
 class AWSService:
@@ -23,29 +23,23 @@ class AWSService:
             aws_secret_access_key (str): AWS secret access key.
             bucket_name (str): Name of the S3 bucket to use.
         """
-        self.aws_access_key_id = CONFIG.get("VALENTINA_AWS_ACCESS_KEY_ID", False)
-        self.aws_secret_access_key = CONFIG.get("VALENTINA_AWS_SECRET_ACCESS_KEY", False)
-        self.bucket_name = CONFIG.get("VALENTINA_S3_BUCKET_NAME", False)
-
-        if not self.aws_access_key_id or not self.aws_secret_access_key or not self.bucket_name:
-            self.disabled = True
-        else:
-            self.disabled = False
-
-            self.s3 = boto3.client(
-                "s3",
-                aws_access_key_id=self.aws_access_key_id,
-                aws_secret_access_key=self.aws_secret_access_key,
-                config=Config(retries={"max_attempts": 10, "mode": "standard"}),
-            )
-            self.bucket = self.bucket_name
-            self.location = self.s3.get_bucket_location(Bucket=self.bucket)  # Ex. us-east-1
-
-    def _check_disabled(self) -> None:
-        """Check if the service is disabled and raise an error if it is."""
-        if self.disabled:
+        try:
+            self.aws_access_key_id = get_config_value("VALENTINA_AWS_ACCESS_KEY_ID")
+            self.aws_secret_access_key = get_config_value("VALENTINA_AWS_SECRET_ACCESS_KEY")
+            self.bucket_name = get_config_value("VALENTINA_S3_BUCKET_NAME")
+        except errors.MissingConfigurationError as e:
+            logger.error(f"Failed to initialize AWS Service: {e}")
             msg = "AWS"
-            raise errors.ServiceDisabledError(msg)
+            raise errors.ServiceDisabledError(msg) from e
+
+        self.s3 = boto3.client(
+            "s3",
+            aws_access_key_id=self.aws_access_key_id,
+            aws_secret_access_key=self.aws_secret_access_key,
+            config=Config(retries={"max_attempts": 10, "mode": "standard"}),
+        )
+        self.bucket = self.bucket_name
+        self.location = self.s3.get_bucket_location(Bucket=self.bucket)  # Ex. us-east-1
 
     def copy_object(self, source_key: str, dest_key: str) -> bool:
         """Copy an object within the S3 bucket or to another bucket.
@@ -57,8 +51,6 @@ class AWSService:
         Returns:
             bool: True if the copy is successful, False otherwise.
         """
-        self._check_disabled()
-
         copy_source = {"Bucket": self.bucket, "Key": source_key}
         try:
             self.s3.copy_object(CopySource=copy_source, Bucket=self.bucket, Key=dest_key)
@@ -80,8 +72,6 @@ class AWSService:
         Returns:
             bool: True if the deletion is successful, False otherwise.
         """
-        self._check_disabled()
-
         try:
             # Attempt to delete the object from the S3 bucket
             result = self.s3.delete_object(Bucket=self.bucket, Key=key)
@@ -102,8 +92,6 @@ class AWSService:
         Returns:
             bool: True if the download is successful, False otherwise.
         """
-        self._check_disabled()
-
         try:
             self.s3.download_file(Bucket=self.bucket, Key=key, Filename=download_path)
         except ClientError as e:
@@ -124,8 +112,6 @@ class AWSService:
         Returns:
             str | None: Presigned URL or None if the operation fails.
         """
-        self._check_disabled()
-
         try:
             url = self.s3.generate_presigned_url(
                 "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expiration
@@ -200,8 +186,6 @@ class AWSService:
         Returns:
             list[str]: A list of object keys that start with the given prefix.
         """
-        self._check_disabled()
-
         result = self.s3.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
         return [obj["Key"] for obj in result.get("Contents", [])]
 
@@ -233,8 +217,6 @@ class AWSService:
         Returns:
             bool: True if the upload is successful, False otherwise.
         """
-        self._check_disabled()
-
         # Check if the object exists and whether we should overwrite it
         if not overwrite and self.object_exist(key):
             raise errors.S3ObjectExistsError()
@@ -269,8 +251,6 @@ class AWSService:
         Returns:
             bool: True if the upload is successful, False otherwise.
         """
-        self._check_disabled()
-
         # Determine the name of the file in the S3 bucket
         key = name or f"{ctx.guild.id}/{path.name}"
 

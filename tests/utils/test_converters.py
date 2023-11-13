@@ -5,6 +5,7 @@ import datetime
 
 import pytest
 from discord.ext.commands import BadArgument
+from tests.factories import *
 
 from valentina.constants import (
     CharacterConcept,
@@ -26,8 +27,6 @@ from valentina.utils.converters import (
     ValidTraitCategory,
     ValidYYYYMMDD,
 )
-
-from .factories import *
 
 
 @pytest.mark.no_db()

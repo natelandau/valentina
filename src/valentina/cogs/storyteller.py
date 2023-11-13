@@ -322,7 +322,9 @@ class StoryTeller(commands.Cog):
         title = (
             f"Update `{trait.name}` for `{character.name}` from `{trait.value}` to `{new_value}`"
         )
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -332,7 +334,7 @@ class StoryTeller(commands.Cog):
         await trait.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
@@ -371,7 +373,9 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Delete a storyteller character."""
         title = f"Delete storyteller character `{character.full_name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -379,7 +383,7 @@ class StoryTeller(commands.Cog):
         await character.delete(link_rule=DeleteRules.DELETE_LINKS)
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(name="add_trait", description="Add a trait to a storyteller character")
     async def add_trait(
@@ -416,7 +420,9 @@ class StoryTeller(commands.Cog):
     ) -> None:
         """Add a custom trait to a character."""
         title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -424,7 +430,7 @@ class StoryTeller(commands.Cog):
         await character.add_trait(category, name.title(), value, max_value=max_value)
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(name="image_add", description="Add an image to a storyteller character")
     async def add_image(
@@ -490,16 +496,17 @@ class StoryTeller(commands.Cog):
         image_url = self.aws_svc.get_url(image_key)
 
         title = f"Add image to `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, image=image_url
         )
+
         if not is_confirmed:
             await character.delete_image(image_key)
             return
 
         # Update audit log and original response
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(
         name="image_delete", description="Delete an image to a storyteller character"
@@ -575,7 +582,9 @@ class StoryTeller(commands.Cog):
             return
 
         title = f"Transfer `{character.name}` from `{old_owner.name}` to `{new_owner.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
@@ -587,7 +596,7 @@ class StoryTeller(commands.Cog):
         await character.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @player.command(name="update", description="Update a player character")
     async def update_player_character(
@@ -628,7 +637,9 @@ class StoryTeller(commands.Cog):
         title = (
             f"Update `{trait.name}` from `{trait.value}` to `{new_value}` for `{character.name}`"
         )
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -637,7 +648,7 @@ class StoryTeller(commands.Cog):
         await trait.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### ROLL COMMANDS ####################################################################
 

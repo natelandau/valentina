@@ -4,7 +4,6 @@ from beanie import init_beanie
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from valentina.constants import CONFIG
 from valentina.models import (
     Campaign,
     Character,
@@ -15,6 +14,7 @@ from valentina.models import (
     RollStatistic,
     User,
 )
+from valentina.utils.helpers import get_config_value
 
 
 async def init_database(client=None, database=None) -> None:  # type: ignore [no-untyped-def]
@@ -25,15 +25,16 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
         database (AsyncIOMotorClient, optional): The database. Defaults to None.
     """
     logger.debug("DB: Initializing...")
+    mongo_uri = get_config_value("VALENTINA_MONGO_URI")
+    db_name = get_config_value("VALENTINA_MONGO_DATABASE_NAME")
+
     # Create Motor client
     if not client:
-        client = AsyncIOMotorClient(f"{CONFIG['VALENTINA_MONGO_URI']}", tz_aware=True)
+        client = AsyncIOMotorClient(f"{mongo_uri}", tz_aware=True)
 
     # Initialize beanie with the Sample document class and a database
     await init_beanie(
-        database=database
-        if database is not None
-        else client[CONFIG["VALENTINA_MONGO_DATABASE_NAME"]],
+        database=database if database is not None else client[db_name],
         document_models=[
             Campaign,
             Character,

@@ -3,10 +3,9 @@
 
 import pytest
 from rich import print
+from tests.factories import *
 
 from valentina.utils import errors
-
-from .factories import *
 
 
 async def test_add_experience(user_factory, campaign_factory) -> None:

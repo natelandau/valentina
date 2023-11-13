@@ -63,7 +63,9 @@ class CampaignCog(commands.Cog):
             return
 
         title = f"Create new campaign: `{name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -77,7 +79,7 @@ class CampaignCog(commands.Cog):
         await guild.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="current_date", description="Set the current date of a campaign")
     async def current_date(
@@ -125,7 +127,9 @@ class CampaignCog(commands.Cog):
             return
 
         title = f"Delete campaign: {campaign.name}"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -134,7 +138,7 @@ class CampaignCog(commands.Cog):
         await guild.delete_campaign(campaign)
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="view", description="View a campaign")
     async def view_campaign(self, ctx: ValentinaContext) -> None:
@@ -231,7 +235,9 @@ An overview of {campaign.name}.
             return
 
         title = f"Set campaign `{campaign.name}` as active"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -241,7 +247,7 @@ An overview of {campaign.name}.
         await guild.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="set_inactive", description="Set a campaign as inactive")
     async def campaign_set_inactive(
@@ -270,7 +276,9 @@ An overview of {campaign.name}.
             return
 
         title = f"Set campaign `{active_campaign.name}` as inactive"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -279,7 +287,7 @@ An overview of {campaign.name}.
         await guild.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="list", description="List all campaigns")
     async def campaign_list(
@@ -500,7 +508,9 @@ An overview of {campaign.name}.
             return
 
         title = f"Delete NPC: `{npc.name}` in `{active_campaign.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -509,7 +519,7 @@ An overview of {campaign.name}.
         await active_campaign.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### CHAPTER COMMANDS ####################################################################
 
@@ -665,7 +675,9 @@ An overview of {campaign.name}.
         chapter = active_campaign.chapters[index]
 
         title = f"Delete Chapter `{chapter.number}. {chapter.name}` from `{active_campaign.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -674,7 +686,7 @@ An overview of {campaign.name}.
         await active_campaign.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### NOTE COMMANDS ####################################################################
 
@@ -826,7 +838,9 @@ An overview of {campaign.name}.
         note = active_campaign.notes[index]
 
         title = f"Delete note: `{note.name}` from `{active_campaign.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -835,7 +849,7 @@ An overview of {campaign.name}.
         await active_campaign.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
 
 def setup(bot: Valentina) -> None:

@@ -17,9 +17,17 @@ from beanie import (
 from pydantic import BaseModel, Field
 
 from valentina.constants import COOL_POINT_VALUE
-from valentina.models import Campaign, CampaignExperience, Character
+from valentina.models import Campaign, Character
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
+
+
+class CampaignExperience(BaseModel):
+    """Dictionary representing a user's campaign experience as a subdocument attached to a User."""
+
+    xp_current: int = 0
+    xp_total: int = 0
+    cool_points: int = 0
 
 
 class UserMacro(BaseModel):

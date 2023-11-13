@@ -1,10 +1,10 @@
 """Models for Valentina."""
 
-from .campaign import Campaign, CampaignChapter, CampaignExperience, CampaignNote, CampaignNPC
+from .campaign import Campaign, CampaignChapter, CampaignNote, CampaignNPC
 from .character import Character, CharacterSheetSection, CharacterTrait
 from .database import GlobalProperty
 from .guild import Guild, GuildChannels, GuildPermissions, GuildRollResultThumbnail
-from .user import User, UserMacro
+from .user import CampaignExperience, User, UserMacro
 
 from .aws import AWSService  # isort: skip
 from .statistics import Statistics, RollStatistic  # isort: skip

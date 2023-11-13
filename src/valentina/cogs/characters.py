@@ -188,14 +188,16 @@ class CharactersCog(commands.Cog, name="Character"):
         else:
             title = f"Set `{character.name}` as active character for `{ctx.author.display_name}`"
 
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
         user = await User.get(ctx.author.id)
         await user.set_active_character(character)
 
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @chars.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
@@ -303,7 +305,9 @@ class CharactersCog(commands.Cog, name="Character"):
             return
 
         title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_owner.display_name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
@@ -318,7 +322,7 @@ class CharactersCog(commands.Cog, name="Character"):
         await character.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @chars.command(name="kill", description="Kill a character")
     async def kill_character(
@@ -350,7 +354,9 @@ class CharactersCog(commands.Cog, name="Character"):
             return
 
         title = f"Kill `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
@@ -358,7 +364,7 @@ class CharactersCog(commands.Cog, name="Character"):
         await character.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### IMAGE COMMANDS ####################################################################
     @image.command(name="add", description="Add an image to a character")
@@ -421,7 +427,7 @@ class CharactersCog(commands.Cog, name="Character"):
         image_url = self.aws_svc.get_url(image_key)
 
         title = f"Add image to `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, image=image_url
         )
         if not is_confirmed:
@@ -430,7 +436,7 @@ class CharactersCog(commands.Cog, name="Character"):
 
         # Update audit log and original response
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @image.command(name="delete", description="Delete an image from a character")
     async def delete_image(
@@ -506,14 +512,16 @@ class CharactersCog(commands.Cog, name="Character"):
             return
 
         title = f"Add trait: `{name.title()}` at `{value}` dots for {character.name}"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
         await character.add_trait(category, name.title(), value, max_value=max_value)
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @trait.command(name="update", description="Update the value of a trait for a character")
     async def update_trait(
@@ -567,7 +575,9 @@ class CharactersCog(commands.Cog, name="Character"):
         title = (
             f"Update `{trait.name}` from `{trait.value}` to `{new_value}` for `{character.name}`"
         )
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
 
         if not is_confirmed:
             return
@@ -576,7 +586,7 @@ class CharactersCog(commands.Cog, name="Character"):
         await trait.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @trait.command(name="delete", description="Delete a trait from a character")
     async def delete_trait(
@@ -613,7 +623,7 @@ class CharactersCog(commands.Cog, name="Character"):
             return
 
         title = f"Delete trait `{trait.name}` from `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx,
             title,
             description="This is a destructive action that can not be undone.",
@@ -629,7 +639,7 @@ class CharactersCog(commands.Cog, name="Character"):
         await trait.delete()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### SECTION COMMANDS ####################################################################
 
@@ -742,7 +752,9 @@ class CharactersCog(commands.Cog, name="Character"):
         section = character.sheet_sections[section_index]
 
         title = f"Delete section `{section.title}` from `{character.name}`"
-        is_confirmed, confirmation_response_msg = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
         if not is_confirmed:
             return
 
@@ -750,7 +762,7 @@ class CharactersCog(commands.Cog, name="Character"):
         await character.save()
 
         await ctx.post_to_audit_log(title)
-        await confirmation_response_msg
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### BIO COMMANDS ####################################################################
 

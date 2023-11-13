@@ -123,6 +123,7 @@ def test_roll_exceptions(mock_ctx1):
         DiceRoll(mock_ctx1, difficulty=6, pool=6, dice_size=3)
 
 
+@pytest.mark.drop_db()
 async def test_log_roll(mock_ctx1):
     """Test diceroll logging to the database."""
     # GIVEN a diceroll object and a list of two traits
