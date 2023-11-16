@@ -1,6 +1,8 @@
 # mypy: disable-error-code="valid-type"
 """Gameplay cog for Valentina."""
 
+import random
+
 import discord
 from discord.commands import Option
 from discord.ext import commands
@@ -8,8 +10,10 @@ from discord.ext import commands
 from valentina.constants import DEFAULT_DIFFICULTY, DiceType
 from valentina.models import User
 from valentina.models.bot import Valentina, ValentinaContext
+from valentina.utils import random_num
 from valentina.utils.autocomplete import select_char_trait, select_char_trait_two, select_macro
 from valentina.utils.perform_roll import perform_roll
+from valentina.views import present_embed
 
 
 class Roll(commands.Cog):
@@ -18,6 +22,7 @@ class Roll(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot: Valentina = bot
 
+    ### DICEROLL COMMANDS ###
     roll = discord.SlashCommandGroup("roll", "Roll dice")
 
     @roll.command(description="Throw a roll of d10s")
@@ -151,6 +156,56 @@ class Roll(commands.Cog):
             trait_two=trait_two,
             character=character,
         )
+
+    ### GAMEPLAY COMMANDS ###
+    gameplay = discord.SlashCommandGroup("gameplay", "Gameplay commands")
+
+    @gameplay.command(name="damage", description="determine damage")
+    async def damage(
+        self,
+        ctx: ValentinaContext,
+        damage: Option(
+            int,
+            name="damage",
+            description="Damage taken",
+            required=True,
+        ),
+        soak: Option(
+            int,
+            name="soak",
+            description="Soak to apply",
+            required=False,
+            default=0,
+        ),
+    ) -> None:
+        """Determine damage."""
+        damage = damage + random_num(10) - soak
+
+        if damage <= 0:
+            result = ("No Damage", "Miracles happen, no damage taken")
+
+        if 1 <= damage <= 6:  # noqa: PLR2004
+            result = ("Stunned", "Spend 1 Willpower or lose one turn.")
+
+        elif 7 <= damage <= 8:  # noqa: PLR2004
+            result = ("Severe head trauma", "Physical rolls lose 1 die; Mental rolls lose 2.")
+
+        elif 9 <= damage <= 10:  # noqa: PLR2004
+            one = ("Broken limb or joint", "Rolls using the affected limb lose 3 dice.")
+            two = ("Blinded", "Vision-related rolls lose 3 dice.")
+            result = random.choice([one, two])
+
+        elif damage == 11:  # noqa: PLR2004
+            result = ("Massive wound", "All rolls lose 2 dice. Add 1 to all damage suffered.")
+
+        elif damage == 12:  # noqa: PLR2004
+            result = ("Crippled", "Limb is lost or mangled beyond use. Lose 3 dice when using it.")
+
+        elif damage >= 13:  # noqa: PLR2004
+            result = ("Death or torpor", "Mortals die. Vampires enter immediate torpor.")
+
+        title, description = result
+        await present_embed(ctx, title, description, level="info")
 
 
 def setup(bot: Valentina) -> None:

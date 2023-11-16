@@ -15,8 +15,7 @@ from loguru import logger
 
 from valentina.characters import RNGCharGen
 from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
-from valentina.models import Character, GlobalProperty, Guild, RollProbability, User
-from valentina.models.aws import AWSService
+from valentina.models import AWSService, Character, GlobalProperty, Guild, RollProbability, User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.autocomplete import (
     select_aws_object_from_guild,

@@ -1,8 +1,7 @@
 """Perform a diceroll."""
 
-from valentina.models import Character, CharacterTrait
+from valentina.models import Character, CharacterTrait, DiceRoll
 from valentina.models.bot import ValentinaContext
-from valentina.models.dicerolls import DiceRoll
 from valentina.views import ReRollButton, RollDisplay
 
 

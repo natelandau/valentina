@@ -18,8 +18,7 @@ from valentina.constants import (
     DiceType,
     EmbedColor,
 )
-from valentina.models import Character, User
-from valentina.models.aws import AWSService
+from valentina.models import AWSService, Character, User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.autocomplete import (
     select_any_player_character,

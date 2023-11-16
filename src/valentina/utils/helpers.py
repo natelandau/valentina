@@ -5,13 +5,20 @@ import random
 from datetime import UTC, datetime
 from urllib.parse import urlencode
 
-import aiohttp
 from aiohttp import ClientSession
 from loguru import logger
+from numpy.random import default_rng
 
 from valentina.constants import MaxTraitValue, XPMultiplier, XPNew
 from valentina.utils import errors
 from valentina.utils.config import CONFIG
+
+_rng = default_rng()
+
+
+def random_num(ceiling: int = 100) -> int:
+    """Get a random number between 1 and ceiling."""
+    return _rng.integers(1, ceiling + 1)
 
 
 def get_config_value(key: str, default: str | None = None, pass_none: bool = False) -> str:
@@ -215,7 +222,7 @@ def get_trait_new_value(trait: str, category: str) -> int:
 
 async def fetch_data_from_url(url: str) -> io.BytesIO:  # pragma: no cover
     """Fetch data from a URL to be used to upload to Amazon S3."""
-    async with aiohttp.ClientSession() as session, session.get(url) as resp:
+    async with ClientSession() as session, session.get(url) as resp:
         if resp.status != 200:  # noqa: PLR2004
             msg = f"Could not fetch data from {url}"
             raise errors.URLNotAvailableError(msg)

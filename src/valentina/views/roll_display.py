@@ -3,9 +3,8 @@
 import discord
 import inflect
 
-from valentina.models import CharacterTrait
+from valentina.models import CharacterTrait, DiceRoll
 from valentina.models.bot import ValentinaContext
-from valentina.models.dicerolls import DiceRoll
 
 p = inflect.engine()
 

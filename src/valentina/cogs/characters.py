@@ -17,8 +17,7 @@ from valentina.constants import (
     Emoji,
     RNGCharLevel,
 )
-from valentina.models import Character, CharacterSheetSection, User
-from valentina.models.aws import AWSService
+from valentina.models import AWSService, Character, CharacterSheetSection, User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import errors
 from valentina.utils.autocomplete import (

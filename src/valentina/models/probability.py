@@ -9,7 +9,7 @@ from loguru import logger
 from pydantic import Field
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models.dicerolls import DiceRoll
+from valentina.models import DiceRoll
 from valentina.utils.helpers import time_now
 
 # Constants for emoji thresholds

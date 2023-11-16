@@ -4,7 +4,7 @@
 import pytest
 
 from valentina.constants import RollResultType
-from valentina.models.dicerolls import DiceRoll, RollStatistic
+from valentina.models import DiceRoll, RollStatistic
 from valentina.utils import errors
 
 

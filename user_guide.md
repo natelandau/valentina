@@ -87,6 +87,7 @@ Macros are a powerful tool to enhance your gaming experience, allowing for quick
 -   **Roll Dice**: Use `/roll` for various types of rolls, including stats, traits, macros, D10s, or arbitrary dice.
 -   **Create Campaign NPCs**: As you meet an important NPC, take a note of them with `/campaign npc create`.
 -   **Add Campaign Notes**: Keep track of important information by creating notes during gameplay with `/campaign note create`.
+-   **Determine damage**: Use `/gameplay damage [damage]` to determine the effects of damage.
 
 ### Dice Rolling
 

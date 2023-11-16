@@ -15,8 +15,7 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models import Campaign, Character, Guild, User
-from valentina.models.aws import AWSService
+from valentina.models import AWSService, Campaign, Character, Guild, User
 from valentina.models.bot import Valentina
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.helpers import truncate_string

@@ -8,8 +8,8 @@ from .user import CampaignExperience, User, UserMacro
 
 from .aws import AWSService  # isort: skip
 from .statistics import Statistics, RollStatistic  # isort: skip
-from .probability import Probability, RollProbability  # isort: skip
 from .dicerolls import DiceRoll  # isort: skip
+from .probability import Probability, RollProbability  # isort: skip
 
 __all__ = [
     "AWSService",

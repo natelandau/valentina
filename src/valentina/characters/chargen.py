@@ -24,6 +24,7 @@ from valentina.constants import (
 )
 from valentina.models import Campaign, Character, CharacterSheetSection, CharacterTrait, User
 from valentina.models.bot import Valentina, ValentinaContext
+from valentina.utils import random_num
 from valentina.utils.helpers import (
     divide_total_randomly,
     fetch_random_name,
@@ -455,14 +456,14 @@ class RNGCharGen:
 
         # Grab a random class
         if char_class is None:
-            percentile = _rng.integers(1, 101)
+            percentile = random_num(100)
             char_class = CharClass.get_member_by_value(percentile)
 
         name_nick = char_class.value.name if nickname_is_class else None
 
         # Grab a random concept
         if concept is None:
-            percentile = _rng.integers(1, 101)
+            percentile = random_num(100)
             concept = CharacterConcept.get_member_by_value(percentile)
 
         # Grab class specific information
@@ -470,7 +471,7 @@ class RNGCharGen:
             clan = VampireClan.random_member()
 
         if char_class == CharClass.HUNTER and not creed:
-            percentile = _rng.integers(1, 101)
+            percentile = random_num(100)
             creed = HunterCreed.get_member_by_value(percentile)
 
         character = Character(

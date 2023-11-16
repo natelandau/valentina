@@ -3,14 +3,13 @@
 import discord
 import inflect
 from loguru import logger
-from numpy.random import default_rng
 
 from valentina.constants import DiceType, EmbedColor, RollResultType
 from valentina.models import Character, Guild, RollStatistic
-from valentina.utils import errors
+from valentina.utils import errors, random_num
 
 p = inflect.engine()
-_rng = default_rng()
+
 _max_pool_size = 100
 
 
@@ -154,7 +153,7 @@ class DiceRoll:
     def roll(self) -> list[int]:
         """Roll the dice and return the results."""
         if not self._roll:
-            self._roll = list(map(int, _rng.integers(1, self.dice_type.value + 1, self.pool)))
+            self._roll = [random_num(self.dice_type.value) for x in range(self.pool)]
 
         return self._roll
 

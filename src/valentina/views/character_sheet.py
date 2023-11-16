@@ -14,10 +14,8 @@ from valentina.constants import (
     Emoji,
     TraitCategory,
 )
-from valentina.models import Character, CharacterTrait
-from valentina.models.aws import AWSService
+from valentina.models import AWSService, Character, CharacterTrait, Statistics
 from valentina.models.bot import ValentinaContext
-from valentina.models.statistics import Statistics
 
 
 def __embed1(  # noqa: C901
