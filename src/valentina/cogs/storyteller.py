@@ -50,6 +50,7 @@ from valentina.utils.perform_roll import perform_roll
 from valentina.views import (
     ConfirmCancelButtons,
     S3ImageReview,
+    auto_paginate,
     confirm_action,
     present_embed,
     sheet_embed,
@@ -239,7 +240,7 @@ class StoryTeller(commands.Cog):
         )
         await ctx.post_to_audit_log(f"Storyteller character created: `{character.full_name}`")
 
-    @character.command(name="list", description="List all characters")
+    @character.command(name="list", description="List all storyteller characters")
     async def list_characters(
         self,
         ctx: ValentinaContext,
@@ -260,27 +261,14 @@ class StoryTeller(commands.Cog):
             )
             return
 
-        fields = []
-        description = f"**{len(all_characters)}** {p.plural_noun('character', len(all_characters))} on this server\n\u200b"
+        title = f"{len(all_characters)} storyteller {p.plural_noun('character', len(all_characters))} on this server"
 
-        fields.extend(
-            [
-                (
-                    character.full_name,
-                    f"Class: `{character.char_class.name}`",
-                )
-                for character in sorted(all_characters, key=lambda x: x.name)
-            ]
-        )
+        characters = [
+            f"{i}. **{x.full_name}** [{x.char_class_name.title()}]"
+            for i, x in enumerate(sorted(all_characters, key=lambda x: x.name))
+        ]
 
-        await present_embed(
-            ctx=ctx,
-            title="List of storyteller characters",
-            description=description,
-            fields=fields,
-            inline_fields=False,
-            level="info",
-        )
+        await auto_paginate(ctx, title, text="\n".join(characters))
 
     @character.command(name="update", description="Update a storyteller character")
     async def update_storyteller_character(

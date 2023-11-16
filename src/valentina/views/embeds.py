@@ -5,9 +5,67 @@ from datetime import datetime
 from typing import Any
 
 import discord
+from discord.ext import commands, pages
 
-from valentina.constants import EmbedColor
+from valentina.constants import ABS_MAX_EMBED_CHARACTERS, PREF_MAX_EMBED_CHARACTERS, EmbedColor
 from valentina.models.bot import ValentinaContext
+
+
+async def auto_paginate(
+    ctx: discord.ApplicationContext,
+    title: str,
+    text: str,
+    url: str | None = None,
+    max_chars: int = PREF_MAX_EMBED_CHARACTERS,
+    color: EmbedColor = EmbedColor.INFO,
+    footer: str | None = None,
+    show_thumbnail: bool = False,
+    hidden: bool = False,
+) -> None:
+    """Display text in Discord, paginating if necessary.
+
+    Be aware, this command may split apart multi-line code blocks.
+
+    Embeds can take 4000 characters in the description field, but we default to ~1300 for the sake of not scrolling forever.
+
+    Args:
+        ctx (discord.ApplicationContext): The context of the interaction.
+        title (str): The title of the paginator.
+        text (str): The text to paginate.
+        url (str, optional): The URL to link to. Defaults to None.
+        max_chars (int, optional): The maximum number of characters per page. Defaults to 1300.
+        show_thumbnail (bool, optional): Whether to show the bot's thumbnail. Defaults to False.
+        color (EmbedColor, optional): The color of the embed. Defaults to EmbedColor.INFO.
+        footer (str, optional): The footer text. Defaults to None.
+        hidden (bool, optional): Whether to hide the message from other users. Defaults to False.
+    """
+    if max_chars > ABS_MAX_EMBED_CHARACTERS:
+        max_chars = ABS_MAX_EMBED_CHARACTERS
+
+    p = commands.Paginator(prefix="", suffix="", max_size=max_chars)
+    for line in text.splitlines():
+        p.add_line(line)
+
+    embeds = [
+        discord.Embed(title=title, description=page, url=url, color=color.value) for page in p.pages
+    ]
+
+    if show_thumbnail:
+        for embed in embeds:
+            embed.set_thumbnail(url=ctx.bot.user.display_avatar)
+
+    if footer:
+        for embed in embeds:
+            embed.set_footer(text=footer)
+
+    show_buttons = len(embeds) > 1
+    paginator = pages.Paginator(
+        embeds,  # type: ignore [arg-type]
+        author_check=False,
+        show_disabled=show_buttons,
+        show_indicator=show_buttons,
+    )
+    await paginator.respond(ctx.interaction, ephemeral=hidden)
 
 
 async def error_log_embed(

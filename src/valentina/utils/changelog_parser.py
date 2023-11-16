@@ -169,15 +169,9 @@ class ChangelogParser:
         """
         return list(self.changelog_dict.keys())
 
-    def get_embed(self) -> discord.Embed:
-        """Generate an embed for the changelog.
-
-        Returns:
-            discord.Embed: The changelog embed.
-        """
+    def get_text(self) -> str:
+        """Generate a text version of the changelog."""
         description = ""
-
-        description = "## Valentina Noir Changelog\n"
 
         # Loop through each version in the changelog
         for version, data in self.changelog_dict.items():
@@ -200,6 +194,19 @@ class ChangelogParser:
         description += "\n\n----\n"
         description += "View the [full changelog on Github](https://github.com/natelandau/valentina/releases)\n"
 
+        return description
+
+    def get_embed(self) -> discord.Embed:
+        """Generate an embed for the changelog.
+
+        Returns:
+            discord.Embed: The changelog embed.
+        """
+        description = ""
+
+        description = "## Valentina Noir Changelog\n"
+        description += self.get_text()
+
         embed = discord.Embed(
             description=description,
             color=EmbedColor.INFO.value,
@@ -217,27 +224,8 @@ class ChangelogParser:
         # Create and populate the embed description
         description = f"Valentina, your {random.choice(['honored', 'admired', 'distinguished', 'celebrated', 'hallowed', 'prestigious', 'acclaimed', 'favorite', 'friendly neighborhood', 'prized', 'treasured', 'number one', 'esteemed', 'venerated', 'revered', 'feared'])} {random.choice(BOT_DESCRIPTIONS)}, has {random.choice(['been granted new powers', 'leveled up', 'spent experience points', 'gained new abilities', 'been bitten by a radioactive spider', 'spent willpower points', 'been updated', 'squashed bugs and gained new features',])}!\n"
 
-        # Loop through each version in the changelog
-        for version, data in self.changelog_dict.items():
-            # Add the version header
-            description += f"\n### `v{version}` ({data['date']})\n"
-
-            # Add each category
-            for category, entries in data.items():
-                # Skip the version and date
-                if category == "date":
-                    continue
-
-                # Add the category header
-                description += f"\n**{category.capitalize()}**\n"
-
-                # Add each entry
-                for entry in entries:
-                    description += f"{entry}\n"
-
-        description += "\n----\n"
+        description += self.get_text()
         description += "- Run `/changelog` to view specific versions\n"
-        description += "- View my [full changelog on Github](https://github.com/natelandau/valentina/releases)\n"
 
         embed = discord.Embed(description=description, color=EmbedColor.INFO.value)
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)

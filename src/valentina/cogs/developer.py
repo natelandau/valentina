@@ -14,7 +14,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.characters import RNGCharGen
-from valentina.constants import MAX_CHARACTER_COUNT, EmbedColor
+from valentina.constants import PREF_MAX_EMBED_CHARACTERS, EmbedColor
 from valentina.models import AWSService, Character, GlobalProperty, Guild, RollProbability, User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.autocomplete import (
@@ -399,7 +399,7 @@ class Developer(commands.Cog):
                         log_lines.pop(0)
 
         response = "".join(log_lines)
-        await ctx.respond("```" + response[-MAX_CHARACTER_COUNT:] + "```", ephemeral=hidden)
+        await ctx.respond("```" + response[-PREF_MAX_EMBED_CHARACTERS:] + "```", ephemeral=hidden)
 
     ### STATS COMMANDS ################################################################
 
