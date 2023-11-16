@@ -3,22 +3,27 @@
 
 import discord
 from discord.commands import Option
-from discord.ext import commands, pages
+from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import MAX_FIELD_COUNT, MAX_PAGE_CHARACTER_COUNT
+from valentina.constants import MAX_FIELD_COUNT
 from valentina.models import Campaign, CampaignChapter, CampaignNote, CampaignNPC, Guild
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.autocomplete import select_campaign, select_chapter, select_note, select_npc
 from valentina.utils.converters import ValidCampaign, ValidYYYYMMDD
 from valentina.utils.helpers import truncate_string
-from valentina.views import ChapterModal, NoteModal, NPCModal, confirm_action, present_embed
+from valentina.views import (
+    ChapterModal,
+    NoteModal,
+    NPCModal,
+    auto_paginate,
+    confirm_action,
+    present_embed,
+)
 
 
 class CampaignCog(commands.Cog):
     """Commands used for updating campaigns."""
-
-    # TODO: Add paginator to long embeds (e.g. campaign list, campaign chapters, etc.)
 
     def __init__(self, bot: Valentina) -> None:
         self.bot: Valentina = bot
@@ -149,70 +154,36 @@ class CampaignCog(commands.Cog):
         npc_list = sorted(campaign.npcs, key=lambda n: n.name)
         note_list = sorted(campaign.notes, key=lambda n: n.name)
 
-        chapter_listing = "\n".join([f"{c.number}. {c.name}" for c in chapter_list])
+        chapter_listing = "\n> ".join([f"{c.number}. {c.name}" for c in chapter_list])
 
-        intro = f"""
-\u200b\n**__{campaign.name.upper()}__**
-An overview of {campaign.name}.
+        chapter_text = "\n\n".join([f"{c.campaign_display()}" for c in chapter_list])
 
-**{len(chapter_list)} Chapters**
-{chapter_listing}
+        npc_text = "\n\n".join([f"{n.campaign_display()}" for n in npc_list])
 
-**{len(npc_list)} NPCs**
-{', '.join([f"{n.name}" for n in npc_list])}
+        note_text = "\n\n".join([f"{n.campaign_display()}" for n in note_list])
 
-**{len(note_list)} Notes**
-{', '.join([f"{n.name}" for n in note_list])}
+        text = f"""
+### __Overview of {campaign.name}__
+> **Chapters** ({len(chapter_list)})
+> {chapter_listing}
+
+> **NPCs** ({len(npc_list)})
+> {', '.join([f"{n.name}" for n in npc_list])}
+
+> **Notes** ({len(note_list)})
+> {', '.join([f"{n.name}" for n in note_list])}
+
+### __Chapters__
+{chapter_text}
+
+### __NPCs__
+{npc_text}
+
+### __Notes__
+{note_text}
             """
 
-        ### CHAPTERS ###
-        chapter_pages = []
-        current_string = ""
-        for chapter in chapter_list:
-            if len(current_string) + len(chapter.campaign_display()) > MAX_PAGE_CHARACTER_COUNT:
-                chapter_pages.append(f"\u200b\nChapters in **{campaign.name}**" + current_string)
-                current_string = ""
-            current_string += f"\n\n{chapter.campaign_display()}"
-
-        if current_string:
-            chapter_pages.append(f"\u200b\nChapters in **{campaign.name}**" + current_string)
-
-        ## NPCS ##
-        npc_pages = []
-        current_string = ""
-        for npc in npc_list:
-            if len(current_string) + len(npc.campaign_display()) > MAX_PAGE_CHARACTER_COUNT:
-                npc_pages.append(f"\u200b\nNPCs in **{campaign.name}**" + current_string)
-                current_string = ""
-            current_string += f"\n\n{npc.campaign_display()}"
-
-        if current_string:
-            npc_pages.append(f"\u200b\nNPCs in **{campaign.name}**" + current_string)
-
-        ## NOTES ##
-        note_pages = []
-        current_string = ""
-        for note in note_list:
-            if len(current_string) + len(note.campaign_display()) > MAX_PAGE_CHARACTER_COUNT:
-                note_pages.append(f"\u200b\nNotes in **{campaign.name}**" + current_string)
-                current_string = ""
-            current_string += f"\n\n{note.campaign_display()}"
-
-        if current_string:
-            note_pages.append(f"\u200b\nNotes in **{campaign.name}**" + current_string)
-
-        # Create a paginator with the intro page
-        paginator = pages.Paginator(pages=[intro, *chapter_pages, *npc_pages, *note_pages])
-        paginator.remove_button("first")
-        paginator.remove_button("last")
-
-        # Send the paginator as a dm to the user
-        await paginator.respond(
-            ctx.interaction,
-            target=ctx.author,
-            ephemeral=True,
-            target_message=f"Please check your DMs! The campaign **{campaign.name}** has been sent to you.",
-        )
+        await auto_paginate(ctx, title=f"Campaign Overview: __{campaign.name}__", text=text)
 
     @campaign.command(name="set_active", description="Set a campaign as active")
     async def campaign_set_active(

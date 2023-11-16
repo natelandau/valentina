@@ -19,13 +19,12 @@ p = inflect.engine()
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
 DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
 MAX_BUTTONS_PER_ROW = 5
-MAX_CHARACTER_COUNT = 1990  # truncate text to fit in embeds
 MAX_DOT_DISPLAY = 5  # number of dots to display on a character sheet before converting to text
 MAX_FIELD_COUNT = 1010
 MAX_OPTION_LIST_SIZE = 25  # maximum number of options in a discord select menu
-MAX_PAGE_CHARACTER_COUNT = 1950
+PREF_MAX_EMBED_CHARACTERS = 1950  # Preferred maximum number of characters in an embed
+ABS_MAX_EMBED_CHARACTERS = 3900  # Absolute maximum number of characters in an embed -100 for safety
 VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
-SPACER = " \u200b"
 CHANGELOG_PATH = Path(__file__).parent / "../../CHANGELOG.md"
 
 
@@ -90,6 +89,14 @@ class Emoji(Enum):
     RECYCLE = "♻️"
     RELOAD = "🔄"
     DICE = "🎲"
+
+
+class GithubIssueLabels(Enum):
+    """Enum for Github issue labels."""
+
+    BUG = "bug"
+    ENHANCEMENT = "enhancement"
+    QUESTION = "question"
 
 
 class MaxTraitValue(Enum):
@@ -830,14 +837,6 @@ class RNGCharLevel(Enum):
             CharClass: A random enum member.
         """
         return choice(list(cls))
-
-
-class GithubIssueLabels(Enum):
-    """Enum for Github issue labels."""
-
-    BUG = "bug"
-    ENHANCEMENT = "enhancement"
-    QUESTION = "question"
 
 
 @dataclass(frozen=True, eq=True)

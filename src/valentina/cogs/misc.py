@@ -21,7 +21,7 @@ from valentina.utils.autocomplete import (
 from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidImageURL
 from valentina.utils.helpers import fetch_random_name
-from valentina.views import confirm_action
+from valentina.views import auto_paginate, confirm_action
 
 p = inflect.engine()
 
@@ -280,8 +280,13 @@ Roll Macros      : {num_macros}
             raise commands.BadArgument(msg)
 
         changelog = ChangelogParser(self.bot, oldest_version, newest_version)
-        embed = changelog.get_embed()
-        await ctx.respond(embed=embed, ephemeral=hidden)
+        await auto_paginate(
+            ctx,
+            title="Valentina Noir Changelog",
+            text=changelog.get_text(),
+            url="https://github.com/natelandau/valentina/releases",
+            hidden=hidden,
+        )
 
     @commands.slash_command(name="coinflip", help="Flip a coin")
     async def coinflip(self, ctx: ValentinaContext) -> None:

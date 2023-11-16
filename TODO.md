@@ -16,7 +16,7 @@
 -   [ ] CharGen: Adjust hunter virtues according to this: Virtues are awarded to or imposed upon your character when she is imbued. You have three starting points to spend in any of the Virtues. However, your rating in your character's "creed Virtue" - her primary Virtue - cannot be exceeded by her score in any other Virtue. Thus, a Defender's Zeal rating cannot be exceeded by her Vision or Mercy ratings - she could have 3 Zeal; 2 Zeal, 1 Vision and 0 Mercy; or one point in each. Likewise, a Redeemer's Mercy cannot be exceeded by her Zeal or Vision ratings.
 -   [ ] Database: On bot load, poll all character traits and update `custom` status and max value for traits in enums. This will keep database in-sync with the codebase.
 -   [ ] Gameplay: Button to create macro from rolling traits
--   [ ] Refactor: Centralize pagination for long responses
+-   [x] Refactor: Centralize pagination for long responses
 -   [ ] Refactor: Move testable logic out of cogs and to services or db models
 -   [ ] Statistics: Pull stats based on timeframe
 -   [ ] Storyteller: Add notes

@@ -10,7 +10,7 @@ from loguru import logger
 
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.helpers import get_config_value
-from valentina.views import present_embed
+from valentina.views import auto_paginate, present_embed
 
 
 class Help(commands.Cog):
@@ -158,32 +158,13 @@ class Help(commands.Cog):
             raise FileNotFoundError
 
         user_guide = path.read_text()
-
-        # Embeds can take 4000 characters in the description field, but we keep
-        # it at ~1200 for the sake of not scrolling forever.
-        paginator = discord.ext.commands.Paginator(prefix="", suffix="", max_size=1200)
-
-        for line in user_guide.split("\n"):
-            paginator.add_line(line)
-
-        pages_to_send: list[discord.Embed] = []
-        for page in paginator.pages:
-            embed = discord.Embed(
-                title="Valentina User Guide",
-                description=page,
-                url="https://github.com/natelandau/valentina/blob/main/user_guide.md",
-            )
-            embed.set_thumbnail(url=ctx.bot.user.display_avatar)
-            pages_to_send.append(embed)
-
-        show_buttons = len(pages_to_send) > 1
-        paginator = discord.ext.pages.Paginator(  # type: ignore
-            pages=pages_to_send,  # type: ignore [arg-type]
-            author_check=False,
-            show_disabled=show_buttons,
-            show_indicator=show_buttons,
+        await auto_paginate(
+            ctx,
+            title="Valentina User Guide",
+            text=user_guide,
+            url="https://github.com/natelandau/valentina/blob/main/user_guide.md",
+            hidden=hidden,
         )
-        await paginator.respond(ctx.interaction, ephemeral=hidden)  # type: ignore
 
 
 def setup(bot: Valentina) -> None:

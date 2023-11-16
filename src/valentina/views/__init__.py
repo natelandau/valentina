@@ -1,6 +1,6 @@
 """Views for Valentina."""
 
-from .embeds import present_embed, user_error_embed  # isort:skip
+from .embeds import present_embed, user_error_embed, auto_paginate  # isort:skip
 from .buttons import ConfirmCancelButtons, ReRollButton, CancelButton, IntegerButtons  # isort:skip
 from .actions import confirm_action
 from .character_sheet import sheet_embed, show_sheet
@@ -22,8 +22,8 @@ from .thumbnail_review import ThumbnailReview
 __all__ = [
     "BioModal",
     "CancelButton",
-    "ChapterModal",
     "ChangeNameModal",
+    "ChapterModal",
     "confirm_action",
     "ConfirmCancelButtons",
     "CustomSectionModal",
@@ -31,6 +31,7 @@ __all__ = [
     "MacroCreateModal",
     "NoteModal",
     "NPCModal",
+    "auto_paginate",
     "present_embed",
     "ProfileModal",
     "ReRollButton",

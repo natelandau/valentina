@@ -47,6 +47,7 @@ from valentina.views import (
     CustomSectionModal,
     ProfileModal,
     S3ImageReview,
+    auto_paginate,
     confirm_action,
     present_embed,
     show_sheet,
@@ -253,8 +254,9 @@ class CharactersCog(commands.Cog, name="Character"):
             return
 
         title_prefix = "All player" if scope == "all" else "Your"
-        text = f"## {title_prefix} {p.plural_noun('character', len(all_characters))} on {ctx.guild.name}\n"
+        title = f"{title_prefix} {p.plural_noun('character', len(all_characters))} on {ctx.guild.name}\n"
 
+        text = ""
         for character in sorted(all_characters, key=lambda x: x.name):
             user = await User.get(character.user_owner, fetch_links=True)
 
@@ -272,8 +274,9 @@ class CharactersCog(commands.Cog, name="Character"):
             text += f"Owner: {user.name:<20}\n"
             text += "```\n"
 
-        embed = discord.Embed(description=text, color=EmbedColor.INFO.value)
-        await ctx.respond(embed=embed, ephemeral=hidden)
+        await auto_paginate(
+            ctx, title=title, text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=300
+        )
 
     @chars.command(name="transfer", description="Transfer one of your characters to another user")
     async def transfer_character(
