@@ -1,3 +1,16 @@
+## v2.1.0 (2023-11-17)
+
+### Feat
+
+- **gameplay**: add `/gameplay damage` for damage effects
+- add /github command to add/view issues  (#92)
+
+### Refactor
+
+- autopaginate text (#93)
+- improve how random trait values are computed
+- rename `options` to `autocomplete`
+
 ## v2.0.0 (2023-11-04)
 
 ### Feat
