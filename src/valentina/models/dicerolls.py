@@ -202,9 +202,9 @@ class DiceRoll:
                 self._result = self.successes + self.criticals - self.failures - self.botches
             else:
                 botches = self.botches - self.criticals
-                botches = botches if botches > 0 else 0
+                botches = max(0, botches)
                 criticals = self.criticals - self.botches
-                criticals = criticals if criticals > 0 else 0
+                criticals = max(0, criticals)
 
                 self._result = self.successes + (criticals * 2) - (botches * 2)
 
