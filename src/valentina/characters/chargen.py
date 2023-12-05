@@ -936,12 +936,10 @@ class RNGCharGen:
                     character.traits.append(trait)
 
             if isinstance(ability["custom_sections"], list):
-                character.sheet_sections.extend(
-                    [
-                        CharacterSheetSection(title=title, content=content)
-                        for title, content in ability["custom_sections"]
-                    ]
-                )
+                character.sheet_sections.extend([
+                    CharacterSheetSection(title=title, content=content)
+                    for title, content in ability["custom_sections"]
+                ])
         await character.save()
         return character
 
@@ -1075,23 +1073,19 @@ Once you select a character you can re-allocate dots and change the name, but yo
         )
         embed2 = discord.Embed(
             title="Classes",
-            description="\n".join(
-                [
-                    f"- **`{c.value.percentile_range[1] - c.value.percentile_range[0]}%` {c.value.name}** {c.value.description}"
-                    for c in CharClass.playable_classes()
-                ]
-            ),
+            description="\n".join([
+                f"- **`{c.value.percentile_range[1] - c.value.percentile_range[0]}%` {c.value.name}** {c.value.description}"
+                for c in CharClass.playable_classes()
+            ]),
             color=EmbedColor.INFO.value,
         )
         embed3 = discord.Embed(
             title="Concepts",
-            description="\n".join(
-                [
-                    f"- **{c.value.name}** {c.value.description}"
-                    for c in CharacterConcept
-                    if c.value.percentile_range is not None
-                ]
-            ),
+            description="\n".join([
+                f"- **{c.value.name}** {c.value.description}"
+                for c in CharacterConcept
+                if c.value.percentile_range is not None
+            ]),
             color=EmbedColor.INFO.value,
         )
 
@@ -1172,14 +1166,12 @@ Once you select a character you can re-allocate dots and change the name, but yo
                 title="Character Generations", description=description, color=EmbedColor.INFO.value
             )
         ]
-        pages.extend(
-            [
-                await self._generate_character_sheet_embed(
-                    character, suffix=self._special_ability_char_sheet_text(character)
-                )
-                for character in characters
-            ]
-        )
+        pages.extend([
+            await self._generate_character_sheet_embed(
+                character, suffix=self._special_ability_char_sheet_text(character)
+            )
+            for character in characters
+        ])
 
         # present the character selection paginator
         view = CharacterPickerButtons(self.ctx, characters)

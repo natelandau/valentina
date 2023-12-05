@@ -443,38 +443,36 @@ class SettingsManager:
         storyteller_channel = guild.fetch_storyteller_channel(self.ctx.guild)
         changelog_channel = guild.fetch_changelog_channel(self.ctx.guild)
 
-        settings_home_embed.description = "\n".join(
-            [
-                "# Manage Guild Settings",
-                "### How this works",
-                "1. Select the setting to manage from the select menu below",
-                "2. Select the value to set from the buttons associated with each setting",
-                "### Current Settings",
-                "```yaml",
-                "# Permissions",
-                f"Grant experience   : {self.guild.permissions.grant_xp.name.title()}",
-                f"Manage campaign    : {self.guild.permissions.manage_campaigns.name.title()}",
-                f"Update trait values: {self.guild.permissions.manage_traits.name.title()}",
-                f"Kill Character     : {self.guild.permissions.kill_character.name.title()}",
-                "",
-                "# Channel Settings:",
-                f"Changelog channel  : Enabled (#{changelog_channel.name})"
-                if changelog_channel is not None
-                else "Changelog channel  : Disabled",
-                f"Storyteller channel: Enabled (#{storyteller_channel.name})"
-                if storyteller_channel is not None
-                else "Storyteller channel: Not set",
-                "",
-                "# Logging:",
-                f"Log errors      : Enabled (#{error_log_channel.name})"
-                if error_log_channel is not None
-                else "Log errors      : Disabled",
-                f"Log interactions: Enabled (#{audit_log_channel.name})"
-                if audit_log_channel is not None
-                else "Log interactions: Disabled",
-                "```",
-            ]
-        )
+        settings_home_embed.description = "\n".join([
+            "# Manage Guild Settings",
+            "### How this works",
+            "1. Select the setting to manage from the select menu below",
+            "2. Select the value to set from the buttons associated with each setting",
+            "### Current Settings",
+            "```yaml",
+            "# Permissions",
+            f"Grant experience   : {self.guild.permissions.grant_xp.name.title()}",
+            f"Manage campaign    : {self.guild.permissions.manage_campaigns.name.title()}",
+            f"Update trait values: {self.guild.permissions.manage_traits.name.title()}",
+            f"Kill Character     : {self.guild.permissions.kill_character.name.title()}",
+            "",
+            "# Channel Settings:",
+            f"Changelog channel  : Enabled (#{changelog_channel.name})"
+            if changelog_channel is not None
+            else "Changelog channel  : Disabled",
+            f"Storyteller channel: Enabled (#{storyteller_channel.name})"
+            if storyteller_channel is not None
+            else "Storyteller channel: Not set",
+            "",
+            "# Logging:",
+            f"Log errors      : Enabled (#{error_log_channel.name})"
+            if error_log_channel is not None
+            else "Log errors      : Disabled",
+            f"Log interactions: Enabled (#{audit_log_channel.name})"
+            if audit_log_channel is not None
+            else "Log interactions: Disabled",
+            "```",
+        ])
 
         view = CancelButton(self.ctx)
         return pages.PageGroup(

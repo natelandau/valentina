@@ -210,20 +210,16 @@ async def show_sheet(
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)
 
     embeds = []
-    embeds.extend(
-        [
-            __embed1(character, owned_by_user, show_footer=show_footer),
-            await __embed2(ctx, character, owned_by_user, show_footer=show_footer),
-        ]
-    )
+    embeds.extend([
+        __embed1(character, owned_by_user, show_footer=show_footer),
+        await __embed2(ctx, character, owned_by_user, show_footer=show_footer),
+    ])
 
     if character.images:
-        embeds.extend(
-            [
-                __image_embed(character, image_key, owned_by_user, show_footer=show_footer)
-                for image_key in character.images
-            ]
-        )
+        embeds.extend([
+            __image_embed(character, image_key, owned_by_user, show_footer=show_footer)
+            for image_key in character.images
+        ])
 
     paginator = pages.Paginator(pages=embeds)  # type: ignore [arg-type]
     paginator.remove_button("first")

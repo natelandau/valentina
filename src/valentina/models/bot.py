@@ -475,12 +475,10 @@ class Valentina(commands.Bot):
         # Add/Update the guild in the database
         logger.debug(f"DATABASE: Update guild `{guild.name}`")
         guild_object = await Guild.find_one(Guild.id == guild.id).upsert(
-            Set(
-                {
-                    "date_modified": datetime.now(UTC).replace(microsecond=0),
-                    "name": guild.name,
-                }
-            ),
+            Set({
+                "date_modified": datetime.now(UTC).replace(microsecond=0),
+                "name": guild.name,
+            }),
             on_insert=Guild(id=guild.id, name=guild.name),
             response_type=UpdateResponse.NEW_DOCUMENT,
         )
@@ -490,12 +488,10 @@ class Valentina(commands.Bot):
             if not member.bot:
                 logger.debug(f"DATABASE: Update user `{member.name}`")
                 user = await User.find_one(User.id == member.id).upsert(
-                    Set(
-                        {
-                            "date_modified": datetime.now(UTC).replace(microsecond=0),
-                            "name": member.display_name,
-                        }
-                    ),
+                    Set({
+                        "date_modified": datetime.now(UTC).replace(microsecond=0),
+                        "name": member.display_name,
+                    }),
                     on_insert=User(id=member.id, name=member.display_name),
                     response_type=UpdateResponse.NEW_DOCUMENT,
                 )

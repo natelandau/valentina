@@ -261,24 +261,20 @@ async def test_random_abilities(
         assert 0 <= trait.value <= 5
 
     assert (
-        sum(
-            [
-                x.value
-                for x in results.traits
-                if x.category_name == concept.value.ability_specialty.name
-            ]
-        )
+        sum([
+            x.value
+            for x in results.traits
+            if x.category_name == concept.value.ability_specialty.name
+        ])
         == primary_dots
     )
 
     assert (
-        sum(
-            [
-                x.value
-                for x in results.traits
-                if x.category_name != concept.value.ability_specialty.name
-            ]
-        )
+        sum([
+            x.value
+            for x in results.traits
+            if x.category_name != concept.value.ability_specialty.name
+        ])
         == non_primary_dots
     )
 

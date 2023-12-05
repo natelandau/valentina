@@ -130,12 +130,10 @@ class Events(commands.Cog, name="Events"):
         logger.info(f"EVENT: {member.display_name} has joined the server")
         logger.debug(f"DATABASE: Update user `{member.name}`")
         await User.find_one(User.id == member.id).upsert(
-            Set(
-                {
-                    "date_modified": time_now(),
-                    "name": member.display_name,
-                }
-            ),
+            Set({
+                "date_modified": time_now(),
+                "name": member.display_name,
+            }),
             on_insert=User(id=member.id, name=member.display_name),
         )
 

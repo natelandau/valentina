@@ -118,7 +118,7 @@ class Help(commands.Cog):
                     for c in cmd.subcommands:
                         if c.name == arg_command[1]:
                             found_command = True
-                            description = description = self.__build_help_text(c)
+                            description = self.__build_help_text(c)
 
                             break
 
