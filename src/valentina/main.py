@@ -3,6 +3,7 @@
 import logging
 import sys
 from pathlib import Path
+from time import sleep
 from typing import Optional
 
 import discord
@@ -11,6 +12,7 @@ from loguru import logger
 
 from valentina.models.bot import Valentina
 from valentina.utils import InterceptHandler
+from valentina.utils.database import test_db_connection
 from valentina.utils.helpers import get_config_value
 
 from .__version__ import __version__
@@ -67,8 +69,12 @@ def main(
     ),
 ) -> None:
     """Run Valentina."""
-    # Instantiate the bot
+    # Ensure the database is available before starting the bot
+    while not test_db_connection():
+        logger.error("DB: Connection failed. Retrying in 30 seconds...")
+        sleep(30)
 
+    # Instantiate the bot
     intents = discord.Intents.all()
     bot = Valentina(
         debug_guilds=[int(g) for g in get_config_value("VALENTINA_GUILDS", "").split(",")],

@@ -1,11 +1,13 @@
 """The main file for the Valentina bot."""
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import arrow
 import discord
+import pymongo
 import semver
 from beanie import UpdateResponse
 from beanie.operators import Set
@@ -385,7 +387,14 @@ class Valentina(commands.Bot):
     async def on_connect(self) -> None:
         """Perform early setup."""
         # Initialize the mongodb database
-        await init_database()
+        while True:
+            try:
+                await init_database()
+            except pymongo.errors.ServerSelectionTimeoutError as e:
+                logger.error(f"DB: Failed to initialize database: {e}")
+                await asyncio.sleep(60)
+            else:
+                break
 
         # Connect to discord
         if not self.connected:
@@ -474,6 +483,7 @@ class Valentina(commands.Bot):
 
         # Add/Update the guild in the database
         logger.debug(f"DATABASE: Update guild `{guild.name}`")
+
         guild_object = await Guild.find_one(Guild.id == guild.id).upsert(
             Set({
                 "date_modified": datetime.now(UTC).replace(microsecond=0),
@@ -510,6 +520,9 @@ class Valentina(commands.Bot):
     async def on_ready(self) -> None:
         """Override on_ready."""
         await self.wait_until_ready()
+        while not self.connected:
+            logger.warning("CONNECT: Waiting for connection...")
+            await asyncio.sleep(10)
 
         # Needed for computing uptime
         self.start_time = datetime.utcnow()

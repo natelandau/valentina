@@ -1,5 +1,6 @@
 """Database utilities for Valentina."""
 
+import pymongo
 from beanie import init_beanie
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -17,6 +18,21 @@ from valentina.models import (
 from valentina.utils.helpers import get_config_value
 
 
+def test_db_connection() -> bool:
+    """Test the database connection using pymongo."""
+    logger.debug("DB: Testing connection...")
+    mongo_uri = get_config_value("VALENTINA_MONGO_URI")
+
+    try:
+        client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=1800)
+        client.server_info()
+        logger.info("DB: Connection successful")
+    except pymongo.errors.ServerSelectionTimeoutError:
+        return False
+    else:
+        return True
+
+
 async def init_database(client=None, database=None) -> None:  # type: ignore [no-untyped-def]
     """Initialize the database. If a client is not provided, one will be created.
 
@@ -30,7 +46,7 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
 
     # Create Motor client
     if not client:
-        client = AsyncIOMotorClient(f"{mongo_uri}", tz_aware=True)
+        client = AsyncIOMotorClient(f"{mongo_uri}", tz_aware=True, serverSelectionTimeoutMS=1800)
 
     # Initialize beanie with the Sample document class and a database
     await init_beanie(
