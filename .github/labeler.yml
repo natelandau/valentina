@@ -7,20 +7,13 @@ dev_container:
           - any-glob-to-any-file: ".devcontainer/**"
 configuration:
     - changed-files:
-          - any-glob-to-any-file: ".*"
-          - any-glob-to-any-file: "*.js"
-          - any-glob-to-any-file: "*.json"
-          - any-glob-to-any-file: "*.toml"
-          - any-glob-to-any-file: "*.yml"
+          - any-glob-to-any-file: [".*", "*.js", "*.json", "*.toml", "*.yaml", "*.yml"]
 documentation:
     - changed-files:
-          - any-glob-to-any-file: "**.md"
-          - any-glob-to-any-file: "docs/**"
-          - any-glob-to-any-file: "LICENSE"
+          - any-glob-to-any-file: ["**.md", "docs/**", "LICENSE"]
 python:
     - changed-files:
-          - any-glob-to-any-file: "src/**"
-          - any-glob-to-any-file: "tests/**"
+          - any-glob-to-any-file: ["src/**", "tests/**"]
 dependencies:
     - changed-files:
           - any-glob-to-any-file: "*.lock"
