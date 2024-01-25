@@ -131,7 +131,7 @@ class ThumbnailReview:
             if thumbnail.roll_type == self.roll_type:
                 filtered_thumbs[original_index] = thumbnail
 
-            original_index += 1
+            original_index += 1  # noqa: SIM113
 
         return filtered_thumbs
 

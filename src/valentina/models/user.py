@@ -44,7 +44,7 @@ class UserMacro(BaseModel):
 class User(Document):
     """Represents a user in the database."""
 
-    id: int  # type: ignore [assignment]  # noqa: A003
+    id: int  # type: ignore [assignment]
 
     active_characters: dict[str, Link[Character]] = Field(default_factory=dict)
     characters: list[Link[Character]] = Field(default_factory=list)

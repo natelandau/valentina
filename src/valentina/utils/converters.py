@@ -108,7 +108,7 @@ class ValidCharacterName(Converter):
             errors.append(f"`{argument}` is too long by {name_len - max_len} characters.")
 
         if not re.match(r"^[a-zA-Z0-9àèìòñùçëïüÁÉÖÜÑ_ -]+$", argument):
-            errors.append(
+            errors.append(  # type: ignore [unreachable]
                 "`Character names may only contain letters, numbers, spaces, hyphens, and underscores."
             )
 
@@ -176,7 +176,7 @@ class ValidImageURL(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> str:  # noqa: ARG002
         """Validate and normalize thumbnail URLs."""
         if not re.match(r"^https?://", argument):
-            msg = "Thumbnail URLs must start with `http://` or `https://`"
+            msg = "Thumbnail URLs must start with `http://` or `https://`"  # type: ignore [unreachable]
             raise BadArgument(msg)
 
         # Extract the file extension from the URL
@@ -216,5 +216,5 @@ class ValidYYYYMMDD(Converter):
         if re.match(r"^\d{4}-\d{2}-\d{2}$", argument):
             return datetime.strptime(argument, "%Y-%m-%d")
 
-        msg = f"`{argument}` is not a valid trait"
+        msg = f"`{argument}` is not a valid trait"  # type: ignore [unreachable]
         raise BadArgument(msg)
