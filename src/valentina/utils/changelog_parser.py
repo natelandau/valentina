@@ -76,7 +76,7 @@ class ChangelogParser:
         # Prepare compiled regular expressions
         version_re = re.compile(r"## v(\d+\.\d+\.\d+)")
         date_re = re.compile(r"\((\d{4}-\d{2}-\d{2})\)")
-        category_re = re.compile(rf"### ({'|'.join(self.all_categories)})", re.I)
+        category_re = re.compile(rf"### ({'|'.join(self.all_categories)})", re.IGNORECASE)
 
         # Initialize the changelog dictionary
         changelog_dict: dict[str, dict[str, str | list[str]]] = {}
@@ -114,13 +114,13 @@ class ChangelogParser:
                 continue
 
             # If we are within a version and a category, append line to that category
-            if parse_version and current_category:
+            if parse_version and current_category:  # type: ignore [unreachable] # TODO
                 cleaned_line = re.sub(r" \(#\d+\)$", "", line)  # Clean up PR references
 
                 if current_category not in changelog_dict[version_being_parsed]:
                     changelog_dict[version_being_parsed][current_category] = [cleaned_line]
                 else:
-                    changelog_dict[version_being_parsed][current_category].append(cleaned_line)  # type: ignore [union-attr]
+                    changelog_dict[version_being_parsed][current_category].append(cleaned_line)
 
         return changelog_dict
 

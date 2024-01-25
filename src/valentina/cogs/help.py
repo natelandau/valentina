@@ -71,7 +71,7 @@ class Help(commands.Cog):
 
         return description
 
-    help = discord.SlashCommandGroup("help", "Help with Valentina")  # noqa: A003
+    help = discord.SlashCommandGroup("help", "Help with Valentina")
 
     @help.command(name="commands", description="Help information for Valentina's commands")
     async def command_help(
@@ -89,7 +89,7 @@ class Help(commands.Cog):
             for cmd in commands:
                 description += f"**{cmd.name}**\n"
                 description += f"└ {cmd.description}\n\n"
-            description += "\u23AF" * 33 + "\n"
+            description += "\u23af" * 33 + "\n"
             description += (
                 "> Use `/help <command>` for detailed help information on each command.\n"
             )
@@ -109,7 +109,7 @@ class Help(commands.Cog):
                 if cmd.name == arg_command[0] and not arg_command[1:]:
                     found_command = True
                     description = self.__build_help_text(cmd)
-                    description += "\u23AF" * 33 + "\n"
+                    description += "\u23af" * 33 + "\n"
                     description += "> Use `/help <command> <command>` for information on subcommands with subcommands.\n"
 
                     break

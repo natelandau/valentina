@@ -31,8 +31,7 @@ class Reference(commands.Cog):
         ),
     ) -> None:
         """Display health levels."""
-        description = dedent(
-            """
+        description = dedent("""
         ```
         Bruised       :
         Hurt          : -1
@@ -42,8 +41,7 @@ class Reference(commands.Cog):
         Crippled      : -5
         Incapacitated :
         ```
-        """
-        )
+        """)
 
         await present_embed(
             ctx,
@@ -65,8 +63,7 @@ class Reference(commands.Cog):
         ),
     ) -> None:
         """Display experience costs."""
-        description = dedent(
-            """
+        description = dedent("""
             Multiply the new dot rating by the multiplier to get the cost to raise a trait.
             ```
             Abilities.............: x3
@@ -85,8 +82,7 @@ class Reference(commands.Cog):
             Virtues...............: x2
             Willpower.............: x1
             ```
-            """
-        )
+            """)
         await present_embed(
             ctx,
             title="Experience Costs",
@@ -220,8 +216,7 @@ class Reference(commands.Cog):
         ),
     ) -> None:
         """Reference information for Thaumaturgy Paths."""
-        page1 = dedent(
-            """
+        page1 = dedent("""
             Created by exhaustive research and extensive experimentation, Thaumaturgy utilizes the principles of Hermetic magic used by House Tremere when it was still a cabal of mages, adapted to be fueled by the inherent magical power of Vitae rather than Quintessence. While it is certainly powerful and versatile, it is organized very differently to the [Spheres](https://whitewolf.fandom.com/wiki/Sphere); Thaumaturgy is largely unknown to mages, and universally distrusted and reviled by those who have encountered it.
 
             Thaumaturgy uses a system of paths and rituals to focus the thaumaturge's will. Paths are learned expressions of thaumaturgical principles developed into reliable, repeatable effects. Unlike the "natural" powers of Disciplines, however, thaumaturges must concentrate their will, forcing the power of their blood to unnatural ends. If their concentration is not complete, if they falter, then the magic will fail, and in extreme cases such failure can have a lasting effect on the thaumaturge, draining their mental resources.
@@ -231,8 +226,7 @@ class Reference(commands.Cog):
             - [Paths Info](https://whitewolf.fandom.com/wiki/Thaumaturgy_(VTM))
             - [Rituals Info](https://whitewolf.fandom.com/wiki/List_of_Thaumaturgy_Rituals)
 
-            """
-        )
+            """)
 
         await present_embed(
             ctx, title="Thaumaturgy", description=page1, level="info", ephemeral=hidden

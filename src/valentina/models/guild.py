@@ -62,7 +62,7 @@ class GuildChannels(BaseModel):
 class Guild(Document):
     """Represents a guild in the database."""
 
-    id: int  # type: ignore [assignment]  # noqa: A003
+    id: int  # type: ignore [assignment]
 
     active_campaign: Link["Campaign"] = None
     campaigns: list[Link["Campaign"]] = Field(default_factory=list)
