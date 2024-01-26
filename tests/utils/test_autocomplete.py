@@ -256,7 +256,7 @@ async def test_select_char_trait(mock_ctx1, user_factory, character_factory, tra
     # THEN the trait and its index is returned
     assert len(result) == 1
     assert result[0].name == "Dexterity"
-    assert result[0].value == 0
+    assert result[0].value == str(trait.id)
 
 
 @pytest.mark.drop_db()
@@ -295,7 +295,7 @@ async def test_select_char_trait_two(mock_ctx1, user_factory, character_factory,
     # THEN the trait and its index is returned
     assert len(result) == 1
     assert result[0].name == "Dexterity"
-    assert result[0].value == 0
+    assert result[0].value == str(trait.id)
 
 
 @pytest.mark.drop_db()

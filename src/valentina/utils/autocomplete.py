@@ -153,6 +153,7 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     """
     # Fetch the active character
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
+
     if not (
         active_character := await user_object.active_character(
             ctx.interaction.guild, raise_error=False
@@ -165,8 +166,8 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
 
     # Filter and return the character's traits
     return [
-        OptionChoice(t.name, i)
-        for i, t in enumerate(active_character.traits)
+        OptionChoice(t.name, str(t.id))
+        for t in active_character.traits
         if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -196,8 +197,8 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
 
     # Filter and return the character's traits
     return [
-        OptionChoice(t.name, i)
-        for i, t in enumerate(active_character.traits)
+        OptionChoice(t.name, str(t.id))
+        for t in active_character.traits
         if t.name.lower().startswith(ctx.options["trait_two"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 

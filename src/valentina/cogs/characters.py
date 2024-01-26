@@ -36,6 +36,7 @@ from valentina.utils.converters import (
     ValidClan,
     ValidImageURL,
     ValidTraitCategory,
+    ValidTraitFromID,
     ValidYYYYMMDD,
 )
 from valentina.utils.helpers import (
@@ -529,12 +530,12 @@ class CharactersCog(commands.Cog, name="Character"):
     async def update_trait(
         self,
         ctx: ValentinaContext,
-        trait_index: Option(
-            int,  # Index of the trait in character.traits
-            description="Trait to update",
+        trait: Option(
+            ValidTraitFromID,
+            name="trait_one",
+            description="First trait to roll",
             required=True,
             autocomplete=select_char_trait,
-            name="trait",
         ),
         new_value: Option(
             int, description="New value for the trait", required=True, min_value=0, max_value=20
@@ -560,9 +561,6 @@ class CharactersCog(commands.Cog, name="Character"):
                 delete_after=30,
             )
             return
-
-        # Grab the CharacterTrait object
-        trait = character.traits[trait_index]
 
         if not 0 <= new_value <= trait.max_value:
             await present_embed(
@@ -594,11 +592,11 @@ class CharactersCog(commands.Cog, name="Character"):
     async def delete_trait(
         self,
         ctx: ValentinaContext,
-        trait_index: Option(
-            int,
-            description="Trait to delete",
+        trait: Option(
+            ValidTraitFromID,
+            name="trait_one",
+            description="First trait to roll",
             required=True,
-            name="trait",
             autocomplete=select_char_trait,
         ),
         hidden: Option(
@@ -610,7 +608,6 @@ class CharactersCog(commands.Cog, name="Character"):
         """Delete a trait from a character."""
         # Fetch the active character and trait
         character = await ctx.fetch_active_character()
-        trait = character.traits[trait_index]
 
         # Guard statement: check permissions
         if not await ctx.can_manage_traits(character):
@@ -635,7 +632,7 @@ class CharactersCog(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        character.traits.pop(trait_index)
+        character.traits.remove(trait)
         await character.save()
 
         await trait.delete()

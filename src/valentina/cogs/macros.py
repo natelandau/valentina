@@ -12,6 +12,7 @@ from valentina.utils.autocomplete import (
     select_char_trait_two,
     select_macro,
 )
+from valentina.utils.converters import ValidTraitFromID
 from valentina.utils.helpers import truncate_string
 from valentina.views import MacroCreateModal, confirm_action, present_embed
 
@@ -28,15 +29,15 @@ class Macro(commands.Cog):
     async def create(
         self,
         ctx: ValentinaContext,
-        index1: Option(
-            int,
+        trait_one: Option(
+            ValidTraitFromID,
             name="trait_one",
             description="First trait to roll",
             required=True,
             autocomplete=select_char_trait,
         ),
-        index2: Option(
-            int,
+        trait_two: Option(
+            ValidTraitFromID,
             name="trait_two",
             description="Second trait to roll",
             required=True,
@@ -52,15 +53,11 @@ class Macro(commands.Cog):
 
         Args:
             ctx (ValentinaContext): The context of the application.
-            index1 (int): The index for the first trait.
-            index2 (int): The index for the second trait.
+            trait_one (CharacterTrait): The index for the first trait.
+            trait_two (CharacterTrait): The index for the second trait.
             hidden (Option[bool]): Whether to make the result only to you (default true).
         """
         user = await User.get(ctx.author.id, fetch_links=True)
-        character = await user.active_character(ctx.guild)
-
-        trait_one = character.traits[index1]
-        trait_two = character.traits[index2]
 
         modal = MacroCreateModal(
             title=truncate_string("Enter the details for your macro", 45),

@@ -208,6 +208,18 @@ class ValidTraitCategory(Converter):
             raise BadArgument(msg) from e
 
 
+class ValidTraitFromID(Converter):
+    """Convert a TraitCategory name to a TraitCategory enum."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> CharacterTrait:  # noqa: ARG002
+        """Validate and return a CharacterTrait from it's id."""
+        try:
+            return await CharacterTrait.get(argument)
+        except KeyError as e:
+            msg = f"`{argument}` is not an existing trait id"
+            raise BadArgument(msg) from e
+
+
 class ValidYYYYMMDD(Converter):
     """Convert a string in the form of YYYY-MM-DD to a datetime object."""
 
