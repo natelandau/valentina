@@ -161,7 +161,7 @@ class Macro(commands.Cog):
 
         title = f"Delete macro `{macro.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, footer="This action is irreversible."
+            ctx, title, hidden=hidden, footer="This action is irreversible.", audit=True
         )
 
         if not is_confirmed:
@@ -170,7 +170,6 @@ class Macro(commands.Cog):
         del user.macros[index]
         await user.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
 

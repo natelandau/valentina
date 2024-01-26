@@ -139,7 +139,7 @@ class StoryTeller(commands.Cog):
         wizard = AddFromSheetWizard(ctx, character=character, user=user)
         await wizard.begin_chargen()
 
-        await ctx.post_to_audit_log(f"Created storyteller character: `{character.name}`")
+        await ctx.post_to_audit_log(f"Create storyteller character: `{character.name}`")
         logger.info(f"CHARACTER: Create storyteller character {character.name}")
 
     @character.command(name="create_rng", description="Create a random new npc character")
@@ -238,7 +238,7 @@ class StoryTeller(commands.Cog):
                 color=EmbedColor.SUCCESS.value,
             ),
         )
-        await ctx.post_to_audit_log(f"Storyteller character created: `{character.full_name}`")
+        await ctx.post_to_audit_log(f"Create storyteller character: `{character.full_name}`")
 
     @character.command(name="list", description="List all storyteller characters")
     async def list_characters(
@@ -310,7 +310,7 @@ class StoryTeller(commands.Cog):
             f"Update `{trait.name}` for `{character.name}` from `{trait.value}` to `{new_value}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -320,7 +320,6 @@ class StoryTeller(commands.Cog):
         trait.value = new_value
         await trait.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(name="sheet", description="View a character sheet")
@@ -361,7 +360,7 @@ class StoryTeller(commands.Cog):
         """Delete a storyteller character."""
         title = f"Delete storyteller character `{character.full_name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -369,7 +368,6 @@ class StoryTeller(commands.Cog):
 
         await character.delete(link_rule=DeleteRules.DELETE_LINKS)
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(name="add_trait", description="Add a trait to a storyteller character")
@@ -408,7 +406,7 @@ class StoryTeller(commands.Cog):
         """Add a custom trait to a character."""
         title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -416,7 +414,6 @@ class StoryTeller(commands.Cog):
 
         await character.add_trait(category, name.title(), value, max_value=max_value)
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(name="image_add", description="Add an image to a storyteller character")
@@ -484,7 +481,7 @@ class StoryTeller(commands.Cog):
 
         title = f"Add image to `{character.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, image=image_url
+            ctx, title, hidden=hidden, image=image_url, audit=True
         )
 
         if not is_confirmed:
@@ -492,7 +489,6 @@ class StoryTeller(commands.Cog):
             return
 
         # Update audit log and original response
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(
@@ -570,7 +566,7 @@ class StoryTeller(commands.Cog):
 
         title = f"Transfer `{character.name}` from `{old_owner.name}` to `{new_owner.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
         if not is_confirmed:
             return
@@ -582,7 +578,6 @@ class StoryTeller(commands.Cog):
         character.user_owner = new_owner.id
         await character.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @player.command(name="update", description="Update a player character")
@@ -625,7 +620,7 @@ class StoryTeller(commands.Cog):
             f"Update `{trait.name}` from `{trait.value}` to `{new_value}` for `{character.name}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -634,7 +629,6 @@ class StoryTeller(commands.Cog):
         trait.value = new_value
         await trait.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### ROLL COMMANDS ####################################################################

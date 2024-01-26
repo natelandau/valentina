@@ -527,7 +527,7 @@ class RNGCharGen:
         Args:
             character (Character): The character for which to generate attributes.
         """
-        logger.debug(f"CHARGEN: Generate attribute values for {character.name}")
+        logger.debug(f"Generate attribute values for {character.name}")
 
         concept = CharacterConcept[character.concept_name] if character.concept_name else None
         char_class = CharClass[character.char_class_name]
@@ -591,7 +591,7 @@ class RNGCharGen:
         Args:
             character (Character): The character for which to generate abilities.
         """
-        logger.debug(f"CHARGEN: Generate ability values for {character.name}")
+        logger.debug(f"Generate ability values for {character.name}")
 
         concept = CharacterConcept[character.concept_name] if character.concept_name else None
 
@@ -656,7 +656,7 @@ class RNGCharGen:
         Returns:
             Character: The updated character.
         """
-        logger.debug(f"CHARGEN: Generate discipline values for {character.name}")
+        logger.debug(f"Generate discipline values for {character.name}")
 
         # TODO: Work with Ghouls which have no clan
         try:
@@ -713,7 +713,7 @@ class RNGCharGen:
         Returns:
             Character: The updated character.
         """
-        logger.debug(f"CHARGEN: Generate virtue values for {character.name}")
+        logger.debug(f"Generate virtue values for {character.name}")
 
         if not (
             virtues := TraitCategory.VIRTUES.get_trait_list(CharClass[character.char_class_name])
@@ -756,7 +756,7 @@ class RNGCharGen:
         Returns:
             Character: The updated character.
         """
-        logger.debug(f"CHARGEN: Generate background values for {character.name}")
+        logger.debug(f"Generate background values for {character.name}")
 
         char_class = CharClass[character.char_class_name]
 
@@ -801,7 +801,7 @@ class RNGCharGen:
         Returns:
             Character: The updated character.
         """
-        logger.debug(f"CHARGEN: Generate willpower values for {character.name}")
+        logger.debug(f"Generate willpower values for {character.name}")
 
         if not any(x.name for x in character.traits if x.name == "Self-Control"):  # type: ignore [attr-defined]
             return character
@@ -852,7 +852,7 @@ class RNGCharGen:
         if character.char_class != CharClass.HUNTER:
             return character
 
-        logger.debug(f"CHARGEN: Generate hunter trait values for {character.name}")
+        logger.debug(f"Generate hunter trait values for {character.name}")
 
         try:
             creed = HunterCreed[character.creed_name]
@@ -919,7 +919,7 @@ class RNGCharGen:
         if character.char_class != CharClass.MORTAL:
             return character
 
-        logger.debug(f"CHARGEN: Assign special abilities for {character.name}")
+        logger.debug(f"Assign special abilities for {character.name}")
 
         # Assign Traits
         for ability in character.concept.value.abilities:
@@ -1055,7 +1055,7 @@ class CharGenWizard:
         Args:
             restart (bool, optional): Whether to restart the wizard. Defaults to False.
         """
-        logger.debug("CHARGEN: Starting the character generation wizard.")
+        logger.debug("Starting the character generation wizard.")
 
         # Build the instructional embeds
         embed1 = discord.Embed(
@@ -1126,7 +1126,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
         Returns:
             None: This method returns nothing.
         """
-        logger.debug("CHARGEN: Starting the character selection process")
+        logger.debug("Starting the character selection process")
 
         # Generate 3 characters
         characters = [
@@ -1192,7 +1192,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
             campaign_xp, _, _ = self.user.fetch_campaign_xp(self.campaign)
 
             # Delete the previously created characters
-            logger.debug("CHARGEN: Rerolling characters and deleting old ones.")
+            logger.debug("Rerolling characters and deleting old ones.")
             for character in characters:
                 await character.delete(link_rule=DeleteRules.DELETE_LINKS)
 
@@ -1271,7 +1271,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
         Returns:
             Character: The created character.
         """
-        logger.debug(f"CHARGEN: Spending freebie points for {character.name}")
+        logger.debug(f"Spending freebie points for {character.name}")
 
         # Create the character sheet embed
         title = f"Spend freebie points on {character.name}\n"

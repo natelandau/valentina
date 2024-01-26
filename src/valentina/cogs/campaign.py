@@ -69,7 +69,7 @@ class CampaignCog(commands.Cog):
 
         title = f"Create new campaign: `{name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -83,7 +83,6 @@ class CampaignCog(commands.Cog):
         guild.campaigns.append(campaign)
         await guild.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="current_date", description="Set the current date of a campaign")
@@ -103,7 +102,6 @@ class CampaignCog(commands.Cog):
         campaign.date_in_game = date
         await campaign.save()
 
-        await ctx.post_to_audit_log(f"Set date of campaign `{campaign.name}` to `{date:%Y-%m-%d}`")
         await present_embed(
             ctx,
             title=f"Set date of campaign `{campaign.name}` to `{date:%Y-%m-%d}`",
@@ -133,7 +131,7 @@ class CampaignCog(commands.Cog):
 
         title = f"Delete campaign: {campaign.name}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -142,7 +140,6 @@ class CampaignCog(commands.Cog):
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         await guild.delete_campaign(campaign)
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="view", description="View a campaign")
@@ -207,7 +204,7 @@ class CampaignCog(commands.Cog):
 
         title = f"Set campaign `{campaign.name}` as active"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -217,7 +214,6 @@ class CampaignCog(commands.Cog):
         guild.active_campaign = campaign
         await guild.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="set_inactive", description="Set a campaign as inactive")
@@ -248,7 +244,7 @@ class CampaignCog(commands.Cog):
 
         title = f"Set campaign `{active_campaign.name}` as inactive"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -257,7 +253,6 @@ class CampaignCog(commands.Cog):
         guild.active_campaign = None
         await guild.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="list", description="List all campaigns")
@@ -294,7 +289,6 @@ class CampaignCog(commands.Cog):
         ])
 
         await present_embed(ctx, title="Campaigns", fields=fields, level="info")
-        logger.debug("CAMPAIGN: List all campaigns")
 
     ### NPC COMMANDS ####################################################################
 
@@ -476,7 +470,7 @@ class CampaignCog(commands.Cog):
 
         title = f"Delete NPC: `{npc.name}` in `{active_campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -485,7 +479,6 @@ class CampaignCog(commands.Cog):
         del active_campaign.npcs[index]
         await active_campaign.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### CHAPTER COMMANDS ####################################################################
@@ -641,7 +634,7 @@ class CampaignCog(commands.Cog):
 
         title = f"Delete Chapter `{chapter.number}. {chapter.name}` from `{active_campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -650,7 +643,6 @@ class CampaignCog(commands.Cog):
         del active_campaign.chapters[index]
         await active_campaign.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### NOTE COMMANDS ####################################################################
@@ -802,7 +794,7 @@ class CampaignCog(commands.Cog):
 
         title = f"Delete note: `{note.name}` from `{active_campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -811,7 +803,6 @@ class CampaignCog(commands.Cog):
         del active_campaign.notes[index]
         await active_campaign.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
 

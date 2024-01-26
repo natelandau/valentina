@@ -355,7 +355,7 @@ Roll Macros      : {num_macros}
         """Add a roll result thumbnail to the bot."""
         title = f"Add roll result image for {roll_type.title()}\n{url}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, image=url
+            ctx, title, hidden=hidden, image=url, audit=True
         )
 
         if not is_confirmed:
@@ -364,7 +364,6 @@ Roll Macros      : {num_macros}
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         await guild.add_roll_result_thumbnail(ctx, RollResultType[roll_type.upper()], url)
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
 

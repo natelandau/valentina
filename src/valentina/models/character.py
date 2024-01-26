@@ -175,6 +175,7 @@ class Character(Document):
         key = f"{key_prefix}/{image_name}"
 
         # Upload the image to S3
+        logger.debug(f"S3: Uploading {key} to {self.name}")
         aws_svc.upload_image(data=data, key=key)
 
         # Add the image to the character's data
@@ -209,7 +210,7 @@ class Character(Document):
 
         # Delete the image from Amazon S3
         aws_svc.delete_object(key)
-        logger.info(f"S3: Deleted {key} from {self.name}")
+        logger.info(f"S3: Delete {key} from {self.name}")
 
     async def add_trait(
         self,

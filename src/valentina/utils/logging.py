@@ -5,6 +5,58 @@ import sys
 
 from loguru import logger
 
+from valentina.constants import LogLevel
+from valentina.utils.helpers import get_config_value
+
+
+def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no cover
+    """Instantiate the Loguru logger for Valentina.
+
+    Configure the logger with the specified verbosity level, log file path,
+    and whether to log to a file.
+
+    Args:
+        log_level (LogLevel): The verbosity level for the logger.
+
+    Returns:
+        None
+    """
+    if log_level:
+        log_level_name = log_level.value
+    else:
+        log_level_name = LogLevel(get_config_value("VALENTINA_LOG_LEVEL", "INFO").upper())
+
+    http_log_level = get_config_value("VALENTINA_LOG_LEVEL_HTTP", "INFO")
+    aws_log_level = get_config_value("VALENTINA_LOG_LEVEL_AWS", "INFO")
+
+    # Configure Loguru
+    logger.remove()
+    logger.add(
+        sys.stderr,
+        level=log_level_name,
+        colorize=True,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>: <level>{message}</level>",
+        enqueue=True,
+    )
+    logger.add(
+        get_config_value("VALENTINA_LOG_FILE", "valentina.log"),
+        level=log_level_name,
+        rotation="10 MB",
+        retention=3,
+        compression="zip",
+        enqueue=True,
+    )
+
+    # Intercept standard discord.py logs and redirect to Loguru
+    logging.getLogger("discord.http").setLevel(level=http_log_level.upper())
+    logging.getLogger("discord.gateway").setLevel(level=http_log_level.upper())
+    logging.getLogger("discord.webhook").setLevel(level=http_log_level.upper())
+    logging.getLogger("discord.client").setLevel(level=http_log_level.upper())
+    logging.getLogger("faker").setLevel(level="INFO")
+    for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
+        logging.getLogger(service).setLevel(level=aws_log_level.upper())
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+
 
 class InterceptHandler(logging.Handler):
     """Intercepts standard logging and redirects to Loguru.

@@ -8,7 +8,7 @@ from github import Auth, Github
 from github.Repository import Repository
 from loguru import logger
 
-from valentina.constants import GithubIssueLabels
+from valentina.constants import GithubIssueLabels, LogLevel
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import errors
 from valentina.utils.helpers import get_config_value
@@ -51,6 +51,7 @@ class GithubCog(commands.Cog):
     @issues.command(name="list", description="List open issues")
     async def issue_list(self, ctx: ValentinaContext) -> None:
         """List open Github issues."""
+        ctx.log_command("github issues list", LogLevel.DEBUG)
         repo = await self.fetch_github_repo()
         open_issues = repo.get_issues(state="open")
         for issue in open_issues:
@@ -77,6 +78,7 @@ class GithubCog(commands.Cog):
     @issues.command(name="get", description="Get details for a specific issue")
     async def issue_get(self, ctx: ValentinaContext, issue_number: int) -> None:
         """Get details for a specific Github issue."""
+        ctx.log_command(f"github issues get {issue_number}", LogLevel.DEBUG)
         repo = await self.fetch_github_repo()
         issue = repo.get_issue(number=issue_number)
         await present_embed(
@@ -103,6 +105,7 @@ class GithubCog(commands.Cog):
         ),
     ) -> None:
         """Add a new Github issue."""
+        ctx.log_command(f"github issues add {title} {description} {type_of_issue}", LogLevel.DEBUG)
         repo = await self.fetch_github_repo()
         issue = repo.create_issue(title=title, body=description, labels=[type_of_issue])
         await present_embed(
