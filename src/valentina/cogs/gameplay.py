@@ -6,12 +6,14 @@ import random
 import discord
 from discord.commands import Option
 from discord.ext import commands
+from loguru import logger
 
 from valentina.constants import DEFAULT_DIFFICULTY, DiceType
 from valentina.models import User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import random_num
 from valentina.utils.autocomplete import select_char_trait, select_char_trait_two, select_macro
+from valentina.utils.converters import ValidTraitFromID
 from valentina.utils.perform_roll import perform_roll
 from valentina.views import present_embed
 
@@ -55,15 +57,15 @@ class Roll(commands.Cog):
     async def traits(
         self,
         ctx: ValentinaContext,
-        index1: Option(
-            int,
+        trait_one: Option(
+            ValidTraitFromID,
             name="trait_one",
             description="First trait to roll",
             required=True,
             autocomplete=select_char_trait,
         ),
-        index2: Option(
-            int,
+        trait_two: Option(
+            ValidTraitFromID,
             name="trait_two",
             description="Second trait to roll",
             required=True,
@@ -79,10 +81,12 @@ class Roll(commands.Cog):
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
         character = await ctx.fetch_active_character()
-        trait_one = character.traits[index1]
-        trait_two = character.traits[index2]
 
         pool = trait_one.value + trait_two.value
+
+        logger.debug(
+            f"ROLL TRAITS: {trait_one.name} ({trait_one.id}) + {trait_two.name} ({trait_two.id}) = {pool}"
+        )
 
         await perform_roll(
             ctx,
