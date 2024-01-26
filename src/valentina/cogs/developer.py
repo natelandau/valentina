@@ -14,7 +14,15 @@ from discord.ext import commands
 
 from valentina.characters import RNGCharGen
 from valentina.constants import PREF_MAX_EMBED_CHARACTERS, EmbedColor, LogLevel
-from valentina.models import AWSService, Character, GlobalProperty, Guild, RollProbability, User
+from valentina.models import (
+    AWSService,
+    ChangelogParser,
+    Character,
+    GlobalProperty,
+    Guild,
+    RollProbability,
+    User,
+)
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import instantiate_logger
 from valentina.utils.autocomplete import (
@@ -23,7 +31,6 @@ from valentina.utils.autocomplete import (
     select_changelog_version_2,
     select_char_class,
 )
-from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharClass
 from valentina.utils.helpers import get_config_value
 from valentina.views import confirm_action, present_embed

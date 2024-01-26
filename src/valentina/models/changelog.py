@@ -1,4 +1,4 @@
-"""Helper class for parsing changelogs."""
+"""Classes and functions to manage posting changelogs to Discord channels."""
 
 import random
 import re

@@ -25,13 +25,13 @@ from valentina.constants import (
 )
 from valentina.models import (
     Campaign,
+    ChangelogParser,
     Character,
     GlobalProperty,
     Guild,
     User,
 )
 from valentina.utils import errors
-from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.database import init_database
 from valentina.utils.discord_utils import set_channel_perms
 from valentina.utils.helpers import get_config_value

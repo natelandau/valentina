@@ -11,14 +11,13 @@ from discord.commands import Option
 from discord.ext import commands
 
 from valentina.constants import DiceType, EmbedColor, RollResultType
-from valentina.models import Character, Guild, Probability, Statistics, User
+from valentina.models import ChangelogParser, Character, Guild, Probability, Statistics, User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.autocomplete import (
     select_changelog_version_1,
     select_changelog_version_2,
     select_country,
 )
-from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidImageURL
 from valentina.utils.helpers import fetch_random_name
 from valentina.views import auto_paginate, confirm_action

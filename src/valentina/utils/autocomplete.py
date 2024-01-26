@@ -15,9 +15,8 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models import AWSService, Campaign, Character, Guild, User
+from valentina.models import AWSService, Campaign, ChangelogParser, Character, Guild, User
 from valentina.models.bot import Valentina
-from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99

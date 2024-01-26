@@ -4,7 +4,7 @@
 import pytest
 from rich import print
 
-from valentina.utils.changelog_parser import ChangelogParser
+from valentina.models import ChangelogParser
 
 sample_changelog = """
 ## v2.0.0 (2023-11-04)
@@ -87,7 +87,7 @@ def changelog(tmp_path, mocker):
     if not changelog.exists():
         changelog.write_text(sample_changelog)
 
-    mocker.patch("valentina.utils.changelog_parser.CHANGELOG_PATH", changelog)
+    mocker.patch("valentina.models.changelog.CHANGELOG_PATH", changelog)
 
     return changelog
 
