@@ -268,7 +268,7 @@ class StoryTeller(commands.Cog):
             for i, x in enumerate(sorted(all_characters, key=lambda x: x.name))
         ]
 
-        await auto_paginate(ctx, title, text="\n".join(characters))
+        await auto_paginate(ctx=ctx, title=title, text="\n".join(characters))
 
     @character.command(name="update", description="Update a storyteller character")
     async def update_storyteller_character(

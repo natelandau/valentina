@@ -7,14 +7,21 @@ from pathlib import Path
 import aiofiles
 import discord
 import inflect
-import semver
 from beanie import DeleteRules
 from discord.commands import Option
 from discord.ext import commands
 
 from valentina.characters import RNGCharGen
 from valentina.constants import PREF_MAX_EMBED_CHARACTERS, EmbedColor, LogLevel
-from valentina.models import AWSService, Character, GlobalProperty, Guild, RollProbability, User
+from valentina.models import (
+    AWSService,
+    ChangelogPoster,
+    Character,
+    GlobalProperty,
+    Guild,
+    RollProbability,
+    User,
+)
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import instantiate_logger
 from valentina.utils.autocomplete import (
@@ -23,7 +30,6 @@ from valentina.utils.autocomplete import (
     select_changelog_version_2,
     select_char_class,
 )
-from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.converters import ValidCharClass
 from valentina.utils.helpers import get_config_value
 from valentina.views import confirm_action, present_embed
@@ -213,65 +219,29 @@ class Developer(commands.Cog):
         newest_version: Option(str, autocomplete=select_changelog_version_2, required=True),
     ) -> None:
         """Post the changelog."""
-        if semver.compare(oldest_version, newest_version) > 0:
-            msg = (
-                f"Oldest version `{oldest_version}` is newer than newest version `{newest_version}`"
-            )
-            raise commands.BadArgument(msg)
-
-        guild = await Guild.get(ctx.guild.id)
-        changelog_channel = guild.fetch_changelog_channel(ctx.guild)
-        if not changelog_channel:
-            await ctx.respond(
-                embed=discord.Embed(
-                    title="Can not post changelog",
-                    description="No changelog channel set",
-                    color=EmbedColor.ERROR.value,
-                )
-            )
-            return
-
-        # Grab the changelog
-        changelog = ChangelogParser(
-            self.bot,
-            oldest_version,
-            newest_version,
-            exclude_categories=[
-                "docs",
-                "refactor",
-                "style",
-                "test",
-                "chore",
-                "perf",
-                "ci",
-                "build",
-            ],
+        changelog = ChangelogPoster(
+            bot=self.bot,
+            ctx=ctx,
+            oldest_version=oldest_version,
+            newest_version=newest_version,
         )
-        if not changelog.has_updates():
-            await ctx.respond(
-                embed=discord.Embed(
-                    title="Can not post changelog",
-                    description="No updates found which pass the exclude list",
-                    color=EmbedColor.ERROR.value,
-                )
-            )
-            return
+
+        await changelog.post()
 
         # Update the last posted version in guild settings
-        guild.changelog_posted_version = newest_version
-        await guild.save()
+        if changelog.posted:
+            # Update the last posted version in guild settings
+            guild = await Guild.get(ctx.guild.id)
+            guild.changelog_posted_version = newest_version
+            await guild.save()
 
-        # Post the changelog
-        embed = changelog.get_embed_personality()
-        await changelog_channel.send(embed=embed)
-
-        await ctx.respond(
-            embed=discord.Embed(
-                description=f"Changelog reposted and `guild.changelog_posted_version` updated to `{newest_version}`",
-                color=EmbedColor.SUCCESS.value,
-            ),
-            ephemeral=True,
-        )
+            await ctx.respond(
+                embed=discord.Embed(
+                    description=f"Changelog reposted and `guild.changelog_posted_version` updated to `{newest_version}`",
+                    color=EmbedColor.SUCCESS.value,
+                ),
+                ephemeral=True,
+            )
 
     ### BOT COMMANDS ################################################################
 

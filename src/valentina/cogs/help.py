@@ -159,7 +159,7 @@ class Help(commands.Cog):
 
         user_guide = path.read_text()
         await auto_paginate(
-            ctx,
+            ctx=ctx,
             title="Valentina User Guide",
             text=user_guide,
             url="https://github.com/natelandau/valentina/blob/main/user_guide.md",

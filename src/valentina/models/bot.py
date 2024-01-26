@@ -25,13 +25,13 @@ from valentina.constants import (
 )
 from valentina.models import (
     Campaign,
+    ChangelogPoster,
     Character,
     GlobalProperty,
     Guild,
     User,
 )
 from valentina.utils import errors
-from valentina.utils.changelog_parser import ChangelogParser
 from valentina.utils.database import init_database
 from valentina.utils.discord_utils import set_channel_perms
 from valentina.utils.helpers import get_config_value
@@ -428,81 +428,54 @@ class Valentina(commands.Bot):
         await self.sync_commands()
         logger.info("CONNECT: Commands synced")
 
-    async def post_changelog_to_guild(self, discord_guild: discord.Guild) -> None:
-        """Post the changelog to the specified guild.
+    async def post_changelog_to_guild(self, guild: discord.Guild) -> None:
+        """Update the changelog."""
+        db_global_properties = await GlobalProperty.find_one()
 
-        This function fetches the changelog channel for the guild and posts the changelog if there are any updates since the last posted version. It also updates the last posted version in the guild settings.
-
-        Args:
-            discord_guild (discord.Guild): The guild to post the changelog to.
-
-        """
-        guild = await Guild.find_one(Guild.id == discord_guild.id)
-
-        # Don't post if there's no changelog channel
-        changelog_channel = guild.fetch_changelog_channel(discord_guild)
-        if not changelog_channel:
-            logger.debug(f"CHANGELOG: No changelog channel found for {guild.name}")
+        # Post Changelog to the #changelog channel, if set
+        db_guild = await Guild.find_one(Guild.id == guild.id)
+        if not db_guild:
+            logger.error(f"DATABASE: Could not find guild {guild.name} ({guild.id})")
             return
-
-        # Find the most recent version
-        global_properties = await GlobalProperty.find_one()
-
-        # if no changelog has been posted, only post the most recent version
-        if not guild.changelog_posted_version:
-            guild.changelog_posted_version = global_properties.most_recent_version.versions[-2]
 
         # Check if there are any updates to post
         if (
-            semver.compare(guild.changelog_posted_version, global_properties.most_recent_version)
+            db_guild.changelog_posted_version
+            and semver.compare(
+                db_guild.changelog_posted_version, db_global_properties.most_recent_version
+            )
             == 0
         ):
-            logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
+            logger.debug(f"CHANGELOG: No updates to send to {db_guild.name}")
             return
 
-        # Add 1 to the last posted version to get the next version to post
-        version_to_post = global_properties.most_recent_version
-        for v in ChangelogParser(self).list_of_versions():
-            if v == guild.changelog_posted_version:
-                break
-            version_to_post = v
-
-        # Initialize the changelog parser
-        changelog = ChangelogParser(
-            self,
-            version_to_post,
-            global_properties.most_recent_version,
-            exclude_categories=[
-                "docs",
-                "refactor",
-                "style",
-                "test",
-                "chore",
-                "perf",
-                "ci",
-                "build",
-            ],
-        )
-        if not changelog.has_updates():
-            logger.debug(f"CHANGELOG: No updates to send to {guild.name}")
+        # Grab the changelog
+        try:
+            changelog = ChangelogPoster(
+                bot=self,
+                channel=db_guild.fetch_changelog_channel(guild),
+                oldest_version=db_guild.changelog_posted_version,
+                newest_version=db_global_properties.most_recent_version,
+                with_personality=True,
+            )
+        except errors.VersionNotFoundError:
+            logger.error(f"CHANGELOG: Could not find version {self.version} in the changelog")
             return
 
-        # Send the changelog embed to the channel
-        embed = changelog.get_embed_personality()
-        await changelog_channel.send(embed=embed)
-        logger.debug(f"CHANGELOG: Post changelog to {guild.name}")
+        await changelog.post()
+        logger.info(f"CHANGELOG: Posted changelog to {db_guild.name}")
 
-        # Update the guild's last posted version
-        guild.changelog_posted_version = global_properties.most_recent_version
-        await guild.save()
+        # Update the changelog version for the guild
+        db_guild.changelog_posted_version = db_global_properties.most_recent_version
+        await db_guild.save()
+        logger.debug(f"DATABASE: Update guild `{db_guild.name}` with v{self.version}")
 
-    async def _provision_guild(self, guild: discord.Guild) -> None:
+    @staticmethod
+    async def _provision_guild(guild: discord.Guild) -> None:
         """Provision a guild on connect."""
         logger.info(f"CONNECT: Provision {guild.name} ({guild.id})")
 
         # Add/Update the guild in the database
-        logger.debug(f"DATABASE: Update guild `{guild.name}`")
-
         guild_object = await Guild.find_one(Guild.id == guild.id).upsert(
             Set({
                 "date_modified": datetime.now(UTC).replace(microsecond=0),
@@ -531,13 +504,10 @@ class Valentina(commands.Bot):
         # Setup the necessary roles in the guild
         await guild_object.setup_roles(guild)
 
-        # Post the changelog
-        await self.post_changelog_to_guild(guild)
-
         logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
     async def on_ready(self) -> None:
-        """Override on_ready."""
+        """Override on_ready. Additional functionality is in the on_ready listener in event_listener.py."""
         await self.wait_until_ready()
         while not self.connected:
             logger.warning("CONNECT: Waiting for connection...")
@@ -551,9 +521,26 @@ class Valentina(commands.Bot):
                 activity=discord.Activity(type=discord.ActivityType.watching, name="for /help")
             )
 
+            if not await GlobalProperty.find_one():
+                logger.info("DATABASE: Create GlobalProperty")
+                await GlobalProperty().save()
+
+            db_global_properties = await GlobalProperty.find_one()
+
+            # Grab current bot version
+            latest_db_version = db_global_properties.most_recent_version
+            logger.debug(f"DATABASE: Current version: {latest_db_version}")
+
+            # Add updated bot version to the database
+            if self.version not in db_global_properties.versions:
+                logger.info(f"DATABASE: Add version {self.version} to GlobalProperty")
+                db_global_properties.versions.append(self.version)
+                await db_global_properties.save()
+
             # Work with connected guilds
             for guild in self.guilds:
                 await self._provision_guild(guild)
+                await self.post_changelog_to_guild(guild)
 
         self.welcomed = True
         logger.info(f"{self.user} is ready")
