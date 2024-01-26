@@ -1,7 +1,5 @@
 """Main file which instantiates the bot and runs it."""
 
-import logging
-import sys
 from pathlib import Path
 from time import sleep
 from typing import Optional
@@ -11,7 +9,7 @@ import typer
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.utils import InterceptHandler
+from valentina.utils import instantiate_logger
 from valentina.utils.database import test_db_connection
 from valentina.utils.helpers import get_config_value
 
@@ -29,39 +27,6 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-http_log_level = get_config_value("VALENTINA_LOG_LEVEL_HTTP", "INFO")
-aws_log_level = get_config_value("VALENTINA_LOG_LEVEL_AWS", "INFO")
-
-# Instantiate Logging
-logging.getLogger("discord.http").setLevel(level=http_log_level.upper())
-logging.getLogger("discord.gateway").setLevel(level=http_log_level.upper())
-logging.getLogger("discord.webhook").setLevel(level=http_log_level.upper())
-logging.getLogger("discord.client").setLevel(level=http_log_level.upper())
-logging.getLogger("faker").setLevel(level="INFO")
-for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
-    logging.getLogger(service).setLevel(level=aws_log_level.upper())
-
-logger.remove()
-logger.add(
-    sys.stderr,
-    level=get_config_value("VALENTINA_LOG_LEVEL", "INFO").upper(),
-    colorize=True,
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>: <level>{message}</level>",
-    enqueue=True,
-)
-logger.add(
-    get_config_value("VALENTINA_LOG_FILE", "valentina.log"),
-    level=get_config_value("VALENTINA_LOG_LEVEL", "INFO").upper(),
-    rotation="1 week",
-    retention="2 weeks",
-    compression="zip",
-    enqueue=True,
-)
-
-# Intercept standard discord.py logs and redirect to Loguru
-logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-
-
 @app.command()
 def main(
     version: Optional[bool] = typer.Option(  # noqa: ARG001
@@ -69,6 +34,9 @@ def main(
     ),
 ) -> None:
     """Run Valentina."""
+    # Instantiate the logger
+    instantiate_logger()
+
     # Ensure the database is available before starting the bot
     while not test_db_connection():
         logger.error("DB: Connection failed. Retrying in 30 seconds...")

@@ -29,6 +29,16 @@ CHANGELOG_PATH = Path(__file__).parent / "../../CHANGELOG.md"
 
 
 ### ENUMS ###
+class LogLevel(str, Enum):
+    """Enum for logging levels."""
+
+    TRACE = "TRACE"
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+
 class ChannelPermission(Enum):
     """Enum for permissions when creating a character. Default is UNRESTRICTED."""
 

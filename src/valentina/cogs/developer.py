@@ -14,9 +14,10 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.characters import RNGCharGen
-from valentina.constants import PREF_MAX_EMBED_CHARACTERS, EmbedColor
+from valentina.constants import PREF_MAX_EMBED_CHARACTERS, EmbedColor, LogLevel
 from valentina.models import AWSService, Character, GlobalProperty, Guild, RollProbability, User
 from valentina.models.bot import Valentina, ValentinaContext
+from valentina.utils import instantiate_logger
 from valentina.utils.autocomplete import (
     select_aws_object_from_guild,
     select_changelog_version_1,
@@ -464,6 +465,31 @@ class Developer(commands.Cog):
             )
 
         await ctx.respond(embed=embed, ephemeral=hidden)
+
+    ### LOGGING COMMANDS ################################################################
+
+    @developer.command(name="logging", description="Change log level")
+    @commands.is_owner()
+    async def logging(
+        self,
+        ctx: ValentinaContext,
+        log_level: Option(LogLevel),
+        hidden: Option(
+            bool,
+            description="Make the confirmation only visible to you (default True)",
+            default=True,
+        ),
+    ) -> None:
+        """Change log level."""
+        title = f"Set log level to: `{log_level.value}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
+        if not is_confirmed:
+            return
+
+        instantiate_logger(log_level)
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
 
 def setup(bot: Valentina) -> None:
