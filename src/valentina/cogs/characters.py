@@ -274,7 +274,7 @@ class CharactersCog(commands.Cog, name="Character"):
             text += "```\n"
 
         await auto_paginate(
-            ctx, title=title, text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
+            ctx=ctx, title=title, text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
         )
 
     @chars.command(name="transfer", description="Transfer one of your characters to another user")

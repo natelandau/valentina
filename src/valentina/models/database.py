@@ -31,4 +31,7 @@ class GlobalProperty(Document):
     @property
     def most_recent_version(self) -> str:
         """Return the most recent version."""
+        if len(self.versions) == 0:
+            return "0.0.0"
+
         return max(self.versions, key=semver.Version.parse)

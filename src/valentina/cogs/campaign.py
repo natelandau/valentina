@@ -180,7 +180,7 @@ class CampaignCog(commands.Cog):
 {note_text}
             """
 
-        await auto_paginate(ctx, title=f"Campaign Overview: __{campaign.name}__", text=text)
+        await auto_paginate(ctx=ctx, title=f"Campaign Overview: __{campaign.name}__", text=text)
 
     @campaign.command(name="set_active", description="Set a campaign as active")
     async def campaign_set_active(

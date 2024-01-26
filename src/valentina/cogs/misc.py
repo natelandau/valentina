@@ -280,7 +280,7 @@ Roll Macros      : {num_macros}
 
         changelog = ChangelogParser(self.bot, oldest_version, newest_version)
         await auto_paginate(
-            ctx,
+            ctx=ctx,
             title="Valentina Noir Changelog",
             text=changelog.get_text(),
             url="https://github.com/natelandau/valentina/releases",

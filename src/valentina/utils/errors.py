@@ -3,6 +3,24 @@
 from discord import DiscordException
 
 
+class VersionNotFoundError(Exception):
+    """Raised when we can't find a version in the changelog."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "Version not found in changelog."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class MissingConfigurationError(Exception):
     """Raised when a configuration variable is missing."""
 

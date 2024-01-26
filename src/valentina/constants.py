@@ -26,6 +26,16 @@ PREF_MAX_EMBED_CHARACTERS = 1950  # Preferred maximum number of characters in an
 ABS_MAX_EMBED_CHARACTERS = 3900  # Absolute maximum number of characters in an embed -100 for safety
 VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 CHANGELOG_PATH = Path(__file__).parent / "../../CHANGELOG.md"
+CHANGELOG_EXCLUDE_CATEGORIES = [
+    "docs",
+    "refactor",
+    "style",
+    "test",
+    "chore",
+    "perf",
+    "ci",
+    "build",
+]
 
 
 ### ENUMS ###
