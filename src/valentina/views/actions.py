@@ -2,7 +2,7 @@
 
 import discord
 
-from valentina.constants import EmbedColor, Emoji
+from valentina.constants import EmbedColor, Emoji, LogLevel
 from valentina.models.bot import ValentinaContext
 from valentina.views import ConfirmCancelButtons, present_embed
 
@@ -15,6 +15,7 @@ async def confirm_action(
     image: str | None = None,
     thumbnail: str | None = None,
     footer: str | None = None,
+    audit: bool = False,
 ) -> tuple[bool, discord.Interaction, discord.Embed]:
     """Prompt the user for confirmation.
 
@@ -26,6 +27,7 @@ async def confirm_action(
         image (str, optional): The image URL for the confirmation embed. Defaults to None.
         thumbnail (str, optional): The thumbnail URL for the confirmation embed. Defaults to None.
         footer: str | None = None,
+        audit (bool): Whether to log the command in the audit log.
 
     Returns:
         tuple(bool, discord.InteractionMessage): A tuple containing the user's response and success response coroutine.
@@ -64,5 +66,10 @@ async def confirm_action(
 
     if footer is not None:
         response_embed.set_footer(text=footer)
+
+    if audit:
+        await ctx.post_to_audit_log(title.rstrip("?"))
+    else:
+        ctx.log_command(title.rstrip("?"), LogLevel.DEBUG)
 
     return (True, msg, response_embed)

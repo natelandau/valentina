@@ -44,9 +44,7 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         await self.guild.save()
 
         # Log to audit log
-        await self.ctx.post_to_audit_log(
-            f"Deleted thumbnail id `{self.index}`\n{self.thumbnail.url}"
-        )
+        await self.ctx.post_to_audit_log(f"Delete thumbnail `{self.index}`\n{self.thumbnail.url}")
 
         # Respond to user
         await interaction.response.edit_message(
@@ -94,7 +92,7 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
 
         # Log to audit log
         await self.ctx.post_to_audit_log(
-            f"Thumbnail id `{self.index}` categorized to {new_cat} \n{self.thumbnail.url}",
+            f"Thumbnail `{self.index}` categorized to {new_cat} \n{self.thumbnail.url}",
         )
 
         # Respond to user

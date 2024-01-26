@@ -11,7 +11,6 @@ import semver
 from beanie import DeleteRules
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 
 from valentina.characters import RNGCharGen
 from valentina.constants import PREF_MAX_EMBED_CHARACTERS, EmbedColor, LogLevel
@@ -111,7 +110,6 @@ class Developer(commands.Cog):
         # Delete the object from S3
         # TODO: Search for the url in character data and delete it there too so we don't have dead links
         self.aws_svc.delete_object(key)
-        logger.info(f"Deleted object with key: {key} from S3")
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -200,7 +198,7 @@ class Developer(commands.Cog):
             return
 
         for c in dev_characters:
-            logger.debug(f"DEVELOPER: Deleting {c.name}")
+            ctx.log_command(f"Delete dev character {c.name}")
             await c.delete(link_rule=DeleteRules.DELETE_LINKS)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
@@ -303,7 +301,6 @@ class Developer(commands.Cog):
         for result in results:
             await result.delete()
 
-        logger.info(f"DEVELOPER: {ctx.author.display_name} cleared probability data from the db")
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @server.command(name="reload", description="Reload all cogs")
@@ -329,10 +326,8 @@ class Developer(commands.Cog):
         for cog in Path(self.bot.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
             if cog.stem[0] != "_":
                 count += 1
-                logger.info(f"COGS: Reloading - {cog.stem}")
                 self.bot.reload_extension(f"valentina.cogs.{cog.stem}")
 
-        logger.debug("Admin: Reload the bot's cogs")
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @server.command(name="shutdown", description="Shutdown the bot")
@@ -355,7 +350,7 @@ class Developer(commands.Cog):
             return
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
-        logger.warning(f"DEVELOPER: {ctx.author.display_name} has shut down the bot")
+        ctx.log_command("Shutdown the bot", LogLevel.WARNING)
 
         await self.bot.close()
 
@@ -371,6 +366,7 @@ class Developer(commands.Cog):
         ),
     ) -> None:
         """Send the bot's logs to the user."""
+        ctx.log_command("Send the bot's logs", LogLevel.DEBUG)
         log_file = get_config_value("VALENTINA_LOG_FILE")
         file = discord.File(log_file)
         await ctx.respond(file=file, ephemeral=hidden)
@@ -387,7 +383,7 @@ class Developer(commands.Cog):
         ),
     ) -> None:
         """Tail the bot's logs."""
-        logger.debug("ADMIN: Tail bot logs")
+        ctx.log_command("Tail the bot's logs", LogLevel.DEBUG)
         max_lines_from_bottom = 20
         log_lines = []
 

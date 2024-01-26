@@ -66,7 +66,7 @@ class Experience(commands.Cog):
         title = f"Add `{amount}` xp to `{user.name}`"
         description = "View experience with `/user_info`"
         is_confirmed, msg, confirmation_embed = await confirm_action(
-            ctx, title, description=description, hidden=hidden
+            ctx, title, description=description, hidden=hidden, audit=True
         )
         if not is_confirmed:
             return
@@ -75,7 +75,6 @@ class Experience(commands.Cog):
         await user.add_campaign_xp(active_campaign, amount)
 
         # Send the confirmation message
-        await ctx.post_to_audit_log(title)
         await msg.edit_original_response(embed=confirmation_embed, view=None)
 
     @xp.command(name="add_cool_point", description="Add a cool point to a user")
@@ -116,7 +115,7 @@ class Experience(commands.Cog):
         title = f"Add `{amount}` cool {p.plural_noun('point', amount)} to `{user.name}`"
         description = "View cool points with `/user_info`"
         is_confirmed, msg, confirmation_embed = await confirm_action(
-            ctx, title, description=description, hidden=hidden
+            ctx, title, description=description, hidden=hidden, audit=True
         )
         if not is_confirmed:
             return
@@ -125,7 +124,6 @@ class Experience(commands.Cog):
         await user.add_campaign_cool_points(active_campaign, amount)
 
         # Send the confirmation message
-        await ctx.post_to_audit_log(title)
         await msg.edit_original_response(embed=confirmation_embed, view=None)
 
     @xp.command(name="spend", description="Spend experience points")
@@ -183,7 +181,9 @@ class Experience(commands.Cog):
         new_trait_value = trait.value + 1
 
         title = f"Upgrade `{trait.name}` from `{trait.value}` {p.plural_noun('dot', trait.value)} to `{trait.value + 1}` {p.plural_noun('dot', trait.value + 1)} for `{upgrade_cost}` xp"
-        is_confirmed, msg, confirmation_embed = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, msg, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden, audit=True
+        )
         if not is_confirmed:
             return
 
@@ -196,7 +196,6 @@ class Experience(commands.Cog):
         await trait.save()
 
         # Send the confirmation message
-        await ctx.post_to_audit_log(title)
         await msg.edit_original_response(embed=confirmation_embed, view=None)
 
 

@@ -6,9 +6,8 @@ import random
 import discord
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 
-from valentina.constants import DEFAULT_DIFFICULTY, DiceType
+from valentina.constants import DEFAULT_DIFFICULTY, DiceType, LogLevel
 from valentina.models import User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import random_num
@@ -84,8 +83,9 @@ class Roll(commands.Cog):
 
         pool = trait_one.value + trait_two.value
 
-        logger.debug(
-            f"ROLL TRAITS: {trait_one.name} ({trait_one.id}) + {trait_two.name} ({trait_two.id}) = {pool}"
+        ctx.log_command(
+            f"{trait_one.name} ({trait_one.id}) + {trait_two.name} ({trait_two.id})",
+            LogLevel.DEBUG,
         )
 
         await perform_roll(
@@ -147,6 +147,11 @@ class Roll(commands.Cog):
         if not trait_one or not trait_two:
             msg = "Macro traits not found on character"
             raise commands.BadArgument(msg)
+
+        ctx.log_command(
+            f"Macro: {macro.name}: {trait_one.name} ({trait_one.id}) + {trait_two.name} ({trait_two.id})",
+            LogLevel.DEBUG,
+        )
 
         pool = trait_one.value + trait_two.value
 

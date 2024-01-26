@@ -41,8 +41,8 @@ def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no
     logger.add(
         get_config_value("VALENTINA_LOG_FILE", "valentina.log"),
         level=log_level_name,
-        rotation="1 week",
-        retention="2 weeks",
+        rotation="10 MB",
+        retention=3,
         compression="zip",
         enqueue=True,
     )

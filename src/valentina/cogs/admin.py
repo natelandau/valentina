@@ -324,7 +324,9 @@ class AdminCog(commands.Cog):
 
         # Confirm the action
         title = f"Add custom emoji :{name}:"
-        is_confirmed, msg, confirmation_embed = await confirm_action(ctx, title, hidden=hidden)
+        is_confirmed, msg, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden, audit=True
+        )
         if not is_confirmed:
             return
 
@@ -332,7 +334,6 @@ class AdminCog(commands.Cog):
         await ctx.guild.create_custom_emoji(name=name, image=data)
 
         # Send confirmation
-        await ctx.post_to_audit_log(title)
         await msg.edit_original_response(embed=confirmation_embed, view=None)
 
     @guild.command(name="emoji_delete")

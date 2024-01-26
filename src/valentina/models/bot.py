@@ -17,6 +17,7 @@ from loguru import logger
 from valentina.constants import (
     ChannelPermission,
     EmbedColor,
+    LogLevel,
     PermissionManageCampaign,
     PermissionsGrantXP,
     PermissionsKillCharacter,
@@ -39,6 +40,18 @@ from valentina.utils.helpers import get_config_value
 # Subclass discord.ApplicationContext to create custom application context
 class ValentinaContext(discord.ApplicationContext):
     """A custom application context for Valentina."""
+
+    # valentina.models.bot: Reload all cogs (@natenate in #general)
+
+    def log_command(self, msg: str, level: LogLevel = LogLevel.INFO) -> None:  # pragma: no cover
+        """Log the command to the console and log file."""
+        author = f"@{self.author.display_name}" if hasattr(self, "author") else None
+        command = f"'/{self.command.qualified_name}'" if hasattr(self, "command") else None
+        channel = f"#{self.channel.name}" if hasattr(self, "channel") else None
+
+        command_info = [author, command, channel]
+
+        logger.log(level.value, f"{msg} [{', '.join([x for x in command_info if x])}]")
 
     def _message_to_embed(self, message: str) -> discord.Embed:  # pragma: no cover
         """Convert a string message to a discord embed.
@@ -131,6 +144,12 @@ class ValentinaContext(discord.ApplicationContext):
         # Get the database guild object and error log channel
         guild = await Guild.get(self.guild.id)
         audit_log_channel = guild.fetch_audit_log_channel(self.guild)
+
+        if isinstance(message, str):
+            self.log_command(message, LogLevel.INFO)
+
+        if isinstance(message, discord.Embed):
+            self.log_command(f"{message.title} {message.description}", LogLevel.INFO)
 
         if audit_log_channel:
             embed = self._message_to_embed(message) if isinstance(message, str) else message

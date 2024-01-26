@@ -7,7 +7,6 @@ import discord
 import inflect
 from discord.commands import Option
 from discord.ext import commands
-from loguru import logger
 
 from valentina.characters import AddFromSheetWizard, CharGenWizard
 from valentina.constants import (
@@ -130,8 +129,7 @@ class CharactersCog(commands.Cog, name="Character"):
         wizard = AddFromSheetWizard(ctx, character=character, user=user)
         await wizard.begin_chargen()
 
-        await ctx.post_to_audit_log(f"Created player character: `{character.name}`")
-        logger.info(f"CHARACTER: Create player character {character.name}")
+        await ctx.post_to_audit_log(f"Create player character: `{character.name}`")
 
     @chars.command(name="create", description="Create a new randomized character")
     async def create_character(
@@ -309,7 +307,7 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_owner.display_name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
         if not is_confirmed:
             return
@@ -324,7 +322,6 @@ class CharactersCog(commands.Cog, name="Character"):
         character.user_owner = new_user.id
         await character.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @chars.command(name="kill", description="Kill a character")
@@ -358,7 +355,7 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Kill `{character.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
         if not is_confirmed:
             return
@@ -366,7 +363,6 @@ class CharactersCog(commands.Cog, name="Character"):
         character.is_alive = False
         await character.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### IMAGE COMMANDS ####################################################################
@@ -431,14 +427,13 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Add image to `{character.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, image=image_url
+            ctx, title, hidden=hidden, image=image_url, audit=True
         )
         if not is_confirmed:
             await character.delete_image(image_key)
             return
 
         # Update audit log and original response
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @image.command(name="delete", description="Delete an image from a character")
@@ -516,14 +511,13 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Add trait: `{name.title()}` at `{value}` dots for {character.name}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
         if not is_confirmed:
             return
 
         await character.add_trait(category, name.title(), value, max_value=max_value)
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @trait.command(name="update", description="Update the value of a trait for a character")
@@ -576,7 +570,7 @@ class CharactersCog(commands.Cog, name="Character"):
             f"Update `{trait.name}` from `{trait.value}` to `{new_value}` for `{character.name}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
@@ -585,7 +579,6 @@ class CharactersCog(commands.Cog, name="Character"):
         trait.value = new_value
         await trait.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @trait.command(name="delete", description="Delete a trait from a character")
@@ -627,6 +620,7 @@ class CharactersCog(commands.Cog, name="Character"):
             title,
             description="This is a destructive action that can not be undone.",
             hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -637,7 +631,6 @@ class CharactersCog(commands.Cog, name="Character"):
 
         await trait.delete()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### SECTION COMMANDS ####################################################################
@@ -752,7 +745,7 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Delete section `{section.title}` from `{character.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx, title, hidden=hidden, audit=True
         )
         if not is_confirmed:
             return
@@ -760,7 +753,6 @@ class CharactersCog(commands.Cog, name="Character"):
         character.sheet_sections.pop(section_index)
         await character.save()
 
-        await ctx.post_to_audit_log(title)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### BIO COMMANDS ####################################################################
