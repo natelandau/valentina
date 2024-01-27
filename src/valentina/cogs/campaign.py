@@ -16,10 +16,10 @@ from valentina.views import (
     ChapterModal,
     NoteModal,
     NPCModal,
-    auto_paginate,
     confirm_action,
     present_embed,
 )
+from valentina.views.campaign_viewer import CampaignViewer
 
 
 class CampaignCog(commands.Cog):
@@ -147,40 +147,10 @@ class CampaignCog(commands.Cog):
         """View a campaign."""
         campaign = await ctx.fetch_active_campaign()
 
-        chapter_list = sorted(campaign.chapters, key=lambda c: c.number)
-        npc_list = sorted(campaign.npcs, key=lambda n: n.name)
-        note_list = sorted(campaign.notes, key=lambda n: n.name)
-
-        chapter_listing = "\n> ".join([f"{c.number}. {c.name}" for c in chapter_list])
-
-        chapter_text = "\n\n".join([f"{c.campaign_display()}" for c in chapter_list])
-
-        npc_text = "\n\n".join([f"{n.campaign_display()}" for n in npc_list])
-
-        note_text = "\n\n".join([f"{n.campaign_display()}" for n in note_list])
-
-        text = f"""
-### __Overview of {campaign.name}__
-> **Chapters** ({len(chapter_list)})
-> {chapter_listing}
-
-> **NPCs** ({len(npc_list)})
-> {', '.join([f"{n.name}" for n in npc_list])}
-
-> **Notes** ({len(note_list)})
-> {', '.join([f"{n.name}" for n in note_list])}
-
-### __Chapters__
-{chapter_text}
-
-### __NPCs__
-{npc_text}
-
-### __Notes__
-{note_text}
-            """
-
-        await auto_paginate(ctx=ctx, title=f"Campaign Overview: __{campaign.name}__", text=text)
+        cv = CampaignViewer(ctx, campaign, max_chars=1000)
+        paginator = await cv.display()
+        await paginator.respond(ctx.interaction, ephemeral=True)
+        await paginator.wait()
 
     @campaign.command(name="set_active", description="Set a campaign as active")
     async def campaign_set_active(
