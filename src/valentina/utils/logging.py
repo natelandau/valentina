@@ -6,7 +6,7 @@ import sys
 from loguru import logger
 
 from valentina.constants import LogLevel
-from valentina.utils.helpers import get_config_value
+from valentina.utils import ValentinaConfig
 
 
 def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no cover
@@ -21,13 +21,10 @@ def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no
     Returns:
         None
     """
-    if log_level:
-        log_level_name = log_level.value
-    else:
-        log_level_name = LogLevel(get_config_value("VALENTINA_LOG_LEVEL", "INFO").upper())
+    log_level_name = log_level.value if log_level else ValentinaConfig().log_level
 
-    http_log_level = get_config_value("VALENTINA_LOG_LEVEL_HTTP", "INFO")
-    aws_log_level = get_config_value("VALENTINA_LOG_LEVEL_AWS", "INFO")
+    http_log_level = ValentinaConfig().log_level_http
+    aws_log_level = ValentinaConfig().log_level_aws
 
     # Configure Loguru
     logger.remove()
@@ -39,7 +36,7 @@ def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no
         enqueue=True,
     )
     logger.add(
-        get_config_value("VALENTINA_LOG_FILE", "valentina.log"),
+        ValentinaConfig().log_file,
         level=log_level_name,
         rotation="10 MB",
         retention=3,

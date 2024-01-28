@@ -9,7 +9,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils.helpers import get_config_value
+from valentina.utils import ValentinaConfig
 from valentina.views import auto_paginate, present_embed
 
 
@@ -26,7 +26,7 @@ class Help(commands.Cog):
         # build user specific list of commands to hide
         hidden_commands = ["Owner"]  # Always hide the "Owner" cog
 
-        owner_ids = get_config_value("VALENTINA_OWNER_IDS", pass_none=True)
+        owner_ids = ValentinaConfig().owner_ids
         if owner_ids:
             owners = [int(x) for x in owner_ids.split(",")]
             if ctx.author.id not in owners:

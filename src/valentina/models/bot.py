@@ -32,10 +32,9 @@ from valentina.models import (
     Guild,
     User,
 )
-from valentina.utils import errors
+from valentina.utils import ValentinaConfig, errors
 from valentina.utils.database import init_database
 from valentina.utils.discord_utils import set_channel_perms
-from valentina.utils.helpers import get_config_value
 
 
 # Subclass discord.ApplicationContext to create custom application context
@@ -411,9 +410,7 @@ class Valentina(commands.Bot):
         self.welcomed = False
         self.parent_dir = parent_dir
         self.version = version
-        self.owner_channels = [
-            int(x) for x in get_config_value("VALENTINA_OWNER_CHANNELS").split(",")
-        ]
+        self.owner_channels = [int(x) for x in ValentinaConfig().owner_channels.split(",")]
 
         # Load Cogs
         # #######################

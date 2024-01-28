@@ -23,7 +23,7 @@ from valentina.models import (
     User,
 )
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils import instantiate_logger
+from valentina.utils import ValentinaConfig, instantiate_logger
 from valentina.utils.autocomplete import (
     select_aws_object_from_guild,
     select_changelog_version_1,
@@ -31,7 +31,6 @@ from valentina.utils.autocomplete import (
     select_char_class,
 )
 from valentina.utils.converters import ValidCharClass
-from valentina.utils.helpers import get_config_value
 from valentina.views import confirm_action, present_embed
 
 p = inflect.engine()
@@ -337,7 +336,7 @@ class Developer(commands.Cog):
     ) -> None:
         """Send the bot's logs to the user."""
         ctx.log_command("Send the bot's logs", LogLevel.DEBUG)
-        log_file = get_config_value("VALENTINA_LOG_FILE")
+        log_file = ValentinaConfig().log_file
         file = discord.File(log_file)
         await ctx.respond(file=file, ephemeral=hidden)
 
@@ -357,7 +356,7 @@ class Developer(commands.Cog):
         max_lines_from_bottom = 20
         log_lines = []
 
-        logfile = get_config_value("VALENTINA_LOG_FILE")
+        logfile = ValentinaConfig().log_file
         async with aiofiles.open(logfile, mode="r") as f:
             async for line in f:
                 if "has connected to Gateway" not in line:

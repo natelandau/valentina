@@ -8,8 +8,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from loguru import logger
 
-from valentina.utils import errors
-from valentina.utils.helpers import get_config_value
+from valentina.utils import ValentinaConfig, errors
 
 
 class AWSService:
@@ -23,14 +22,13 @@ class AWSService:
             aws_secret_access_key (str): AWS secret access key.
             bucket_name (str): Name of the S3 bucket to use.
         """
-        try:
-            self.aws_access_key_id = get_config_value("VALENTINA_AWS_ACCESS_KEY_ID")
-            self.aws_secret_access_key = get_config_value("VALENTINA_AWS_SECRET_ACCESS_KEY")
-            self.bucket_name = get_config_value("VALENTINA_S3_BUCKET_NAME")
-        except errors.MissingConfigurationError as e:
-            logger.error(f"Failed to initialize AWS Service: {e}")
+        self.aws_access_key_id = ValentinaConfig().aws_access_key_id
+        self.aws_secret_access_key = ValentinaConfig().aws_secret_access_key
+        self.bucket_name = ValentinaConfig().s3_bucket_name
+
+        if not self.aws_access_key_id or not self.aws_secret_access_key or not self.bucket_name:
             msg = "AWS"
-            raise errors.ServiceDisabledError(msg) from e
+            raise errors.MissingConfigurationError(msg)
 
         self.s3 = boto3.client(
             "s3",
