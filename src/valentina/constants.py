@@ -46,7 +46,9 @@ class LogLevel(str, Enum):
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
+    SUCCESS = "SUCCESS"
     ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
 
 
 class ChannelPermission(Enum):
