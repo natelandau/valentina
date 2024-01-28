@@ -10,9 +10,8 @@ import pytest_asyncio
 from discord.ext import commands
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
-from rich import print
 
-from valentina.utils.config import CONFIG
+from valentina.utils import ValentinaConfig
 from valentina.utils.database import init_database
 
 
@@ -24,19 +23,17 @@ async def _init_database(request):
         yield
     else:  # Create Motor client
         client = AsyncIOMotorClient(
-            f"{CONFIG['VALENTINA_TEST_MONGO_URI']}/{CONFIG['VALENTINA_TEST_MONGO_DATABASE_NAME']}",
+            f"{ValentinaConfig().test_mongodb_uri}/{ValentinaConfig().test_mongodb_db}",
             tz_aware=True,
         )
 
         # when '@pytest.mark.drop_db()' is called, the database will be dropped before the test
         if "drop_db" in request.keywords:
             # Drop the database after the test
-            await client.drop_database(CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"])
+            await client.drop_database(ValentinaConfig().test_mongodb_db)
 
         # Initialize beanie with the Sample document class and a database
-        await init_database(
-            client=client, database=client[CONFIG["VALENTINA_TEST_MONGO_DATABASE_NAME"]]
-        )
+        await init_database(client=client, database=client[ValentinaConfig().test_mongodb_db])
 
         yield
 

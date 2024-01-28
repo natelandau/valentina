@@ -6,12 +6,10 @@ from datetime import UTC, datetime
 from urllib.parse import urlencode
 
 from aiohttp import ClientSession
-from loguru import logger
 from numpy.random import default_rng
 
 from valentina.constants import MaxTraitValue, XPMultiplier, XPNew
 from valentina.utils import errors
-from valentina.utils.config import CONFIG
 
 _rng = default_rng()
 
@@ -19,29 +17,6 @@ _rng = default_rng()
 def random_num(ceiling: int = 100) -> int:
     """Get a random number between 1 and ceiling."""
     return _rng.integers(1, ceiling + 1)
-
-
-def get_config_value(key: str, default: str | None = None, pass_none: bool = False) -> str:
-    """Get an environment variable and check if it exists.
-
-    Args:
-        key (str): The name of the config variable.
-        default (str, optional): The default value to use if the key is not set. Defaults to None.
-        pass_none (bool, optional): Whether to pass None if the key does not exist. Defaults to False.
-
-    Returns:
-        str: The value of the config variable.
-    """
-    value = CONFIG.get(key, default)
-
-    if value is None and not pass_none:
-        logger.error(f"Config variable {key} is not set.")
-        raise errors.MissingConfigurationError(key)
-
-    if not value:
-        return None
-
-    return value.strip().lstrip('"').rstrip('"')
 
 
 async def fetch_random_name(

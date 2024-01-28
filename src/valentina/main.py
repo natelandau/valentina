@@ -9,9 +9,8 @@ import typer
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.utils import instantiate_logger
+from valentina.utils import ValentinaConfig, instantiate_logger
 from valentina.utils.database import test_db_connection
-from valentina.utils.helpers import get_config_value
 
 from .__version__ import __version__
 
@@ -45,12 +44,12 @@ def main(
     # Instantiate the bot
     intents = discord.Intents.all()
     bot = Valentina(
-        debug_guilds=[int(g) for g in get_config_value("VALENTINA_GUILDS", "").split(",")],
+        debug_guilds=[int(g) for g in ValentinaConfig().guilds.split(",")],
         intents=intents,
-        owner_ids=[int(o) for o in get_config_value("VALENTINA_OWNER_IDS", "").split(",")],
+        owner_ids=[int(o) for o in ValentinaConfig().owner_ids.split(",")],
         parent_dir=Path(__file__).parents[2].absolute(),
         command_prefix="∑",  # Effectively remove the command prefix by setting it to 'sigma'
         version=__version__,
     )
 
-    bot.run(get_config_value("VALENTINA_DISCORD_TOKEN"))  # run the bot
+    bot.run(ValentinaConfig().discord_token)  # run the bot

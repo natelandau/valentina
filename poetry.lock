@@ -503,6 +503,23 @@ termcolor = ">=1.1,<3"
 tomlkit = ">=0.5.3,<1.0.0"
 
 [[package]]
+name = "confz"
+version = "2.0.1"
+description = "ConfZ is a configuration management library for Python based on pydantic."
+optional = false
+python-versions = ">=3.7.2,<4.0.0"
+files = [
+    {file = "confz-2.0.1-py3-none-any.whl", hash = "sha256:271dfbc7343dafda414f731c4931ba91bc62a448e4a3b2fdf2fb7334ffac1d36"},
+    {file = "confz-2.0.1.tar.gz", hash = "sha256:c2d7af28224d8e70c72f66c4ea7ca0069abdc73dda11732d74f2be7dbe8641a0"},
+]
+
+[package.dependencies]
+pydantic = ">=1.9.0,<3.0.0"
+python-dotenv = ">=0.19.2,<2.0.0"
+PyYAML = ">=5.4.1,<7.0.0"
+toml = ">=0.10.2,<0.11.0"
+
+[[package]]
 name = "coverage"
 version = "7.4.1"
 description = "Code coverage measurement for Python"
@@ -2560,4 +2577,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "00e15b890d661ecf257d0a2efe7e54ce59da5953f1d0a44d18ba2061251ef397"
+content-hash = "6be57b747e6a429c4ec78856ae30b08fb97f55a3d17a3f71a688e02825a273dd"

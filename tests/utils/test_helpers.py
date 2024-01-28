@@ -3,26 +3,8 @@
 
 import pytest
 
-from valentina.utils import errors
-from valentina.utils.helpers import divide_total_randomly, get_config_value, num_to_circles
-
-
-@pytest.mark.no_db()
-def test_get_config_value() -> None:
-    """Test get_config_value().
-
-    GIVEN a config key
-    WHEN get_config_value() is called
-    THEN the correct value is returned
-    """
-    assert get_config_value("VALENTINA_TEST_CONFIG_KEY") == "testing"
-
-    assert get_config_value("VALENTINA_TEST_CONFIG_KEY_MISSING", "something") == "something"
-
-    assert not get_config_value("VALENTINA_TEST_CONFIG_KEY_MISSING", pass_none=True)
-
-    with pytest.raises(errors.MissingConfigurationError):
-        get_config_value("VALENTINA_TEST_CONFIG_KEY_MISSING")
+from valentina.utils import ValentinaConfig, errors
+from valentina.utils.helpers import divide_total_randomly, num_to_circles
 
 
 @pytest.mark.no_db()

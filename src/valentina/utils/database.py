@@ -15,13 +15,13 @@ from valentina.models import (
     RollStatistic,
     User,
 )
-from valentina.utils.helpers import get_config_value
+from valentina.utils import ValentinaConfig
 
 
 def test_db_connection() -> bool:
     """Test the database connection using pymongo."""
     logger.debug("DB: Testing connection...")
-    mongo_uri = get_config_value("VALENTINA_MONGO_URI")
+    mongo_uri = ValentinaConfig().mongo_uri
 
     try:
         client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=1800)
@@ -41,8 +41,8 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
         database (AsyncIOMotorClient, optional): The database. Defaults to None.
     """
     logger.debug("DB: Initializing...")
-    mongo_uri = get_config_value("VALENTINA_MONGO_URI")
-    db_name = get_config_value("VALENTINA_MONGO_DATABASE_NAME")
+    mongo_uri = ValentinaConfig().mongo_uri
+    db_name = ValentinaConfig().mongo_database_name
 
     # Create Motor client
     if not client:

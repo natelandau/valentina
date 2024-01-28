@@ -10,8 +10,7 @@ from loguru import logger
 
 from valentina.constants import GithubIssueLabels, LogLevel
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils import errors
-from valentina.utils.helpers import get_config_value
+from valentina.utils import ValentinaConfig, errors
 from valentina.views import present_embed
 
 
@@ -27,12 +26,12 @@ class GithubCog(commands.Cog):
         if self.repo:
             return self.repo
 
-        try:
-            token = get_config_value("VALENTINA_GITHUB_TOKEN")
-            repo_name = get_config_value("VALENTINA_GITHUB_REPO")
-        except errors.MissingConfigurationError as e:
+        token = ValentinaConfig().github_token
+        repo_name = ValentinaConfig().github_repo
+
+        if not token or not repo_name:
             msg = "Github"
-            raise errors.ServiceDisabledError(msg) from e
+            raise errors.ServiceDisabledError(msg)
 
         try:
             auth = Auth.Token(token)
