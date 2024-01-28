@@ -1,6 +1,7 @@
 """The main file for the Valentina bot."""
 
 import asyncio
+import inspect
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -41,8 +42,6 @@ from valentina.utils.helpers import get_config_value
 class ValentinaContext(discord.ApplicationContext):
     """A custom application context for Valentina."""
 
-    # valentina.models.bot: Reload all cogs (@natenate in #general)
-
     def log_command(self, msg: str, level: LogLevel = LogLevel.INFO) -> None:  # pragma: no cover
         """Log the command to the console and log file."""
         author = f"@{self.author.display_name}" if hasattr(self, "author") else None
@@ -51,7 +50,29 @@ class ValentinaContext(discord.ApplicationContext):
 
         command_info = [author, command, channel]
 
-        logger.log(level.value, f"{msg} [{', '.join([x for x in command_info if x])}]")
+        if (
+            inspect.stack()[1].function == "post_to_audit_log"
+            and inspect.stack()[2].function == "confirm_action"
+        ):
+            name1 = inspect.stack()[3].filename.split("/")[-3].split(".")[0]
+            name2 = inspect.stack()[3].filename.split("/")[-2].split(".")[0]
+            name3 = inspect.stack()[3].filename.split("/")[-1].split(".")[0]
+            new_name = f"{name1}.{name2}.{name3}"
+        elif inspect.stack()[1].function == "post_to_audit_log":
+            name1 = inspect.stack()[2].filename.split("/")[-3].split(".")[0]
+            name2 = inspect.stack()[2].filename.split("/")[-2].split(".")[0]
+            name3 = inspect.stack()[2].filename.split("/")[-1].split(".")[0]
+            new_name = f"{name1}.{name2}.{name3}"
+
+        else:
+            name1 = inspect.stack()[1].filename.split("/")[-3].split(".")[0]
+            name2 = inspect.stack()[1].filename.split("/")[-2].split(".")[0]
+            name3 = inspect.stack()[1].filename.split("/")[-1].split(".")[0]
+            new_name = f"{name1}.{name2}.{name3}"
+
+        logger.patch(lambda r: r.update(name=new_name)).log(  # type: ignore [call-arg]
+            level.value, f"{msg} [{', '.join([x for x in command_info if x])}]"
+        )
 
     def _message_to_embed(self, message: str) -> discord.Embed:  # pragma: no cover
         """Convert a string message to a discord embed.
