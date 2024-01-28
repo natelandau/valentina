@@ -31,6 +31,9 @@ env:
     VALENTINA_TEST_MONGO_DATABASE_NAME: "valentina-test"
     VALENTINA_MONGO_URI: ""
     VALENTINA_MONGO_DATABASE_NAME: ""
+    VALENTINA_DISCORD_TOKEN: ""
+    VALENTINA_GUILDS: ""
+    VALENTINA_OWNER_CHANNELS: ""
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
