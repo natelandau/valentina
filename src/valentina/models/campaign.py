@@ -72,6 +72,8 @@ class Campaign(Document):
     date_modified: datetime = Field(default_factory=time_now)
     date_in_game: Optional[datetime] = None
     description: str | None = None
+    desperation: int = 0
+    danger: int = 0
     guild: int
     name: str
     chapters: list[CampaignChapter] = Field(default_factory=list)
