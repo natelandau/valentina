@@ -8,6 +8,7 @@ from discord.ext import pages
 from valentina.constants import ABS_MAX_EMBED_CHARACTERS, EmbedColor
 from valentina.models import Campaign
 from valentina.models.bot import ValentinaContext
+from valentina.utils.helpers import num_to_circles
 
 
 class CampaignViewer:
@@ -62,6 +63,10 @@ class CampaignViewer:
         )
 
         description = f"""\
+```scala
+🤞 Desperation : {num_to_circles(self.campaign.desperation)}
+⚠️ Danger      : {num_to_circles(self.campaign.danger)}
+```
 {campaign_description}
 ```scala
 Chapters : {len(self.campaign.chapters):<4} Created  : {self.campaign.date_created.strftime("%Y-%M-%d")}

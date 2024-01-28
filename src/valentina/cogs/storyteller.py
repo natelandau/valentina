@@ -88,6 +88,39 @@ class StoryTeller(commands.Cog):
         checks=[commands.has_any_role("Storyteller", "Admin").predicate],  # type: ignore [attr-defined]
     )
 
+    ## CAMPAIGN COMMANDS ####################################################################
+    @storyteller.command(name="set_danger", description="Set the danger level")
+    async def set_danger(self, ctx: ValentinaContext, danger: int) -> None:
+        """Set the danger level for a campaign."""
+        campaign = await ctx.fetch_active_campaign()
+
+        title = f"Set danger level to {danger}"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title, audit=True)
+
+        if not is_confirmed:
+            return
+
+        campaign.danger = danger
+        await campaign.save()
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    @storyteller.command(name="set_desperation", description="Set the desperation level")
+    async def set_desperation(self, ctx: ValentinaContext, desperation: int) -> None:
+        """Set the desperation level for a campaign."""
+        campaign = await ctx.fetch_active_campaign()
+
+        title = f"Set desperation level to {desperation}"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title, audit=True)
+
+        if not is_confirmed:
+            return
+
+        campaign.desperation = desperation
+        await campaign.save()
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
     ### CHARACTER COMMANDS ####################################################################
     @character.command(name="create_full", description="Create a full npc character")
     async def create_story_char(
