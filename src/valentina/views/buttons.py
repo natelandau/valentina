@@ -80,39 +80,85 @@ class IntegerButtons(discord.ui.View):
 
 
 class ReRollButton(discord.ui.View):
-    """Add a re-roll button to a view."""
+    """Add a re-roll button to a view.  When desperation botch is True, choices to enter Overreach or Despair will replace the re-roll button."""
 
     def __init__(
-        self, author: discord.User | discord.Member | None = None, desperation_botch: bool = False
+        self,
+        author: discord.User | discord.Member | None = None,
+        desperation_botch: bool = False,
     ):
-        super().__init__()
+        super().__init__(timeout=300)
         self.author = author
         self.desperation_botch = desperation_botch
         self.confirmed: bool = None
+        self.overreach: bool = False
+        self.despair: bool = False
+
+        ######################################################
+        if not desperation_botch:  # Add reroll and done buttons if not a desperation botch
+            reroll_button: Button = Button(
+                label="Re-Roll",
+                custom_id="reroll",
+                style=discord.ButtonStyle.success,
+            )
+            reroll_button.callback = self.button_callback  # type: ignore [method-assign]
+            self.add_item(reroll_button)
+
+            done_button: Button = Button(
+                label="Done", custom_id="done", style=discord.ButtonStyle.secondary
+            )
+            done_button.callback = self.button_callback  # type: ignore [method-assign]
+            self.add_item(done_button)
+        else:
+            overreach_button: Button = Button(
+                label=f"{Emoji.OVERREACH.value} Succeed and increase danger!",
+                custom_id="overreach",
+                style=discord.ButtonStyle.success,
+            )
+            overreach_button.callback = self.button_callback  # type: ignore [method-assign]
+            self.add_item(overreach_button)
+
+            despair_button: Button = Button(
+                label=f"{Emoji.DESPAIR.value} Fail and enter Despair!",
+                custom_id="despair",
+                style=discord.ButtonStyle.success,
+            )
+            despair_button.callback = self.button_callback  # type: ignore [method-assign]
+            self.add_item(despair_button)
+
+        ##################################################################
+
+    async def button_callback(self, interaction: discord.Interaction) -> None:
+        """Respond to the button press and update the view."""
+        # Get the custom_id of the button that was pressed
+        response = interaction.data.get("custom_id", None)
+
+        # Disable the interaction and grab the setting name
+        for child in self.children:
+            if isinstance(child, Button) and response == child.custom_id:
+                child.label = f"{Emoji.YES.value} {child.label}"
+
+        self._disable_all()
+        await interaction.response.edit_message(view=None)  # view=None remove all buttons
+
+        if response == "done":
+            self.confirmed = False
+        if response == "reroll":
+            self.confirmed = True
+        if response == "overreach":
+            self.confirmed = False
+            self.overreach = True
+        if response == "despair":
+            self.confirmed = False
+            self.despair = True
+
+        self.stop()
 
     def _disable_all(self) -> None:
         """Disable all buttons in the view."""
         for child in self.children:
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
-
-    @discord.ui.button(label="Re-Roll", style=discord.ButtonStyle.success, custom_id="reroll")
-    async def reroll_callback(self, button: Button, interaction: discord.Interaction) -> None:
-        """Callback for the re-roll button."""
-        button.label += " ✅"
-        self._disable_all()
-        await interaction.response.edit_message(view=None)  # view=None remove all buttons
-        self.confirmed = True
-        self.stop()
-
-    @discord.ui.button(label="Done", style=discord.ButtonStyle.secondary, custom_id="done")
-    async def done_callback(self, button: Button, interaction: discord.Interaction) -> None:
-        """Callback for the re-roll button."""
-        button.label += f" {Emoji.YES.value}"
-        self._disable_all()
-        await interaction.response.edit_message(view=None)  # view=None remove all buttons
-        self.confirmed = False
-        self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """Disables buttons for everyone except the user who created the embed."""
