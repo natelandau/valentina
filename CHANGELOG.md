@@ -1,3 +1,22 @@
+## v2.2.0 (2024-01-29)
+
+### Feat
+
+- **gameplay**: roll desperation dice (#120)
+- **campaign**: track desperation and danger (#116)
+- **admin**: change log level from discord  @natelandau (#113)
+
+### Fix
+
+- use `confz` for env variable parsing (#119)
+- **logging**: correct printing of calling function names (#117)
+- **campaign**: improve `/campaign view` (#115)
+- actually post change log on bot connect (#114)
+- **gameplay**: roll correct traits (#112)
+- **gameplay**: fix bug rolling traits
+- **character**: increase size of `/character list` (#111)
+- **database**: wait for db before connecting bot
+
 ## v2.1.0 (2023-11-17)
 
 ### Feat
