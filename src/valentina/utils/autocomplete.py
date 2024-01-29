@@ -178,7 +178,7 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     # Filter and return the character's traits
     return [
         OptionChoice(t.name, str(t.id))
-        for t in active_character.traits
+        for t in sorted(active_character.traits, key=lambda x: x.name)
         if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -209,7 +209,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     # Filter and return the character's traits
     return [
         OptionChoice(t.name, str(t.id))
-        for t in active_character.traits
+        for t in sorted(active_character.traits, key=lambda x: x.name)
         if t.name.lower().startswith(ctx.options["trait_two"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
