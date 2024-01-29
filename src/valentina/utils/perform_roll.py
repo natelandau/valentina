@@ -55,6 +55,7 @@ async def perform_roll(
     while True:
         view = ReRollButton(
             author=ctx.author,
+            desperation_pool=desperation_pool,
             desperation_botch=roll.desperation_botches > 0 if roll.desperation_botches else False,
         )
         embed = await RollDisplay(

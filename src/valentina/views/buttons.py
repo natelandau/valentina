@@ -85,17 +85,19 @@ class ReRollButton(discord.ui.View):
     def __init__(
         self,
         author: discord.User | discord.Member | None = None,
+        desperation_pool: int = 0,
         desperation_botch: bool = False,
     ):
         super().__init__(timeout=300)
         self.author = author
+        self.desperation_pool = desperation_pool
         self.desperation_botch = desperation_botch
         self.confirmed: bool = None
         self.overreach: bool = False
         self.despair: bool = False
 
         ######################################################
-        if not desperation_botch:  # Add reroll and done buttons if not a desperation botch
+        if self.desperation_pool == 0:  # Add reroll and done buttons if not a desperation roll
             reroll_button: Button = Button(
                 label="Re-Roll",
                 custom_id="reroll",
@@ -109,7 +111,7 @@ class ReRollButton(discord.ui.View):
             )
             done_button.callback = self.button_callback  # type: ignore [method-assign]
             self.add_item(done_button)
-        else:
+        elif desperation_botch:
             overreach_button: Button = Button(
                 label=f"{Emoji.OVERREACH.value} Succeed and increase danger!",
                 custom_id="overreach",
