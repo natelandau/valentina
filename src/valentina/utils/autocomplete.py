@@ -3,6 +3,7 @@
 from typing import cast
 
 import discord
+import inflect
 from beanie.operators import And
 from discord.commands import OptionChoice
 
@@ -20,6 +21,17 @@ from valentina.models.bot import Valentina
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99
+
+
+async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Populate the autocomplete list for the aws_object option based on the user's input."""
+    aws_svc = AWSService()
+
+    guild_prefix = f"{ctx.interaction.guild.id}/"
+
+    return [OptionChoice(x.strip(guild_prefix), x) for x in aws_svc.list_objects(guild_prefix)][
+        :MAX_OPTION_LIST_SIZE
+    ]
 
 
 async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[str]:
@@ -275,14 +287,33 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
     ]
 
 
-async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Populate the autocomplete list for the aws_object option based on the user's input."""
-    aws_svc = AWSService()
+async def select_desperation_dice(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Populate the autocomplete list for the desperation_dice option based on the user's input.
 
-    guild_prefix = f"{ctx.interaction.guild.id}/"
+    This function creates a list of OptionChoice objects to populate the autocomplete list.
 
-    return [OptionChoice(x.strip(guild_prefix), x) for x in aws_svc.list_objects(guild_prefix)][
-        :MAX_OPTION_LIST_SIZE
+    Args:
+        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
+
+    Returns:
+        list[OptionChoice]: A list of OptionChoice objects to populate the autocomplete list.
+    """
+    p = inflect.engine()
+
+    # Fetch the active campaign
+    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
+    active_campaign = await guild.fetch_active_campaign()
+    desperation_dice = active_campaign.desperation
+
+    if not active_campaign:
+        return [OptionChoice("No active campaign", 1000)]
+
+    if desperation_dice == 0:
+        return [OptionChoice("No desperation dice", 1000)]
+
+    return [
+        OptionChoice(f"{p.number_to_words(i).capitalize()} {p.plural('die', i)}", i)  # type: ignore [arg-type, union-attr]
+        for i in range(1, desperation_dice + 1)
     ]
 
 

@@ -4,13 +4,11 @@ import discord
 import inflect
 from loguru import logger
 
-from valentina.constants import DiceType, EmbedColor, RollResultType
+from valentina.constants import MAX_POOL_SIZE, DiceType, EmbedColor, RollResultType
 from valentina.models import Character, Guild, RollStatistic
 from valentina.utils import errors, random_num
 
 p = inflect.engine()
-
-_max_pool_size = 100
 
 
 class DiceRoll:
@@ -33,6 +31,8 @@ class DiceRoll:
     Attributes:
         botches (int): The number of ones in the dice.
         criticals (int): The number of rolled criticals (Highest number on dice).
+        desperation_roll (list[int]): A list of the result all rolled desperation dice.
+        desperation_botches (int): The number of ones in the desperation dice.
         dice_type (DiceType): The type of dice to roll.
         difficulty (int): The difficulty of the roll.
         embed_color (int): The color of the embed.
@@ -57,6 +57,7 @@ class DiceRoll:
         difficulty: int = 6,
         dice_size: int = 10,
         character: Character = None,
+        desperation_pool: int = 0,
     ) -> None:
         """A container class that determines the result of a roll.
 
@@ -66,9 +67,11 @@ class DiceRoll:
             difficulty (int, optional): The difficulty of the roll. Defaults to 6.
             pool (int): The pool's total size, including hunger
             character (Character, optional): The character to log the roll for. Defaults to None.
+            desperation_pool (int): The number of dice to roll from the desperation pool. Defaults to 0.
         """
         self.ctx = ctx
         self.character = character
+        self.desperation_pool = desperation_pool
 
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
@@ -86,21 +89,24 @@ class DiceRoll:
         if pool < 0:
             msg = f"Pool cannot be less than 0. (Got `{pool}`.)"
             raise errors.ValidationError(msg)
-        if pool > _max_pool_size:
-            msg = f"Pool cannot exceed {_max_pool_size}. (Got `{pool}`.)"
+        if pool > MAX_POOL_SIZE:
+            msg = f"Pool cannot exceed {MAX_POOL_SIZE}. (Got `{pool}`.)"
             raise errors.ValidationError(msg)
 
         self.difficulty = difficulty
         self.pool = pool
         self._roll: list[int] = None
+        self._desperation_roll: list[int] = None
         self._botches: int = None
         self._criticals: int = None
         self._failures: int = None
         self._successes: int = None
         self._result: int = None
         self._result_type: RollResultType = None
+        self._desperation_botches: int = None
 
     def _calculate_result(self) -> RollResultType:
+        """Calculate the result type of the roll."""
         if self.dice_type != DiceType.D10:
             return RollResultType.OTHER
 
@@ -120,7 +126,6 @@ class DiceRoll:
 
         Args:
             traits (list[str], optional): The traits to log the roll for. Defaults to [].
-
         """
         # Ensure the user in the database to avoid foreign key errors
 
@@ -158,18 +163,45 @@ class DiceRoll:
         return self._roll
 
     @property
+    def desperation_roll(self) -> list[int]:
+        """Roll the desperation dice and return the results."""
+        if not self._desperation_roll:
+            self._desperation_roll = [
+                random_num(self.dice_type.value) for x in range(self.desperation_pool)
+            ]
+
+        return self._desperation_roll
+
+    @property
     def botches(self) -> int:
         """Retrieve the number of ones in the dice."""
         if not self._botches:
-            self._botches = self.roll.count(1)
+            if self.desperation_pool > 0:
+                desperation_botches = self.desperation_roll.count(1)
+                self._botches = self.roll.count(1) + desperation_botches
+            else:
+                self._botches = self.roll.count(1)
 
         return self._botches
+
+    @property
+    def desperation_botches(self) -> int:
+        """Retrieve the number of ones in the desperation dice."""
+        if not self._desperation_botches and self.desperation_pool > 0:
+            self._desperation_botches = self.desperation_roll.count(1)
+
+        return self._desperation_botches
 
     @property
     def criticals(self) -> int:
         """Retrieve the number of rolled criticals (Highest number on dice)."""
         if not self._criticals:
-            self._criticals = self.roll.count(self.dice_type.value)
+            if self.desperation_pool > 0:
+                desperation_criticals = self.desperation_roll.count(self.dice_type.value)
+                self._criticals = self.roll.count(self.dice_type.value) + desperation_criticals
+            else:
+                self._criticals = self.roll.count(self.dice_type.value)
+
         return self._criticals
 
     @property
@@ -181,6 +213,14 @@ class DiceRoll:
                 if 2 <= die <= self.difficulty - 1:  # noqa: PLR2004
                     count += 1
             self._failures = count
+
+        if self.desperation_pool > 0:
+            desperation_failures = 0
+            for die in self.desperation_roll:
+                if 2 <= die <= self.difficulty - 1:  # noqa: PLR2004
+                    desperation_failures += 1
+            self._failures += desperation_failures
+
         return self._failures
 
     @property
@@ -192,6 +232,14 @@ class DiceRoll:
                 if self.difficulty <= die <= self.dice_type.value - 1:
                     count += 1
             self._successes = count
+
+        if self.desperation_pool > 0:
+            desperation_successes = 0
+            for die in self.desperation_roll:
+                if self.difficulty <= die <= self.dice_type.value - 1:
+                    desperation_successes += 1
+            self._successes += desperation_successes
+
         return self._successes
 
     @property
@@ -242,11 +290,11 @@ class DiceRoll:
     @property
     def embed_description(self) -> str:
         """The description of the roll response embed."""
-        title_map = {
+        description_map = {
             RollResultType.OTHER: "",
             RollResultType.BOTCH: f"{self.result} {p.plural_noun('Success', self.result)}",
             RollResultType.CRITICAL: f"{self.result} {p.plural_noun('Success', self.result)}",
             RollResultType.SUCCESS: "",
             RollResultType.FAILURE: "",
         }
-        return title_map[self.result_type]
+        return description_map[self.result_type]
