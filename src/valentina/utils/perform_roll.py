@@ -15,6 +15,7 @@ async def perform_roll(
     trait_one: CharacterTrait | None = None,
     trait_two: CharacterTrait | None = None,
     character: Character | None = None,
+    desperation_pool: int = 0,
 ) -> None:
     """Perform a dice roll and display the result.
 
@@ -29,8 +30,16 @@ async def perform_roll(
         trait_one (CustomTrait, Trait, optional): The name of the first trait. Defaults to None.
         trait_two (CustomTrait, Trait, optional): The name of the second trait. Defaults to None.
         character (Character, optional): The ID of the character to log the roll for. Defaults to None.
+        desperation_pool (int, optional): The number of dice in the desperation pool. Defaults to 0.
     """
-    roll = DiceRoll(ctx, pool=pool, difficulty=difficulty, dice_size=dice_size, character=character)
+    roll = DiceRoll(
+        ctx,
+        pool=pool,
+        difficulty=difficulty,
+        dice_size=dice_size,
+        character=character,
+        desperation_pool=desperation_pool,
+    )
 
     traits_to_log = []
     if trait_one:
@@ -48,6 +57,7 @@ async def perform_roll(
             comment,
             trait_one,
             trait_two,
+            desperation_pool=desperation_pool,
         ).get_embed()
         await ctx.respond(embed=embed, view=view, ephemeral=hidden)
 
@@ -55,7 +65,12 @@ async def perform_roll(
         await view.wait()
         if view.confirmed:
             roll = DiceRoll(
-                ctx, pool=pool, difficulty=difficulty, dice_size=dice_size, character=character
+                ctx,
+                pool=pool,
+                difficulty=difficulty,
+                dice_size=dice_size,
+                character=character,
+                desperation_pool=desperation_pool,
             )
             await roll.log_roll(traits=traits_to_log)
         else:

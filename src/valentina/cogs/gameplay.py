@@ -166,6 +166,44 @@ class Roll(commands.Cog):
             character=character,
         )
 
+    @roll.command(name="desperation", description="Roll desperation")
+    async def roll_desperation(
+        self,
+        ctx: ValentinaContext,
+        pool: discord.Option(int, "The number of dice to roll", required=True),
+        difficulty: Option(
+            int,
+            "The difficulty of the roll",
+            required=False,
+            default=DEFAULT_DIFFICULTY,
+        ),
+        comment: Option(str, "A comment to display with the roll", required=False, default=None),
+    ) -> None:
+        """Roll desperation dice."""
+        active_campaign = await ctx.fetch_active_campaign()
+        if active_campaign.desperation == 0:
+            await present_embed(
+                ctx,
+                title="Can not roll desperation",
+                description="The current desperation level is 0. No dice to roll.",
+                level="error",
+                ephemeral=True,
+            )
+            return
+
+        # Grab the player's active character for statistic logging purposes
+        character = await ctx.fetch_active_character(raise_error=False)
+
+        await perform_roll(
+            ctx,
+            pool,
+            difficulty,
+            DiceType.D10.value,
+            comment,
+            character=character,
+            desperation_pool=active_campaign.desperation,
+        )
+
     ### GAMEPLAY COMMANDS ###
     gameplay = discord.SlashCommandGroup("gameplay", "Gameplay commands")
 

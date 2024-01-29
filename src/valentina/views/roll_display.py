@@ -3,6 +3,7 @@
 import discord
 import inflect
 
+from valentina.constants import Emoji
 from valentina.models import CharacterTrait, DiceRoll
 from valentina.models.bot import ValentinaContext
 
@@ -22,12 +23,14 @@ class RollDisplay:
         comment: str | None = None,
         trait_one: CharacterTrait | None = None,
         trait_two: CharacterTrait | None = None,
+        desperation_pool: int = 0,
     ):
         self.ctx = ctx
         self.roll = roll
         self.comment = comment
         self.trait_one = trait_one
         self.trait_two = trait_two
+        self.desperation_pool = desperation_pool
 
     def _add_comment_field(self, embed: discord.Embed) -> discord.Embed:
         """Add the comment field to the embed."""
@@ -36,56 +39,57 @@ class RollDisplay:
 
         return embed
 
-    def _add_roll_fields(self, embed: discord.Embed) -> discord.Embed:
-        """Add the roll fields to the embed."""
-        roll_string = " ".join(f"`{die}`" for die in self.roll.roll)
-
-        embed.add_field(
-            name="\u200b",
-            value=f"{self.ctx.author.display_name} rolled **{self.roll.pool}{self.roll.dice_type.name.lower()}**",
-            inline=False,
-        )
-        embed.add_field(
-            name=f"Dice: {roll_string}",
-            value="\u200b",
-            inline=False,
-        )
-        if self.roll.dice_type.name == "D10":
-            embed.add_field(name="Pool", value=str(self.roll.pool), inline=True)
-            embed.add_field(name="Difficulty", value=str(self.roll.difficulty), inline=True)
-
-        return embed
-
-    def _add_trait_fields(self, embed: discord.Embed) -> discord.Embed:
-        """Add the trait fields to the embed."""
-        if self.trait_one and self.trait_two:
-            embed.add_field(
-                name="**Rolled Traits**",
-                value=f"{self.trait_one.name}: `{self.trait_one.value} {p.plural_noun('die', self.trait_one.value)}`\n{self.trait_two.name}: `{self.trait_two.value} {p.plural_noun('die', self.trait_two.value)}`",
-                inline=False,
-            )
-        elif self.trait_one:
-            embed.add_field(
-                name="**Rolled Traits**",
-                value=f"{self.trait_one.name}: `{self.trait_one.value} {p.plural_noun('die', self.trait_one.value)}`",
-                inline=False,
-            )
-
-        return embed
-
     async def get_embed(self) -> discord.Embed:
         """The graphical representation of the roll."""
+        roll_string = " ".join(f"{die}" for die in self.roll.roll)
+        if self.desperation_pool > 0:
+            desperation_roll_string = " ".join(f"{die}" for die in self.roll.desperation_roll)
+
+        description = f"""\
+### {self.ctx.author.display_name} rolled `{self.desperation_pool + self.roll.pool}{self.roll.dice_type.name.lower()}`
+## {self.roll.embed_title}
+{self.roll.embed_description}
+"""
+
+        if self.desperation_pool > 0 and self.roll.desperation_botches > 0:
+            description += f"""
+### {Emoji.FACEPALM.value} `{self.roll.desperation_botches}` Desperation {p.plural_noun('botch', self.roll.desperation_botches)}
+> You must pick either:
+> - {Emoji.DESPAIR.value} **Despair** (Fail your roll)
+> - {Emoji.OVERREACH.value} **Overreach** (Succeed but raise the danger level by 1)
+"""
+
+        description += f"""\
+### Roll Details:
+```scala
+Difficulty       : {self.roll.difficulty}
+Pool             : {self.roll.pool}{self.roll.dice_type.name.lower()}
+Roll             : {roll_string}
+"""
+
+        if self.desperation_pool > 0:
+            description += f"""\
+Desperation Pool : {self.desperation_pool}{self.roll.dice_type.name.lower()}
+Desperation Roll : {desperation_roll_string}
+Total Dice Rolled: {self.desperation_pool + self.roll.pool}{self.roll.dice_type.name.lower()}
+"""
+
+        if self.trait_one:
+            description += f"{self.trait_one.name:<17}: {self.trait_one.value} {p.plural_noun('die', self.trait_one.value)}\n"
+        if self.trait_two:
+            description += f"{self.trait_two.name:<17}: {self.trait_two.value} {p.plural_noun('die', self.trait_two.value)}\n"
+
+        description += "```"
+
         embed = discord.Embed(
-            title=self.roll.embed_title,
-            description=self.roll.embed_description,
+            title=None,
+            description=description,
             color=self.roll.embed_color,
         )
 
         # Thumbnail
         embed.set_thumbnail(url=await self.roll.thumbnail_url())
 
-        embed = self._add_roll_fields(embed)
-        embed = self._add_trait_fields(embed)
         return self._add_comment_field(embed)
 
     async def display(self) -> None:
