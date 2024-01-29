@@ -52,58 +52,65 @@ async def perform_roll(
 
     await roll.log_roll(traits=traits_to_log)
 
-    while True:
-        view = ReRollButton(
-            author=ctx.author,
-            desperation_pool=desperation_pool,
-            desperation_botch=roll.desperation_botches > 0 if roll.desperation_botches else False,
+    view = ReRollButton(
+        author=ctx.author,
+        desperation_pool=desperation_pool,
+        desperation_botch=roll.desperation_botches > 0 if roll.desperation_botches else False,
+    )
+    embed = await RollDisplay(
+        ctx,
+        roll,
+        comment,
+        trait_one,
+        trait_two,
+        desperation_pool=desperation_pool,
+    ).get_embed()
+    original_response = await ctx.respond(embed=embed, view=view, ephemeral=hidden)
+
+    # Wait for a re-roll
+    await view.wait()
+
+    if view.overreach:
+        active_campaign = await ctx.fetch_active_campaign()
+        if active_campaign.danger < 5:  # noqa: PLR2004
+            active_campaign.danger = active_campaign.danger + 1
+            await active_campaign.save()
+
+        await original_response.edit_original_response(  # type: ignore [union-attr]
+            view=None,
+            embed=discord.Embed(
+                title=None,
+                description=f"# {Emoji.OVERREACH.value} Overreach!\nThe character overreached. This roll has succeeded but the danger level has increased to `{active_campaign.danger}`.",
+                color=EmbedColor.WARNING.value,
+            ),
         )
-        embed = await RollDisplay(
+
+    if view.despair:
+        await original_response.edit_original_response(  # type: ignore [union-attr]
+            view=None,
+            embed=discord.Embed(
+                title=None,
+                description=f"# {Emoji.DESPAIR.value} Despair!\n### This roll has failed and the character has entered Despair!\nYou can no longer use desperation dice until you redeem yourself.",
+                color=EmbedColor.WARNING.value,
+            ),
+        )
+
+    if view.timeout:
+        if isinstance(original_response, discord.Interaction):
+            await original_response.edit_original_response(view=None)
+        if isinstance(original_response, discord.WebhookMessage):
+            await original_response.edit(view=None)
+
+    if view.reroll:
+        await perform_roll(
             ctx,
-            roll,
-            comment,
-            trait_one,
-            trait_two,
+            pool=pool,
+            difficulty=difficulty,
+            dice_size=dice_size,
+            comment=comment,
+            hidden=hidden,
+            trait_one=trait_one,
+            trait_two=trait_two,
+            character=character,
             desperation_pool=desperation_pool,
-        ).get_embed()
-        original_response = await ctx.respond(embed=embed, view=view, ephemeral=hidden)
-
-        # Wait for a re-roll
-        await view.wait()
-        if view.overreach:
-            active_campaign = await ctx.fetch_active_campaign()
-            if active_campaign.danger < 5:  # noqa: PLR2004
-                active_campaign.danger = active_campaign.danger + 1
-                await active_campaign.save()
-
-            await original_response.edit_original_response(  # type: ignore [union-attr]
-                view=None,
-                embed=discord.Embed(
-                    title=None,
-                    description=f"# {Emoji.OVERREACH.value} Overreach!\nThe character overreached. This roll has succeeded but the danger level has increased to `{active_campaign.danger}`.",
-                    color=EmbedColor.WARNING.value,
-                ),
-            )
-
-        if view.despair:
-            await original_response.edit_original_response(  # type: ignore [union-attr]
-                view=None,
-                embed=discord.Embed(
-                    title=None,
-                    description=f"# {Emoji.DESPAIR.value} Despair!\n### This roll has failed and the character has entered Despair!\nYou can no longer use desperation dice until you redeem yourself.",
-                    color=EmbedColor.WARNING.value,
-                ),
-            )
-
-        if view.confirmed:
-            roll = DiceRoll(
-                ctx,
-                pool=pool,
-                difficulty=difficulty,
-                dice_size=dice_size,
-                character=character,
-                desperation_pool=desperation_pool,
-            )
-            await roll.log_roll(traits=traits_to_log)
-        else:
-            break
+        )

@@ -46,7 +46,7 @@ class RollDisplay:
             desperation_roll_string = " ".join(f"{die}" for die in self.roll.desperation_roll)
 
         description = f"""\
-### {self.ctx.author.display_name} rolled `{self.desperation_pool + self.roll.pool}{self.roll.dice_type.name.lower()}`
+### {self.ctx.author.mention} rolled `{self.desperation_pool + self.roll.pool}{self.roll.dice_type.name.lower()}`
 ## {self.roll.embed_title}
 {self.roll.embed_description}
 """

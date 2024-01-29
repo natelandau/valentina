@@ -88,15 +88,15 @@ class ReRollButton(discord.ui.View):
         desperation_pool: int = 0,
         desperation_botch: bool = False,
     ):
-        super().__init__(timeout=300)
+        super().__init__(timeout=60)
+
         self.author = author
         self.desperation_pool = desperation_pool
         self.desperation_botch = desperation_botch
-        self.confirmed: bool = None
+        self.reroll: bool = None
         self.overreach: bool = False
         self.despair: bool = False
 
-        ######################################################
         if self.desperation_pool == 0:  # Add reroll and done buttons if not a desperation roll
             reroll_button: Button = Button(
                 label="Re-Roll",
@@ -128,8 +128,6 @@ class ReRollButton(discord.ui.View):
             despair_button.callback = self.button_callback  # type: ignore [method-assign]
             self.add_item(despair_button)
 
-        ##################################################################
-
     async def button_callback(self, interaction: discord.Interaction) -> None:
         """Respond to the button press and update the view."""
         # Get the custom_id of the button that was pressed
@@ -144,14 +142,14 @@ class ReRollButton(discord.ui.View):
         await interaction.response.edit_message(view=None)  # view=None remove all buttons
 
         if response == "done":
-            self.confirmed = False
+            self.reroll = False
         if response == "reroll":
-            self.confirmed = True
+            self.reroll = True
         if response == "overreach":
-            self.confirmed = False
+            self.reroll = False
             self.overreach = True
         if response == "despair":
-            self.confirmed = False
+            self.reroll = False
             self.despair = True
 
         self.stop()
