@@ -11,7 +11,12 @@ from valentina.constants import DEFAULT_DIFFICULTY, DiceType, LogLevel
 from valentina.models import User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import random_num
-from valentina.utils.autocomplete import select_char_trait, select_char_trait_two, select_macro
+from valentina.utils.autocomplete import (
+    select_char_trait,
+    select_char_trait_two,
+    select_desperation_dice,
+    select_macro,
+)
 from valentina.utils.converters import ValidTraitFromID
 from valentina.utils.perform_roll import perform_roll
 from valentina.views import present_embed
@@ -38,11 +43,11 @@ class Roll(commands.Cog):
             default=DEFAULT_DIFFICULTY,
         ),
         desperation: Option(
-            bool,
-            name="add_desperation_dice",
+            int,
             description="Add desperation dice",
             required=False,
-            default=False,
+            default=0,
+            autocomplete=select_desperation_dice,
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
@@ -52,15 +57,15 @@ class Roll(commands.Cog):
             comment (str, optional): A comment to display with the roll. Defaults to None.
             ctx (ValentinaContext): The context of the command
             difficulty (int): The difficulty of the roll
-            desperation (bool): Add desperation dice to the roll
+            desperation (int): Add x desperation dice to the roll
             pool (int): The number of dice to roll
         """
         # Grab the player's active character for statistic logging purposes
         character = await ctx.fetch_active_character(raise_error=False)
 
-        if desperation:
+        if desperation > 0:
             active_campaign = await ctx.fetch_active_campaign()
-            if active_campaign.desperation == 0:
+            if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
                 await present_embed(
                     ctx,
                     title="Can not roll desperation",
@@ -77,7 +82,7 @@ class Roll(commands.Cog):
             DiceType.D10.value,
             comment,
             character=character,
-            desperation_pool=active_campaign.desperation if desperation else 0,
+            desperation_pool=desperation,
         )
 
     @roll.command(name="traits", description="Throw a roll based on trait names")
@@ -105,11 +110,11 @@ class Roll(commands.Cog):
             default=DEFAULT_DIFFICULTY,
         ),
         desperation: Option(
-            bool,
-            name="add_desperation_dice",
+            int,
             description="Add desperation dice",
             required=False,
-            default=False,
+            default=0,
+            autocomplete=select_desperation_dice,
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
@@ -123,9 +128,9 @@ class Roll(commands.Cog):
             LogLevel.DEBUG,
         )
 
-        if desperation:
+        if desperation > 0:
             active_campaign = await ctx.fetch_active_campaign()
-            if active_campaign.desperation == 0:
+            if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
                 await present_embed(
                     ctx,
                     title="Can not roll desperation",
@@ -144,7 +149,7 @@ class Roll(commands.Cog):
             trait_one=trait_one,
             trait_two=trait_two,
             character=character,
-            desperation_pool=active_campaign.desperation if desperation else 0,
+            desperation_pool=desperation,
         )
 
     @roll.command(description="Simple dice roll of any size.")
@@ -183,11 +188,11 @@ class Roll(commands.Cog):
             default=DEFAULT_DIFFICULTY,
         ),
         desperation: Option(
-            bool,
-            name="add_desperation_dice",
+            int,
             description="Add desperation dice",
             required=False,
-            default=False,
+            default=0,
+            autocomplete=select_desperation_dice,
         ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
@@ -203,9 +208,9 @@ class Roll(commands.Cog):
             msg = "Macro traits not found on character"
             raise commands.BadArgument(msg)
 
-        if desperation:
+        if desperation > 0:
             active_campaign = await ctx.fetch_active_campaign()
-            if active_campaign.desperation == 0:
+            if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
                 await present_embed(
                     ctx,
                     title="Can not roll desperation",
@@ -231,14 +236,19 @@ class Roll(commands.Cog):
             trait_one=trait_one,
             trait_two=trait_two,
             character=character,
-            desperation_pool=active_campaign.desperation if desperation else 0,
+            desperation_pool=desperation,
         )
 
     @roll.command(name="desperation", description="Roll desperation")
     async def roll_desperation(
         self,
         ctx: ValentinaContext,
-        pool: discord.Option(int, "The number of dice to roll", required=True),
+        desperation: Option(
+            int,
+            description="Add desperation dice",
+            required=True,
+            autocomplete=select_desperation_dice,
+        ),
         difficulty: Option(
             int,
             "The difficulty of the roll",
@@ -249,7 +259,7 @@ class Roll(commands.Cog):
     ) -> None:
         """Roll desperation dice."""
         active_campaign = await ctx.fetch_active_campaign()
-        if active_campaign.desperation == 0:
+        if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
             await present_embed(
                 ctx,
                 title="Can not roll desperation",
@@ -264,12 +274,12 @@ class Roll(commands.Cog):
 
         await perform_roll(
             ctx,
-            pool,
+            0,
             difficulty,
             DiceType.D10.value,
             comment,
             character=character,
-            desperation_pool=active_campaign.desperation,
+            desperation_pool=desperation,
         )
 
     ### GAMEPLAY COMMANDS ###
