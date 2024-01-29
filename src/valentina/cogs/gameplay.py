@@ -37,6 +37,13 @@ class Roll(commands.Cog):
             required=False,
             default=DEFAULT_DIFFICULTY,
         ),
+        desperation: Option(
+            bool,
+            name="add_desperation_dice",
+            description="Add desperation dice",
+            required=False,
+            default=False,
+        ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll the dice.
@@ -45,12 +52,33 @@ class Roll(commands.Cog):
             comment (str, optional): A comment to display with the roll. Defaults to None.
             ctx (ValentinaContext): The context of the command
             difficulty (int): The difficulty of the roll
+            desperation (bool): Add desperation dice to the roll
             pool (int): The number of dice to roll
         """
         # Grab the player's active character for statistic logging purposes
         character = await ctx.fetch_active_character(raise_error=False)
 
-        await perform_roll(ctx, pool, difficulty, DiceType.D10.value, comment, character=character)
+        if desperation:
+            active_campaign = await ctx.fetch_active_campaign()
+            if active_campaign.desperation == 0:
+                await present_embed(
+                    ctx,
+                    title="Can not roll desperation",
+                    description="The current desperation level is 0. No dice to roll.",
+                    level="error",
+                    ephemeral=True,
+                )
+                return
+
+        await perform_roll(
+            ctx,
+            pool,
+            difficulty,
+            DiceType.D10.value,
+            comment,
+            character=character,
+            desperation_pool=active_campaign.desperation if desperation else 0,
+        )
 
     @roll.command(name="traits", description="Throw a roll based on trait names")
     async def traits(
@@ -76,6 +104,13 @@ class Roll(commands.Cog):
             required=False,
             default=DEFAULT_DIFFICULTY,
         ),
+        desperation: Option(
+            bool,
+            name="add_desperation_dice",
+            description="Add desperation dice",
+            required=False,
+            default=False,
+        ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
@@ -88,6 +123,18 @@ class Roll(commands.Cog):
             LogLevel.DEBUG,
         )
 
+        if desperation:
+            active_campaign = await ctx.fetch_active_campaign()
+            if active_campaign.desperation == 0:
+                await present_embed(
+                    ctx,
+                    title="Can not roll desperation",
+                    description="The current desperation level is 0. No dice to roll.",
+                    level="error",
+                    ephemeral=True,
+                )
+                return
+
         await perform_roll(
             ctx,
             pool,
@@ -97,6 +144,7 @@ class Roll(commands.Cog):
             trait_one=trait_one,
             trait_two=trait_two,
             character=character,
+            desperation_pool=active_campaign.desperation if desperation else 0,
         )
 
     @roll.command(description="Simple dice roll of any size.")
@@ -134,6 +182,13 @@ class Roll(commands.Cog):
             required=False,
             default=DEFAULT_DIFFICULTY,
         ),
+        desperation: Option(
+            bool,
+            name="add_desperation_dice",
+            description="Add desperation dice",
+            required=False,
+            default=False,
+        ),
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll a macro."""
@@ -147,6 +202,18 @@ class Roll(commands.Cog):
         if not trait_one or not trait_two:
             msg = "Macro traits not found on character"
             raise commands.BadArgument(msg)
+
+        if desperation:
+            active_campaign = await ctx.fetch_active_campaign()
+            if active_campaign.desperation == 0:
+                await present_embed(
+                    ctx,
+                    title="Can not roll desperation",
+                    description="The current desperation level is 0. No dice to roll.",
+                    level="error",
+                    ephemeral=True,
+                )
+                return
 
         ctx.log_command(
             f"Macro: {macro.name}: {trait_one.name} ({trait_one.id}) + {trait_two.name} ({trait_two.id})",
@@ -164,6 +231,7 @@ class Roll(commands.Cog):
             trait_one=trait_one,
             trait_two=trait_two,
             character=character,
+            desperation_pool=active_campaign.desperation if desperation else 0,
         )
 
     @roll.command(name="desperation", description="Roll desperation")

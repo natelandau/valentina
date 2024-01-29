@@ -82,9 +82,12 @@ class IntegerButtons(discord.ui.View):
 class ReRollButton(discord.ui.View):
     """Add a re-roll button to a view."""
 
-    def __init__(self, author: discord.User | discord.Member | None = None):
+    def __init__(
+        self, author: discord.User | discord.Member | None = None, desperation_botch: bool = False
+    ):
         super().__init__()
         self.author = author
+        self.desperation_botch = desperation_botch
         self.confirmed: bool = None
 
     def _disable_all(self) -> None:

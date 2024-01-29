@@ -51,8 +51,16 @@ class RollDisplay:
 {self.roll.embed_description}
 """
 
+        description += f"""\
+### Rolled Dice:
+```scala
+Roll        : {roll_string}
+{"Desperation : " + desperation_roll_string if self.desperation_pool > 0 else ""}
+```
+"""
+
         if self.desperation_pool > 0 and self.roll.desperation_botches > 0:
-            description += f"""
+            description += f"""\
 ### {Emoji.FACEPALM.value} `{self.roll.desperation_botches}` Desperation {p.plural_noun('botch', self.roll.desperation_botches)}
 > You must pick either:
 > - {Emoji.DESPAIR.value} **Despair** (Fail your roll)
@@ -64,13 +72,11 @@ class RollDisplay:
 ```scala
 Difficulty       : {self.roll.difficulty}
 Pool             : {self.roll.pool}{self.roll.dice_type.name.lower()}
-Roll             : {roll_string}
 """
 
         if self.desperation_pool > 0:
             description += f"""\
 Desperation Pool : {self.desperation_pool}{self.roll.dice_type.name.lower()}
-Desperation Roll : {desperation_roll_string}
 Total Dice Rolled: {self.desperation_pool + self.roll.pool}{self.roll.dice_type.name.lower()}
 """
 
