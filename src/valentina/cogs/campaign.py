@@ -250,13 +250,15 @@ class CampaignCog(commands.Cog):
             return
 
         fields = []
-        fields.extend([
-            (
-                f"**{c.name}** (Active)" if c == active_campaign else f"**{c.name}**",
-                "",
-            )
-            for c in sorted(guild.campaigns, key=lambda x: x.name)
-        ])
+        fields.extend(
+            [
+                (
+                    f"**{c.name}** (Active)" if c == active_campaign else f"**{c.name}**",
+                    "",
+                )
+                for c in sorted(guild.campaigns, key=lambda x: x.name)
+            ]
+        )
 
         await present_embed(ctx, title="Campaigns", fields=fields, level="info")
 
@@ -331,13 +333,15 @@ class CampaignCog(commands.Cog):
             return
 
         fields = []
-        fields.extend([
-            (
-                f"**__{npc.name}__**",
-                f"**Class:** {npc.npc_class}\n**Description:** {npc.description}",
-            )
-            for npc in sorted(active_campaign.npcs, key=lambda x: x.name)
-        ])
+        fields.extend(
+            [
+                (
+                    f"**__{npc.name}__**",
+                    f"**Class:** {npc.npc_class}\n**Description:** {npc.description}",
+                )
+                for npc in sorted(active_campaign.npcs, key=lambda x: x.name)
+            ]
+        )
 
         await present_embed(ctx, title="NPCs", fields=fields, level="info", ephemeral=hidden)
 
@@ -521,13 +525,15 @@ class CampaignCog(commands.Cog):
             return
 
         fields = []
-        fields.extend([
-            (
-                f"**{chapter.number}.** **__{chapter.name}__**",
-                f"{chapter.description_short}",
-            )
-            for chapter in sorted(active_campaign.chapters, key=lambda x: x.number)
-        ])
+        fields.extend(
+            [
+                (
+                    f"**{chapter.number}.** **__{chapter.name}__**",
+                    f"{chapter.description_short}",
+                )
+                for chapter in sorted(active_campaign.chapters, key=lambda x: x.number)
+            ]
+        )
 
         await present_embed(ctx, title="Chapters", fields=fields, level="info")
 
@@ -683,10 +689,12 @@ class CampaignCog(commands.Cog):
             return
 
         fields = []
-        fields.extend([
-            (f"**__{note.name}__**", f"{note.description}")
-            for note in sorted(active_campaign.notes, key=lambda x: x.name)
-        ])
+        fields.extend(
+            [
+                (f"**__{note.name}__**", f"{note.description}")
+                for note in sorted(active_campaign.notes, key=lambda x: x.name)
+            ]
+        )
 
         await present_embed(
             ctx, title=f"Notes for **{active_campaign.name}**", fields=fields, level="info"

@@ -91,7 +91,7 @@ class Probability:
         critical_dice = 0
         total_successes = 0
         total_failures = 0
-        result_counts = {result: 0 for result in RollResultType}
+        result_counts = dict.fromkeys(RollResultType, 0)
 
         for _ in range(self.trials):
             roll = DiceRoll(
