@@ -118,17 +118,19 @@ Notes    : {len(self.campaign.notes):<4}
 
         buttons = []
         if len(embeds) > 1:
-            buttons.extend([
-                pages.PaginatorButton(
-                    "prev", label="←", style=discord.ButtonStyle.green, disabled=True
-                ),
-                pages.PaginatorButton(
-                    "page_indicator", style=discord.ButtonStyle.gray, disabled=True
-                ),
-                pages.PaginatorButton(
-                    "next", label="→", style=discord.ButtonStyle.green, disabled=False
-                ),
-            ])
+            buttons.extend(
+                [
+                    pages.PaginatorButton(
+                        "prev", label="←", style=discord.ButtonStyle.green, disabled=True
+                    ),
+                    pages.PaginatorButton(
+                        "page_indicator", style=discord.ButtonStyle.gray, disabled=True
+                    ),
+                    pages.PaginatorButton(
+                        "next", label="→", style=discord.ButtonStyle.green, disabled=False
+                    ),
+                ]
+            )
 
         return pages.PageGroup(
             pages=[pages.Page(embeds=[embed]) for embed in embeds],
@@ -168,17 +170,19 @@ Notes    : {len(self.campaign.notes):<4}
 
         buttons = []
         if len(embeds) > 1:
-            buttons.extend([
-                pages.PaginatorButton(
-                    "prev", label="←", style=discord.ButtonStyle.green, disabled=True
-                ),
-                pages.PaginatorButton(
-                    "page_indicator", style=discord.ButtonStyle.gray, disabled=True
-                ),
-                pages.PaginatorButton(
-                    "next", label="→", style=discord.ButtonStyle.green, disabled=False
-                ),
-            ])
+            buttons.extend(
+                [
+                    pages.PaginatorButton(
+                        "prev", label="←", style=discord.ButtonStyle.green, disabled=True
+                    ),
+                    pages.PaginatorButton(
+                        "page_indicator", style=discord.ButtonStyle.gray, disabled=True
+                    ),
+                    pages.PaginatorButton(
+                        "next", label="→", style=discord.ButtonStyle.green, disabled=False
+                    ),
+                ]
+            )
 
         return pages.PageGroup(
             pages=[pages.Page(embeds=[embed]) for embed in embeds],

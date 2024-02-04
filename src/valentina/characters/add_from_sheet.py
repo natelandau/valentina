@@ -123,12 +123,14 @@ class AddFromSheetWizard:
         trait_name, trait_category = self.trait_list.pop(0)
 
         # Append to dict to be turned into Character Traits later
-        self.completed_traits.append({
-            "name": trait_name,
-            "category_name": trait_category.name,
-            "value": rating,
-            "max_value": max_value,
-        })
+        self.completed_traits.append(
+            {
+                "name": trait_name,
+                "category_name": trait_category.name,
+                "value": rating,
+                "max_value": max_value,
+            }
+        )
 
         if not self.trait_list:
             # We're finished; create the character
