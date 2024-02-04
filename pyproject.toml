@@ -7,7 +7,7 @@
     description = "Valentina is a Discord bot that helps you run TTRPGs."
     homepage    = "https://github.com/natelandau/valentina"
     keywords    = []
-    license     = ""
+    license     = "AGPL-3.0-or-later"
     name        = "valentina"
     readme      = "README.md"
     repository  = "https://github.com/natelandau/valentina"

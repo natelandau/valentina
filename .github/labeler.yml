@@ -1,5 +1,5 @@
 ---
-github_actions:
+ci:
     - changed-files:
           - any-glob-to-any-file: ".github/**"
 dev_container:
@@ -11,9 +11,12 @@ configuration:
 documentation:
     - changed-files:
           - any-glob-to-any-file: ["**.md", "docs/**", "LICENSE"]
-python:
+valentina:
     - changed-files:
-          - any-glob-to-any-file: ["src/**", "tests/**"]
+          - any-glob-to-any-file: ["src/**"]
+tests:
+    - changed-files:
+          - any-glob-to-any-file: ["tests/**"]
 dependencies:
     - changed-files:
           - any-glob-to-any-file: "*.lock"
