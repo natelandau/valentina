@@ -32,8 +32,9 @@ async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
     async_mock_ctx1.fetch_active_campaign = AsyncMock(return_value=campaign)
 
     # WHEN the xp_add command is called
-    await Experience(bot=mock_bot).xp_add(
-        async_mock_ctx1,
+    cog = Experience(bot=mock_bot)
+    await cog.xp_add(
+        ctx=async_mock_ctx1,
         amount=10,
         user=None,
         hidden=False,
