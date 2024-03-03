@@ -1,3 +1,10 @@
+## v2.2.1 (2024-03-03)
+
+### Fix
+
+- **gameplay**: cleanup reroll buttons after 60 seconds
+- autocomplete sorts traits alphabetically
+
 ## v2.2.0 (2024-01-29)
 
 ### Feat
