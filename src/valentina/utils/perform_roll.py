@@ -73,7 +73,7 @@ async def perform_roll(
     if view.overreach:
         active_campaign = await ctx.fetch_active_campaign()
         if active_campaign.danger < 5:  # noqa: PLR2004
-            active_campaign.danger = active_campaign.danger + 1
+            active_campaign.danger += 1
             await active_campaign.save()
 
         await original_response.edit_original_response(  # type: ignore [union-attr]

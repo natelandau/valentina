@@ -38,7 +38,7 @@ class ChangelogPoster:
         self.channel = channel
 
         self.changelog = ChangelogParser(
-            bot=self.bot if self.bot else self.ctx.bot,
+            bot=self.bot or self.ctx.bot,
             exclude_categories=self.exclude_categories,
             oldest_version=oldest_version,
             newest_version=newest_version,

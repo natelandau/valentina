@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 from random import choice
 from typing import ClassVar
@@ -41,7 +41,7 @@ VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 
 
 ### ENUMS ###
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """Enum for logging levels."""
 
     TRACE = "TRACE"

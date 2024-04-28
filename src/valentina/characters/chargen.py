@@ -351,9 +351,7 @@ class RNGCharGen:
     ) -> None:
         self.ctx = ctx
         self.user = user
-        self.experience_level = (
-            experience_level if experience_level else RNGCharLevel.random_member()
-        )
+        self.experience_level = experience_level or RNGCharLevel.random_member()
 
     @staticmethod
     def _redistribute_trait_values(
@@ -1028,7 +1026,7 @@ class CharGenWizard:
         return await sheet_embed(
             self.ctx,
             character,
-            title=title if title else f"{character.name}",
+            title=title or f"{character.name}",
             desc_prefix=prefix,
             desc_suffix=suffix,
             show_footer=False,
