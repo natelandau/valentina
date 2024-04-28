@@ -8,7 +8,7 @@ from valentina.constants import ChannelPermission
 from .errors import BotMissingPermissionsError
 
 
-async def assert_permissions(ctx: discord.ApplicationContext, **permissions: bool) -> None:
+async def assert_permissions(ctx: discord.ApplicationContext, **permissions: bool) -> None:  # noqa: RUF029
     """Check if the bot has the required permissions to run the command.""."""
     if missing := [
         perm for perm, value in permissions.items() if getattr(ctx.app_permissions, perm) != value

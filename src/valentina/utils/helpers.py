@@ -219,8 +219,7 @@ def num_to_circles(num: int = 0, maximum: int = 5) -> str:
         num = 0
     if maximum is None:
         maximum = 5
-    if num > maximum:
-        maximum = num
+    maximum = max(num, maximum)
 
     return "●" * num + "○" * (maximum - num)
 

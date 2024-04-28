@@ -9,15 +9,27 @@ updates:
       commit-message:
           prefix: "ci"
           prefix-development: "ci"
-          include: "scope"
-    # - package-ecosystem: pip
-    #   directory: /
-    #   schedule:
-    #       interval: monthly
-    #   commit-message:
-    #       prefix: "build"
-    #       prefix-development: "build"
-    #       include: "scope"
-    #   versioning-strategy: lockfile-only
-    #   allow:
-    #       - dependency-type: "all"
+          include: scope
+      groups:
+          ci-deps:
+              patterns:
+                  - "*"
+      reviewers:
+          - "natelandau"
+    - package-ecosystem: pip
+      directory: /
+      schedule:
+          interval: monthly
+      commit-message:
+          prefix: "chore"
+          prefix-development: "build"
+          include: scope
+      versioning-strategy: increase
+      allow:
+          - dependency-type: production
+      groups:
+          runtime-deps:
+              patterns:
+                  - "*"
+      reviewers:
+          - "natelandau"

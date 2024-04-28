@@ -38,7 +38,7 @@ class ChangeNameModal(Modal):
             InputText(
                 label="Nickname",
                 placeholder="Enter a nickname for the character",
-                value=self.character.name_nick if self.character.name_nick else None,
+                value=self.character.name_nick or None,
                 style=discord.InputTextStyle.short,
                 required=False,
             )
@@ -77,7 +77,7 @@ class BioModal(Modal):
             InputText(
                 label="bio",
                 placeholder="Enter a biography",
-                value=self.current_bio if self.current_bio else None,
+                value=self.current_bio or None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
@@ -185,7 +185,7 @@ class CustomSectionModal(Modal):
             InputText(
                 label="name",
                 placeholder="Name of the section",
-                value=self.section_title if self.section_title else None,
+                value=self.section_title or None,
                 required=True,
                 style=discord.InputTextStyle.short,
             )
@@ -194,7 +194,7 @@ class CustomSectionModal(Modal):
             InputText(
                 label="description",
                 placeholder="Description of the section",
-                value=self.section_content if self.section_content else None,
+                value=self.section_content or None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
@@ -230,7 +230,7 @@ class MacroCreateModal(Modal):
             InputText(
                 label="name",
                 placeholder="Enter a name for the macro",
-                value=self.name if self.name else None,
+                value=self.name or None,
                 required=True,
                 style=discord.InputTextStyle.short,
             )
@@ -239,7 +239,7 @@ class MacroCreateModal(Modal):
             InputText(
                 label="abbreviation",
                 placeholder="Up to 4 character abbreviation",
-                value=self.abbreviation if self.abbreviation else None,
+                value=self.abbreviation or None,
                 required=True,
                 style=discord.InputTextStyle.short,
                 max_length=4,
@@ -249,7 +249,7 @@ class MacroCreateModal(Modal):
             InputText(
                 label="description",
                 placeholder="A brief description of what this macro does",
-                value=self.description if self.description else None,
+                value=self.description or None,
                 required=False,
                 style=discord.InputTextStyle.long,
                 max_length=600,

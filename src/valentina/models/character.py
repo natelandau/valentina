@@ -242,7 +242,7 @@ class Character(Document):
             value=value,
             display_on_sheet=display_on_sheet,
             is_custom=is_custom,
-            max_value=max_value if max_value else get_max_trait_value(name, category.name),
+            max_value=max_value or get_max_trait_value(name, category.name),
         )
         await new_trait.save()
 

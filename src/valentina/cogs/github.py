@@ -36,7 +36,7 @@ class GithubCog(commands.Cog):
         try:
             auth = Auth.Token(token)
             g = Github(auth=auth)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error(f"Error fetching github repo: {e}")
             msg = "Github"
             raise errors.ServiceDisabledError(msg) from e

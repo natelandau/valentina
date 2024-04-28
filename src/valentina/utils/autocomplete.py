@@ -23,7 +23,7 @@ from valentina.utils.helpers import truncate_string
 MAX_OPTION_LENGTH = 99
 
 
-async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
     """Populate the autocomplete list for the aws_object option based on the user's input."""
     aws_svc = AWSService()
 
@@ -34,7 +34,7 @@ async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list
     ]
 
 
-async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[str]:  # noqa: RUF029
     """Populate the autocomplete for the version option. This is for the first of two options."""
     bot = cast(Valentina, ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
@@ -44,7 +44,7 @@ async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[s
     ]
 
 
-async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[str]:
+async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[str]:  # noqa: RUF029
     """Populate the autocomplete for the version option. This is for the second of two options."""
     bot = cast(Valentina, ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
@@ -82,10 +82,10 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]
         if chapter.name.lower().startswith(ctx.options["chapter"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return choices if choices else [OptionChoice("No chapers", 1000)]
+    return choices or [OptionChoice("No chapers", 1000)]
 
 
-async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
     """Generate a list of available character classes.
 
     This function fetches the available character classes, sorts them by name,
@@ -106,7 +106,7 @@ async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoi
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
     """Generate a list of available character concepts.
 
     This function fetches the available character concepts, sorts them by name,
@@ -127,7 +127,7 @@ async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionCh
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_char_level(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_char_level(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
     """Generate a list of available character levels.
 
     This function fetches the available character levels, sorts them by name,
@@ -214,7 +214,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
     """Generate a list of available campaigns for the guilds.
 
     Args:
@@ -263,7 +263,7 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
     return options
 
 
-async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: ARG001
+async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: ARG001, RUF029
     """Generate a list of available countries for autocomplete.
 
     This function creates a predefined list of countries and their corresponding codes,
@@ -373,7 +373,7 @@ async def select_note(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
         if note.name.lower().startswith(ctx.options["note"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return choices if choices else [OptionChoice("No notes", 1000)]
+    return choices or [OptionChoice("No notes", 1000)]
 
 
 async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -401,7 +401,7 @@ async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
         if npc.name.lower().startswith(ctx.options["npc"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return npc_choices if npc_choices else [OptionChoice("No npcs", 1000)]
+    return npc_choices or [OptionChoice("No npcs", 1000)]
 
 
 async def select_character_from_user(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -434,7 +434,7 @@ async def select_character_from_user(ctx: discord.AutocompleteContext) -> list[O
         if name.lower().startswith(ctx.value.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return options if options else [OptionChoice("No characters available", "")]
+    return options or [OptionChoice("No characters available", "")]
 
 
 async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -467,7 +467,7 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
         if name.lower().startswith(ctx.value.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return options if options else [OptionChoice("No characters available", "")]
+    return options or [OptionChoice("No characters available", "")]
 
 
 async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -512,7 +512,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
         instructions = "Keep typing ..." if ctx.value else "Start typing a name."
         return [OptionChoice(f"Too many characters to display. {instructions}", "")]
 
-    return options if options else [OptionChoice("No characters available", "")]
+    return options or [OptionChoice("No characters available", "")]
 
 
 async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -543,7 +543,7 @@ async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> lis
         if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return options if options else [OptionChoice("No traits", "")]
+    return options or [OptionChoice("No traits", "")]
 
 
 async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -568,10 +568,10 @@ async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) ->
         if t.name.lower().startswith(ctx.options["trait_two"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return options if options else [OptionChoice("No traits", "")]
+    return options or [OptionChoice("No traits", "")]
 
 
-async def select_trait_category(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_trait_category(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
     """Generate a list of available trait categories for autocomplete.
 
     This function fetches all trait categories from the database, filters them based on the user's input, and returns a list of trait category names to populate the autocomplete list.
@@ -589,7 +589,7 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[Option
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
     """Generate a list of available vampire clans for autocomplete.
 
     This function fetches all vampire clans from the database, filters them based on the user's input,
