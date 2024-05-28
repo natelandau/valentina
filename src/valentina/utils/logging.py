@@ -49,6 +49,7 @@ def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no
     logging.getLogger("discord.gateway").setLevel(level=http_log_level.upper())
     logging.getLogger("discord.webhook").setLevel(level=http_log_level.upper())
     logging.getLogger("discord.client").setLevel(level=http_log_level.upper())
+    logging.getLogger("pymongo").setLevel(level=ValentinaConfig().log_level_pymongo.upper())
     logging.getLogger("faker").setLevel(level="INFO")
     for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
         logging.getLogger(service).setLevel(level=aws_log_level.upper())

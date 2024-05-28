@@ -68,23 +68,24 @@ Before running Valentina, the following must be configured or installed.
 
 #### Environment Variables
 
-| Variable                        | Default Value               | Usage                                                                                                                                |
-| ------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| VALENTINA_AWS_ACCESS_KEY_ID     |                             | Access key for AWS (_Optional: Only needed for image uploads_)                                                                       |
-| VALENTINA_AWS_SECRET_ACCESS_KEY |                             | Secret access key for AWS (_Optional: Only needed for image uploads_)                                                                |
-| VALENTINA_S3_BUCKET_NAME        |                             | Name of the S3 bucket to use (_Optional: Only needed for image uploads_)                                                             |
-| VALENTINA_DISCORD_TOKEN         |                             | Sets the Discord bot token. This is required to run the bot.                                                                         |
-| VALENTINA_GUILDS                |                             | Sets the Discord guilds the bot is allowed to join. This is a comma separated string of guild IDs.                                   |
-| VALENTINA_LOG_FILE              | `/valentina/valentina.log`  | Sets the file to write logs to.<br />Note, this is the directory used within the Docker container                                    |
-| VALENTINA_LOG_LEVEL             | `INFO`                      | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                               |
-| VALENTINA_LOG_LEVEL_AWS         | `INFO`                      | Sets the log level for AWS S3. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                       |
-| VALENTINA_LOG_LEVEL_HTTP        | `WARNING`                   | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
-| VALENTINA_OWNER_CHANNELS        |                             | Sets the Discord channels that are allowed to run bot admin commands. This is a comma separated string of Discord channel IDs.       |
-| VALENTINA_OWNER_IDS             |                             | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated string of Discord user IDs.          |
-| VALENTINA_MONGO_URI             | `mongodb://localhost:27017` | Production MongoDB URI                                                                                                               |
-| VALENTINA_MONGO_DATABASE_NAME   | `valentina`                 | Production Database name                                                                                                             |
-| VALENTINA_GITHUB_REPO           |                             | Optional: Sets the Github repo to use for Github integration `username/repo`                                                         |
-| VALENTINA_GITHUB_TOKEN          |                             | Optional: Sets the Github API Access token to use for Github integration                                                             |
+| Variable | Default Value | Usage |
+| --- | --- | --- |
+| VALENTINA_AWS_ACCESS_KEY_ID |  | Access key for AWS (_Optional: Only needed for image uploads_) |
+| VALENTINA_AWS_SECRET_ACCESS_KEY |  | Secret access key for AWS (_Optional: Only needed for image uploads_) |
+| VALENTINA_S3_BUCKET_NAME |  | Name of the S3 bucket to use (_Optional: Only needed for image uploads_) |
+| VALENTINA_DISCORD_TOKEN |  | Sets the Discord bot token. This is required to run the bot. |
+| VALENTINA_GUILDS |  | Sets the Discord guilds the bot is allowed to join. This is a comma separated string of guild IDs. |
+| VALENTINA_LOG_FILE | `/valentina/valentina.log` | Sets the file to write logs to.<br />Note, this is the directory used within the Docker container |
+| VALENTINA_LOG_LEVEL | `INFO` | Sets master log level. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_LOG_LEVEL_AWS | `INFO` | Sets the log level for AWS S3. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_LOG_LEVEL_HTTP | `WARNING` | Sets the log level for discord HTTP, gateway, webhook,client events. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_LOG_LEVEL_PYMONGO | `WARNING` | Sets the log level for PyMongo. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_OWNER_CHANNELS |  | Sets the Discord channels that are allowed to run bot admin commands. This is a comma separated string of Discord channel IDs. |
+| VALENTINA_OWNER_IDS |  | Sets the Discord user IDs that are allowed to run bot admin commands. This is a comma separated string of Discord user IDs. |
+| VALENTINA_MONGO_URI | `mongodb://localhost:27017` | Production MongoDB URI |
+| VALENTINA_MONGO_DATABASE_NAME | `valentina` | Production Database name |
+| VALENTINA_GITHUB_REPO |  | Optional: Sets the Github repo to use for Github integration `username/repo` |
+| VALENTINA_GITHUB_TOKEN |  | Optional: Sets the Github API Access token to use for Github integration |
 
 ---
 

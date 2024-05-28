@@ -21,6 +21,7 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     log_file: str = "/valentina/valentina.log"
     log_level_aws: str = "INFO"
     log_level_http: str = "WARNING"
+    log_level_pymongo: str = "WARNING"
     log_level: str = "INFO"
     mongo_database_name: str = "valentina"
     mongo_uri: str = "mongodb://localhost:27017"
