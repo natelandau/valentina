@@ -214,7 +214,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
+async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available campaigns for the guilds.
 
     Args:

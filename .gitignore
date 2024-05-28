@@ -2,6 +2,8 @@
 secrets.txt
 .env.secret
 test_random.py
+*.log
+tmp
 
 # Testing during development
 test_cog.py
