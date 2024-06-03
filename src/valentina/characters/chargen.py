@@ -171,7 +171,6 @@ class BeginCancelCharGenButtons(discord.ui.View):
     )
     async def cancel_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the cancel button."""
-        await interaction.response.defer()
         button.label += f" {Emoji.YES.value}"
         button.disabled = True
         self._disable_all()
@@ -967,7 +966,7 @@ class CharGenWizard:
         campaign: Campaign,
         user: User,
         experience_level: RNGCharLevel = None,
-        hidden: bool = True,
+        hidden: bool = False,
     ) -> None:
         self.ctx = ctx
         self.interaction = ctx.interaction

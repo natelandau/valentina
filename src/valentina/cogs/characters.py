@@ -135,11 +135,6 @@ class CharactersCog(commands.Cog, name="Character"):
     async def create_character(
         self,
         ctx: ValentinaContext,
-        hidden: Option(
-            bool,
-            description="Make the interaction only visible to you (default true).",
-            default=True,
-        ),
     ) -> None:
         """Create a new character from scratch."""
         # Grab the current user and campaign experience
@@ -154,12 +149,13 @@ class CharactersCog(commands.Cog, name="Character"):
                 title="Not enough xp",
                 description="You do not have enough xp to create a new character",
                 level="error",
-                ephemeral=hidden,
+                ephemeral=True,
             )
             return
 
+        # This paginator must not be hidden - Regression in pycord 2.5.0
         wizard = CharGenWizard(
-            ctx, campaign=campaign, user=user, experience_level=RNGCharLevel.NEW, hidden=hidden
+            ctx, campaign=campaign, user=user, experience_level=RNGCharLevel.NEW, hidden=False
         )
         await wizard.start()
 
