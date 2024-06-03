@@ -190,7 +190,7 @@ Storyteller Characters: {storyteller_characters}
         roles = (
             ", ".join(
                 f"@{r.name}" if not r.name.startswith("@") else r.name
-                for r in target.roles[::-1][:-1]
+                for r in target.roles[::-1][:-1]  # type: ignore [union-attr]
                 if not r.is_integration()
             )
             or "No roles"
@@ -206,17 +206,18 @@ Storyteller Characters: {storyteller_characters}
             description=f"# {target.display_name}",
             color=EmbedColor.INFO.value,
         )
-        embed.add_field(
-            name="",
-            value=f"""\
-```scala
+        if isinstance(target, discord.Member):
+            embed.add_field(
+                name="",
+                value=f"""\
+    ```scala
 Account Created: {arrow.get(target.created_at).humanize()} ({arrow.get(target.created_at).format('YYYY-MM-DD')})
 Joined Server  : {arrow.get(target.joined_at).humanize()} ({arrow.get(target.joined_at).format('YYYY-MM-DD')})
 Roles: {roles}
-```
-""",
-            inline=False,
-        )
+    ```
+    """,
+                inline=False,
+            )
         embed.add_field(
             name="Experience",
             value=f"""\
@@ -242,13 +243,14 @@ Roll Macros      : {num_macros}
 """,
             inline=False,
         )
-        embed.add_field(
-            name="Roll Statistics",
-            value=await stats_engine.user_statistics(  # type: ignore [arg-type]
-                target, as_embed=False, with_title=False, with_help=False
-            ),
-            inline=False,
-        )
+        if isinstance(target, discord.Member):
+            embed.add_field(
+                name="Roll Statistics",
+                value=await stats_engine.user_statistics(  # type: ignore [arg-type]
+                    target, as_embed=False, with_title=False, with_help=False
+                ),
+                inline=False,
+            )
         embed.set_thumbnail(url=target.display_avatar.url)
         embed.set_footer(
             text=f"Requested by {ctx.author}",

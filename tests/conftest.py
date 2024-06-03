@@ -138,7 +138,7 @@ def mock_guild2(mocker):
 
 
 @pytest_asyncio.fixture()
-async def async_mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1):
+async def async_mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1):  # noqa: RUF029
     """Create an async mock context object with user 1."""
     mock_bot = mocker.AsyncMock()
     mock_bot.__class__ = commands.Bot

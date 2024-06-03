@@ -103,7 +103,7 @@ class AdminCog(commands.Cog):
             msg = "You cannot kick yourself."
             raise errors.ValidationError(msg)
 
-        if member.top_role >= ctx.author.top_role:
+        if isinstance(ctx.author, discord.Member) and member.top_role >= ctx.author.top_role:
             msg = "You cannot kick this member."
             raise errors.ValidationError(msg)
 
@@ -141,7 +141,7 @@ class AdminCog(commands.Cog):
                 msg = "You cannot ban yourself."
                 raise errors.ValidationError(msg)
 
-            if user.top_role >= ctx.author.top_role:
+            if isinstance(ctx.author, discord.Member) and user.top_role >= ctx.author.top_role:
                 msg = "You cannot ban this member."
                 raise errors.ValidationError(msg)
 
@@ -244,7 +244,7 @@ class AdminCog(commands.Cog):
                     msg = "You cannot ban yourself."
                     raise errors.ValidationError(msg)
 
-                if user.top_role >= ctx.author.top_role:
+                if isinstance(ctx.author, discord.Member) and user.top_role >= ctx.author.top_role:
                     msg = "You cannot ban this member."
                     raise errors.ValidationError(msg)
 

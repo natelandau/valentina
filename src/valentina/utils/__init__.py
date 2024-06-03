@@ -6,7 +6,6 @@ from .helpers import random_num
 from .logging import InterceptHandler, instantiate_logger
 
 __all__ = [
-    "Context",
     "InterceptHandler",
     "ValentinaConfig",
     "console",

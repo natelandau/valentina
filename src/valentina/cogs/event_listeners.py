@@ -28,7 +28,7 @@ class Events(commands.Cog, name="Events"):
             return
 
         # Do not reply to messages that start with the prefix
-        if message.content.startswith(self.bot.command_prefix):
+        if message.content.startswith(self.bot.command_prefix):  # type: ignore [arg-type]
             logger.info(f"BOT: Ignoring command message: {message.content}")
             return
 

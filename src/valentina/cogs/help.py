@@ -32,7 +32,10 @@ class Help(commands.Cog):
             if ctx.author.id not in owners:
                 hidden_commands.append("Developer")
 
-            if ctx.author.guild_permissions.administrator is False:
+            if (
+                isinstance(ctx.author, discord.Member)
+                and ctx.author.guild_permissions.administrator is False
+            ):
                 hidden_commands.append("Admin")
 
         for cog in self.bot.cogs:
