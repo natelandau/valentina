@@ -81,7 +81,7 @@ class AddFromSheetWizard:
         self.ctx = ctx
         self.character = character
         self.user = user
-        self.msg = None
+        self.msg: discord.Message = None
         self.trait_list = self.__grab_trait_names()
         self.completed_traits: list[dict] = []
 
@@ -236,7 +236,7 @@ class AddFromSheetWizard:
             )
         else:
             # Subsequent sends, edit the interaction of the DM
-            await interaction.response.edit_message(embed=embed, view=self.view)  # type: ignore [unreachable]
+            await interaction.response.edit_message(embed=embed, view=self.view)  # type: ignore [union-attr]
 
     async def __timeout(self) -> None:
         """Inform the user they took too long."""
@@ -248,5 +248,5 @@ class AddFromSheetWizard:
     def edit_message(self) -> Any:
         """Get the proper edit method for editing our message outside of an interaction."""
         if self.msg:
-            return self.msg.edit  # type: ignore [unreachable]
+            return self.msg.edit
         return self.ctx.respond
