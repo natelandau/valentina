@@ -53,16 +53,8 @@ jobs:
                   egress-policy: block
                   disable-sudo: true
                   allowed-endpoints: >
-                      api.github.com:443
-                      api.snapcraft.io:443
-                      files.pythonhosted.org:443
-                      github.com:443
-                      install.python-poetry.org:443
-                      *.docker.com:443
-                      pypi.org:443
-                      python-poetry.org:443
-                      *.docker.io:443
-                      storage.googleapis.com:443
+                      api.github.com:443 api.snapcraft.io:443 files.pythonhosted.org:443 github.com:443 install.python-poetry.org:443 *.docker.com:443 pypi.org:443 python-poetry.org:443 *.docker.io:443 storage.googleapis.com:443
+
 
             # ----------------------------------------------
             #    Install python and checkout repository
@@ -81,7 +73,7 @@ jobs:
             # ----------------------------------------------
 
             - name: Start MongoDB
-              uses: supercharge/mongodb-github-action@1.10.0
+              uses: supercharge/mongodb-github-action@1.11.0
               with:
                   mongodb-version: "7.0.2"
 
