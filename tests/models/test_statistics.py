@@ -28,7 +28,7 @@ async def test_guild_statistics_no_results(mock_ctx1):
     assert result == "\n## Roll statistics for guild `Test Guild`\nNo statistics found"
 
 
-# async def test_guild_statistics_with_results(mock_ctx1)
+@pytest.mark.drop_db()
 async def test_guild_statistics_results(mock_ctx1):
     """Test pulling guild statistics."""
     # GIVEN a guild with statistics
@@ -94,6 +94,7 @@ async def test_user_statistics_no_results(mock_ctx1):
     assert result == "\nNo statistics found"
 
 
+@pytest.mark.drop_db()
 async def test_user_statistics_results(mock_ctx1):
     """Test pulling user statistics."""
     # GIVEN a user with statistics
