@@ -101,3 +101,13 @@ jobs:
                   poetry run coverage run
                   poetry run coverage report
                   poetry run coverage xml
+
+            # ----------------------------------------------
+            #             upload coverage stats
+            # ----------------------------------------------
+            - name: Upload coverage
+              uses: codecov/codecov-action@v4
+              with:
+                  files: reports/coverage.xml
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
