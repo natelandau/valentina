@@ -1031,14 +1031,20 @@ class CharGenWizard:
             show_footer=False,
         )
 
-    async def _cancel_character_generation(self, msg: str | None = None) -> None:
+    async def _cancel_character_generation(
+        self, msg: str | None = None, characters: list[Character] = []
+    ) -> None:
         """Cancel the character generation process.
 
         Args:
             msg (str, optional): Message to display. Defaults to None.
+            characters (list[Character], optional): The characters to delete. Defaults to [].
         """
         if not msg:
             msg = "No character was created."
+
+        for character in characters:
+            await character.delete(link_rule=DeleteRules.DELETE_LINKS)
 
         embed = discord.Embed(
             title=f"{Emoji.CANCEL.value} Cancelled",
@@ -1189,7 +1195,8 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
         if view.cancelled:
             await self._cancel_character_generation(
-                msg="No character was created but you lost 10 XP for wasting my time."
+                msg="No character was created but you lost 10 XP for wasting my time.",
+                characters=characters,
             )
             return
 
@@ -1203,7 +1210,9 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
             # Check if the user has enough XP to reroll
             if campaign_xp < 10:  # noqa: PLR2004
-                await self._cancel_character_generation(msg="Not enough XP to reroll")
+                await self._cancel_character_generation(
+                    msg="Not enough XP to reroll", characters=characters
+                )
                 return
 
             # Restart the character generation process
