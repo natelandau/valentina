@@ -10,8 +10,22 @@ coverage:
                 target: 50%
                 threshold: 5%
     ignore:
-        - tests/
+        - "src/valentina/__version__.py"
+        - "src/valentina/characters/add_from_sheet.py"
+        - "src/valentina/characters/buttons.py"
+        - "src/valentina/characters/reallocate_dots.py"
+        - "src/valentina/characters/spend_experience.py"
+        - "src/valentina/cogs"
+        - "src/valentina/main.py"
+        - "src/valentina/models/bot.py"
+        - "src/valentina/models/errors.py"
+        - "src/valentina/utils/discord_utils.py"
+        - "src/valentina/utils/errors.py"
+        - "src/valentina/utils/logging.py"
+        - "src/valentina/utils/types.py"
+        - "src/valentina/views"
+        - "tests/"
 
 comment:
-    layout: "reach, diff, flags, files" # Remove items here to change the format
-    require_changes: true
+    layout: "diff, flags, files, components" # Remove items here to change the format
+    require_changes: false # If true, will only comment if coverage changes
