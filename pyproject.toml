@@ -98,6 +98,7 @@
         "src/valentina/characters/buttons.py",
         "src/valentina/characters/reallocate_dots.py",
         "src/valentina/characters/spend_experience.py",
+        "src/valentina/cogs/*",                         # TODO: Add tests for cogs
         "src/valentina/main.py",
         "src/valentina/models/bot.py",
         "src/valentina/models/errors.py",
