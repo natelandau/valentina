@@ -27,5 +27,5 @@ coverage:
         - "tests/"
 
 comment:
-    layout: "reach, diff, flags, files" # Remove items here to change the format
-    require_changes: true
+    layout: "diff, flags, files, components" # Remove items here to change the format
+    require_changes: false # If true, will only comment if coverage changes
