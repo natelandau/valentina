@@ -142,7 +142,7 @@ async def test_valid_character_object(character_factory):
 
 async def test_valid_campaign(campaign_factory):
     """Test the ValidCampaign converter."""
-    campaign = campaign_factory.build()
+    campaign = campaign_factory.build(characters=[])
     await campaign.insert()
 
     # WHEN the converter is called with a valid campaign id

@@ -332,18 +332,24 @@ class ValentinaContext(discord.ApplicationContext):
 
     async def channel_update_or_add(
         self,
-        channel: str | discord.TextChannel,
-        topic: str,
         permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
+        channel: discord.TextChannel | None = None,
+        name: str | None = None,
+        topic: str | None = None,
+        category: discord.CategoryChannel | None = None,
+        permissions_user_post: discord.User | None = None,
     ) -> discord.TextChannel:  # pragma: no cover
         """Create or update a channel in the guild.
 
-        Either create a new text channel in the guild or update an existing onebased on the name. Set permissions for default role, player role, and storyteller role. If a member is a bot, set permissions to manage.
+        Either create a new text channel in the guild or update an existing one based on the name. Set permissions for default role, player role, and storyteller role. If a member is a bot, set permissions to manage.
 
         Args:
-            channel (str|discord.TextChannel): Channel name or object.
-            topic (str): Channel topic.
-            permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]): Tuple containing channel permissions for default_role, player_role, storyteller_role.
+            permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]): The permissions for the channel.
+            channel (discord.TextChannel, optional): The channel to update. Defaults to None.
+            name (str, optional): The name of the channel. Defaults to None.
+            topic (str, optional): The topic of the channel. Defaults to None.
+            category (discord.CategoryChannel, optional): The category of the channel. Defaults to None.
+            permissions_user_post (discord.User, optional): The user to set permissions for posting. Defaults to None.
 
         Returns:
             discord.TextChannel: The created or updated text channel.
@@ -364,29 +370,33 @@ class ValentinaContext(discord.ApplicationContext):
             },
         }
 
-        # Determine channel object and name
-        if isinstance(channel, discord.TextChannel):
-            channel_object = channel
-        elif isinstance(channel, str):
-            channel_name = channel.lower().strip()
-            channel_object = discord.utils.get(self.guild.text_channels, name=channel_name)
+        if permissions_user_post:
+            overwrites[permissions_user_post] = set_channel_perms(ChannelPermission.POST)
+
+        if name and not channel:
+            channel_name = name.lower().strip()
+            channel = discord.utils.get(self.guild.text_channels, name=channel_name)
 
             # Create the channel if it doesn't exist
-            if not channel_object:
-                logger.debug(
-                    f"GUILD: Create channel '{channel_object.name}' on '{self.guild.name}'"
-                )
+            if not channel:
+                logger.debug(f"GUILD: Create channel '{name}' on '{self.guild.name}'")
                 return await self.guild.create_text_channel(
-                    channel_name,
+                    name=channel_name,
                     overwrites=overwrites,
                     topic=topic,
+                    category=category,
                 )
 
         # Update existing channel
-        logger.debug(f"GUILD: Update channel '{channel_object.name}' on '{self.guild.name}'")
-        await channel_object.edit(overwrites=overwrites, topic=topic)
+        logger.debug(f"GUILD: Update channel '{channel.name}' on '{self.guild.name}'")
+        await channel.edit(
+            name=name or channel.name,
+            overwrites=overwrites,
+            topic=topic or channel.topic,
+            category=category or channel.category,
+        )
 
-        return channel_object
+        return channel
 
     async def fetch_active_character(self, raise_error: bool = True) -> Character | None:
         """Fetch the active character for the user.

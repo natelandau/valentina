@@ -53,7 +53,31 @@ class AdminCog(commands.Cog):
         default_member_permissions=discord.Permissions(administrator=True),
     )
 
-    ### USER ADMINISTRATION COMMANDS ################################################################
+    ### CAMPAIGN ADMINISTRATION COMMANDS ###########################################################
+    @admin.command(name="campaign_channels", description="Rebuild Campaign Channels")
+    @commands.guild_only()
+    async def campaign_channels(
+        self,
+        ctx: ValentinaContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Manage Guild Settings."""
+        title = "Rebuild all campaign channels?"
+        is_confirmed, msg, confirmation_embed = await confirm_action(ctx, title, hidden=hidden)
+        if not is_confirmed:
+            return
+
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        for campaign in guild.campaigns:
+            await campaign.create_channels(ctx)
+
+        await msg.edit_original_response(embed=confirmation_embed, view=None)
+
+    ### USER ADMINISTRATION COMMANDS ###############################################################
 
     @user.command()
     @commands.guild_only()

@@ -1211,7 +1211,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
             # Check if the user has enough XP to reroll
             if campaign_xp < 10:  # noqa: PLR2004
                 await self._cancel_character_generation(
-                    msg="Not enough XP to reroll", characters=characters
+                    msg="Not enough XP to reroll.", characters=characters
                 )
                 return
 
@@ -1275,6 +1275,11 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
         if view.done:
             await self.spend_freebie_points(character)
+
+        # Lastly, add the character to the active campaign
+        self.campaign.characters.append(character)
+        await self.campaign.save()
+        await self.campaign.create_channels(self.ctx)
 
     async def spend_freebie_points(self, character: Character) -> Character:
         """Spend freebie points.

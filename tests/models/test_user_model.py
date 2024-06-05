@@ -17,7 +17,7 @@ async def test_add_experience(user_factory, campaign_factory) -> None:
         campaign_experience={},
         macros=[],
     )
-    campaign = campaign_factory.build()
+    campaign = campaign_factory.build(characters=[])
     await campaign.insert()
     await user.insert()
 
@@ -51,7 +51,7 @@ async def test_add_campaign_cool_points(user_factory, campaign_factory) -> None:
         campaign_experience={},
         macros=[],
     )
-    campaign = campaign_factory.build()
+    campaign = campaign_factory.build(characters=[])
     await campaign.insert()
     await user.insert()
     string_id = str(campaign.id)
@@ -78,7 +78,7 @@ async def test_spend_spend_campaign_xp(user_factory, campaign_factory) -> None:
         campaign_experience={},
         macros=[],
     )
-    campaign = campaign_factory.build()
+    campaign = campaign_factory.build(characters=[])
     await campaign.insert()
     await user.insert()
     string_id = str(campaign.id)

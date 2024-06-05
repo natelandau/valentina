@@ -18,6 +18,7 @@ from valentina.constants import (
 )
 from valentina.models import AWSService, Campaign, ChangelogParser, Character, Guild, User
 from valentina.models.bot import Valentina
+from valentina.utils.discord_utils import character_from_campaign_channel
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99
@@ -162,15 +163,17 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     Returns:
         list[OptionChoice]: A list of available names and their index in character.traits.
     """
-    # Fetch the active character
-    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
+    character = await character_from_campaign_channel(ctx)
 
-    if not (
-        active_character := await user_object.active_character(
-            ctx.interaction.guild, raise_error=False
-        )
-    ):
-        return [OptionChoice("No active character", 0)]
+    if not character:
+        user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
+
+        if not (
+            character := await user_object.active_character(
+                ctx.interaction.guild, raise_error=False
+            )
+        ):
+            return [OptionChoice("No active character", 0)]
 
     # Determine the option to retrieve the argument
     argument = ctx.options.get("trait") or ctx.options.get("trait_one") or ""
@@ -178,7 +181,7 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     # Filter and return the character's traits
     return [
         OptionChoice(t.name, str(t.id))
-        for t in sorted(active_character.traits, key=lambda x: x.name)
+        for t in sorted(character.traits, key=lambda x: x.name)
         if t.name.lower().startswith(argument.lower())
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -198,18 +201,22 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     Returns:
         list[OptionChoice]: A list of available trait names and their index in character.traits.
     """
-    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-    if not (
-        active_character := await user_object.active_character(
-            ctx.interaction.guild, raise_error=False
-        )
-    ):
-        return [OptionChoice("No active character", 0)]
+    character = await character_from_campaign_channel(ctx)
+
+    if not character:
+        user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
+
+        if not (
+            character := await user_object.active_character(
+                ctx.interaction.guild, raise_error=False
+            )
+        ):
+            return [OptionChoice("No active character", 0)]
 
     # Filter and return the character's traits
     return [
         OptionChoice(t.name, str(t.id))
-        for t in sorted(active_character.traits, key=lambda x: x.name)
+        for t in sorted(character.traits, key=lambda x: x.name)
         if t.name.lower().startswith(ctx.options["trait_two"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 

@@ -14,7 +14,9 @@ from valentina.utils import autocomplete
 async def test_select_campaign(campaign_factory, mock_ctx1):
     """Test the select_campaign function."""
     # GIVEN a campaign in the database
-    campaign = campaign_factory.build(name="mock_campaign", guild=mock_ctx1.interaction.guild.id)
+    campaign = campaign_factory.build(
+        name="mock_campaign", guild=mock_ctx1.interaction.guild.id, characters=[]
+    )
     await campaign.insert()
 
     mock_ctx1.options = {"campaign": "mock_campaign"}
@@ -199,7 +201,7 @@ async def test_select_chapter(mock_ctx1, guild_factory, campaign_factory):
         description_long="mock_description",
     )
 
-    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter])
+    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter], characters=[])
     await campaign.insert()
 
     guild = guild_factory.build(

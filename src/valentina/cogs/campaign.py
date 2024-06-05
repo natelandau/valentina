@@ -78,6 +78,7 @@ class CampaignCog(commands.Cog):
         # Update the database
         campaign = Campaign(name=name, guild=ctx.guild.id)
         await campaign.insert()
+        await campaign.create_channels(ctx)
 
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         guild.campaigns.append(campaign)
