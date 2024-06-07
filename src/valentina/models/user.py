@@ -103,7 +103,10 @@ class User(Document):
         Returns:
             tuple[int, int, int]: Tuple of (current xp, total xp, cool points) if the user has experience for the campaign; otherwise, None.
         """
-        campaign_experience = self._find_campaign_xp(campaign)
+        try:
+            campaign_experience = self._find_campaign_xp(campaign)
+        except errors.NoExperienceInCampaignError:
+            return 0, 0, 0
 
         return (
             campaign_experience.xp_current,
