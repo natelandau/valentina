@@ -10,7 +10,7 @@ from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor, TraitCategory
-from valentina.models import Character, CharacterTrait, User
+from valentina.models import Campaign, Character, CharacterTrait, User
 from valentina.models.bot import ValentinaContext
 from valentina.utils import errors
 from valentina.utils.helpers import get_max_trait_value
@@ -77,13 +77,20 @@ class RatingView(discord.ui.View):
 class AddFromSheetWizard:
     """A character generation wizard that walks the user through setting a value for each trait. This is used for entering a character that has already been created from a physical character sheet."""
 
-    def __init__(self, ctx: ValentinaContext, character: Character, user: User) -> None:
+    def __init__(
+        self,
+        ctx: ValentinaContext,
+        character: Character,
+        user: User,
+        campaign: Campaign | None = None,
+    ) -> None:
         self.ctx = ctx
         self.character = character
         self.user = user
         self.msg: discord.Message = None
         self.trait_list = self.__grab_trait_names()
         self.completed_traits: list[dict] = []
+        self.campaign = campaign
 
     def __grab_trait_names(self) -> list[tuple[str, TraitCategory]]:
         """Get the character's traits."""
@@ -164,6 +171,12 @@ class AddFromSheetWizard:
         # Write the traits to the database
         self.character.traits = traits_to_add  # type: ignore [assignment]
         await self.character.save(link_rule=WriteRules.WRITE)
+
+        # Associate character with current campaign
+        if self.campaign:
+            self.campaign.characters.append(self.character)
+            await self.campaign.save()
+            await self.campaign.create_channels(self.ctx)
 
         # Add the character to the user's list of characters
         self.user.characters.append(self.character)

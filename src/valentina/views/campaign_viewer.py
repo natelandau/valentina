@@ -81,7 +81,7 @@ Notes    : {len(self.campaign.notes):<4}
             color=EmbedColor.DEFAULT.value,
         )
         home_embed.set_author(name="Campaign Overview")
-        home_embed.set_footer(text="Navigate To Setting")
+        home_embed.set_footer(text="Navigate Sections with the Dropdown Menu")
 
         return pages.PageGroup(
             pages=[pages.Page(embeds=[home_embed])],

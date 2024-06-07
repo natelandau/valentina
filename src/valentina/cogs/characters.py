@@ -38,6 +38,7 @@ from valentina.utils.converters import (
     ValidTraitFromID,
     ValidYYYYMMDD,
 )
+from valentina.utils.discord_utils import character_from_campaign_channel
 from valentina.utils.helpers import (
     fetch_data_from_url,
     truncate_string,
@@ -113,6 +114,7 @@ class CharactersCog(commands.Cog, name="Character"):
             )
             return
 
+        campaign = await ctx.fetch_active_campaign()
         user = await User.get(ctx.author.id, fetch_links=True)
         character = Character(
             guild=ctx.guild.id,
@@ -126,7 +128,7 @@ class CharactersCog(commands.Cog, name="Character"):
             user_owner=user.id,
         )
 
-        wizard = AddFromSheetWizard(ctx, character=character, user=user)
+        wizard = AddFromSheetWizard(ctx, character=character, user=user, campaign=campaign)
         await wizard.begin_chargen()
 
         await ctx.post_to_audit_log(f"Create player character: `{character.name}`")
@@ -410,7 +412,7 @@ class CharactersCog(commands.Cog, name="Character"):
                 return
 
         # Fetch the active character
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         # Determine image extension and read data
         extension = file_extension if file else url.split(".")[-1].lower()
@@ -454,7 +456,7 @@ class CharactersCog(commands.Cog, name="Character"):
             None
         """
         # Fetch the active character
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         # Generate the key prefix for the character's images
         key_prefix = f"{ctx.guild.id}/characters/{character.id}"
@@ -492,7 +494,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a trait to a character."""
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         if not await ctx.can_manage_traits(character):
             await present_embed(
@@ -538,7 +540,7 @@ class CharactersCog(commands.Cog, name="Character"):
     ) -> None:
         """Update the value of a trait."""
         # Fetch the active character and trait
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         # Guard statement: check permissions
         if not await ctx.can_manage_traits(character):
@@ -596,7 +598,7 @@ class CharactersCog(commands.Cog, name="Character"):
     ) -> None:
         """Delete a trait from a character."""
         # Fetch the active character and trait
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         # Guard statement: check permissions
         if not await ctx.can_manage_traits(character):
@@ -642,7 +644,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom section to the character sheet."""
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         modal = CustomSectionModal(
             title=truncate_string(f"Custom section for {character.name}", 45)
@@ -691,7 +693,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a custom section."""
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
         section = character.sheet_sections[section_index]
 
         modal = CustomSectionModal(
@@ -736,7 +738,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom section from a character."""
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
         section = character.sheet_sections[section_index]
 
         title = f"Delete section `{section.title}` from `{character.name}`"
@@ -764,7 +766,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's bio."""
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         modal = BioModal(
             title=truncate_string(f"Enter the biography for {character.name}", 45),
@@ -800,7 +802,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Set the DOB of a character."""
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         character.dob = dob
         await character.save()
@@ -825,7 +827,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
-        character = await ctx.fetch_active_character()
+        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
 
         modal = ProfileModal(
             title=truncate_string(f"Profile for {character.name}", 45), character=character

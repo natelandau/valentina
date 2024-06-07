@@ -68,7 +68,7 @@ async def test_fetch_active_campaign(campaign_factory, guild_factory):
         active_campaign=None,
         campaigns=[],
     )
-    campaign = campaign_factory.build(guild=guild.id)
+    campaign = campaign_factory.build(guild=guild.id, characters=[])
     await campaign.insert()
 
     with pytest.raises(errors.NoActiveCampaignError):
@@ -89,7 +89,7 @@ async def test_delete_campaign(campaign_factory, guild_factory):
     """Test the delete_campaign method."""
     # GIVEN a guild with a campaign
     guild = guild_factory.build(active_campaign=None, campaigns=[])
-    campaign = campaign_factory.build(guild=guild.id)
+    campaign = campaign_factory.build(guild=guild.id, characters=[])
     await campaign.insert()
 
     guild.campaigns.append(campaign)

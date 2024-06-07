@@ -78,6 +78,7 @@ class CampaignCog(commands.Cog):
         # Update the database
         campaign = Campaign(name=name, guild=ctx.guild.id)
         await campaign.insert()
+        await campaign.create_channels(ctx)
 
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         guild.campaigns.append(campaign)
@@ -183,6 +184,7 @@ class CampaignCog(commands.Cog):
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         guild.active_campaign = campaign
         await guild.save()
+        await campaign.create_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -489,6 +491,7 @@ class CampaignCog(commands.Cog):
         )
         active_campaign.chapters.append(chapter)
         await active_campaign.save()
+        await active_campaign.create_channels(ctx)
 
         await ctx.post_to_audit_log(
             f"Create chapter: `{chapter.number}. {chapter.name}` in `{active_campaign.name}`",
@@ -573,6 +576,7 @@ class CampaignCog(commands.Cog):
         active_campaign.chapters[index].description_short = description_short
         active_campaign.chapters[index].description_long = description_long
         await active_campaign.save()
+        await active_campaign.create_channels(ctx)
 
         await ctx.post_to_audit_log(f"Update chapter: `{name}` in `{active_campaign.name}`")
 

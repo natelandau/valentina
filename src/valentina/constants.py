@@ -9,7 +9,7 @@ from typing import ClassVar
 
 import inflect
 
-from valentina.utils import types
+from valentina import typed_dicts
 
 # Create an inflect engine to pluralize words.
 p = inflect.engine()
@@ -116,6 +116,12 @@ class Emoji(Enum):
     WEREWOLF = "🐺"
     YES = "✅"
     FACEPALM = "🤦"
+    BOOKS = "📚"
+    CHAPTER = "📖"
+    SILHOUETTE = "👤"
+    LOCK = "🔒"
+    NOTE = "📝"
+    SPARKLES = "✨"
 
 
 class GithubIssueLabels(Enum):
@@ -257,10 +263,10 @@ class XPMultiplier(Enum):
 class CharSheetSection(Enum):
     """Enum for character sheet sections. Rollups of TraitCategory."""
 
-    ATTRIBUTES: ClassVar[types.CharSheetSectionDict] = {"name": "Attributes", "order": 1}
-    ABILITIES: ClassVar[types.CharSheetSectionDict] = {"name": "Abilities", "order": 2}
-    ADVANTAGES: ClassVar[types.CharSheetSectionDict] = {"name": "Advantages", "order": 3}
-    NONE: ClassVar[types.CharSheetSectionDict] = {"name": "None", "order": 4}
+    ATTRIBUTES: ClassVar[typed_dicts.CharSheetSectionDict] = {"name": "Attributes", "order": 1}
+    ABILITIES: ClassVar[typed_dicts.CharSheetSectionDict] = {"name": "Abilities", "order": 2}
+    ADVANTAGES: ClassVar[typed_dicts.CharSheetSectionDict] = {"name": "Advantages", "order": 3}
+    NONE: ClassVar[typed_dicts.CharSheetSectionDict] = {"name": "None", "order": 4}
 
 
 # Enums linked to the Database
@@ -877,7 +883,7 @@ class CharacterConceptValue:
     num_abilities: int
     ability_specialty: TraitCategory
     attribute_specialty: TraitCategory
-    abilities: list[types.ConceptAbilityDict] = field(default_factory=list)
+    abilities: list[typed_dicts.ConceptAbilityDict] = field(default_factory=list)
     specific_abilities: list[str] = field(default_factory=list)
 
 
@@ -1386,7 +1392,7 @@ class CharacterConcept(Enum):
 class HunterCreed(Enum):
     """Enum for Hunter creeds."""
 
-    DEFENDER: ClassVar[types.HunterCreedDict] = {
+    DEFENDER: ClassVar[typed_dicts.HunterCreedDict] = {
         "name": "Defender",
         "description": "Protectors and _Defenders_ who seek to salvage or preserve what they can in the war against the unknown, perhaps to prove that the fight is worthwhile.",
         "conviction": 3,
@@ -1396,7 +1402,7 @@ class HunterCreed(Enum):
         "edges": ["Ward", "Rejuvenate", "Brand", "Champion", "Burn"],
         "range": (1, 14),
     }
-    INNOCENT: ClassVar[types.HunterCreedDict] = {
+    INNOCENT: ClassVar[typed_dicts.HunterCreedDict] = {
         "name": "Innocent",
         "description": "The curious, unabashed and wide-eyed, the _Innocent_ accept monsters on their own terms and seek simple resolution between creatures and humanity.",
         "conviction": 3,
@@ -1406,7 +1412,7 @@ class HunterCreed(Enum):
         "edges": ["Hide", "Illuminate", "Radiate", "Confront", "Blaze"],
         "range": (15, 28),
     }
-    JUDGE: ClassVar[types.HunterCreedDict] = {
+    JUDGE: ClassVar[typed_dicts.HunterCreedDict] = {
         "name": "Judge",
         "description": "The eyes and ears of the battle against monsters, _Judges_ seek to uphold the greater good, whether it means destroying creatures or sparing them and questioning other hunters' motives",
         "conviction": 3,
@@ -1416,7 +1422,7 @@ class HunterCreed(Enum):
         "edges": ["Discern", "Burden", "Balance", "Pierce", "Expose"],
         "range": (29, 42),
     }
-    MARTYR: ClassVar[types.HunterCreedDict] = {
+    MARTYR: ClassVar[typed_dicts.HunterCreedDict] = {
         "name": "Martyr",
         "description": "Acting out of desperate passion, _Martyrs_ put themselves in harm's way to protect others or to alleviate some all-consuming guilt.",
         "conviction": 4,
@@ -1426,7 +1432,7 @@ class HunterCreed(Enum):
         "edges": ["Demand", "Witness", "Ravage", "Donate", "Payback"],
         "range": (43, 56),
     }
-    REDEEMER: ClassVar[types.HunterCreedDict] = {
+    REDEEMER: ClassVar[typed_dicts.HunterCreedDict] = {
         "name": "Redeemer",
         "description": "Piercing the souls of the enemy, _Redeemers_ offer the hand of salvation to the deserving and strike down the irredeemable.",
         "conviction": 3,
@@ -1436,7 +1442,7 @@ class HunterCreed(Enum):
         "edges": ["Bluster", "Insinuate", "Respire", "Becalm", "Suspend"],
         "range": (57, 71),
     }
-    AVENGER: ClassVar[types.HunterCreedDict] = {
+    AVENGER: ClassVar[typed_dicts.HunterCreedDict] = {
         "name": "Avenger",
         "description": "Holy terror personified, _Avengers_ accept only one end to the war: the destruction of the enemy.",
         "conviction": 4,
@@ -1446,7 +1452,7 @@ class HunterCreed(Enum):
         "edges": ["Cleave", "Trail", "Smolder", "Surge", "Smite"],
         "range": (72, 85),
     }
-    VISIONARY: ClassVar[types.HunterCreedDict] = {
+    VISIONARY: ClassVar[typed_dicts.HunterCreedDict] = {
         "name": "Visionary",
         "description": "Introspective, questioning and doubtful, _Visionaries_ seek the ultimate goals of the war against the unknown, and they seek purpose for hunters as a whole.",
         "conviction": 3,
@@ -1483,7 +1489,7 @@ class HunterCreed(Enum):
         return choice(list(cls))
 
 
-# CHANNEL_PERMISSIONS: Dictionary containing a mapping of channel permissions.
+# CHANNEL_PERMISSIONS: Dictionary containing a tuple mapping of channel permissions.
 #     Format:
 #         default role permission,
 #         player role permission,
@@ -1509,6 +1515,11 @@ CHANNEL_PERMISSIONS: dict[str, tuple[ChannelPermission, ChannelPermission, Chann
         ChannelPermission.HIDDEN,
         ChannelPermission.HIDDEN,
         ChannelPermission.HIDDEN,
+    ),
+    "campaign_character_channel": (
+        ChannelPermission.READ_ONLY,
+        ChannelPermission.READ_ONLY,
+        ChannelPermission.MANAGE,
     ),
 }
 

@@ -61,6 +61,8 @@ You may only have a single character active at a time. To set a character as act
 
 In some circumstances, you may want to transfer ownership of a character to another user. To do so, use `/character transfer` and specify the character name and the user to transfer to.
 
+When characters are associated with a campaign, they will have their own channel where you can interact with them. Use commands like `/roll`, `/xp`, and `/character` in the character's campaign channel to manage and play with your character. In these channels, the active character is automatically set to the character associated with the channel.
+
 ## 4. GAMEPLAY
 
 ### Before Gameplay
@@ -69,8 +71,7 @@ In some circumstances, you may want to transfer ownership of a character to anot
 -   Set a character as active using `/character set_active`.
 -   Create macros for diceroll shortcuts using `/macro create`.
 
-**What is a Macro?**
-In Valentina Noir, a macro is a custom shortcut that you can create to simplify complex dice rolls. Macros are tied to users, not characters, meaning you can use the same macro regardless of which character is active.
+**What is a Macro?** In Valentina Noir, a macro is a custom shortcut that you can create to simplify complex dice rolls. Macros are tied to users, not characters, meaning you can use the same macro regardless of which character is active.
 
 For example, if you often need to roll for _perception_ and _alertness_, you can create a macro called `pa` that combines these stats into a single roll. Instead of typing computing the number of dice yourself, you can simply use `/roll macro pa`, and Valentina Noir will execute the roll for you.
 
@@ -123,6 +124,8 @@ The outcome of the role is defined as:
 ## 5. CAMPAIGNS
 
 Campaigns are the backbone of your role-playing adventure in Valentina Noir. They span across multiple gaming sessions and help in organizing the story, keeping track of characters and events, and providing a cohesive narrative structure. Regularly updating chapters and making use of NPCs and notes ensures that information is not lost in between gaming sessions.
+
+When a campaign is created, channels will be created for each chapter and character. This allows for easy organization and management of the campaign. Add notes in the chapter channels to keep track of important information. Players can easily roll dice and manage their characters by using those commands in their character's campaign channel.
 
 ### Creating and Managing Campaigns
 
@@ -196,23 +199,17 @@ The `Storyteller` is the game master, guiding the narrative and controlling non-
 
 This section provides solutions to common problems and answers to frequently asked questions. If you encounter an issue not covered here, please refer to the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina) for support.
 
-**Q: How do I update the value of a trait after my character is created?**
-**A:** Use `/character update` to update the value of an existing trait. However, depending on your guild settings you may not have permissions to do so. If this occurs, please contact your storyteller or an admin.
+**Q: How do I update the value of a trait after my character is created?** **A:** Use `/character update` to update the value of an existing trait. However, depending on your guild settings you may not have permissions to do so. If this occurs, please contact your storyteller or an admin.
 
-**Q: I found a bug. How do I report it?**
-**A:** Use `/github issues add` to create a new issue on the Valentina Noir GitHub repository. Or visit the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina) and create a new issue.
+**Q: I found a bug. How do I report it?** **A:** Use `/github issues add` to create a new issue on the Valentina Noir GitHub repository. Or visit the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina) and create a new issue.
 
-**Q: I have a feature request. Who do I tell?**
-**A:** Please file an issue on the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina). Provide as much detail as possible on the feature you would like to see.
+**Q: I have a feature request. Who do I tell?** **A:** Please file an issue on the [Valentina Noir GitHub repository](https://github.com/natelandau/valentina). Provide as much detail as possible on the feature you would like to see.
 
-**Q: Can I play multiple characters at once?**
-**A:** You can create multiple characters, but you may only have a single character active at a time. To set a character as active, use `/character set_active` and specify the character name.
+**Q: Can I play multiple characters at once?** **A:** You can create multiple characters, but you may only have a single character active at a time. To set a character as active, use `/character set_active` and specify the character name.
 
-**Q: How do I become a Storyteller or Admin?**
-**A:** Roles like Storyteller and Admin are typically assigned by the server owner or existing Admins. Speak with them if you are interested in taking on one of these roles.
+**Q: How do I become a Storyteller or Admin?** **A:** Roles like Storyteller and Admin are typically assigned by the server owner or existing Admins. Speak with them if you are interested in taking on one of these roles.
 
-**Q: Can I use Valentina Noir for other role-playing games besides Vampire the Masquerade?**
-**A:** Valentina Noir is specifically designed for a highly customized version of Vampire the Masquerade. While some features might be applicable to other games, it may not fully support them.
+**Q: Can I use Valentina Noir for other role-playing games besides Vampire the Masquerade?** **A:** Valentina Noir is specifically designed for a highly customized version of Vampire the Masquerade. While some features might be applicable to other games, it may not fully support them.
 
 ### Need More Help?
 
