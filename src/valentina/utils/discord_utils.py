@@ -1,5 +1,7 @@
 """Helper utilities for working with the discord API."""
 
+from typing import TYPE_CHECKING
+
 import discord
 from loguru import logger
 
@@ -8,8 +10,11 @@ from valentina.models import Character
 
 from .errors import BotMissingPermissionsError
 
+if TYPE_CHECKING:
+    from valentina.models.bot import ValentinaContext
 
-async def assert_permissions(ctx: discord.ApplicationContext, **permissions: bool) -> None:  # noqa: RUF029
+
+async def assert_permissions(ctx: "ValentinaContext", **permissions: bool) -> None:  # noqa: RUF029
     """Check if the bot has the required permissions to run the command.""."""
     if missing := [
         perm for perm, value in permissions.items() if getattr(ctx.app_permissions, perm) != value

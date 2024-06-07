@@ -201,8 +201,6 @@ class Character(Document):
         and also deletes the actual image stored in Amazon S3.
 
         Args:
-            ctx (discord.ApplicationContext): The context containing the bot object.
-            character (Character): The character object to update.
             key (str): The key representing the image to be deleted.
 
         Returns:

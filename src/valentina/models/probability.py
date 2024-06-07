@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import discord
 from beanie import Document, Indexed
@@ -12,6 +13,8 @@ from valentina.constants import EmbedColor, RollResultType
 from valentina.models import DiceRoll
 from valentina.utils.helpers import time_now
 
+if TYPE_CHECKING:
+    from valentina.models.bot import ValentinaContext
 # Constants for emoji thresholds
 SUCCESS_HIGHEST_THRESHOLD = 90
 SUCCESS_HIGH_THRESHOLD = 65
@@ -47,13 +50,11 @@ class RollProbability(Document):
 class Probability:
     """Probability utility class used for generating probabilities of success for different dice rolls."""
 
-    def __init__(
-        self, ctx: discord.ApplicationContext, pool: int, difficulty: int, dice_size: int
-    ) -> None:
+    def __init__(self, ctx: "ValentinaContext", pool: int, difficulty: int, dice_size: int) -> None:
         """Initialize the Probability class.
 
         Args:
-            ctx (discord.ApplicationContext): Context for the discord app.
+            ctx (ValentinaContext): Context for the discord app.
             pool (int): Pool of dice.
             difficulty (int): Difficulty level.
             dice_size (int): Size of the dice.

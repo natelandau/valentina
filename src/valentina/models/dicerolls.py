@@ -1,6 +1,7 @@
 """Models for dice rolls."""
 
-import discord
+from typing import TYPE_CHECKING
+
 import inflect
 from loguru import logger
 
@@ -9,6 +10,9 @@ from valentina.models import Character, Guild, RollStatistic
 from valentina.utils import errors, random_num
 
 p = inflect.engine()
+
+if TYPE_CHECKING:
+    from valentina.models.bot import ValentinaContext
 
 
 class DiceRoll:
@@ -52,7 +56,7 @@ class DiceRoll:
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: "ValentinaContext",
         pool: int,
         difficulty: int = 6,
         dice_size: int = 10,
@@ -62,7 +66,7 @@ class DiceRoll:
         """A container class that determines the result of a roll.
 
         Args:
-            ctx (discord.ApplicationContext): The context of the command.
+            ctx (ValentinaContext): The context of the command.
             dice_size (int, optional): The size of the dice. Defaults to 10.
             difficulty (int, optional): The difficulty of the roll. Defaults to 6.
             pool (int): The pool's total size, including hunger

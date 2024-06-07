@@ -344,7 +344,7 @@ class CharactersCog(commands.Cog, name="Character"):
         This function allows the user to add an image to a character either by uploading a file or providing a URL. It performs validation checks on the image, confirms the action with the user, and then uploads the image.
 
         Args:
-            ctx (ApplicationContext): The application context.
+            ctx (ValentinaContext): The application context.
             file (discord.Attachment): The image file to be uploaded.
             url (ValidImageURL): The URL of the image to be uploaded.
             hidden (bool): Whether the interaction should only be visible to the user initiating it.
@@ -405,7 +405,7 @@ class CharactersCog(commands.Cog, name="Character"):
         This function fetches the active character for the user, generates the key prefix for the character's images, and then initiates an S3ImageReview to allow the user to review and delete images.
 
         Args:
-            ctx (ApplicationContext): The application context.
+            ctx (ValentinaContext): The application context.
             hidden (bool): Whether the interaction should only be visible to the user initiating it.
 
         Returns:

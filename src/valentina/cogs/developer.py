@@ -94,7 +94,7 @@ class Developer(commands.Cog):
         deletes the object from S3, and then sends a message to the audit log.
 
         Args:
-            ctx (ApplicationContext): The application context.
+            ctx (ValentinaContext): The application context.
             key (str): The key of the file to be deleted from S3.
 
         Returns:
