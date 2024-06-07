@@ -3,9 +3,7 @@
 -   [ ] Campaign: add notes in channel without needing a command
 -   [ ] Campaign: Delete channels when campaign is deleted
 -   [ ] Campaign: If only one campaign, always set it as active
--   [ ] Campaign: Improve campaign paginator view
 -   [ ] Campaign: Renumber chapters
--   [ ] Campaign: Rework campaigns to be the backbone of gameplay
 -   [ ] Campaign: View any campaign, not just active one
 -   [ ] Character: assign to other campaign
 -   [ ] Character: rethink inventory
@@ -24,5 +22,7 @@
 -   [ ] Tests: Increase coverage
 -   [x] Campaign: Associate characters with campaigns
 -   [x] Campaign: create channels for each character
+-   [x] Campaign: Improve campaign paginator view
+-   [x] Campaign: Rework campaigns to be the backbone of gameplay
 -   [x] CharGen: Add edges for hunters
 -   [x] Refactor: Centralize pagination for long responses

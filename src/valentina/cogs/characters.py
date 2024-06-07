@@ -21,6 +21,7 @@ from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import errors
 from valentina.utils.autocomplete import (
     select_any_player_character,
+    select_campaign,
     select_char_class,
     select_char_trait,
     select_character_from_user,
@@ -29,6 +30,7 @@ from valentina.utils.autocomplete import (
     select_vampire_clan,
 )
 from valentina.utils.converters import (
+    ValidCampaign,
     ValidCharacterName,
     ValidCharacterObject,
     ValidCharClass,
@@ -38,7 +40,7 @@ from valentina.utils.converters import (
     ValidTraitFromID,
     ValidYYYYMMDD,
 )
-from valentina.utils.discord_utils import character_from_campaign_channel
+from valentina.utils.discord_utils import character_from_channel
 from valentina.utils.helpers import (
     fetch_data_from_url,
     truncate_string,
@@ -70,6 +72,7 @@ class CharactersCog(commands.Cog, name="Character"):
     profile = chars.create_subgroup("profile", "Nature, Demeanor, DOB, and other profile traits")
     section = chars.create_subgroup("section", "Work with character custom sections")
     trait = chars.create_subgroup("trait", "Work with character traits")
+    admin = chars.create_subgroup("admin", "Admin commands for characters")
 
     @chars.command(name="add", description="Add a character to Valentina from a sheet")
     async def add_character(
@@ -275,53 +278,6 @@ class CharactersCog(commands.Cog, name="Character"):
             ctx=ctx, title=title, text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
         )
 
-    @chars.command(name="transfer", description="Transfer one of your characters to another user")
-    async def transfer_character(
-        self,
-        ctx: ValentinaContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to view",
-            autocomplete=select_character_from_user,
-            required=True,
-        ),
-        new_owner: Option(discord.User, description="The user to transfer the character to"),
-        hidden: Option(
-            bool,
-            description="Make the sheet only visible to you (default false).",
-            default=False,
-        ),
-    ) -> None:
-        """Transfer one of your characters to another user."""
-        if new_owner == ctx.author:
-            await present_embed(
-                ctx,
-                title="Cannot transfer to yourself",
-                description="You cannot transfer a character to yourself",
-                level="error",
-                ephemeral=hidden,
-            )
-            return
-
-        title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_owner.display_name}`"
-        is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
-        )
-        if not is_confirmed:
-            return
-
-        current_user = await User.get(ctx.author.id, fetch_links=True)
-        new_user = await User.get(new_owner.id, fetch_links=True)
-
-        await current_user.remove_character(character)
-        new_user.characters.append(character)
-        await new_user.save()
-
-        character.user_owner = new_user.id
-        await character.save()
-
-        await interaction.edit_original_response(embed=confirmation_embed, view=None)
-
     @chars.command(name="kill", description="Kill a character")
     async def kill_character(
         self,
@@ -412,7 +368,7 @@ class CharactersCog(commands.Cog, name="Character"):
                 return
 
         # Fetch the active character
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         # Determine image extension and read data
         extension = file_extension if file else url.split(".")[-1].lower()
@@ -456,7 +412,7 @@ class CharactersCog(commands.Cog, name="Character"):
             None
         """
         # Fetch the active character
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         # Generate the key prefix for the character's images
         key_prefix = f"{ctx.guild.id}/characters/{character.id}"
@@ -494,7 +450,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a trait to a character."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         if not await ctx.can_manage_traits(character):
             await present_embed(
@@ -540,7 +496,7 @@ class CharactersCog(commands.Cog, name="Character"):
     ) -> None:
         """Update the value of a trait."""
         # Fetch the active character and trait
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         # Guard statement: check permissions
         if not await ctx.can_manage_traits(character):
@@ -598,7 +554,7 @@ class CharactersCog(commands.Cog, name="Character"):
     ) -> None:
         """Delete a trait from a character."""
         # Fetch the active character and trait
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         # Guard statement: check permissions
         if not await ctx.can_manage_traits(character):
@@ -644,7 +600,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom section to the character sheet."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         modal = CustomSectionModal(
             title=truncate_string(f"Custom section for {character.name}", 45)
@@ -693,7 +649,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a custom section."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
         section = character.sheet_sections[section_index]
 
         modal = CustomSectionModal(
@@ -738,7 +694,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom section from a character."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
         section = character.sheet_sections[section_index]
 
         title = f"Delete section `{section.title}` from `{character.name}`"
@@ -766,7 +722,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's bio."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         modal = BioModal(
             title=truncate_string(f"Enter the biography for {character.name}", 45),
@@ -802,7 +758,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Set the DOB of a character."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         character.dob = dob
         await character.save()
@@ -827,7 +783,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         modal = ProfileModal(
             title=truncate_string(f"Profile for {character.name}", 45), character=character
@@ -848,6 +804,85 @@ class CharactersCog(commands.Cog, name="Character"):
                 level="success",
                 ephemeral=hidden,
             )
+
+    ### ADMIN COMMANDS ####################################################################
+    @admin.command(name="campaign", description="Associate character with a campaign")
+    async def associate_campaign(
+        self,
+        ctx: ValentinaContext,
+        campaign: Option(
+            ValidCampaign,
+            name="campaign",
+            description="Campaign to associate with the character",
+            required=True,
+            autocomplete=select_campaign,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Associate a character with a campaign."""
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+
+        title = f"Associate `{character.name}` with `{campaign.name}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden, audit=True
+        )
+        if not is_confirmed:
+            return
+
+        await character.associate_with_campaign(ctx, campaign)
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    @admin.command(name="transfer", description="Transfer one of your characters to another user")
+    async def transfer_character(
+        self,
+        ctx: ValentinaContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to view",
+            autocomplete=select_character_from_user,
+            required=True,
+        ),
+        new_owner: Option(discord.User, description="The user to transfer the character to"),
+        hidden: Option(
+            bool,
+            description="Make the sheet only visible to you (default false).",
+            default=False,
+        ),
+    ) -> None:
+        """Transfer one of your characters to another user."""
+        if new_owner == ctx.author:
+            await present_embed(
+                ctx,
+                title="Cannot transfer to yourself",
+                description="You cannot transfer a character to yourself",
+                level="error",
+                ephemeral=hidden,
+            )
+            return
+
+        title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_owner.display_name}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden, audit=True
+        )
+        if not is_confirmed:
+            return
+
+        current_user = await User.get(ctx.author.id, fetch_links=True)
+        new_user = await User.get(new_owner.id, fetch_links=True)
+
+        await current_user.remove_character(character)
+        new_user.characters.append(character)
+        await new_user.save()
+
+        character.user_owner = new_user.id
+        await character.save()
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
 
 def setup(bot: Valentina) -> None:

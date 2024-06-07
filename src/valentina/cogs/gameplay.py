@@ -18,7 +18,7 @@ from valentina.utils.autocomplete import (
     select_macro,
 )
 from valentina.utils.converters import ValidTraitFromID
-from valentina.utils.discord_utils import character_from_campaign_channel
+from valentina.utils.discord_utils import character_from_channel
 from valentina.utils.perform_roll import perform_roll
 from valentina.views import present_embed
 
@@ -62,9 +62,9 @@ class Roll(commands.Cog):
             pool (int): The number of dice to roll
         """
         # Grab the player's active character for statistic logging purposes
-        character = await character_from_campaign_channel(
-            ctx.channel
-        ) or await ctx.fetch_active_character(raise_error=False)
+        character = await character_from_channel(ctx.channel) or await ctx.fetch_active_character(
+            raise_error=False
+        )
 
         if desperation > 0:
             active_campaign = await ctx.fetch_active_campaign()
@@ -122,7 +122,7 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         pool = trait_one.value + trait_two.value
 
@@ -200,7 +200,7 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll a macro."""
-        character = await character_from_campaign_channel(ctx) or await ctx.fetch_active_character()
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
         user = await User.get(ctx.author.id, fetch_links=True)
         macro = user.macros[index]
 
@@ -273,9 +273,9 @@ class Roll(commands.Cog):
             return
 
         # Grab the player's active character for statistic logging purposes
-        character = await character_from_campaign_channel(
-            ctx.channel
-        ) or await ctx.fetch_active_character(raise_error=False)
+        character = await character_from_channel(ctx.channel) or await ctx.fetch_active_character(
+            raise_error=False
+        )
 
         await perform_roll(
             ctx,

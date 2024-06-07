@@ -1276,10 +1276,10 @@ Once you select a character you can re-allocate dots and change the name, but yo
         if view.done:
             await self.spend_freebie_points(character)
 
-        # Lastly, add the character to the active campaign
-        self.campaign.characters.append(character)
-        await self.campaign.save()
-        await self.campaign.create_channels(self.ctx)
+        if self.campaign:
+            character.campaign = str(self.campaign.id)
+            await character.save()
+            await self.campaign.create_channels(self.ctx)
 
     async def spend_freebie_points(self, character: Character) -> Character:
         """Spend freebie points.

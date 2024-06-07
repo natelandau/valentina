@@ -168,15 +168,14 @@ class AddFromSheetWizard:
             for x in self.completed_traits
         ]
 
+        # Associate the character with a campaign
+        if self.campaign:
+            self.character.campaign = str(self.campaign.id)
+            await self.campaign.create_channels(self.ctx)
+
         # Write the traits to the database
         self.character.traits = traits_to_add  # type: ignore [assignment]
         await self.character.save(link_rule=WriteRules.WRITE)
-
-        # Associate character with current campaign
-        if self.campaign:
-            self.campaign.characters.append(self.character)
-            await self.campaign.save()
-            await self.campaign.create_channels(self.ctx)
 
         # Add the character to the user's list of characters
         self.user.characters.append(self.character)

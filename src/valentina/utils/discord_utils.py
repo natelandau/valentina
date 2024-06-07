@@ -4,7 +4,7 @@ import discord
 from loguru import logger
 
 from valentina.constants import ChannelPermission
-from valentina.models import Campaign, Character
+from valentina.models import Character
 
 from .errors import BotMissingPermissionsError
 
@@ -170,7 +170,7 @@ def set_channel_perms(requested_permission: ChannelPermission) -> discord.Permis
     return perms
 
 
-async def character_from_campaign_channel(
+async def character_from_channel(
     ctx: discord.ApplicationContext | discord.AutocompleteContext,
 ) -> Character | None:
     """Get the character from a campaign character channel.
@@ -188,9 +188,8 @@ async def character_from_campaign_channel(
         ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel
     )
 
-    for campaign in await Campaign.find(Campaign.guild == discord_guild.id).to_list():
-        for k, v in campaign.channels.character_channels.items():
-            if v == discord_channel.id:
-                return await Character.get(k, fetch_links=True)
-
-    return None
+    return await Character.find_one(
+        Character.guild == discord_guild.id,
+        Character.channel == discord_channel.id,
+        fetch_links=True,
+    )

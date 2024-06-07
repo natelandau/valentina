@@ -1,8 +1,9 @@
 """Character models for Valentina."""
 
 from datetime import datetime
-from typing import Optional, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast
 
+import discord
 from beanie import (
     Document,
     Indexed,
@@ -18,6 +19,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from valentina.constants import (
+    CHANNEL_PERMISSIONS,
     CharacterConcept,
     CharClass,
     HunterCreed,
@@ -27,6 +29,10 @@ from valentina.constants import (
 from valentina.models.aws import AWSService
 from valentina.utils import errors
 from valentina.utils.helpers import get_max_trait_value, num_to_circles, time_now
+
+if TYPE_CHECKING:
+    from valentina.models import Campaign
+    from valentina.models.bot import ValentinaContext
 
 
 class CharacterSheetSection(BaseModel):
@@ -82,6 +88,8 @@ class Character(Document):
     type_developer: bool = False
     user_creator: int  # id of the user who created the character
     user_owner: int  # id of the user who owns the character
+    channel: int | None = None  # id of the character's discord channel
+    campaign: str | None = None  # id of the character's campaign
 
     # Profile
     bio: str | None = None
@@ -259,3 +267,34 @@ class Character(Document):
                 return trait
 
         return None
+
+    async def associate_with_campaign(
+        self, ctx: "ValentinaContext", new_campaign: "Campaign"
+    ) -> bool:
+        """Associate a character with a campaign."""
+        if self.campaign == str(new_campaign.id):
+            logger.debug(f"Character {self.name} is already associated with {new_campaign.name}")
+            return False
+
+        existing_channel = (
+            discord.utils.get(ctx.guild.text_channels, id=self.channel) if self.channel else None
+        )
+
+        new_category = discord.utils.get(
+            ctx.guild.categories, id=new_campaign.channels.category_channel
+        )
+        character_owner = discord.utils.get(ctx.bot.users, id=self.user_owner)
+
+        if existing_channel and new_category:
+            await ctx.channel_update_or_add(
+                channel=existing_channel,
+                category=new_category,
+                permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
+                permissions_user_post=character_owner,
+                topic=f"Character channel for {self.name}",
+            )
+
+        self.campaign = str(new_campaign.id)
+        await self.save()
+        await new_campaign.create_channels(ctx)
+        return True
