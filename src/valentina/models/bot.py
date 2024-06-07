@@ -373,19 +373,33 @@ class ValentinaContext(discord.ApplicationContext):
         if permissions_user_post:
             overwrites[permissions_user_post] = set_channel_perms(ChannelPermission.POST)
 
+        formatted_name = name.lower().strip().replace(" ", "-") if name else None
+
         if name and not channel:
-            channel_name = name.lower().strip()
-            channel = discord.utils.get(self.guild.text_channels, name=channel_name)
+            for existing_channel in self.guild.text_channels:
+                # If channel already exists in a specified category, edit it
+                if (
+                    category
+                    and existing_channel.category == category
+                    and existing_channel.name == formatted_name
+                ) or (not category and existing_channel.name == formatted_name):
+                    logger.debug(f"GUILD: Update channel '{channel.name}' on '{self.guild.name}'")
+                    await existing_channel.edit(
+                        name=formatted_name or channel.name,
+                        overwrites=overwrites,
+                        topic=topic or channel.topic,
+                        category=category or channel.category,
+                    )
+                    return existing_channel
 
             # Create the channel if it doesn't exist
-            if not channel:
-                logger.debug(f"GUILD: Create channel '{name}' on '{self.guild.name}'")
-                return await self.guild.create_text_channel(
-                    name=channel_name,
-                    overwrites=overwrites,
-                    topic=topic,
-                    category=category,
-                )
+            logger.debug(f"GUILD: Create channel '{name}' on '{self.guild.name}'")
+            return await self.guild.create_text_channel(
+                name=formatted_name,
+                overwrites=overwrites,
+                topic=topic,
+                category=category,
+            )
 
         # Update existing channel
         logger.debug(f"GUILD: Update channel '{channel.name}' on '{self.guild.name}'")

@@ -63,13 +63,6 @@ class ChannelPermission(Enum):
     MANAGE = 4
 
 
-class CampaignChannelNames(Enum):
-    """Enum for channel names in a campaign."""
-
-    GAMEPLAY = "gameplay"
-    LOG = "log"
-
-
 class DiceType(Enum):
     """Enum for types of dice."""
 
@@ -123,6 +116,12 @@ class Emoji(Enum):
     WEREWOLF = "🐺"
     YES = "✅"
     FACEPALM = "🤦"
+    BOOKS = "📚"
+    CHAPTER = "📖"
+    SILHOUETTE = "👤"
+    LOCK = "🔒"
+    NOTE = "📝"
+    SPARKLES = "✨"
 
 
 class GithubIssueLabels(Enum):
