@@ -18,7 +18,7 @@ from valentina.constants import (
 )
 from valentina.models import AWSService, Campaign, ChangelogParser, Character, Guild, User
 from valentina.models.bot import Valentina
-from valentina.utils.discord_utils import character_from_campaign_channel
+from valentina.utils.discord_utils import character_from_channel
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99
@@ -163,7 +163,7 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     Returns:
         list[OptionChoice]: A list of available names and their index in character.traits.
     """
-    character = await character_from_campaign_channel(ctx)
+    character = await character_from_channel(ctx)
 
     if not character:
         user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
@@ -201,7 +201,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     Returns:
         list[OptionChoice]: A list of available trait names and their index in character.traits.
     """
-    character = await character_from_campaign_channel(ctx)
+    character = await character_from_channel(ctx)
 
     if not character:
         user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
@@ -222,7 +222,7 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
 
 
 async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of available campaigns for the guilds.
+    """Generate a list of available campaigns for the guild.
 
     Args:
         ctx (discord.AutocompleteContext): The context in which the function is called.

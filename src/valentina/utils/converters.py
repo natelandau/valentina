@@ -149,7 +149,7 @@ class ValidCampaign(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> Campaign:  # noqa: ARG002
         """Convert from mongo db id to campaign object."""
-        campaign = await Campaign.get(argument)
+        campaign = await Campaign.get(argument, fetch_links=True)
 
         if campaign:
             return campaign

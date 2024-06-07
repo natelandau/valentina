@@ -8,7 +8,6 @@ import discord
 from beanie import (
     Document,
     Insert,
-    Link,
     Replace,
     Save,
     SaveChanges,
@@ -80,7 +79,6 @@ class CampaignChannels(BaseModel):
     storyteller: int | None = None
     log: int | None = None
     general: int | None = None
-    character_channels: dict[str, int] = Field(default_factory=dict)
 
 
 class Campaign(Document):
@@ -98,7 +96,6 @@ class Campaign(Document):
     notes: list[CampaignNote] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)
     channels: CampaignChannels = CampaignChannels()
-    characters: list[Link["Character"]] = Field(default_factory=list)
 
     @before_event(Insert, Replace, Save, Update, SaveChanges)
     async def update_modified_date(self) -> None:
@@ -119,7 +116,7 @@ class Campaign(Document):
             channel_id_in_category = (
                 any(channel_db_id == channel.id for channel in channels) if channel_db_id else False
             )
-            ########################################################
+
             if channel_name_in_category and not channel_db_id:
                 await asyncio.sleep(1)  # Keep the rate limit happy
                 for channel in channels:
@@ -160,8 +157,6 @@ class Campaign(Document):
                 logger.info(
                     f"Channel {channel_name} does not exist in {category}. Create new channel and add to database"
                 )
-            else:
-                logger.debug(f"Channel {channel_name} already exists in {category}")
 
     async def _confirm_character_channels(
         self,
@@ -170,12 +165,11 @@ class Campaign(Document):
         channels: list[discord.TextChannel],
     ) -> None:
         """Create the character channels for the campaign."""
-        for character in self.characters:
-            channel_db_key = str(character.id)  # type: ignore [attr-defined]
-            channel_name = f"{Emoji.SILHOUETTE.value}-{character.name.lower().replace(' ', '-')}"  # type: ignore [attr-defined]
-            owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)  # type: ignore [attr-defined]
-            channel_db_id = self.channels.character_channels.get(channel_db_key, None)
+        for character in await self.fetch_characters():
+            channel_name = f"{Emoji.SILHOUETTE.value}-{character.name.lower().replace(' ', '-')}"
+            owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)
             channel_name_in_category = any(channel_name == channel.name for channel in channels)
+            channel_db_id = character.channel
             channel_id_in_category = (
                 any(channel_db_id == channel.id for channel in channels) if channel_db_id else False
             )
@@ -184,8 +178,8 @@ class Campaign(Document):
                 await asyncio.sleep(1)  # Keep the rate limit happy
                 for channel in channels:
                     if channel.name == channel_name:
-                        self.channels.character_channels[channel_db_key] = channel.id
-                        await self.save()
+                        character.channel = channel.id
+                        await character.save()
                 logger.info(
                     f"Channel {channel_name} exists in {category} but not in database. Add channel id to database."
                 )
@@ -202,7 +196,7 @@ class Campaign(Document):
                     category=category,
                     permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
                     permissions_user_post=owned_by_user,
-                    topic=f"Character channel for {character.name}",  # type: ignore [attr-defined]
+                    topic=f"Character channel for {character.name}",
                 )
 
                 logger.info(
@@ -216,16 +210,13 @@ class Campaign(Document):
                     category=category,
                     permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
                     permissions_user_post=owned_by_user,
-                    topic=f"Character channel for {character.name}",  # type: ignore [attr-defined]
+                    topic=f"Character channel for {character.name}",
                 )
-                self.channels.character_channels[channel_db_key] = created_channel.id
-                await self.save()
+                character.channel = created_channel.id
+                await character.save()
                 logger.info(
                     f"Channel {channel_name} does not exist in {category}. Create new channel and add to database"
                 )
-
-            else:
-                logger.debug(f"Channel {channel_name} already exists in {category}")
 
     async def _confirm_common_channels(
         self,
@@ -293,9 +284,6 @@ class Campaign(Document):
                     f"Channel {channel_name} does not exist in {category}. Create new channel and add to database"
                 )
 
-            else:
-                logger.debug(f"Channel {channel_name} already exists in {category}")
-
     @staticmethod
     def _custom_channel_sort(channel: discord.TextChannel) -> tuple[int, str]:
         """Custom sorting key to for campaign channels.
@@ -358,9 +346,13 @@ class Campaign(Document):
                 sorted_channels = sorted(channels, key=self._custom_channel_sort)
                 for i, channel in enumerate(sorted_channels):
                     await channel.edit(position=i)
-                    await asyncio.sleep(1)  # Keep the rate limit happy
+                    await asyncio.sleep(1.5)  # Keep the rate limit happy
 
                 logger.debug(f"Sorted channels: {[channel.name for channel in sorted_channels]}")
                 break
 
         logger.debug(f"All channels confirmed for campaign '{self.name}' in '{ctx.guild.name}'")
+
+    async def fetch_characters(self) -> list[Character]:
+        """Fetch all characters in the campaign."""
+        return await Character.find(Character.campaign == str(self.id)).to_list()
