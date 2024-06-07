@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from beanie import (
@@ -21,6 +21,9 @@ from valentina.constants import CHANNEL_PERMISSIONS, Emoji
 from valentina.utils.helpers import time_now
 
 from .character import Character
+
+if TYPE_CHECKING:
+    from valentina.models.bot import ValentinaContext
 
 
 class CampaignChapter(BaseModel):
@@ -104,7 +107,7 @@ class Campaign(Document):
 
     async def _confirm_chapter_channels(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: "ValentinaContext",
         category: discord.CategoryChannel,
         channels: list[discord.TextChannel],
     ) -> None:
@@ -132,7 +135,7 @@ class Campaign(Document):
                     (channel for channel in channels if channel_db_id == channel.id), None
                 )
 
-                await ctx.channel_update_or_add(  # type: ignore [attr-defined]
+                await ctx.channel_update_or_add(
                     channel=channel_object,
                     name=channel_name,
                     category=category,
@@ -146,7 +149,7 @@ class Campaign(Document):
 
             elif not channel_name_in_category:
                 await asyncio.sleep(1)  # Keep the rate limit happy
-                created_channel = await ctx.channel_update_or_add(  # type: ignore [attr-defined]
+                created_channel = await ctx.channel_update_or_add(
                     name=channel_name,
                     category=category,
                     permissions=CHANNEL_PERMISSIONS["default"],
@@ -160,7 +163,7 @@ class Campaign(Document):
 
     async def _confirm_character_channels(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: "ValentinaContext",
         category: discord.CategoryChannel,
         channels: list[discord.TextChannel],
     ) -> None:
@@ -190,7 +193,7 @@ class Campaign(Document):
                     (channel for channel in channels if channel_db_id == channel.id), None
                 )
 
-                await ctx.channel_update_or_add(  # type: ignore [attr-defined]
+                await ctx.channel_update_or_add(
                     channel=channel_object,
                     name=channel_name,
                     category=category,
@@ -205,7 +208,7 @@ class Campaign(Document):
 
             elif not channel_name_in_category:
                 await asyncio.sleep(1)  # Keep the rate limit happy
-                created_channel = await ctx.channel_update_or_add(  # type: ignore [attr-defined]
+                created_channel = await ctx.channel_update_or_add(
                     name=channel_name,
                     category=category,
                     permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
@@ -220,7 +223,7 @@ class Campaign(Document):
 
     async def _confirm_common_channels(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: "ValentinaContext",
         category: discord.CategoryChannel,
         channels: list[discord.TextChannel],
     ) -> None:
@@ -260,7 +263,7 @@ class Campaign(Document):
                     (channel for channel in channels if channel_db_id == channel.id), None
                 )
                 await asyncio.sleep(1)  # Keep the rate limit happy
-                await ctx.channel_update_or_add(  # type: ignore [attr-defined]
+                await ctx.channel_update_or_add(
                     channel=channel_object,
                     name=channel_name,
                     category=category,
@@ -273,7 +276,7 @@ class Campaign(Document):
 
             elif not channel_name_in_category:
                 await asyncio.sleep(1)  # Keep the rate limit happy
-                created_channel = await ctx.channel_update_or_add(  # type: ignore [attr-defined]
+                created_channel = await ctx.channel_update_or_add(
                     name=channel_name,
                     category=category,
                     permissions=permissions,
@@ -305,7 +308,7 @@ class Campaign(Document):
 
         return (3, channel.name)
 
-    async def create_channels(self, ctx: discord.ApplicationContext) -> None:
+    async def create_channels(self, ctx: "ValentinaContext") -> None:
         """Create the campaign channels in the guild."""
         category_name = f"{Emoji.BOOKS.value}-{self.name.lower().replace(' ', '-')}"
 

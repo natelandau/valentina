@@ -2,6 +2,7 @@
 
 import random
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import discord
 from beanie import (
@@ -30,6 +31,9 @@ from valentina.models import Campaign
 from valentina.utils import errors
 from valentina.utils.discord_utils import create_player_role, create_storyteller_role
 from valentina.utils.helpers import time_now
+
+if TYPE_CHECKING:
+    from valentina.models.bot import ValentinaContext
 
 
 class GuildRollResultThumbnail(BaseModel):
@@ -179,7 +183,7 @@ class Guild(Document):
         await self.save()
 
     async def add_roll_result_thumbnail(
-        self, ctx: discord.ApplicationContext, roll_type: RollResultType, url: str
+        self, ctx: "ValentinaContext", roll_type: RollResultType, url: str
     ) -> None:
         """Add a roll result thumbnail to the database."""
         for thumb in self.roll_result_thumbnails:

@@ -1,6 +1,7 @@
 """Compute and display statistics."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import discord
 from beanie import Document, Indexed
@@ -9,6 +10,9 @@ from pydantic import Field
 from valentina.constants import EmbedColor, RollResultType
 from valentina.models import Character
 from valentina.utils.helpers import time_now
+
+if TYPE_CHECKING:
+    from valentina.models.bot import ValentinaContext
 
 
 class RollStatistic(Document):
@@ -29,7 +33,7 @@ class Statistics:
 
     def __init__(
         self,
-        ctx: discord.ApplicationContext,
+        ctx: "ValentinaContext",
     ) -> None:
         self.ctx = ctx
         self.botches = 0

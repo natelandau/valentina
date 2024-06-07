@@ -2,6 +2,7 @@
 
 import random
 import re
+from typing import TYPE_CHECKING, Optional
 
 import discord
 import semver
@@ -18,6 +19,9 @@ from valentina.utils import errors
 
 from .guild import Guild
 
+if TYPE_CHECKING:
+    from valentina.models.bot import ValentinaContext
+
 
 class ChangelogPoster:
     """Helper class for posting changelogs to the changelog channel specified in guild settings."""
@@ -25,7 +29,7 @@ class ChangelogPoster:
     def __init__(
         self,
         bot: commands.Bot | None = None,
-        ctx: discord.ApplicationContext | None = None,
+        ctx: Optional["ValentinaContext"] = None,
         channel: discord.TextChannel | None = None,
         exclud_cagegories: list[str] = CHANGELOG_EXCLUDE_CATEGORIES,
         oldest_version: str | None = None,
