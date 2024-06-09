@@ -1,3 +1,23 @@
+## v2.3.0 (2024-06-09)
+
+### Feat
+
+- **character**: minimal release of inventory system (#148)
+- **inventory**: minimal release of character inventory system
+- **campaign**: chapters can be renumbered (#147)
+- **campaign**: renumber chapters
+- **character**: associate characters with campaigns (#145)
+- **campaign**: add campaign specific channels (#141)
+
+### Fix
+
+- **user**: user_info now displays when no experience (#144)
+- **chargen**: remove unused characters from db when cancelled (#137)
+
+### Refactor
+
+- improve type hints (#146)
+
 ## v2.2.1 (2024-03-03)
 
 ### Fix
