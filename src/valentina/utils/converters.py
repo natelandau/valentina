@@ -15,7 +15,56 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models import Campaign, Character, CharacterTrait
+from valentina.models import Campaign, CampaignChapter, Character, CharacterTrait, Guild
+
+
+class CampaignChapterConverter(Converter):
+    """Convert a chapter number to a CampaignChapter object."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> CampaignChapter:
+        """Validate and normalize traits."""
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        active_campaign = await guild.fetch_active_campaign()
+
+        try:
+            chapter_number = int(argument)
+        except ValueError as e:
+            msg = f"`{argument}` is not a valid chapter number"
+            raise BadArgument(msg) from e
+
+        chapter = next((x for x in active_campaign.chapters if x.number == chapter_number), None)
+
+        if not chapter:
+            msg = f"Requested chapter number `{chapter_number}` is not part of the active campaign."
+            raise BadArgument(msg)
+
+        return chapter
+
+
+class ValidChapterNumber(Converter):
+    """A converter that ensures a requested chapter number is valid."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> int:
+        """Validate and normalize chapter numbers."""
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        active_campaign = await guild.fetch_active_campaign()
+        campaign_chapter_numbers = [x.number for x in active_campaign.chapters]
+
+        try:
+            chapter_number = int(argument)
+        except ValueError as e:
+            msg = f"`{argument}` is not a valid chapter number"
+            raise BadArgument(msg) from e
+
+        if chapter_number < 1:
+            msg = "Chapter numbers must be greater than 0"
+            raise BadArgument(msg)
+
+        if chapter_number not in campaign_chapter_numbers:
+            msg = f"Requested chapter number `{chapter_number}` is not part of the active campaign."
+            raise BadArgument(msg)
+
+        return chapter_number
 
 
 class ValidChannelName(Converter):

@@ -10,7 +10,12 @@ from valentina.constants import MAX_FIELD_COUNT
 from valentina.models import Campaign, CampaignChapter, CampaignNote, CampaignNPC, Guild
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.autocomplete import select_campaign, select_chapter, select_note, select_npc
-from valentina.utils.converters import ValidCampaign, ValidYYYYMMDD
+from valentina.utils.converters import (
+    CampaignChapterConverter,
+    ValidCampaign,
+    ValidChapterNumber,
+    ValidYYYYMMDD,
+)
 from valentina.utils.helpers import truncate_string
 from valentina.views import (
     ChapterModal,
@@ -545,10 +550,10 @@ class CampaignCog(commands.Cog):
     async def edit_chapter(
         self,
         ctx: ValentinaContext,
-        index: Option(
-            int,
+        selected_chapter: Option(
+            CampaignChapterConverter,
             name="chapter",
-            description="Chapter to edit",
+            description="Chapter to renumber",
             required=True,
             autocomplete=select_chapter,
         ),
@@ -560,9 +565,9 @@ class CampaignCog(commands.Cog):
     ) -> None:
         """Edit a chapter."""
         active_campaign = await ctx.fetch_active_campaign()
-        chapter = active_campaign.chapters[index]
+        original_name = selected_chapter.name
 
-        modal = ChapterModal(title=truncate_string("Edit chapter", 45), chapter=chapter)
+        modal = ChapterModal(title=truncate_string("Edit chapter", 45), chapter=selected_chapter)
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
@@ -572,11 +577,13 @@ class CampaignCog(commands.Cog):
         description_short = modal.description_short.strip()
         description_long = modal.description_long.strip()
 
+        index = active_campaign.chapters.index(selected_chapter)
         active_campaign.chapters[index].name = name
         active_campaign.chapters[index].description_short = description_short
         active_campaign.chapters[index].description_long = description_long
         await active_campaign.save()
-        await active_campaign.create_channels(ctx)
+        if original_name != name:
+            await active_campaign.create_channels(ctx)
 
         await ctx.post_to_audit_log(f"Update chapter: `{name}` in `{active_campaign.name}`")
 
@@ -592,10 +599,10 @@ class CampaignCog(commands.Cog):
     async def delete_chapter(
         self,
         ctx: ValentinaContext,
-        index: Option(
-            int,
+        selected_chapter: Option(
+            CampaignChapterConverter,
             name="chapter",
-            description="Chapter to edit",
+            description="Chapter to renumber",
             required=True,
             autocomplete=select_chapter,
         ),
@@ -610,9 +617,8 @@ class CampaignCog(commands.Cog):
             return
 
         active_campaign = await ctx.fetch_active_campaign()
-        chapter = active_campaign.chapters[index]
 
-        title = f"Delete Chapter `{chapter.number}. {chapter.name}` from `{active_campaign.name}`"
+        title = f"Delete Chapter `{selected_chapter.number}. {selected_chapter.name}` from `{active_campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, audit=True
         )
@@ -620,8 +626,94 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
+        index = active_campaign.chapters.index(selected_chapter)
         del active_campaign.chapters[index]
         await active_campaign.save()
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    @chapter.command(name="renumber", description="Renumber chapters")
+    async def renumber_chapters(
+        self,
+        ctx: ValentinaContext,
+        chapter_to_renumber: Option(
+            CampaignChapterConverter,
+            name="chapter",
+            description="Chapter to renumber",
+            required=True,
+            autocomplete=select_chapter,
+        ),
+        new_number: Option(
+            ValidChapterNumber,
+            name="new_number",
+            description="New chapter number",
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Renumber chapters."""
+        if not await self.check_permissions(ctx):
+            return
+
+        if chapter_to_renumber.number == new_number:
+            await present_embed(
+                ctx,
+                title="Chapter numbers are the same",
+                description="The chapter numbers are the same",
+                level="info",
+                ephemeral=hidden,
+            )
+            return
+
+        active_campaign = await ctx.fetch_active_campaign()
+        index = active_campaign.chapters.index(chapter_to_renumber)
+        selected_chapter = active_campaign.chapters[index]
+        original_number = selected_chapter.number
+
+        before = "\n".join(
+            [
+                f"{x.number}: {x.name}"
+                for x in sorted(active_campaign.chapters, key=lambda x: x.number)
+            ]
+        )
+
+        # Adjust the numbers of the other chapters
+        if new_number > selected_chapter.number:
+            for chapter in active_campaign.chapters:
+                if selected_chapter.number < chapter.number <= new_number:
+                    chapter.number -= 1
+        else:
+            for chapter in active_campaign.chapters:
+                if new_number <= chapter.number < selected_chapter.number:
+                    chapter.number += 1
+
+        # Update the number of the selected chapter
+        selected_chapter.number = new_number
+
+        after = "\n".join(
+            [
+                f"{x.number}: {x.name}"
+                for x in sorted(active_campaign.chapters, key=lambda x: x.number)
+            ]
+        )
+
+        description = f"### Before:\n{before}\n### After:\n{after}"
+
+        title = f"Renumber chapter `{selected_chapter.name}` from number `{original_number}` to number `{new_number}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, description=description, hidden=hidden, audit=True
+        )
+
+        if not is_confirmed:
+            return
+
+        active_campaign.chapters = sorted(active_campaign.chapters, key=lambda x: x.number)
+        await active_campaign.save()
+        await active_campaign.create_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

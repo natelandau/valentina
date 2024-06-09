@@ -68,7 +68,7 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]
         ctx (discord.AutocompleteContext): The context in which the function is called.
 
     Returns:
-        list[str]: A list of strings representing the chapters.
+        list[OptionChoice]: A list of available chapter names mapped to chapter.number.
     """
     # Fetch the active campaign
     guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
@@ -78,8 +78,8 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]
         return [OptionChoice("No active campaign", 1000)]
 
     choices = [
-        OptionChoice(f"{chapter.number}. {chapter.name}", index)
-        for index, chapter in enumerate(active_campaign.chapters)
+        OptionChoice(f"{chapter.number}. {chapter.name}", str(chapter.number))
+        for chapter in sorted(active_campaign.chapters, key=lambda x: x.number)
         if chapter.name.lower().startswith(ctx.options["chapter"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 

@@ -2,7 +2,6 @@
 """Test the autocomplete functions."""
 
 import pytest
-from rich import print
 from tests.factories import *
 
 from valentina.constants import TraitCategory
@@ -219,7 +218,7 @@ async def test_select_chapter(mock_ctx1, guild_factory, campaign_factory):
     # THEN the chapter is returned
     assert len(result) == 1
     assert result[0].name == "1. mock_chapter"
-    assert result[0].value == 0
+    assert result[0].value == "1"
 
 
 @pytest.mark.drop_db()

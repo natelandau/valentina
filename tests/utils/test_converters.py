@@ -14,8 +14,11 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
+from valentina.models import CampaignChapter
 from valentina.utils.converters import (
+    CampaignChapterConverter,
     ValidCampaign,
+    ValidChapterNumber,
     ValidCharacterConcept,
     ValidCharacterLevel,
     ValidCharacterName,
@@ -189,3 +192,75 @@ async def test_valid_yyyymmdd():
     # THEN assert a BadArgument is raised
     with pytest.raises(BadArgument):
         await ValidYYYYMMDD().convert(None, "01-01-2021")
+
+
+@pytest.mark.drop_db()
+async def test_valid_chapter_number(mock_ctx1, guild_factory, campaign_factory):
+    """Test the ValidChapterNumber converter."""
+    # GIVEN a guild with a campaign and a mock context
+    chapter = CampaignChapter(
+        name="mock_chapter",
+        number=1,
+        description_short="mock_description",
+        description_long="mock_description",
+    )
+
+    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter], characters=[])
+    await campaign.insert()
+
+    guild = guild_factory.build(
+        id=mock_ctx1.guild.id,
+        campaigns=[campaign],
+        active_campaign=campaign,
+        roll_result_thumbnails=[],
+    )
+    await guild.insert()
+    # WHEN the converter is called with a valid chapter number
+    # THEN assert the result is the correct number
+    assert await ValidChapterNumber().convert(mock_ctx1, 1) == 1
+
+    # WHEN the converter is called with an invalid chapter number
+    # THEN assert a BadArgument is raised
+    with pytest.raises(BadArgument):
+        await ValidChapterNumber().convert(mock_ctx1, "not a number")
+
+    # WHEN the converter is called with a number less than zero
+    # THEN assert a BadArgument is raised
+    with pytest.raises(BadArgument):
+        await ValidChapterNumber().convert(mock_ctx1, 0)
+
+
+@pytest.mark.drop_db()
+async def test_campaign_chapter_converter(mock_ctx1, guild_factory, campaign_factory):
+    """Test the CampaignChapterConverter converter."""
+    # GIVEN a guild with a campaign and a mock context
+    chapter = CampaignChapter(
+        name="mock_chapter",
+        number=1,
+        description_short="mock_description",
+        description_long="mock_description",
+    )
+
+    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter], characters=[])
+    await campaign.insert()
+
+    guild = guild_factory.build(
+        id=mock_ctx1.guild.id,
+        campaigns=[campaign],
+        active_campaign=campaign,
+        roll_result_thumbnails=[],
+    )
+    await guild.insert()
+    # WHEN the converter is called with a valid chapter number
+    # THEN assert the result is the correct number
+    assert await CampaignChapterConverter().convert(mock_ctx1, 1) == chapter
+
+    # WHEN the converter is called with an invalid chapter number
+    # THEN assert a BadArgument is raised
+    with pytest.raises(BadArgument):
+        await CampaignChapterConverter().convert(mock_ctx1, 2)
+
+    # WHEN the converter is called with a number less than zero
+    # THEN assert a BadArgument is raised
+    with pytest.raises(BadArgument):
+        await CampaignChapterConverter().convert(mock_ctx1, 0)
