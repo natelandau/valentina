@@ -166,6 +166,75 @@ class ChapterModal(Modal):
         self.stop()
 
 
+class InventoryItemModal(Modal):
+    """A modal for managing inventory items."""
+
+    def __init__(  # type: ignore [no-untyped-def]
+        self,
+        item_name: str | None = None,
+        item_description: str | None = None,
+        *args,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.item_name = item_name
+        self.item_description = item_description
+        self.update_existing = bool(item_name)
+
+        self.add_item(
+            InputText(
+                label="name",
+                placeholder="Name of the section",
+                value=self.item_name or None,
+                required=True,
+                style=discord.InputTextStyle.short,
+            )
+        )
+        self.add_item(
+            InputText(
+                label="description",
+                placeholder="Description of the section",
+                value=self.item_description or None,
+                style=discord.InputTextStyle.short,
+                required=False,
+            )
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        """Callback for the modal."""
+        self.item_name = self.children[0].value
+        self.item_description = self.children[1].value
+        view = ConfirmCancelButtons(interaction.user)
+
+        embed_title = "Update inventory" if self.update_existing else "Add item to inventory"
+        embed_description = f"### {self.item_name}\n{self.item_description}"
+        embed = discord.Embed(
+            title=embed_title, description=embed_description, color=EmbedColor.DEFAULT.value
+        )
+        await interaction.response.send_message(embeds=[embed], ephemeral=True, view=view)
+
+        await view.wait()
+        if view.confirmed:
+            self.confirmed = True
+            embed_title = "Inventory updated" if self.update_existing else "Inventory item added"
+            await interaction.edit_original_response(
+                embeds=[
+                    discord.Embed(
+                        title=embed_title,
+                        description=embed_description,
+                        color=EmbedColor.SUCCESS.value,
+                    )
+                ]
+            )
+        if not view.confirmed:
+            self.confirmed = False
+            await interaction.edit_original_response(
+                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)]
+            )
+
+        self.stop()
+
+
 class CustomSectionModal(Modal):
     """A modal for adding or editing a custom section."""
 

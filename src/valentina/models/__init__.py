@@ -1,7 +1,7 @@
 """Models for Valentina."""
 
 from .campaign import Campaign, CampaignChapter, CampaignNote, CampaignNPC
-from .character import Character, CharacterSheetSection, CharacterTrait
+from .character import Character, CharacterSheetSection, CharacterTrait, InventoryItem
 from .database import GlobalProperty
 from .guild import Guild, GuildChannels, GuildPermissions, GuildRollResultThumbnail
 from .user import CampaignExperience, User, UserMacro
@@ -30,6 +30,7 @@ __all__ = [
     "GuildChannels",
     "GuildPermissions",
     "GuildRollResultThumbnail",
+    "InventoryItem",
     "Probability",
     "RollProbability",
     "RollStatistic",

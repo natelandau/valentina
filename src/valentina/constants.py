@@ -747,6 +747,16 @@ class TraitCategory(Enum):
         return self.value.COMMON + getattr(self.value, char_class.name)
 
 
+class InventoryItemType(Enum):
+    """Enum for types of inventory items."""
+
+    CONSUMABLE = "Consumable"
+    ENCHANTED = "Enchanted"
+    EQUIPMENT = "Equipment"
+    OTHER = "Other"
+    WEAPON = "Weapon"
+
+
 @dataclass(frozen=True, eq=True)
 class VampireClanValue:
     """A value object for the VampireClan enum."""

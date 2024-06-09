@@ -15,7 +15,14 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models import Campaign, CampaignChapter, Character, CharacterTrait, Guild
+from valentina.models import (
+    Campaign,
+    CampaignChapter,
+    Character,
+    CharacterTrait,
+    Guild,
+    InventoryItem,
+)
 
 
 class CampaignChapterConverter(Converter):
@@ -254,6 +261,18 @@ class ValidTraitCategory(Converter):
             return TraitCategory[argument.upper()]
         except KeyError as e:
             msg = f"`{argument}` is not a valid trait category"
+            raise BadArgument(msg) from e
+
+
+class ValidInventoryItemFromID(Converter):
+    """Convert a InventoryItem name to a InventoryItem enum."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> InventoryItem:  # noqa: ARG002
+        """Validate and return a InventoryItem from it's id."""
+        try:
+            return await InventoryItem.get(argument)
+        except KeyError as e:
+            msg = f"`{argument}` is not an existing InventoryItem id"
             raise BadArgument(msg) from e
 
 
