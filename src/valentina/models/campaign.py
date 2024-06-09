@@ -171,6 +171,7 @@ class Campaign(Document):
         for character in await self.fetch_characters():
             channel_name = f"{Emoji.SILHOUETTE.value}-{character.name.lower().replace(' ', '-')}"
             owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)
+            await asyncio.sleep(1)  # Keep the rate limit happy
             channel_name_in_category = any(channel_name == channel.name for channel in channels)
             channel_db_id = character.channel
             channel_id_in_category = (
@@ -349,7 +350,7 @@ class Campaign(Document):
                 sorted_channels = sorted(channels, key=self._custom_channel_sort)
                 for i, channel in enumerate(sorted_channels):
                     await channel.edit(position=i)
-                    await asyncio.sleep(1.5)  # Keep the rate limit happy
+                    await asyncio.sleep(2)  # Keep the rate limit happy
 
                 logger.debug(f"Sorted channels: {[channel.name for channel in sorted_channels]}")
                 break
