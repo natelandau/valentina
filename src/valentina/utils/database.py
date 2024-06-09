@@ -11,6 +11,7 @@ from valentina.models import (
     CharacterTrait,
     GlobalProperty,
     Guild,
+    InventoryItem,
     RollProbability,
     RollStatistic,
     User,
@@ -60,6 +61,7 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
             Guild,
             User,
             RollProbability,
+            InventoryItem,
         ],
     )
 

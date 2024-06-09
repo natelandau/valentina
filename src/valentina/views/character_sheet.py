@@ -12,9 +12,10 @@ from valentina.constants import (
     CharSheetSection,
     EmbedColor,
     Emoji,
+    InventoryItemType,
     TraitCategory,
 )
-from valentina.models import AWSService, Character, CharacterTrait, Statistics
+from valentina.models import AWSService, Character, CharacterTrait, InventoryItem, Statistics
 from valentina.models.bot import ValentinaContext
 
 
@@ -174,6 +175,44 @@ async def __embed2(
     return embed
 
 
+async def __embed3(
+    character: Character,
+    owned_by_user: discord.User | None = None,
+    title: str | None = None,
+    show_footer: bool = True,
+) -> discord.Embed | None:
+    """Builds the third embed of a character sheet. This embed contains the character's inventory."""
+    items = await InventoryItem.find(InventoryItem.character == str(character.id)).to_list()
+    if title is None:
+        title = f"{character.full_name} - INVENTORY - Page 3"
+
+    embed = discord.Embed(title=title, description="", color=EmbedColor.INFO.value)
+
+    if show_footer:
+        modified = arrow.get(character.date_modified).humanize()
+        footer = f"Owned by: {owned_by_user.display_name} • " if owned_by_user else ""
+        footer += f"Last updated: {modified}"
+        embed.set_footer(text=footer)
+
+    if items:
+        for member in InventoryItemType:
+            sub_items = [i for i in items if i.type == member.name]
+            content = ""
+            for i in sub_items:
+                line_begin = "- "
+                name = f"**{i.name}**"
+                desc = f": {i.description}" if i.description else ""
+                line_end = "\n"
+                content += f"{line_begin}{name}{desc}{line_end}"
+
+            if sub_items:
+                embed.add_field(name=f"__**{member.value}**__", value=content, inline=False)
+    else:
+        embed.add_field(name="**EMPTY INVENTORY**", value="No items in inventory", inline=False)
+
+    return embed
+
+
 def __image_embed(
     character: Character,
     image_key: str,
@@ -214,6 +253,7 @@ async def show_sheet(
         [
             __embed1(character, owned_by_user, show_footer=show_footer),
             await __embed2(ctx, character, owned_by_user, show_footer=show_footer),
+            await __embed3(character, owned_by_user, show_footer=show_footer),
         ]
     )
 

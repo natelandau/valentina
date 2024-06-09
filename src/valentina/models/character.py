@@ -64,6 +64,15 @@ class CharacterTrait(Document):
         return TraitCategory[self.category_name] if self.category_name else None
 
 
+class InventoryItem(Document):
+    """Represents an item in a character's inventory."""
+
+    character: Indexed(str)  # type: ignore [valid-type]
+    name: str
+    description: str = ""
+    type: str  # InventoryItemType enum name
+
+
 class Character(Document):
     """Represents a character in the database."""
 
@@ -80,6 +89,7 @@ class Character(Document):
 
     sheet_sections: list[CharacterSheetSection] = Field(default_factory=list)
     traits: list[Link[CharacterTrait]] = Field(default_factory=list)
+    inventory: list[Link[InventoryItem]] = Field(default_factory=list)
 
     type_chargen: bool = False
     type_debug: bool = False

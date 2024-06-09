@@ -157,5 +157,9 @@ class CharacterFactory(BeanieDocumentFactory[Character]):
     def name_last(cls) -> str:
         return cls.__faker__.last_name()
 
+    @classmethod
+    def inventory(cls) -> list:
+        return []
+
     # async def insert(self) -> None:
     #     await self.insert(link_rule=WriteRules.WRITE)

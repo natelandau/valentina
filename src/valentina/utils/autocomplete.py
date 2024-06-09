@@ -128,6 +128,44 @@ async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionCh
     ][:MAX_OPTION_LIST_SIZE]
 
 
+async def select_char_inventory_item(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of inventory items and their index for a character.
+
+    This function fetches the active character from the bot's user service,
+    retrieves the argument "item" from the context options,
+    and filters the character's inventory items based on the starting string of the item name.
+    If the number of items reaches a maximum size, it stops appending more items.
+    If there is no active character, it returns a list with a single string "No active character".
+
+    Args:
+        ctx (discord.AutocompleteContext): The context in which the function is called.
+
+    Returns:
+        list[OptionChoice]: A list of available item names and their index in character.inventory.
+    """
+    character = await character_from_channel(ctx)
+
+    if not character:
+        user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
+
+        if not (
+            character := await user_object.active_character(
+                ctx.interaction.guild, raise_error=False
+            )
+        ):
+            return [OptionChoice("No active character", 0)]
+
+    # Determine the option to retrieve the argument
+    argument = ctx.options.get("item") or ""
+
+    # Filter and return the character's inventory items
+    return [
+        OptionChoice(t.name, str(t.id))
+        for t in sorted(character.inventory, key=lambda x: x.name)
+        if t.name.lower().startswith(argument.lower())
+    ][:MAX_OPTION_LIST_SIZE]
+
+
 async def select_char_level(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
     """Generate a list of available character levels.
 
