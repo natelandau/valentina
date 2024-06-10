@@ -62,9 +62,7 @@ class Roll(commands.Cog):
             pool (int): The number of dice to roll
         """
         # Grab the player's active character for statistic logging purposes
-        character = await character_from_channel(ctx.channel) or await ctx.fetch_active_character(
-            raise_error=False
-        )
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         if desperation > 0:
             active_campaign = await ctx.fetch_active_campaign()
@@ -273,9 +271,7 @@ class Roll(commands.Cog):
             return
 
         # Grab the player's active character for statistic logging purposes
-        character = await character_from_channel(ctx.channel) or await ctx.fetch_active_character(
-            raise_error=False
-        )
+        character = await character_from_channel(ctx.channel) or await ctx.fetch_active_character()
 
         await perform_roll(
             ctx,
