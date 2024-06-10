@@ -1,3 +1,9 @@
+## v2.3.1 (2024-06-09)
+
+### Fix
+
+- fix bug where `/roll throw` was broken
+
 ## v2.3.0 (2024-06-09)
 
 ### Feat
