@@ -496,6 +496,9 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Create a new book."""
+        if not await self.check_permissions(ctx):
+            return
+
         active_campaign = await ctx.fetch_active_campaign()
 
         modal = BookModal(title=truncate_string("Create new book", 45))
@@ -592,6 +595,9 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Edit a chapter."""
+        if not await self.check_permissions(ctx):
+            return
+
         active_campaign = await ctx.fetch_active_campaign()
         original_name = book.name
 
@@ -759,6 +765,9 @@ class CampaignCog(commands.Cog):
 
         TODO: Remove after migration
         """
+        if not await self.check_permissions(ctx):
+            return
+
         active_campaign = await ctx.fetch_active_campaign()
 
         title = f"Move Chapter `{selected_chapter.name}` to book `{book.name}`"
@@ -799,6 +808,9 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Create a new chapter."""
+        if not await self.check_permissions(ctx):
+            return
+
         book = await book_from_channel(ctx)
         if not book:
             await present_embed(
@@ -909,6 +921,9 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Edit a chapter."""
+        if not await self.check_permissions(ctx):
+            return
+
         book = await book_from_channel(ctx)
         if not book:
             await present_embed(

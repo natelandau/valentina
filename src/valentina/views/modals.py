@@ -433,7 +433,7 @@ class MacroCreateModal(Modal):
 
 
 class NoteModal(Modal):
-    """A modal for adding chapters."""
+    """A modal for adding Notes."""
 
     def __init__(self, note: CampaignNote | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
