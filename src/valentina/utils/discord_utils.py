@@ -3,10 +3,11 @@
 from typing import TYPE_CHECKING
 
 import discord
+from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import ChannelPermission
-from valentina.models import Character
+from valentina.models import CampaignBook, Character
 
 from .errors import BotMissingPermissionsError
 
@@ -176,7 +177,7 @@ def set_channel_perms(requested_permission: ChannelPermission) -> discord.Permis
 
 
 async def character_from_channel(
-    ctx: discord.ApplicationContext | discord.AutocompleteContext,
+    ctx: discord.ApplicationContext | discord.AutocompleteContext | commands.Context,
 ) -> Character | None:
     """Get the character from a campaign character channel.
 
@@ -198,3 +199,21 @@ async def character_from_channel(
         Character.channel == discord_channel.id,
         fetch_links=True,
     )
+
+
+async def book_from_channel(
+    ctx: discord.ApplicationContext | discord.AutocompleteContext | commands.Context,
+) -> CampaignBook | None:
+    """Get the book from a campaign book channel.
+
+    Args:
+        ctx (discord.ApplicationContext|discord.AutocompleteContext): The context containing the channel object.
+
+    Returns:
+        CampaignBook|None: The CampaignBook object if found; otherwise, None.
+    """
+    discord_channel = (
+        ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel
+    )
+
+    return await CampaignBook.find_one(CampaignBook.channel == discord_channel.id, fetch_links=True)

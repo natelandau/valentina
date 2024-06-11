@@ -8,7 +8,7 @@ from valentina.models.bot import ValentinaContext
 from valentina.views import ReRollButton, RollDisplay
 
 
-async def perform_roll(
+async def perform_roll(  # pragma: no cover
     ctx: ValentinaContext,
     pool: int,
     difficulty: int,

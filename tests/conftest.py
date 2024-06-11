@@ -49,12 +49,22 @@ def mock_bot(mocker):
 
 
 @pytest.fixture()
-def mock_interaction1(mocker, mock_guild1, mock_member):
+def mock_discord_channel(mocker):
+    """A mock of a discord.Channel object."""
+    mock_channel = mocker.MagicMock()
+    mock_channel.id = 12345
+    mock_channel.__class__ = discord.TextChannel
+    return mock_channel
+
+
+@pytest.fixture()
+def mock_interaction1(mocker, mock_guild1, mock_member, mock_discord_channel):
     """A mock of a discord.Interaction object."""
     mock_interaction = mocker.MagicMock()
     mock_interaction.id = 1
     mock_interaction.guild = mock_guild1
     mock_interaction.author = mock_member
+    mock_interaction.channel = mock_discord_channel
 
     mock_interaction.__class__ = discord.Interaction
 
@@ -139,7 +149,9 @@ def mock_guild2(mocker):
 
 
 @pytest_asyncio.fixture()
-async def async_mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1):  # noqa: RUF029
+async def async_mock_ctx1(  # noqa: RUF029
+    mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_channel
+):
     """Create an async mock context object with user 1."""
     mock_bot = mocker.AsyncMock()
     mock_bot.__class__ = commands.Bot
@@ -154,6 +166,7 @@ async def async_mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1): 
     mock_ctx.author = mock_member
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild1
+    mock_ctx.channel = mock_discord_channel
     mock_ctx.__class__ = discord.ApplicationContext
 
     # Mock the methods which post to audit and error logs
@@ -170,7 +183,7 @@ async def async_mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1): 
 
 
 @pytest.fixture()
-def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1):
+def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_channel):
     """Create a mock context object with user 1."""
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()
@@ -186,6 +199,7 @@ def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1):
     mock_ctx.author = mock_member
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild1
+    mock_ctx.channel = mock_discord_channel
     mock_ctx.__class__ = discord.ApplicationContext
 
     return mock_ctx

@@ -45,15 +45,15 @@ class CampaignViewer:
         if len(self.campaign.npcs) > 0:
             pages.append(await self._npc_pages())
 
-        if len(self.campaign.chapters) > 0:
-            pages.extend(await self._chapter_pages())
+        if len(self.campaign.books) > 0:
+            pages.extend(await self._book_pages())
 
         return pages
 
     async def _home_page(self) -> pages.PageGroup:
         """Construct the home page view of the campaign.
 
-        Build the home page embed summarizing key campaign information, including description, number of chapters, NPCs, and notes, with proper formatting and styling for presentation.
+        Build the home page embed summarizing key campaign information, including description, number of books, NPCs, and notes, with proper formatting and styling for presentation.
 
         Returns:
             pages.PageGroup: A PageGroup object representing the home view of the campaign.
@@ -69,7 +69,7 @@ class CampaignViewer:
 ```
 {campaign_description}
 ```scala
-Chapters : {len(self.campaign.chapters):<4} Created  : {self.campaign.date_created.strftime("%Y-%M-%d")}
+Books    : {len(self.campaign.books):<4} Created  : {self.campaign.date_created.strftime("%Y-%M-%d")}
 NPCs     : {len(self.campaign.npcs):<4} Modified : {self.campaign.date_modified.strftime("%Y-%M-%d")}
 Notes    : {len(self.campaign.notes):<4}
 ```
@@ -195,19 +195,29 @@ Notes    : {len(self.campaign.notes):<4}
             emoji="👥",
         )
 
-    async def _chapter_pages(self) -> list[pages.PageGroup]:
-        """Assemble pages for the campaign's chapters.
+    async def _book_pages(self) -> list[pages.PageGroup]:
+        """Assemble pages for the campaign's books.
 
-        Create a series of pages, one for each campaign chapter. Present chapters in individual embeds, using pagination for extensive descriptions.
+        Create a series of pages, one for each book in the campaign. Present books in individual embeds, using pagination for extensive descriptions.
 
         Returns:
-            list[pages.PageGroup]: A list of PageGroup objects, each signifying a chapter in the campaign.
+            list[pages.PageGroup]: A list of PageGroup objects, each signifying a book in the campaign.
         """
-        chapter_pages = []
+        book_pages = []
 
-        for chapter in sorted(self.campaign.chapters, key=lambda c: c.number):
+        for book in sorted(await self.campaign.fetch_books(), key=lambda b: b.number):
+            chapters = await book.fetch_chapters()
+            book_chapter_text = "### Chapters\n"
+            book_chapter_text += "\n".join([f"{c.number}. {c.name}" for c in chapters])
+
+            description_text = (
+                f"{book_chapter_text}\n### Description\n{book.description_long}"
+                if chapters
+                else f"### Description\n{book.description_long}"
+            )
+
             lines = textwrap.wrap(
-                chapter.description_long,
+                description_text,
                 self.max_chars,
                 break_long_words=False,
                 replace_whitespace=False,
@@ -215,16 +225,16 @@ Notes    : {len(self.campaign.notes):<4}
             embeds = []
             for line in lines:
                 embed = discord.Embed(
-                    title=f"{chapter.number}: {chapter.name}",
-                    description=line,
+                    title="",
+                    description=f"## Book #{book.number}: {book.name}\n" + line,
                     color=EmbedColor.DEFAULT.value,
                 )
                 embeds.append(embed)
 
-            chapter_page = pages.PageGroup(
+            book_page = pages.PageGroup(
                 pages=[pages.Page(embeds=[embed]) for embed in embeds],
-                label=f"{chapter.name}",
-                description=f"Chapter #{chapter.number}",
+                label=f"{book.name}",
+                description=f"Book #{book.number}",
                 custom_buttons=[
                     pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green),
                     pages.PaginatorButton(
@@ -237,9 +247,9 @@ Notes    : {len(self.campaign.notes):<4}
                 loop_pages=False,
                 emoji="📖",
             )
-            chapter_pages.append(chapter_page)
+            book_pages.append(book_page)
 
-        return chapter_pages
+        return book_pages
 
     async def display(self) -> pages.Paginator:
         """Display the campaign in a Discord paginator.

@@ -18,13 +18,13 @@ from valentina.constants import (
 )
 from valentina.models import AWSService, Campaign, ChangelogParser, Character, Guild, User
 from valentina.models.bot import Valentina
-from valentina.utils.discord_utils import character_from_channel
+from valentina.utils.discord_utils import book_from_channel, character_from_channel
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99
 
 
-async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
+async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029 # pragma: no cover
     """Populate the autocomplete list for the aws_object option based on the user's input."""
     aws_svc = AWSService()
 
@@ -35,7 +35,7 @@ async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list
     ]
 
 
-async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[str]:  # noqa: RUF029
+async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[str]:  # noqa: RUF029 # pragma: no cover
     """Populate the autocomplete for the version option. This is for the first of two options."""
     bot = cast(Valentina, ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
@@ -45,7 +45,7 @@ async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[s
     ]
 
 
-async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[str]:  # noqa: RUF029
+async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[str]:  # noqa: RUF029 # pragma: no cover
     """Populate the autocomplete for the version option. This is for the second of two options."""
     bot = cast(Valentina, ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
@@ -55,7 +55,70 @@ async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[s
     ]
 
 
+async def select_book(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Populate the autocomplete for the chapter option.
+
+    This function fetches the active campaign from the bot's campaign service,
+    fetches all books of that campaign, sorts them by book number,
+    and filters them based on the starting string of the book name.
+    If the number of books reaches a maximum size, it stops appending more books.
+    If there is no active campaign, it returns a list with a single string "No active campaign".
+
+    Args:
+        ctx (discord.AutocompleteContext): The context in which the function is called.
+
+    Returns:
+        list[OptionChoice]: A list of available chapter names mapped to book database id.
+    """
+    # Fetch the active campaign
+    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
+    active_campaign = await guild.fetch_active_campaign()
+    books = await active_campaign.fetch_books()
+
+    if not active_campaign:
+        return [OptionChoice("No active campaign", 1000)]
+
+    choices = [
+        OptionChoice(f"{book.number}. {book.name}", str(book.id))
+        for book in sorted(books, key=lambda x: x.number)
+        if book.name.lower().startswith(ctx.options["book"].lower())
+    ][:MAX_OPTION_LIST_SIZE]
+
+    return choices or [OptionChoice("No books", 1000)]
+
+
 async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Populate the autocomplete for the chapter option.
+
+    This function fetches the active book based on the Discord channel,
+    fetches all chapters of that book, sorts them by chapter number,
+    and filters them based on the starting string of the chapter name.
+    If the number of chapters reaches a maximum size, it stops appending more chapters.
+    If there is no active campaign, it returns a list with a single string "No active campaign".
+
+    Args:
+        ctx (discord.AutocompleteContext): The context in which the function is called.
+
+    Returns:
+        list[OptionChoice]: A list of available chapter names mapped to chapter.number.
+    """
+    # Fetch the active campaign
+    book = await book_from_channel(ctx)
+    if not book:
+        return [OptionChoice("Not in book channel", 1000)]
+
+    choices = [
+        OptionChoice(f"{chapter.number}. {chapter.name}", str(chapter.id))
+        for chapter in sorted(await book.fetch_chapters(), key=lambda x: x.number)
+        if chapter.name.lower().startswith(ctx.options["chapter"].lower())
+    ][:MAX_OPTION_LIST_SIZE]
+
+    return choices or [OptionChoice("No chapters", 1000)]
+
+
+async def select_chapter_old(
+    ctx: discord.AutocompleteContext,
+) -> list[OptionChoice]:  # pragma: no cover
     """Populate the autocomplete for the chapter option.
 
     This function fetches the active campaign from the bot's campaign service,
@@ -63,6 +126,8 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]
     and filters them based on the starting string of the chapter name.
     If the number of chapters reaches a maximum size, it stops appending more chapters.
     If there is no active campaign, it returns a list with a single string "No active campaign".
+
+    TODO: Remove this after migration to the new chapter system.
 
     Args:
         ctx (discord.AutocompleteContext): The context in which the function is called.
@@ -308,7 +373,7 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
     return options
 
 
-async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: ARG001, RUF029
+async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: ARG001, RUF029 # pragma: no cover
     """Generate a list of available countries for autocomplete.
 
     This function creates a predefined list of countries and their corresponding codes,
@@ -332,7 +397,9 @@ async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]
     ]
 
 
-async def select_desperation_dice(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+async def select_desperation_dice(
+    ctx: discord.AutocompleteContext,
+) -> list[OptionChoice]:  # pragma: no cover
     """Populate the autocomplete list for the desperation_dice option based on the user's input.
 
     This function creates a list of OptionChoice objects to populate the autocomplete list.
@@ -553,7 +620,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     ]
 
     # Check if the number of options exceeds the maximum allowed
-    if len(options) >= MAX_OPTION_LIST_SIZE:
+    if len(options) >= MAX_OPTION_LIST_SIZE:  # pragma: no cover
         instructions = "Keep typing ..." if ctx.value else "Start typing a name."
         return [OptionChoice(f"Too many characters to display. {instructions}", "")]
 

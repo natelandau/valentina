@@ -292,7 +292,7 @@ class DiceRoll:
         return title_map[self.result_type]
 
     @property
-    def embed_description(self) -> str:
+    def embed_description(self) -> str:  # pragma: no cover
         """The description of the roll response embed."""
         description_map = {
             RollResultType.OTHER: "",

@@ -39,7 +39,7 @@ class AWSService:
         self.bucket = self.bucket_name
         self.location = self.s3.get_bucket_location(Bucket=self.bucket)  # Ex. us-east-1
 
-    def copy_object(self, source_key: str, dest_key: str) -> bool:
+    def copy_object(self, source_key: str, dest_key: str) -> bool:  # pragma: no cover
         """Copy an object within the S3 bucket or to another bucket.
 
         Args:
@@ -58,7 +58,7 @@ class AWSService:
 
         return True
 
-    def delete_object(self, key: str) -> bool:
+    def delete_object(self, key: str) -> bool:  # pragma: no cover
         """Delete an object from the S3 bucket.
 
         Attempt to delete the object from the S3 bucket using the provided key.
@@ -80,7 +80,7 @@ class AWSService:
         # Check the DeleteMarker to confirm deletion
         return bool(result.get("DeleteMarker", False))
 
-    def download_file(self, key: str, download_path: str) -> bool:
+    def download_file(self, key: str, download_path: str) -> bool:  # pragma: no cover
         """Download a file from the S3 bucket to Valentina's server.
 
         Args:
@@ -98,7 +98,9 @@ class AWSService:
 
         return True
 
-    def generate_presigned_url(self, key: str, expiration: int = 3600) -> str | None:
+    def generate_presigned_url(
+        self, key: str, expiration: int = 3600
+    ) -> str | None:  # pragma: no cover
         """Generate a presigned URL for an object in the S3 bucket.
 
         A presigned URL grants temporary access to a specific S3 object without requiring AWS security credentials or permissions from the end user.
@@ -173,7 +175,7 @@ class AWSService:
         """Get the URL for an object in the S3 bucket."""
         return f"https://{self.bucket}.s3.amazonaws.com/{key}"
 
-    def list_objects(self, prefix: str) -> list[str]:
+    def list_objects(self, prefix: str) -> list[str]:  # pragma: no cover
         """List all objects in the S3 bucket with a given prefix.
 
         Use the S3 bucket's object filter method to find all objects that have keys starting with the given prefix. Return these keys as a list of strings.
@@ -187,7 +189,7 @@ class AWSService:
         result = self.s3.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
         return [obj["Key"] for obj in result.get("Contents", [])]
 
-    def object_exist(self, key: str) -> bool:
+    def object_exist(self, key: str) -> bool:  # pragma: no cover
         """Check if an object exists in the S3 bucket.
 
         Attempt to load the object from the S3 bucket using the provided key.
@@ -201,7 +203,9 @@ class AWSService:
         """
         return key in self.list_objects(key)
 
-    def upload_image(self, data: bytes, key: str, overwrite: bool = False) -> bool:
+    def upload_image(
+        self, data: bytes, key: str, overwrite: bool = False
+    ) -> bool:  # pragma: no cover
         """Upload a an image to an S3 bucket.
 
         Take the provided bytes data and attempt to upload it to the S3 bucket.
@@ -234,7 +238,7 @@ class AWSService:
         path: Path,
         name: str | None = None,
         overwrite: bool = False,
-    ) -> bool:
+    ) -> bool:  # pragma: no cover
         """Upload a file to an S3 bucket.
 
         Open the file in binary mode and attempt to upload it to the S3 bucket.

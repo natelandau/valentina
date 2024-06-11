@@ -9,12 +9,19 @@ Read more at https://polyfactory.litestar.dev/latest/index.html
 from faker import Faker
 from polyfactory.factories.beanie_odm_factory import BeanieDocumentFactory
 from polyfactory.pytest_plugin import register_fixture
-from rich import print
 
-from valentina.constants import CharacterConcept, CharClass, HunterCreed, TraitCategory, VampireClan
+from valentina.constants import (
+    CharacterConcept,
+    CharClass,
+    HunterCreed,
+    InventoryItemType,
+    TraitCategory,
+    VampireClan,
+)
 from valentina.models import (
     Campaign,
-    CampaignChapter,
+    CampaignBook,
+    CampaignBookChapter,
     CampaignExperience,
     CampaignNote,
     CampaignNPC,
@@ -23,6 +30,7 @@ from valentina.models import (
     Guild,
     GuildChannels,
     GuildPermissions,
+    InventoryItem,
     RollStatistic,
     User,
     UserMacro,
@@ -51,6 +59,67 @@ class RollStatFactory(BeanieDocumentFactory[CharacterTrait]):
 
 
 @register_fixture
+class BookChapterFactory(BeanieDocumentFactory[CampaignBookChapter]):
+    """Factory to create a campaign book object in the database."""
+
+    __model__ = CampaignBookChapter
+    __set_as_default_factory_for_type__ = True
+    __faker__ = Faker(locale="en_US")
+
+    @classmethod
+    def name(cls) -> str:
+        return cls.__faker__.sentence(nb_words=3).rstrip(".")
+
+    @classmethod
+    def number(cls) -> str:
+        return 1
+
+    @classmethod
+    def description_short(cls) -> str:
+        return cls.__faker__.paragraph(nb_sentences=3)
+
+    @classmethod
+    def description_long(cls) -> str:
+        return cls.__faker__.paragraph(nb_sentences=8)
+
+
+@register_fixture
+class BookFactory(BeanieDocumentFactory[CampaignBook]):
+    """Factory to create a campaign book object in the database."""
+
+    __model__ = CampaignBook
+    __set_as_default_factory_for_type__ = True
+    __faker__ = Faker(locale="en_US")
+    __min_collection_length__ = 1
+    __max_collection_length__ = 3
+    __randomize_collection_length__ = True
+
+    @classmethod
+    def name(cls) -> str:
+        return cls.__faker__.sentence(nb_words=3).rstrip(".")
+
+    @classmethod
+    def channel(cls) -> GuildChannels:
+        return 12345
+
+    @classmethod
+    def number(cls) -> str:
+        return 1
+
+    @classmethod
+    def description_short(cls) -> str:
+        return cls.__faker__.paragraph(nb_sentences=3)
+
+    @classmethod
+    def description_long(cls) -> str:
+        return cls.__faker__.paragraph(nb_sentences=8)
+
+    @classmethod
+    def chapters(cls) -> list:
+        return []
+
+
+@register_fixture
 class CampaignFactory(BeanieDocumentFactory[Campaign]):
     """Factory to create a campaign object in the database."""
 
@@ -68,6 +137,10 @@ class CampaignFactory(BeanieDocumentFactory[Campaign]):
     @classmethod
     def description(cls) -> str:
         return cls.__faker__.paragraph(nb_sentences=3)
+
+    @classmethod
+    def books(cls) -> list:
+        return []
 
 
 @register_fixture
@@ -92,6 +165,30 @@ class GuildFactory(BeanieDocumentFactory[Guild]):
     __min_collection_length__ = 1
     __max_collection_length__ = 3
     __randomize_collection_length__ = True
+
+
+@register_fixture
+class InventoryFactory(BeanieDocumentFactory[InventoryItem]):
+    """Factory to create a character object in the database."""
+
+    __model__ = CharacterTrait
+    __faker__ = Faker(locale="en_US")
+    __set_as_default_factory_for_type__ = True
+    __min_collection_length__ = 1
+    __max_collection_length__ = 3
+    __randomize_collection_length__ = True
+
+    @classmethod
+    def name(cls) -> str:
+        return cls.__faker__.sentence(nb_words=3).rstrip(".")
+
+    @classmethod
+    def description(cls) -> str:
+        return cls.__faker__.paragraph(nb_sentences=3)
+
+    @classmethod
+    def type(cls) -> int:
+        return cls.__random__.choice([x.name for x in InventoryItemType])
 
 
 @register_fixture
@@ -160,6 +257,3 @@ class CharacterFactory(BeanieDocumentFactory[Character]):
     @classmethod
     def inventory(cls) -> list:
         return []
-
-    # async def insert(self) -> None:
-    #     await self.insert(link_rule=WriteRules.WRITE)

@@ -7,6 +7,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from valentina.models import (
     Campaign,
+    CampaignBook,
+    CampaignBookChapter,
     Character,
     CharacterTrait,
     GlobalProperty,
@@ -19,7 +21,7 @@ from valentina.models import (
 from valentina.utils import ValentinaConfig
 
 
-def test_db_connection() -> bool:
+def test_db_connection() -> bool:  # pragma: no cover
     """Test the database connection using pymongo."""
     logger.debug("DB: Testing connection...")
     mongo_uri = ValentinaConfig().mongo_uri
@@ -54,14 +56,16 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
         database=database if database is not None else client[db_name],
         document_models=[
             Campaign,
+            CampaignBook,
+            CampaignBookChapter,
             Character,
             CharacterTrait,
             GlobalProperty,
-            RollStatistic,
             Guild,
-            User,
-            RollProbability,
             InventoryItem,
+            RollProbability,
+            RollStatistic,
+            User,
         ],
     )
 

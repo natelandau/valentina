@@ -190,17 +190,34 @@ async def test_select_storyteller_character(mock_ctx1, character_factory):
 
 
 @pytest.mark.drop_db()
-async def test_select_chapter(mock_ctx1, guild_factory, campaign_factory):
+async def test_select_chapter(mock_ctx1, book_factory, book_chapter_factory):
     """Test the select_chapter function."""
-    # GIVEN a guild with a campaign and a mock context
-    chapter = CampaignChapter(
+    chapter = book_chapter_factory.build(
         name="mock_chapter",
         number=1,
-        description_short="mock_description",
-        description_long="mock_description",
     )
+    chapter_object = await chapter.insert()
 
-    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter], characters=[])
+    book = book_factory.build(chapters=[chapter_object])
+    await book.insert()
+
+    # WHEN calling select_chapter
+    mock_ctx1.options = {"chapter": "mock"}
+    result = await autocomplete.select_chapter(mock_ctx1)
+
+    # THEN the chapter is returned
+    assert len(result) == 1
+    assert result[0].name == "1. mock_chapter"
+    assert result[0].value == str(chapter_object.id)
+
+
+@pytest.mark.drop_db()
+async def test_select_book(mock_ctx1, book_factory, campaign_factory, guild_factory):
+    """Test the select_book autocomplete function."""
+    book = book_factory.build(name="mock_book", number=1)
+    book_object = await book.insert()
+
+    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, books=[book_object], characters=[])
     await campaign.insert()
 
     guild = guild_factory.build(
@@ -212,13 +229,13 @@ async def test_select_chapter(mock_ctx1, guild_factory, campaign_factory):
     await guild.insert()
 
     # WHEN calling select_chapter
-    mock_ctx1.options = {"chapter": "mock"}
-    result = await autocomplete.select_chapter(mock_ctx1)
+    mock_ctx1.options = {"book": "mock"}
+    result = await autocomplete.select_book(mock_ctx1)
 
     # THEN the chapter is returned
     assert len(result) == 1
-    assert result[0].name == "1. mock_chapter"
-    assert result[0].value == "1"
+    assert result[0].name == "1. mock_book"
+    assert result[0].value == str(book_object.id)
 
 
 @pytest.mark.drop_db()
