@@ -6,6 +6,7 @@ from .actions import confirm_action
 from .character_sheet import sheet_embed, show_sheet
 from .modals import (
     BioModal,
+    BookModal,
     ChangeNameModal,
     ChapterModal,
     CustomSectionModal,
@@ -22,6 +23,7 @@ from .thumbnail_review import ThumbnailReview
 
 __all__ = [
     "BioModal",
+    "BookModal",
     "CancelButton",
     "ChangeNameModal",
     "ChapterModal",

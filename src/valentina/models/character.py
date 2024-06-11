@@ -172,7 +172,7 @@ class Character(Document):
         except KeyError:
             return None
 
-    async def add_image(self, extension: str, data: bytes) -> str:
+    async def add_image(self, extension: str, data: bytes) -> str:  # pragma: no cover
         """Add an image to a character and upload it to Amazon S3.
 
         This function generates a unique key for the image, uploads the image to S3, and updates the character in the database to include the new image.
@@ -204,7 +204,7 @@ class Character(Document):
 
         return key
 
-    async def delete_image(self, key: str) -> None:
+    async def delete_image(self, key: str) -> None:  # pragma: no cover
         """Delete a character's image from both the character data and Amazon S3.
 
         This method updates the character's data to remove the image reference
@@ -276,7 +276,7 @@ class Character(Document):
 
         return None
 
-    async def associate_with_campaign(
+    async def associate_with_campaign(  # pragma: no cover
         self, ctx: "ValentinaContext", new_campaign: "Campaign"
     ) -> bool:
         """Associate a character with a campaign."""

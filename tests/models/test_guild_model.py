@@ -30,7 +30,7 @@ async def test_add_roll_result_thumbnail(mock_ctx1, guild_factory):
         await guild.add_roll_result_thumbnail(mock_ctx1, RollResultType.CRITICAL, "test_url")
 
 
-@pytest.mark.no_db()
+@pytest.mark.drop_db()
 async def test_fetch_diceroll_thumbnail(guild_factory):
     """Test the fetch_diceroll_thumbnail method."""
     # GIVEN a guild

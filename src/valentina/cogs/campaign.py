@@ -7,17 +7,36 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import MAX_FIELD_COUNT
-from valentina.models import Campaign, CampaignChapter, CampaignNote, CampaignNPC, Guild
+from valentina.models import (
+    Campaign,
+    CampaignBook,
+    CampaignBookChapter,
+    CampaignNote,
+    CampaignNPC,
+    Guild,
+)
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils.autocomplete import select_campaign, select_chapter, select_note, select_npc
+from valentina.utils.autocomplete import (
+    select_book,
+    select_campaign,
+    select_chapter,
+    select_chapter_old,
+    select_note,
+    select_npc,
+)
 from valentina.utils.converters import (
     CampaignChapterConverter,
+    ValidBookNumber,
     ValidCampaign,
+    ValidCampaignBook,
+    ValidCampaignBookChapter,
     ValidChapterNumber,
     ValidYYYYMMDD,
 )
+from valentina.utils.discord_utils import book_from_channel
 from valentina.utils.helpers import truncate_string
 from valentina.views import (
+    BookModal,
     ChapterModal,
     NoteModal,
     NPCModal,
@@ -35,8 +54,10 @@ class CampaignCog(commands.Cog):
 
     campaign = discord.SlashCommandGroup("campaign", "Manage campaigns")
     chapter = campaign.create_subgroup(name="chapter", description="Manage campaign chapters")
+    book = campaign.create_subgroup(name="book", description="Manage campaign books")
     npc = campaign.create_subgroup(name="npc", description="Manage campaign NPCs")
     notes = campaign.create_subgroup(name="notes", description="Manage campaign notes")
+    admin = campaign.create_subgroup(name="admin", description="Administer the campaign")
 
     async def check_permissions(self, ctx: ValentinaContext) -> bool:
         """Check if the user has permissions to run the command."""
@@ -462,10 +483,10 @@ class CampaignCog(commands.Cog):
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
-    ### CHAPTER COMMANDS ####################################################################
+    ### BOOK COMMANDS ####################################################################
 
-    @chapter.command(name="create", description="Create a new chapter")
-    async def create_chapter(
+    @book.command(name="create", description="Create a new book")
+    async def create_book(
         self,
         ctx: ValentinaContext,
         hidden: Option(
@@ -474,10 +495,107 @@ class CampaignCog(commands.Cog):
             default=True,
         ),
     ) -> None:
-        """Create a new chapter."""
+        """Create a new book."""
         active_campaign = await ctx.fetch_active_campaign()
 
-        modal = ChapterModal(title=truncate_string("Create new chapter", 45))
+        modal = BookModal(title=truncate_string("Create new book", 45))
+        await ctx.send_modal(modal)
+        await modal.wait()
+        if not modal.confirmed:
+            return
+
+        books = await active_campaign.fetch_books()
+
+        name = modal.name.strip().title()
+        description_short = modal.description_short.strip()
+        description_long = modal.description_long.strip()
+        chapter_number = max([c.number for c in books], default=0) + 1
+
+        book = CampaignBook(
+            name=name,
+            description_short=description_short,
+            description_long=description_long,
+            number=chapter_number,
+            campaign=str(active_campaign.id),
+        )
+        await book.insert()
+        active_campaign.books.append(book)
+        await active_campaign.save()
+        await active_campaign.create_channels(ctx)
+
+        await ctx.post_to_audit_log(
+            f"Create book: `{book.number}. {book.name}` in `{active_campaign.name}`",
+        )
+        await present_embed(
+            ctx,
+            f"Create book: `{book.number}. {book.name}` in `{active_campaign.name}`",
+            level="success",
+            description=description_long,
+            ephemeral=hidden,
+        )
+
+    @book.command(name="list", description="List all books")
+    async def list_books(
+        self,
+        ctx: ValentinaContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """List all books."""
+        active_campaign = await ctx.fetch_active_campaign()
+        all_books = await active_campaign.fetch_books()
+
+        if len(all_books) == 0:
+            await present_embed(
+                ctx,
+                title="No books",
+                description="There are no books\nCreate one with `/campaign create_book`",
+                level="info",
+                ephemeral=hidden,
+            )
+            return
+
+        fields = []
+        fields.extend(
+            [
+                (
+                    f"**{book.number}.** **__{book.name}__** ({len(book.chapters)} chapters)",
+                    f"{book.description_short}",
+                )
+                for book in sorted(all_books, key=lambda x: x.number)
+            ]
+        )
+
+        await present_embed(
+            ctx, title=f"All Books in {active_campaign.name}", fields=fields, level="info"
+        )
+
+    @book.command(name="edit", description="Edit a book")
+    @logger.catch
+    async def edit_book(
+        self,
+        ctx: ValentinaContext,
+        book: Option(
+            ValidCampaignBook,
+            name="book",
+            description="Book to edit",
+            required=True,
+            autocomplete=select_book,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Edit a chapter."""
+        active_campaign = await ctx.fetch_active_campaign()
+        original_name = book.name
+
+        modal = BookModal(title=truncate_string(f"Edit book {book.name}", 45), book=book)
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
@@ -486,24 +604,240 @@ class CampaignCog(commands.Cog):
         name = modal.name.strip().title()
         description_short = modal.description_short.strip()
         description_long = modal.description_long.strip()
-        chapter_number = max([c.number for c in active_campaign.chapters], default=0) + 1
 
-        chapter = CampaignChapter(
+        book.name = name
+        book.description_short = description_short
+        book.description_long = description_long
+        await book.save()
+
+        if original_name != name:
+            await active_campaign.create_channels(ctx)
+
+        await ctx.post_to_audit_log(f"Update book: `{book.name}` in `{active_campaign.name}`")
+
+        await present_embed(
+            ctx,
+            title=f"Update book: `{name}` in `{active_campaign.name}`",
+            level="success",
+            description=description_short,
+            ephemeral=hidden,
+        )
+
+    @book.command(name="delete", description="Delete a book")
+    async def delete_book(
+        self,
+        ctx: ValentinaContext,
+        book: Option(
+            ValidCampaignBook,
+            name="book",
+            description="Book to delete",
+            required=True,
+            autocomplete=select_book,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Delete a chapter."""
+        if not await self.check_permissions(ctx):
+            return
+
+        active_campaign = await ctx.fetch_active_campaign()
+
+        title = f"Delete book `{book.number}. {book.name}` from `{active_campaign.name}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden, audit=True
+        )
+
+        if not is_confirmed:
+            return
+
+        await book.delete()
+        active_campaign.books.remove(book)
+        await active_campaign.save()
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    @book.command(name="renumber", description="Renumber books")
+    async def renumber_books(
+        self,
+        ctx: ValentinaContext,
+        book: Option(
+            ValidCampaignBook,
+            name="book",
+            description="Book to renumber",
+            required=True,
+            autocomplete=select_book,
+        ),
+        new_number: Option(
+            ValidBookNumber,
+            name="new_number",
+            description="New chapter number",
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Renumber books."""
+        if not await self.check_permissions(ctx):
+            return
+
+        if book.number == new_number:
+            await present_embed(
+                ctx,
+                title="book numbers are the same",
+                description="The book numbers are the same",
+                level="info",
+                ephemeral=hidden,
+            )
+            return
+
+        active_campaign = await ctx.fetch_active_campaign()
+        original_number = book.number
+
+        title = (
+            f"Renumber book `{book.name}` from number `{original_number}` to number `{new_number}`"
+        )
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden, audit=True
+        )
+
+        if not is_confirmed:
+            return
+
+        all_books = await active_campaign.fetch_books()
+
+        # Update the number of the selected book
+        book.number = new_number
+
+        # Adjust the numbers of the other books
+        if new_number > original_number:
+            # Shift books down if the new number is higher
+            for b in all_books:
+                if original_number < b.number <= new_number:
+                    b.number -= 1
+                    await b.save()
+        else:
+            # Shift books up if the new number is lower
+            for b in all_books:
+                if new_number <= b.number < original_number:
+                    b.number += 1
+                    await b.save()
+
+        # Save the selected book with its new number
+        await book.save()
+        await active_campaign.create_channels(ctx)
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    ### ADMIN COMMANDS ####################################################################
+    @admin.command(name="chapter_to_book", description="Move a chapter to a book")
+    async def chapter_to_book(
+        self,
+        ctx: ValentinaContext,
+        selected_chapter: Option(
+            CampaignChapterConverter,
+            name="chapter",
+            description="Chapter to renumber",
+            required=True,
+            autocomplete=select_chapter_old,
+        ),
+        book: Option(
+            ValidCampaignBook,
+            name="book",
+            description="Book to edit",
+            required=True,
+            autocomplete=select_book,
+        ),
+    ) -> None:
+        """Move a chapter to a book.
+
+        TODO: Remove after migration
+        """
+        active_campaign = await ctx.fetch_active_campaign()
+
+        title = f"Move Chapter `{selected_chapter.name}` to book `{book.name}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=False, audit=True
+        )
+
+        if not is_confirmed:
+            return
+
+        new_chapter = CampaignBookChapter(
+            name=selected_chapter.name,
+            description_short=selected_chapter.description_short,
+            description_long=selected_chapter.description_long,
+            number=max([c.number for c in await book.fetch_chapters()], default=0) + 1,
+            book=str(book.id),
+        )
+        await new_chapter.insert()
+        book.chapters.append(new_chapter)
+        await book.save()
+
+        index = active_campaign.chapters.index(selected_chapter)
+        del active_campaign.chapters[index]
+        await active_campaign.save()
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    ### CHAPTER COMMANDS ####################################################################
+
+    @chapter.command(name="create", description="Create a new chapter")
+    async def create_chapter(
+        self,
+        ctx: ValentinaContext,
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default false).",
+            default=False,
+        ),
+    ) -> None:
+        """Create a new chapter."""
+        book = await book_from_channel(ctx)
+        if not book:
+            await present_embed(
+                ctx,
+                title="No active book",
+                description="Invoke this command from the appropriate book channel to create a chapter",
+                level="ERROR",
+                ephemeral=hidden,
+            )
+            return
+
+        modal = ChapterModal(title="Create new chapter")
+        await ctx.send_modal(modal)
+        await modal.wait()
+        if not modal.confirmed:
+            return
+
+        name = modal.name.strip().title()
+        description_short = modal.description_short.strip()
+        description_long = modal.description_long.strip()
+        chapter_number = max([c.number for c in await book.fetch_chapters()], default=0) + 1
+
+        chapter = CampaignBookChapter(
             name=name,
             description_short=description_short,
             description_long=description_long,
             number=chapter_number,
+            book=str(book.id),
         )
-        active_campaign.chapters.append(chapter)
-        await active_campaign.save()
-        await active_campaign.create_channels(ctx)
+        await chapter.insert()
+        book.chapters.append(chapter)
+        await book.save()
 
         await ctx.post_to_audit_log(
-            f"Create chapter: `{chapter.number}. {chapter.name}` in `{active_campaign.name}`",
+            f"Create chapter: `{chapter.number}. {chapter.name}` in book `{book.name}`",
         )
         await present_embed(
             ctx,
-            f"Create chapter: `{chapter.number}. {chapter.name}` in `{active_campaign.name}`",
+            f"Create chapter: `{chapter.number}. {chapter.name}` in book `{book.name}`",
             level="success",
             description=description_long,
             ephemeral=hidden,
@@ -520,13 +854,24 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """List all chapters."""
-        active_campaign = await ctx.fetch_active_campaign()
+        book = await book_from_channel(ctx)
+        if not book:
+            await present_embed(
+                ctx,
+                title="No active book",
+                description="Invoke this command from the appropriate book channel to create a chapter",
+                level="ERROR",
+                ephemeral=hidden,
+            )
+            return
 
-        if len(active_campaign.chapters) == 0:
+        chapters = await book.fetch_chapters()
+
+        if len(chapters) == 0:
             await present_embed(
                 ctx,
                 title="No Chapters",
-                description="There are no chapters\nCreate one with `/campaign create_chapter`",
+                description="There are no chapters\nCreate one with `/campaign chapter create`",
                 level="info",
                 ephemeral=hidden,
             )
@@ -539,7 +884,7 @@ class CampaignCog(commands.Cog):
                     f"**{chapter.number}.** **__{chapter.name}__**",
                     f"{chapter.description_short}",
                 )
-                for chapter in sorted(active_campaign.chapters, key=lambda x: x.number)
+                for chapter in sorted(chapters, key=lambda x: x.number)
             ]
         )
 
@@ -550,8 +895,8 @@ class CampaignCog(commands.Cog):
     async def edit_chapter(
         self,
         ctx: ValentinaContext,
-        selected_chapter: Option(
-            CampaignChapterConverter,
+        chapter: Option(
+            ValidCampaignBookChapter,
             name="chapter",
             description="Chapter to renumber",
             required=True,
@@ -559,15 +904,23 @@ class CampaignCog(commands.Cog):
         ),
         hidden: Option(
             bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
+            description="Make the response visible only to you (default false).",
+            default=False,
         ),
     ) -> None:
         """Edit a chapter."""
-        active_campaign = await ctx.fetch_active_campaign()
-        original_name = selected_chapter.name
+        book = await book_from_channel(ctx)
+        if not book:
+            await present_embed(
+                ctx,
+                title="No active book",
+                description="Invoke this command from the appropriate book channel to edit a chapter",
+                level="ERROR",
+                ephemeral=hidden,
+            )
+            return
 
-        modal = ChapterModal(title=truncate_string("Edit chapter", 45), chapter=selected_chapter)
+        modal = ChapterModal(title=truncate_string("Edit chapter", 45), chapter=chapter)
         await ctx.send_modal(modal)
         await modal.wait()
         if not modal.confirmed:
@@ -577,19 +930,16 @@ class CampaignCog(commands.Cog):
         description_short = modal.description_short.strip()
         description_long = modal.description_long.strip()
 
-        index = active_campaign.chapters.index(selected_chapter)
-        active_campaign.chapters[index].name = name
-        active_campaign.chapters[index].description_short = description_short
-        active_campaign.chapters[index].description_long = description_long
-        await active_campaign.save()
-        if original_name != name:
-            await active_campaign.create_channels(ctx)
+        chapter.name = name
+        chapter.description_short = description_short
+        chapter.description_long = description_long
+        await chapter.save()
 
-        await ctx.post_to_audit_log(f"Update chapter: `{name}` in `{active_campaign.name}`")
+        await ctx.post_to_audit_log(f"Update chapter: `{name}` in `{book.name}`")
 
         await present_embed(
             ctx,
-            title=f"Update chapter: `{name}` in `{active_campaign.name}`",
+            title=f"Update chapter: `{name}` in `{book.name}`",
             level="success",
             description=description_short,
             ephemeral=hidden,
@@ -599,8 +949,8 @@ class CampaignCog(commands.Cog):
     async def delete_chapter(
         self,
         ctx: ValentinaContext,
-        selected_chapter: Option(
-            CampaignChapterConverter,
+        chapter: Option(
+            ValidCampaignBookChapter,
             name="chapter",
             description="Chapter to renumber",
             required=True,
@@ -608,17 +958,26 @@ class CampaignCog(commands.Cog):
         ),
         hidden: Option(
             bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
+            description="Make the response visible only to you (default False).",
+            default=False,
         ),
     ) -> None:
         """Delete a chapter."""
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        book = await book_from_channel(ctx)
+        if not book:
+            await present_embed(
+                ctx,
+                title="No active book",
+                description="Invoke this command from the appropriate book channel to delete a chapter",
+                level="ERROR",
+                ephemeral=hidden,
+            )
+            return
 
-        title = f"Delete Chapter `{selected_chapter.number}. {selected_chapter.name}` from `{active_campaign.name}`"
+        title = f"Delete Chapter `{chapter.number}. {chapter.name}` from `{book.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, audit=True
         )
@@ -626,9 +985,9 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
-        index = active_campaign.chapters.index(selected_chapter)
-        del active_campaign.chapters[index]
-        await active_campaign.save()
+        await chapter.delete()
+        book.chapters.remove(chapter)
+        await book.save()
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -636,8 +995,8 @@ class CampaignCog(commands.Cog):
     async def renumber_chapters(
         self,
         ctx: ValentinaContext,
-        chapter_to_renumber: Option(
-            CampaignChapterConverter,
+        chapter: Option(
+            ValidCampaignBookChapter,
             name="chapter",
             description="Chapter to renumber",
             required=True,
@@ -659,7 +1018,18 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        if chapter_to_renumber.number == new_number:
+        book = await book_from_channel(ctx)
+        if not book:
+            await present_embed(
+                ctx,
+                title="No active book",
+                description="Invoke this command from the appropriate book channel to renumber chapters",
+                level="ERROR",
+                ephemeral=hidden,
+            )
+            return
+
+        if chapter.number == new_number:
             await present_embed(
                 ctx,
                 title="Chapter numbers are the same",
@@ -669,51 +1039,39 @@ class CampaignCog(commands.Cog):
             )
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
-        index = active_campaign.chapters.index(chapter_to_renumber)
-        selected_chapter = active_campaign.chapters[index]
-        original_number = selected_chapter.number
+        original_number = chapter.number
 
-        before = "\n".join(
-            [
-                f"{x.number}: {x.name}"
-                for x in sorted(active_campaign.chapters, key=lambda x: x.number)
-            ]
+        title = (
+            f"Renumber book `{book.name}` from number `{original_number}` to number `{new_number}`"
         )
-
-        # Adjust the numbers of the other chapters
-        if new_number > selected_chapter.number:
-            for chapter in active_campaign.chapters:
-                if selected_chapter.number < chapter.number <= new_number:
-                    chapter.number -= 1
-        else:
-            for chapter in active_campaign.chapters:
-                if new_number <= chapter.number < selected_chapter.number:
-                    chapter.number += 1
-
-        # Update the number of the selected chapter
-        selected_chapter.number = new_number
-
-        after = "\n".join(
-            [
-                f"{x.number}: {x.name}"
-                for x in sorted(active_campaign.chapters, key=lambda x: x.number)
-            ]
-        )
-
-        description = f"### Before:\n{before}\n### After:\n{after}"
-
-        title = f"Renumber chapter `{selected_chapter.name}` from number `{original_number}` to number `{new_number}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, description=description, hidden=hidden, audit=True
+            ctx, title, hidden=hidden, audit=True
         )
 
         if not is_confirmed:
             return
 
-        active_campaign.chapters = sorted(active_campaign.chapters, key=lambda x: x.number)
-        await active_campaign.save()
-        await active_campaign.create_channels(ctx)
+        all_chapters = await book.fetch_chapters()
+
+        # Update the number of the selected book
+        chapter.number = new_number
+
+        # Adjust the numbers of the other books
+        if new_number > original_number:
+            # Shift books down if the new number is higher
+            for c in all_chapters:
+                if original_number < c.number <= new_number:
+                    c.number -= 1
+                    await c.save()
+        else:
+            # Shift books up if the new number is lower
+            for c in all_chapters:
+                if new_number <= c.number < original_number:
+                    c.number += 1
+                    await c.save()
+
+        # Save the selected book with its new number
+        await chapter.save()
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

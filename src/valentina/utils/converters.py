@@ -17,16 +17,22 @@ from valentina.constants import (
 )
 from valentina.models import (
     Campaign,
+    CampaignBook,
+    CampaignBookChapter,
     CampaignChapter,
     Character,
     CharacterTrait,
     Guild,
     InventoryItem,
 )
+from valentina.utils.discord_utils import book_from_channel
 
 
 class CampaignChapterConverter(Converter):
-    """Convert a chapter number to a CampaignChapter object."""
+    """Convert a chapter number to a CampaignChapter object.
+
+    TODO: Remove this converter after chapter migration is complete.
+    """
 
     async def convert(self, ctx: commands.Context, argument: str) -> CampaignChapter:
         """Validate and normalize traits."""
@@ -48,14 +54,65 @@ class CampaignChapterConverter(Converter):
         return chapter
 
 
+class ValidCampaignBook(Converter):  # pragma: no cover
+    """A converter that converts a book id to a CampaignBook object."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> CampaignBook:  # noqa: ARG002
+        """Validate and normalize book ids."""
+        book = await CampaignBook.get(argument)
+        if book:
+            return book
+
+        msg = f"`{argument}` is not a valid book"
+        raise BadArgument(msg)
+
+
+class ValidCampaignBookChapter(Converter):  # pragma: no cover
+    """A converter that converts a book id to a CampaignBookChapter object."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> CampaignBookChapter:  # noqa: ARG002
+        """Validate and normalize book ids."""
+        chapter = await CampaignBookChapter.get(argument)
+        if chapter:
+            return chapter
+
+        msg = f"`{argument}` is not a valid chapter"
+        raise BadArgument(msg)
+
+
+class ValidBookNumber(Converter):
+    """A converter that ensures a requested book number is valid."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> int:
+        """Validate and normalize book numbers."""
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        active_campaign = await guild.fetch_active_campaign()
+        campaign_book_numbers = [x.number for x in await active_campaign.fetch_books()]
+
+        try:
+            book_number = int(argument)
+        except ValueError as e:
+            msg = f"`{argument}` is not a valid chapter number"
+            raise BadArgument(msg) from e
+
+        if book_number < 1:
+            msg = "Chapter numbers must be greater than 0"
+            raise BadArgument(msg)
+
+        if book_number not in campaign_book_numbers:
+            msg = f"Requested book number `{book_number}` is not part of the active campaign."
+            raise BadArgument(msg)
+
+        return book_number
+
+
 class ValidChapterNumber(Converter):
     """A converter that ensures a requested chapter number is valid."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> int:
         """Validate and normalize chapter numbers."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
-        campaign_chapter_numbers = [x.number for x in active_campaign.chapters]
+        book = await book_from_channel(ctx)
+        campaign_chapter_numbers = [x.number for x in await book.fetch_chapters()]
 
         try:
             chapter_number = int(argument)
@@ -68,13 +125,13 @@ class ValidChapterNumber(Converter):
             raise BadArgument(msg)
 
         if chapter_number not in campaign_chapter_numbers:
-            msg = f"Requested chapter number `{chapter_number}` is not part of the active campaign."
+            msg = f"Requested chapter number `{chapter_number}` is not part of the book."
             raise BadArgument(msg)
 
         return chapter_number
 
 
-class ValidChannelName(Converter):
+class ValidChannelName(Converter):  # pragma: no cover
     """A converter that ensures a requested channel name is valid."""
 
     ALLOWED_CHARACTERS = r"ABCDEFGHIJKLMNOPQRSTUVWXYZ!?'`-<>\/"
@@ -226,7 +283,7 @@ class ValidClan(Converter):
             raise BadArgument(msg) from e
 
 
-class ValidImageURL(Converter):
+class ValidImageURL(Converter):  # pragma: no cover
     """Converter that ensures a requested image URL is valid."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> str:  # noqa: ARG002
@@ -264,7 +321,7 @@ class ValidTraitCategory(Converter):
             raise BadArgument(msg) from e
 
 
-class ValidInventoryItemFromID(Converter):
+class ValidInventoryItemFromID(Converter):  # pragma: no cover
     """Convert a InventoryItem name to a InventoryItem enum."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> InventoryItem:  # noqa: ARG002
@@ -276,7 +333,7 @@ class ValidInventoryItemFromID(Converter):
             raise BadArgument(msg) from e
 
 
-class ValidTraitFromID(Converter):
+class ValidTraitFromID(Converter):  # pragma: no cover
     """Convert a TraitCategory name to a TraitCategory enum."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> CharacterTrait:  # noqa: ARG002

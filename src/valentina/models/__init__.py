@@ -1,6 +1,13 @@
 """Models for Valentina."""
 
-from .campaign import Campaign, CampaignChapter, CampaignNote, CampaignNPC
+from .campaign import (
+    Campaign,
+    CampaignBook,
+    CampaignBookChapter,
+    CampaignChapter,
+    CampaignNote,
+    CampaignNPC,
+)
 from .character import Character, CharacterSheetSection, CharacterTrait, InventoryItem
 from .database import GlobalProperty
 from .guild import Guild, GuildChannels, GuildPermissions, GuildRollResultThumbnail
@@ -15,6 +22,8 @@ from .changelog import ChangelogParser, ChangelogPoster
 __all__ = [
     "AWSService",
     "Campaign",
+    "CampaignBook",
+    "CampaignBookChapter",
     "CampaignChapter",
     "CampaignExperience",
     "CampaignNPC",

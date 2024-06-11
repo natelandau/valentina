@@ -5,6 +5,7 @@
 -   [ ] Campaign: Delete chapter channel when chapter is deleted
 -   [ ] Campaign: If only one campaign, always set it as active
 -   [ ] Campaign: View any campaign, not just active one
+-   [ ] Campaign: Add books to campaigns. Books contain chapters.
 -   [ ] CharGen: Add backgrounds to freebie point picker
 -   [ ] CharGen: Add changelings
 -   [ ] CharGen: Add ghouls

@@ -4,7 +4,7 @@ import discord
 from discord.ui import InputText, Modal
 
 from valentina.constants import MAX_FIELD_COUNT, CharClass, EmbedColor
-from valentina.models import CampaignChapter, CampaignNote, CampaignNPC, Character
+from valentina.models import CampaignBook, CampaignBookChapter, CampaignNote, CampaignNPC, Character
 from valentina.views import ConfirmCancelButtons
 
 
@@ -94,10 +94,82 @@ class BioModal(Modal):
         self.stop()
 
 
+class BookModal(Modal):
+    """A modal for campaign books."""
+
+    def __init__(self, book: CampaignBook | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+        super().__init__(*args, **kwargs)
+        self.confirmed: bool = False
+        self.name: str = ""
+        self.description_short: str = ""
+        self.description_long: str = ""
+
+        self.add_item(
+            InputText(
+                label="name",
+                placeholder="Enter a name for the chapter",
+                value=book.name if book else None,
+                required=True,
+                style=discord.InputTextStyle.short,
+            )
+        )
+        self.add_item(
+            InputText(
+                label="description_short",
+                placeholder="A short description for the book",
+                value=book.description_short if book else None,
+                required=True,
+                style=discord.InputTextStyle.long,
+                max_length=500,
+            )
+        )
+        self.add_item(
+            InputText(
+                label="description_long",
+                placeholder="Long description of the book",
+                value=book.description_long if book else None,
+                required=True,
+                style=discord.InputTextStyle.long,
+                max_length=1900,
+            )
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        """Callback for the modal."""
+        view = ConfirmCancelButtons(interaction.user)
+        self.name = self.children[0].value
+        self.description_short = self.children[1].value
+        self.description_long = self.children[2].value
+
+        embed = discord.Embed(title="Confirm Book", color=EmbedColor.INFO.value)
+        embed.add_field(name="Book Name", value=self.name, inline=True)
+        embed.add_field(name="Short Description", value=self.description_short, inline=True)
+        embed.add_field(
+            name="Book",
+            value=(self.description_long[:MAX_FIELD_COUNT] + " ...")
+            if len(self.description_long) > MAX_FIELD_COUNT
+            else self.description_long,
+            inline=False,
+        )
+
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await view.wait()
+        if view.confirmed:
+            self.confirmed = True
+            await interaction.delete_original_response()
+        else:
+            self.confirmed = False
+            await interaction.edit_original_response(
+                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)]
+            )
+
+        self.stop()
+
+
 class ChapterModal(Modal):
     """A modal for adding chapters."""
 
-    def __init__(self, chapter: CampaignChapter | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, chapter: CampaignBookChapter | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
         self.name: str = ""

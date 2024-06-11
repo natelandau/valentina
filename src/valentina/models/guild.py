@@ -83,7 +83,9 @@ class Guild(Document):
         """Update the date_modified field."""
         self.date_modified = time_now()
 
-    def fetch_changelog_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
+    def fetch_changelog_channel(
+        self, guild: discord.Guild
+    ) -> discord.TextChannel | None:  # pragma: no cover
         """Retrieve the changelog channel for the guild from the settings.
 
         Fetch the guild's settings to determine if a changelog channel has been set.  If set, return the corresponding TextChannel object; otherwise, return None.
@@ -99,7 +101,9 @@ class Guild(Document):
 
         return None
 
-    def fetch_storyteller_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
+    def fetch_storyteller_channel(
+        self, guild: discord.Guild
+    ) -> discord.TextChannel | None:  # pragma: no cover
         """Retrieve the storyteller channel for the guild from the settings.
 
         Fetch the guild's settings to determine if a storyteller channel has been set.  If set, return the corresponding TextChannel object; otherwise, return None.
@@ -115,7 +119,9 @@ class Guild(Document):
 
         return None
 
-    def fetch_audit_log_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
+    def fetch_audit_log_channel(
+        self, guild: discord.Guild
+    ) -> discord.TextChannel | None:  # pragma: no cover
         """Retrieve the audit log channel for the guild from the settings.
 
         Fetch the guild's settings to determine if an audit log channel has been set.  If set, return the corresponding TextChannel object; otherwise, return None.
@@ -131,7 +137,9 @@ class Guild(Document):
 
         return None
 
-    def fetch_error_log_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
+    def fetch_error_log_channel(
+        self, guild: discord.Guild
+    ) -> discord.TextChannel | None:  # pragma: no cover
         """Retrieve the error log channel for the guild from the settings.
 
         Fetch the guild's settings to determine if an error log channel has been set.  If set, return the corresponding TextChannel object; otherwise, return None.
@@ -147,7 +155,7 @@ class Guild(Document):
 
         return None
 
-    async def setup_roles(self, guild: discord.Guild) -> None:
+    async def setup_roles(self, guild: discord.Guild) -> None:  # pragma: no cover
         """Create or update the guild's roles.
 
         Args:

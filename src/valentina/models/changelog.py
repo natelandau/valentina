@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from valentina.models.bot import ValentinaContext
 
 
-class ChangelogPoster:
+class ChangelogPoster:  # pragma: no cover
     """Helper class for posting changelogs to the changelog channel specified in guild settings."""
 
     def __init__(

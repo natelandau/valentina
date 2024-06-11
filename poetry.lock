@@ -208,17 +208,17 @@ test = ["asgi-lifespan (>=1.0.1)", "dnspython (>=2.1.0)", "fastapi (>=0.100)", "
 
 [[package]]
 name = "boto3"
-version = "1.34.121"
+version = "1.34.123"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.34.121-py3-none-any.whl", hash = "sha256:4e79e400d6d44b4eee5deda6ac0ecd08a3f5a30c45a0d30712795cdc4459fd79"},
-    {file = "boto3-1.34.121.tar.gz", hash = "sha256:ec89f3e0b0dc959c418df29e14d3748c0b05ab7acf7c0b90c839e9f340a659fa"},
+    {file = "boto3-1.34.123-py3-none-any.whl", hash = "sha256:56bec52d485d5670ce96d53ae7b2cd4ae4e8a705fb2298a21093cdd77d642331"},
+    {file = "boto3-1.34.123.tar.gz", hash = "sha256:42b140fc850cf261ee4b1e8ef527fa071b1f1592a6d6a68d34b29f37cc46b4dd"},
 ]
 
 [package.dependencies]
-botocore = ">=1.34.121,<1.35.0"
+botocore = ">=1.34.123,<1.35.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -227,13 +227,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.34.121"
+version = "1.34.123"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.34.121-py3-none-any.whl", hash = "sha256:25b05c7646a9f240cde1c8f839552a43f27e71e15c42600275dea93e219f7dd9"},
-    {file = "botocore-1.34.121.tar.gz", hash = "sha256:1a8f94b917c47dfd84a0b531ab607dc53570efb0d073d8686600f2d2be985323"},
+    {file = "botocore-1.34.123-py3-none-any.whl", hash = "sha256:8c34ada2a708c82e7174bff700611643db7ce2cb18f1130c35045c24310d299d"},
+    {file = "botocore-1.34.123.tar.gz", hash = "sha256:a8577f6574600c4d159b5cd103ee05744a443d77f7778304e17307940b369c4f"},
 ]
 
 [package.dependencies]
@@ -1060,13 +1060,13 @@ files = [
 
 [[package]]
 name = "more-itertools"
-version = "10.2.0"
+version = "10.3.0"
 description = "More routines for operating on iterables, beyond itertools"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "more-itertools-10.2.0.tar.gz", hash = "sha256:8fccb480c43d3e99a00087634c06dd02b0d50fbf088b380de5a41a015ec239e1"},
-    {file = "more_itertools-10.2.0-py3-none-any.whl", hash = "sha256:686b06abe565edfab151cb8fd385a05651e1fdf8f0a14191e4439283421f8684"},
+    {file = "more-itertools-10.3.0.tar.gz", hash = "sha256:e5d93ef411224fbcef366a6e8ddc4c5781bc6359d43412a65dd5964e46111463"},
+    {file = "more_itertools-10.3.0-py3-none-any.whl", hash = "sha256:ea6a02e24a9161e51faad17a8782b92a0df82c12c1c8886fec7f0c3fa1a1b320"},
 ]
 
 [[package]]
@@ -1307,13 +1307,13 @@ files = [
 
 [[package]]
 name = "packaging"
-version = "24.0"
+version = "24.1"
 description = "Core utilities for Python packages"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "packaging-24.0-py3-none-any.whl", hash = "sha256:2ddfb553fdf02fb784c234c7ba6ccc288296ceabec964ad2eae3777778130bc5"},
-    {file = "packaging-24.0.tar.gz", hash = "sha256:eb82c5e3e56209074766e6885bb04b8c38a0c015d0a30036ebe7ece34c9989e9"},
+    {file = "packaging-24.1-py3-none-any.whl", hash = "sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124"},
+    {file = "packaging-24.1.tar.gz", hash = "sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002"},
 ]
 
 [[package]]
@@ -2235,32 +2235,32 @@ files = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.12.1"
+version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "typing_extensions-4.12.1-py3-none-any.whl", hash = "sha256:6024b58b69089e5a89c347397254e35f1bf02a907728ec7fee9bf0fe837d203a"},
-    {file = "typing_extensions-4.12.1.tar.gz", hash = "sha256:915f5e35ff76f56588223f15fdd5938f9a1cf9195c0de25130c627e4d597f6d1"},
+    {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
+    {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
 
 [[package]]
 name = "typos"
-version = "1.22.0"
+version = "1.22.4"
 description = "Source Code Spelling Correction"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "typos-1.22.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:db9960b691aa9adcfac50af1edd890bd7667c3a40086469cf63a2f2a7b3674a9"},
-    {file = "typos-1.22.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:b719933d92ff1abf9ce2b390424fa71bca3073b7e036c6c340461860395572de"},
-    {file = "typos-1.22.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4a9baf8a52b19506bb598f9b3ad8ea3c33988ad61647bda613962f284721cd9f"},
-    {file = "typos-1.22.0-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:733e7e311e512f80b058697b203168c7e90cd22aa235fbb43a75f1e1c1a9669e"},
-    {file = "typos-1.22.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f4d1b51417cd5b2300a9a3bf34eb4f3a03dce730eb928caacf0ed346658653e2"},
-    {file = "typos-1.22.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:934d22bd0df0404e628e977387f8718b8dd5f60a910ecbfa4f96ee9d9e62e896"},
-    {file = "typos-1.22.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:a5d71d86cf3f6455f269fb5694b3548a09fba539312d0da9a15f4d9c4d0f3240"},
-    {file = "typos-1.22.0-py3-none-win32.whl", hash = "sha256:4b3a3cb181136e7ddf0c0c2a2422fcb561407128c790cb89a7d39231ff77fcbd"},
-    {file = "typos-1.22.0-py3-none-win_amd64.whl", hash = "sha256:3a27053b417cef148ab8d5f1a886f34b0d99f05cd4713476124424f598f6d91f"},
-    {file = "typos-1.22.0.tar.gz", hash = "sha256:abe84d585cc6c20ef245a4d5fc0ac0689c8730551f5701833c90f70e07d9d3a5"},
+    {file = "typos-1.22.4-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:a1e35f0ec977e78659d46379570ab018d32c0fdd3f192a44c982731982b693d8"},
+    {file = "typos-1.22.4-py3-none-macosx_11_0_arm64.whl", hash = "sha256:63e97187dd48123e781dd54c3be854c1af548d2e4c913c3dd92f451df1b25fbf"},
+    {file = "typos-1.22.4-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a7c3fdae08252b2d0b0b2c66d69fe4227e4b4a207b87133199386256480b195a"},
+    {file = "typos-1.22.4-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:e5adb76d07fe622160a00293a6b9a518e784fa58545e99a07b59398f305daec9"},
+    {file = "typos-1.22.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:79a9184ac60127b4830ded6f98b768154385a8b63a4ed93c48316694a0407946"},
+    {file = "typos-1.22.4-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:ac4090254fef67148fc084eabd10752b04cc2ecbaa5dc742b2db69362b3bc018"},
+    {file = "typos-1.22.4-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:6dec7abe907cd74393e9be5a28d568d439101108a0964f5dbe8030d7bcc5be92"},
+    {file = "typos-1.22.4-py3-none-win32.whl", hash = "sha256:0d6f23bef5ea3d1d76c5f1aa701b739c5cf4ad5e907803597d0afbc2cb090b90"},
+    {file = "typos-1.22.4-py3-none-win_amd64.whl", hash = "sha256:05ae63c11cdaa9883fa6f2d5864a9f31ca07f62d1652b16ad2a6c75a7c34b68c"},
+    {file = "typos-1.22.4.tar.gz", hash = "sha256:2a2880834960b89f516abc98f7ec5da427a297aec7566664c5e6726386f0bb85"},
 ]
 
 [[package]]
