@@ -319,6 +319,40 @@ class CharactersCog(commands.Cog, name="Character"):
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
+    @chars.command(name="rename", description="Rename a character")
+    async def rename(
+        self,
+        ctx: ValentinaContext,
+        first_name: Option(ValidCharacterName, "Character's name", required=True),
+        last_name: Option(ValidCharacterName, "Character's last name", required=True),
+        nickname: Option(ValidCharacterName, "Character's nickname", required=False, default=None),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Rename a character."""
+        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        nick = f"'{nickname}' " if nickname else ""
+
+        title = f"Rename `{character.name}` to `{first_name} {nick}{last_name}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden, audit=True
+        )
+        if not is_confirmed:
+            return
+
+        character.name_first = first_name
+        character.name_last = last_name
+        character.name_nick = nickname
+        await character.save()
+
+        active_campaign = await ctx.fetch_active_campaign()
+        await active_campaign.create_channels(ctx)
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
     ### IMAGE COMMANDS ####################################################################
     @image.command(name="add", description="Add an image to a character")
     async def add_image(
@@ -744,7 +778,7 @@ class CharactersCog(commands.Cog, name="Character"):
             ephemeral=hidden,
         )
 
-    ### PROFiLE COMMANDS ####################################################################
+    ### PROFILE COMMANDS ####################################################################
 
     @profile.command(name="date_of_birth")
     async def date_of_birth(

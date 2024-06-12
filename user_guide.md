@@ -43,8 +43,14 @@ Valentina Noir revolves around three core concepts:
 
 -   Use `/character add` to add a new character you've already created by hand.
 -   User `/character create` to create use a RNG guided character creation process.
--   **IMPORTANT**: Create your character on paper before entering it into Valentina.
--   **Post creation:** Don't worry if you make a mistake or the section on your sheet doesn't appear during character generation.You can easily add/update traits, abilities, custom sections, and a biography as needed.
+-   **IMPORTANT**: If using `/character add`, create your character on paper before entering it into Valentina.
+-   **Post creation:** Don't worry if you make a mistake or the section on your sheet doesn't appear during character generation.You can easily rename your character, add/update traits, abilities, custom sections, and a biography as needed.
+
+### Working with characters
+
+Each character has a specific channel within their associated campaign. This channel is where you can interact with your character, roll dice, and manage their traits. Use commands like `/roll`, `/xp`, and `/character` in the character's campaign channel to manage and play with your character.
+
+In some circumstances, you may want to transfer ownership of a character to another user. To do so, use `/character transfer` and specify the character name and the user to transfer to.
 
 ### Updating Your Character
 
@@ -55,21 +61,9 @@ Valentina Noir revolves around three core concepts:
 -   **Profile**: Use `/character profile update` to manage your character's concept, and class specific items such as clan, sire, tribe, etc.
 -   **Spending XP**: Use `/xp spend` to spend XP and increase your character's traits.
 
-### Active Characters
-
-You may only have a single character active at a time. To set a character as active, use `/character set_active` and specify the character name. This will allow you to manage and roll dice for that character.
-
-In some circumstances, you may want to transfer ownership of a character to another user. To do so, use `/character transfer` and specify the character name and the user to transfer to.
-
-When characters are associated with a campaign, they will have their own channel where you can interact with them. Use commands like `/roll`, `/xp`, and `/character` in the character's campaign channel to manage and play with your character. In these channels, the active character is automatically set to the character associated with the channel.
-
 ## 4. GAMEPLAY
 
-### Before Gameplay
-
--   Create characters using `/character create`.
--   Set a character as active using `/character set_active`.
--   Create macros for diceroll shortcuts using `/macro create`.
+### Macros
 
 **What is a Macro?** In Valentina Noir, a macro is a custom shortcut that you can create to simplify complex dice rolls. Macros are tied to users, not characters, meaning you can use the same macro regardless of which character is active.
 
@@ -117,7 +111,6 @@ The outcome of the role is defined as:
 ### After Gameplay
 
 -   Add or spend experience points using `/xp`.
--   Remember to update the chapter of your campaign using `/campaign chapter`.
 
 > NOTE: Valentina treats experience differently than most TTRPGs. Instead of granting XP to a specific character, XP is granted to a player. This allows players to spend XP on any of their characters within a specific campaign.
 
@@ -125,7 +118,9 @@ The outcome of the role is defined as:
 
 Campaigns are the backbone of your role-playing adventure in Valentina Noir. They span across multiple gaming sessions and help in organizing the story, keeping track of characters and events, and providing a cohesive narrative structure. Regularly updating chapters and making use of NPCs and notes ensures that information is not lost in between gaming sessions.
 
-When a campaign is created, channels will be created for each chapter and character. This allows for easy organization and management of the campaign. Add notes in the chapter channels to keep track of important information. Players can easily roll dice and manage their characters by using those commands in their character's campaign channel.
+Campaigns are organized into books and each book can have multiple chapters.
+
+When a campaign is created, channels will be created for each book and character. This allows for easy organization and management of the campaign. Add notes in the chapter channels to keep track of important information. Players can easily roll dice and manage their characters by using those commands in their character's campaign channel.
 
 ### Creating and Managing Campaigns
 
