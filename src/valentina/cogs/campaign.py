@@ -102,13 +102,22 @@ class CampaignCog(commands.Cog):
             return
 
         # Update the database
-        campaign = Campaign(name=name, guild=ctx.guild.id)
-        await campaign.insert()
-        await campaign.create_channels(ctx)
+        c = Campaign(name=name, guild=ctx.guild.id)
+        campaign = await c.insert()
 
+        # Add campaign to guild
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         guild.campaigns.append(campaign)
+
+        try:
+            test_var = guild.active_campaign.name  # noqa: F841
+        except AttributeError:
+            guild.active_campaign = campaign
+            logger.info(f"Set active campaign to `{campaign.name}`")
+
         await guild.save()
+
+        await campaign.create_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -166,6 +175,7 @@ class CampaignCog(commands.Cog):
 
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         await guild.delete_campaign(campaign)
+        await campaign.delete_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -210,7 +220,6 @@ class CampaignCog(commands.Cog):
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         guild.active_campaign = campaign
         await guild.save()
-        await campaign.create_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

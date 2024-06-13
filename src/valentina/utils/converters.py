@@ -54,6 +54,20 @@ class CampaignChapterConverter(Converter):
         return chapter
 
 
+class ValidCampaign(Converter):
+    """A converter to grab a campaign object from it's name."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> Campaign:  # noqa: ARG002
+        """Convert from mongo db id to campaign object."""
+        campaign = await Campaign.get(argument, fetch_links=True)
+
+        if campaign:
+            return campaign
+
+        msg = f"Campaign {argument} not found"
+        raise BadArgument(msg)
+
+
 class ValidCampaignBook(Converter):  # pragma: no cover
     """A converter that converts a book id to a CampaignBook object."""
 
@@ -254,20 +268,6 @@ class ValidCharTrait(Converter):
             return trait
 
         msg = f"`{argument}` is not a valid trait"
-        raise BadArgument(msg)
-
-
-class ValidCampaign(Converter):
-    """A converter to grab a campaign object from it's name."""
-
-    async def convert(self, ctx: commands.Context, argument: str) -> Campaign:  # noqa: ARG002
-        """Convert from mongo db id to campaign object."""
-        campaign = await Campaign.get(argument, fetch_links=True)
-
-        if campaign:
-            return campaign
-
-        msg = f"Campaign {argument} not found"
         raise BadArgument(msg)
 
 

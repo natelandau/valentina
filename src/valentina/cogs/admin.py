@@ -13,7 +13,8 @@ from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
 from valentina.models import Guild
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import errors
-from valentina.utils.converters import ValidImageURL
+from valentina.utils.autocomplete import select_any_player_character, select_campaign
+from valentina.utils.converters import ValidCampaign, ValidCharacterObject, ValidImageURL
 from valentina.utils.discord_utils import assert_permissions
 from valentina.utils.helpers import fetch_data_from_url
 from valentina.views import (
@@ -53,10 +54,11 @@ class AdminCog(commands.Cog):
         default_member_permissions=discord.Permissions(administrator=True),
     )
 
-    ### CAMPAIGN ADMINISTRATION COMMANDS ###########################################################
-    @admin.command(name="campaign_channels", description="Rebuild Campaign Channels")
-    @commands.guild_only()
-    async def campaign_channels(
+    ### VALENTINA ADMINISTRATION COMMANDS ###########################################################
+    @admin.command(name="rebuild_campaign_channels", description="Rebuild Campaign Channels")
+    @discord.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def rebuild_campaign_channels(
         self,
         ctx: ValentinaContext,
         hidden: Option(
@@ -73,9 +75,85 @@ class AdminCog(commands.Cog):
 
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         for campaign in guild.campaigns:
+            await campaign.delete_channels(ctx)
             await campaign.create_channels(ctx)
 
         await msg.edit_original_response(embed=confirmation_embed, view=None)
+
+    @discord.guild_only()
+    @commands.has_permissions(administrator=True)
+    @admin.command(name="character_to_campaign", description="Associate character with a campaign")
+    async def associate_campaign(
+        self,
+        ctx: ValentinaContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to transfer",
+            autocomplete=select_any_player_character,
+            required=True,
+        ),
+        campaign: Option(
+            ValidCampaign,
+            description="The campaign to associate with",
+            autocomplete=select_campaign,
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Associate a character with a campaign."""
+        if character.campaign == str(campaign.id):
+            await present_embed(
+                ctx,
+                title=f"`{character.name}` already in `{campaign.name}`",
+                description="The character is already associated with this campaign",
+                level="warning",
+                ephemeral=True,
+            )
+            return
+
+        title = f"Associate `{character.name}` with `{campaign.name}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden, audit=True
+        )
+        if not is_confirmed:
+            return
+
+        await character.associate_with_campaign(ctx, campaign)
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    @discord.guild_only()
+    @commands.has_permissions(administrator=True)
+    @admin.command(
+        name="delete_champaign_channels", description="Associate character with a campaign"
+    )
+    async def delete_champaign_channels(
+        self,
+        ctx: ValentinaContext,
+        hidden: Option(
+            bool,
+            description="Make the response only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Delete all campaign channels from Discord."""
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+
+        title = f"Delete all campaign channels from `{ctx.guild.name}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, hidden=hidden
+        )
+        if not is_confirmed:
+            return
+
+        for c in guild.campaigns:
+            await c.delete_channels(ctx)
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### USER ADMINISTRATION COMMANDS ###############################################################
 

@@ -24,6 +24,51 @@ from valentina.utils.helpers import truncate_string
 MAX_OPTION_LENGTH = 99
 
 
+async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of all type_player characters in the guild for autocomplete.
+
+    This function fetches all player characters for the guild, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
+
+    Returns:
+        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
+    """
+    # Fetch and prepare player characters
+    all_chars_owners = sorted(
+        [
+            (x, await User.get(x.user_owner))
+            async for x in Character.find(
+                And(
+                    Character.guild == ctx.interaction.guild.id,
+                    Character.type_player == True,  # noqa: E712
+                ),
+                fetch_links=True,
+            )
+        ],
+        key=lambda x: x[0].name,
+    )
+
+    options = [
+        OptionChoice(
+            f"{character.name} [@{owner.name}]"
+            if character.is_alive
+            else f"{Emoji.DEAD.value} {character.name} [@{owner.name}]",
+            str(character.id),
+        )
+        for character, owner in all_chars_owners
+        if character.name.lower().startswith(ctx.value.lower())
+    ]
+
+    # Check if the number of options exceeds the maximum allowed
+    if len(options) >= MAX_OPTION_LIST_SIZE:  # pragma: no cover
+        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
+        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
+
+    return options or [OptionChoice("No characters available", "")]
+
+
 async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029 # pragma: no cover
     """Populate the autocomplete list for the aws_object option based on the user's input."""
     aws_svc = AWSService()
@@ -85,6 +130,34 @@ async def select_book(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     ][:MAX_OPTION_LIST_SIZE]
 
     return choices or [OptionChoice("No books", 1000)]
+
+
+async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of available campaigns for the guild.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context in which the function is called.
+
+    Returns:
+        list[OptionChoice]: A list of available campaign names and db ids.
+    """
+    all_campaigns = sorted(
+        await Campaign.find(Campaign.guild == ctx.interaction.guild.id, fetch_links=True).to_list(),
+        key=lambda x: x.name,
+    )
+
+    options = [
+        OptionChoice(f"{campaign.name}", str(campaign.id))
+        for campaign in all_campaigns
+        if campaign.name.lower().startswith(ctx.value.lower())
+    ]
+
+    # Check if the number of options exceeds the maximum allowed
+    if len(options) >= MAX_OPTION_LIST_SIZE:  # pragma: no cover
+        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
+        return [OptionChoice(f"Too many campaigns to display. {instructions}", "")]
+
+    return options or [OptionChoice("No campaigns available", "")]
 
 
 async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -324,20 +397,37 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of available campaigns for the guild.
+async def select_character_from_user(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of the user's available characters for autocomplete.
+
+    This function fetches all alive player characters for the user, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
 
     Args:
-        ctx (discord.AutocompleteContext): The context in which the function is called.
+        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
 
     Returns:
-        list[OptionChoice]: A list of available campaign names and db ids.
+        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
-    return [
-        OptionChoice(c.name, str(c.id))
-        for c in await Campaign.find(Campaign.guild == ctx.interaction.guild.id).to_list()
-        if c.name.lower().startswith(ctx.options["campaign"].lower())
+    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
+
+    # Prepare character data
+    all_chars = [
+        (
+            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
+            character.id,
+        )
+        for character in user_object.all_characters(ctx.interaction.guild)
+        if character.type_player
+    ]
+
+    # Generate options
+    options = [
+        OptionChoice(name, str(char_id))
+        for name, char_id in sorted(all_chars)
+        if name.lower().startswith(ctx.value.lower())
     ][:MAX_OPTION_LIST_SIZE]
+
+    return options or [OptionChoice("No characters available", "")]
 
 
 async def select_custom_section(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -516,39 +606,6 @@ async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     return npc_choices or [OptionChoice("No npcs", 1000)]
 
 
-async def select_character_from_user(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of the user's available characters for autocomplete.
-
-    This function fetches all alive player characters for the user, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
-
-    Args:
-        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
-
-    Returns:
-        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
-    """
-    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-
-    # Prepare character data
-    all_chars = [
-        (
-            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
-            character.id,
-        )
-        for character in user_object.all_characters(ctx.interaction.guild)
-        if character.type_player
-    ]
-
-    # Generate options
-    options = [
-        OptionChoice(name, str(char_id))
-        for name, char_id in sorted(all_chars)
-        if name.lower().startswith(ctx.value.lower())
-    ][:MAX_OPTION_LIST_SIZE]
-
-    return options or [OptionChoice("No characters available", "")]
-
-
 async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available storyteller characters for autocomplete.
 
@@ -578,51 +635,6 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
         for name, char_id in sorted(all_chars)
         if name.lower().startswith(ctx.value.lower())
     ][:MAX_OPTION_LIST_SIZE]
-
-    return options or [OptionChoice("No characters available", "")]
-
-
-async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of all type_player characters in the guild for autocomplete.
-
-    This function fetches all player characters for the guild, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
-
-    Args:
-        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
-
-    Returns:
-        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
-    """
-    # Fetch and prepare player characters
-    all_chars_owners = sorted(
-        [
-            (x, await User.get(x.user_owner))
-            async for x in Character.find(
-                And(
-                    Character.guild == ctx.interaction.guild.id,
-                    Character.type_player == True,  # noqa: E712
-                ),
-                fetch_links=True,
-            )
-        ],
-        key=lambda x: x[0].name,
-    )
-
-    options = [
-        OptionChoice(
-            f"{character.name} [@{owner.name}]"
-            if character.is_alive
-            else f"{Emoji.DEAD.value} {character.name} [@{owner.name}]",
-            str(character.id),
-        )
-        for character, owner in all_chars_owners
-        if character.name.lower().startswith(ctx.value.lower())
-    ]
-
-    # Check if the number of options exceeds the maximum allowed
-    if len(options) >= MAX_OPTION_LIST_SIZE:  # pragma: no cover
-        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
-        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
 
     return options or [OptionChoice("No characters available", "")]
 
