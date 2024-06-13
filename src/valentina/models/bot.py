@@ -563,6 +563,16 @@ class Valentina(commands.Bot):
                     user.guilds.append(guild.id)
                     await user.save()
 
+        # Add `is_deleted` to campaigns
+        # TODO: Remove this after migration
+        for campaign in await Campaign.find(Campaign.guild == guild.id).to_list():
+            if not campaign.is_deleted:
+                campaign.is_deleted = False
+                await campaign.save()
+                logger.info(
+                    f"DATABASE: Add `is_deleted` to campaign {campaign.name} ({campaign.id})"
+                )
+
         # Setup the necessary roles in the guild
         await guild_object.setup_roles(guild)
 

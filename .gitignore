@@ -1,6 +1,7 @@
 # Secrets
 secrets.txt
 .env.secret
+.env.secrets
 test_random.py
 *.log
 tmp

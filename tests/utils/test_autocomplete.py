@@ -18,7 +18,7 @@ async def test_select_campaign(campaign_factory, mock_ctx1):
     )
     await campaign.insert()
 
-    mock_ctx1.value = "mock_campaign"
+    mock_ctx1.value = "mock"
 
     # WHEN calling select_campaign
     result = await autocomplete.select_campaign(mock_ctx1)

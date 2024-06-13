@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 import discord
 from beanie import (
-    DeleteRules,
     Document,
     Insert,
     Link,
@@ -186,9 +185,10 @@ class Guild(Document):
         if campaign in self.campaigns:
             self.campaigns.remove(campaign)
 
-        await campaign.delete(link_rule=DeleteRules.DELETE_LINKS)
-
         await self.save()
+
+        campaign.is_deleted = True
+        await campaign.save()
 
     async def add_roll_result_thumbnail(
         self, ctx: "ValentinaContext", roll_type: RollResultType, url: str
