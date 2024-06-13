@@ -145,6 +145,7 @@ class Campaign(Document):
     danger: int = 0
     guild: int
     name: str
+    is_deleted: bool = False  # Campaigns are never deleted from the DB, only marked as deleted
     chapters: list[CampaignChapter] = Field(default_factory=list)
     notes: list[CampaignNote] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)

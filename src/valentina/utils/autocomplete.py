@@ -142,7 +142,11 @@ async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice
         list[OptionChoice]: A list of available campaign names and db ids.
     """
     all_campaigns = sorted(
-        await Campaign.find(Campaign.guild == ctx.interaction.guild.id, fetch_links=True).to_list(),
+        await Campaign.find(
+            Campaign.guild == ctx.interaction.guild.id,
+            Campaign.is_deleted == False,  # noqa: E712
+            fetch_links=True,
+        ).to_list(),
         key=lambda x: x.name,
     )
 

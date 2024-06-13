@@ -101,4 +101,5 @@ async def test_delete_campaign(campaign_factory, guild_factory):
     # THEN the active campaign is deleted
     assert guild.active_campaign is None
     assert guild.campaigns == []
-    assert not await Campaign.find_all().to_list()
+    assert not await Campaign.find(Campaign.is_deleted == False).to_list()  # noqa: E712
+    assert campaign.is_deleted
