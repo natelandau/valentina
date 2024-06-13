@@ -204,30 +204,6 @@ class Character(Document):
 
         return key
 
-    async def delete_image(self, key: str) -> None:  # pragma: no cover
-        """Delete a character's image from both the character data and Amazon S3.
-
-        This method updates the character's data to remove the image reference
-        and also deletes the actual image stored in Amazon S3.
-
-        Args:
-            key (str): The key representing the image to be deleted.
-
-        Returns:
-            None
-        """
-        aws_svc = AWSService()
-
-        # Remove image key from character's data
-        if key in self.images:
-            self.images.remove(key)
-            await self.save()
-            logger.debug(f"DATA: Removed image key '{key}' from character '{self.name}'")
-
-        # Delete the image from Amazon S3
-        aws_svc.delete_object(key)
-        logger.info(f"S3: Delete {key} from {self.name}")
-
     async def add_trait(
         self,
         category: TraitCategory,
@@ -268,14 +244,6 @@ class Character(Document):
 
         return new_trait
 
-    async def fetch_trait_by_name(self, name: str) -> Union["CharacterTrait", None]:
-        """Fetch a CharacterTrait by name."""
-        for trait in cast(list[CharacterTrait], self.traits):
-            if trait.name == name:
-                return trait
-
-        return None
-
     async def associate_with_campaign(  # pragma: no cover
         self, ctx: "ValentinaContext", new_campaign: "Campaign"
     ) -> bool:
@@ -289,7 +257,7 @@ class Character(Document):
         )
 
         new_category = discord.utils.get(
-            ctx.guild.categories, id=new_campaign.channels.category_channel
+            ctx.guild.categories, id=new_campaign.channel_campaign_category
         )
         character_owner = discord.utils.get(ctx.bot.users, id=self.user_owner)
 
@@ -306,3 +274,53 @@ class Character(Document):
         await self.save()
         await new_campaign.create_channels(ctx)
         return True
+
+    async def delete_channel(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
+        """Delete the channel associated with the book.
+
+        Args:
+            ctx (ValentinaContext): The context of the command.
+        """
+        if not self.channel:
+            return
+
+        channel = ctx.guild.get_channel(self.channel)
+
+        if not channel:
+            return
+
+        await channel.delete()
+        self.channel = None
+        await self.save()
+
+    async def delete_image(self, key: str) -> None:  # pragma: no cover
+        """Delete a character's image from both the character data and Amazon S3.
+
+        This method updates the character's data to remove the image reference
+        and also deletes the actual image stored in Amazon S3.
+
+        Args:
+            key (str): The key representing the image to be deleted.
+
+        Returns:
+            None
+        """
+        aws_svc = AWSService()
+
+        # Remove image key from character's data
+        if key in self.images:
+            self.images.remove(key)
+            await self.save()
+            logger.debug(f"DATA: Removed image key '{key}' from character '{self.name}'")
+
+        # Delete the image from Amazon S3
+        aws_svc.delete_object(key)
+        logger.info(f"S3: Delete {key} from {self.name}")
+
+    async def fetch_trait_by_name(self, name: str) -> Union["CharacterTrait", None]:
+        """Fetch a CharacterTrait by name."""
+        for trait in cast(list[CharacterTrait], self.traits):
+            if trait.name == name:
+                return trait
+
+        return None

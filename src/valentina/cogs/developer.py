@@ -1,6 +1,7 @@
 # mypy: disable-error-code="valid-type"
 """Commands for bot development."""
 
+import random
 from datetime import datetime
 from pathlib import Path
 
@@ -10,11 +11,16 @@ import inflect
 from beanie import DeleteRules
 from discord.commands import Option
 from discord.ext import commands
+from faker import Faker
+from loguru import logger
 
 from valentina.characters import RNGCharGen
-from valentina.constants import PREF_MAX_EMBED_CHARACTERS, EmbedColor, LogLevel
+from valentina.constants import PREF_MAX_EMBED_CHARACTERS, CharClass, EmbedColor, LogLevel
 from valentina.models import (
     AWSService,
+    Campaign,
+    CampaignBook,
+    CampaignBookChapter,
     ChangelogPoster,
     Character,
     GlobalProperty,
@@ -119,6 +125,91 @@ class Developer(commands.Cog):
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### GUILD COMMANDS ################################################################
+    @guild.command()
+    @commands.is_owner()
+    async def create_dummy_data(self, ctx: ValentinaContext) -> None:  # noqa: C901
+        """Create dummy data in the database for the current guild."""
+        title = f"Create dummy data on `{ctx.guild.name}`"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title)
+        if not is_confirmed:
+            return
+
+        # Campaigns
+        created_campaigns = []
+        for _ in range(2):
+            campaign = await Campaign(
+                name=Faker().sentence(nb_words=3).rstrip("."),
+                description=Faker().paragraph(nb_sentences=3),
+                guild=ctx.guild.id,
+            ).insert()
+
+            created_campaigns.append(campaign)
+
+        # Campaign Books
+        created_books = []
+        for campaign in created_campaigns:
+            for n in range(2):
+                book = await CampaignBook(
+                    name=Faker().sentence(nb_words=3).rstrip("."),
+                    campaign=str(campaign.id),
+                    number=n + 1,
+                    description_short=Faker().paragraph(nb_sentences=3),
+                    description_long=Faker().paragraph(nb_sentences=8),
+                ).insert()
+
+                campaign.books.append(book)
+                await campaign.save()
+                created_books.append(book)
+
+        # Campaign Book Chapters
+        for book in created_books:
+            for n in range(2):
+                chapter = await CampaignBookChapter(
+                    name=Faker().sentence(nb_words=3).rstrip("."),
+                    book=str(book.id),
+                    number=n + 1,
+                    description_short=Faker().paragraph(nb_sentences=3),
+                    description_long=Faker().paragraph(nb_sentences=8),
+                ).insert()
+
+                book.chapters.append(chapter)
+                await book.save()
+
+        # Characters
+        user = await User.get(ctx.author.id)
+        chargen = RNGCharGen(ctx, user)
+        created_characters = []
+        for _ in range(3):
+            character = await chargen.generate_full_character(
+                developer_character=True,
+                player_character=True,
+                char_class=random.choice(CharClass.playable_classes()),
+                nickname_is_class=True,
+            )
+            created_characters.append(character)
+
+        # Associated characters with campaigns
+        for character in created_characters:
+            campaign = random.choice(created_campaigns)
+            character.campaign = str(campaign.id)
+            await character.save()
+
+        # Create discord channels and add campaigns to the guild
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        for campaign in created_campaigns:
+            await campaign.create_channels(ctx)
+            guild.campaigns.append(campaign)
+
+        try:
+            test_var = guild.active_campaign.name  # noqa: F841
+        except AttributeError:
+            guild.active_campaign = campaign
+            logger.debug(f"Set active campaign to `{campaign.name}`")
+
+        await guild.save()
+
+        logger.info(f"DATABASE: Dummy data created on {ctx.guild.name}")
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @guild.command()
     @commands.guild_only()

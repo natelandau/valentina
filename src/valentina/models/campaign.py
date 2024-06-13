@@ -115,6 +115,24 @@ class CampaignBook(Document):
             key=lambda x: x.number,
         )
 
+    async def delete_channel(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
+        """Delete the channel associated with the book.
+
+        Args:
+            ctx (ValentinaContext): The context of the command.
+        """
+        if not self.channel:
+            return
+
+        channel = ctx.guild.get_channel(self.channel)
+
+        if not channel:
+            return
+
+        await channel.delete()
+        self.channel = None
+        await self.save()
+
 
 class Campaign(Document):
     """Represents a campaign in the database."""
@@ -397,6 +415,41 @@ class Campaign(Document):
                 break
 
         logger.debug(f"All channels confirmed for campaign '{self.name}' in '{ctx.guild.name}'")
+
+    async def delete_channels(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
+        """Delete the channel associated with the book.
+
+        Args:
+            ctx (ValentinaContext): The context of the command.
+        """
+        for book in await self.fetch_books():
+            await book.delete_channel(ctx)
+
+        for character in await self.fetch_characters():
+            await character.delete_channel(ctx)
+
+        if self.channel_storyteller:
+            channel = ctx.guild.get_channel(self.channel_storyteller)
+
+            if channel:
+                await channel.delete()
+                self.channel_storyteller = None
+
+        if self.channel_general:
+            channel = ctx.guild.get_channel(self.channel_general)
+
+            if channel:
+                await channel.delete()
+                self.channel_general = None
+
+        if self.channel_campaign_category:
+            category = ctx.guild.get_channel(self.channel_campaign_category)
+
+            if category:
+                await category.delete()
+                self.channel_campaign_category = None
+
+        await self.save()
 
     async def fetch_characters(self) -> list[Character]:
         """Fetch all characters in the campaign."""

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 async def assert_permissions(ctx: "ValentinaContext", **permissions: bool) -> None:  # noqa: RUF029
-    """Check if the bot has the required permissions to run the command.""."""
+    """Check if the bot has the required permissions to run the command."""
     if missing := [
         perm for perm, value in permissions.items() if getattr(ctx.app_permissions, perm) != value
     ]:

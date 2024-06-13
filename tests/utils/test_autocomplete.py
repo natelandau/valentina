@@ -14,11 +14,11 @@ async def test_select_campaign(campaign_factory, mock_ctx1):
     """Test the select_campaign function."""
     # GIVEN a campaign in the database
     campaign = campaign_factory.build(
-        name="mock_campaign", guild=mock_ctx1.interaction.guild.id, characters=[]
+        name="mock_campaign", guild=str(mock_ctx1.interaction.guild.id), characters=[]
     )
     await campaign.insert()
 
-    mock_ctx1.options = {"campaign": "mock_campaign"}
+    mock_ctx1.value = "mock_campaign"
 
     # WHEN calling select_campaign
     result = await autocomplete.select_campaign(mock_ctx1)
