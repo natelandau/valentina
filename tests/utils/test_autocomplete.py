@@ -5,20 +5,23 @@ import pytest
 from tests.factories import *
 
 from valentina.constants import TraitCategory
-from valentina.models import CampaignChapter, CharacterSheetSection
+from valentina.models import Campaign, CharacterSheetSection
 from valentina.utils import autocomplete
 
 
 @pytest.mark.drop_db()
-async def test_select_campaign(campaign_factory, mock_ctx1):
+async def test_select_campaign(campaign_factory, mock_ctx1, debug):
     """Test the select_campaign function."""
     # GIVEN a campaign in the database
     campaign = campaign_factory.build(
-        name="mock_campaign", guild=str(mock_ctx1.interaction.guild.id), characters=[]
+        name="mock_campaign",
+        guild=str(mock_ctx1.interaction.guild.id),
+        characters=[],
+        is_deleted=False,
     )
     await campaign.insert()
 
-    mock_ctx1.value = "mock"
+    mock_ctx1.value = "mock_campaign"
 
     # WHEN calling select_campaign
     result = await autocomplete.select_campaign(mock_ctx1)
