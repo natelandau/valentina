@@ -212,9 +212,12 @@
             "UP007",
         ]
 
-        per-file-ignores = { "cli.py" = [
+        per-file-ignores = { "main.py" = [
             "PLR0912",
             "PLR0913",
+        ], "migrations/*.py" = [
+            "ARG002",
+            "PLR6301",
         ], "tests/*.py" = [
             "A002",
             "A003",
