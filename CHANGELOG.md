@@ -1,3 +1,9 @@
+## v2.4.1 (2024-06-14)
+
+### Fix
+
+- fix bot missing required package
+
 ## v2.4.0 (2024-06-14)
 
 ### Feat
