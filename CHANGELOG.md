@@ -1,3 +1,15 @@
+## v2.4.0 (2024-06-14)
+
+### Feat
+
+- **admin**: create and delete campaign channels (#152)
+- **character**: rename characters with `/character rename` (#151)
+- **campaign**: add books and chapter migration tool (#150)
+
+### Fix
+
+- **campaign**: improve campaign deletion (#153)
+
 ## v2.3.1 (2024-06-09)
 
 ### Fix
