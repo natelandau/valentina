@@ -15,7 +15,13 @@ from faker import Faker
 from loguru import logger
 
 from valentina.characters import RNGCharGen
-from valentina.constants import PREF_MAX_EMBED_CHARACTERS, CharClass, EmbedColor, LogLevel
+from valentina.constants import (
+    PREF_MAX_EMBED_CHARACTERS,
+    CharClass,
+    EmbedColor,
+    InventoryItemType,
+    LogLevel,
+)
 from valentina.models import (
     AWSService,
     Campaign,
@@ -23,8 +29,10 @@ from valentina.models import (
     CampaignBookChapter,
     ChangelogPoster,
     Character,
+    CharacterSheetSection,
     GlobalProperty,
     Guild,
+    InventoryItem,
     RollProbability,
     User,
 )
@@ -188,8 +196,24 @@ class Developer(commands.Cog):
             )
             created_characters.append(character)
 
-        # Associated characters with campaigns
+        # Add inventory & custom sections to characters and associate characters with campaigns
         for character in created_characters:
+            for _ in range(3):
+                i = InventoryItem(
+                    name=Faker().sentence(nb_words=2).rstrip("."),
+                    description=Faker().sentence(),
+                    character=str(character.id),
+                    type=random.choice([x.name for x in InventoryItemType]),
+                )
+                item = await i.insert()
+                character.inventory.append(item)
+
+                section = CharacterSheetSection(
+                    title=Faker().sentence(nb_words=3).rstrip("."),
+                    content=Faker().paragraph(nb_sentences=3),
+                )
+                character.sheet_sections.append(section)
+
             campaign = random.choice(created_campaigns)
             character.campaign = str(campaign.id)
             await character.save()

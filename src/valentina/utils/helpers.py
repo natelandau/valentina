@@ -14,6 +14,50 @@ from valentina.utils import errors
 _rng = default_rng()
 
 
+def convert_int_to_emoji(num: int, markdown: bool = False) -> str:
+    """Convert an integer to an emoji or a string.
+
+    Args:
+        num (int): The integer to convert.
+        markdown (bool, optional): Whether to wrap numbers larger than emojis in markdown code. Defaults to False.
+
+    Returns:
+        str: The emoji corresponding to the integer.
+
+    Examples:
+        >>> convert_int_to_emoji(1)
+        ':one:'
+
+        >>> convert_int_to_emoji(10)
+        ':keycap_ten:'
+
+        >>> convert_int_to_emoji(11)
+        '11'
+
+        >>> convert_int_to_emoji(11, markdown=True)
+        '`11`'
+    """
+    if -1 <= num <= 10:  # noqa: PLR2004
+        return (
+            str(num)
+            .replace("10", ":keycap_ten:")
+            .replace("0", ":zero:")
+            .replace("1", ":one:")
+            .replace("2", ":two:")
+            .replace("3", ":three:")
+            .replace("4", ":four:")
+            .replace("5", ":five:")
+            .replace("6", ":six:")
+            .replace("7", ":seven:")
+            .replace("8", ":eight:")
+            .replace("9", ":nine:")
+        )
+    if markdown:
+        return f"`{num}`"
+
+    return str(num)
+
+
 def random_num(ceiling: int = 100) -> int:
     """Get a random number between 1 and ceiling."""
     return _rng.integers(1, ceiling + 1)

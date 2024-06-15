@@ -6,6 +6,7 @@ import inflect
 from valentina.constants import Emoji
 from valentina.models import CharacterTrait, DiceRoll
 from valentina.models.bot import ValentinaContext
+from valentina.utils.helpers import convert_int_to_emoji
 
 p = inflect.engine()
 
@@ -41,9 +42,14 @@ class RollDisplay:
 
     async def get_embed(self) -> discord.Embed:
         """The graphical representation of the roll."""
-        roll_string = " ".join(f"{die}" for die in self.roll.roll)
+        roll_string = " ".join(
+            f"{convert_int_to_emoji(die, markdown=True)}" for die in self.roll.roll
+        )
+
         if self.desperation_pool > 0:
-            desperation_roll_string = " ".join(f"{die}" for die in self.roll.desperation_roll)
+            desperation_roll_string = " ".join(
+                f"{convert_int_to_emoji(die, markdown=True)}" for die in self.roll.desperation_roll
+            )
 
         description = f"""\
 ### {self.ctx.author.mention} rolled `{self.desperation_pool + self.roll.pool}{self.roll.dice_type.name.lower()}`
@@ -51,49 +57,60 @@ class RollDisplay:
 {self.roll.embed_description}
 """
 
-        description += f"""\
-### Rolled Dice:
-```scala
-Roll        : {roll_string}
-{"Desperation : " + desperation_roll_string if self.desperation_pool > 0 else ""}
-```
-"""
-
-        if self.desperation_pool > 0 and self.roll.desperation_botches > 0:
-            description += f"""\
-### {Emoji.FACEPALM.value} `{self.roll.desperation_botches}` Desperation {p.plural_noun('botch', self.roll.desperation_botches)}
-> You must pick either:
-> - {Emoji.DESPAIR.value} **Despair** (Fail your roll)
-> - {Emoji.OVERREACH.value} **Overreach** (Succeed but raise the danger level by 1)
-"""
-
-        description += f"""\
-### Roll Details:
-```scala
-Difficulty       : {self.roll.difficulty}
-Pool             : {self.roll.pool}{self.roll.dice_type.name.lower()}
-"""
-
-        if self.desperation_pool > 0:
-            description += f"""\
-Desperation Pool : {self.desperation_pool}{self.roll.dice_type.name.lower()}
-Total Dice Rolled: {self.desperation_pool + self.roll.pool}{self.roll.dice_type.name.lower()}
-"""
-
-        if self.trait_one:
-            description += f"{self.trait_one.name:<17}: {self.trait_one.value} {p.plural_noun('die', self.trait_one.value)}\n"
-        if self.trait_two:
-            description += f"{self.trait_two.name:<17}: {self.trait_two.value} {p.plural_noun('die', self.trait_two.value)}\n"
-
-        description += "```"
-
         embed = discord.Embed(
             title=None,
             description=description,
             color=self.roll.embed_color,
         )
 
-        # Thumbnail
+        # Rolled dice
+        value = f"{roll_string}"
+        if self.desperation_pool > 0:
+            value += f" + {desperation_roll_string}"
+
+        embed.add_field(name="Rolled Dice", value=f"{value}", inline=False)
+
+        if self.desperation_pool > 0 and self.roll.desperation_botches > 0:
+            embed.add_field(name="\u200b", value="\u200b", inline=False)  # spacer
+            value = f"""\
+> You must pick either:
+> - {Emoji.DESPAIR.value} **Despair** (Fail your roll)
+> - {Emoji.OVERREACH.value} **Overreach** (Succeed but raise the danger level by 1)
+"""
+            embed.add_field(
+                name=f"**{Emoji.FACEPALM.value} {self.roll.desperation_botches} Desperation {p.plural_noun('botch', self.roll.desperation_botches)}**",
+                value=f"{value}",
+                inline=False,
+            )
+
+        embed.add_field(name="Difficulty", value=f"`{self.roll.difficulty}`", inline=True)
+        embed.add_field(
+            name="Dice Pool",
+            value=f"`{self.roll.pool}{self.roll.dice_type.name.lower()}`",
+            inline=True,
+        )
+
+        if self.desperation_pool > 0:
+            embed.add_field(
+                name="Desperation Pool",
+                value=f"`{self.desperation_pool}{self.roll.dice_type.name.lower()}`",
+                inline=True,
+            )
+
+        if self.trait_one:
+            embed.add_field(name="\u200b", value="**TRAITS**", inline=False)
+            embed.add_field(
+                name=f"{self.trait_one.name}",
+                value=f"`{self.trait_one.value} {p.plural_noun('die', self.trait_one.value)}`",
+                inline=True,
+            )
+        if self.trait_two:
+            embed.add_field(
+                name=f"{self.trait_two.name}",
+                value=f"`{self.trait_two.value} {p.plural_noun('die', self.trait_two.value)}`",
+                inline=True,
+            )
+
         embed.set_thumbnail(url=await self.roll.thumbnail_url())
 
         return self._add_comment_field(embed)
