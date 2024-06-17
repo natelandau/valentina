@@ -257,3 +257,48 @@ def test_changelog_get_embed(changelog, mock_bot):  # noqa: ARG001
 View the [full changelog on Github](https://github.com/natelandau/valentina/releases)
 """
     )
+
+
+def test_changelog_get_embed_exclude_oldest(changelog, mock_bot):  # noqa: ARG001
+    """Test the ChangelogParser get_embed method with exclude_oldest."""
+    parser = ChangelogParser(
+        mock_bot, oldest_version="1.1.0", newest_version="2.0.0", exclude_oldest_version=True
+    )
+
+    embed = parser.get_embed()
+
+    assert (
+        embed.description
+        == """\
+## Valentina Noir Changelog
+### v2.0.0 (2023-11-04)
+
+**Feat**
+- Lorem ipsum dolor sit amet
+- Lorem ipsum dolor sit amet
+
+**Fix**
+- Lorem ipsum dolor sit amet
+- Lorem ipsum dolor sit amet
+
+**Test**
+- Lorem ipsum dolor sit amet
+- Lorem ipsum dolor sit amet
+
+**Build**
+- Lorem ipsum dolor sit amet
+- Lorem ipsum dolor sit amet
+
+**Ci**
+- Lorem ipsum dolor sit amet
+- Lorem ipsum dolor sit amet
+
+**Chore**
+- Lorem ipsum dolor sit amet
+- Lorem ipsum dolor sit amet
+
+
+----
+View the [full changelog on Github](https://github.com/natelandau/valentina/releases)
+"""
+    )
