@@ -253,29 +253,21 @@ class CharactersCog(commands.Cog, name="Character"):
             )
             return
 
-        title_prefix = "All player" if scope == "all" else "Your"
-        title = f"{title_prefix} {p.plural_noun('character', len(all_characters))} on {ctx.guild.name}\n"
-
-        text = ""
+        title_prefix = "All" if scope == "all" else "Your"
+        text = f"## {title_prefix} {p.plural_noun('character', len(all_characters))} on `{ctx.guild.name}`\n"
         for character in sorted(all_characters, key=lambda x: x.name):
             user = await User.get(character.user_owner, fetch_links=True)
+            dead_emoji = Emoji.DEAD.value if not character.is_alive else ""
 
-            alive_emoji = Emoji.ALIVE.value if character.is_alive else Emoji.DEAD.value
             if user_active_character := await user.active_character(ctx.guild, raise_error=False):
-                active = "True" if character.id == user_active_character.id else "False"
+                is_active = character.id == user_active_character.id
             else:
-                active = "False"
+                is_active = False
 
-            text += f"**{character.name}**\n"
-            text += "```\n"
-            text += f"Class: {character.char_class.name:<20}  Created On: {character.date_created.strftime('%Y-%m-%d')}\n"
-            text += f"Alive: {alive_emoji:<20} Active: {active}\n"
-
-            text += f"Owner: {user.name:<20}\n"
-            text += "```\n"
+            text += f"- {dead_emoji} **{character.name}** _({character.char_class.value.name})_ `@{user.name}` {'`[Active]`' if is_active else ''}\n"
 
         await auto_paginate(
-            ctx=ctx, title=title, text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
+            ctx=ctx, title="", text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
         )
 
     @chars.command(name="kill", description="Kill a character")

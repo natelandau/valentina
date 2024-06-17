@@ -94,6 +94,7 @@ class Emoji(Enum):
     BOOKS = "📚"
     BOT = "🤖"
     CANCEL = "🚫"
+    CHANGELING = "🧑👿"
     COOL_POINT = "🆒"
     DEAD = "💀"
     DESPAIR = "😰"
@@ -101,6 +102,7 @@ class Emoji(Enum):
     ERROR = "❌"
     FACEPALM = "🤦"
     GHOST = "👻"
+    GHOUL = "🧟"
     HUNTER = "🧑🏹"
     LOCK = "🔒"
     MAGE = "🧙🪄"
@@ -282,6 +284,7 @@ class CharClassValue:
     description: str
     playable: bool
     chargen_background_dots: int
+    emoji: str
 
 
 class CharClass(Enum):
@@ -293,6 +296,7 @@ class CharClass(Enum):
         description="Receive special abilities based on their concept",
         playable=True,
         chargen_background_dots=1,
+        emoji=Emoji.MORTAL.value,
     )
     VAMPIRE = CharClassValue(
         name="Vampire",
@@ -300,6 +304,7 @@ class CharClass(Enum):
         description="Receive a clan and disciplines",
         playable=True,
         chargen_background_dots=5,
+        emoji=Emoji.VAMPIRE.value,
     )
     WEREWOLF = CharClassValue(
         name="Werewolf",
@@ -307,6 +312,7 @@ class CharClass(Enum):
         description="Receive a tribe and gifts",
         playable=True,
         chargen_background_dots=1,
+        emoji=Emoji.WEREWOLF.value,
     )
     MAGE = CharClassValue(
         name="Mage",
@@ -314,6 +320,7 @@ class CharClass(Enum):
         description="Receive a tradition and spheres",
         playable=True,
         chargen_background_dots=1,
+        emoji=Emoji.MAGE.value,
     )
     GHOUL = CharClassValue(
         name="Ghoul",
@@ -321,6 +328,7 @@ class CharClass(Enum):
         description="Receive disciplines and a master",
         playable=True,
         chargen_background_dots=1,
+        emoji=Emoji.GHOUL.value,
     )
     CHANGELING = CharClassValue(
         name="Changeling",
@@ -328,6 +336,7 @@ class CharClass(Enum):
         description="",
         playable=True,
         chargen_background_dots=1,
+        emoji=Emoji.CHANGELING.value,
     )
     HUNTER = CharClassValue(
         name="Hunter",
@@ -335,6 +344,7 @@ class CharClass(Enum):
         description="Receive a creed and edges",
         playable=True,
         chargen_background_dots=1,
+        emoji=Emoji.HUNTER.value,
     )
     SPECIAL = CharClassValue(
         name="Special",
@@ -342,6 +352,7 @@ class CharClass(Enum):
         description="Examples: Demon, Angel, Exalted, Titan, Mummy, etc. You choose.",
         playable=True,
         chargen_background_dots=3,
+        emoji=Emoji.MONSTER.value,
     )
     OTHER = CharClassValue(
         name="Other",
@@ -349,6 +360,7 @@ class CharClass(Enum):
         description=None,
         playable=False,
         chargen_background_dots=0,
+        emoji=Emoji.OTHER.value,
     )
     NONE = CharClassValue(
         name="None",
@@ -356,6 +368,7 @@ class CharClass(Enum):
         description=None,
         playable=False,
         chargen_background_dots=0,
+        emoji=Emoji.SILHOUETTE.value,
     )
     COMMON = CharClassValue(
         name="Common",
@@ -363,6 +376,7 @@ class CharClass(Enum):
         description=None,
         playable=False,
         chargen_background_dots=0,
+        emoji=Emoji.SILHOUETTE.value,
     )
 
     @classmethod

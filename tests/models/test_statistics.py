@@ -72,7 +72,7 @@ async def test_guild_statistics_results(mock_ctx1):
     assert s.total_rolls == 2
     assert s.average_difficulty == 2
     assert isinstance(result, discord.Embed)
-    assert "Successful Rolls: ........ 1   (50.00%)" in result.description
+    assert "Successful Rolls ........ 1   (50.00%)" in result.description
 
 
 @pytest.mark.drop_db()
@@ -138,7 +138,7 @@ async def test_user_statistics_results(mock_ctx1):
     assert s.total_rolls == 2
     assert s.average_difficulty == 2
     assert isinstance(result, discord.Embed)
-    assert "Successful Rolls: ........ 1   (50.00%)" in result.description
+    assert "Successful Rolls ........ 1   (50.00%)" in result.description
     assert "Definitions:" not in result.description
 
 
@@ -207,5 +207,5 @@ async def test_character_statistics_results(mock_ctx1, character_factory):
     assert s.total_rolls == 2
     assert s.average_difficulty == 2
     assert isinstance(result, discord.Embed)
-    assert "Successful Rolls: ........ 1   (50.00%)" in result.description
+    assert "Successful Rolls ........ 1   (50.00%)" in result.description
     assert "Definitions:" not in result.description

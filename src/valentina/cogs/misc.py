@@ -2,6 +2,7 @@
 """Miscellaneous commands."""
 
 import random
+from datetime import datetime
 
 import arrow
 import discord
@@ -42,6 +43,11 @@ class Misc(commands.Cog):
         ),
     ) -> None:
         """View information about the server."""
+        delta_uptime = datetime.utcnow() - self.bot.start_time
+        hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
+        minutes, _ = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
+
         # Load db objects
         guild = await Guild.get(ctx.guild.id)
 
@@ -79,10 +85,8 @@ Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for 
         embed.add_field(
             name="Campaigns",
             value=f"""\
-```scala
-Total Campaigns: {num_campaigns}
-Active Campaign: {active_campaign.name if active_campaign else 'None'}
-```
+> `{num_campaigns}` Campaigns
+> {'**' + active_campaign.name + '** (_Active_)' if active_campaign else ''}
 """,
             inline=True,
         )
@@ -90,11 +94,18 @@ Active Campaign: {active_campaign.name if active_campaign else 'None'}
         embed.add_field(
             name="Characters",
             value=f"""\
-```scala
-Total Characters      : {player_characters + storyteller_characters}
-Player Characters     : {player_characters}
-Storyteller Characters: {storyteller_characters}
-```
+> Total: `{player_characters + storyteller_characters}`
+> Player: `{player_characters}`
+> Storyteller: `{storyteller_characters}`
+""",
+            inline=True,
+        )
+
+        embed.add_field(
+            name="Bot Status",
+            value=f"""\
+> Uptime: `{days}d, {hours}h, {minutes}m`
+> Bot Version: `{self.bot.version}`
 """,
             inline=True,
         )
@@ -189,7 +200,7 @@ Storyteller Characters: {storyteller_characters}
 
         roles = (
             ", ".join(
-                f"@{r.name}" if not r.name.startswith("@") else r.name
+                f"{r.mention}" if not r.name.startswith("@") else r.mention
                 for r in target.roles[::-1][:-1]  # type: ignore [union-attr]
                 if not r.is_integration()
             )
@@ -199,58 +210,48 @@ Storyteller Characters: {storyteller_characters}
         campaign_xp, campaign_total_xp, campaign_cp = db_user.fetch_campaign_xp(active_campaign)
         lifetime_xp = db_user.lifetime_experience
         lifetime_cp = db_user.lifetime_cool_points
+        if user_active_character := await db_user.active_character(ctx.guild, raise_error=False):
+            active_character_name = user_active_character.name
+        else:
+            active_character_name = "No active character"
+        user_roll_stats = await stats_engine.user_statistics(
+            target,  # type: ignore [arg-type]
+            as_embed=False,
+            with_title=False,
+            with_help=False,
+        )
 
-        # Build the Embed
+        #         # Build the Embed
         embed = discord.Embed(
             title="",
-            description=f"# {target.display_name}",
+            description=f"""\
+# @{target.display_name}
+
+### User Information
+`ID             :` {target.id}
+`Account Created:` {arrow.get(target.created_at).humanize()} `({arrow.get(target.created_at).format('YYYY-MM-DD')})`
+`Joined Server  :` {arrow.get(target.joined_at).humanize() if isinstance(target, discord.Member) else ''} `({arrow.get(target.joined_at).format('YYYY-MM-DD') if isinstance(target, discord.Member) else ''})`
+`Roles          :` {roles}
+
+### Experience
+`Lifetime Experience :` `{lifetime_xp}`
+`Lifetime Cool Points:` `{lifetime_cp}`
+
+**"{active_campaign.name}"** (active campaign)
+`Available Experience:` `{campaign_xp}`
+`Total Earned        :` `{campaign_total_xp}`
+`Cool Points         :` `{campaign_cp}`
+
+### Gameplay
+`Player Characters:` `{num_characters}`
+`Active Character  :` {active_character_name}
+`Roll Macros       :` `{num_macros}`
+
+### Roll Statistics
+{user_roll_stats}
+""",
             color=EmbedColor.INFO.value,
         )
-        if isinstance(target, discord.Member):
-            embed.add_field(
-                name="",
-                value=f"""\
-    ```scala
-Account Created: {arrow.get(target.created_at).humanize()} ({arrow.get(target.created_at).format('YYYY-MM-DD')})
-Joined Server  : {arrow.get(target.joined_at).humanize()} ({arrow.get(target.joined_at).format('YYYY-MM-DD')})
-Roles: {roles}
-    ```
-    """,
-                inline=False,
-            )
-        embed.add_field(
-            name="Experience",
-            value=f"""\
-```scala
-Lifetime Experience : {lifetime_xp}
-Lifetime Cool Points: {lifetime_cp}
-
-"{active_campaign.name}" (active campaign)
-Available Experience: {campaign_xp}
-Total Earned        : {campaign_total_xp}
-Cool Points         : {campaign_cp}
-```
-""",
-            inline=False,
-        )
-        embed.add_field(
-            name="Gameplay",
-            value=f"""\
-```scala
-Player Characters: {num_characters}
-Roll Macros      : {num_macros}
-```
-""",
-            inline=False,
-        )
-        if isinstance(target, discord.Member):
-            embed.add_field(
-                name="Roll Statistics",
-                value=await stats_engine.user_statistics(  # type: ignore [arg-type]
-                    target, as_embed=False, with_title=False, with_help=False
-                ),
-                inline=False,
-            )
         embed.set_thumbnail(url=target.display_avatar.url)
         embed.set_footer(
             text=f"Requested by {ctx.author}",

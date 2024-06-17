@@ -2,11 +2,12 @@
 """Cog for the Campaign commands."""
 
 import discord
+import inflect
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import MAX_FIELD_COUNT
+from valentina.constants import MAX_FIELD_COUNT, EmbedColor
 from valentina.models import (
     Campaign,
     CampaignBook,
@@ -40,10 +41,13 @@ from valentina.views import (
     ChapterModal,
     NoteModal,
     NPCModal,
+    auto_paginate,
     confirm_action,
     present_embed,
 )
 from valentina.views.campaign_viewer import CampaignViewer
+
+p = inflect.engine()
 
 
 class CampaignCog(commands.Cog):
@@ -342,18 +346,20 @@ class CampaignCog(commands.Cog):
             )
             return
 
-        fields = []
-        fields.extend(
-            [
-                (
-                    f"**{c.name}** (Active)" if c == active_campaign else f"**{c.name}**",
-                    "",
-                )
-                for c in sorted(guild.campaigns, key=lambda x: x.name)
-            ]
-        )
+        text = f"## {len(guild.campaigns)} {p.plural_noun('campaign', len(guild.campaigns))} on `{ctx.guild.name}`\n"
+        for c in sorted(guild.campaigns, key=lambda x: x.name):
+            characters = await c.fetch_characters()
+            text += (
+                f"### **{c.name}** (Active)\n" if c == active_campaign else f"### **{c.name}**\n"
+            )
+            text += f"{c.description}\n" if c.description else ""
+            text += f"- `{len(c.books)}` {p.plural_noun('book', len(c.books))}\n"
+            text += f"- `{len(c.npcs)}` NPCs\n"
+            text += f"- `{len(characters)}` {p.plural_noun('character', len(characters))}\n"
 
-        await present_embed(ctx, title="Campaigns", fields=fields, level="info")
+        await auto_paginate(
+            ctx=ctx, title="", text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
+        )
 
     ### NPC COMMANDS ####################################################################
 
