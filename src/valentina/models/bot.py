@@ -515,6 +515,7 @@ class Valentina(commands.Bot):
                 oldest_version=db_guild.changelog_posted_version,
                 newest_version=db_global_properties.most_recent_version,
                 with_personality=True,
+                exclude_oldest_version=True,
             )
         except errors.VersionNotFoundError:
             logger.error(f"CHANGELOG: Could not find version {self.version} in the changelog")

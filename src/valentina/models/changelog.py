@@ -35,6 +35,7 @@ class ChangelogPoster:  # pragma: no cover
         oldest_version: str | None = None,
         newest_version: str | None = None,
         with_personality: bool = False,
+        exclude_oldest_version: bool = False,
     ):
         self.exclude_categories = exclud_cagegories
         self.bot = bot
@@ -46,6 +47,7 @@ class ChangelogPoster:  # pragma: no cover
             exclude_categories=self.exclude_categories,
             oldest_version=oldest_version,
             newest_version=newest_version,
+            exclude_oldest_version=exclude_oldest_version,
         )
 
         self.oldest_version, self.newest_version = self._validate_versions(
@@ -159,6 +161,7 @@ class ChangelogParser:
         oldest_version: str | None = None,
         newest_version: str | None = None,
         exclude_categories: list[str] = [],
+        exclude_oldest_version: bool = False,
     ):
         self.path = CHANGELOG_PATH
         self.bot = bot
@@ -175,6 +178,8 @@ class ChangelogParser:
             "build",
         ]
         self.exclude_categories = exclude_categories
+        self.exclude_oldest_version = exclude_oldest_version
+
         self.oldest_version = (
             (oldest_version if self.__check_version_schema(oldest_version) else None)
             if oldest_version
@@ -203,7 +208,7 @@ class ChangelogParser:
 
         return self.path.read_text()
 
-    def __parse_changelog(self) -> dict[str, dict[str, str | list[str]]]:
+    def __parse_changelog(self) -> dict[str, dict[str, str | list[str]]]:  # noqa: C901
         """Parse the changelog into a dictionary.
 
         Loop through each line in the changelog, identifying the version and category of each entry.
@@ -230,6 +235,14 @@ class ChangelogParser:
             # Check for version line
             if version_match := version_re.match(line):
                 version_being_parsed = version_match.group(1)
+
+                # When requested, do not parse the oldest version
+                # This is used when automatically posting the changelog on bot connect
+                if self.exclude_oldest_version and semver.Version.parse(
+                    version_being_parsed
+                ) == semver.Version.parse(self.oldest_version):
+                    parse_version = False
+                    continue
 
                 if (
                     semver.Version.parse(version_being_parsed)
@@ -314,7 +327,7 @@ class ChangelogParser:
         Returns:
             list[str]: A list of all versions in the changelog.
         """
-        return list(self.changelog_dict.keys())
+        return sorted(self.changelog_dict.keys(), key=semver.Version.parse, reverse=True)
 
     def get_text(self) -> str:
         """Generate a text version of the changelog."""
