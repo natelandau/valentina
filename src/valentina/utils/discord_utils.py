@@ -7,7 +7,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import ChannelPermission
-from valentina.models import CampaignBook, Character
+from valentina.models import Campaign, CampaignBook, Character
 
 from .errors import BotMissingPermissionsError
 
@@ -217,3 +217,24 @@ async def book_from_channel(
     )
 
     return await CampaignBook.find_one(CampaignBook.channel == discord_channel.id, fetch_links=True)
+
+
+async def campaign_from_channel(
+    ctx: discord.ApplicationContext | discord.AutocompleteContext | commands.Context,
+) -> Campaign | None:
+    """Get the campaign from a campaign channel.
+
+    Args:
+        ctx (discord.ApplicationContext|discord.AutocompleteContext): The context containing the channel object.
+
+    Returns:
+        CampaignBook|None: The CampaignBook object if found; otherwise, None.
+    """
+    discord_channel = (
+        ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel
+    )
+    category = discord_channel.category
+
+    return await Campaign.find_one(
+        Campaign.channel_campaign_category == category.id, fetch_links=True
+    )

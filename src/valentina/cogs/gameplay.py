@@ -18,7 +18,7 @@ from valentina.utils.autocomplete import (
     select_macro,
 )
 from valentina.utils.converters import ValidTraitFromID
-from valentina.utils.discord_utils import character_from_channel
+from valentina.utils.discord_utils import campaign_from_channel, character_from_channel
 from valentina.utils.perform_roll import perform_roll
 from valentina.views import present_embed
 
@@ -65,7 +65,7 @@ class Roll(commands.Cog):
         character = await character_from_channel(ctx) or await ctx.fetch_active_character()
 
         if desperation > 0:
-            active_campaign = await ctx.fetch_active_campaign()
+            active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
             if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
                 await present_embed(
                     ctx,
@@ -130,7 +130,7 @@ class Roll(commands.Cog):
         )
 
         if desperation > 0:
-            active_campaign = await ctx.fetch_active_campaign()
+            active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
             if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
                 await present_embed(
                     ctx,
@@ -210,7 +210,7 @@ class Roll(commands.Cog):
             raise commands.BadArgument(msg)
 
         if desperation > 0:
-            active_campaign = await ctx.fetch_active_campaign()
+            active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
             if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
                 await present_embed(
                     ctx,

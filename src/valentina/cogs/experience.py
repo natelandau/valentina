@@ -14,6 +14,7 @@ from valentina.utils.converters import (
     ValidCharacterObject,
     ValidCharTrait,
 )
+from valentina.utils.discord_utils import campaign_from_channel
 from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
 from valentina.views import confirm_action, present_embed
 
@@ -61,7 +62,7 @@ class Experience(commands.Cog):
             )
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         title = f"Add `{amount}` xp to `{user.name}`"
         description = "View experience with `/user_info`"
@@ -110,7 +111,7 @@ class Experience(commands.Cog):
             )
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         title = f"Add `{amount}` cool {p.plural_noun('point', amount)} to `{user.name}`"
         description = "View cool points with `/user_info`"
@@ -189,7 +190,7 @@ class Experience(commands.Cog):
 
         # Make the updates
         user = await User.get(ctx.author.id)
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         await user.spend_campaign_xp(active_campaign, upgrade_cost)
         trait.value = new_trait_value
