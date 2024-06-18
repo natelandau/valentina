@@ -25,7 +25,7 @@ from valentina.models import (
     Guild,
     InventoryItem,
 )
-from valentina.utils.discord_utils import book_from_channel
+from valentina.utils.discord_utils import book_from_channel, campaign_from_channel
 
 
 class CampaignChapterConverter(Converter):
@@ -37,7 +37,7 @@ class CampaignChapterConverter(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> CampaignChapter:
         """Validate and normalize traits."""
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
 
         try:
             chapter_number = int(argument)
@@ -100,7 +100,7 @@ class ValidBookNumber(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> int:
         """Validate and normalize book numbers."""
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
         campaign_book_numbers = [x.number for x in await active_campaign.fetch_books()]
 
         try:

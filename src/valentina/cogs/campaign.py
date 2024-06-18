@@ -34,7 +34,7 @@ from valentina.utils.converters import (
     ValidChapterNumber,
     ValidYYYYMMDD,
 )
-from valentina.utils.discord_utils import book_from_channel
+from valentina.utils.discord_utils import book_from_channel, campaign_from_channel
 from valentina.utils.helpers import truncate_string
 from valentina.views import (
     BookModal,
@@ -193,7 +193,7 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Set current date of a campaign."""
-        campaign = await ctx.fetch_active_campaign()
+        campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         campaign.date_in_game = date
         await campaign.save()
@@ -242,7 +242,7 @@ class CampaignCog(commands.Cog):
     @campaign.command(name="view", description="View a campaign")
     async def view_campaign(self, ctx: ValentinaContext) -> None:
         """View a campaign."""
-        campaign = await ctx.fetch_active_campaign()
+        campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         cv = CampaignViewer(ctx, campaign, max_chars=1000)
         paginator = await cv.display()
@@ -374,7 +374,7 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Create a new NPC."""
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         modal = NPCModal(title=truncate_string("Create new NPC", 45))
         await ctx.send_modal(modal)
@@ -419,7 +419,7 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """List all NPCs."""
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         if len(active_campaign.npcs) == 0:
             await present_embed(
@@ -465,7 +465,7 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
         try:
             npc = active_campaign.npcs[index]
         except IndexError:
@@ -528,7 +528,7 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
         try:
             npc = active_campaign.npcs[index]
         except IndexError:
@@ -570,7 +570,7 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         modal = BookModal(title=truncate_string("Create new book", 45))
         await ctx.send_modal(modal)
@@ -619,7 +619,7 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """List all books."""
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
         all_books = await active_campaign.fetch_books()
 
         if len(all_books) == 0:
@@ -669,7 +669,7 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
         original_name = book.name
 
         modal = BookModal(title=truncate_string(f"Edit book {book.name}", 45), book=book)
@@ -721,7 +721,7 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         title = f"Delete book `{book.number}. {book.name}` from `{active_campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
@@ -774,7 +774,7 @@ class CampaignCog(commands.Cog):
             )
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
         original_number = book.number
 
         title = (
@@ -1120,7 +1120,7 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Create a new note."""
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         modal = NoteModal(title=truncate_string("Create new note", 45))
         await ctx.send_modal(modal)
@@ -1161,8 +1161,7 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """List all notes."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
 
         if len(active_campaign.notes) == 0:
             await present_embed(
@@ -1204,7 +1203,7 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Edit a note."""
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
         note = active_campaign.notes[index]
 
         modal = NoteModal(title=truncate_string("Edit note", 45), note=note)
@@ -1253,7 +1252,7 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
         note = active_campaign.notes[index]
 
         title = f"Delete note: `{note.name}` from `{active_campaign.name}`"

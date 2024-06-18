@@ -5,6 +5,7 @@ import discord
 from valentina.constants import EmbedColor, Emoji
 from valentina.models import Character, CharacterTrait, DiceRoll
 from valentina.models.bot import ValentinaContext
+from valentina.utils.discord_utils import campaign_from_channel
 from valentina.views import ReRollButton, RollDisplay
 
 
@@ -71,7 +72,7 @@ async def perform_roll(  # pragma: no cover
     await view.wait()
 
     if view.overreach:
-        active_campaign = await ctx.fetch_active_campaign()
+        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
         if active_campaign.danger < 5:  # noqa: PLR2004
             active_campaign.danger += 1
             await active_campaign.save()

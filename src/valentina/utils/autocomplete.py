@@ -18,7 +18,11 @@ from valentina.constants import (
 )
 from valentina.models import AWSService, Campaign, ChangelogParser, Character, Guild, User
 from valentina.models.bot import Valentina
-from valentina.utils.discord_utils import book_from_channel, character_from_channel
+from valentina.utils.discord_utils import (
+    book_from_channel,
+    campaign_from_channel,
+    character_from_channel,
+)
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99
@@ -117,7 +121,7 @@ async def select_book(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """
     # Fetch the active campaign
     guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await guild.fetch_active_campaign()
+    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
     books = await active_campaign.fetch_books()
 
     if not active_campaign:
@@ -214,7 +218,7 @@ async def select_chapter_old(
     """
     # Fetch the active campaign
     guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await guild.fetch_active_campaign()
+    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
 
     if not active_campaign:
         return [OptionChoice("No active campaign", 1000)]
@@ -508,7 +512,7 @@ async def select_desperation_dice(
 
     # Fetch the active campaign
     guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await guild.fetch_active_campaign()
+    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
     desperation_dice = active_campaign.desperation
 
     if not active_campaign:
@@ -568,7 +572,7 @@ async def select_note(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """
     # Fetch the active campaign
     guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await guild.fetch_active_campaign()
+    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
 
     if not active_campaign:
         return [OptionChoice("No active campaign", 1000)]
@@ -596,7 +600,7 @@ async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """
     # Fetch the active campaign
     guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await guild.fetch_active_campaign()
+    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
 
     if not active_campaign:
         return [OptionChoice("No active campaign", 1000)]
