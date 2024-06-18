@@ -1,3 +1,15 @@
+## v2.5.0 (2024-06-18)
+
+### Feat
+
+- **campaign**: set campaign from discord channel category (#157)
+
+### Fix
+
+- **changelog**: don't repost version on bot connect (#156)
+- fewer errant line breaks in embeds (#155)
+- **gameplay**: improve roll display (#154)
+
 ## v2.4.1 (2024-06-14)
 
 ### Fix
