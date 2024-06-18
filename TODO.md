@@ -1,8 +1,6 @@
 # Todo List
 
 -   [ ] Campaign: add notes in channel without needing a command
--   [ ] Campaign: Delete book channel when book is deleted
--   [ ] Campaign: View any campaign, not just active one
 -   [ ] CharGen: Add backgrounds to freebie point picker
 -   [ ] CharGen: Add changelings
 -   [ ] CharGen: Add ghouls
@@ -14,16 +12,19 @@
 -   [ ] Gameplay: Button to create macro from rolling traits
 -   [ ] Refactor: Move testable logic out of cogs and to services or db models
 -   [ ] Statistics: Pull stats based on timeframe
+-   [ ] Statistics: Track per book stats
 -   [ ] Storyteller: Add notes
 -   [ ] Tests: Increase coverage
 -   [x] Campaign: Add books to campaigns. Books contain chapters.
 -   [x] Campaign: Associate characters with campaigns
 -   [x] Campaign: create channels for each character
+-   [x] Campaign: Delete book channel when book is deleted
 -   [x] Campaign: Delete channels when campaign is deleted
 -   [x] Campaign: If only one campaign, always set it as active
 -   [x] Campaign: Improve campaign paginator view
 -   [x] Campaign: Renumber chapters
 -   [x] Campaign: Rework campaigns to be the backbone of gameplay
+-   [x] Campaign: View any campaign, not just active one
 -   [x] Character: assign to other campaign
 -   [x] Character: rethink inventory
 -   [x] CharGen: Add edges for hunters
