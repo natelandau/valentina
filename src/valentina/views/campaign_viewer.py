@@ -5,7 +5,7 @@ import textwrap
 import discord
 from discord.ext import pages
 
-from valentina.constants import ABS_MAX_EMBED_CHARACTERS, EmbedColor
+from valentina.constants import ABS_MAX_EMBED_CHARACTERS, EmbedColor, Emoji
 from valentina.models import Campaign
 from valentina.models.bot import ValentinaContext
 from valentina.utils.helpers import num_to_circles
@@ -59,24 +59,28 @@ class CampaignViewer:
             pages.PageGroup: A PageGroup object representing the home view of the campaign.
         """
         campaign_description = (
-            f"{self.campaign.description}\n\n" if self.campaign.description else ""
+            f"### Description\n{self.campaign.description}" if self.campaign.description else ""
         )
 
         description = f"""\
-```scala
-🤞 Desperation : {num_to_circles(self.campaign.desperation)}
-⚠️ Danger      : {num_to_circles(self.campaign.danger)}
-```
+# {self.campaign.name}
 {campaign_description}
+### Details
 ```scala
-Books    : {len(self.campaign.books):<4} Created  : {self.campaign.date_created.strftime("%Y-%M-%d")}
-NPCs     : {len(self.campaign.npcs):<4} Modified : {self.campaign.date_modified.strftime("%Y-%M-%d")}
-Notes    : {len(self.campaign.notes):<4}
+{Emoji.DESPERATION.value} Desperation : {num_to_circles(self.campaign.desperation)}
+{Emoji.DANGER.value} Danger      : {num_to_circles(self.campaign.danger)}
+```
+```scala
+Created  : {self.campaign.date_created.strftime("%Y-%M-%d")}
+Modified : {self.campaign.date_modified.strftime("%Y-%M-%d")}
+Books    : {len(self.campaign.books)}
+NPCs     : {len(self.campaign.npcs)}
+Notes    : {len(self.campaign.notes)}
 ```
 """
 
         home_embed = discord.Embed(
-            title=self.campaign.name,
+            title="",
             description=description,
             color=EmbedColor.DEFAULT.value,
         )
