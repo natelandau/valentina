@@ -957,7 +957,6 @@ class CharGenWizard:
     """
 
     # TODO: Allow the user to select their special ability when a choice is available
-    # TODO: Edges for hunters
     # TODO: Improve mages, changelings, werewolves, and ghouls
 
     def __init__(

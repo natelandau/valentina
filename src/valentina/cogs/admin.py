@@ -5,12 +5,13 @@ from pathlib import Path
 
 import discord
 import inflect
+from beanie import DeleteRules
 from discord.commands import Option
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
 from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
-from valentina.models import Guild
+from valentina.models import Guild, User
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import errors
 from valentina.utils.autocomplete import select_any_player_character, select_campaign
@@ -155,8 +156,43 @@ class AdminCog(commands.Cog):
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
-    ### USER ADMINISTRATION COMMANDS ###############################################################
+    @discord.guild_only()
+    @commands.has_permissions(administrator=True)
+    @admin.command(name="character_delete", description="Delete a character from database")
+    async def character_delete(
+        self,
+        ctx: ValentinaContext,
+        character: Option(
+            ValidCharacterObject,
+            description="The character to kill",
+            autocomplete=select_any_player_character,
+            required=True,
+        ),
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Delete a character from the database."""
+        title = f"Delete `{character.name}` from the database"
+        description = "This action is irreversible."
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx, title, description=description, hidden=hidden, audit=True
+        )
+        if not is_confirmed:
+            return
 
+        user = await User.get(str(character.user_owner), fetch_links=True)
+        await user.remove_character(character)
+        await user.save()
+
+        await character.delete_channel(ctx)
+        await character.delete(link_rule=DeleteRules.DELETE_LINKS)
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    ### USER ADMINISTRATION COMMANDS ###############################################################
     @user.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
