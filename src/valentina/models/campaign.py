@@ -73,18 +73,6 @@ class CampaignNote(BaseModel):  # pragma: no cover
         return display
 
 
-class CampaignChannels(BaseModel):
-    """Representation of a campaign's channel ids as a subdocument attached to a Campaign.
-
-    TODO: Remove after migration
-    """
-
-    category_channel: int | None = None
-    storyteller: int | None = None
-    log: int | None = None
-    general: int | None = None
-
-
 class CampaignBookChapter(Document):
     """Represents a chapter as a subdocument within CampaignBook."""
 
@@ -149,7 +137,6 @@ class Campaign(Document):
     chapters: list[CampaignChapter] = Field(default_factory=list)
     notes: list[CampaignNote] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)
-    channels: Optional[CampaignChannels] = None  # TODO: Remove after migration
     books: list[Link[CampaignBook]] = Field(default_factory=list)
     channel_campaign_category: int | None = None
     channel_storyteller: int | None = None
@@ -368,9 +355,6 @@ class Campaign(Document):
 
     async def create_channels(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
         """Create the campaign channels in the guild."""
-        # Migrate channels
-        await self.migrate_campaign_channels()
-
         category_name = f"{Emoji.BOOKS.value}-{self.name.lower().replace(' ', '-')}"
 
         if self.channel_campaign_category:
@@ -455,35 +439,6 @@ class Campaign(Document):
     async def fetch_characters(self) -> list[Character]:
         """Fetch all characters in the campaign."""
         return await Character.find(Character.campaign == str(self.id)).to_list()
-
-    async def migrate_campaign_channels(self) -> None:  # pragma: no cover
-        """Migrate campaign channels to the new structure.
-
-        TODO: Remove this method after all campaigns have been migrated.
-        """
-        if getattr(self, "channels", None) is None:
-            return
-
-        did_migrate_channels = False
-
-        if self.channels.category_channel:
-            self.channel_campaign_category = self.channels.category_channel
-            logger.info("Migrated category channel to new structure.")
-            did_migrate_channels = True
-
-        if self.channels.storyteller:
-            self.channel_storyteller = self.channels.storyteller
-            logger.info("Migrated storyteller channel to new structure.")
-            did_migrate_channels = True
-
-        if self.channels.general:
-            self.channel_general = self.channels.general
-            logger.info("Migrated general channel to new structure.")
-            did_migrate_channels = True
-
-        if did_migrate_channels:
-            await self.save()
-            logger.info("Campaign channel migration complete.")
 
     async def fetch_books(self) -> list[CampaignBook]:
         """Fetch all books in the campaign."""
