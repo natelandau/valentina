@@ -219,8 +219,6 @@ class User(Document):
             del self.active_characters[str(character.guild)]
 
         # Remove the character from the list of characters
-        for c in cast(list[Character], self.characters):
-            if c.id == character.id:
-                self.characters.remove(c)
+        self.characters = [x for x in self.characters if x.id != character.id]  # type: ignore [attr-defined]
 
         await self.save()

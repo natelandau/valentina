@@ -276,7 +276,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
-            description="The character to view",
+            description="The character to kill",
             autocomplete=select_any_player_character,
             required=True,
         ),

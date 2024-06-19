@@ -214,6 +214,15 @@ class Developer(commands.Cog):
                 )
                 character.sheet_sections.append(section)
 
+            # Add the character to the user's list of characters
+            user.characters.append(character)
+            await user.save()
+
+            # Make the user active if the user has no active character
+            if str(ctx.guild.id) not in user.active_characters:
+                await user.set_active_character(character)
+
+            # Associate the character with a campaign
             campaign = random.choice(created_campaigns)
             character.campaign = str(campaign.id)
             await character.save()
