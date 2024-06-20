@@ -5,12 +5,12 @@ from .campaign import (
     CampaignBook,
     CampaignBookChapter,
     CampaignChapter,
-    CampaignNote,
     CampaignNPC,
 )
 from .character import Character, CharacterSheetSection, CharacterTrait, InventoryItem
 from .database import GlobalProperty
 from .guild import Guild, GuildChannels, GuildPermissions, GuildRollResultThumbnail
+from .note import Note
 from .user import CampaignExperience, User, UserMacro
 
 from .aws import AWSService  # isort: skip
@@ -27,7 +27,6 @@ __all__ = [
     "CampaignChapter",
     "CampaignExperience",
     "CampaignNPC",
-    "CampaignNote",
     "ChangelogParser",
     "ChangelogPoster",
     "Character",
@@ -40,6 +39,7 @@ __all__ = [
     "GuildPermissions",
     "GuildRollResultThumbnail",
     "InventoryItem",
+    "Note",
     "Probability",
     "RollProbability",
     "RollStatistic",

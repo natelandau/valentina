@@ -8,6 +8,7 @@ from loguru import logger
 
 from valentina.constants import ChannelPermission
 from valentina.models import Campaign, CampaignBook, Character
+from valentina.utils import errors
 
 from .errors import BotMissingPermissionsError
 
@@ -238,3 +239,33 @@ async def campaign_from_channel(
     return await Campaign.find_one(
         Campaign.channel_campaign_category == category.id, fetch_links=True
     )
+
+
+async def determine_channel_type(
+    ctx: discord.ApplicationContext | discord.AutocompleteContext | commands.Context,
+    raise_error: bool = True,
+) -> tuple[Campaign, CampaignBook, Character]:
+    """Determine the type of channel the command was invoked in.
+
+    Args:
+        ctx (discord.ApplicationContext|discord.AutocompleteContext): The context containing the channel object.
+        raise_error (bool, optional): Whether to raise an error if no active campaign is found. Defaults to True. Returns None if False.
+
+    Returns:
+        tuple[Campaign, CampaignBook, Character]: The campaign, book, and character objects for the channel.
+    """
+    discord_channel = (
+        ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel
+    )
+
+    channel_category = discord_channel.category
+    campaign = await Campaign.find_one(
+        Campaign.channel_campaign_category == channel_category.id, fetch_links=True
+    )
+    book = await CampaignBook.find_one(CampaignBook.channel == discord_channel.id, fetch_links=True)
+    character = await Character.find_one(Character.channel == discord_channel.id, fetch_links=True)
+
+    if not campaign and not book and not character and raise_error:
+        raise errors.ChannelTypeError
+
+    return campaign, book, character

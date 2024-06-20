@@ -54,6 +54,24 @@ class BotMissingPermissionsError(DiscordException):
         super().__init__(f"I require {sub} permissions to run this command.")
 
 
+class ChannelTypeError(Exception):
+    """Raised when a channel is not the correct type."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "This channel is not the correct type."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class MessageTooLongError(Exception):
     """Raised when a message is too long to send."""
 

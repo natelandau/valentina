@@ -52,6 +52,7 @@ class ErrorReporter:
             error,
             errors.NoActiveCampaignError
             | errors.ValidationError
+            | errors.ChannelTypeError
             | errors.NoActiveCharacterError
             | errors.NotEnoughExperienceError
             | errors.NoExperienceInCampaignError

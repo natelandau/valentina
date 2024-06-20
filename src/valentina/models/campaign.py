@@ -23,6 +23,7 @@ from valentina.constants import CHANNEL_PERMISSIONS, Emoji
 from valentina.utils.helpers import time_now
 
 from .character import Character
+from .note import Note
 
 if TYPE_CHECKING:
     from valentina.models.bot import ValentinaContext
@@ -58,21 +59,6 @@ class CampaignNPC(BaseModel):
         return display
 
 
-class CampaignNote(BaseModel):  # pragma: no cover
-    """Represents a campaign note as a subdocument within Campaign."""
-
-    # TODO: Remove user-specific notes from cogs/views
-    description: str
-    name: str
-
-    def campaign_display(self) -> str:
-        """Return the display for campaign overview."""
-        display = f"**{self.name}**\n"
-        display += f"{self.description}" if self.description else ""
-
-        return display
-
-
 class CampaignBookChapter(Document):
     """Represents a chapter as a subdocument within CampaignBook."""
 
@@ -95,6 +81,7 @@ class CampaignBook(Document):
     description_short: str = None
     name: str
     number: int
+    notes: list[Link[Note]] = Field(default_factory=list)
 
     async def fetch_chapters(self) -> list[CampaignBookChapter]:
         """Fetch all chapters in the book."""
@@ -135,7 +122,6 @@ class Campaign(Document):
     name: str
     is_deleted: bool = False  # Campaigns are never deleted from the DB, only marked as deleted
     chapters: list[CampaignChapter] = Field(default_factory=list)
-    notes: list[CampaignNote] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)
     books: list[Link[CampaignBook]] = Field(default_factory=list)
     channel_campaign_category: int | None = None

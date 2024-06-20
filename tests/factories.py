@@ -23,7 +23,6 @@ from valentina.models import (
     CampaignBook,
     CampaignBookChapter,
     CampaignExperience,
-    CampaignNote,
     CampaignNPC,
     Character,
     CharacterTrait,
@@ -116,6 +115,10 @@ class BookFactory(BeanieDocumentFactory[CampaignBook]):
 
     @classmethod
     def chapters(cls) -> list:
+        return []
+
+    @classmethod
+    def notes(cls) -> list:
         return []
 
 
@@ -256,4 +259,8 @@ class CharacterFactory(BeanieDocumentFactory[Character]):
 
     @classmethod
     def inventory(cls) -> list:
+        return []
+
+    @classmethod
+    def notes(cls) -> list:
         return []
