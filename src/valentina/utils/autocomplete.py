@@ -18,10 +18,12 @@ from valentina.constants import (
 )
 from valentina.models import AWSService, Campaign, ChangelogParser, Character, Guild, User
 from valentina.models.bot import Valentina
+from valentina.utils import errors
 from valentina.utils.discord_utils import (
     book_from_channel,
     campaign_from_channel,
     character_from_channel,
+    determine_channel_type,
 )
 from valentina.utils.helpers import truncate_string
 
@@ -559,31 +561,24 @@ async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
 
 
 async def select_note(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Populate the autocomplete list for the note option based on the user's input.
+    """Populate the autocomplete for selecting a note."""
+    try:
+        _, book, character = await determine_channel_type(ctx)
+    except errors.ChannelTypeError:
+        return [OptionChoice("No notes found", 1000)]
 
-    This function fetches all notes for the active campaign, filters them based on the user's input,
-    and returns a list of note IDs and names to populate the autocomplete list.
+    if book:
+        notes = book.notes
+    elif character:
+        notes = character.notes
+    else:
+        return [OptionChoice("No notes found", 1000)]
 
-    Args:
-        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
-
-    Returns:
-        list[OptionChoice]: A list of note IDs and names for the autocomplete list.
-    """
-    # Fetch the active campaign
-    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
-
-    if not active_campaign:
-        return [OptionChoice("No active campaign", 1000)]
-
-    choices = [
-        OptionChoice(note.name, index)
-        for index, note in enumerate(active_campaign.notes)
-        if note.name.lower().startswith(ctx.options["note"].lower())
+    return [
+        OptionChoice(truncate_string(note.text, 99), str(note.id))  # type: ignore [attr-defined]
+        for note in notes
+        if ctx.value.lower() in note.text.lower()  # type: ignore [attr-defined]
     ][:MAX_OPTION_LIST_SIZE]
-
-    return choices or [OptionChoice("No notes", 1000)]
 
 
 async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:

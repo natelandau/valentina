@@ -1,6 +1,5 @@
 # Todo List
 
--   [ ] Campaign: add notes in channel without needing a command
 -   [ ] CharGen: Add backgrounds to freebie point picker
 -   [ ] CharGen: Add changelings
 -   [ ] CharGen: Add ghouls
@@ -15,6 +14,7 @@
 -   [ ] Statistics: Track per book stats
 -   [ ] Storyteller: Add notes
 -   [ ] Tests: Increase coverage
+-   [ ] Notes: View individual player notes
 -   [x] Campaign: Add books to campaigns. Books contain chapters.
 -   [x] Campaign: Associate characters with campaigns
 -   [x] Campaign: create channels for each character

@@ -4,7 +4,7 @@ import discord
 from discord.ui import InputText, Modal
 
 from valentina.constants import MAX_FIELD_COUNT, CharClass, EmbedColor
-from valentina.models import CampaignBook, CampaignBookChapter, CampaignNote, CampaignNPC, Character
+from valentina.models import CampaignBook, CampaignBookChapter, CampaignNPC, Character, Note
 from valentina.views import ConfirmCancelButtons
 
 
@@ -435,26 +435,16 @@ class MacroCreateModal(Modal):
 class NoteModal(Modal):
     """A modal for adding Notes."""
 
-    def __init__(self, note: CampaignNote | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
+    def __init__(self, note: Note | None = None, *args, **kwargs) -> None:  # type: ignore [no-untyped-def]
         super().__init__(*args, **kwargs)
         self.confirmed: bool = False
-        self.name: str = ""
-        self.description: str = ""
+        self.note_text: str = ""
 
         self.add_item(
             InputText(
-                label="name",
-                placeholder="Enter a name for the chapter",
-                value=note.name if note else None,
-                required=True,
-                style=discord.InputTextStyle.short,
-            )
-        )
-        self.add_item(
-            InputText(
-                label="description",
-                placeholder="Write a description for the chapter",
-                value=note.description if note else None,
+                label="note_text",
+                placeholder="Write the note here",
+                value=note.text if note else None,
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
@@ -464,16 +454,14 @@ class NoteModal(Modal):
     async def callback(self, interaction: discord.Interaction) -> None:
         """Callback for the modal."""
         view = ConfirmCancelButtons(interaction.user)
-        self.name = self.children[0].value
-        self.description = self.children[1].value
+        self.note_text = self.children[0].value
 
         embed = discord.Embed(title="Confirm Note", color=EmbedColor.INFO.value)
-        embed.add_field(name="Note Name", value=self.name, inline=True)
         embed.add_field(
-            name="Description",
-            value=(self.description[:MAX_FIELD_COUNT] + " ...")
-            if len(self.description) > MAX_FIELD_COUNT
-            else self.description,
+            name="note",
+            value=(self.note_text[:MAX_FIELD_COUNT] + " ...")
+            if len(self.note_text) > MAX_FIELD_COUNT
+            else self.note_text,
         )
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)

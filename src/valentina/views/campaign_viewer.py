@@ -14,7 +14,7 @@ from valentina.utils.helpers import num_to_circles
 class CampaignViewer:
     """Manage and display interactive views of a campaign in a Discord context.
 
-    This class provides an interface for creating and managing different views (pages) of a campaign, such as home, notes, NPCs, and chapters. It utilizes embeds and pagination to present information in an organized and user-friendly manner.
+    This class provides an interface for creating and managing different views (pages) of a campaign, such as home, NPCs, and chapters. It utilizes embeds and pagination to present information in an organized and user-friendly manner.
 
     Attributes:
         ctx (ValentinaContext): The context of the Discord command invoking this viewer.
@@ -32,15 +32,12 @@ class CampaignViewer:
     async def _get_pages(self) -> list[pages.PageGroup]:
         """Compile all relevant pages for the campaign view.
 
-        Gather and create page groups for various sections of the campaign like home, notes, NPCs, and chapters, ensuring inclusion of only sections with content.
+        Gather and create page groups for various sections of the campaign like home, NPCs, and chapters, ensuring inclusion of only sections with content.
 
         Returns:
             list[pages.PageGroup]: A list of PageGroup objects, each representing a different section of the campaign.
         """
         pages = [await self._home_page()]
-
-        if len(self.campaign.notes) > 0:
-            pages.append(await self._notes_pages())
 
         if len(self.campaign.npcs) > 0:
             pages.append(await self._npc_pages())
@@ -53,7 +50,7 @@ class CampaignViewer:
     async def _home_page(self) -> pages.PageGroup:
         """Construct the home page view of the campaign.
 
-        Build the home page embed summarizing key campaign information, including description, number of books, NPCs, and notes, with proper formatting and styling for presentation.
+        Build the home page embed summarizing key campaign information, including description, number of books, and NPCs with proper formatting and styling for presentation.
 
         Returns:
             pages.PageGroup: A PageGroup object representing the home view of the campaign.
@@ -75,7 +72,6 @@ Created  : {self.campaign.date_created.strftime("%Y-%M-%d")}
 Modified : {self.campaign.date_modified.strftime("%Y-%M-%d")}
 Books    : {len(self.campaign.books)}
 NPCs     : {len(self.campaign.npcs)}
-Notes    : {len(self.campaign.notes)}
 ```
 """
 
@@ -93,58 +89,6 @@ Notes    : {len(self.campaign.notes)}
             description="Campaign Overview",
             use_default_buttons=False,
             emoji="🏠",
-        )
-
-    async def _notes_pages(self) -> pages.PageGroup:
-        """Generate pages for the campaign's notes section.
-
-        Create multiple pages to display the campaign's notes, formatting each note in a separate embed. Implement pagination for notes that exceed the embed character limit.
-
-        Returns:
-            pages.PageGroup: A PageGroup object containing the notes section of the campaign.
-        """
-        note_list = sorted(self.campaign.notes, key=lambda n: n.name)
-        note_text = "\n\n".join([f"{n.campaign_display()}" for n in note_list])
-        lines = textwrap.wrap(
-            note_text,
-            self.max_chars,
-            break_long_words=False,
-            replace_whitespace=False,
-        )
-        embeds = []
-        for line in lines:
-            embed = discord.Embed(
-                title=f"{self.campaign.name} Notes",
-                description=line,
-                color=EmbedColor.DEFAULT.value,
-            )
-            embeds.append(embed)
-
-        buttons = []
-        if len(embeds) > 1:
-            buttons.extend(
-                [
-                    pages.PaginatorButton(
-                        "prev", label="←", style=discord.ButtonStyle.green, disabled=True
-                    ),
-                    pages.PaginatorButton(
-                        "page_indicator", style=discord.ButtonStyle.gray, disabled=True
-                    ),
-                    pages.PaginatorButton(
-                        "next", label="→", style=discord.ButtonStyle.green, disabled=False
-                    ),
-                ]
-            )
-
-        return pages.PageGroup(
-            pages=[pages.Page(embeds=[embed]) for embed in embeds],
-            label="Campaign Notes",
-            description=f"{len(note_list)} Notes",
-            custom_buttons=buttons,
-            show_disabled=len(embeds) > 1,
-            show_indicator=len(embeds) > 1,
-            loop_pages=False,
-            emoji="📝",
         )
 
     async def _npc_pages(self) -> pages.PageGroup:
@@ -213,15 +157,20 @@ Notes    : {len(self.campaign.notes)}
             chapters = await book.fetch_chapters()
             book_chapter_text = "### Chapters\n"
             book_chapter_text += "\n".join([f"{c.number}. {c.name}" for c in chapters])
-
-            description_text = (
-                f"{book_chapter_text}\n### Description\n{book.description_long}"
-                if chapters
-                else f"### Description\n{book.description_long}"
+            book_notes_text = "### Notes\n"
+            book_notes_text += "\n".join(
+                [f"- {await n.display(self.ctx)}" for n in book.notes]  # type: ignore [attr-defined]
             )
 
+            full_text = ""
+            if chapters:
+                full_text += f"{book_chapter_text}\n"
+            full_text += f"### Description\n{book.description_long}\n"
+            if book.notes:
+                full_text += f"{book_notes_text}\n"
+
             lines = textwrap.wrap(
-                description_text,
+                full_text,
                 self.max_chars,
                 break_long_words=False,
                 replace_whitespace=False,

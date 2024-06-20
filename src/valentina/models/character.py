@@ -30,6 +30,8 @@ from valentina.models.aws import AWSService
 from valentina.utils import errors
 from valentina.utils.helpers import get_max_trait_value, num_to_circles, time_now
 
+from .note import Note
+
 if TYPE_CHECKING:
     from valentina.models import Campaign
     from valentina.models.bot import ValentinaContext
@@ -90,6 +92,7 @@ class Character(Document):
     sheet_sections: list[CharacterSheetSection] = Field(default_factory=list)
     traits: list[Link[CharacterTrait]] = Field(default_factory=list)
     inventory: list[Link[InventoryItem]] = Field(default_factory=list)
+    notes: list[Link[Note]] = Field(default_factory=list)
 
     type_chargen: bool = False
     type_debug: bool = False

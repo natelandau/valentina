@@ -24,6 +24,7 @@ from valentina.models import (
     CharacterTrait,
     Guild,
     InventoryItem,
+    Note,
 )
 from valentina.utils.discord_utils import book_from_channel, campaign_from_channel
 
@@ -307,6 +308,19 @@ class ValidImageURL(Converter):  # pragma: no cover
 
         # Replace media.giphy.com URLs with i.giphy.com URLs
         return re.sub(r"//media\.giphy\.com", "//i.giphy.com", argument)
+
+
+class ValidNote(Converter):  # pragma: no cover
+    """A converter that returns a Note object from the database.from it's id."""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> Note:  # noqa: ARG002
+        """Return a note object from a note id."""
+        note = await Note.get(argument)
+        if note:
+            return note
+
+        msg = f"No note found with id `{argument}`"
+        raise BadArgument(msg)
 
 
 class ValidTraitCategory(Converter):

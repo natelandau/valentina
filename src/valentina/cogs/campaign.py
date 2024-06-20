@@ -12,7 +12,6 @@ from valentina.models import (
     Campaign,
     CampaignBook,
     CampaignBookChapter,
-    CampaignNote,
     CampaignNPC,
     Guild,
 )
@@ -22,7 +21,6 @@ from valentina.utils.autocomplete import (
     select_campaign,
     select_chapter,
     select_chapter_old,
-    select_note,
     select_npc,
 )
 from valentina.utils.converters import (
@@ -39,7 +37,6 @@ from valentina.utils.helpers import truncate_string
 from valentina.views import (
     BookModal,
     ChapterModal,
-    NoteModal,
     NPCModal,
     auto_paginate,
     confirm_action,
@@ -1104,167 +1101,6 @@ class CampaignCog(commands.Cog):
 
         # Save the selected book with its new number
         await chapter.save()
-
-        await interaction.edit_original_response(embed=confirmation_embed, view=None)
-
-    ### NOTE COMMANDS ####################################################################
-
-    @notes.command(name="create", description="Create a new note")
-    async def create_note(
-        self,
-        ctx: ValentinaContext,
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Create a new note."""
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-
-        modal = NoteModal(title=truncate_string("Create new note", 45))
-        await ctx.send_modal(modal)
-        await modal.wait()
-        if not modal.confirmed:
-            return
-
-        name = modal.name.strip().title()
-        description = modal.description.strip()
-
-        note = CampaignNote(
-            name=name,
-            description=description,
-        )
-
-        active_campaign.notes.append(note)
-        await active_campaign.save()
-
-        await ctx.post_to_audit_log(f"Create note: `{name}` in `{active_campaign.name}`")
-        await present_embed(
-            ctx,
-            title=f"Create note: `{name}` in `{active_campaign.name}`",
-            level="success",
-            description=(description[:MAX_FIELD_COUNT] + " ...")
-            if len(description) > MAX_FIELD_COUNT
-            else description,
-            ephemeral=hidden,
-        )
-
-    @notes.command(name="list", description="List all notes")
-    async def list_notes(
-        self,
-        ctx: ValentinaContext,
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """List all notes."""
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-
-        if len(active_campaign.notes) == 0:
-            await present_embed(
-                ctx,
-                title="No Notes",
-                description="There are no notes\nCreate one with `/campaign create_note`",
-                level="info",
-                ephemeral=hidden,
-            )
-            return
-
-        fields = []
-        fields.extend(
-            [
-                (f"**__{note.name}__**", f"{note.description}")
-                for note in sorted(active_campaign.notes, key=lambda x: x.name)
-            ]
-        )
-
-        await present_embed(
-            ctx, title=f"Notes for **{active_campaign.name}**", fields=fields, level="info"
-        )
-
-    @notes.command(name="edit", description="Edit a note")
-    async def edit_note(
-        self,
-        ctx: ValentinaContext,
-        index: Option(
-            int,
-            name="note",
-            description="Note to edit",
-            required=True,
-            autocomplete=select_note,
-        ),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Edit a note."""
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-        note = active_campaign.notes[index]
-
-        modal = NoteModal(title=truncate_string("Edit note", 45), note=note)
-        await ctx.send_modal(modal)
-        await modal.wait()
-        if not modal.confirmed:
-            return
-
-        name = modal.name.strip().title()
-        description = modal.description.strip()
-
-        active_campaign.notes[index].name = name
-        active_campaign.notes[index].description = description
-        await active_campaign.save()
-
-        await ctx.post_to_audit_log(f"Update note: `{name}` in `{active_campaign.name}`")
-
-        await present_embed(
-            ctx,
-            title=f"Update note: `{name}` in `{active_campaign.name}`",
-            level="success",
-            description=(modal.description.strip()[:MAX_FIELD_COUNT] + " ...")
-            if len(modal.description.strip()) > MAX_FIELD_COUNT
-            else modal.description.strip(),
-            ephemeral=hidden,
-        )
-
-    @notes.command(name="delete", description="Delete a note")
-    async def delete_note(
-        self,
-        ctx: ValentinaContext,
-        index: Option(
-            int,
-            name="note",
-            description="Note to edit",
-            required=True,
-            autocomplete=select_note,
-        ),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Delete a note."""
-        if not await self.check_permissions(ctx):
-            return
-
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-        note = active_campaign.notes[index]
-
-        title = f"Delete note: `{note.name}` from `{active_campaign.name}`"
-        is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
-        )
-
-        if not is_confirmed:
-            return
-
-        del active_campaign.notes[index]
-        await active_campaign.save()
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
