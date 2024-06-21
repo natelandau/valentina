@@ -212,9 +212,6 @@ async def fetch_channel_object(
     book = await CampaignBook.find_one(CampaignBook.channel == discord_channel.id, fetch_links=True)
     character = await Character.find_one(Character.channel == discord_channel.id, fetch_links=True)
 
-    if raise_error and not campaign and not book and not character:
-        raise errors.ChannelTypeError
-
     if raise_error and need_character and not character:
         msg = "Rerun command in a character channel."
         raise errors.ChannelTypeError(msg)
@@ -226,5 +223,8 @@ async def fetch_channel_object(
     if raise_error and need_book and not book:
         msg = "Rerun command in a book channel"
         raise errors.ChannelTypeError(msg)
+
+    if raise_error and not campaign and not book and not character:
+        raise errors.ChannelTypeError
 
     return ChannelObjects(campaign=campaign, book=book, character=character)

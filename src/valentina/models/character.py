@@ -22,6 +22,7 @@ from valentina.constants import (
     CHANNEL_PERMISSIONS,
     CharacterConcept,
     CharClass,
+    Emoji,
     HunterCreed,
     TraitCategory,
     VampireClan,
@@ -327,3 +328,27 @@ class Character(Document):
                 return trait
 
         return None
+
+    async def update_channel(
+        self, ctx: "ValentinaContext", campaign: "Campaign"
+    ) -> discord.TextChannel | None:
+        """Update the permissions for the character's channel."""
+        if not self.channel:
+            return None
+
+        channel = ctx.guild.get_channel(self.channel)
+        channel_name = f"{Emoji.SILHOUETTE.value}-{self.name.lower().replace(' ', '-')}"
+        owned_by_user = discord.utils.get(ctx.bot.users, id=self.user_owner)
+        category = discord.utils.get(ctx.guild.categories, id=campaign.channel_campaign_category)
+
+        if not channel:
+            return None
+
+        return await ctx.channel_update_or_add(
+            channel=channel,
+            name=channel_name,
+            category=category,
+            permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
+            permissions_user_post=owned_by_user,
+            topic=f"Character channel for {self.name}",
+        )

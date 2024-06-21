@@ -586,6 +586,9 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         old_owner = await User.get(character.user_owner, fetch_links=True)
         new_owner = await User.get(new_user.id, fetch_links=True)
 
@@ -613,6 +616,8 @@ class StoryTeller(commands.Cog):
 
         character.user_owner = new_owner.id
         await character.save()
+
+        await character.update_channel(ctx, campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -705,6 +710,9 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Roll traits for a storyteller character."""
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         pool = trait_one.value + trait_two.value
 
         await perform_roll(
@@ -712,6 +720,7 @@ class StoryTeller(commands.Cog):
             pool,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             trait_one=trait_one,
             trait_two=trait_two,

@@ -80,6 +80,7 @@ class Roll(commands.Cog):
             pool,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             character=character,
             desperation_pool=desperation,
@@ -145,6 +146,7 @@ class Roll(commands.Cog):
             pool,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             trait_one=trait_one,
             trait_two=trait_two,
@@ -168,7 +170,9 @@ class Roll(commands.Cog):
             dice_size (int): The number of sides on the dice
             pool (int): The number of dice to roll
         """
-        await perform_roll(ctx, pool, 0, dice_size, comment)
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+        await perform_roll(ctx, pool, 0, dice_size, campaign, comment)
 
     @roll.command(name="macro", description="Roll a macro")
     async def roll_macro(
@@ -233,6 +237,7 @@ class Roll(commands.Cog):
             pool,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             trait_one=trait_one,
             trait_two=trait_two,
@@ -278,6 +283,7 @@ class Roll(commands.Cog):
             0,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             character=character,
             desperation_pool=desperation,

@@ -24,7 +24,6 @@ from valentina.utils.autocomplete import (
     select_campaign,
     select_char_class,
     select_char_trait,
-    select_character_from_user,
     select_custom_section,
     select_trait_category,
     select_vampire_clan,
@@ -843,12 +842,6 @@ class CharactersCog(commands.Cog, name="Character"):
     async def transfer_character(
         self,
         ctx: ValentinaContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to transfer",
-            autocomplete=select_character_from_user,
-            required=True,
-        ),
         new_owner: Option(discord.User, description="The user to transfer the character to"),
         hidden: Option(
             bool,
@@ -857,6 +850,10 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Transfer one of your characters to another user."""
+        channel_objects = await fetch_channel_object(ctx, need_character=True, need_campaign=True)
+        character = channel_objects.character
+        campaign = channel_objects.campaign
+
         if new_owner == ctx.author:
             await present_embed(
                 ctx,
@@ -881,8 +878,10 @@ class CharactersCog(commands.Cog, name="Character"):
         new_user.characters.append(character)
         await new_user.save()
 
-        character.user_owner = new_user.id
+        character.user_owner = new_owner.id
         await character.save()
+
+        await character.update_channel(ctx, campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
