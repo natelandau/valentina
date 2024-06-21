@@ -331,7 +331,7 @@ class Character(Document):
 
     async def update_channel(
         self, ctx: "ValentinaContext", campaign: "Campaign"
-    ) -> discord.TextChannel | None:
+    ) -> discord.TextChannel | None:  # pragma: no cover
         """Update the permissions for the character's channel."""
         if not self.channel:
             return None

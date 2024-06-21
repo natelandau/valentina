@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from valentina.models.bot import ValentinaContext
 
 
-async def assert_permissions(ctx: "ValentinaContext", **permissions: bool) -> None:  # noqa: RUF029
+async def assert_permissions(ctx: "ValentinaContext", **permissions: bool) -> None:  # noqa: RUF029 # pragma: no cover
     """Check if the bot has the required permissions to run the command."""
     if missing := [
         perm for perm, value in permissions.items() if getattr(ctx.app_permissions, perm) != value
@@ -25,7 +25,7 @@ async def assert_permissions(ctx: "ValentinaContext", **permissions: bool) -> No
         raise BotMissingPermissionsError(missing)
 
 
-async def create_storyteller_role(guild: discord.Guild) -> discord.Role:
+async def create_storyteller_role(guild: discord.Guild) -> discord.Role:  # pragma: no cover
     """Create a storyteller role for the guild."""
     storyteller = discord.utils.get(guild.roles, name="Storyteller")
 
@@ -72,7 +72,7 @@ async def create_storyteller_role(guild: discord.Guild) -> discord.Role:
     return storyteller
 
 
-async def create_player_role(guild: discord.Guild) -> discord.Role:
+async def create_player_role(guild: discord.Guild) -> discord.Role:  # pragma: no cover
     """Create player role for the guild."""
     player = discord.utils.get(guild.roles, name="Player", mentionable=True, hoist=True)
 

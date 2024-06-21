@@ -105,7 +105,6 @@
         "src/valentina/utils/discord_utils.py",
         "src/valentina/utils/errors.py",
         "src/valentina/utils/logging.py",
-        "src/valentina/utils/types.py",
         "src/valentina/views/*",
         "tests/*",
     ]
