@@ -43,7 +43,7 @@ from valentina.utils.converters import (
     ValidImageURL,
     ValidTraitCategory,
 )
-from valentina.utils.discord_utils import campaign_from_channel
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.utils.helpers import (
     fetch_data_from_url,
 )
@@ -93,7 +93,8 @@ class StoryTeller(commands.Cog):
     @storyteller.command(name="set_danger", description="Set the danger level")
     async def set_danger(self, ctx: ValentinaContext, danger: int) -> None:
         """Set the danger level for a campaign."""
-        campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         title = f"Set danger level to {danger}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title, audit=True)
@@ -109,7 +110,8 @@ class StoryTeller(commands.Cog):
     @storyteller.command(name="set_desperation", description="Set the desperation level")
     async def set_desperation(self, ctx: ValentinaContext, desperation: int) -> None:
         """Set the desperation level for a campaign."""
-        campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         title = f"Set desperation level to {desperation}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title, audit=True)

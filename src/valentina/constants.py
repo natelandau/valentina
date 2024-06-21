@@ -41,49 +41,6 @@ VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 
 
 ### ENUMS ###
-class LogLevel(StrEnum):
-    """Enum for logging levels."""
-
-    TRACE = "TRACE"
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    SUCCESS = "SUCCESS"
-    ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
-
-
-class ChannelPermission(Enum):
-    """Enum for permissions when creating a character. Default is UNRESTRICTED."""
-
-    DEFAULT = 0  # Default
-    HIDDEN = 1
-    READ_ONLY = 2
-    POST = 3
-    MANAGE = 4
-
-
-class DiceType(Enum):
-    """Enum for types of dice."""
-
-    D4 = 4
-    D6 = 6
-    D8 = 8
-    D10 = 10
-    D100 = 100
-
-
-class EmbedColor(Enum):
-    """Enum for colors of embeds."""
-
-    SUCCESS = 0x00FF00  # GREEN
-    ERROR = 0xFF0000  # RED
-    WARNING = 0xFF5F00  # ORANGE
-    INFO = 0x00FFFF  # CYAN
-    DEBUG = 0x0000FF  # BLUE
-    DEFAULT = 0x6082B6  # GRAY
-    GRAY = 0x808080
-    YELLOW = 0xFFFF00
 
 
 class Emoji(Enum):
@@ -126,6 +83,58 @@ class Emoji(Enum):
     WARNING = "⚠️"
     WEREWOLF = "🐺"
     YES = "✅"
+
+
+class LogLevel(StrEnum):
+    """Enum for logging levels."""
+
+    TRACE = "TRACE"
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    SUCCESS = "SUCCESS"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class ChannelPermission(Enum):
+    """Enum for permissions when creating a character. Default is UNRESTRICTED."""
+
+    DEFAULT = 0  # Default
+    HIDDEN = 1
+    READ_ONLY = 2
+    POST = 3
+    MANAGE = 4
+
+
+class CampaignChannelName(Enum):
+    """Enum for common campaign channel names."""
+
+    GENERAL = f"{Emoji.SPARKLES.value}-general"
+    STORYTELLER = f"{Emoji.LOCK.value}-storyteller"
+
+
+class DiceType(Enum):
+    """Enum for types of dice."""
+
+    D4 = 4
+    D6 = 6
+    D8 = 8
+    D10 = 10
+    D100 = 100
+
+
+class EmbedColor(Enum):
+    """Enum for colors of embeds."""
+
+    SUCCESS = 0x00FF00  # GREEN
+    ERROR = 0xFF0000  # RED
+    WARNING = 0xFF5F00  # ORANGE
+    INFO = 0x00FFFF  # CYAN
+    DEBUG = 0x0000FF  # BLUE
+    DEFAULT = 0x6082B6  # GRAY
+    GRAY = 0x808080
+    YELLOW = 0xFFFF00
 
 
 class GithubIssueLabels(Enum):

@@ -15,7 +15,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from valentina.utils import ValentinaConfig, console
 from valentina.utils.database import init_database
 
+### Constants for Testing ###
+CHANNEL_CHARACTER_ID = 1234567890
+CHANNEL_BOOK_ID = 1234567891
+CHANNEL_CATEGORY_CAMPAIGN_ID = 1234567892
 
+
+## Database initialization ##
 @pytest_asyncio.fixture(autouse=True)
 async def _init_database(request):
     """Initialize the database."""
@@ -49,22 +55,61 @@ def mock_bot(mocker):
 
 
 @pytest.fixture()
-def mock_discord_channel(mocker):
-    """A mock of a discord.Channel object."""
+def mock_discord_campaign_category_channel(mocker):
+    """A mock of a discord.CategoryChannel object associated with a campaign."""
     mock_channel = mocker.MagicMock()
-    mock_channel.id = 12345
-    mock_channel.__class__ = discord.TextChannel
+    mock_channel.id = CHANNEL_CATEGORY_CAMPAIGN_ID
+    mock_channel.__class__ = discord.CategoryChannel
     return mock_channel
 
 
 @pytest.fixture()
-def mock_interaction1(mocker, mock_guild1, mock_member, mock_discord_channel):
-    """A mock of a discord.Interaction object."""
+def mock_discord_unassociated_category_channel(mocker):
+    """A mock of a discord.CategoryChannel object associated with a campaign."""
+    mock_channel = mocker.MagicMock()
+    mock_channel.id = 2000001
+    mock_channel.__class__ = discord.CategoryChannel
+    return mock_channel
+
+
+@pytest.fixture()
+def mock_discord_unassociated_channel(mocker, mock_discord_unassociated_category_channel):
+    """A mock of a discord.Channel object associated with a book."""
+    mock_channel = mocker.MagicMock()
+    mock_channel.id = 1000002
+    mock_channel.__class__ = discord.TextChannel
+    mock_channel.category = mock_discord_unassociated_category_channel
+    return mock_channel
+
+
+@pytest.fixture()
+def mock_discord_character_channel(mocker, mock_discord_campaign_category_channel):
+    """A mock of a discord.Channel object associated with a character."""
+    mock_channel = mocker.MagicMock()
+    mock_channel.id = CHANNEL_CHARACTER_ID
+    mock_channel.__class__ = discord.TextChannel
+    mock_channel.category = mock_discord_campaign_category_channel
+    return mock_channel
+
+
+@pytest.fixture()
+def mock_discord_book_channel(mocker, mock_discord_campaign_category_channel):
+    """A mock of a discord.Channel object associated with a book."""
+    mock_channel = mocker.MagicMock()
+    mock_channel.id = CHANNEL_BOOK_ID
+    mock_channel.__class__ = discord.TextChannel
+    mock_channel.category = mock_discord_campaign_category_channel
+    return mock_channel
+
+
+@pytest.fixture()
+def mock_interaction1(mocker, mock_guild1, mock_member, mock_discord_character_channel):
+    """A mock of a discord.Interaction object run in a character channel."""
     mock_interaction = mocker.MagicMock()
     mock_interaction.id = 1
     mock_interaction.guild = mock_guild1
     mock_interaction.author = mock_member
-    mock_interaction.channel = mock_discord_channel
+    mock_interaction.channel = mock_discord_character_channel
 
     mock_interaction.__class__ = discord.Interaction
 
@@ -150,9 +195,9 @@ def mock_guild2(mocker):
 
 @pytest_asyncio.fixture()
 async def async_mock_ctx1(  # noqa: RUF029
-    mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_channel
+    mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_character_channel
 ):
-    """Create an async mock context object with user 1."""
+    """Create an async mock context object with user 1 run in a character channel."""
     mock_bot = mocker.AsyncMock()
     mock_bot.__class__ = commands.Bot
 
@@ -166,7 +211,7 @@ async def async_mock_ctx1(  # noqa: RUF029
     mock_ctx.author = mock_member
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild1
-    mock_ctx.channel = mock_discord_channel
+    mock_ctx.channel = mock_discord_character_channel
     mock_ctx.__class__ = discord.ApplicationContext
 
     # Mock the methods which post to audit and error logs
@@ -183,8 +228,8 @@ async def async_mock_ctx1(  # noqa: RUF029
 
 
 @pytest.fixture()
-def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_channel):
-    """Create a mock context object with user 1."""
+def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_character_channel):
+    """Create a mock context object with user 1 run in a character channel."""
     # Mock the ctx.bot object
     mock_bot = mocker.MagicMock()
     mock_bot.__class__ = commands.Bot
@@ -199,7 +244,7 @@ def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_
     mock_ctx.author = mock_member
     mock_ctx.bot = mock_bot
     mock_ctx.guild = mock_guild1
-    mock_ctx.channel = mock_discord_channel
+    mock_ctx.channel = mock_discord_character_channel
     mock_ctx.__class__ = discord.ApplicationContext
 
     return mock_ctx

@@ -40,7 +40,7 @@ from valentina.utils.converters import (
     ValidTraitFromID,
     ValidYYYYMMDD,
 )
-from valentina.utils.discord_utils import character_from_channel
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.utils.helpers import (
     fetch_data_from_url,
     truncate_string,
@@ -117,7 +117,9 @@ class CharactersCog(commands.Cog, name="Character"):
             )
             return
 
-        campaign = await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         user = await User.get(ctx.author.id, fetch_links=True)
         character = Character(
             guild=ctx.guild.id,
@@ -142,9 +144,11 @@ class CharactersCog(commands.Cog, name="Character"):
         ctx: ValentinaContext,
     ) -> None:
         """Create a new character from scratch."""
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         # Grab the current user and campaign experience
         user = await User.get(ctx.author.id, fetch_links=True)
-        campaign = await ctx.fetch_active_campaign()
         campaign_xp, _, _ = user.fetch_campaign_xp(campaign)
 
         # Abort if user does not have enough xp
@@ -163,41 +167,6 @@ class CharactersCog(commands.Cog, name="Character"):
             ctx, campaign=campaign, user=user, experience_level=RNGCharLevel.NEW, hidden=False
         )
         await wizard.start()
-
-    @chars.command(name="set_active", description="Select a character as your active character")
-    async def set_active_character(
-        self,
-        ctx: ValentinaContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to view",
-            autocomplete=select_character_from_user,
-            required=True,
-        ),
-        hidden: Option(
-            bool,
-            description="Make the interaction only visible to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Select a character as your active character."""
-        if not character.is_alive:
-            title = (
-                f"{character.name} is dead. Set as active for `{ctx.author.display_name}` anyway"
-            )
-        else:
-            title = f"Set `{character.name}` as active character for `{ctx.author.display_name}`"
-
-        is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
-        )
-        if not is_confirmed:
-            return
-
-        user = await User.get(ctx.author.id)
-        await user.set_active_character(character)
-
-        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @chars.command(name="sheet", description="View a character sheet")
     async def view_character_sheet(
@@ -259,12 +228,7 @@ class CharactersCog(commands.Cog, name="Character"):
             user = await User.get(character.user_owner, fetch_links=True)
             dead_emoji = Emoji.DEAD.value if not character.is_alive else ""
 
-            if user_active_character := await user.active_character(ctx.guild, raise_error=False):
-                is_active = character.id == user_active_character.id
-            else:
-                is_active = False
-
-            text += f"- {dead_emoji} **{character.name}** _({character.char_class.value.name})_ `@{user.name}` {'`[Active]`' if is_active else ''}\n"
+            text += f"- {dead_emoji} **{character.name}** _({character.char_class.value.name})_ `@{user.name}`\n"
 
         await auto_paginate(
             ctx=ctx, title="", text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
@@ -325,7 +289,9 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Rename a character."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
+
         nick = f"'{nickname}' " if nickname else ""
 
         title = f"Rename `{character.name}` to `{first_name} {nick}{last_name}`"
@@ -340,8 +306,8 @@ class CharactersCog(commands.Cog, name="Character"):
         character.name_nick = nickname
         await character.save()
 
-        active_campaign = await ctx.fetch_active_campaign()
-        await active_campaign.create_channels(ctx)
+        if channel_objects.campaign:
+            await channel_objects.campaign.create_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -393,8 +359,8 @@ class CharactersCog(commands.Cog, name="Character"):
                 )
                 return
 
-        # Fetch the active character
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         # Determine image extension and read data
         extension = file_extension if file else url.split(".")[-1].lower()
@@ -437,8 +403,8 @@ class CharactersCog(commands.Cog, name="Character"):
         Returns:
             None
         """
-        # Fetch the active character
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         # Generate the key prefix for the character's images
         key_prefix = f"{ctx.guild.id}/characters/{character.id}"
@@ -476,7 +442,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a trait to a character."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         if not await ctx.can_manage_traits(character):
             await present_embed(
@@ -521,8 +488,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update the value of a trait."""
-        # Fetch the active character and trait
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         # Guard statement: check permissions
         if not await ctx.can_manage_traits(character):
@@ -579,8 +546,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a trait from a character."""
-        # Fetch the active character and trait
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         # Guard statement: check permissions
         if not await ctx.can_manage_traits(character):
@@ -626,7 +593,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Add a custom section to the character sheet."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         modal = CustomSectionModal(
             title=truncate_string(f"Custom section for {character.name}", 45)
@@ -675,7 +643,9 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a custom section."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
+
         section = character.sheet_sections[section_index]
 
         modal = CustomSectionModal(
@@ -720,7 +690,9 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Delete a custom section from a character."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
+
         section = character.sheet_sections[section_index]
 
         title = f"Delete section `{section.title}` from `{character.name}`"
@@ -748,7 +720,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's bio."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         modal = BioModal(
             title=truncate_string(f"Enter the biography for {character.name}", 45),
@@ -784,7 +757,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Set the DOB of a character."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         character.dob = dob
         await character.save()
@@ -809,7 +783,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Update a character's profile."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         modal = ProfileModal(
             title=truncate_string(f"Profile for {character.name}", 45), character=character
@@ -850,7 +825,8 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Associate a character with a campaign."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         title = f"Associate `{character.name}` with `{campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
@@ -869,7 +845,7 @@ class CharactersCog(commands.Cog, name="Character"):
         ctx: ValentinaContext,
         character: Option(
             ValidCharacterObject,
-            description="The character to view",
+            description="The character to transfer",
             autocomplete=select_character_from_user,
             required=True,
         ),

@@ -196,8 +196,11 @@ async def test_valid_yyyymmdd():
 
 
 @pytest.mark.drop_db()
-async def test_valid_chapter_number(mock_ctx1, book_chapter_factory, book_factory):
+async def test_valid_chapter_number(
+    mock_ctx1, book_chapter_factory, book_factory, mock_discord_book_channel
+):
     """Test the ValidChapterNumber converter."""
+    mock_ctx1.channel = mock_discord_book_channel
     chapter = book_chapter_factory.build()
     chapter_object = await chapter.insert()
 
@@ -225,7 +228,7 @@ async def test_valid_chapter_number(mock_ctx1, book_chapter_factory, book_factor
 
 
 @pytest.mark.drop_db()
-async def test_campaign_chapter_converter(mock_ctx1, guild_factory, campaign_factory):
+async def test_campaign_chapter_converter(mock_ctx1, campaign_factory):
     """Test the CampaignChapterConverter converter.
 
     TODO: Remove this after chapter migration
@@ -241,13 +244,6 @@ async def test_campaign_chapter_converter(mock_ctx1, guild_factory, campaign_fac
     campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter], characters=[])
     await campaign.insert()
 
-    guild = guild_factory.build(
-        id=mock_ctx1.guild.id,
-        campaigns=[campaign],
-        active_campaign=campaign,
-        roll_result_thumbnails=[],
-    )
-    await guild.insert()
     # WHEN the converter is called with a valid chapter number
     # THEN assert the result is the correct number
     assert await CampaignChapterConverter().convert(mock_ctx1, 1) == chapter
@@ -264,21 +260,13 @@ async def test_campaign_chapter_converter(mock_ctx1, guild_factory, campaign_fac
 
 
 @pytest.mark.drop_db()
-async def test_valid_book_number(mock_ctx1, guild_factory, campaign_factory, book_factory):
+async def test_valid_book_number(mock_ctx1, campaign_factory, book_factory):
     """Test the ValidBookNumber converter."""
     book = book_factory.build()
     book_object = await book.insert()
 
     campaign = campaign_factory.build(guild=mock_ctx1.guild.id, books=[book_object], characters=[])
     await campaign.insert()
-
-    guild = guild_factory.build(
-        id=mock_ctx1.guild.id,
-        campaigns=[campaign],
-        active_campaign=campaign,
-        roll_result_thumbnails=[],
-    )
-    await guild.insert()
 
     # WHEN the converter is called with a valid chapter number
     # THEN assert the result is the correct number

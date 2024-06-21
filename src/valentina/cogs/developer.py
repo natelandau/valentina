@@ -218,10 +218,6 @@ class Developer(commands.Cog):
             user.characters.append(character)
             await user.save()
 
-            # Make the user active if the user has no active character
-            if str(ctx.guild.id) not in user.active_characters:
-                await user.set_active_character(character)
-
             # Associate the character with a campaign
             campaign = random.choice(created_campaigns)
             character.campaign = str(campaign.id)
@@ -232,12 +228,6 @@ class Developer(commands.Cog):
         for campaign in created_campaigns:
             await campaign.create_channels(ctx)
             guild.campaigns.append(campaign)
-
-        try:
-            test_var = guild.active_campaign.name  # noqa: F841
-        except AttributeError:
-            guild.active_campaign = campaign
-            logger.debug(f"Set active campaign to `{campaign.name}`")
 
         await guild.save()
 

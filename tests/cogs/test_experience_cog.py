@@ -22,7 +22,6 @@ async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
     # GIVEN a mock context, a user, and a campaign
     user = user_factory.build(
         id=async_mock_ctx1.author.id,
-        active_characters={},
         characters=[],
         campaign_experience={},
         macros=[],
@@ -31,9 +30,6 @@ async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
 
     campaign = campaign_factory.build()
     await campaign.insert()
-
-    # MOCK call to fetch_active_campaign
-    async_mock_ctx1.fetch_active_campaign = AsyncMock(return_value=campaign)
 
     # WHEN the xp_add command is called
     cog = Experience(bot=mock_bot)
@@ -56,7 +52,6 @@ async def test_cp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
     # GIVEN a mock context, a user, and a campaign
     user = user_factory.build(
         id=async_mock_ctx1.author.id,
-        active_characters={},
         characters=[],
         campaign_experience={},
         macros=[],
@@ -65,9 +60,6 @@ async def test_cp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
 
     campaign = campaign_factory.build()
     await campaign.insert()
-
-    # MOCK call to fetch_active_campaign
-    async_mock_ctx1.fetch_active_campaign = AsyncMock(return_value=campaign)
 
     # WHEN the xp_add command is called
     await Experience(bot=mock_bot).cp_add(
@@ -101,7 +93,6 @@ async def test_xp_spend(
 
     user = user_factory.build(
         id=async_mock_ctx1.author.id,
-        active_characters={},
         characters=[],
         campaign_experience={
             str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1)
@@ -109,9 +100,6 @@ async def test_xp_spend(
         macros=[],
     )
     await user.insert()
-
-    # MOCK call to fetch_active_campaign
-    async_mock_ctx1.fetch_active_campaign = AsyncMock(return_value=campaign)
 
     # WHEN the xp_add command is called
     await Experience(bot=mock_bot).xp_spend(
@@ -147,7 +135,6 @@ async def test_xp_spend_not_enough_xp(
 
     user = user_factory.build(
         id=async_mock_ctx1.author.id,
-        active_characters={},
         characters=[],
         campaign_experience={
             str(campaign.id): CampaignExperience(xp_current=10, xp_total=30, cool_points=1)
@@ -155,9 +142,6 @@ async def test_xp_spend_not_enough_xp(
         macros=[],
     )
     await user.insert()
-
-    # MOCK call to fetch_active_campaign
-    async_mock_ctx1.fetch_active_campaign = AsyncMock(return_value=campaign)
 
     # WHEN the xp_add command is called
     with pytest.raises(errors.NotEnoughExperienceError):

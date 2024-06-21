@@ -16,15 +16,10 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models import AWSService, Campaign, ChangelogParser, Character, Guild, User
+from valentina.models import AWSService, Campaign, ChangelogParser, Character, User
 from valentina.models.bot import Valentina
 from valentina.utils import errors
-from valentina.utils.discord_utils import (
-    book_from_channel,
-    campaign_from_channel,
-    character_from_channel,
-    determine_channel_type,
-)
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99
@@ -122,12 +117,13 @@ async def select_book(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
         list[OptionChoice]: A list of available chapter names mapped to book database id.
     """
     # Fetch the active campaign
-    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
-    books = await active_campaign.fetch_books()
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    campaign = channel_objects.campaign
 
-    if not active_campaign:
-        return [OptionChoice("No active campaign", 1000)]
+    if not campaign:
+        return [OptionChoice("No active campaign", "")]
+
+    books = await campaign.fetch_books()
 
     choices = [
         OptionChoice(f"{book.number}. {book.name}", str(book.id))
@@ -135,7 +131,7 @@ async def select_book(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
         if book.name.lower().startswith(ctx.options["book"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return choices or [OptionChoice("No books", 1000)]
+    return choices or [OptionChoice("No books", "")]
 
 
 async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
@@ -186,9 +182,10 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]
         list[OptionChoice]: A list of available chapter names mapped to chapter.number.
     """
     # Fetch the active campaign
-    book = await book_from_channel(ctx)
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    book = channel_objects.book
     if not book:
-        return [OptionChoice("Not in book channel", 1000)]
+        return [OptionChoice("Not in book channel", "")]
 
     choices = [
         OptionChoice(f"{chapter.number}. {chapter.name}", str(chapter.id))
@@ -196,7 +193,7 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]
         if chapter.name.lower().startswith(ctx.options["chapter"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return choices or [OptionChoice("No chapters", 1000)]
+    return choices or [OptionChoice("No chapters", "")]
 
 
 async def select_chapter_old(
@@ -219,19 +216,19 @@ async def select_chapter_old(
         list[OptionChoice]: A list of available chapter names mapped to chapter.number.
     """
     # Fetch the active campaign
-    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    campaign = channel_objects.campaign
 
-    if not active_campaign:
-        return [OptionChoice("No active campaign", 1000)]
+    if not campaign:
+        return [OptionChoice("No active campaign", "")]
 
     choices = [
         OptionChoice(f"{chapter.number}. {chapter.name}", str(chapter.number))
-        for chapter in sorted(active_campaign.chapters, key=lambda x: x.number)
+        for chapter in sorted(campaign.chapters, key=lambda x: x.number)
         if chapter.name.lower().startswith(ctx.options["chapter"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return choices or [OptionChoice("No chapers", 1000)]
+    return choices or [OptionChoice("No chapers", "")]
 
 
 async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
@@ -283,7 +280,6 @@ async def select_char_inventory_item(ctx: discord.AutocompleteContext) -> list[O
     retrieves the argument "item" from the context options,
     and filters the character's inventory items based on the starting string of the item name.
     If the number of items reaches a maximum size, it stops appending more items.
-    If there is no active character, it returns a list with a single string "No active character".
 
     Args:
         ctx (discord.AutocompleteContext): The context in which the function is called.
@@ -291,26 +287,20 @@ async def select_char_inventory_item(ctx: discord.AutocompleteContext) -> list[O
     Returns:
         list[OptionChoice]: A list of available item names and their index in character.inventory.
     """
-    character = await character_from_channel(ctx)
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    character = channel_objects.character
 
     if not character:
-        user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-
-        if not (
-            character := await user_object.active_character(
-                ctx.interaction.guild, raise_error=False
-            )
-        ):
-            return [OptionChoice("No active character", 0)]
+        return [OptionChoice("Rerun command in a character channel", "")]
 
     # Determine the option to retrieve the argument
     argument = ctx.options.get("item") or ""
 
     # Filter and return the character's inventory items
     return [
-        OptionChoice(t.name, str(t.id))
-        for t in sorted(character.inventory, key=lambda x: x.name)
-        if t.name.lower().startswith(argument.lower())
+        OptionChoice(t.name, str(t.id))  # type: ignore [attr-defined]
+        for t in sorted(character.inventory, key=lambda x: x.name)  # type: ignore [attr-defined]
+        if t.name.lower().startswith(argument.lower())  # type: ignore [attr-defined]
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -341,7 +331,6 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     retrieves the argument (either "trait" or "trait_one") from the context options,
     and filters the character's traits based on the starting string of the trait name.
     If the number of traits reaches a maximum size, it stops appending more traits.
-    If there is no active character, it returns a list with a single string "No active character".
 
     Args:
         ctx (discord.AutocompleteContext): The context in which the function is called.
@@ -349,26 +338,20 @@ async def select_char_trait(ctx: discord.AutocompleteContext) -> list[OptionChoi
     Returns:
         list[OptionChoice]: A list of available names and their index in character.traits.
     """
-    character = await character_from_channel(ctx)
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    character = channel_objects.character
 
     if not character:
-        user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-
-        if not (
-            character := await user_object.active_character(
-                ctx.interaction.guild, raise_error=False
-            )
-        ):
-            return [OptionChoice("No active character", 0)]
+        return [OptionChoice("Rerun command in a character channel", "")]
 
     # Determine the option to retrieve the argument
     argument = ctx.options.get("trait") or ctx.options.get("trait_one") or ""
 
     # Filter and return the character's traits
     return [
-        OptionChoice(t.name, str(t.id))
-        for t in sorted(character.traits, key=lambda x: x.name)
-        if t.name.lower().startswith(argument.lower())
+        OptionChoice(t.name, str(t.id))  # type: ignore [attr-defined]
+        for t in sorted(character.traits, key=lambda x: x.name)  # type: ignore [attr-defined]
+        if t.name.lower().startswith(argument.lower())  # type: ignore [attr-defined]
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -379,7 +362,6 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     retrieves the argument ("trait_two") from the context options,
     and filters the character's traits based on the starting string of the trait name.
     If the number of traits reaches a maximum size, it stops appending more traits.
-    If there is no active character, it returns a list with a single string "No active character".
 
     Args:
         ctx (discord.AutocompleteContext): The context in which the function is called.
@@ -387,23 +369,17 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     Returns:
         list[OptionChoice]: A list of available trait names and their index in character.traits.
     """
-    character = await character_from_channel(ctx)
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    character = channel_objects.character
 
     if not character:
-        user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-
-        if not (
-            character := await user_object.active_character(
-                ctx.interaction.guild, raise_error=False
-            )
-        ):
-            return [OptionChoice("No active character", 0)]
+        return [OptionChoice("Rerun command in a character channel", "")]
 
     # Filter and return the character's traits
     return [
-        OptionChoice(t.name, str(t.id))
-        for t in sorted(character.traits, key=lambda x: x.name)
-        if t.name.lower().startswith(ctx.options["trait_two"].lower())
+        OptionChoice(t.name, str(t.id))  # type: ignore [attr-defined]
+        for t in sorted(character.traits, key=lambda x: x.name)  # type: ignore [attr-defined]
+        if t.name.lower().startswith(ctx.options["trait_two"].lower())  # type: ignore [attr-defined]
     ][:MAX_OPTION_LIST_SIZE]
 
 
@@ -453,17 +429,19 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
     Returns:
         list[OptionChoice]: A list of option choices for discord selection containing title and index pairs.
     """
-    # Fetch the active character
-    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-    active_character = await user_object.active_character(ctx.interaction.guild, raise_error=False)
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    character = channel_objects.character
 
-    if not active_character:
-        return [OptionChoice("No active character", "")]
+    if not character:
+        return [OptionChoice("Rerun command in a character channel", "")]
+
+    if not character.sheet_sections:
+        return [OptionChoice("No custom sections", "")]
 
     # Create a list of tuples containing display title and list index for each custom section
     options = [
         OptionChoice(truncate_string(section.title, MAX_OPTION_LENGTH), str(index))
-        for index, section in enumerate(active_character.sheet_sections)
+        for index, section in enumerate(character.sheet_sections)
         if section.title.lower().startswith(ctx.value.lower())
     ]
     if len(options) > MAX_OPTION_LIST_SIZE:
@@ -513,19 +491,18 @@ async def select_desperation_dice(
     p = inflect.engine()
 
     # Fetch the active campaign
-    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
-    desperation_dice = active_campaign.desperation
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    campaign = channel_objects.campaign
 
-    if not active_campaign:
-        return [OptionChoice("No active campaign", 1000)]
+    if not campaign:
+        return [OptionChoice("No active campaign", "")]
 
-    if desperation_dice == 0:
-        return [OptionChoice("No desperation dice", 1000)]
+    if campaign.desperation == 0:
+        return [OptionChoice("No desperation dice", "")]
 
     return [
         OptionChoice(f"{p.number_to_words(i).capitalize()} {p.plural('die', i)}", i)  # type: ignore [arg-type, union-attr]
-        for i in range(1, desperation_dice + 1)
+        for i in range(1, campaign.desperation + 1)
     ]
 
 
@@ -563,20 +540,23 @@ async def select_macro(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
 async def select_note(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate the autocomplete for selecting a note."""
     try:
-        _, book, character = await determine_channel_type(ctx)
-    except errors.ChannelTypeError:
-        return [OptionChoice("No notes found", 1000)]
+        channel_objects = await fetch_channel_object(ctx)
 
-    if book:
-        notes = book.notes
-    elif character:
-        notes = character.notes
-    else:
-        return [OptionChoice("No notes found", 1000)]
+        if channel_objects.has_book():
+            channel_object = channel_objects.book
+        elif channel_objects.has_character():
+            channel_object = channel_objects.character
+    except errors.ChannelTypeError:
+        return [OptionChoice("No notes found", "")]
+
+    if not channel_object.notes:
+        return [OptionChoice("No notes found", "")]
+
+    sorted_notes = sorted(channel_object.notes, key=lambda x: x.date_created)  # type: ignore [attr-defined]
 
     return [
         OptionChoice(truncate_string(note.text, 99), str(note.id))  # type: ignore [attr-defined]
-        for note in notes
+        for note in sorted_notes
         if ctx.value.lower() in note.text.lower()  # type: ignore [attr-defined]
     ][:MAX_OPTION_LIST_SIZE]
 
@@ -594,19 +574,19 @@ async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
         list[OptionChoice]: A list of NPC names and associated ids for the autocomplete list.
     """
     # Fetch the active campaign
-    guild = await Guild.get(ctx.interaction.guild.id, fetch_links=True)
-    active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    campaign = channel_objects.campaign
 
-    if not active_campaign:
-        return [OptionChoice("No active campaign", 1000)]
+    if not campaign:
+        return [OptionChoice("No active campaign", "")]
 
     npc_choices = [
         OptionChoice(npc.name, index)
-        for index, npc in enumerate(active_campaign.npcs)
+        for index, npc in enumerate(campaign.npcs)
         if npc.name.lower().startswith(ctx.options["npc"].lower())
     ][:MAX_OPTION_LIST_SIZE]
 
-    return npc_choices or [OptionChoice("No npcs", 1000)]
+    return npc_choices or [OptionChoice("No npcs", "")]
 
 
 async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:

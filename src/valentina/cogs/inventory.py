@@ -10,7 +10,7 @@ from valentina.models import InventoryItem
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.autocomplete import select_char_inventory_item
 from valentina.utils.converters import ValidInventoryItemFromID
-from valentina.utils.discord_utils import character_from_channel
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.utils.helpers import truncate_string
 from valentina.views import InventoryItemModal, confirm_action, present_embed
 
@@ -29,7 +29,9 @@ class InventoryCog(commands.Cog, name="Inventory"):
         ctx: ValentinaContext,
     ) -> None:
         """List all items in a character's inventory."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
+
         items = await InventoryItem.find(InventoryItem.character == str(character.id)).to_list()
 
         description = ""
@@ -65,7 +67,9 @@ class InventoryCog(commands.Cog, name="Inventory"):
         ),
     ) -> None:
         """Add an item to a character's inventory."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
+
         modal = InventoryItemModal(title=truncate_string(f"Add inventory to {character.name}", 45))
         await ctx.send_modal(modal)
         await modal.wait()
@@ -99,7 +103,9 @@ class InventoryCog(commands.Cog, name="Inventory"):
         ),
     ) -> None:
         """Edit an item in a character's inventory."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
+
         modal = InventoryItemModal(
             title=truncate_string(f"Edit {item.name}", 45),
             item_name=item.name,
@@ -132,7 +138,8 @@ class InventoryCog(commands.Cog, name="Inventory"):
         ),
     ) -> None:
         """Edit an item in a character's inventory."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
 
         title = f"Delete `{item.name}` from `{character.name}`'s inventory"
         is_confirmed, msg, confirmation_embed = await confirm_action(

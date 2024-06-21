@@ -19,7 +19,7 @@ from beanie import (
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from valentina.constants import CHANNEL_PERMISSIONS, Emoji
+from valentina.constants import CHANNEL_PERMISSIONS, CampaignChannelName, Emoji
 from valentina.utils.helpers import time_now
 
 from .character import Character
@@ -261,8 +261,8 @@ class Campaign(Document):
         """Create the campaign channels in the guild."""
         # Static channels
         common_channel_list = {  # channel_db_key: channel_name
-            "channel_storyteller": f"{Emoji.LOCK.value}-storyteller",
-            "channel_general": f"{Emoji.SPARKLES.value}-general",
+            "channel_storyteller": CampaignChannelName.STORYTELLER.value,
+            "channel_general": CampaignChannelName.GENERAL.value,
         }
         for channel_db_key, channel_name in common_channel_list.items():
             # Set permissions

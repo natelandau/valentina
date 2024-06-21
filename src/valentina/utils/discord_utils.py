@@ -7,6 +7,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import ChannelPermission
+from valentina.dataclasses import ChannelObjects
 from valentina.models import Campaign, CampaignBook, Character
 from valentina.utils import errors
 
@@ -177,95 +178,53 @@ def set_channel_perms(requested_permission: ChannelPermission) -> discord.Permis
     return perms
 
 
-async def character_from_channel(
-    ctx: discord.ApplicationContext | discord.AutocompleteContext | commands.Context,
-) -> Character | None:
-    """Get the character from a campaign character channel.
-
-    Args:
-        ctx (discord.ApplicationContext|discord.AutocompleteContext): The context containing the channel object.
-
-    Returns:
-        Character|None: The character object if found; otherwise, None.
-    """
-    discord_guild = (
-        ctx.interaction.guild if isinstance(ctx, discord.AutocompleteContext) else ctx.guild
-    )
-    discord_channel = (
-        ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel
-    )
-
-    return await Character.find_one(
-        Character.guild == discord_guild.id,
-        Character.channel == discord_channel.id,
-        fetch_links=True,
-    )
-
-
-async def book_from_channel(
-    ctx: discord.ApplicationContext | discord.AutocompleteContext | commands.Context,
-) -> CampaignBook | None:
-    """Get the book from a campaign book channel.
-
-    Args:
-        ctx (discord.ApplicationContext|discord.AutocompleteContext): The context containing the channel object.
-
-    Returns:
-        CampaignBook|None: The CampaignBook object if found; otherwise, None.
-    """
-    discord_channel = (
-        ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel
-    )
-
-    return await CampaignBook.find_one(CampaignBook.channel == discord_channel.id, fetch_links=True)
-
-
-async def campaign_from_channel(
-    ctx: discord.ApplicationContext | discord.AutocompleteContext | commands.Context,
-) -> Campaign | None:
-    """Get the campaign from a campaign channel.
-
-    Args:
-        ctx (discord.ApplicationContext|discord.AutocompleteContext): The context containing the channel object.
-
-    Returns:
-        CampaignBook|None: The CampaignBook object if found; otherwise, None.
-    """
-    discord_channel = (
-        ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel
-    )
-    category = discord_channel.category
-
-    return await Campaign.find_one(
-        Campaign.channel_campaign_category == category.id, fetch_links=True
-    )
-
-
-async def determine_channel_type(
+async def fetch_channel_object(
     ctx: discord.ApplicationContext | discord.AutocompleteContext | commands.Context,
     raise_error: bool = True,
-) -> tuple[Campaign, CampaignBook, Character]:
+    need_book: bool = False,
+    need_character: bool = False,
+    need_campaign: bool = False,
+) -> ChannelObjects:
     """Determine the type of channel the command was invoked in.
 
     Args:
         ctx (discord.ApplicationContext|discord.AutocompleteContext): The context containing the channel object.
+        need_character (bool, optional): Whether to raise an error if no character is found. Defaults to False.
+        need_book (bool, optional): Whether to raise an error if no book is found. Defaults to False.
+        need_campaign (bool, optional): Whether to raise an error if no campaign is found. Defaults to False.
         raise_error (bool, optional): Whether to raise an error if no active campaign is found. Defaults to True. Returns None if False.
 
     Returns:
-        tuple[Campaign, CampaignBook, Character]: The campaign, book, and character objects for the channel.
+        ChannelObjects: The channel objects found in the channel.
+
+    Raises:
+        errors.ChannelTypeError: If no active objects are found for the channel.
     """
     discord_channel = (
         ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel
     )
 
     channel_category = discord_channel.category
+
     campaign = await Campaign.find_one(
         Campaign.channel_campaign_category == channel_category.id, fetch_links=True
     )
     book = await CampaignBook.find_one(CampaignBook.channel == discord_channel.id, fetch_links=True)
     character = await Character.find_one(Character.channel == discord_channel.id, fetch_links=True)
 
-    if not campaign and not book and not character and raise_error:
+    if raise_error and not campaign and not book and not character:
         raise errors.ChannelTypeError
 
-    return campaign, book, character
+    if raise_error and need_character and not character:
+        msg = "Rerun command in a character channel."
+        raise errors.ChannelTypeError(msg)
+
+    if raise_error and need_campaign and not campaign:
+        msg = "Rerun command in a channel associated with a campaign"
+        raise errors.ChannelTypeError(msg)
+
+    if raise_error and need_book and not book:
+        msg = "Rerun command in a book channel"
+        raise errors.ChannelTypeError(msg)
+
+    return ChannelObjects(campaign=campaign, book=book, character=character)

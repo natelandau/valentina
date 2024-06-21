@@ -10,7 +10,7 @@ from valentina.utils import autocomplete
 
 
 @pytest.mark.drop_db()
-async def test_select_campaign(campaign_factory, mock_ctx1, debug):
+async def test_select_campaign(campaign_factory, mock_ctx1):
     """Test the select_campaign function."""
     # GIVEN a campaign in the database
     campaign = campaign_factory.build(
@@ -193,8 +193,12 @@ async def test_select_storyteller_character(mock_ctx1, character_factory):
 
 
 @pytest.mark.drop_db()
-async def test_select_chapter(mock_ctx1, book_factory, book_chapter_factory):
+async def test_select_chapter(
+    mock_ctx1, book_factory, book_chapter_factory, mock_discord_book_channel
+):
     """Test the select_chapter function."""
+    mock_ctx1.channel = mock_discord_book_channel
+
     chapter = book_chapter_factory.build(
         name="mock_chapter",
         number=1,
@@ -215,21 +219,18 @@ async def test_select_chapter(mock_ctx1, book_factory, book_chapter_factory):
 
 
 @pytest.mark.drop_db()
-async def test_select_book(mock_ctx1, book_factory, campaign_factory, guild_factory):
+async def test_select_book_from_channel(
+    mock_ctx1, book_factory, campaign_factory, mock_discord_book_channel
+):
     """Test the select_book autocomplete function."""
+    # GIVEN a book in a channel in the context
+    mock_ctx1.channel = mock_discord_book_channel
+
     book = book_factory.build(name="mock_book", number=1)
     book_object = await book.insert()
 
     campaign = campaign_factory.build(guild=mock_ctx1.guild.id, books=[book_object], characters=[])
     await campaign.insert()
-
-    guild = guild_factory.build(
-        id=mock_ctx1.guild.id,
-        campaigns=[campaign],
-        active_campaign=campaign,
-        roll_result_thumbnails=[],
-    )
-    await guild.insert()
 
     # WHEN calling select_chapter
     mock_ctx1.options = {"book": "mock"}
@@ -242,7 +243,30 @@ async def test_select_book(mock_ctx1, book_factory, campaign_factory, guild_fact
 
 
 @pytest.mark.drop_db()
-async def test_select_char_trait(mock_ctx1, user_factory, character_factory, trait_factory):
+async def test_select_book_no_campaign(
+    mock_ctx1, book_factory, campaign_factory, mock_discord_unassociated_channel
+):
+    """Test the select_book autocomplete function."""
+    # GIVEN a book in a channel in the context
+    mock_ctx1.channel = mock_discord_unassociated_channel
+
+    book = book_factory.build(name="mock_book", number=1)
+    book_object = await book.insert()
+
+    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, books=[book_object], characters=[])
+    await campaign.insert()
+
+    # WHEN calling select_chapter
+    mock_ctx1.options = {"book": "mock"}
+    result = await autocomplete.select_book(mock_ctx1)
+
+    # THEN the chapter is returned
+    assert len(result) == 1
+    assert "No active campaign" in result[0].name
+
+
+@pytest.mark.drop_db()
+async def test_select_char_trait(mock_ctx1, character_factory, trait_factory):
     """Test the select_char_trait function."""
     # GIVEN a character with a trait and a user with an active character
     trait = trait_factory.build(
@@ -261,15 +285,6 @@ async def test_select_char_trait(mock_ctx1, user_factory, character_factory, tra
     )
     await character.insert()
 
-    user = user_factory.build(
-        id=mock_ctx1.author.id,
-        active_characters={str(mock_ctx1.guild.id): character},
-        characters=[character],
-        campaign_experience={},
-        macros=[],
-    )
-    await user.insert()
-
     # WHEN calling select_char_trait
     mock_ctx1.options = {"trait": "dexterity"}
     result = await autocomplete.select_char_trait(mock_ctx1)
@@ -281,7 +296,37 @@ async def test_select_char_trait(mock_ctx1, user_factory, character_factory, tra
 
 
 @pytest.mark.drop_db()
-async def test_select_char_trait_two(mock_ctx1, user_factory, character_factory, trait_factory):
+async def test_select_char_trait_no_channel(mock_ctx1, character_factory, trait_factory):
+    """Test the select_char_trait function."""
+    # GIVEN a database without a character associated with the channel where the command is run
+    trait = trait_factory.build(
+        category_name=TraitCategory.PHYSICAL.name, name="Dexterity", value=3, max_value=5
+    )
+    await trait.insert()
+    character = character_factory.build(
+        name_first="character",
+        name_last="character",
+        guild=mock_ctx1.guild.id,
+        type_storyteller=True,
+        type_player=False,
+        type_chargen=False,
+        is_alive=True,
+        traits=[trait],
+        channel=0,
+    )
+    await character.insert()
+
+    # WHEN calling select_char_trait
+    mock_ctx1.options = {"trait": "dexterity"}
+    result = await autocomplete.select_char_trait(mock_ctx1)
+
+    # THEN the trait and its index is returned
+    assert len(result) == 1
+    assert result[0].name == "Rerun command in a character channel"
+
+
+@pytest.mark.drop_db()
+async def test_select_char_trait_two(mock_ctx1, character_factory, trait_factory):
     """Test the select_char_trait_two function."""
     # GIVEN a character with a trait and a user with an active character
     trait = trait_factory.build(
@@ -299,15 +344,6 @@ async def test_select_char_trait_two(mock_ctx1, user_factory, character_factory,
         traits=[trait],
     )
     await character.insert()
-
-    user = user_factory.build(
-        id=mock_ctx1.author.id,
-        active_characters={str(mock_ctx1.guild.id): character},
-        characters=[character],
-        campaign_experience={},
-        macros=[],
-    )
-    await user.insert()
 
     # WHEN calling select_char_trait
     mock_ctx1.options = {"trait_two": "dexterity"}
@@ -339,7 +375,6 @@ async def test_select_custom_section(mock_ctx1, character_factory, user_factory)
 
     user = user_factory.build(
         id=mock_ctx1.author.id,
-        active_characters={str(mock_ctx1.guild.id): character},
         characters=[character],
         campaign_experience={},
         macros=[],
@@ -385,7 +420,6 @@ async def test_select_character_from_user(mock_ctx1, character_factory, user_fac
 
     user = user_factory.build(
         id=mock_ctx1.author.id,
-        active_characters={str(mock_ctx1.guild.id): character1},
         characters=[character1, character2],
         campaign_experience={},
         macros=[],
@@ -407,7 +441,6 @@ async def test_select_any_player_character(mock_ctx1, character_factory, user_fa
     """Test the select_any_player_character function."""
     user = user_factory.build(
         id=mock_ctx1.author.id,
-        active_characters={},
         characters=[],
         name="mock_user",
     )

@@ -49,7 +49,7 @@ class Misc(commands.Cog):
         days, hours = divmod(hours, 24)
 
         # Load db objects
-        guild = await Guild.get(ctx.guild.id)
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
 
         # Compute data
         created_on = arrow.get(ctx.guild.created_at)
@@ -61,8 +61,6 @@ class Misc(commands.Cog):
             Character.guild == ctx.guild.id,
             Character.type_storyteller == True,  # noqa: E712
         ).count()
-        num_campaigns = len(guild.campaigns)
-        active_campaign = await ctx.fetch_active_campaign(raise_error=False)
         roll_stats = Statistics(ctx)
 
         # Build the Embed
@@ -82,12 +80,10 @@ Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for 
             inline=False,
         )
 
+        campaign_list = "\n".join(f"> - {x.name}" for x in guild.campaigns)
         embed.add_field(
             name="Campaigns",
-            value=f"""\
-> `{num_campaigns}` Campaigns
-> {'**' + active_campaign.name + '** (_Active_)' if active_campaign else ''}
-""",
+            value=f"{campaign_list}",
             inline=True,
         )
 
@@ -193,7 +189,8 @@ Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for 
         """View information about a user."""
         target = user or ctx.author
         db_user = await User.get(target.id, fetch_links=True)
-        active_campaign = await ctx.fetch_active_campaign(raise_error=False)
+        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+
         # Variables for embed
         num_characters = len([x for x in db_user.characters if x.type_player])
         num_macros = len(db_user.macros)
@@ -207,24 +204,15 @@ Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for 
             or "No roles"
         )
         stats_engine = Statistics(ctx)
-        campaign_xp, campaign_total_xp, campaign_cp = db_user.fetch_campaign_xp(active_campaign)
-        lifetime_xp = db_user.lifetime_experience
-        lifetime_cp = db_user.lifetime_cool_points
-        if user_active_character := await db_user.active_character(ctx.guild, raise_error=False):
-            active_character_name = user_active_character.name
-        else:
-            active_character_name = "No active character"
         user_roll_stats = await stats_engine.user_statistics(
             target,  # type: ignore [arg-type]
             as_embed=False,
             with_title=False,
             with_help=False,
         )
-
-        #         # Build the Embed
-        embed = discord.Embed(
-            title="",
-            description=f"""\
+        lifetime_xp = db_user.lifetime_experience
+        lifetime_cp = db_user.lifetime_cool_points
+        description = f"""\
 # @{target.display_name}
 
 ### User Information
@@ -233,23 +221,34 @@ Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for 
 `Joined Server  :` {arrow.get(target.joined_at).humanize() if isinstance(target, discord.Member) else ''} `({arrow.get(target.joined_at).format('YYYY-MM-DD') if isinstance(target, discord.Member) else ''})`
 `Roles          :` {roles}
 
+### Gameplay
+`Player Characters:` `{num_characters}`
+`Roll Macros       :` `{num_macros}`
+
 ### Experience
 `Lifetime Experience :` `{lifetime_xp}`
 `Lifetime Cool Points:` `{lifetime_cp}`
+"""
 
-**"{active_campaign.name}"** (active campaign)
+        for campaign in guild.campaigns:
+            campaign_xp, campaign_total_xp, campaign_cp = db_user.fetch_campaign_xp(campaign)
+            description += f"""\
+
+**{campaign.name}**
 `Available Experience:` `{campaign_xp}`
 `Total Earned        :` `{campaign_total_xp}`
 `Cool Points         :` `{campaign_cp}`
+"""
 
-### Gameplay
-`Player Characters:` `{num_characters}`
-`Active Character  :` {active_character_name}
-`Roll Macros       :` `{num_macros}`
-
+        description += f"""\
 ### Roll Statistics
 {user_roll_stats}
-""",
+"""
+
+        #         # Build the Embed
+        embed = discord.Embed(
+            title="",
+            description=description,
             color=EmbedColor.INFO.value,
         )
         embed.set_thumbnail(url=target.display_avatar.url)

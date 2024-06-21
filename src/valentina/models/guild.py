@@ -67,7 +67,6 @@ class Guild(Document):
 
     id: int  # type: ignore [assignment]
 
-    active_campaign: Link["Campaign"] = None
     campaigns: list[Link["Campaign"]] = Field(default_factory=list)
     changelog_posted_version: str | None = None
     channels: GuildChannels = GuildChannels()
@@ -165,23 +164,12 @@ class Guild(Document):
         await create_player_role(guild)
         logger.debug(f"GUILD: Roles created/updated on {self.name}")
 
-    async def fetch_active_campaign(self) -> "Campaign":
-        """Fetch the active campaign for the guild."""
-        try:
-            return await Campaign.get(self.active_campaign.id, fetch_links=True)  # type: ignore [attr-defined]
-        except AttributeError as e:
-            raise errors.NoActiveCampaignError from e
-
     async def delete_campaign(self, campaign: "Campaign") -> None:
         """Delete a campaign from the guild. Remove the campaign from the guild's list of campaigns and delete the campaign from the database.
 
         Args:
             campaign (Campaign): The campaign to delete.
         """
-        # Remove the campaign from the active campaign if it is active
-        if self.active_campaign and self.active_campaign == campaign:
-            self.active_campaign = None
-
         if campaign in self.campaigns:
             self.campaigns.remove(campaign)
 

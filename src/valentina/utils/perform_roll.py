@@ -5,7 +5,7 @@ import discord
 from valentina.constants import EmbedColor, Emoji
 from valentina.models import Character, CharacterTrait, DiceRoll
 from valentina.models.bot import ValentinaContext
-from valentina.utils.discord_utils import campaign_from_channel
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.views import ReRollButton, RollDisplay
 
 
@@ -72,16 +72,19 @@ async def perform_roll(  # pragma: no cover
     await view.wait()
 
     if view.overreach:
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-        if active_campaign.danger < 5:  # noqa: PLR2004
-            active_campaign.danger += 1
-            await active_campaign.save()
+        # TODO: This is a temporary solution for grabbing the campaign object.
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
+        if campaign.danger < 5:  # noqa: PLR2004
+            campaign.danger += 1
+            await campaign.save()
 
         await original_response.edit_original_response(  # type: ignore [union-attr]
             view=None,
             embed=discord.Embed(
                 title=None,
-                description=f"# {Emoji.OVERREACH.value} Overreach!\nThe character overreached. This roll has succeeded but the danger level has increased to `{active_campaign.danger}`.",
+                description=f"# {Emoji.OVERREACH.value} Overreach!\nThe character overreached. This roll has succeeded but the danger level has increased to `{campaign.danger}`.",
                 color=EmbedColor.WARNING.value,
             ),
         )
