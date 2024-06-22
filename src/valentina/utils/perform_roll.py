@@ -3,9 +3,8 @@
 import discord
 
 from valentina.constants import EmbedColor, Emoji
-from valentina.models import Character, CharacterTrait, DiceRoll
+from valentina.models import Campaign, Character, CharacterTrait, DiceRoll
 from valentina.models.bot import ValentinaContext
-from valentina.utils.discord_utils import campaign_from_channel
 from valentina.views import ReRollButton, RollDisplay
 
 
@@ -14,6 +13,7 @@ async def perform_roll(  # pragma: no cover
     pool: int,
     difficulty: int,
     dice_size: int,
+    campaign: Campaign,
     comment: str | None = None,
     hidden: bool = False,
     trait_one: CharacterTrait | None = None,
@@ -28,6 +28,7 @@ async def perform_roll(  # pragma: no cover
         pool (int): The number of dice to roll.
         difficulty (int): The difficulty of the roll.
         dice_size (int): The size of the dice.
+        campaign (Campaign): The campaign to log the roll for.
         comment (str, optional): A comment to display with the roll. Defaults to None.
         hidden (bool, optional): Whether to hide the response from other users. Defaults to False.
         from_macro (bool, optional): Whether the roll is from a macro. Defaults to False.
@@ -72,16 +73,15 @@ async def perform_roll(  # pragma: no cover
     await view.wait()
 
     if view.overreach:
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-        if active_campaign.danger < 5:  # noqa: PLR2004
-            active_campaign.danger += 1
-            await active_campaign.save()
+        if campaign.danger < 5:  # noqa: PLR2004
+            campaign.danger += 1
+            await campaign.save()
 
         await original_response.edit_original_response(  # type: ignore [union-attr]
             view=None,
             embed=discord.Embed(
                 title=None,
-                description=f"# {Emoji.OVERREACH.value} Overreach!\nThe character overreached. This roll has succeeded but the danger level has increased to `{active_campaign.danger}`.",
+                description=f"# {Emoji.OVERREACH.value} Overreach!\nThe character overreached. This roll has succeeded but the danger level has increased to `{campaign.danger}`.",
                 color=EmbedColor.WARNING.value,
             ),
         )
@@ -108,6 +108,7 @@ async def perform_roll(  # pragma: no cover
             pool=pool,
             difficulty=difficulty,
             dice_size=dice_size,
+            campaign=campaign,
             comment=comment,
             hidden=hidden,
             trait_one=trait_one,

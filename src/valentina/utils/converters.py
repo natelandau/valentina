@@ -22,11 +22,10 @@ from valentina.models import (
     CampaignChapter,
     Character,
     CharacterTrait,
-    Guild,
     InventoryItem,
     Note,
 )
-from valentina.utils.discord_utils import book_from_channel, campaign_from_channel
+from valentina.utils.discord_utils import fetch_channel_object
 
 
 class CampaignChapterConverter(Converter):
@@ -37,8 +36,8 @@ class CampaignChapterConverter(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> CampaignChapter:
         """Validate and normalize traits."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, raise_error=False)
+        campaign = channel_objects.campaign
 
         try:
             chapter_number = int(argument)
@@ -46,7 +45,7 @@ class CampaignChapterConverter(Converter):
             msg = f"`{argument}` is not a valid chapter number"
             raise BadArgument(msg) from e
 
-        chapter = next((x for x in active_campaign.chapters if x.number == chapter_number), None)
+        chapter = next((x for x in campaign.chapters if x.number == chapter_number), None)
 
         if not chapter:
             msg = f"Requested chapter number `{chapter_number}` is not part of the active campaign."
@@ -100,9 +99,14 @@ class ValidBookNumber(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> int:
         """Validate and normalize book numbers."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await campaign_from_channel(ctx) or await guild.fetch_active_campaign()
-        campaign_book_numbers = [x.number for x in await active_campaign.fetch_books()]
+        channel_objects = await fetch_channel_object(ctx, raise_error=False)
+        campaign = channel_objects.campaign
+
+        if not campaign:
+            msg = "No active campaign found in this channel"
+            raise BadArgument(msg)
+
+        campaign_book_numbers = [x.number for x in await campaign.fetch_books()]
 
         try:
             book_number = int(argument)
@@ -126,8 +130,9 @@ class ValidChapterNumber(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> int:
         """Validate and normalize chapter numbers."""
-        book = await book_from_channel(ctx)
-        campaign_chapter_numbers = [x.number for x in await book.fetch_chapters()]
+        channel_objects = await fetch_channel_object(ctx, raise_error=False)
+        book = channel_objects.book
+        book_chapter_numbers = [x.number for x in await book.fetch_chapters()]
 
         try:
             chapter_number = int(argument)
@@ -139,7 +144,7 @@ class ValidChapterNumber(Converter):
             msg = "Chapter numbers must be greater than 0"
             raise BadArgument(msg)
 
-        if chapter_number not in campaign_chapter_numbers:
+        if chapter_number not in book_chapter_numbers:
             msg = f"Requested chapter number `{chapter_number}` is not part of the book."
             raise BadArgument(msg)
 

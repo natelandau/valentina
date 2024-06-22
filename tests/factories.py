@@ -35,6 +35,8 @@ from valentina.models import (
     UserMacro,
 )
 
+from .conftest import CHANNEL_BOOK_ID, CHANNEL_CATEGORY_CAMPAIGN_ID, CHANNEL_CHARACTER_ID
+
 
 @register_fixture
 class RollStatFactory(BeanieDocumentFactory[CharacterTrait]):
@@ -99,7 +101,7 @@ class BookFactory(BeanieDocumentFactory[CampaignBook]):
 
     @classmethod
     def channel(cls) -> GuildChannels:
-        return 12345
+        return CHANNEL_BOOK_ID
 
     @classmethod
     def number(cls) -> str:
@@ -132,6 +134,10 @@ class CampaignFactory(BeanieDocumentFactory[Campaign]):
     __min_collection_length__ = 1
     __max_collection_length__ = 3
     __randomize_collection_length__ = True
+
+    @classmethod
+    def channel_campaign_category(cls) -> GuildChannels:
+        return CHANNEL_CATEGORY_CAMPAIGN_ID
 
     @classmethod
     def name(cls) -> str:
@@ -232,6 +238,10 @@ class CharacterFactory(BeanieDocumentFactory[Character]):
     __max_collection_length__ = 3
     __randomize_collection_length__ = True
     __set_as_default_factory_for_type__ = True
+
+    @classmethod
+    def channel(cls) -> GuildChannels:
+        return CHANNEL_CHARACTER_ID
 
     @classmethod
     def char_class_name(cls) -> str:

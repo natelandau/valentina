@@ -3,8 +3,9 @@
 
 from typing import TypedDict
 
-
 ### TypedDicts ###
+
+
 class HunterCreedDict(TypedDict):
     """Type for Hunter Creed sub-dictionary."""
 

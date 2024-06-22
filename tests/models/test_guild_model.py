@@ -13,7 +13,7 @@ from valentina.utils import errors
 async def test_add_roll_result_thumbnail(mock_ctx1, guild_factory):
     """Test the add_roll_result_thumbnail method."""
     # GIVEN a guild
-    guild = guild_factory.build(roll_result_thumbnails=[], active_campaign=None, campaigns=[])
+    guild = guild_factory.build(roll_result_thumbnails=[], campaigns=[])
     await guild.insert()
 
     # WHEN adding a thumbnail
@@ -60,46 +60,20 @@ async def test_fetch_diceroll_thumbnail(guild_factory):
     assert found_new_thumbnail
 
 
-async def test_fetch_active_campaign(campaign_factory, guild_factory):
-    """Test the fetch_active_campaign method."""
-    # GIVEN a guild with a campaign
-    guild = guild_factory.build(
-        roll_result_thumbnails=[],
-        active_campaign=None,
-        campaigns=[],
-    )
-    campaign = campaign_factory.build(guild=guild.id, characters=[])
-    await campaign.insert()
-
-    with pytest.raises(errors.NoActiveCampaignError):
-        active_campaign = await guild.fetch_active_campaign()
-
-    # GIVEN an active campaign
-    guild.active_campaign = campaign
-
-    # WHEN fetching the active campaign
-    active_campaign = await guild.fetch_active_campaign()
-
-    # THEN the correct campaign is returned
-    assert active_campaign.id == campaign.id
-
-
 @pytest.mark.drop_db()
 async def test_delete_campaign(campaign_factory, guild_factory):
     """Test the delete_campaign method."""
     # GIVEN a guild with a campaign
-    guild = guild_factory.build(active_campaign=None, campaigns=[])
+    guild = guild_factory.build(campaigns=[])
     campaign = campaign_factory.build(guild=guild.id, characters=[])
     await campaign.insert()
 
     guild.campaigns.append(campaign)
-    guild.active_campaign = campaign
 
     # WHEN deleting the campaign
     await guild.delete_campaign(campaign)
 
     # THEN the active campaign is deleted
-    assert guild.active_campaign is None
     assert guild.campaigns == []
     assert not await Campaign.find(Campaign.is_deleted == False).to_list()  # noqa: E712
     assert campaign.is_deleted

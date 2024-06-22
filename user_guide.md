@@ -34,15 +34,16 @@ For interactive help, run `/help commands` to see a list of available commands.
 Valentina Noir revolves around three core concepts:
 
 -   **Characters**: Player characters managed in Valentina allow for quick dice rolling, XP spending, and character updates.
--   **Campaigns**: Storylines with multiple chapters, characters, NPCs, and notes, spanning multiple gaming sessions.
+-   **Campaigns**: Storylines with multiple chapters, characters, NPCs, and notes, spanning multiple gaming sessions. Every campaign has its own set of channels which are used for all gameplay.
 -   **Gameplay**: The actual game, where you roll dice and play using your character.
 
 ## 3. CHARACTER CREATION & MANAGEMENT
 
 ### Creating a Character
 
+-   Go to the `✨-general` channel within the campaign.
 -   Use `/character add` to add a new character you've already created by hand.
--   User `/character create` to create use a RNG guided character creation process.
+-   Use `/character create` to create use a RNG guided character creation process.
 -   **IMPORTANT**: If using `/character add`, create your character on paper before entering it into Valentina.
 -   **Post creation:** Don't worry if you make a mistake or the section on your sheet doesn't appear during character generation.You can easily rename your character, add/update traits, abilities, custom sections, and a biography as needed.
 
@@ -82,7 +83,7 @@ Macros are a powerful tool to enhance your gaming experience, allowing for quick
 -   **Roll Dice**: Use `/roll` for various types of rolls, including stats, traits, macros, D10s, or arbitrary dice.
 -   **Create Campaign NPCs**: As you meet an important NPC, take a note of them with `/campaign npc create`.
 -   **Add Campaign Notes**: Keep track of important information by creating notes during gameplay with `/campaign note create`.
--   **Determine damage**: Use `/gameplay damage [damage]` to determine the effects of damage.
+-   **Determine damage**: Use `/roll damage [damage]` to determine the effects of damage.
 
 ### Dice Rolling
 

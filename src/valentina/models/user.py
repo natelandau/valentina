@@ -46,7 +46,6 @@ class User(Document):
 
     id: int  # type: ignore [assignment]
 
-    active_characters: dict[str, Link[Character]] = Field(default_factory=dict)
     characters: list[Link[Character]] = Field(default_factory=list)
     campaign_experience: dict[str, CampaignExperience] = Field(default_factory=dict)
     date_created: datetime = Field(default_factory=time_now)
@@ -182,42 +181,12 @@ class User(Document):
 
         return campaign_experience.cool_points
 
-    async def active_character(self, guild: discord.Guild, raise_error: bool = True) -> Character:
-        """Return the active character for the user in the guild."""
-        try:
-            active_char_id = self.active_characters[str(guild.id)].id  # type: ignore [attr-defined]
-        except KeyError as e:
-            if raise_error:
-                raise errors.NoActiveCharacterError from e
-            return None
-
-        return await Character.get(active_char_id, fetch_links=True)
-
     def all_characters(self, guild: discord.Guild) -> list[Character]:
         """Return all characters for the user in the guild."""
         return [x for x in cast(list[Character], self.characters) if x.guild == guild.id]
 
-    async def set_active_character(self, character: Character) -> None:
-        """Set the active character for the user in the guild.
-
-        Args:
-            character (Character): The character to set as active.
-        """
-        self.active_characters[str(character.guild)] = character
-        if character not in self.characters:
-            self.characters.append(character)
-
-        await self.save()
-
     async def remove_character(self, character: Character) -> None:
         """Remove a character from the user's list of characters."""
-        # Remove the character from the active characters list if it is active
-        if (
-            str(character.guild) in self.active_characters
-            and self.active_characters[str(character.guild)].id == character.id  # type: ignore [attr-defined]
-        ):
-            del self.active_characters[str(character.guild)]
-
         # Remove the character from the list of characters
         self.characters = [x for x in self.characters if x.id != character.id]  # type: ignore [attr-defined]
 

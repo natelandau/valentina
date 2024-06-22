@@ -18,7 +18,7 @@ from valentina.utils.autocomplete import (
     select_macro,
 )
 from valentina.utils.converters import ValidTraitFromID
-from valentina.utils.discord_utils import campaign_from_channel, character_from_channel
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.utils.perform_roll import perform_roll
 from valentina.views import present_embed
 
@@ -61,26 +61,26 @@ class Roll(commands.Cog):
             desperation (int): Add x desperation dice to the roll
             pool (int): The number of dice to roll
         """
-        # Grab the player's active character for statistic logging purposes
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+        character = channel_objects.character
 
-        if desperation > 0:
-            active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-            if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
-                await present_embed(
-                    ctx,
-                    title="Can not roll desperation",
-                    description="The current desperation level is 0. No dice to roll.",
-                    level="error",
-                    ephemeral=True,
-                )
-                return
+        if desperation > 0 and campaign.desperation == 0:
+            await present_embed(
+                ctx,
+                title="Can not roll desperation",
+                description="The current desperation level is 0. No dice to roll.",
+                level="error",
+                ephemeral=True,
+            )
+            return
 
         await perform_roll(
             ctx,
             pool,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             character=character,
             desperation_pool=desperation,
@@ -120,7 +120,9 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll the total number of d10s for two given traits against a difficulty."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True, need_campaign=True)
+        campaign = channel_objects.campaign
+        character = channel_objects.character
 
         pool = trait_one.value + trait_two.value
 
@@ -129,23 +131,22 @@ class Roll(commands.Cog):
             LogLevel.DEBUG,
         )
 
-        if desperation > 0:
-            active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-            if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
-                await present_embed(
-                    ctx,
-                    title="Can not roll desperation",
-                    description="The current desperation level is 0. No dice to roll.",
-                    level="error",
-                    ephemeral=True,
-                )
-                return
+        if desperation > 0 and campaign.desperation == 0:
+            await present_embed(
+                ctx,
+                title="Can not roll desperation",
+                description="The current desperation level is 0. No dice to roll.",
+                level="error",
+                ephemeral=True,
+            )
+            return
 
         await perform_roll(
             ctx,
             pool,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             trait_one=trait_one,
             trait_two=trait_two,
@@ -169,7 +170,9 @@ class Roll(commands.Cog):
             dice_size (int): The number of sides on the dice
             pool (int): The number of dice to roll
         """
-        await perform_roll(ctx, pool, 0, dice_size, comment)
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+        await perform_roll(ctx, pool, 0, dice_size, campaign, comment)
 
     @roll.command(name="macro", description="Roll a macro")
     async def roll_macro(
@@ -198,7 +201,10 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll a macro."""
-        character = await character_from_channel(ctx) or await ctx.fetch_active_character()
+        channel_objects = await fetch_channel_object(ctx, need_character=True, need_campaign=True)
+        campaign = channel_objects.campaign
+        character = channel_objects.character
+
         user = await User.get(ctx.author.id, fetch_links=True)
         macro = user.macros[index]
 
@@ -209,17 +215,15 @@ class Roll(commands.Cog):
             msg = "Macro traits not found on character"
             raise commands.BadArgument(msg)
 
-        if desperation > 0:
-            active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-            if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
-                await present_embed(
-                    ctx,
-                    title="Can not roll desperation",
-                    description="The current desperation level is 0. No dice to roll.",
-                    level="error",
-                    ephemeral=True,
-                )
-                return
+        if desperation > 0 and campaign.desperation == 0:
+            await present_embed(
+                ctx,
+                title="Can not roll desperation",
+                description="The current desperation level is 0. No dice to roll.",
+                level="error",
+                ephemeral=True,
+            )
+            return
 
         ctx.log_command(
             f"Macro: {macro.name}: {trait_one.name} ({trait_one.id}) + {trait_two.name} ({trait_two.id})",
@@ -233,6 +237,7 @@ class Roll(commands.Cog):
             pool,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             trait_one=trait_one,
             trait_two=trait_two,
@@ -259,8 +264,11 @@ class Roll(commands.Cog):
         comment: Option(str, "A comment to display with the roll", required=False, default=None),
     ) -> None:
         """Roll desperation dice."""
-        active_campaign = await ctx.fetch_active_campaign()
-        if active_campaign.desperation == 0 or desperation > 5:  # noqa: PLR2004
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+        character = channel_objects.character
+
+        if desperation > 0 and campaign.desperation == 0:
             await present_embed(
                 ctx,
                 title="Can not roll desperation",
@@ -270,14 +278,12 @@ class Roll(commands.Cog):
             )
             return
 
-        # Grab the player's active character for statistic logging purposes
-        character = await character_from_channel(ctx.channel) or await ctx.fetch_active_character()
-
         await perform_roll(
             ctx,
             0,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             character=character,
             desperation_pool=desperation,

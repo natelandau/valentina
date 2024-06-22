@@ -12,7 +12,6 @@ from loguru import logger
 from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor, TraitCategory
 from valentina.models import Campaign, Character, CharacterTrait, User
 from valentina.models.bot import ValentinaContext
-from valentina.utils import errors
 from valentina.utils.helpers import get_max_trait_value
 
 
@@ -171,7 +170,6 @@ class AddFromSheetWizard:
         # Associate the character with a campaign
         if self.campaign:
             self.character.campaign = str(self.campaign.id)
-            await self.campaign.create_channels(self.ctx)
 
         # Write the traits to the database
         self.character.traits = traits_to_add  # type: ignore [assignment]
@@ -181,11 +179,10 @@ class AddFromSheetWizard:
         self.user.characters.append(self.character)
         await self.user.save()
 
-        # Make the user active if the user has no active character
-        try:
-            await self.user.active_character(self.ctx.guild)
-        except errors.NoActiveCharacterError:
-            await self.user.set_active_character(self.character)
+        # Create channel
+        if self.campaign:
+            await self.character.confirm_channel(self.ctx, self.campaign)
+            await self.campaign.sort_channels(self.ctx)
 
         # Respond to the user
         embed = discord.Embed(

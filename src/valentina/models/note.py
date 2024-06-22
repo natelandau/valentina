@@ -30,7 +30,7 @@ class Note(Document):
     text: str
     parent_id: str  # campaign_id, book_id, or character_id
 
-    @before_event(Insert, Replace, Save, Update, SaveChanges)
+    @before_event(Insert, Replace, Save, Update, SaveChanges)  # pragma: no cover
     async def update_modified_date(self) -> None:
         """Update the date_modified field."""
         self.date_modified = time_now()

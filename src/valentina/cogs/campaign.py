@@ -1,6 +1,8 @@
 # mypy: disable-error-code="valid-type"
 """Cog for the Campaign commands."""
 
+import asyncio
+
 import discord
 import inflect
 from discord.commands import Option
@@ -32,7 +34,7 @@ from valentina.utils.converters import (
     ValidChapterNumber,
     ValidYYYYMMDD,
 )
-from valentina.utils.discord_utils import book_from_channel, campaign_from_channel
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.utils.helpers import truncate_string
 from valentina.views import (
     BookModal,
@@ -104,7 +106,8 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         title = f"Move Chapter `{selected_chapter.name}` to book `{book.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
@@ -125,9 +128,9 @@ class CampaignCog(commands.Cog):
         book.chapters.append(new_chapter)
         await book.save()
 
-        index = active_campaign.chapters.index(selected_chapter)
-        del active_campaign.chapters[index]
-        await active_campaign.save()
+        index = campaign.chapters.index(selected_chapter)
+        del campaign.chapters[index]
+        await campaign.save()
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -166,12 +169,6 @@ class CampaignCog(commands.Cog):
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         guild.campaigns.append(campaign)
 
-        try:
-            test_var = guild.active_campaign.name  # noqa: F841
-        except AttributeError:
-            guild.active_campaign = campaign
-            logger.info(f"Set active campaign to `{campaign.name}`")
-
         await guild.save()
 
         await campaign.create_channels(ctx)
@@ -190,7 +187,8 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Set current date of a campaign."""
-        campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         campaign.date_in_game = date
         await campaign.save()
@@ -239,85 +237,13 @@ class CampaignCog(commands.Cog):
     @campaign.command(name="view", description="View a campaign")
     async def view_campaign(self, ctx: ValentinaContext) -> None:
         """View a campaign."""
-        campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         cv = CampaignViewer(ctx, campaign, max_chars=1000)
         paginator = await cv.display()
         await paginator.respond(ctx.interaction, ephemeral=True)
         await paginator.wait()
-
-    @campaign.command(name="set_active", description="Set a campaign as active")
-    async def campaign_set_active(
-        self,
-        ctx: ValentinaContext,
-        campaign: Option(
-            ValidCampaign,
-            description="Name of the campaign",
-            required=True,
-            autocomplete=select_campaign,
-        ),
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Set a campaign as active."""
-        if not await self.check_permissions(ctx):
-            return
-
-        title = f"Set campaign `{campaign.name}` as active"
-        is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
-        )
-
-        if not is_confirmed:
-            return
-
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        guild.active_campaign = campaign
-        await guild.save()
-
-        await interaction.edit_original_response(embed=confirmation_embed, view=None)
-
-    @campaign.command(name="set_inactive", description="Set a campaign as inactive")
-    async def campaign_set_inactive(
-        self,
-        ctx: ValentinaContext,
-        hidden: Option(
-            bool,
-            description="Make the response visible only to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Set the active campaign as inactive."""
-        if not await self.check_permissions(ctx):
-            return
-
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
-        if not active_campaign:
-            await present_embed(
-                ctx,
-                title="No active campaign",
-                description="There is no active campaign",
-                level="info",
-                ephemeral=hidden,
-            )
-            return
-
-        title = f"Set campaign `{active_campaign.name}` as inactive"
-        is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
-        )
-
-        if not is_confirmed:
-            return
-
-        guild.active_campaign = None
-        await guild.save()
-
-        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @campaign.command(name="list", description="List all campaigns")
     async def campaign_list(
@@ -331,7 +257,6 @@ class CampaignCog(commands.Cog):
     ) -> None:
         """List all campaigns."""
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        active_campaign = await guild.fetch_active_campaign()
 
         if len(guild.campaigns) == 0:
             await present_embed(
@@ -346,9 +271,7 @@ class CampaignCog(commands.Cog):
         text = f"## {len(guild.campaigns)} {p.plural_noun('campaign', len(guild.campaigns))} on `{ctx.guild.name}`\n"
         for c in sorted(guild.campaigns, key=lambda x: x.name):
             characters = await c.fetch_characters()
-            text += (
-                f"### **{c.name}** (Active)\n" if c == active_campaign else f"### **{c.name}**\n"
-            )
+            text += f"### **{c.name}**\n"
             text += f"{c.description}\n" if c.description else ""
             text += f"- `{len(c.books)}` {p.plural_noun('book', len(c.books))}\n"
             text += f"- `{len(c.npcs)}` NPCs\n"
@@ -371,7 +294,8 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """Create a new NPC."""
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         modal = NPCModal(title=truncate_string("Create new NPC", 45))
         await ctx.send_modal(modal)
@@ -384,13 +308,13 @@ class CampaignCog(commands.Cog):
         description = modal.description.strip()
 
         npc = CampaignNPC(name=name, npc_class=npc_class, description=description)
-        active_campaign.npcs.append(npc)
-        await active_campaign.save()
+        campaign.npcs.append(npc)
+        await campaign.save()
 
-        await ctx.post_to_audit_log(f"Create NPC: `{name}` in `{active_campaign.name}`")
+        await ctx.post_to_audit_log(f"Create NPC: `{name}` in `{campaign.name}`")
         await present_embed(
             ctx,
-            title=f"Create NPC: `{name}` in `{active_campaign.name}`",
+            title=f"Create NPC: `{name}` in `{campaign.name}`",
             level="success",
             fields=[
                 ("Class", npc_class),
@@ -416,9 +340,10 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """List all NPCs."""
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
-        if len(active_campaign.npcs) == 0:
+        if len(campaign.npcs) == 0:
             await present_embed(
                 ctx,
                 title="No NPCs",
@@ -435,7 +360,7 @@ class CampaignCog(commands.Cog):
                     f"**__{npc.name}__**",
                     f"**Class:** {npc.npc_class}\n**Description:** {npc.description}",
                 )
-                for npc in sorted(active_campaign.npcs, key=lambda x: x.name)
+                for npc in sorted(campaign.npcs, key=lambda x: x.name)
             ]
         )
 
@@ -462,9 +387,11 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         try:
-            npc = active_campaign.npcs[index]
+            npc = campaign.npcs[index]
         except IndexError:
             await present_embed(
                 ctx,
@@ -485,15 +412,15 @@ class CampaignCog(commands.Cog):
         npc_class = modal.npc_class.strip().title()
         description = modal.description.strip()
 
-        active_campaign.npcs[index].name = name
-        active_campaign.npcs[index].npc_class = npc_class
-        active_campaign.npcs[index].description = description
-        await active_campaign.save()
+        campaign.npcs[index].name = name
+        campaign.npcs[index].npc_class = npc_class
+        campaign.npcs[index].description = description
+        await campaign.save()
 
-        await ctx.post_to_audit_log(f"Update NPC: `{name}` in `{active_campaign.name}`")
+        await ctx.post_to_audit_log(f"Update NPC: `{name}` in `{campaign.name}`")
         await present_embed(
             ctx,
-            title=f"Update NPC: `{name}` in `{active_campaign.name}`",
+            title=f"Update NPC: `{name}` in `{campaign.name}`",
             level="success",
             fields=[
                 ("Class", npc_class),
@@ -525,9 +452,11 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         try:
-            npc = active_campaign.npcs[index]
+            npc = campaign.npcs[index]
         except IndexError:
             await present_embed(
                 ctx,
@@ -538,7 +467,7 @@ class CampaignCog(commands.Cog):
             )
             return
 
-        title = f"Delete NPC: `{npc.name}` in `{active_campaign.name}`"
+        title = f"Delete NPC: `{npc.name}` in `{campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, audit=True
         )
@@ -546,8 +475,8 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
-        del active_campaign.npcs[index]
-        await active_campaign.save()
+        del campaign.npcs[index]
+        await campaign.save()
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -567,7 +496,8 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         modal = BookModal(title=truncate_string("Create new book", 45))
         await ctx.send_modal(modal)
@@ -575,7 +505,7 @@ class CampaignCog(commands.Cog):
         if not modal.confirmed:
             return
 
-        books = await active_campaign.fetch_books()
+        books = await campaign.fetch_books()
 
         name = modal.name.strip().title()
         description_short = modal.description_short.strip()
@@ -587,19 +517,19 @@ class CampaignCog(commands.Cog):
             description_short=description_short,
             description_long=description_long,
             number=chapter_number,
-            campaign=str(active_campaign.id),
+            campaign=str(campaign.id),
         )
         await book.insert()
-        active_campaign.books.append(book)
-        await active_campaign.save()
-        await active_campaign.create_channels(ctx)
+        campaign.books.append(book)
+        await campaign.save()
+        await campaign.create_channels(ctx)
 
         await ctx.post_to_audit_log(
-            f"Create book: `{book.number}. {book.name}` in `{active_campaign.name}`",
+            f"Create book: `{book.number}. {book.name}` in `{campaign.name}`",
         )
         await present_embed(
             ctx,
-            f"Create book: `{book.number}. {book.name}` in `{active_campaign.name}`",
+            f"Create book: `{book.number}. {book.name}` in `{campaign.name}`",
             level="success",
             description=description_long,
             ephemeral=hidden,
@@ -616,8 +546,9 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """List all books."""
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
-        all_books = await active_campaign.fetch_books()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+        all_books = await campaign.fetch_books()
 
         if len(all_books) == 0:
             await present_embed(
@@ -640,9 +571,7 @@ class CampaignCog(commands.Cog):
             ]
         )
 
-        await present_embed(
-            ctx, title=f"All Books in {active_campaign.name}", fields=fields, level="info"
-        )
+        await present_embed(ctx, title=f"All Books in {campaign.name}", fields=fields, level="info")
 
     @book.command(name="edit", description="Edit a book")
     @logger.catch
@@ -666,7 +595,8 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
         original_name = book.name
 
         modal = BookModal(title=truncate_string(f"Edit book {book.name}", 45), book=book)
@@ -685,13 +615,13 @@ class CampaignCog(commands.Cog):
         await book.save()
 
         if original_name != name:
-            await active_campaign.create_channels(ctx)
+            await campaign.create_channels(ctx)
 
-        await ctx.post_to_audit_log(f"Update book: `{book.name}` in `{active_campaign.name}`")
+        await ctx.post_to_audit_log(f"Update book: `{book.name}` in `{campaign.name}`")
 
         await present_embed(
             ctx,
-            title=f"Update book: `{name}` in `{active_campaign.name}`",
+            title=f"Update book: `{name}` in `{campaign.name}`",
             level="success",
             description=description_short,
             ephemeral=hidden,
@@ -718,9 +648,10 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
-        title = f"Delete book `{book.number}. {book.name}` from `{active_campaign.name}`"
+        title = f"Delete book `{book.number}. {book.name}` from `{campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, audit=True
         )
@@ -728,9 +659,18 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
+        original_number = book.number
+        await book.delete_channel(ctx)
         await book.delete()
-        active_campaign.books.remove(book)
-        await active_campaign.save()
+        campaign.books = [x for x in campaign.books if x.id != book.id]  # type: ignore [attr-defined]
+        await campaign.save()
+
+        # Reorder the books
+        for b in [x for x in await campaign.fetch_books() if x.number > original_number]:
+            b.number -= 1
+            await b.save()
+            await b.confirm_channel(ctx, campaign)
+            await asyncio.sleep(1)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -771,7 +711,9 @@ class CampaignCog(commands.Cog):
             )
             return
 
-        active_campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         original_number = book.number
 
         title = (
@@ -784,7 +726,7 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
-        all_books = await active_campaign.fetch_books()
+        all_books = await campaign.fetch_books()
 
         # Update the number of the selected book
         book.number = new_number
@@ -796,16 +738,21 @@ class CampaignCog(commands.Cog):
                 if original_number < b.number <= new_number:
                     b.number -= 1
                     await b.save()
+                    await b.confirm_channel(ctx, campaign)
+                    await asyncio.sleep(1)
         else:
             # Shift books up if the new number is lower
             for b in all_books:
                 if new_number <= b.number < original_number:
                     b.number += 1
                     await b.save()
+                    await b.confirm_channel(ctx, campaign)
+                    await asyncio.sleep(1)
 
         # Save the selected book with its new number
         await book.save()
-        await active_campaign.create_channels(ctx)
+        await book.confirm_channel(ctx, campaign)
+        await campaign.sort_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -825,7 +772,8 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        book = await book_from_channel(ctx)
+        channel_objects = await fetch_channel_object(ctx, need_book=True)
+        book = channel_objects.book
         if not book:
             await present_embed(
                 ctx,
@@ -880,7 +828,8 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """List all chapters."""
-        book = await book_from_channel(ctx)
+        channel_objects = await fetch_channel_object(ctx, need_book=True)
+        book = channel_objects.book
         if not book:
             await present_embed(
                 ctx,
@@ -938,7 +887,8 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        book = await book_from_channel(ctx)
+        channel_objects = await fetch_channel_object(ctx, need_book=True)
+        book = channel_objects.book
         if not book:
             await present_embed(
                 ctx,
@@ -995,7 +945,8 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        book = await book_from_channel(ctx)
+        channel_objects = await fetch_channel_object(ctx, need_book=True)
+        book = channel_objects.book
         if not book:
             await present_embed(
                 ctx,
@@ -1047,7 +998,8 @@ class CampaignCog(commands.Cog):
         if not await self.check_permissions(ctx):
             return
 
-        book = await book_from_channel(ctx)
+        channel_objects = await fetch_channel_object(ctx, need_book=True)
+        book = channel_objects.book
         if not book:
             await present_embed(
                 ctx,

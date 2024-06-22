@@ -346,11 +346,16 @@ class RNGCharGen:
     """Randomly generate different parts of a character."""
 
     def __init__(
-        self, ctx: ValentinaContext, user: User, experience_level: RNGCharLevel = None
+        self,
+        ctx: ValentinaContext,
+        user: User,
+        experience_level: RNGCharLevel = None,
+        campaign: Campaign = None,
     ) -> None:
         self.ctx = ctx
         self.user = user
         self.experience_level = experience_level or RNGCharLevel.random_member()
+        self.campaign = campaign
 
     @staticmethod
     def _redistribute_trait_values(
@@ -486,6 +491,7 @@ class RNGCharGen:
             type_developer=developer_character,
             user_creator=self.user.id,
             user_owner=self.user.id,
+            campaign=str(self.campaign.id) if self.campaign else None,
         )
 
         await character.insert()
@@ -1278,7 +1284,8 @@ Once you select a character you can re-allocate dots and change the name, but yo
         if self.campaign:
             character.campaign = str(self.campaign.id)
             await character.save()
-            await self.campaign.create_channels(self.ctx)
+            await character.confirm_channel(self.ctx, self.campaign)
+            await self.campaign.sort_channels(self.ctx)
 
     async def spend_freebie_points(self, character: Character) -> Character:
         """Spend freebie points.

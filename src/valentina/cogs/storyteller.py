@@ -43,7 +43,7 @@ from valentina.utils.converters import (
     ValidImageURL,
     ValidTraitCategory,
 )
-from valentina.utils.discord_utils import campaign_from_channel
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.utils.helpers import (
     fetch_data_from_url,
 )
@@ -93,7 +93,8 @@ class StoryTeller(commands.Cog):
     @storyteller.command(name="set_danger", description="Set the danger level")
     async def set_danger(self, ctx: ValentinaContext, danger: int) -> None:
         """Set the danger level for a campaign."""
-        campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         title = f"Set danger level to {danger}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title, audit=True)
@@ -109,7 +110,8 @@ class StoryTeller(commands.Cog):
     @storyteller.command(name="set_desperation", description="Set the desperation level")
     async def set_desperation(self, ctx: ValentinaContext, desperation: int) -> None:
         """Set the desperation level for a campaign."""
-        campaign = await campaign_from_channel(ctx) or await ctx.fetch_active_campaign()
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
 
         title = f"Set desperation level to {desperation}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title, audit=True)
@@ -157,6 +159,9 @@ class StoryTeller(commands.Cog):
             )
             return
 
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         user = await User.get(ctx.author.id, fetch_links=True)
         character = Character(
             guild=ctx.guild.id,
@@ -168,6 +173,7 @@ class StoryTeller(commands.Cog):
             type_storyteller=True,
             user_creator=user.id,
             user_owner=user.id,
+            campaign=str(campaign.id),
         )
 
         wizard = AddFromSheetWizard(ctx, character=character, user=user)
@@ -235,8 +241,11 @@ class StoryTeller(commands.Cog):
             )
             return
 
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         user = await User.get(ctx.author.id, fetch_links=True)
-        chargen = RNGCharGen(ctx, user, experience_level=level)
+        chargen = RNGCharGen(ctx, user, experience_level=level, campaign=campaign)
         character = await chargen.generate_full_character(
             char_class=character_class,
             storyteller_character=True,
@@ -584,6 +593,9 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Update the value of a trait for a storyteller or player character."""
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         old_owner = await User.get(character.user_owner, fetch_links=True)
         new_owner = await User.get(new_user.id, fetch_links=True)
 
@@ -611,6 +623,8 @@ class StoryTeller(commands.Cog):
 
         character.user_owner = new_owner.id
         await character.save()
+
+        await character.update_channel_permissions(ctx, campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -703,6 +717,9 @@ class StoryTeller(commands.Cog):
         ),
     ) -> None:
         """Roll traits for a storyteller character."""
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         pool = trait_one.value + trait_two.value
 
         await perform_roll(
@@ -710,6 +727,7 @@ class StoryTeller(commands.Cog):
             pool,
             difficulty,
             DiceType.D10.value,
+            campaign,
             comment,
             trait_one=trait_one,
             trait_two=trait_two,

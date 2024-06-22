@@ -7,12 +7,12 @@ import discord
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import MAX_FIELD_COUNT, EmbedColor
+from valentina.constants import MAX_FIELD_COUNT
 from valentina.models import Note as DbNote
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils.autocomplete import select_note
 from valentina.utils.converters import ValidNote
-from valentina.utils.discord_utils import determine_channel_type
+from valentina.utils.discord_utils import fetch_channel_object
 from valentina.views import NoteModal, auto_paginate, confirm_action, present_embed
 
 
@@ -39,11 +39,13 @@ class Note(commands.Cog):
         ] = True,
     ) -> None:
         """Add a note."""
-        # determine channel type
-        _, book, character = await determine_channel_type(ctx, raise_error=False)
+        channel_objects = await fetch_channel_object(ctx, raise_error=False)
 
-        added_to = f"book: `{book.name}`" if book else f"`{character.name}`" if character else ""
-        if not added_to:
+        if channel_objects.has_book():
+            channel_object = channel_objects.book
+        elif channel_objects.has_character():
+            channel_object = channel_objects.character
+        else:
             await present_embed(
                 ctx,
                 title="Add note",
@@ -53,7 +55,7 @@ class Note(commands.Cog):
             )
             return
 
-        title = f"Add note to {added_to}"
+        title = f"Add note to `{channel_object.name}`"
         description = f"```\n{note.strip().capitalize()}\n```"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx, title, description=description, hidden=hidden, audit=True
@@ -62,32 +64,13 @@ class Note(commands.Cog):
         if not is_confirmed:
             return
 
-        if book:
-            note = await DbNote(
-                created_by=ctx.author.id, text=note.strip().capitalize(), parent_id=str(book.id)
-            ).insert()
-            book.notes.append(note)
-            await book.save()
-
-        elif character:
-            note = await DbNote(
-                created_by=ctx.author.id,
-                text=note.strip().capitalize(),
-                parent_id=str(character.id),
-            ).insert()
-            character.notes.append(note)
-            await character.save()
-
-        else:
-            await interaction.edit_original_response(
-                embed=discord.Embed(
-                    title=title,
-                    description="Notes can only be added to books and characters within their respective channels.",
-                    color=EmbedColor.WARNING.value,
-                ),
-                view=None,
-            )
-            return
+        note = await DbNote(
+            created_by=ctx.author.id,
+            text=note.strip().capitalize(),
+            parent_id=str(channel_object.id),
+        ).insert()
+        channel_object.notes.append(note)
+        await channel_object.save()
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -105,27 +88,28 @@ class Note(commands.Cog):
         ] = True,
     ) -> None:
         """View notes."""
-        # determine channel type
-        _, book, character = await determine_channel_type(ctx, raise_error=False)
-        if book:
-            name = book.name
-            notes = [await x.display(ctx) for x in book.notes]  # type: ignore [attr-defined]
-        elif character:
-            name = character.name
-            notes = [await x.display(ctx) for x in character.notes]  # type: ignore [attr-defined]
+        channel_objects = await fetch_channel_object(ctx, raise_error=False)
+
+        if channel_objects.has_book():
+            channel_object = channel_objects.book
+        elif channel_objects.has_character():
+            channel_object = channel_objects.character
         else:
             await present_embed(
                 ctx,
-                title="View notes",
+                title="Add note",
                 description="Notes can only be viewed for books and characters.",
                 ephemeral=hidden,
                 level="error",
             )
             return
 
+        sorted_notes = sorted(channel_object.notes, key=lambda x: x.date_created)  # type: ignore [attr-defined]
+        notes = [await x.display(ctx) for x in sorted_notes]  # type: ignore [attr-defined]
+
         await auto_paginate(
             ctx=ctx,
-            title=f"Notes for `{name}`",
+            title=f"Notes for `{channel_object.name}`",
             text="\n".join(f"{i}. {n}" for i, n in enumerate(notes, start=1))
             if notes
             else "No notes found.",
@@ -193,22 +177,23 @@ class Note(commands.Cog):
         ),
     ) -> None:
         """Delete a note."""
-        _, book, character = await determine_channel_type(ctx, raise_error=False)
+        channel_objects = await fetch_channel_object(ctx, raise_error=False)
 
-        deleted_from = (
-            f"book: `{book.name}`" if book else f"`{character.name}`" if character else ""
-        )
-        if not deleted_from:
+        if channel_objects.has_book():
+            channel_object = channel_objects.book
+        elif channel_objects.has_character():
+            channel_object = channel_objects.character
+        else:
             await present_embed(
                 ctx,
                 title="Add note",
-                description="Notes can only be added to books and characters.",
+                description="Notes can only be deleted from books and characters.",
                 ephemeral=hidden,
                 level="error",
             )
             return
 
-        title = f"Delete note from {deleted_from}"
+        title = f"Delete note from {channel_object.name}"
         description = f"```\n{note_to_delete.text}\n```"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
             ctx,
@@ -222,13 +207,8 @@ class Note(commands.Cog):
         if not is_confirmed:
             return
 
-        if book:
-            book.notes.remove(note_to_delete)
-            await book.save()
-
-        if character:
-            character.notes.remove(note_to_delete)
-            await character.save()
+        channel_object.remove(note_to_delete)
+        await channel_object.save()
 
         await note_to_delete.delete()
 

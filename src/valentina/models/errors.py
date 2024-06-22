@@ -50,10 +50,8 @@ class ErrorReporter:
         # Reported to users but suppressed from logs and traceback
         if isinstance(
             error,
-            errors.NoActiveCampaignError
-            | errors.ValidationError
+            errors.ValidationError
             | errors.ChannelTypeError
-            | errors.NoActiveCharacterError
             | errors.NotEnoughExperienceError
             | errors.NoExperienceInCampaignError
             | errors.URLNotAvailableError
