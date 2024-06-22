@@ -541,15 +541,12 @@ async def select_note(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate the autocomplete for selecting a note."""
     try:
         channel_objects = await fetch_channel_object(ctx)
+        channel_object = channel_objects.book or channel_objects.character
 
-        if channel_objects.has_book():
-            channel_object = channel_objects.book
-        elif channel_objects.has_character():
-            channel_object = channel_objects.character
     except errors.ChannelTypeError:
         return [OptionChoice("No notes found", "")]
 
-    if not channel_object.notes:
+    if not channel_object or not channel_object.notes:
         return [OptionChoice("No notes found", "")]
 
     sorted_notes = sorted(channel_object.notes, key=lambda x: x.date_created)  # type: ignore [attr-defined]

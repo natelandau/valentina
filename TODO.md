@@ -15,7 +15,7 @@
 -   [ ] Statistics: Track per book stats
 -   [ ] Statistics: Track per campaign stats
 -   [ ] Storyteller: Add notes
--   [ ] Storyteller: Associate storyteller characters with campaigns
+-   [x] Storyteller: Associate storyteller characters with campaigns
 -   [ ] Tests: Increase coverage
 -   [x] Campaign: Add books to campaigns. Books contain chapters.
 -   [x] Campaign: Associate characters with campaigns

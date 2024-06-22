@@ -209,3 +209,55 @@ async def test_character_statistics_results(mock_ctx1, character_factory):
     assert isinstance(result, discord.Embed)
     assert "Successful Rolls ........ 1   (50.00%)" in result.description
     assert "Definitions:" not in result.description
+
+
+async def test_campaign_statistics_results(mock_ctx1, character_factory, campaign_factory):
+    """Test pulling character_statistics."""
+    # GIVEN a character with statistics
+    campaign = campaign_factory.build()
+    character = character_factory.build(traits=[])
+    stat1 = RollStatistic(
+        user=1,
+        guild=1,
+        character=str(character.id),
+        result=RollResultType.SUCCESS,
+        pool=1,
+        difficulty=1,
+        campaign=str(campaign.id),
+    )
+    stat2 = RollStatistic(
+        user=1,
+        guild=1,
+        character=str(character.id),
+        result=RollResultType.BOTCH,
+        pool=1,
+        difficulty=3,
+        campaign=str(campaign.id),
+    )
+    stat3 = RollStatistic(
+        user=2,
+        guild=2,
+        character="not_for_this_character",
+        result=RollResultType.BOTCH,
+        pool=1,
+        difficulty=1,
+        campaign=str(campaign.id),
+    )
+    await stat1.insert()
+    await stat2.insert()
+    await stat3.insert()
+
+    # WHEN statistics are pulled for a guild
+    s = Statistics(mock_ctx1)
+    result = await s.campaign_statistics(campaign, as_embed=True, with_help=False)
+
+    # THEN confirm the statistics are returned to the user
+    assert s.botches == 2
+    assert s.successes == 1
+    assert s.failures == 0
+    assert s.criticals == 0
+    assert s.total_rolls == 3
+    assert s.average_difficulty == 2
+    assert isinstance(result, discord.Embed)
+    assert "Successful Rolls ........ 1   (33.33%)" in result.description
+    assert "Definitions:" not in result.description

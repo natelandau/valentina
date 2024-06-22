@@ -40,12 +40,9 @@ class Note(commands.Cog):
     ) -> None:
         """Add a note."""
         channel_objects = await fetch_channel_object(ctx, raise_error=False)
+        channel_object = channel_objects.book or channel_objects.character
 
-        if channel_objects.has_book():
-            channel_object = channel_objects.book
-        elif channel_objects.has_character():
-            channel_object = channel_objects.character
-        else:
+        if not channel_object:
             await present_embed(
                 ctx,
                 title="Add note",
@@ -89,12 +86,9 @@ class Note(commands.Cog):
     ) -> None:
         """View notes."""
         channel_objects = await fetch_channel_object(ctx, raise_error=False)
+        channel_object = channel_objects.book or channel_objects.character
 
-        if channel_objects.has_book():
-            channel_object = channel_objects.book
-        elif channel_objects.has_character():
-            channel_object = channel_objects.character
-        else:
+        if not channel_object:
             await present_embed(
                 ctx,
                 title="Add note",
@@ -178,12 +172,9 @@ class Note(commands.Cog):
     ) -> None:
         """Delete a note."""
         channel_objects = await fetch_channel_object(ctx, raise_error=False)
+        channel_object = channel_objects.book or channel_objects.character
 
-        if channel_objects.has_book():
-            channel_object = channel_objects.book
-        elif channel_objects.has_character():
-            channel_object = channel_objects.character
-        else:
+        if not channel_object:
             await present_embed(
                 ctx,
                 title="Add note",

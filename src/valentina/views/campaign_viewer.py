@@ -6,7 +6,7 @@ import discord
 from discord.ext import pages
 
 from valentina.constants import ABS_MAX_EMBED_CHARACTERS, EmbedColor, Emoji
-from valentina.models import Campaign
+from valentina.models import Campaign, Statistics
 from valentina.models.bot import ValentinaContext
 from valentina.utils.helpers import num_to_circles
 
@@ -55,6 +55,14 @@ class CampaignViewer:
         Returns:
             pages.PageGroup: A PageGroup object representing the home view of the campaign.
         """
+        stats_engine = Statistics(self.ctx)
+        campaign_roll_stats = await stats_engine.campaign_statistics(
+            self.campaign,
+            as_embed=False,
+            with_title=False,
+            with_help=False,
+        )
+
         campaign_description = (
             f"### Description\n{self.campaign.description}" if self.campaign.description else ""
         )
@@ -73,6 +81,8 @@ Modified : {self.campaign.date_modified.strftime("%Y-%M-%d")}
 Books    : {len(self.campaign.books)}
 NPCs     : {len(self.campaign.npcs)}
 ```
+### Roll Statistics
+{campaign_roll_stats}
 """
 
         home_embed = discord.Embed(
