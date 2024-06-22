@@ -237,12 +237,6 @@ class CharactersCog(commands.Cog, name="Character"):
     async def kill_character(
         self,
         ctx: ValentinaContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to kill",
-            autocomplete=select_any_player_character,
-            required=True,
-        ),
         hidden: Option(
             bool,
             description="Make the interaction only visible to you (default true).",
@@ -250,6 +244,10 @@ class CharactersCog(commands.Cog, name="Character"):
         ),
     ) -> None:
         """Kill a character."""
+        channel_objects = await fetch_channel_object(ctx, need_character=True)
+        character = channel_objects.character
+        campaign = channel_objects.campaign
+
         # Guard statement: check permissions
         if not await ctx.can_kill_character(character):
             await present_embed(
@@ -272,6 +270,10 @@ class CharactersCog(commands.Cog, name="Character"):
         character.is_alive = False
         await character.save()
 
+        if campaign:
+            await character.confirm_channel(ctx, campaign)
+            await campaign.sort_channels(ctx)
+
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @chars.command(name="rename", description="Rename a character")
@@ -290,6 +292,7 @@ class CharactersCog(commands.Cog, name="Character"):
         """Rename a character."""
         channel_objects = await fetch_channel_object(ctx, need_character=True)
         character = channel_objects.character
+        campaign = channel_objects.campaign
 
         nick = f"'{nickname}' " if nickname else ""
 
@@ -305,8 +308,9 @@ class CharactersCog(commands.Cog, name="Character"):
         character.name_nick = nickname
         await character.save()
 
-        if channel_objects.campaign:
-            await channel_objects.campaign.create_channels(ctx)
+        if campaign:
+            await character.confirm_channel(ctx, campaign)
+            await campaign.sort_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -881,7 +885,7 @@ class CharactersCog(commands.Cog, name="Character"):
         character.user_owner = new_owner.id
         await character.save()
 
-        await character.update_channel(ctx, campaign)
+        await character.update_channel_permissions(ctx, campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

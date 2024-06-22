@@ -170,7 +170,6 @@ class AddFromSheetWizard:
         # Associate the character with a campaign
         if self.campaign:
             self.character.campaign = str(self.campaign.id)
-            await self.campaign.create_channels(self.ctx)
 
         # Write the traits to the database
         self.character.traits = traits_to_add  # type: ignore [assignment]
@@ -179,6 +178,11 @@ class AddFromSheetWizard:
         # Add the character to the user's list of characters
         self.user.characters.append(self.character)
         await self.user.save()
+
+        # Create channel
+        if self.campaign:
+            await self.character.confirm_channel(self.ctx, self.campaign)
+            await self.campaign.sort_channels(self.ctx)
 
         # Respond to the user
         embed = discord.Embed(

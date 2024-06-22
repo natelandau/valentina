@@ -1,6 +1,8 @@
 # mypy: disable-error-code="valid-type"
 """Cog for the Campaign commands."""
 
+import asyncio
+
 import discord
 import inflect
 from discord.commands import Option
@@ -657,9 +659,18 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
+        original_number = book.number
+        await book.delete_channel(ctx)
         await book.delete()
-        campaign.books.remove(book)
+        campaign.books = [x for x in campaign.books if x.id != book.id]  # type: ignore [attr-defined]
         await campaign.save()
+
+        # Reorder the books
+        for b in [x for x in await campaign.fetch_books() if x.number > original_number]:
+            b.number -= 1
+            await b.save()
+            await b.confirm_channel(ctx, campaign)
+            await asyncio.sleep(1)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -727,16 +738,21 @@ class CampaignCog(commands.Cog):
                 if original_number < b.number <= new_number:
                     b.number -= 1
                     await b.save()
+                    await b.confirm_channel(ctx, campaign)
+                    await asyncio.sleep(1)
         else:
             # Shift books up if the new number is lower
             for b in all_books:
                 if new_number <= b.number < original_number:
                     b.number += 1
                     await b.save()
+                    await b.confirm_channel(ctx, campaign)
+                    await asyncio.sleep(1)
 
         # Save the selected book with its new number
         await book.save()
-        await campaign.create_channels(ctx)
+        await book.confirm_channel(ctx, campaign)
+        await campaign.sort_channels(ctx)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

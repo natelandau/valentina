@@ -159,6 +159,9 @@ class StoryTeller(commands.Cog):
             )
             return
 
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         user = await User.get(ctx.author.id, fetch_links=True)
         character = Character(
             guild=ctx.guild.id,
@@ -170,6 +173,7 @@ class StoryTeller(commands.Cog):
             type_storyteller=True,
             user_creator=user.id,
             user_owner=user.id,
+            campaign=str(campaign.id),
         )
 
         wizard = AddFromSheetWizard(ctx, character=character, user=user)
@@ -237,8 +241,11 @@ class StoryTeller(commands.Cog):
             )
             return
 
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
+        campaign = channel_objects.campaign
+
         user = await User.get(ctx.author.id, fetch_links=True)
-        chargen = RNGCharGen(ctx, user, experience_level=level)
+        chargen = RNGCharGen(ctx, user, experience_level=level, campaign=campaign)
         character = await chargen.generate_full_character(
             char_class=character_class,
             storyteller_character=True,
@@ -617,7 +624,7 @@ class StoryTeller(commands.Cog):
         character.user_owner = new_owner.id
         await character.save()
 
-        await character.update_channel(ctx, campaign)
+        await character.update_channel_permissions(ctx, campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

@@ -1,5 +1,6 @@
 """Character models for Valentina."""
 
+import asyncio
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional, Union, cast
 
@@ -141,6 +142,13 @@ class Character(Document):
         return f"{self.name_first}{nick}{last}".strip()
 
     @property
+    def channel_name(self) -> str:
+        """Channel name for the book."""
+        emoji = Emoji.SILHOUETTE.value if self.is_alive else Emoji.DEAD.value
+
+        return f"{emoji}-{self.name.lower().replace(' ', '-')}"
+
+    @property
     def char_class(self) -> CharClass:
         """Return the character's class."""
         try:
@@ -256,28 +264,79 @@ class Character(Document):
             logger.debug(f"Character {self.name} is already associated with {new_campaign.name}")
             return False
 
-        existing_channel = (
-            discord.utils.get(ctx.guild.text_channels, id=self.channel) if self.channel else None
-        )
+        self.campaign = str(new_campaign.id)
+        await self.save()
 
-        new_category = discord.utils.get(
-            ctx.guild.categories, id=new_campaign.channel_campaign_category
-        )
-        character_owner = discord.utils.get(ctx.bot.users, id=self.user_owner)
+        await self.confirm_channel(ctx, new_campaign)
+        await new_campaign.sort_channels(ctx)
+        return True
 
-        if existing_channel and new_category:
-            await ctx.channel_update_or_add(
-                channel=existing_channel,
-                category=new_category,
+    async def confirm_channel(
+        self, ctx: "ValentinaContext", campaign: Optional["Campaign"]
+    ) -> discord.TextChannel | None:
+        """Confirm the channel for the book.
+
+        Args:
+            ctx (ValentinaContext): The context of the command.
+            campaign (Campaign, optional): The campaign object.
+
+        Returns:
+            discord.TextChannel | None: The channel object
+        """
+        campaign = campaign or await Campaign.get(self.campaign)
+        if not campaign:
+            return None
+
+        category, channels = await campaign.fetch_campaign_category_channels(ctx)
+
+        if not category:
+            return None
+
+        is_channel_name_in_category = any(self.channel_name == channel.name for channel in channels)
+        is_channel_id_in_category = (
+            any(self.channel == channel.id for channel in channels) if self.channel else False
+        )
+        owned_by_user = discord.utils.get(ctx.bot.users, id=self.user_owner)
+
+        # If channel name exists in category but not in database, add channel id to self
+        if is_channel_name_in_category and not self.channel:
+            await asyncio.sleep(1)  # Keep the rate limit happy
+            for channel in channels:
+                if channel.name == self.channel_name:
+                    self.channel = channel.id
+                    await self.save()
+                    return channel
+
+        # If channel.id exists but has wrong name, rename it
+        elif self.channel and is_channel_id_in_category and not is_channel_name_in_category:
+            channel_object = next(
+                (channel for channel in channels if self.channel == channel.id), None
+            )
+            return await ctx.channel_update_or_add(
+                channel=channel_object,
+                name=self.channel_name,
+                category=category,
                 permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
-                permissions_user_post=character_owner,
+                permissions_user_post=owned_by_user,
                 topic=f"Character channel for {self.name}",
             )
 
-        self.campaign = str(new_campaign.id)
-        await self.save()
-        await new_campaign.create_channels(ctx)
-        return True
+        # If channel does not exist, create it
+        elif not is_channel_name_in_category:
+            await asyncio.sleep(1)  # Keep the rate limit happy
+            book_channel = await ctx.channel_update_or_add(
+                name=self.channel_name,
+                category=category,
+                permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
+                permissions_user_post=owned_by_user,
+                topic=f"Character channel for {self.name}",
+            )
+            self.channel = book_channel.id
+            await self.save()
+            return book_channel
+
+        await asyncio.sleep(1)  # Keep the rate limit happy
+        return discord.utils.get(channels, name=self.channel_name)
 
     async def delete_channel(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
         """Delete the channel associated with the book.
@@ -329,7 +388,7 @@ class Character(Document):
 
         return None
 
-    async def update_channel(
+    async def update_channel_permissions(
         self, ctx: "ValentinaContext", campaign: "Campaign"
     ) -> discord.TextChannel | None:  # pragma: no cover
         """Update the permissions for the character's channel."""
