@@ -44,6 +44,7 @@ async def perform_roll(  # pragma: no cover
         dice_size=dice_size,
         character=character,
         desperation_pool=desperation_pool,
+        campaign=campaign,
     )
 
     traits_to_log = []

@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
-from valentina.constants import ChannelPermission
+from valentina.constants import CampaignChannelName, ChannelPermission
 from valentina.dataclasses import ChannelObjects
 from valentina.models import Campaign, CampaignBook, Character
 from valentina.utils import errors
@@ -227,4 +227,13 @@ async def fetch_channel_object(
     if raise_error and not campaign and not book and not character:
         raise errors.ChannelTypeError
 
-    return ChannelObjects(campaign=campaign, book=book, character=character)
+    is_storyteller_channel = (
+        discord_channel and discord_channel.name == CampaignChannelName.STORYTELLER.value
+    )
+
+    return ChannelObjects(
+        campaign=campaign,
+        book=book,
+        character=character,
+        is_storyteller_channel=is_storyteller_channel,
+    )

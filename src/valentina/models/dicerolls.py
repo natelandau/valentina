@@ -6,7 +6,7 @@ import inflect
 from loguru import logger
 
 from valentina.constants import MAX_POOL_SIZE, DiceType, EmbedColor, RollResultType
-from valentina.models import Character, Guild, RollStatistic
+from valentina.models import Campaign, Character, Guild, RollStatistic
 from valentina.utils import errors, random_num
 
 p = inflect.engine()
@@ -62,6 +62,7 @@ class DiceRoll:
         dice_size: int = 10,
         character: Character = None,
         desperation_pool: int = 0,
+        campaign: Campaign = None,
     ) -> None:
         """A container class that determines the result of a roll.
 
@@ -72,10 +73,12 @@ class DiceRoll:
             pool (int): The pool's total size, including hunger
             character (Character, optional): The character to log the roll for. Defaults to None.
             desperation_pool (int): The number of dice to roll from the desperation pool. Defaults to 0.
+            campaign (Campaign, optional): The campaign to log the roll for. Defaults to None.
         """
         self.ctx = ctx
         self.character = character
         self.desperation_pool = desperation_pool
+        self.campaign = campaign
 
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
@@ -143,6 +146,7 @@ class DiceRoll:
                 pool=self.pool,
                 difficulty=self.difficulty,
                 traits=traits,
+                campaign=str(self.campaign.id) if self.campaign else None,
             )
             await stat.insert()
 

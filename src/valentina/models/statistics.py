@@ -8,7 +8,7 @@ from beanie import Document, Indexed
 from pydantic import Field
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models import Character
+from valentina.models import Campaign, Character
 from valentina.utils.helpers import time_now
 
 if TYPE_CHECKING:
@@ -26,6 +26,7 @@ class RollStatistic(Document):
     difficulty: int
     date_rolled: datetime = Field(default_factory=time_now)
     traits: list[str] = Field(default_factory=list)
+    campaign: Indexed(str) | None = None  # type: ignore [valid-type]
 
 
 class Statistics:
@@ -267,6 +268,70 @@ class Statistics:
         ).count()
         self.other = await RollStatistic.find(
             RollStatistic.character == str(character.id),
+            RollStatistic.result == RollResultType.OTHER,
+        ).count()
+
+        avg_diff = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+            RollStatistic.difficulty
+        )
+        if avg_diff:
+            self.average_difficulty = round(avg_diff)
+
+        avg_pool = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+            RollStatistic.pool
+        )
+        if avg_pool:
+            self.average_pool = round(avg_pool)
+
+        # Calculate total rolls
+        self.total_rolls = (
+            self.botches + self.successes + self.failures + self.criticals + self.other
+        )
+
+        if as_embed:
+            return await self._get_embed(with_title=with_title, with_help=with_help)
+
+        return self._get_text(with_title=with_title, with_help=with_help)
+
+    async def campaign_statistics(
+        self,
+        campaign: Campaign,
+        as_embed: bool = False,
+        with_title: bool = True,
+        with_help: bool = True,
+    ) -> discord.Embed | str:
+        """Compute and display character statistics.
+
+        Args:
+            campaign (Campaign): The campaign to get statistics for.
+            as_embed (bool, optional): Whether to return an embed. Defaults to False. When False, returns a string.
+            with_title (bool, optional): Whether to include the title. Defaults to True.
+            with_help (bool, optional): Whether to include the help text. Defaults to True.
+
+        Returns:
+            discord.Embed | str: Embed or string with the statistics.
+        """
+        self.title = f"Roll statistics for {campaign.name}"
+
+        # Grab the data from the database
+        self.botches = await RollStatistic.find(
+            RollStatistic.campaign == str(campaign.id),
+            RollStatistic.result == RollResultType.BOTCH,
+        ).count()
+        self.successes = await RollStatistic.find(
+            RollStatistic.campaign == str(campaign.id),
+            RollStatistic.result == RollResultType.SUCCESS,
+        ).count()
+        self.criticals = await RollStatistic.find(
+            RollStatistic.campaign == str(campaign.id),
+            RollStatistic.result == RollResultType.CRITICAL,
+        ).count()
+        self.failures = await RollStatistic.find(
+            RollStatistic.campaign == str(campaign.id),
+            RollStatistic.result == RollResultType.FAILURE,
+        ).count()
+        self.other = await RollStatistic.find(
+            RollStatistic.campaign == str(campaign.id),
             RollStatistic.result == RollResultType.OTHER,
         ).count()
 
