@@ -89,7 +89,13 @@ class CampaignBook(Document):
         return f"{Emoji.BOOK.value}-{self.number:0>2}-{self.name.lower().replace(' ', '-')}"
 
     async def fetch_chapters(self) -> list[CampaignBookChapter]:
-        """Fetch all chapters in the book."""
+        """Fetch all chapters in the book.
+
+        This method retrieves and sorts all chapters associated with the book by their number.
+
+        Returns:
+            list[CampaignBookChapter]: A sorted list of CampaignBookChapter objects associated with the book.
+        """
         return sorted(
             self.chapters,  # type: ignore [arg-type]
             key=lambda x: x.number,
@@ -98,8 +104,13 @@ class CampaignBook(Document):
     async def delete_channel(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
         """Delete the channel associated with the book.
 
+        This method removes the channel linked to the book from the guild and updates the book's channel information.
+
         Args:
-            ctx (ValentinaContext): The context of the command.
+            ctx (ValentinaContext): The context object containing guild information.
+
+        Returns:
+            None
         """
         if not self.channel:
             return
@@ -116,14 +127,16 @@ class CampaignBook(Document):
     async def confirm_channel(
         self, ctx: "ValentinaContext", campaign: Optional["Campaign"]
     ) -> discord.TextChannel | None:
-        """Confirm the channel for the book.
+        """Confirm or create the channel for the book within the campaign.
+
+        This method ensures the book's channel exists within the campaign's category. It updates the channel information in the database if necessary, renames a channel if it has the wrong name, or creates a new one if it doesn't exist.
 
         Args:
-            ctx (ValentinaContext): The context of the command.
-            campaign (Campaign, optional): The campaign object.
+            ctx (ValentinaContext): The context object containing guild information.
+            campaign (Optional[Campaign]): The campaign object. If not provided, it will be fetched using the book's campaign ID.
 
         Returns:
-            discord.TextChannel | None: The channel object
+            discord.TextChannel | None: The channel object if found or created, otherwise None.
         """
         campaign = campaign or await Campaign.get(self.campaign)
         if not campaign:
@@ -202,74 +215,26 @@ class Campaign(Document):
         """Update the date_modified field."""
         self.date_modified = time_now()
 
-    async def _confirm_character_channels(
-        self,
-        ctx: "ValentinaContext",
-        category: discord.CategoryChannel,
-        channels: list[discord.TextChannel],
-    ) -> None:  # pragma: no cover
-        """Create the character channels for the campaign."""
-        for character in await self.fetch_characters():
-            channel_name = f"{Emoji.SILHOUETTE.value}-{character.name.lower().replace(' ', '-')}"
-            owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)
-            await asyncio.sleep(1)  # Keep the rate limit happy
-            channel_name_in_category = any(channel_name == channel.name for channel in channels)
-            channel_db_id = character.channel
-            channel_id_in_category = (
-                any(channel_db_id == channel.id for channel in channels) if channel_db_id else False
-            )
-
-            if channel_name_in_category and not channel_db_id:
-                await asyncio.sleep(1)  # Keep the rate limit happy
-                for channel in channels:
-                    if channel.name == channel_name:
-                        character.channel = channel.id
-                        await character.save()
-                logger.info(
-                    f"Channel {channel_name} exists in {category} but not in database. Add channel id to database."
-                )
-
-            elif channel_db_id and channel_id_in_category and not channel_name_in_category:
-                await asyncio.sleep(1)  # Keep the rate limit happy
-                channel_object = next(
-                    (channel for channel in channels if channel_db_id == channel.id), None
-                )
-
-                await ctx.channel_update_or_add(
-                    channel=channel_object,
-                    name=channel_name,
-                    category=category,
-                    permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
-                    permissions_user_post=owned_by_user,
-                    topic=f"Character channel for {character.name}",
-                )
-
-                logger.info(
-                    f"Channel {channel_name} exists in database and {category} but name is different. Renamed channel."
-                )
-
-            elif not channel_name_in_category:
-                await asyncio.sleep(1)  # Keep the rate limit happy
-                created_channel = await ctx.channel_update_or_add(
-                    name=channel_name,
-                    category=category,
-                    permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
-                    permissions_user_post=owned_by_user,
-                    topic=f"Character channel for {character.name}",
-                )
-                character.channel = created_channel.id
-                await character.save()
-                logger.info(
-                    f"Channel {channel_name} does not exist in {category}. Create new channel and add to database"
-                )
-
     async def _confirm_common_channels(
         self,
         ctx: "ValentinaContext",
         category: discord.CategoryChannel,
         channels: list[discord.TextChannel],
     ) -> None:  # pragma: no cover
-        """Create the campaign channels in the guild."""
+        """Create or update common campaign channels in the guild.
+
+        This method ensures that the common channels (e.g., storyteller and general channels)
+        are created or updated as necessary in the specified category. It checks existing
+        channels, updates database references, and creates new channels if necessary.
+
+        Args:
+            ctx (ValentinaContext): The context of the command invocation.
+            category (discord.CategoryChannel): The category where common channels are managed.
+            channels (list[discord.TextChannel]): The list of existing text channels in the category.
+
+        Returns:
+            None: This function does not return a value.
+        """
         # Static channels
         common_channel_list = {  # channel_db_key: channel_name
             "channel_storyteller": CampaignChannelName.STORYTELLER.value,
@@ -332,7 +297,14 @@ class Campaign(Document):
     async def fetch_campaign_category_channels(
         self, ctx: "ValentinaContext"
     ) -> tuple[discord.CategoryChannel, list[discord.TextChannel]]:
-        """Fetch the campaign category channels in the guild."""
+        """Fetch the campaign category channels in the guild.
+
+        Args:
+            ctx (ValentinaContext): The context object containing guild information.
+
+        Returns:
+            tuple[discord.CategoryChannel, list[discord.TextChannel]]: A tuple containing the campaign category channel and a list of text channels within that category. If the category is not found, returns (None, []).
+        """
         for category, channels in ctx.guild.by_category():
             if category and category.id == self.channel_campaign_category:
                 return category, channels
@@ -341,13 +313,16 @@ class Campaign(Document):
 
     @staticmethod
     def _custom_channel_sort(channel: discord.TextChannel) -> tuple[int, str]:  # pragma: no cover
-        """Custom sorting key to for campaign channels.
+        """Generate a custom sorting key for campaign channels.
+
+        This method prioritizes channels based on their channel names.
 
         Args:
-            channel: The channel to generate the sort key for.
+            channel (discord.TextChannel): The channel to generate the sort key for.
 
         Returns:
-            A tuple indicating the sort priority and the channel name.
+            tuple[int, str]: A tuple indicating the sort priority and the channel name.
+
         """
         if channel.name.startswith(Emoji.SPARKLES.value):
             return (0, channel.name)
@@ -367,7 +342,17 @@ class Campaign(Document):
         return (5, channel.name)
 
     async def create_channels(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Create the campaign channels in the guild."""
+        """Create and organize the campaign channels in the guild.
+
+        This method ensures the campaign category and its channels are correctly created and named.
+        If the campaign category already exists, it renames it if necessary. Then, it creates the necessary channels for books and characters, confirming their existence and respecting the rate limits.
+
+        Args:
+            ctx (ValentinaContext): The context object containing guild information.
+
+        Returns:
+            None
+        """
         category_name = f"{Emoji.BOOKS.value}-{self.name.lower().replace(' ', '-')}"
 
         if self.channel_campaign_category:
@@ -411,10 +396,16 @@ class Campaign(Document):
         logger.info(f"All channels confirmed for campaign '{self.name}' in '{ctx.guild.name}'")
 
     async def delete_channels(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Delete the channel associated with the book.
+        """Delete the channels associated with the campaign.
+
+        This method removes all channels related to the campaign, including book channels,
+        character channels, storyteller channel, general channel, and the campaign category channel.
 
         Args:
-            ctx (ValentinaContext): The context of the command.
+            ctx (ValentinaContext): The context object containing guild information.
+
+        Returns:
+            None
         """
         for book in await self.fetch_books():
             await book.delete_channel(ctx)
@@ -446,14 +437,26 @@ class Campaign(Document):
         await self.save()
 
     async def fetch_characters(self) -> list[Character]:
-        """Fetch all player characters in the campaign."""
+        """Fetch all player characters in the campaign.
+
+        This method retrieves a list of all player characters associated with the campaign.
+
+        Returns:
+            list[Character]: A list of Character objects representing player characters in the campaign.
+        """
         return await Character.find(
             Character.campaign == str(self.id),
             Character.type_player == True,  # noqa: E712
         ).to_list()
 
     async def fetch_books(self) -> list[CampaignBook]:
-        """Fetch all books in the campaign."""
+        """Fetch all books in the campaign.
+
+        This method retrieves and sorts a list of all books associated with the campaign by their number.
+
+        Returns:
+            list[CampaignBook]: A sorted list of CampaignBook objects associated with the campaign.
+        """
         return sorted(
             self.books,  # type: ignore [arg-type]
             key=lambda x: x.number,
@@ -462,8 +465,13 @@ class Campaign(Document):
     async def sort_channels(self, ctx: "ValentinaContext") -> None:
         """Sort the campaign channels in the guild.
 
+        This method sorts the campaign channels within their category according to a custom sorting key.
+
         Args:
-            ctx (ValentinaContext): The context of the command.
+            ctx (ValentinaContext): The context object containing guild information.
+
+        Returns:
+            None
         """
         for category, channels in ctx.guild.by_category():
             if category and category.id == self.channel_campaign_category:

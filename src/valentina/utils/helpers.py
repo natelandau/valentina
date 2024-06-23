@@ -17,12 +17,16 @@ _rng = default_rng()
 def convert_int_to_emoji(num: int, markdown: bool = False) -> str:
     """Convert an integer to an emoji or a string.
 
+    This method converts an integer to its corresponding emoji representation if it is between 0 and 10.
+    For integers outside this range, it returns the number as a string. Optionally, it can wrap numbers
+    larger than emojis in markdown code.
+
     Args:
         num (int): The integer to convert.
         markdown (bool, optional): Whether to wrap numbers larger than emojis in markdown code. Defaults to False.
 
     Returns:
-        str: The emoji corresponding to the integer.
+        str: The emoji corresponding to the integer, or the integer as a string.
 
     Examples:
         >>> convert_int_to_emoji(1)
@@ -37,7 +41,7 @@ def convert_int_to_emoji(num: int, markdown: bool = False) -> str:
         >>> convert_int_to_emoji(11, markdown=True)
         '`11`'
     """
-    if -1 <= num <= 10:  # noqa: PLR2004
+    if 0 <= num <= 10:  # noqa: PLR2004
         return (
             str(num)
             .replace("10", ":keycap_ten:")
@@ -59,7 +63,16 @@ def convert_int_to_emoji(num: int, markdown: bool = False) -> str:
 
 
 def random_num(ceiling: int = 100) -> int:
-    """Get a random number between 1 and ceiling."""
+    """Get a random number between 1 and the specified ceiling.
+
+    This method returns a random integer between 1 and the given ceiling (inclusive).
+
+    Args:
+        ceiling (int, optional): The upper limit for the random number. Defaults to 100.
+
+    Returns:
+        int: A random integer between 1 and the ceiling.
+    """
     return _rng.integers(1, ceiling + 1)
 
 
