@@ -57,10 +57,12 @@ def mock_bot(mocker):
 @pytest.fixture()
 def mock_discord_campaign_category_channel(mocker):
     """A mock of a discord.CategoryChannel object associated with a campaign."""
-    mock_channel = mocker.MagicMock()
-    mock_channel.id = CHANNEL_CATEGORY_CAMPAIGN_ID
-    mock_channel.__class__ = discord.CategoryChannel
-    return mock_channel
+    mock_channel_category = mocker.MagicMock()
+    mock_channel_category.id = CHANNEL_CATEGORY_CAMPAIGN_ID
+    mock_channel_category.name = "campaign-category"
+    mock_channel_category.__class__ = discord.CategoryChannel
+
+    return mock_channel_category
 
 
 @pytest.fixture()
@@ -89,6 +91,7 @@ def mock_discord_character_channel(mocker, mock_discord_campaign_category_channe
     mock_channel.id = CHANNEL_CHARACTER_ID
     mock_channel.__class__ = discord.TextChannel
     mock_channel.category = mock_discord_campaign_category_channel
+    mock_channel.name = "character-channel"
     return mock_channel
 
 

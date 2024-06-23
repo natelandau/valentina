@@ -392,9 +392,16 @@ async def test_select_custom_section(mock_ctx1, character_factory, user_factory)
 
 
 @pytest.mark.drop_db()
-async def test_select_character_from_user(mock_ctx1, character_factory, user_factory):
-    """Test the select_character_from_user function."""
+async def test_select_campaign_character_from_user(
+    mock_ctx1, character_factory, user_factory, campaign_factory
+):
+    """Test the select_campaign_character_from_user function."""
     # GIVEN a user with multiple characters
+    campaign = campaign_factory.build(
+        guild=mock_ctx1.guild.id,
+    )
+    await campaign.insert()
+
     character1 = character_factory.build(
         name_first="character1",
         name_last="character1",
@@ -404,6 +411,7 @@ async def test_select_character_from_user(mock_ctx1, character_factory, user_fac
         type_chargen=False,
         is_alive=True,
         traits=[],
+        campaign=str(campaign.id),
     )
     character2 = character_factory.build(
         name_first="character2",
@@ -414,9 +422,22 @@ async def test_select_character_from_user(mock_ctx1, character_factory, user_fac
         type_chargen=False,
         is_alive=True,
         traits=[],
+        campaign=str(campaign.id),
+    )
+    character3 = character_factory.build(
+        name_first="character2",
+        name_last="character2",
+        guild=mock_ctx1.guild.id,
+        type_storyteller=True,
+        type_player=True,
+        type_chargen=False,
+        is_alive=True,
+        traits=[],
+        campaign=None,
     )
     await character1.insert()
     await character2.insert()
+    await character3.insert()
 
     user = user_factory.build(
         id=mock_ctx1.author.id,
@@ -426,9 +447,9 @@ async def test_select_character_from_user(mock_ctx1, character_factory, user_fac
     )
     await user.insert()
 
-    # WHEN calling select_character_from_user
+    # WHEN calling select_campaign_character_from_user
     mock_ctx1.value = "character"
-    result = await autocomplete.select_character_from_user(mock_ctx1)
+    result = await autocomplete.select_campaign_character_from_user(mock_ctx1)
 
     # THEN the correct result is returned
     assert len(result) == 1
