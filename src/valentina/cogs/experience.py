@@ -9,11 +9,8 @@ from discord.ext import commands
 from valentina.constants import TraitCategory, XPMultiplier
 from valentina.models import User
 from valentina.models.bot import Valentina, ValentinaContext
-from valentina.utils.autocomplete import select_character_from_user, select_trait_from_char_option
-from valentina.utils.converters import (
-    ValidCharacterObject,
-    ValidCharTrait,
-)
+from valentina.utils.autocomplete import select_char_trait
+from valentina.utils.converters import ValidTraitFromID
 from valentina.utils.discord_utils import fetch_channel_object
 from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
 from valentina.views import confirm_action, present_embed
@@ -65,7 +62,7 @@ class Experience(commands.Cog):
         channel_objects = await fetch_channel_object(ctx, need_campaign=True)
         campaign = channel_objects.campaign
 
-        title = f"Add `{amount}` xp to `{user.name}`"
+        title = f"Add `{amount}` xp to `{user.name}` in `{campaign.name}`"
         description = "View experience with `/user_info`"
         is_confirmed, msg, confirmation_embed = await confirm_action(
             ctx, title, description=description, hidden=hidden, audit=True
@@ -115,7 +112,7 @@ class Experience(commands.Cog):
         channel_objects = await fetch_channel_object(ctx, need_campaign=True)
         campaign = channel_objects.campaign
 
-        title = f"Add `{amount}` cool {p.plural_noun('point', amount)} to `{user.name}`"
+        title = f"Add `{amount}` cool {p.plural_noun('point', amount)} to `{user.name}` in `{campaign.name}`"
         description = "View cool points with `/user_info`"
         is_confirmed, msg, confirmation_embed = await confirm_action(
             ctx, title, description=description, hidden=hidden, audit=True
@@ -133,17 +130,12 @@ class Experience(commands.Cog):
     async def xp_spend(
         self,
         ctx: ValentinaContext,
-        character: Option(
-            ValidCharacterObject,
-            description="The character to view",
-            autocomplete=select_character_from_user,
-            required=True,
-        ),
         trait: Option(
-            ValidCharTrait,
-            description="Trait to raise with xp",
+            ValidTraitFromID,
+            name="trait_one",
+            description="First trait to roll",
             required=True,
-            autocomplete=select_trait_from_char_option,
+            autocomplete=select_char_trait,
         ),
         hidden: Option(
             bool,
@@ -152,6 +144,10 @@ class Experience(commands.Cog):
         ),
     ) -> None:
         """Spend experience points."""
+        channel_objects = await fetch_channel_object(ctx, need_campaign=True, need_character=True)
+        campaign = channel_objects.campaign
+        character = channel_objects.character
+
         # Guard statement: fail if the trait is already at max value
         if trait.value >= trait.max_value:
             await present_embed(
@@ -192,8 +188,6 @@ class Experience(commands.Cog):
 
         # Make the updates
         user = await User.get(ctx.author.id)
-        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
-        campaign = channel_objects.campaign
 
         await user.spend_campaign_xp(campaign, upgrade_cost)
         trait.value = new_trait_value

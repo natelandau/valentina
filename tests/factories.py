@@ -151,6 +151,10 @@ class CampaignFactory(BeanieDocumentFactory[Campaign]):
     def books(cls) -> list:
         return []
 
+    @classmethod
+    def characters(cls) -> list:
+        return []
+
 
 @register_fixture
 class UserFactory(BeanieDocumentFactory[User]):

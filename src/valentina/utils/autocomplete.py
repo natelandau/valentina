@@ -383,8 +383,10 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_character_from_user(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of the user's available characters for autocomplete.
+async def select_campaign_character_from_user(
+    ctx: discord.AutocompleteContext,
+) -> list[OptionChoice]:
+    """Generate a list of the user's available characters associated with a campaign for autocomplete.
 
     This function fetches all alive player characters for the user, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
 
@@ -394,6 +396,12 @@ async def select_character_from_user(ctx: discord.AutocompleteContext) -> list[O
     Returns:
         list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    campaign = channel_objects.campaign
+
+    if not campaign:
+        return [OptionChoice("Rerun in a channel associated with a campaign", "")]
+
     user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
 
     # Prepare character data
@@ -403,7 +411,7 @@ async def select_character_from_user(ctx: discord.AutocompleteContext) -> list[O
             character.id,
         )
         for character in user_object.all_characters(ctx.interaction.guild)
-        if character.type_player
+        if character.type_player and character.campaign == str(campaign.id)
     ]
 
     # Generate options
