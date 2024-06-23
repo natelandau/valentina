@@ -18,7 +18,20 @@ if TYPE_CHECKING:
 
 
 async def assert_permissions(ctx: "ValentinaContext", **permissions: bool) -> None:  # noqa: RUF029 # pragma: no cover
-    """Check if the bot has the required permissions to run the command."""
+    """Check if the bot has the required permissions to run the command.
+
+    This method verifies that the bot has the necessary permissions specified in the `permissions` argument. If any required permissions are missing, it raises a `BotMissingPermissionsError`.
+
+    Args:
+        ctx (ValentinaContext): The context object containing the bot's permissions.
+        **permissions (bool): A dictionary of permissions to check, where the key is the permission name and the value is the required state (True/False).
+
+    Returns:
+        None
+
+    Raises:
+        BotMissingPermissionsError: If any required permissions are missing.
+    """
     if missing := [
         perm for perm, value in permissions.items() if getattr(ctx.app_permissions, perm) != value
     ]:
@@ -26,7 +39,17 @@ async def assert_permissions(ctx: "ValentinaContext", **permissions: bool) -> No
 
 
 async def create_storyteller_role(guild: discord.Guild) -> discord.Role:  # pragma: no cover
-    """Create a storyteller role for the guild."""
+    """Create or update the storyteller role for the guild.
+
+    This method ensures a "Storyteller" role exists in the guild with the appropriate permissions.
+    If the role does not exist, it is created. If it exists, its permissions are updated.
+
+    Args:
+        guild (discord.Guild): The guild where the role should be created or updated.
+
+    Returns:
+        discord.Role: The created or updated "Storyteller" role.
+    """
     storyteller = discord.utils.get(guild.roles, name="Storyteller")
 
     if storyteller is None:
@@ -73,7 +96,17 @@ async def create_storyteller_role(guild: discord.Guild) -> discord.Role:  # prag
 
 
 async def create_player_role(guild: discord.Guild) -> discord.Role:  # pragma: no cover
-    """Create player role for the guild."""
+    """Create or update the player role for the guild.
+
+    This method ensures a "Player" role exists in the guild with the appropriate permissions.
+    If the role does not exist, it is created. If it exists, its permissions are updated.
+
+    Args:
+        guild (discord.Guild): The guild where the role should be created or updated.
+
+    Returns:
+        discord.Role: The created or updated "Player" role.
+    """
     player = discord.utils.get(guild.roles, name="Player", mentionable=True, hoist=True)
 
     if player is None:
@@ -185,20 +218,22 @@ async def fetch_channel_object(
     need_character: bool = False,
     need_campaign: bool = False,
 ) -> ChannelObjects:
-    """Determine the type of channel the command was invoked in.
+    """Determine the type of channel the command was invoked in and fetch the associated objects.
+
+    This method identifies the channel type and fetches the related campaign, book, and character objects. It raises errors if specified conditions are not met.
 
     Args:
-        ctx (discord.ApplicationContext|discord.AutocompleteContext): The context containing the channel object.
-        need_character (bool, optional): Whether to raise an error if no character is found. Defaults to False.
+        ctx (discord.ApplicationContext | discord.AutocompleteContext | commands.Context): The context containing the channel object.
+        raise_error (bool, optional): Whether to raise an error if no active objects are found. Defaults to True.
         need_book (bool, optional): Whether to raise an error if no book is found. Defaults to False.
+        need_character (bool, optional): Whether to raise an error if no character is found. Defaults to False.
         need_campaign (bool, optional): Whether to raise an error if no campaign is found. Defaults to False.
-        raise_error (bool, optional): Whether to raise an error if no active campaign is found. Defaults to True. Returns None if False.
 
     Returns:
-        ChannelObjects: The channel objects found in the channel.
+        ChannelObjects: An object containing the campaign, book, character, and a flag for storyteller channel.
 
     Raises:
-        errors.ChannelTypeError: If no active objects are found for the channel.
+        errors.ChannelTypeError: If the required objects are not found based on the specified conditions.
     """
     discord_channel = (
         ctx.interaction.channel if isinstance(ctx, discord.AutocompleteContext) else ctx.channel

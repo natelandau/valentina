@@ -259,7 +259,18 @@ class Character(Document):
     async def associate_with_campaign(  # pragma: no cover
         self, ctx: "ValentinaContext", new_campaign: "Campaign"
     ) -> bool:
-        """Associate a character with a campaign."""
+        """Associate a character with a campaign.
+
+        This method associates the character with the specified campaign, updates the database,
+        confirms the character's channel, and sorts the campaign channels.
+
+        Args:
+            ctx (ValentinaContext): The context object containing guild information.
+            new_campaign (Campaign): The new campaign to associate with the character.
+
+        Returns:
+            bool: True if the character was successfully associated with the new campaign, False if already associated.
+        """
         if self.campaign == str(new_campaign.id):
             logger.debug(f"Character {self.name} is already associated with {new_campaign.name}")
             return False
@@ -274,14 +285,16 @@ class Character(Document):
     async def confirm_channel(
         self, ctx: "ValentinaContext", campaign: Optional["Campaign"]
     ) -> discord.TextChannel | None:
-        """Confirm the channel for the book.
+        """Confirm or create the channel for the character within the campaign.
+
+        This method ensures the character's channel exists within the campaign's category. It updates the channel information in the database if necessary, renames it if it has the wrong name, or creates a new one if it doesn't exist.
 
         Args:
-            ctx (ValentinaContext): The context of the command.
-            campaign (Campaign, optional): The campaign object.
+            ctx (ValentinaContext): The context object containing guild information.
+            campaign (Optional[Campaign]): The campaign object. If not provided, it will be fetched using the character's campaign ID.
 
         Returns:
-            discord.TextChannel | None: The channel object
+            discord.TextChannel | None: The channel object if found or created, otherwise None.
         """
         campaign = campaign or await Campaign.get(self.campaign)
         if not campaign:
@@ -339,10 +352,15 @@ class Character(Document):
         return discord.utils.get(channels, name=self.channel_name)
 
     async def delete_channel(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Delete the channel associated with the book.
+        """Delete the channel associated with the character.
+
+        This method removes the channel linked to the character from the guild and updates the character's channel information.
 
         Args:
-            ctx (ValentinaContext): The context of the command.
+            ctx (ValentinaContext): The context object containing guild information.
+
+        Returns:
+            None
         """
         if not self.channel:
             return
@@ -391,7 +409,17 @@ class Character(Document):
     async def update_channel_permissions(
         self, ctx: "ValentinaContext", campaign: "Campaign"
     ) -> discord.TextChannel | None:  # pragma: no cover
-        """Update the permissions for the character's channel."""
+        """Update the permissions for the character's channel.
+
+        This method updates the permissions for a character's channel, renames it, and sets the appropriate category and topic. Run this method after updating the character's user_owner.
+
+        Args:
+            ctx (ValentinaContext): The context object containing guild information.
+            campaign (Campaign): The campaign object to which the character belongs.
+
+        Returns:
+            discord.TextChannel | None: The updated channel object, or None if the channel does not exist.
+        """
         if not self.channel:
             return None
 

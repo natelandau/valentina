@@ -148,7 +148,7 @@ class StoryTeller(commands.Cog):
             default=None,
         ),
     ) -> None:
-        """Create a new storyteller character."""
+        """Create a new storyteller character using the add from sheet wizard."""
         # Require a clan for vampires
         if char_class == CharClass.VAMPIRE and not vampire_clan:
             await present_embed(
@@ -230,7 +230,7 @@ class StoryTeller(commands.Cog):
             default=None,
         ),
     ) -> None:
-        """Create a new storyteller character."""
+        """Create a new storyteller character using the RNG wizard."""
         # Require a clan for vampires
         if character_class == CharClass.VAMPIRE and not vampire_clan:
             await present_embed(
