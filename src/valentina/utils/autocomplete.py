@@ -25,6 +25,7 @@ from valentina.utils.helpers import truncate_string
 MAX_OPTION_LENGTH = 99
 
 
+################## Character Autocomplete Functions ##################
 async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of all type_player characters in the guild for autocomplete.
 
@@ -34,7 +35,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
 
     Returns:
-        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
+        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list which contains character names and character ids.
     """
     # Fetch and prepare player characters
     all_chars_owners = sorted(
@@ -70,6 +71,134 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
     return options or [OptionChoice("No characters available", "")]
 
 
+async def select_campaign_any_player_character(
+    ctx: discord.AutocompleteContext,
+) -> list[OptionChoice]:
+    """Generate a list of all type_player characters associated with a specific campaign.
+
+    This function fetches all player characters for the guild, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
+
+    Returns:
+        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list which contains character names and character ids.
+    """
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    campaign = channel_objects.campaign
+
+    if not campaign:
+        return [OptionChoice("Rerun in a channel associated with a campaign", "")]
+
+    # Fetch and prepare player characters
+    all_chars_owners = sorted(
+        [
+            (x, await User.get(x.user_owner))
+            async for x in Character.find(
+                And(
+                    Character.campaign == str(campaign.id),
+                    Character.type_player == True,  # noqa: E712
+                ),
+                fetch_links=True,
+            )
+        ],
+        key=lambda x: x[0].name,
+    )
+
+    options = [
+        OptionChoice(
+            f"{character.name} [@{owner.name}]"
+            if character.is_alive
+            else f"{Emoji.DEAD.value} {character.name} [@{owner.name}]",
+            str(character.id),
+        )
+        for character, owner in all_chars_owners
+        if character.name.lower().startswith(ctx.value.lower())
+    ]
+
+    # Check if the number of options exceeds the maximum allowed
+    if len(options) >= MAX_OPTION_LIST_SIZE:  # pragma: no cover
+        instructions = "Keep typing ..." if ctx.value else "Start typing a name."
+        return [OptionChoice(f"Too many characters to display. {instructions}", "")]
+
+    return options or [OptionChoice("No characters available", "")]
+
+
+async def select_campaign_character_from_user(
+    ctx: discord.AutocompleteContext,
+) -> list[OptionChoice]:
+    """Generate a list of the user's available characters associated with a campaign for autocomplete.
+
+    This function fetches all alive player characters for the user, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
+
+    Returns:
+        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
+    """
+    channel_objects = await fetch_channel_object(ctx, raise_error=False)
+    campaign = channel_objects.campaign
+
+    if not campaign:
+        return [OptionChoice("Rerun in a channel associated with a campaign", "")]
+
+    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
+
+    # Prepare character data
+    all_chars = [
+        (
+            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
+            character.id,
+        )
+        for character in user_object.all_characters(ctx.interaction.guild)
+        if character.type_player and character.campaign == str(campaign.id)
+    ]
+
+    # Generate options
+    options = [
+        OptionChoice(name, str(char_id))
+        for name, char_id in sorted(all_chars)
+        if name.lower().startswith(ctx.value.lower())
+    ][:MAX_OPTION_LIST_SIZE]
+
+    return options or [OptionChoice("No characters available", "")]
+
+
+async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of available storyteller characters for autocomplete.
+
+    This function fetches all storyteller characters, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
+
+    Returns:
+        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list which contains character names and ids.
+    """
+    # Prepare character data
+    all_chars = [
+        (
+            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
+            character.id,
+        )
+        async for character in Character.find_many(
+            Character.guild == ctx.interaction.guild.id,
+            Character.type_storyteller == True,  # noqa: E712
+        )
+    ]
+
+    # Generate options
+    options = [
+        OptionChoice(name, str(char_id))
+        for name, char_id in sorted(all_chars)
+        if name.lower().startswith(ctx.value.lower())
+    ][:MAX_OPTION_LIST_SIZE]
+
+    return options or [OptionChoice("No characters available", "")]
+
+
+################## Autocomplete Functions ##################
 async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029 # pragma: no cover
     """Populate the autocomplete list for the aws_object option based on the user's input."""
     aws_svc = AWSService()
@@ -383,47 +512,6 @@ async def select_char_trait_two(ctx: discord.AutocompleteContext) -> list[Option
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_campaign_character_from_user(
-    ctx: discord.AutocompleteContext,
-) -> list[OptionChoice]:
-    """Generate a list of the user's available characters associated with a campaign for autocomplete.
-
-    This function fetches all alive player characters for the user, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
-
-    Args:
-        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
-
-    Returns:
-        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
-    """
-    channel_objects = await fetch_channel_object(ctx, raise_error=False)
-    campaign = channel_objects.campaign
-
-    if not campaign:
-        return [OptionChoice("Rerun in a channel associated with a campaign", "")]
-
-    user_object = await User.get(ctx.interaction.user.id, fetch_links=True)
-
-    # Prepare character data
-    all_chars = [
-        (
-            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
-            character.id,
-        )
-        for character in user_object.all_characters(ctx.interaction.guild)
-        if character.type_player and character.campaign == str(campaign.id)
-    ]
-
-    # Generate options
-    options = [
-        OptionChoice(name, str(char_id))
-        for name, char_id in sorted(all_chars)
-        if name.lower().startswith(ctx.value.lower())
-    ][:MAX_OPTION_LIST_SIZE]
-
-    return options or [OptionChoice("No characters available", "")]
-
-
 async def select_custom_section(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Fetches and provides a list of the active character's custom sections.
 
@@ -592,39 +680,6 @@ async def select_npc(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     ][:MAX_OPTION_LIST_SIZE]
 
     return npc_choices or [OptionChoice("No npcs", "")]
-
-
-async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of available storyteller characters for autocomplete.
-
-    This function fetches all storyteller characters, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
-
-    Args:
-        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
-
-    Returns:
-        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
-    """
-    # Prepare character data
-    all_chars = [
-        (
-            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
-            character.id,
-        )
-        async for character in Character.find_many(
-            Character.guild == ctx.interaction.guild.id,
-            Character.type_storyteller == True,  # noqa: E712
-        )
-    ]
-
-    # Generate options
-    options = [
-        OptionChoice(name, str(char_id))
-        for name, char_id in sorted(all_chars)
-        if name.lower().startswith(ctx.value.lower())
-    ][:MAX_OPTION_LIST_SIZE]
-
-    return options or [OptionChoice("No characters available", "")]
 
 
 async def select_trait_from_char_option(ctx: discord.AutocompleteContext) -> list[OptionChoice]:

@@ -197,6 +197,6 @@ class Experience(commands.Cog):
         await msg.edit_original_response(embed=confirmation_embed, view=None)
 
 
-def setup(bot: Valentina) -> None:
+def setup(bot: Valentina) -> None:  # pragma: no cover
     """Add the cog to the bot."""
     bot.add_cog(Experience(bot))
