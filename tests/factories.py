@@ -151,9 +151,9 @@ class CampaignFactory(BeanieDocumentFactory[Campaign]):
     def books(cls) -> list:
         return []
 
-    @classmethod
-    def characters(cls) -> list:
-        return []
+    # @classmethod
+    # def characters(cls) -> list:
+    #     return []
 
 
 @register_fixture
@@ -167,6 +167,22 @@ class UserFactory(BeanieDocumentFactory[User]):
     __max_collection_length__ = 3
     __randomize_collection_length__ = True
 
+    @classmethod
+    def characters(cls) -> list:
+        return []
+
+    @classmethod
+    def guilds(cls) -> list:
+        return []
+
+    @classmethod
+    def macros(cls) -> list:
+        return []
+
+    @classmethod
+    def campaign_experience(cls) -> dict:
+        return {}
+
 
 @register_fixture
 class GuildFactory(BeanieDocumentFactory[Guild]):
@@ -178,6 +194,14 @@ class GuildFactory(BeanieDocumentFactory[Guild]):
     __min_collection_length__ = 1
     __max_collection_length__ = 3
     __randomize_collection_length__ = True
+
+    @classmethod
+    def campaigns(cls) -> list:
+        return []
+
+    @classmethod
+    def roll_result_thumbnails(cls) -> list:
+        return []
 
 
 @register_fixture
@@ -277,4 +301,8 @@ class CharacterFactory(BeanieDocumentFactory[Character]):
 
     @classmethod
     def notes(cls) -> list:
+        return []
+
+    @classmethod
+    def traits(cls) -> list:
         return []

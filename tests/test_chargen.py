@@ -15,9 +15,65 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models import CharacterTrait
+from valentina.models import Character, CharacterTrait
 
+from .conftest import GUILD_ID
 from .factories import *
+
+
+@pytest.mark.drop_db()
+@pytest.mark.parametrize(("char_class"), [(None), (CharClass.VAMPIRE), (CharClass.HUNTER)])
+async def test_generate_full_character(
+    user_factory, campaign_factory, mock_ctx1, mocker, char_class
+):
+    """Test the generate_full_character method."""
+    # MOCK the call the fetch_random_name
+    async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
+    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+
+    # GIVEN a user, campaign, and a character generator
+    user = user_factory.build(characters=[])
+    await user.insert()
+
+    campaign = campaign_factory.build()
+    await campaign.insert()
+
+    char_gen = RNGCharGen(mock_ctx1, user, experience_level=RNGCharLevel.NEW, campaign=campaign)
+
+    # WHEN generate_full_character is called
+    character = await char_gen.generate_full_character(
+        char_class=char_class,
+        storyteller_character=True,
+        player_character=False,
+    )
+
+    # THEN check that the character is created correctly
+    assert character.guild == GUILD_ID
+    assert character.name_first == "mock_first"
+    assert character.name_last == "mock_last"
+    assert character.type_storyteller is True
+    assert character.concept_name in CharacterConcept.__members__
+    assert character.char_class_name in CharClass.__members__
+
+    if character.char_class_name == CharClass.VAMPIRE.name:
+        assert character.clan_name in VampireClan.__members__
+
+    if character.char_class_name == CharClass.HUNTER.name:
+        assert character.creed_name in HunterCreed.__members__
+        assert (
+            await CharacterTrait.find(
+                CharacterTrait.character == str(character.id), CharacterTrait.name == "Conviction"
+            ).count()
+            == 1
+        )
+        assert (
+            await CharacterTrait.find(
+                CharacterTrait.character == str(character.id), CharacterTrait.name == "Willpower"
+            ).count()
+            == 1
+        )
+
+    assert await Character.get(character.id, fetch_links=True) == character
 
 
 @pytest.mark.parametrize(
@@ -101,7 +157,7 @@ async def test_rngchargen_generate_base_character(
     )
 
     # THEN check that the character is created correctly
-    assert character.guild == 1
+    assert character.guild == GUILD_ID
     assert character.name_first == "mock_first"
     assert character.name_last == "mock_last"
     assert character.concept_name in CharacterConcept.__members__

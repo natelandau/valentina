@@ -146,7 +146,7 @@ async def test_user_statistics_results(mock_ctx1):
 async def test_character_statistics_no_results(mock_ctx1, character_factory):
     """Test pulling character_statistics."""
     # GIVEN a character with no statistics
-    character = character_factory.build(traits=[])
+    character = character_factory.build()
 
     # WHEN statistics are pulled for a character
     s = Statistics(mock_ctx1)
@@ -166,7 +166,7 @@ async def test_character_statistics_no_results(mock_ctx1, character_factory):
 async def test_character_statistics_results(mock_ctx1, character_factory):
     """Test pulling character_statistics."""
     # GIVEN a character with statistics
-    character = character_factory.build(traits=[])
+    character = character_factory.build()
     stat1 = RollStatistic(
         user=1,
         guild=1,
@@ -215,7 +215,7 @@ async def test_campaign_statistics_results(mock_ctx1, character_factory, campaig
     """Test pulling character_statistics."""
     # GIVEN a character with statistics
     campaign = campaign_factory.build()
-    character = character_factory.build(traits=[])
+    character = character_factory.build()
     stat1 = RollStatistic(
         user=1,
         guild=1,

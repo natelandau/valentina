@@ -28,8 +28,8 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     owner_channels: str
     owner_ids: str | None = None
     s3_bucket_name: str | None = None
-    test_mongodb_uri: str = "mongodb://localhost:27017"
-    test_mongodb_db: str = "valentina-test-db"
+    test_mongo_uri: str = "mongodb://localhost:27017"
+    test_mongo_database_name: str = "test_db"
 
     CONFIG_SOURCES: ClassVar[ConfigSources | None] = [
         EnvSource(prefix="VALENTINA_", file=DIR / ".env", allow_all=True),

@@ -4,6 +4,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from tests.conftest import GUILD_ID
 
 from valentina.models import AWSService
 from valentina.utils import errors
@@ -15,7 +16,7 @@ def test_get_key_prefix(mock_ctx1):
     with pytest.raises(errors.ValidationError):
         AWSService.get_key_prefix(mock_ctx1, "something") == ""
 
-    assert AWSService.get_key_prefix(mock_ctx1, "guild") == "1"
+    assert AWSService.get_key_prefix(mock_ctx1, "guild") == str(GUILD_ID)
     assert AWSService.get_key_prefix(mock_ctx1, "user") == "1/users/1"
     assert AWSService.get_key_prefix(mock_ctx1, "character", character_id=200) == "1/characters/200"
     assert AWSService.get_key_prefix(mock_ctx1, "campaign", campaign_id=200) == "1/campaigns/200"
