@@ -511,7 +511,10 @@ class RNGCharGen:
         nationality: str = "us",
         nickname_is_class: bool = False,
     ) -> Character:
-        """Generate a full character with random values."""
+        """Generate a full character with random values.
+
+        This method generates a full character with random values for all traits and abilities and adds it to the database. This is primarily used for Storytellers to quickly create NPCs.
+        """
         filtered_locals = {k: v for k, v in locals().items() if k != "self"}
 
         character = await self.generate_base_character(**filtered_locals)
@@ -949,7 +952,7 @@ class RNGCharGen:
         return character
 
 
-class CharGenWizard:
+class CharGenWizard:  # pragma: no cover
     """Guide the user through a step-by-step character generation process.
 
     Args:

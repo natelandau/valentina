@@ -76,7 +76,7 @@ async def test_full_name(character_factory):
 async def test_add_custom_trait(character_factory):
     """Test the add_trait method."""
     # GIVEN a character
-    character = character_factory.build(traits=[])
+    character = character_factory.build()
     await character.insert()
 
     # WHEN adding a trait
@@ -101,7 +101,7 @@ async def test_add_custom_trait(character_factory):
 async def test_add_trait(character_factory):
     """Test the add_trait method."""
     # GIVEN a character
-    character = character_factory.build(traits=[])
+    character = character_factory.build()
     await character.insert()
 
     # WHEN adding a trait that exists in TraitCategory enum

@@ -2,7 +2,6 @@
 """Test the Guild database model."""
 
 import pytest
-from rich import print
 from tests.factories import *
 
 from valentina.constants import DICEROLL_THUMBS, RollResultType
@@ -13,7 +12,7 @@ from valentina.utils import errors
 async def test_add_roll_result_thumbnail(mock_ctx1, guild_factory):
     """Test the add_roll_result_thumbnail method."""
     # GIVEN a guild
-    guild = guild_factory.build(roll_result_thumbnails=[], campaigns=[])
+    guild = guild_factory.build()
     await guild.insert()
 
     # WHEN adding a thumbnail
@@ -34,7 +33,7 @@ async def test_add_roll_result_thumbnail(mock_ctx1, guild_factory):
 async def test_fetch_diceroll_thumbnail(guild_factory):
     """Test the fetch_diceroll_thumbnail method."""
     # GIVEN a guild
-    guild = guild_factory.build(roll_result_thumbnails=[])
+    guild = guild_factory.build()
 
     # WHEN fetching the diceroll thumbnail before any custom thumbnails are added
     result = await guild.fetch_diceroll_thumbnail(RollResultType.BOTCH)
@@ -64,8 +63,8 @@ async def test_fetch_diceroll_thumbnail(guild_factory):
 async def test_delete_campaign(campaign_factory, guild_factory):
     """Test the delete_campaign method."""
     # GIVEN a guild with a campaign
-    guild = guild_factory.build(campaigns=[])
-    campaign = campaign_factory.build(guild=guild.id, characters=[])
+    guild = guild_factory.build()
+    campaign = campaign_factory.build(guild=guild.id)
     await campaign.insert()
 
     guild.campaigns.append(campaign)

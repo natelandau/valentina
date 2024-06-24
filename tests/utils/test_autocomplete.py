@@ -16,7 +16,6 @@ async def test_select_campaign(campaign_factory, mock_ctx1):
     campaign = campaign_factory.build(
         name="mock_campaign",
         guild=str(mock_ctx1.interaction.guild.id),
-        characters=[],
         is_deleted=False,
     )
     await campaign.insert()
@@ -164,7 +163,6 @@ async def test_select_storyteller_character(mock_ctx1, character_factory):
         type_player=False,
         type_chargen=False,
         is_alive=True,
-        traits=[],
     )
 
     character2 = character_factory.build(
@@ -175,7 +173,6 @@ async def test_select_storyteller_character(mock_ctx1, character_factory):
         type_player=True,
         type_chargen=False,
         is_alive=True,
-        traits=[],
     )
 
     await character1.insert()
@@ -369,16 +366,10 @@ async def test_select_custom_section(mock_ctx1, character_factory, user_factory)
         type_chargen=False,
         is_alive=True,
         sheet_sections=[section],
-        traits=[],
     )
     await character.insert()
 
-    user = user_factory.build(
-        id=mock_ctx1.author.id,
-        characters=[character],
-        campaign_experience={},
-        macros=[],
-    )
+    user = user_factory.build(id=mock_ctx1.author.id, characters=[character])
     await user.insert()
 
     # WHEN calling select_custom_section
@@ -410,7 +401,6 @@ async def test_select_campaign_character_from_user(
         type_player=True,
         type_chargen=False,
         is_alive=True,
-        traits=[],
         campaign=str(campaign.id),
     )
     character2 = character_factory.build(
@@ -421,7 +411,6 @@ async def test_select_campaign_character_from_user(
         type_player=False,
         type_chargen=False,
         is_alive=True,
-        traits=[],
         campaign=str(campaign.id),
     )
     character3 = character_factory.build(
@@ -432,7 +421,6 @@ async def test_select_campaign_character_from_user(
         type_player=True,
         type_chargen=False,
         is_alive=True,
-        traits=[],
         campaign=None,
     )
     await character1.insert()
@@ -441,9 +429,7 @@ async def test_select_campaign_character_from_user(
 
     user = user_factory.build(
         id=mock_ctx1.author.id,
-        characters=[character1, character2],
-        campaign_experience={},
-        macros=[],
+        characters=[character1, character2, character3],
     )
     await user.insert()
 
@@ -460,11 +446,7 @@ async def test_select_campaign_character_from_user(
 @pytest.mark.drop_db()
 async def test_select_any_player_character(mock_ctx1, character_factory, user_factory):
     """Test the select_any_player_character function."""
-    user = user_factory.build(
-        id=mock_ctx1.author.id,
-        characters=[],
-        name="mock_user",
-    )
+    user = user_factory.build(id=mock_ctx1.author.id, name="mock_user")
     await user.insert()
 
     character1 = character_factory.build(
@@ -475,7 +457,6 @@ async def test_select_any_player_character(mock_ctx1, character_factory, user_fa
         type_player=True,
         type_chargen=False,
         is_alive=True,
-        traits=[],
         user_owner=user.id,
     )
     character2 = character_factory.build(
@@ -486,7 +467,6 @@ async def test_select_any_player_character(mock_ctx1, character_factory, user_fa
         type_player=False,
         type_chargen=False,
         is_alive=True,
-        traits=[],
         user_owner=user.id,
     )
     character3 = character_factory.build(
@@ -497,7 +477,6 @@ async def test_select_any_player_character(mock_ctx1, character_factory, user_fa
         type_player=True,
         type_chargen=False,
         is_alive=False,
-        traits=[],
         user_owner=user.id,
     )
     await character1.insert()

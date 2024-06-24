@@ -2,7 +2,6 @@
 """Test the User model."""
 
 import pytest
-from rich import print
 from tests.factories import *
 
 from valentina.utils import errors
@@ -11,12 +10,8 @@ from valentina.utils import errors
 async def test_add_experience(user_factory, campaign_factory) -> None:
     """Test the add_experience method."""
     # GIVEN a user and a campaign
-    user = user_factory.build(
-        characters=[],
-        campaign_experience={},
-        macros=[],
-    )
-    campaign = campaign_factory.build(characters=[])
+    user = user_factory.build()
+    campaign = campaign_factory.build()
     await campaign.insert()
     await user.insert()
 
@@ -44,12 +39,8 @@ async def test_add_experience(user_factory, campaign_factory) -> None:
 async def test_add_campaign_cool_points(user_factory, campaign_factory) -> None:
     """Test the add_campaign_cool_points method."""
     # GIVEN a user and a campaign
-    user = user_factory.build(
-        characters=[],
-        campaign_experience={},
-        macros=[],
-    )
-    campaign = campaign_factory.build(characters=[])
+    user = user_factory.build()
+    campaign = campaign_factory.build()
     await campaign.insert()
     await user.insert()
     string_id = str(campaign.id)
@@ -70,12 +61,8 @@ async def test_add_campaign_cool_points(user_factory, campaign_factory) -> None:
 async def test_spend_spend_campaign_xp(user_factory, campaign_factory) -> None:
     """Test the spend_campaign_xp method."""
     # GIVEN a new user and a campaign and 20 experience
-    user = user_factory.build(
-        characters=[],
-        campaign_experience={},
-        macros=[],
-    )
-    campaign = campaign_factory.build(characters=[])
+    user = user_factory.build()
+    campaign = campaign_factory.build()
     await campaign.insert()
     await user.insert()
     string_id = str(campaign.id)
@@ -126,16 +113,9 @@ async def test_remove_character(user_factory, character_factory, mock_guild1):
     # Given a user and two characters
     user = user_factory.build(
         guilds=[mock_guild1.id, 223344],
-        characters=[],
-        campaign_experience={},
-        macros=[],
     )
-    character1 = character_factory.build(
-        guild=mock_guild1.id, user_owner=user.id, type_player=True, traits=[]
-    )
-    character2 = character_factory.build(
-        guild=mock_guild1.id, user_owner=user.id, type_player=True, traits=[]
-    )
+    character1 = character_factory.build(guild=mock_guild1.id, user_owner=user.id, type_player=True)
+    character2 = character_factory.build(guild=mock_guild1.id, user_owner=user.id, type_player=True)
     await character1.insert()
     await character2.insert()
     user.characters = [character1, character2]

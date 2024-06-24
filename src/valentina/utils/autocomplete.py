@@ -73,7 +73,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
 
 async def select_campaign_any_player_character(
     ctx: discord.AutocompleteContext,
-) -> list[OptionChoice]:
+) -> list[OptionChoice]:  # pragma: no cover
     """Generate a list of all type_player characters associated with a specific campaign.
 
     This function fetches all player characters for the guild, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.

@@ -130,7 +130,7 @@ async def test_valid_char_trait(trait_factory):
 
 async def test_valid_character_object(character_factory):
     """Test the ValidCharacter converter."""
-    character = character_factory.build(traits=[])
+    character = character_factory.build()
     await character.insert()
 
     # WHEN the converter is called with a valid character id
@@ -146,7 +146,7 @@ async def test_valid_character_object(character_factory):
 
 async def test_valid_campaign(campaign_factory):
     """Test the ValidCampaign converter."""
-    campaign = campaign_factory.build(characters=[])
+    campaign = campaign_factory.build()
     await campaign.insert()
 
     # WHEN the converter is called with a valid campaign id
@@ -241,7 +241,7 @@ async def test_campaign_chapter_converter(mock_ctx1, campaign_factory):
         description_long="mock_description",
     )
 
-    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter], characters=[])
+    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter])
     await campaign.insert()
 
     # WHEN the converter is called with a valid chapter number
@@ -265,7 +265,7 @@ async def test_valid_book_number(mock_ctx1, campaign_factory, book_factory):
     book = book_factory.build()
     book_object = await book.insert()
 
-    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, books=[book_object], characters=[])
+    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, books=[book_object])
     await campaign.insert()
 
     # WHEN the converter is called with a valid chapter number

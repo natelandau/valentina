@@ -19,6 +19,7 @@ from valentina.utils.database import init_database
 CHANNEL_CHARACTER_ID = 1234567890
 CHANNEL_BOOK_ID = 1234567891
 CHANNEL_CATEGORY_CAMPAIGN_ID = 1234567892
+GUILD_ID = 1
 
 
 ## Database initialization ##
@@ -30,17 +31,19 @@ async def _init_database(request):
         yield
     else:  # Create Motor client
         client = AsyncIOMotorClient(
-            f"{ValentinaConfig().test_mongodb_uri}/{ValentinaConfig().test_mongodb_db}",
+            f"{ValentinaConfig().test_mongo_uri}/{ValentinaConfig().test_mongo_database_name}",
             tz_aware=True,
         )
 
         # when '@pytest.mark.drop_db()' is called, the database will be dropped before the test
         if "drop_db" in request.keywords:
             # Drop the database after the test
-            await client.drop_database(ValentinaConfig().test_mongodb_db)
+            await client.drop_database(ValentinaConfig().test_mongo_database_name)
 
         # Initialize beanie with the Sample document class and a database
-        await init_database(client=client, database=client[ValentinaConfig().test_mongodb_db])
+        await init_database(
+            client=client, database=client[ValentinaConfig().test_mongo_database_name]
+        )
 
         yield
 
@@ -175,7 +178,7 @@ def mock_guild1(mocker):
     """A mock of a discord.Guild object."""
     # Mock the ctx.guild object matches the mock database
     mock_guild = mocker.MagicMock()
-    mock_guild.id = 1
+    mock_guild.id = GUILD_ID
     mock_guild.name = "Test Guild"
     mock_guild.data = {"key": "value"}
     mock_guild.__class__ = discord.Guild

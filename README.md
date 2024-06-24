@@ -6,10 +6,7 @@ A discord bot to manage roll playing sessions for a highly customized version of
 
 1. Dice a rolled as a single pool of D10s with a set difficulty. The number of success determines the outcome of the roll.
 
-> `< 0` successes: Botch
-> `0` successes: Failure
-> `> 0` successes: Success
-> `> dice pool` successes: Critical success
+> `< 0` successes: Botch `0` successes: Failure `> 0` successes: Success `> dice pool` successes: Critical success
 
 2. Rolled ones count as `-1` success
 3. Rolled tens count as `2` successes
@@ -121,10 +118,10 @@ Before running Valentina, the following must be configured or installed.
 
 To run the tests associated with the MongoDB database, you must have MongoDB installed locally. The easiest way to do this is with Docker. Set two additional environment variables to allow the tests to connect to the local MongoDB instance.
 
-| Variable                   | Default Value               | Usage                                        |
-| -------------------------- | --------------------------- | -------------------------------------------- |
-| VALENTINA_TEST_MONGODB_URI | `mongodb://localhost:27017` | URI to the MongoDB instance used for testing |
-| VALENTINA_TEST_MONGODB_DB  | `valentina-test-db`         | Name of the database used for testing        |
+| Variable                           | Default Value               | Usage                                        |
+| ---------------------------------- | --------------------------- | -------------------------------------------- |
+| VALENTINA_TEST_MONGO_URI           | `mongodb://localhost:27017` | URI to the MongoDB instance used for testing |
+| VALENTINA_TEST_MONGO_DATABASE_NAME | `test_db`                   | Name of the database used for testing        |
 
 NOTE: Github CI integrations will ignore these variables and run the tests against a Mongo instance within the workflows.
 
