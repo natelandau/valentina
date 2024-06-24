@@ -40,7 +40,7 @@ p.defnoun("Ability", "Abilities")
 _rng = default_rng()
 
 
-class CharacterPickerButtons(discord.ui.View):
+class CharacterPickerButtons(discord.ui.View):  # pragma: no cover
     """Manage buttons for selecting a character in the CharGenWizard paginator.
 
     Args:
@@ -127,7 +127,7 @@ class CharacterPickerButtons(discord.ui.View):
         return interaction.user.id == self.ctx.author.id
 
 
-class BeginCancelCharGenButtons(discord.ui.View):
+class BeginCancelCharGenButtons(discord.ui.View):  # pragma: no cover
     """Manage buttons for initiating or canceling the character generation process.
 
     Args:
@@ -185,7 +185,7 @@ class BeginCancelCharGenButtons(discord.ui.View):
         return interaction.user.id == self.author.id
 
 
-class UpdateCharacterButtons(discord.ui.View):
+class UpdateCharacterButtons(discord.ui.View):  # pragma: no cover
     """Manage buttons for updating a character's attributes.
 
     Args:
@@ -281,7 +281,7 @@ class UpdateCharacterButtons(discord.ui.View):
         return interaction.user.id == self.ctx.author.id
 
 
-class FreebiePointsButtons(discord.ui.View):
+class FreebiePointsButtons(discord.ui.View):  # pragma: no cover
     """Manage buttons for spending freebie points."""
 
     def __init__(
