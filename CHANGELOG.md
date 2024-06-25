@@ -1,3 +1,21 @@
+## v2.6.0 (2024-06-24)
+
+### Feat
+
+- **campaign**: add roll statistics (#162)
+- campaign/character/roll commands must be run in channels (#161)
+- attach notes to characters and campaign books (#160)
+- **admin**: delete characters from database (#158)
+
+### Fix
+
+- **xp**: restrict xp spend to character channel (#164)
+- **campaign**: improve `/campaign view`
+
+### Refactor
+
+- remove campaign channel migration (#159)
+
 ## v2.5.0 (2024-06-18)
 
 ### Feat

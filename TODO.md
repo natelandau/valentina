@@ -12,10 +12,7 @@
 -   [ ] Notes: Add/Edit/View individual player notes
 -   [ ] Refactor: Move testable logic out of cogs and to services or db models
 -   [ ] Statistics: Pull stats based on timeframe
--   [ ] Statistics: Track per book stats
--   [ ] Statistics: Track per campaign stats
 -   [ ] Storyteller: Add notes
--   [x] Storyteller: Associate storyteller characters with campaigns
 -   [ ] Tests: Increase coverage
 -   [x] Campaign: Add books to campaigns. Books contain chapters.
 -   [x] Campaign: Associate characters with campaigns
@@ -31,3 +28,5 @@
 -   [x] Character: rethink inventory
 -   [x] CharGen: Add edges for hunters
 -   [x] Refactor: Centralize pagination for long responses
+-   [x] Statistics: Track per campaign stats
+-   [x] Storyteller: Associate storyteller characters with campaigns
