@@ -274,7 +274,7 @@ class ChangelogParser:
                 continue
 
             # If we are within a version and a category, append line to that category
-            if parse_version and current_category:  # type: ignore [unreachable] # TODO
+            if parse_version and current_category:  # type: ignore [unreachable] # TODO: Fix unreachable code
                 cleaned_line = re.sub(r" \(#\d+\)$", "", line)  # Clean up PR references
 
                 if current_category not in changelog_dict[version_being_parsed]:

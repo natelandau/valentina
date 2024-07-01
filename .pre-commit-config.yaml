@@ -59,10 +59,9 @@ repos:
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.4.10"
+      rev: "v0.5.0"
       hooks:
           - id: ruff
-            args: ["--extend-ignore", "I001,D301,D401"]
             exclude: tests/
           - id: ruff-format
 

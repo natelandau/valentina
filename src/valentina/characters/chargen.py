@@ -798,7 +798,7 @@ class RNGCharGen:
         await character.save()
         return character
 
-    async def random_willpower(self, character: Character) -> Character:  # noqa: PLR6301
+    async def random_willpower(self, character: Character) -> Character:
         """Randomly generate willpower for the character.
 
         Args:
@@ -913,7 +913,7 @@ class RNGCharGen:
         await character.save()
         return character
 
-    async def concept_special_abilities(self, character: Character) -> Character:  # noqa: PLR6301
+    async def concept_special_abilities(self, character: Character) -> Character:
         """Assign special abilities based on the character's concept.
 
         Args:

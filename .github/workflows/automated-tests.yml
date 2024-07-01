@@ -89,7 +89,8 @@ jobs:
             # ----------------------------------------------
 
             - name: lint with ruff
-              run: poetry run ruff --extend-ignore=I001,D301,D401 src/
+              run: poetry run ruff check --no-fix src/
+
             - name: check pyproject.toml
               run: poetry run poetry check
 
