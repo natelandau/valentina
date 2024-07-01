@@ -199,7 +199,9 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
 
 
 ################## Autocomplete Functions ##################
-async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029 # pragma: no cover
+async def select_aws_object_from_guild(
+    ctx: discord.AutocompleteContext,
+) -> list[OptionChoice]:  # pragma: no cover
     """Populate the autocomplete list for the aws_object option based on the user's input."""
     aws_svc = AWSService()
 
@@ -210,7 +212,9 @@ async def select_aws_object_from_guild(ctx: discord.AutocompleteContext) -> list
     ]
 
 
-async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[str]:  # noqa: RUF029 # pragma: no cover
+async def select_changelog_version_1(
+    ctx: discord.AutocompleteContext,
+) -> list[str]:  # pragma: no cover
     """Populate the autocomplete for the version option. This is for the first of two options."""
     bot = cast(Valentina, ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
@@ -220,7 +224,9 @@ async def select_changelog_version_1(ctx: discord.AutocompleteContext) -> list[s
     ]
 
 
-async def select_changelog_version_2(ctx: discord.AutocompleteContext) -> list[str]:  # noqa: RUF029 # pragma: no cover
+async def select_changelog_version_2(
+    ctx: discord.AutocompleteContext,
+) -> list[str]:  # pragma: no cover
     """Populate the autocomplete for the version option. This is for the second of two options."""
     bot = cast(Valentina, ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
@@ -360,7 +366,7 @@ async def select_chapter_old(
     return choices or [OptionChoice("No chapers", "")]
 
 
-async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
+async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available character classes.
 
     This function fetches the available character classes, sorts them by name,
@@ -381,7 +387,7 @@ async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoi
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
+async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available character concepts.
 
     This function fetches the available character concepts, sorts them by name,
@@ -433,7 +439,7 @@ async def select_char_inventory_item(ctx: discord.AutocompleteContext) -> list[O
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_char_level(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
+async def select_char_level(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available character levels.
 
     This function fetches the available character levels, sorts them by name,
@@ -547,7 +553,7 @@ async def select_custom_section(ctx: discord.AutocompleteContext) -> list[Option
     return options
 
 
-async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: ARG001, RUF029 # pragma: no cover
+async def select_country(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: ARG001 # pragma: no cover
     """Generate a list of available countries for autocomplete.
 
     This function creates a predefined list of countries and their corresponding codes,
@@ -738,7 +744,7 @@ async def select_trait_from_char_option_two(ctx: discord.AutocompleteContext) ->
     return options or [OptionChoice("No traits", "")]
 
 
-async def select_trait_category(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
+async def select_trait_category(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available trait categories for autocomplete.
 
     This function fetches all trait categories from the database, filters them based on the user's input, and returns a list of trait category names to populate the autocomplete list.
@@ -756,7 +762,7 @@ async def select_trait_category(ctx: discord.AutocompleteContext) -> list[Option
     ][:MAX_OPTION_LIST_SIZE]
 
 
-async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[OptionChoice]:  # noqa: RUF029
+async def select_vampire_clan(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available vampire clans for autocomplete.
 
     This function fetches all vampire clans from the database, filters them based on the user's input,

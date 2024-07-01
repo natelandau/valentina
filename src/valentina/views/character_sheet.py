@@ -250,7 +250,7 @@ async def show_sheet(
     await paginator.respond(ctx.interaction, ephemeral=ephemeral)
 
 
-async def sheet_embed(  # noqa: RUF029
+async def sheet_embed(
     ctx: ValentinaContext,
     character: Character,
     owned_by_user: discord.User | None = None,

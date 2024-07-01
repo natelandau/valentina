@@ -17,7 +17,9 @@ if TYPE_CHECKING:
     from valentina.models.bot import ValentinaContext
 
 
-async def assert_permissions(ctx: "ValentinaContext", **permissions: bool) -> None:  # noqa: RUF029 # pragma: no cover
+async def assert_permissions(
+    ctx: "ValentinaContext", **permissions: bool
+) -> None:  # pragma: no cover
     """Check if the bot has the required permissions to run the command.
 
     This method verifies that the bot has the necessary permissions specified in the `permissions` argument. If any required permissions are missing, it raises a `BotMissingPermissionsError`.
