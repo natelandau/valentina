@@ -4,7 +4,7 @@
 
 A discord bot to manage roll playing sessions for a highly customized version of Vampire the Masquerade. Major differences from the published game are:
 
-1. Dice a rolled as a single pool of D10s with a set difficulty. The number of success determines the outcome of the roll.
+1. Dice are rolled as a single pool of D10s with a set difficulty. The number of success determines the outcome of the roll.
 
 > `< 0` successes: Botch `0` successes: Failure `> 0` successes: Success `> dice pool` successes: Critical success
 
