@@ -17,17 +17,17 @@
         valentina = "valentina.main:app"
 
     [tool.poetry.dependencies]
-        aiofiles = "^23.2.1"
+        aiofiles = "^24.1.0"
         arrow    = "^1.3.0"
         beanie   = "^1.25.0"
-        boto3    = "^1.34.113"
+        boto3    = "^1.34.142"
         confz    = "^2.0.1"
-        faker    = "^25.8.0"
-        inflect  = "^7.2.1"
+        faker    = "^26.0.0"
+        inflect  = "^7.3.1"
         loguru   = "^0.7.2"
-        numpy    = "^1.26.4"
+        numpy    = "^2.0.0"
         py-cord  = "^2.5.0"
-        pydantic = "^2.7.1"
+        pydantic = "^2.8.2"
         pygithub = "^2.3.0"
         python   = ">=3.11,<3.13"
         rich     = "^13.7.1"
@@ -36,8 +36,8 @@
 
     [tool.poetry.group.test.dependencies]
         dirty-equals   = "^0.7.1.post0"
-        polyfactory    = "^2.15.0"
-        pytest         = "^8.2.1"
+        polyfactory    = "^2.16.2"
+        pytest         = "^8.2.2"
         pytest-asyncio = "^0.23.6"
         pytest-clarity = "^1.0.1"
         pytest-env     = "^1.1.3"
@@ -47,15 +47,15 @@
 
     [tool.poetry.group.dev.dependencies]
         commitizen     = "^3.27.0"
-        coverage       = "^7.5.2"
-        mypy           = "^1.10.0"
+        coverage       = "^7.5.4"
+        mypy           = "^1.10.1"
         pdoc           = "^14.4.0"
         poethepoet     = "^0.26.1"
         pre-commit     = "^3.7.1"
-        ruff           = "^0.5.0"
+        ruff           = ">=0.5.1"
         shellcheck-py  = "^0.9.0.6"
         types-aiofiles = "^23.2.0.0"
-        typos          = "^1.21.0"
+        typos          = "^1.23.2"
         yamllint       = "^1.35.1"
 
 [tool.commitizen]

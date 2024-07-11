@@ -59,14 +59,14 @@ repos:
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.5.0"
+      rev: "v0.5.1"
       hooks:
           - id: ruff
             exclude: tests/
           - id: ruff-format
 
     - repo: "https://github.com/crate-ci/typos"
-      rev: v1.22.9
+      rev: typos-v0.10.26
       hooks:
           - id: typos
 

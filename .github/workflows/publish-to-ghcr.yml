@@ -33,19 +33,8 @@ jobs:
                   egress-policy: block
                   disable-sudo: true
                   allowed-endpoints: >
-                      *.cloudflare.docker.com:443
-                      *.docker.io:443
-                      *.githubusercontent.com:443
-                      api.github.com:443
-                      deb.debian.org:80
-                      files.pythonhosted.org:443
-                      ghcr.io:443
-                      github.com:443
-                      githubusercontent.com:443
-                      install.python-poetry.org:443
-                      pypi.org:443
-                      pypi.org:443
-                      python-poetry.org:443
+                      *.cloudflare.docker.com:443 *.docker.io:443 *.githubusercontent.com:443 api.github.com:443 deb.debian.org:80 files.pythonhosted.org:443 ghcr.io:443 github.com:443 githubusercontent.com:443 install.python-poetry.org:443 pypi.org:443 pypi.org:443 python-poetry.org:443
+
 
             - name: Checkout repository
               uses: actions/checkout@v4
@@ -81,7 +70,7 @@ jobs:
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push Docker image
-              uses: docker/build-push-action@v5
+              uses: docker/build-push-action@v6
               with:
                   context: .
                   platforms: linux/amd64,linux/arm64
