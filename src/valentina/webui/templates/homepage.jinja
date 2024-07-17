@@ -1,0 +1,84 @@
+{# def
+    homepage_description:str,
+#}
+<PageLayout>
+{% if "USER_NAME" not in session or not session["USER_NAME"] %}
+    <div class="py-5 mt-5">
+        <div class="row flex-lg-row-reverse align-items-center g-5 py-5 rounded-3 border shadow-lg">
+            <div class="col-10 col-sm-8 col-lg-6">
+                <img src="{{ url_for('static', filename='valentina_avatar.png') }}"
+                     class="d-block mx-lg-auto img-fluid"
+                     alt="Bootstrap Themes"
+                     width="700"
+                     height="500"
+                     loading="lazy">
+            </div>
+            <div class="col-lg-6">
+                <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">Valentina Noir</h1>
+                <p class="lead">{{ homepage_description }}</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <a href="{{ url_for("oauth.login") }}"
+                       class="btn btn-primary btn-lg px-4 me-md-2">Log In</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    {% set card_style = "card h-100 border border-2 shadow bg-light-subtle" %}
+    <h1>Welcome {{ session["USER_NAME"] }}</h1>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+        <homepage.Card title="Characters" icon="users">
+        <div class="row row-cols-2">
+            <div class="col border-end border-1">
+                <p class="card-text">View your characters</p>
+                <div x-data="{character_url: null}">
+                    <div class="mb-3">
+                        <select class="form-select"
+                                aria-label="Default select example"
+                                x-model="character_url"
+                                name="character">
+                            <option selected>Select character</option>
+                            <option disabled>──────────</option>
+                            {% for name, id in session['USER_CHARACTERS'].items() %}
+                                <option value="{{ url_for("character.character_view",  character_id=id) }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {# djlint:off J018 #}
+                    <a x-bind:href="character_url"
+                       href="character_url"
+                       class="btn btn-primary">Go</a>
+                </div>
+            </div>
+            <div class="col ps-4 h-100 d-inline-block">
+                <p class="card-text">Or create a new character</p>
+                <br>
+                <button type="button" class="btn btn-primary align-text-bottom">Create</button>
+            </div>
+        </div>
+        </homepage.Card>
+        <homepage.Card title="Campaigns" icon="book">
+        <p class="card-text">View the guild's campaigns</p>
+        <div x-data="{campaign_url: null}">
+            <div class="mb-3">
+                <select class="form-select"
+                        aria-label="Default select example"
+                        x-model="campaign_url"
+                        name="character">
+                    <option selected>Select campaign</option>
+                    <optgroup label="──────────">
+                    </optgroup>
+                    {% for name, id in session['GUILD_CAMPAIGNS'].items() %}
+                        <option value="{{ url_for("campaign.view_campaign",  campaign_id=id) }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {# djlint:off J018 #}
+            <a x-bind:href="campaign_url"
+               href="campaign_url"
+               class="btn btn-primary">Go</a>
+        </div>
+        </homepage.Card>
+    </div>
+{% endif %}
+</PageLayout>

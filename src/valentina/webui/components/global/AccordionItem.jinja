@@ -1,0 +1,24 @@
+{# def
+    accordion_name:str,
+    index:int|str,
+    title:str,
+    start_open:bool = False,
+#}
+{% set accordion_index = accordion_name ~ index %}
+<div class="accordion-item">
+    <h2 class="accordion-header">
+        <button class="accordion-button"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#{{ accordion_index }}"
+                aria-expanded="false"
+                aria-controls="{{ accordion_index }}">
+            <strong>{{ title }}</strong>
+        </button>
+    </h2>
+    <div id="{{ accordion_index }}"
+         class="accordion-collapse collapse {% if start_open %}show{% endif %}"
+         data-bs-parent="#{{ accordion_name }}">
+        <div class="accordion-body">{{ content }}</div>
+    </div>
+</div>

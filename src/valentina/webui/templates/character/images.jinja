@@ -1,0 +1,19 @@
+{# def
+    character:Character,
+    images:list[images]=[]
+#}
+{% if not images %}
+    <p>No images</p>
+{% else %}
+    <div class="row row-cols-1 row-cols-sm-2 g-2">
+        {% for img_url in images %}
+            <div class="col">
+                <a class="image-container" data-bs-toggle="modal" data-bs-target={{ '#modal-' ~ loop.index }}>
+                    <img src="{{ img_url }}"
+                         class="rounded img-fluid img-hover img-thumbnail d-block mx-auto"
+                         alt="{{ loop.index }}">
+                </a> <global.LargeImageModal modal_id={{ 'modal-' ~ loop.index }} img_src={{ img_url }} />
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

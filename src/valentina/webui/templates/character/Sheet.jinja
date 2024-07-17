@@ -1,0 +1,33 @@
+{# def
+    character: Character,
+    traits: list[CharacterTrait]
+#}
+<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 px-lg-5">
+    {% for key, value in character.sheet_section_top_items().items() %}
+        <div class="col">
+            <h4>{{ key }}</h4>
+            <p>{{ value }}</p>
+        </div>
+    {% endfor %}
+</div>
+{% for sheet_section, trait_category in traits.items() %}
+    <hr>
+    <div class="text-center">
+        <h3>{{ sheet_section }}</h3>
+    </div>
+    <div class="row row-cols-1 row-cols-md-3">
+        {% for category, traits in trait_category.items() %}
+            <div class="col">
+                <div class="text-center pe-5">
+                    <h4>{{ category | title }}</h4>
+                </div>
+                <div class="row row-cols-2">
+                    {% for trait in traits %}
+                        <div class="col">{{ trait.name | capitalize }}:</div>
+                        <div class="col-auto">{{ trait.dots }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endfor %}

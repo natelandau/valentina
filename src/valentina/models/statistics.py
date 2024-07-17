@@ -8,7 +8,8 @@ from beanie import Document, Indexed
 from pydantic import Field
 
 from valentina.constants import EmbedColor, RollResultType
-from valentina.models import Campaign, Character
+from valentina.models import Campaign, Character, Guild
+from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
 if TYPE_CHECKING:
@@ -34,9 +35,11 @@ class Statistics:
 
     def __init__(
         self,
-        ctx: "ValentinaContext",
+        ctx: "ValentinaContext" = None,
+        guild_id: int | None = None,
     ) -> None:
         self.ctx = ctx
+        self.guild_id = guild_id
         self.botches = 0
         self.successes = 0
         self.failures = 0
@@ -46,6 +49,46 @@ class Statistics:
         self.average_pool = 0
         self.title = "Roll Statistics"
         self.thumbnail = ""
+
+    @property
+    def criticals_percentage(self) -> str:
+        """Return the percentage of critical successes."""
+        return f"{self.criticals / self.total_rolls * 100:.2f}" if self.total_rolls > 0 else "0"
+
+    @property
+    def success_percentage(self) -> str:
+        """Return the percentage of successful rolls."""
+        return f"{self.successes / self.total_rolls * 100:.2f}" if self.total_rolls > 0 else "0"
+
+    @property
+    def failure_percentage(self) -> str:
+        """Return the percentage of failed rolls."""
+        return f"{self.failures / self.total_rolls * 100:.2f}" if self.total_rolls > 0 else "0"
+
+    @property
+    def botch_percentage(self) -> str:
+        """Return the percentage of botched rolls."""
+        return f"{self.botches / self.total_rolls * 100:.2f}" if self.total_rolls > 0 else "0"
+
+    def _get_json(self) -> dict[str, str]:
+        """Return a dictionary with the statistics.
+
+        Returns:
+            dict: Dictionary with the statistics.
+        """
+        return {
+            "total_rolls": str(self.total_rolls),
+            "criticals": str(self.criticals),
+            "criticals_percentage": self.criticals_percentage,
+            "successes": str(self.successes),
+            "successes_percentage": self.success_percentage,
+            "failures": str(self.failures),
+            "failures_percentage": self.failure_percentage,
+            "botches": str(self.botches),
+            "botches_percentage": self.botch_percentage,
+            "average_difficulty": str(self.average_difficulty),
+            "average_pool": str(self.average_pool),
+        }
 
     def _get_text(self, with_title: bool = True, with_help: bool = True) -> str:
         """Return a string with the statistics.
@@ -67,10 +110,10 @@ class Statistics:
 
         msg += f"""\
 `Total Rolls {'.':.<{25 - 12}} {self.total_rolls}`
-`Critical Success Rolls {'.':.<{25 - 23}} {self.criticals:<3} ({self.criticals / self.total_rolls * 100:.2f}%)`
-`Successful Rolls {'.':.<{25 - 17}} {self.successes:<3} ({self.successes / self.total_rolls * 100:.2f}%)`
-`Failed Rolls {'.':.<{25 - 13}} {self.failures:<3} ({self.failures / self.total_rolls * 100:.2f}%)`
-`Botched Rolls {'.':.<{25 - 14}} {self.botches:<3} ({self.botches / self.total_rolls * 100:.2f}%)`
+`Critical Success Rolls {'.':.<{25 - 23}} {self.criticals:<3} ({self.criticals_percentage}%)`
+`Successful Rolls {'.':.<{25 - 17}} {self.successes:<3} ({self.success_percentage}%)`
+`Failed Rolls {'.':.<{25 - 13}} {self.failures:<3} ({self.failure_percentage}%)`
+`Botched Rolls {'.':.<{25 - 14}} {self.botches:<3} ({self.botch_percentage}%)`
 `Average Difficulty {'.':.<{25 - 19}} {self.average_difficulty}`
 `Average Pool Size {'.':.<{25 - 18}} {self.average_pool}`
 """
@@ -91,6 +134,10 @@ class Statistics:
         Returns:
             discord.Embed: Embed with the statistics.
         """
+        if not self.ctx:
+            msg = "No context provided."
+            raise errors.NoCTXError(msg)
+
         embed = discord.Embed(
             title="",
             description=self._get_text(with_title=with_title, with_help=with_help),
@@ -105,52 +152,67 @@ class Statistics:
         return embed
 
     async def guild_statistics(
-        self, as_embed: bool = False, with_title: bool = True, with_help: bool = True
-    ) -> discord.Embed | str:
+        self,
+        as_embed: bool = False,
+        as_json: bool = False,
+        with_title: bool = True,
+        with_help: bool = True,
+    ) -> discord.Embed | str | dict[str, str]:
         """Compute and display guild statistics.
 
         Args:
             as_embed (bool, optional): Whether to return an embed. Defaults to False. When False, returns a string.
+            as_json (bool, optional): Whether to return a JSON object. Defaults to False.
             with_title (bool, optional): Whether to include the title. Defaults to True.
             with_help (bool, optional): Whether to include the help text. Defaults to True.
 
         Returns:
             discord.Embed | str: Embed or string with the statistics.
         """
-        self.title = f"Roll statistics for guild `{self.ctx.guild.name}`"
-        self.thumbnail = self.ctx.guild.icon.url if self.ctx.guild.icon else ""
+        if not self.ctx and not self.guild_id:
+            msg = "No context or guild ID provided."
+            raise errors.NoCTXError(msg)
+
+        guild_id = self.guild_id or self.ctx.guild.id
+
+        if not self.ctx:
+            guild_object = await Guild.get(guild_id)
+
+        self.title = (
+            f"Roll statistics for guild `{self.ctx.guild.name}`" if self.ctx else guild_object.name
+        )
+        if self.ctx:
+            self.thumbnail = self.ctx.guild.icon.url if self.ctx.guild.icon else ""
 
         # Grab the data from the database
         self.botches = await RollStatistic.find(
-            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.guild == guild_id,
             RollStatistic.result == RollResultType.BOTCH,
         ).count()
         self.successes = await RollStatistic.find(
-            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.guild == guild_id,
             RollStatistic.result == RollResultType.SUCCESS,
         ).count()
         self.criticals = await RollStatistic.find(
-            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.guild == guild_id,
             RollStatistic.result == RollResultType.CRITICAL,
         ).count()
         self.failures = await RollStatistic.find(
-            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.guild == guild_id,
             RollStatistic.result == RollResultType.FAILURE,
         ).count()
         self.other = await RollStatistic.find(
-            RollStatistic.guild == self.ctx.guild.id,
+            RollStatistic.guild == guild_id,
             RollStatistic.result == RollResultType.OTHER,
         ).count()
 
-        avg_diff = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+        avg_diff = await RollStatistic.find(RollStatistic.guild == guild_id).avg(
             RollStatistic.difficulty
         )
         if avg_diff:
             self.average_difficulty = round(avg_diff)
 
-        avg_pool = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
-            RollStatistic.pool
-        )
+        avg_pool = await RollStatistic.find(RollStatistic.guild == guild_id).avg(RollStatistic.pool)
         if avg_pool:
             self.average_pool = round(avg_pool)
 
@@ -161,6 +223,9 @@ class Statistics:
 
         if as_embed:
             return await self._get_embed(with_title=with_title, with_help=with_help)
+
+        if as_json:
+            return self._get_json()
 
         return self._get_text(with_title=with_title, with_help=with_help)
 
@@ -168,22 +233,25 @@ class Statistics:
         self,
         user: discord.Member,
         as_embed: bool = False,
+        as_json: bool = False,
         with_title: bool = True,
         with_help: bool = True,
-    ) -> discord.Embed | str:
+    ) -> discord.Embed | str | dict[str, str]:
         """Compute and display user statistics.
 
         Args:
             user (discord.Member): The user to get statistics for.
             as_embed (bool, optional): Whether to return an embed. Defaults to False. When False, returns a string.
+            as_json (bool, optional): Whether to return a JSON object. Defaults to False.
             with_title (bool, optional): Whether to include the title. Defaults to True.
             with_help (bool, optional): Whether to include the help text. Defaults to True.
 
         Returns:
             discord.Embed | str: Embed or string with the statistics.
         """
-        self.title = f"Roll statistics for @{user.display_name}"
-        self.thumbnail = user.display_avatar.url
+        if not as_json:
+            self.title = f"Roll statistics for @{user.display_name}"
+            self.thumbnail = user.display_avatar.url
 
         # Grab the data from the database
         self.botches = await RollStatistic.find(
@@ -207,15 +275,13 @@ class Statistics:
             RollStatistic.result == RollResultType.OTHER,
         ).count()
 
-        avg_diff = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+        avg_diff = await RollStatistic.find(RollStatistic.user == user.id).avg(
             RollStatistic.difficulty
         )
         if avg_diff:
             self.average_difficulty = round(avg_diff)
 
-        avg_pool = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
-            RollStatistic.pool
-        )
+        avg_pool = await RollStatistic.find(RollStatistic.user == user.id).avg(RollStatistic.pool)
         if avg_pool:
             self.average_pool = round(avg_pool)
 
@@ -227,20 +293,25 @@ class Statistics:
         if as_embed:
             return await self._get_embed(with_title=with_title, with_help=with_help)
 
+        if as_json:
+            return self._get_json()
+
         return self._get_text(with_title=with_title, with_help=with_help)
 
     async def character_statistics(
         self,
         character: Character,
         as_embed: bool = False,
+        as_json: bool = False,
         with_title: bool = True,
         with_help: bool = True,
-    ) -> discord.Embed | str:
+    ) -> discord.Embed | str | dict[str, str]:
         """Compute and display character statistics.
 
         Args:
             character (Character): The character to get statistics for.
             as_embed (bool, optional): Whether to return an embed. Defaults to False. When False, returns a string.
+            as_json (bool, optional): Whether to return a JSON object. Defaults to False.
             with_title (bool, optional): Whether to include the title. Defaults to True.
             with_help (bool, optional): Whether to include the help text. Defaults to True.
 
@@ -271,13 +342,13 @@ class Statistics:
             RollStatistic.result == RollResultType.OTHER,
         ).count()
 
-        avg_diff = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+        avg_diff = await RollStatistic.find(RollStatistic.character == str(character.id)).avg(
             RollStatistic.difficulty
         )
         if avg_diff:
             self.average_difficulty = round(avg_diff)
 
-        avg_pool = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+        avg_pool = await RollStatistic.find(RollStatistic.character == str(character.id)).avg(
             RollStatistic.pool
         )
         if avg_pool:
@@ -291,20 +362,25 @@ class Statistics:
         if as_embed:
             return await self._get_embed(with_title=with_title, with_help=with_help)
 
+        if as_json:
+            return self._get_json()
+
         return self._get_text(with_title=with_title, with_help=with_help)
 
     async def campaign_statistics(
         self,
         campaign: Campaign,
         as_embed: bool = False,
+        as_json: bool = False,
         with_title: bool = True,
         with_help: bool = True,
-    ) -> discord.Embed | str:
+    ) -> discord.Embed | str | dict[str, str]:
         """Compute and display character statistics.
 
         Args:
             campaign (Campaign): The campaign to get statistics for.
             as_embed (bool, optional): Whether to return an embed. Defaults to False. When False, returns a string.
+            as_json (bool, optional): Whether to return a JSON object. Defaults to False.
             with_title (bool, optional): Whether to include the title. Defaults to True.
             with_help (bool, optional): Whether to include the help text. Defaults to True.
 
@@ -335,13 +411,13 @@ class Statistics:
             RollStatistic.result == RollResultType.OTHER,
         ).count()
 
-        avg_diff = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+        avg_diff = await RollStatistic.find(RollStatistic.campaign == str(campaign.id)).avg(
             RollStatistic.difficulty
         )
         if avg_diff:
             self.average_difficulty = round(avg_diff)
 
-        avg_pool = await RollStatistic.find(RollStatistic.guild == self.ctx.guild.id).avg(
+        avg_pool = await RollStatistic.find(RollStatistic.campaign == str(campaign.id)).avg(
             RollStatistic.pool
         )
         if avg_pool:
@@ -354,5 +430,8 @@ class Statistics:
 
         if as_embed:
             return await self._get_embed(with_title=with_title, with_help=with_help)
+
+        if as_json:
+            return self._get_json()
 
         return self._get_text(with_title=with_title, with_help=with_help)

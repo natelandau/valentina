@@ -51,6 +51,9 @@ def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no
     logging.getLogger("discord.client").setLevel(level=http_log_level.upper())
     logging.getLogger("pymongo").setLevel(level=ValentinaConfig().log_level_pymongo.upper())
     logging.getLogger("faker").setLevel(level="INFO")
+    logging.getLogger("hypercorn").setLevel(level=ValentinaConfig().webui_log_level.upper())
+    logging.getLogger("requests_oauthlib").setLevel(level="INFO")
+    logging.getLogger("quart.app").setLevel(level=ValentinaConfig().webui_log_level.upper())
     for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
         logging.getLogger(service).setLevel(level=aws_log_level.upper())
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)

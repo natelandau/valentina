@@ -107,9 +107,9 @@ class Character(Document):
     campaign: str | None = None  # id of the character's campaign
 
     # Profile
-    bio: str | None = None
     age: int | None = None
     auspice: str | None = None
+    bio: str | None = None
     breed: str | None = None
     clan_name: str | None = None  # VampireClan enum name
     concept_name: str | None = None  # CharacterConcept enum name
@@ -439,3 +439,36 @@ class Character(Document):
             permissions_user_post=owned_by_user,
             topic=f"Character channel for {self.name}",
         )
+
+    def sheet_section_top_items(self) -> dict[str, str]:
+        """Return the items to populate the top portion of a character sheet.
+
+        Populate a dictionary with attributes that are present in the character
+        and return the dictionary with properly titled values.
+
+        Returns:
+            dict[str, str]: Dictionary with character attributes.
+        """
+        attributes = [
+            ("Age", str(self.age)),
+            ("Auspice", self.auspice),
+            ("Breed", self.breed),
+            ("Clan", self.clan_name),
+            ("Class", self.char_class_name),
+            ("Concept", self.concept_name),
+            ("Creed", self.creed_name),
+            ("Demeanor", self.demeanor),
+            ("Essence", self.essence),
+            ("Generation", self.generation),
+            ("Nature", self.nature),
+            ("Sire", self.sire),
+            ("Tradition", self.tradition),
+            ("Tribe", self.tribe),
+        ]
+
+        # Create dictionary using a comprehension with conditional inclusion
+        return {
+            name: str(value).title().replace("_", " ")
+            for name, value in attributes
+            if value and value != "None"
+        }

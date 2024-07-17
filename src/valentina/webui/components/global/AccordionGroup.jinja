@@ -1,0 +1,6 @@
+{# def
+    name:str,
+    flush:bool = False,
+#}
+<div class="accordion {% if flush %}accordion-flush{% endif %}"
+     id="{{ name }}">{{ content }}</div>

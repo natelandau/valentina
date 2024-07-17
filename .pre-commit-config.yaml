@@ -5,7 +5,7 @@ default_stages: [commit, manual]
 fail_fast: true
 repos:
     - repo: "https://github.com/commitizen-tools/commitizen"
-      rev: v3.27.0
+      rev: v3.28.0
       hooks:
           - id: commitizen
           #   - id: commitizen-branch
@@ -59,16 +59,22 @@ repos:
             entry: yamllint --strict --config-file .yamllint.yml
 
     - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.5.1"
+      rev: "v0.5.4"
       hooks:
           - id: ruff
             exclude: tests/
           - id: ruff-format
 
     - repo: "https://github.com/crate-ci/typos"
-      rev: typos-v0.10.26
+      rev: v1.23.3
       hooks:
           - id: typos
+
+    - repo: "https://github.com/djlint/djLint"
+      rev: v1.34.1
+      hooks:
+          - id: djlint
+            args: ["--configuration", "pyproject.toml"]
 
     - repo: local
       hooks:

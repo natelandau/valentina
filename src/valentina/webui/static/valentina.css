@@ -1,0 +1,12 @@
+/* apply img-hover class to img tag */
+.img-hover {
+	-webkit-filter: grayscale(0) blur(0);
+	filter: grayscale(0) blur(0);
+	-webkit-transition: .4s ease-in-out;
+	transition: .4s ease-in-out;
+}
+
+.img-hover:hover {
+	-webkit-filter: grayscale(10%) blur(1px);
+	filter: grayscale(10%) blur(1px);
+}

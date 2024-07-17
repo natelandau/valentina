@@ -46,6 +46,7 @@ class User(Document):
 
     id: int  # type: ignore [assignment]
 
+    avatar_url: str | None = None
     characters: list[Link[Character]] = Field(default_factory=list)
     campaign_experience: dict[str, CampaignExperience] = Field(default_factory=dict)
     date_created: datetime = Field(default_factory=time_now)

@@ -1,0 +1,16 @@
+{# def matched_guilds, user #}
+<PageLayout title="Select Guild">
+<div class="py-5 m-5 rounded-3 border shadow-lg">
+    <h1>Select A Guild</h1>
+    <p>Valentina can only interact with a single guild at a time. Please select the guild you would like to play on.</p>
+    <form action="" method="post" {# class="row row-cols-4 g-2" #}>
+        <div class="d-grid gap-2 col-6">
+            {% for guild in session["matched_guilds"] | sort(attribute="name" ) %}
+                <button class="btn btn-primary btn-lg"
+                        name="guild_id"
+                        value="{{ guild['id'] }}">{{ guild['name'] }}</button>
+            {% endfor %}
+        </div>
+    </form>
+</div>
+</PageLayout>
