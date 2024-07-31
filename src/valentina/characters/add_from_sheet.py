@@ -245,7 +245,7 @@ class AddFromSheetWizard:
             )
         else:
             # Subsequent sends, edit the interaction of the DM
-            await interaction.response.edit_message(embed=embed, view=self.view)  # type: ignore [union-attr]
+            await interaction.response.edit_message(embed=embed, view=self.view)
 
     async def __timeout(self) -> None:
         """Inform the user they took too long."""

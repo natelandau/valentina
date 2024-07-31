@@ -6,4 +6,4 @@
         # nd     = "nd"     # Used in the context of '2nd'
 
 [files]
-    extend-exclude = ["*_cache", ".venv"]
+    extend-exclude = ["*_cache", ".venv", "static"]

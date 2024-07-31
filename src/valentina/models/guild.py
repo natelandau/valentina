@@ -204,7 +204,7 @@ class Guild(Document):
             result (RollResultType): The roll result type.
 
         Returns:
-        Optional[str]: The thumbnail URL, or None if no thumbnail is found.
+            Optional[str]: The thumbnail URL, or None if no thumbnail is found.
         """
         # Get the list of default thumbnails for the result type
         thumb_list = DICEROLL_THUMBS.get(result.name, [])

@@ -14,16 +14,17 @@ from valentina.utils import errors
 _rng = default_rng()
 
 
-def convert_int_to_emoji(num: int, markdown: bool = False) -> str:
+def convert_int_to_emoji(num: int, markdown: bool = False, images: bool = False) -> str:
     """Convert an integer to an emoji or a string.
 
     This method converts an integer to its corresponding emoji representation if it is between 0 and 10.
     For integers outside this range, it returns the number as a string. Optionally, it can wrap numbers
-    larger than emojis in markdown code.
+    larger than emojis within in markdown <pre> markers.
 
     Args:
         num (int): The integer to convert.
         markdown (bool, optional): Whether to wrap numbers larger than emojis in markdown code. Defaults to False.
+        images (bool, optional): Whether to use images instead of Discord emoji codes. Defaults to False.
 
     Returns:
         str: The emoji corresponding to the integer, or the integer as a string.
@@ -42,6 +43,22 @@ def convert_int_to_emoji(num: int, markdown: bool = False) -> str:
         '`11`'
     """
     if 0 <= num <= 10:  # noqa: PLR2004
+        if images:
+            return (
+                str(num)
+                .replace("10", "🔟")
+                .replace("0", "0️⃣")
+                .replace("1", "1️⃣")
+                .replace("2", "2️⃣")
+                .replace("3", "3️⃣")
+                .replace("4", "4️⃣")
+                .replace("5", "5️⃣")
+                .replace("6", "6️⃣")
+                .replace("7", "7️⃣")
+                .replace("8", "8️⃣")
+                .replace("9", "9️⃣")
+            )
+
         return (
             str(num)
             .replace("10", ":keycap_ten:")
@@ -56,6 +73,7 @@ def convert_int_to_emoji(num: int, markdown: bool = False) -> str:
             .replace("8", ":eight:")
             .replace("9", ":nine:")
         )
+
     if markdown:
         return f"`{num}`"
 

@@ -166,7 +166,7 @@ Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for 
             pool (int): The number of dice to roll
         """
         probabilities = Probability(
-            ctx, pool=pool, difficulty=difficulty, dice_size=DiceType.D10.value
+            ctx=ctx, pool=pool, difficulty=difficulty, dice_size=DiceType.D10.value
         )
         embed = await probabilities.get_embed()
         await ctx.respond(embed=embed, ephemeral=hidden)

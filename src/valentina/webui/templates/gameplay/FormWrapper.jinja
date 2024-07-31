@@ -1,0 +1,12 @@
+{# def
+    character:Character = None,
+    campaign:Campaign = None,
+    dice_sizes:list[int]
+#}
+<div id="form-column">
+    <gameplay.FormHeader character={{ character }} campaign={{ campaign }} />
+    {% include "gameplay/tabs.html" %}
+    <div id="gameplay-form">
+        <gameplay.FormTabThrow character={{ character }} campaign={{ campaign }} dice_sizes={{ dice_sizes }} />
+    </div>
+</div>

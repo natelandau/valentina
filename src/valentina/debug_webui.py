@@ -30,7 +30,7 @@ def dev() -> None:
     app = create_dev_app()
     app.run(
         host=ValentinaConfig().webui_host,
-        port=ValentinaConfig().webui_port,
+        port=int(ValentinaConfig().webui_port),
         debug=True,
         use_reloader=True,
     )

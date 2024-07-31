@@ -187,6 +187,23 @@ bp.add_url_rule(
 )
 
 
+@bp.route("/character/<string:character_id>/traits/")
+async def character_traits(character_id: str) -> dict[str, dict[str, str | int]]:
+    """Return traits as a json object in the form of {trait_name: trait_id}."""
+    traits = await CharacterTrait.find(CharacterTrait.character == str(character_id)).to_list()
+
+    if name_filter := request.args.get("name_filter", None):
+        traits = [x for x in traits if x.name.lower().startswith(name_filter.lower())]
+
+    return {
+        x.name: {
+            "id": str(x.id),
+            "value": x.value,
+        }
+        for x in traits
+    }
+
+
 class CharacterEditView(MethodView):
     """View to handle editing an individual character."""
 

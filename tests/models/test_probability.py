@@ -15,7 +15,7 @@ async def test_calculate_no_db(mock_ctx1):
     """Test the calculate method."""
     # GIVEN an empty RollProbability collection
     # WHEN calculating the probability of a roll
-    p = Probability(mock_ctx1, pool=5, difficulty=6, dice_size=10)
+    p = Probability(ctx=mock_ctx1, pool=5, difficulty=6, dice_size=10)
     result = await p._calculate()
 
     # THEN confirm the probability is correct and the result is saved to the database
@@ -60,7 +60,7 @@ async def test_calculate_with_db(mock_ctx1):
     await r.insert()
 
     # WHEN calculating the probability of a roll
-    p = Probability(mock_ctx1, pool=5, difficulty=6, dice_size=10)
+    p = Probability(ctx=mock_ctx1, pool=5, difficulty=6, dice_size=10)
     result = await p._calculate()
 
     # THEN confirm the probability is correct and the result pulled from the database
@@ -91,23 +91,25 @@ async def test_get_description(mock_ctx1):
     )
 
     # WHEN getting the description
-    p = Probability(mock_ctx1, pool=5, difficulty=6, dice_size=10)
+    p = Probability(ctx=mock_ctx1, pool=5, difficulty=6, dice_size=10)
     result = p._get_description(results=obj)
 
     # THEN confirm the description is correct
-    assert result == Regex(r"## Overall success probability: \d{2}\.\d{2}% 👍", re.I)
+    assert result == Regex(r"## Overall success probability: \d{2}\.\d{2}% 👍", re.IGNORECASE)
     assert "Rolling `5d10` against difficulty `6`" in result
 
 
 async def test_get_embed(mock_ctx1):
     """Test the get_embed method."""
     # GIVEN a probability instance
-    p = Probability(mock_ctx1, pool=5, difficulty=6, dice_size=10)
+    p = Probability(ctx=mock_ctx1, pool=5, difficulty=6, dice_size=10)
 
     # WHEN getting the embed
     embed = await p.get_embed()
 
     # THEN confirm the embed is correct
     assert isinstance(embed, discord.Embed)
-    assert embed.description == Regex(r"## Overall success probability: \d{2}\.\d{2}% 👍", re.I)
+    assert embed.description == Regex(
+        r"## Overall success probability: \d{2}\.\d{2}% 👍", re.IGNORECASE
+    )
     assert "Rolling `5d10` against difficulty `6`" in embed.description

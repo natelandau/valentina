@@ -63,12 +63,13 @@ async def redirect_unauthorized(e: Any) -> Any:  # noqa: ARG001
 
 def import_routes() -> None:
     """Import routes to avoid circular imports."""
-    from .routes import campaigns, characters, home, oauth
+    from .routes import campaigns, characters, gameplay, home, oauth
 
     app.register_blueprint(campaigns.bp)
     app.register_blueprint(characters.bp)
     app.register_blueprint(home.bp)
     app.register_blueprint(oauth.bp)
+    app.register_blueprint(gameplay.bp)
 
 
 def create_dev_app() -> Quart:

@@ -1,0 +1,14 @@
+{# def
+    character:Character = None,
+    campaign:Campaign = None,
+    dice_sizes:list[int]
+#}
+<PageLayout title="Gameplay">
+<h1>Gameplay</h1>
+<div class="row row-cols-1 row-cols-sm-2">
+    <div class="col col-sm-4 bg-light border">
+        <gameplay.FormWrapper character={{ character }} campaign={{ campaign }} dice_sizes={{ dice_sizes }} />
+    </div>
+    <div class="col col-sm-8" id="main-content"></div>
+</div>
+</PageLayout>

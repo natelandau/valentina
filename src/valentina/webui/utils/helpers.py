@@ -6,6 +6,62 @@ from quart.sessions import SessionMixin
 from valentina.models import Campaign, Character, Guild, User
 
 
+async def fetch_active_campaign(
+    session: SessionMixin, campaign_id: str = "", fetch_links: bool = False
+) -> Campaign | None:
+    """Update and return the active campaign from the session."""
+    if len(session["GUILD_CAMPAIGNS"]) == 0:
+        return None
+
+    if len(session["GUILD_CAMPAIGNS"]) == 1:
+        return await Campaign.get(
+            next(iter(session["GUILD_CAMPAIGNS"].values())), fetch_links=fetch_links
+        )
+
+    existing_campaign_id = session.get("ACTIVE_CAMPAIGN_ID", None)
+
+    if not campaign_id:
+        if existing_campaign_id:
+            return await Campaign.get(existing_campaign_id, fetch_links=fetch_links)
+
+        return None
+
+    if existing_campaign_id == campaign_id:
+        return await Campaign.get(campaign_id, fetch_links=fetch_links)
+
+    session["ACTIVE_CAMPAIGN_ID"] = campaign_id
+    session.modified = True
+    return await Campaign.get(campaign_id, fetch_links=fetch_links)
+
+
+async def fetch_active_character(
+    session: SessionMixin, character_id: str = "", fetch_links: bool = False
+) -> Character | None:
+    """Update and return the active character from the session."""
+    if len(session["USER_CHARACTERS"]) == 0:
+        return None
+
+    if len(session["USER_CHARACTERS"]) == 1:
+        return await Character.get(
+            next(iter(session["USER_CHARACTERS"].values())), fetch_links=fetch_links
+        )
+
+    existing_character_id = session.get("ACTIVE_CHARACTER_ID", None)
+
+    if not character_id:
+        if existing_character_id:
+            return await Character.get(existing_character_id, fetch_links=fetch_links)
+
+        return None
+
+    if existing_character_id == character_id:
+        return await Character.get(character_id, fetch_links=fetch_links)
+
+    session["ACTIVE_CHARACTER_ID"] = character_id
+    session.modified = True
+    return await Character.get(character_id, fetch_links=fetch_links)
+
+
 async def fetch_guild(session: SessionMixin, fetch_links: bool = True) -> Guild:
     """Fetch the database Guild based on Discord guild_id from the session. Updates the session with the guild name.
 
