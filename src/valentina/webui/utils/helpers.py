@@ -1,9 +1,21 @@
 """Helpers for the webui."""
 
 from loguru import logger
+from quart import render_template
 from quart.sessions import SessionMixin
+from werkzeug.exceptions import HTTPException
 
 from valentina.models import Campaign, Character, Guild, User
+
+
+async def error_handler(exc: HTTPException) -> str:
+    """Use a custom error handler for HTTP exceptions."""
+    return await render_template(
+        "error.html",
+        detail=exc.description,
+        status_code=exc.code,
+        page_title=f"{exc.code} Error",
+    )
 
 
 async def fetch_active_campaign(
@@ -30,7 +42,6 @@ async def fetch_active_campaign(
         return await Campaign.get(campaign_id, fetch_links=fetch_links)
 
     session["ACTIVE_CAMPAIGN_ID"] = campaign_id
-    session.modified = True
     return await Campaign.get(campaign_id, fetch_links=fetch_links)
 
 
@@ -58,7 +69,6 @@ async def fetch_active_character(
         return await Character.get(character_id, fetch_links=fetch_links)
 
     session["ACTIVE_CHARACTER_ID"] = character_id
-    session.modified = True
     return await Character.get(character_id, fetch_links=fetch_links)
 
 
@@ -78,7 +88,6 @@ async def fetch_guild(session: SessionMixin, fetch_links: bool = True) -> Guild:
 
     if session.get("GUILD_NAME", None) != guild.name:
         session["GUILD_NAME"] = guild.name
-        session.modified = True
 
     return guild
 
@@ -100,12 +109,10 @@ async def fetch_user(session: SessionMixin, fetch_links: bool = True) -> User:
     if session.get("USER_NAME", None) != user.name:
         logger.warning("Updating session with user name")
         session["USER_NAME"] = user.name
-        session.modified = True
 
     if session.get("USER_AVATAR_URL", None) != user.avatar_url:
         logger.warning("Updating session with user avatar")
         session["USER_AVATAR_URL"] = user.avatar_url
-        session.modified = True
 
     return user
 
@@ -133,7 +140,6 @@ async def fetch_user_characters(session: SessionMixin, fetch_links: bool = True)
     if session.get("USER_CHARACTERS", None) != character_dict:
         logger.warning("Updating session with characters")
         session["USER_CHARACTERS"] = character_dict
-        session.modified = True
 
     return characters
 
@@ -160,7 +166,6 @@ async def fetch_campaigns(session: SessionMixin, fetch_links: bool = True) -> li
     if session.get("GUILD_CAMPAIGNS", None) != campaigns_dict:
         logger.warning("Updating session with campaigns")
         session["GUILD_CAMPAIGNS"] = campaigns_dict
-        session.modified = True
 
     return campaigns
 

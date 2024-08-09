@@ -1,21 +1,22 @@
-"""Blueprint for character views."""
+"""View character."""
+
+from typing import ClassVar
 
 from flask_discord import requires_authorization
 from loguru import logger
 from markupsafe import escape
-from quart import Blueprint, abort, render_template, request, session
+from quart import abort, render_template, request, session
 from quart.views import MethodView
 
 from valentina.constants import CharSheetSection, InventoryItemType, TraitCategory
 from valentina.models import AWSService, Character, CharacterTrait, InventoryItem, Statistics
-from valentina.utils import console
 from valentina.webui import catalog
-
-bp = Blueprint("character", __name__)
 
 
 class CharacterView(MethodView):
     """View to handle character operations."""
+
+    decorators: ClassVar = [requires_authorization]
 
     def __init__(self) -> None:
         self.session = session  # Assuming session is defined globally or passed in some way
@@ -86,7 +87,6 @@ class CharacterView(MethodView):
     async def process_form_data(self, character: Character) -> None:
         """Process form data and update character attributes."""
         form = await request.form
-        console.log(f"{form=}")
 
         # Iterate over all form fields and update character attributes if they exist and are not "None"
         for key, value in form.items():
@@ -145,9 +145,9 @@ class CharacterView(MethodView):
 
         return abort(404)
 
-    @requires_authorization
     async def get(self, character_id: str = "") -> str:
         """Handle GET requests."""
+        success_msg = request.args.get("success_msg")
         character = await self.get_character_object(character_id)
 
         if request.headers.get("HX-Request"):
@@ -157,9 +157,9 @@ class CharacterView(MethodView):
             "character",
             character=character,
             traits=await self.get_character_sheet_traits(character),
+            success_msg=success_msg,
         )
 
-    @requires_authorization
     async def post(self, character_id: str = "") -> str:
         """Handle POST requests."""
         character = await self.get_character_object(character_id)
@@ -178,50 +178,3 @@ class CharacterView(MethodView):
             args=request.args,
             statistics=statistics,
         )
-
-
-# Register the view with the Blueprint
-character_view = CharacterView.as_view("character_view")
-bp.add_url_rule(
-    "/character/<string:character_id>", view_func=character_view, methods=["GET", "POST"]
-)
-
-
-@bp.route("/character/<string:character_id>/traits/")
-async def character_traits(character_id: str) -> dict[str, dict[str, str | int]]:
-    """Return traits as a json object in the form of {trait_name: trait_id}."""
-    traits = await CharacterTrait.find(CharacterTrait.character == str(character_id)).to_list()
-
-    if name_filter := request.args.get("name_filter", None):
-        traits = [x for x in traits if x.name.lower().startswith(name_filter.lower())]
-
-    return {
-        x.name: {
-            "id": str(x.id),
-            "value": x.value,
-        }
-        for x in traits
-    }
-
-
-class CharacterEditView(MethodView):
-    """View to handle editing an individual character."""
-
-    def __init__(self) -> None:
-        self.session = session  # Assuming session is defined globally or passed in some way
-
-    @requires_authorization
-    async def get(self, character_id: str) -> str:
-        """Edit an individual character."""
-        character = await Character.get(character_id, fetch_links=True)
-        if not character:
-            abort(404)
-
-        return await render_template(
-            "snippets/character_edit.html", character=character, view="sheet"
-        )
-
-
-# Register the view with the Blueprint
-edit_character = CharacterEditView.as_view("edit_character")
-bp.add_url_rule("/character/<string:character_id>/edit", view_func=edit_character, methods=["GET"])

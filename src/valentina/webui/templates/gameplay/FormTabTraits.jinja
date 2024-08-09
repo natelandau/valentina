@@ -1,6 +1,7 @@
 {# def
     traits:List[CharacterTrait] = [],
     campaign:Campaign = None,
+    form:ValentinaForm,
 #}
 <form hx-post="{{ url_for("gameplay.diceroll") }}"
       hx-target="#main-content"
@@ -26,7 +27,6 @@
         <div class="col">
             <label for="trait2" class="form-label">Trait 2</label>
             <div class="input-group mb-3">
-                {# <label class="input-group-text">Trait 2</label> #}
                 <select class="form-select" name="trait2">
                     <option value='{}' selected></option>
                     {% for trait in traits %}
@@ -40,10 +40,10 @@
     </div>
     <div class="row">
         <div class="col">
-            <global.FormIncrement label="Difficulty" form-id="difficulty" start-val="6" />
+            <global.valentinaform.Increment label="Difficulty" name="difficulty" start-val="6" form={{ form }} />
         </div>
         <div class="col">
-            <global.FormIncrement label="Desperation Dice" form-id="desperation_dice" start-val="0" max-val={{ campaign.desperation }} />
+            <global.valentinaform.Increment label="Desperation Dice" name="desperation_dice" start-val="0" max-val={{ campaign.desperation }} form={{ form }} />
         </div>
     </div>
     <button class="btn btn-primary" value="submit">Roll Dice</button>

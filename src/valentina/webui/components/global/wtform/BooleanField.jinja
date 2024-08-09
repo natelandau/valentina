@@ -1,0 +1,10 @@
+{# def
+    field:Field,
+#}
+{% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data else "" %}
+<div class="form-check mb-3" id="{{ field.id }}-container">
+    {{ field(class="form-check-input"~valid_css) }}
+    {{ field.label(class="form-check-label") }}
+    {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
+    {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
+</div>

@@ -1,17 +1,19 @@
-"""Blueprint for character views."""
+"""Campaign view."""
+
+from typing import ClassVar
 
 from flask_discord import requires_authorization
-from quart import Blueprint, abort, request, session
+from quart import abort, request, session
 from quart.views import MethodView
 
 from valentina.models import Campaign, Statistics
 from valentina.webui import catalog
 
-bp = Blueprint("campaign", __name__)
-
 
 class CampaignView(MethodView):
     """View to handle campaign operations."""
+
+    decorators: ClassVar = [requires_authorization]
 
     def __init__(self) -> None:
         self.session = session  # Assuming session is defined globally or passed in some way
@@ -54,8 +56,3 @@ class CampaignView(MethodView):
             return await self.handle_tabs(campaign)
 
         return catalog.render("campaign", campaign=campaign)
-
-
-# Register the view with the Blueprint
-view_campaign = CampaignView.as_view("view_campaign")
-bp.add_url_rule("/campaign/<string:campaign_id>", view_func=view_campaign, methods=["GET", "POST"])

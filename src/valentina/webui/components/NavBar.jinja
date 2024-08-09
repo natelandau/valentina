@@ -15,7 +15,7 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link active btn btn-dark me-2"
+                    <a class="nav-link btn btn-dark me-2"
                        aria-current="page"
                        href="{{ url_for("gameplay.gameplay") }}">Gameplay</a>
                 </li>
@@ -36,8 +36,8 @@
                             <hr class="dropdown-divider">
                         </li>
                         <li>
-                            {# TODO: Create new character#}
-                            <a class="dropdown-item" href="#">Create new character</a>
+                            <a class="dropdown-item"
+                               href="{{ url_for("character.create_full_start") }}">Create new character</a>
                         </li>
                     </ul>
                 </li>
@@ -80,6 +80,7 @@
                         <h6 class="dropdown-header">{{ session["USER_NAME"] }}</h6>
                     </li>
                     <li>
+                        {# TODO: Build this page #}
                         <a href="" class="dropdown-item">Profile</a>
                     </li>
                     <li>
@@ -89,38 +90,6 @@
                         <a href="{{ url_for("oauth.logout") }}" class="dropdown-item">Logout</a>
                     </li>
                 </ul>
-                {# <div class="nav-item dropdown d-flex">
-                        <img alt="{{ session["USER_NAME"] }} avatar"
-                             src="{{ session["USER_AVATAR_URL"] }}"
-                             class="rounded-circle border border-3 border-primary-subtle dropdown-toggle"
-                             role="button"
-                             data-bs-toggle="dropdown"
-                             height="55"
-                             width="55"
-                             aria-expanded="false" />
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item" href="#">Action</a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="#">Another action</a>
-                            </li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="#">Something else here</a>
-                            </li>
-                        </ul>
-                    </div> #}
-                <!-- /NAVBAR RIGHT -->
-                {# <form class="d-flex" role="search">
-                    <input class="form-control me-2"
-                           type="search"
-                           placeholder="Search"
-                           aria-label="Search">
-                    <button class="btn btn-outline-success" type="submit">Search</button>
-                </form> #}
             </div>
         </div>
     </div>

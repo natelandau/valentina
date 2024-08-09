@@ -25,7 +25,7 @@
     </div>
 {% else %}
     {% set card_style = "card h-100 border border-2 shadow bg-light-subtle" %}
-    <h1>Welcome {{ session["USER_NAME"] }}</h1>
+    <global.PageTitle>Welcome {{ session["USER_NAME"] }}</global.PageTitle>
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
         <homepage.Card title="Characters" icon="users">
         <div class="row row-cols-2">
@@ -53,7 +53,9 @@
             <div class="col ps-4 h-100 d-inline-block">
                 <p class="card-text">Or create a new character</p>
                 <br>
-                <button type="button" class="btn btn-primary align-text-bottom">Create</button>
+                <a type="button"
+                   class="btn btn-primary align-text-bottom"
+                   href="{{ url_for("character.create_full_start") }}">Create</a>
             </div>
         </div>
         </homepage.Card>
@@ -78,6 +80,10 @@
                href="campaign_url"
                class="btn btn-primary">Go</a>
         </div>
+        </homepage.Card>
+        <homepage.Card title="Gameplay" icon="dice">
+        <p class="card-text">Roll dice for your characters.</p>
+        <a href="{{ url_for("gameplay.gameplay") }}" class="btn btn-primary">Go</a>
         </homepage.Card>
     </div>
 {% endif %}

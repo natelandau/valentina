@@ -37,6 +37,7 @@
         python            = ">=3.11,<3.13"
         quart             = "^0.19.6"
         quart-flask-patch = "^0.3.0"
+        quart-wtforms     = "^1.0.1"
         rich              = "^13.7.1"
         semver            = "^3.0.2"
         typer             = "^0.12.3"

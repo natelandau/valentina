@@ -1,6 +1,7 @@
 {# def
     macros:list[UserMacro] = [],
     campaign:Campaign = None,
+    form:ValentinaForm,
 #}
 <form hx-post="{{ url_for("gameplay.diceroll") }}"
       hx-target="#main-content"
@@ -10,7 +11,6 @@
     <input type="hidden" id="tab" name="tab" value="macros" />
     <div class="row">
         <div class="col">
-            {# <label for="macro" class="form-label">Macro</label> #}
             <div class="input-group mb-3">
                 <label class="input-group-text">Macro</label>
                 <select class="form-select" name="macro">
@@ -26,10 +26,10 @@
     </div>
     <div class="row">
         <div class="col">
-            <global.FormIncrement label="Difficulty" form-id="difficulty" start-val="6" />
+            <global.valentinaform.Increment label="Difficulty" name="difficulty" start-val="6" form={{ form }} />
         </div>
         <div class="col">
-            <global.FormIncrement label="Desperation Dice" form-id="desperation_dice" start-val="0" max-val={{ campaign.desperation }} />
+            <global.valentinaform.Increment label="Desperation Dice" name="desperation_dice" start-val="0" max-val={{ campaign.desperation }} form={{ form }} />
         </div>
     </div>
     <button class="btn btn-primary" value="submit">Roll Dice</button>

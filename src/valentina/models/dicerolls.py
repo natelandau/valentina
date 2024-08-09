@@ -184,7 +184,7 @@ class DiceRoll:
     def roll(self) -> list[int]:
         """Roll the dice and return the results."""
         if not self._roll:
-            self._roll = [random_num(self.dice_type.value) for x in range(self.pool)]
+            self._roll = [int(random_num(self.dice_type.value)) for x in range(self.pool)]
 
         return self._roll
 

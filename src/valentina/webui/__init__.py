@@ -11,10 +11,11 @@ from flask_discord.models import User as FlaskDiscordUser
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 from loguru import logger
-from quart import Quart, redirect, render_template, url_for
+from quart import Quart, redirect, url_for
 from werkzeug.exceptions import HTTPException
 
 from valentina.utils import ValentinaConfig
+from valentina.webui.utils.helpers import error_handler
 from valentina.webui.utils.jinja_filters import from_markdown
 
 # Allow insecure transport for debugging from localhost
@@ -38,18 +39,12 @@ discord_oauth = DiscordOAuth2Session(app)
 catalog = jinjax.Catalog(jinja_env=app.jinja_env)
 catalog.add_folder(Path(__file__).parent / "components")
 catalog.add_folder(Path(__file__).parent / "templates")
+app.jinja_env.trim_blocks = True
+app.jinja_env.lstrip_blocks = True
 app.jinja_env.globals["catalog"] = catalog
 catalog.jinja_env.filters.update({"from_markdown": from_markdown})
-
-
-async def error_handler(exc: HTTPException) -> str:
-    """Use a custom error handler for HTTP exceptions."""
-    return await render_template(
-        "error.html",
-        detail=exc.description,
-        status_code=exc.code,
-        page_title=f"{exc.code} Error",
-    )
+catalog.jinja_env.trim_blocks = True
+catalog.jinja_env.lstrip_blocks = True
 
 
 app.register_error_handler(HTTPException, error_handler)
@@ -61,20 +56,21 @@ async def redirect_unauthorized(e: Any) -> Any:  # noqa: ARG001
     return redirect(url_for("oauth.login"))
 
 
-def import_routes() -> None:
+def import_blueprints() -> None:
     """Import routes to avoid circular imports."""
-    from .routes import campaigns, characters, gameplay, home, oauth
+    from .blueprints import campaign_bp, character_bp, gameplay_bp
+    from .routes import home, oauth
 
-    app.register_blueprint(campaigns.bp)
-    app.register_blueprint(characters.bp)
+    app.register_blueprint(campaign_bp)
+    app.register_blueprint(character_bp)
     app.register_blueprint(home.bp)
     app.register_blueprint(oauth.bp)
-    app.register_blueprint(gameplay.bp)
+    app.register_blueprint(gameplay_bp)
 
 
 def create_dev_app() -> Quart:
     """Create a new Quart app with the given configuration. This is used for development only."""
-    import_routes()
+    import_blueprints()
 
     @app.before_serving
     async def create_db_pool() -> None:
@@ -98,7 +94,7 @@ def create_dev_app() -> Quart:
 async def run_webserver() -> None:
     """Run the web server in production."""
     # Imnport these here to avoid circular imports
-    import_routes()
+    import_blueprints()
 
     hypercorn_config = Config()
     hypercorn_config.bind = [f"{ValentinaConfig().webui_host}:{ValentinaConfig().webui_port}"]

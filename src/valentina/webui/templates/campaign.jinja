@@ -2,7 +2,7 @@
     campaign: Campaign
 #}
 <PageLayout title={{ campaign.name }}>
-<h1>{{ campaign.name }}</h1>
+<global.PageTitle>{{ campaign.name }}</global.PageTitle>
 {% include "campaign/tabs.html" %}
 <div id="main-content" class="mt-3 mx-auto px-lg-5">
     {# Include the default jinjax template include here for initial page load #}

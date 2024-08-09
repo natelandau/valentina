@@ -1,23 +1,24 @@
 {# def
+    form:ValentinaForm,
+    name:str,
     label:str,
     start_val:int = 1,
-    max_val:int=10,
-    form_id:str,
-    join_label:bool=False,
+    max_val:int=5,
+    min_val:int=0,
 #}
-<div x-data="{ currentVal: {{ start_val }}, minVal: 0, maxVal: {{ max_val }}, decimalPoints: 0, incrementAmount: 1 }">
-    {% if not join_label %}<label for="{{ form_id }}" class="form-label">{{ label }}</label>{% endif %}
+<div x-data="{ currentVal: {{ start_val }}, minVal: {{ min_val }}, maxVal: {{ max_val }}, decimalPoints: 0, incrementAmount: 1 }">
+    {% if not form.join_labels %}<label for="{{ name }}" class="form-label">{{ label }}</label>{% endif %}
     <div @dblclick.prevent class="input-group mb-3">
-        {% if join_label %}<label class="input-group-text">{{ label }}</label>{% endif %}
+        {% if form.join_labels %}<label class="input-group-text">{{ label }}</label>{% endif %}
         <button class="btn btn-outline-secondary"
                 type="button"
                 id="button-addon1"
                 @click="currentVal = Math.max(minVal, currentVal - incrementAmount)">-</button>
         <input x-model="currentVal.toFixed(decimalPoints)"
-               id="{{ form_id }}"
+               id="{{ name }}"
                type="text"
                class="form-control"
-               name="{{ form_id }}"
+               name="{{ name }}"
                readonly>
         <button class="btn btn-outline-secondary"
                 type="button"

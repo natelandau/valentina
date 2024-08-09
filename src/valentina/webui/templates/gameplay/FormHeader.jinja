@@ -36,8 +36,7 @@
                 {% endif %}
             {% endfor %}
         {% else %}
-            {# TODO: link to create a character #}
-            <span class="form-text ps-1">Please create a character</span>
+            <span class="form-text ps-1">Please <a href="{{ url_for("character.create_full") }}">create a character</a></span>
         {% endif %}
     </div>
     <div class="input-group mb-3">

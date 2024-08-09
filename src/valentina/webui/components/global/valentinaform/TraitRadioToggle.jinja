@@ -1,0 +1,17 @@
+{# def
+    form:ValentinaForm,
+    max_value:int = 5,
+    name:str,
+    label:str,
+    current_value:int = 0,
+#}
+{% for i in range(max_value + 1) %}
+    <input type="radio"
+           class="btn-check"
+           name="{{ name }}"
+           id="{{ name }}_{{ i }}"
+           autocomplete="off"
+           value="{{ i }}"
+           {% if i == current_value %}checked{% endif %}>
+    <label class="btn btn-sm btn-outline-primary" for="{{ name }}_{{ i }}">{{ i }}</label>
+{% endfor %}

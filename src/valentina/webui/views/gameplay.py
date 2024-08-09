@@ -1,10 +1,10 @@
-"""Blueprint for gameplay views."""
+"""Gameplay views for dicerolling."""
 
 import json
 from typing import ClassVar
 
 from flask_discord import requires_authorization
-from quart import Blueprint, abort, request, session
+from quart import abort, request, session
 from quart.views import MethodView
 
 from valentina.constants import DiceType, RollResultType
@@ -12,7 +12,9 @@ from valentina.models import CharacterTrait, DiceRoll
 from valentina.webui import catalog
 from valentina.webui.utils import fetch_active_campaign, fetch_active_character, fetch_user
 
-bp = Blueprint("gameplay", __name__)
+from .valentina_forms import ValentinaForm
+
+gameplay_form = ValentinaForm()
 
 
 class DiceRollView(MethodView):
@@ -141,6 +143,7 @@ class GameplayView(MethodView):
                 character=await fetch_active_character(session=session),
                 campaign=await fetch_active_campaign(session=session),
                 dice_sizes=self.dice_size_values,
+                form=gameplay_form,
             )
 
         if request.args.get("tab") == "traits":
@@ -155,6 +158,7 @@ class GameplayView(MethodView):
                 "gameplay.FormTabTraits",
                 traits=traits,
                 campaign=await fetch_active_campaign(session=session),
+                form=gameplay_form,
             )
 
         if request.args.get("tab") == "macros":
@@ -163,6 +167,7 @@ class GameplayView(MethodView):
                 "gameplay.FormTabMacros",
                 macros=user.macros,
                 campaign=await fetch_active_campaign(session=session),
+                form=gameplay_form,
             )
 
         return abort(404)
@@ -189,6 +194,7 @@ class GameplayView(MethodView):
                     session=session, campaign_id=request.args.get("campaign_id", None)
                 ),
                 dice_sizes=self.dice_size_values,
+                form=gameplay_form,
             )
 
         # Handle tab switches
@@ -201,10 +207,5 @@ class GameplayView(MethodView):
             character=await fetch_active_character(session=session),
             campaign=await fetch_active_campaign(session=session),
             dice_sizes=self.dice_size_values,
+            form=gameplay_form,
         )
-
-
-bp.add_url_rule("/gameplay/", view_func=GameplayView.as_view("gameplay"), methods=["GET"])
-bp.add_url_rule(
-    "/gameplay/diceroll/", view_func=DiceRollView.as_view("diceroll"), methods=["GET", "POST"]
-)

@@ -1,0 +1,48 @@
+{# def
+    form:ValentinaForm,
+    name:str,
+    label:str,
+    description:str = "",
+    choices:list[tuple[str,str]] = [],
+    value:str="",
+    is_valid:bool = False,
+    is_invalid:bool = False,
+    error_msg:str = "",
+#}
+{# Choices
+    a list of tuples (value, name)
+#}
+{% set valid_css = " is-invalid" if is_invalid else " is-valid" if is_valid else "" %}
+{% if form.join_labels %}
+    <div class="mb-3" {{ form.hx_command_outer(name) }}>
+        <div class="input-group">
+            <span class="input-group-text">{{ label }}</span>
+            <select class="form-select {{ valid_css }}" name="{{ name }}" id="{{ name }}" {{ form.hx_command_input(name=name) }}>
+                {% for choice in choices %}
+                    <option value={{ choice[0] }} {% if value == choice[0] %}selected{% endif %}>{{ choice[1] }}
+                    </option>
+                {% endfor %}
+            </select>
+            <div id="{{ name }}-feedback" class="invalid-feedback">{{ error_msg }}</div>
+            <img id="indicator-{{ name }}"
+                 src="{{ url_for('static', filename='spinners/bars.svg') }}"
+                 class="htmx-indicator" />
+        </div>
+        {% if description %}<div class="form-text">{{ description }}</div>{% endif %}
+    </div>
+{% else %}
+    <div class="mb-3" {{ form.hx_command_outer(name) }}>
+        <label for="{{ field.id }}" class="form-label">{{ label }}</label>
+        <select class="form-select {{ valid_css }}" name="{{ name }}" id="{{ name }}" {{ form.hx_command_input(name=name) }}>
+            {% for choice in choices %}
+                <option value={{ choice[0] }} {% if selected == choice[0] %}selected{% endif %}>{{ choice[1] }}
+                </option>
+            {% endfor %}
+        </select>
+        <div id="{{ name }}-feedback" class="invalid-feedback">{{ error_msg }}</div>
+        {% if description %}<div class="form-text">{{ description }}</div>{% endif %}
+        <img id="indicator-{{ name }}"
+             src="{{ url_for('static', filename='spinners/bars.svg') }}"
+             class="htmx-indicator" />
+    </div>
+{% endif %}

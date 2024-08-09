@@ -54,6 +54,9 @@ def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no
     logging.getLogger("hypercorn").setLevel(level=ValentinaConfig().webui_log_level.upper())
     logging.getLogger("requests_oauthlib").setLevel(level="INFO")
     logging.getLogger("quart.app").setLevel(level=ValentinaConfig().webui_log_level.upper())
+    logging.getLogger("quart_wtf").setLevel(level=ValentinaConfig().webui_log_level.upper())
+    logging.getLogger("jinjax").setLevel(level="INFO")
+
     for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
         logging.getLogger(service).setLevel(level=aws_log_level.upper())
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)

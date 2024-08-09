@@ -5,7 +5,7 @@ import asyncio
 import pymongo
 from loguru import logger
 
-from valentina.utils import ValentinaConfig
+from valentina.utils import ValentinaConfig, instantiate_logger
 from valentina.utils.database import init_database
 from valentina.webui import create_dev_app
 
@@ -27,6 +27,7 @@ async def create_db_pool() -> None:
 
 def dev() -> None:
     """Run the web server for development."""
+    instantiate_logger()
     app = create_dev_app()
     app.run(
         host=ValentinaConfig().webui_host,

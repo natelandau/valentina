@@ -1,0 +1,17 @@
+{# def
+    field:Field,
+#}
+{% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data else "" %}
+<fieldset id="{{ field.id }}-container">
+    {{ field.label(class="form-label fw-medium") }}
+    {% for subfield in field %}
+        <div class="form-check">
+            {{ subfield(class="form-check-input"~valid_css) }}
+            {{ subfield.label(class="form-check-label") }}
+            {% if loop.last %}
+                {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
+                {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
+            {% endif %}
+        </div>
+    {% endfor %}
+</fieldset>
