@@ -15,6 +15,8 @@ from valentina.constants import CharSheetSection, TraitCategory
 from valentina.models import Character, CharacterTrait
 from valentina.utils.helpers import get_max_trait_value
 from valentina.webui import catalog
+from valentina.webui.utils.discord import post_to_audit_log, post_to_error_log
+from valentina.webui.utils.helpers import update_session
 from valentina.webui.WTForms.forms import (
     CharacterCreateFullStep1,
     HunterClassSpecifics,
@@ -170,6 +172,10 @@ class CreateCharacterStep2(MethodView):
     async def get(self, character_id: str, char_class: str) -> str:
         """Process initial page load."""
         if not character_id or not char_class:
+            await post_to_error_log(
+                msg="No character ID or char_class provided to CreateCharacterStep2",
+                view=self.__class__.__name__,
+            )
             abort(400)
 
         class_form = self._get_class_specific_form(char_class)
@@ -191,6 +197,10 @@ class CreateCharacterStep2(MethodView):
     async def post(self, character_id: str, char_class: str) -> str | Response:
         """Process form responses."""
         if not character_id or not char_class:
+            await post_to_error_log(
+                msg="No character ID or char_class provided to CreateCharacterStep2",
+                view=self.__class__.__name__,
+            )
             abort(400)
 
         class_form = self._get_class_specific_form(char_class)
@@ -198,6 +208,10 @@ class CreateCharacterStep2(MethodView):
 
         if await form.validate_on_submit():
             if not character_id:
+                await post_to_error_log(
+                    msg="No character ID  provided to CreateCharacterStep2",
+                    view=self.__class__.__name__,
+                )
                 abort(401)
 
             character = await Character.get(character_id)
@@ -284,6 +298,10 @@ class CreateCharacterStep3(MethodView):
     async def get(self, character_id: str) -> str:
         """Process initial page load."""
         if not character_id:
+            await post_to_error_log(
+                msg="No character ID provided to CreateCharacterStep3",
+                view=self.__class__.__name__,
+            )
             abort(400)
 
         character = await Character.get(character_id, fetch_links=True)
@@ -299,6 +317,10 @@ class CreateCharacterStep3(MethodView):
     async def post(self, character_id: str) -> str | Response:
         """Process form responses."""
         if not character_id:
+            await post_to_error_log(
+                msg="No character ID provided to CreateCharacterStep3",
+                view=self.__class__.__name__,
+            )
             abort(400)
 
         character = await Character.get(character_id, fetch_links=True)
@@ -321,6 +343,14 @@ class CreateCharacterStep3(MethodView):
         await character.save(link_rule=WriteRules.WRITE)
         self.session_data.clear_data()
 
+        # Log the result
+        await post_to_audit_log(
+            msg=f"New character created: {character.full_name}",
+            view=self.__class__.__name__,
+        )
+
+        # Rebuild the session with the new character data
+        await update_session()
         return redirect(
             url_for(
                 "character.character_view",

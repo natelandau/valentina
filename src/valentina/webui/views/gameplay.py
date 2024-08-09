@@ -69,7 +69,7 @@ class DiceRollView(MethodView):
         Returns:
             tuple[int, dic[str,int]]: The pool and a dict of trait names and values.
         """
-        character = await fetch_active_character(session=session, fetch_links=True)
+        character = await fetch_active_character(fetch_links=True)
 
         macro = json.loads(form.get("macro", {}))
 
@@ -98,8 +98,8 @@ class DiceRollView(MethodView):
                 pool = int(form.get("pool", 1))
                 rolled_traits = {}
 
-        character = await fetch_active_character(session=session)
-        campaign = await fetch_active_campaign(session=session)
+        character = await fetch_active_character(fetch_links=True)
+        campaign = await fetch_active_campaign()
 
         roll = DiceRoll(
             difficulty=int(form.get("difficulty", 1)),
@@ -140,14 +140,14 @@ class GameplayView(MethodView):
         if request.args.get("tab") == "throw":
             return catalog.render(
                 "gameplay.FormTabThrow",
-                character=await fetch_active_character(session=session),
-                campaign=await fetch_active_campaign(session=session),
+                character=await fetch_active_character(fetch_links=True),
+                campaign=await fetch_active_campaign(),
                 dice_sizes=self.dice_size_values,
                 form=gameplay_form,
             )
 
         if request.args.get("tab") == "traits":
-            character = await fetch_active_character(session=session)
+            character = await fetch_active_character(fetch_links=True)
             traits = (
                 await CharacterTrait.find(CharacterTrait.character == str(character.id))
                 .sort(+CharacterTrait.name)
@@ -157,16 +157,16 @@ class GameplayView(MethodView):
             return catalog.render(
                 "gameplay.FormTabTraits",
                 traits=traits,
-                campaign=await fetch_active_campaign(session=session),
+                campaign=await fetch_active_campaign(),
                 form=gameplay_form,
             )
 
         if request.args.get("tab") == "macros":
-            user = await fetch_user(session=session, fetch_links=False)
+            user = await fetch_user()
             return catalog.render(
                 "gameplay.FormTabMacros",
                 macros=user.macros,
-                campaign=await fetch_active_campaign(session=session),
+                campaign=await fetch_active_campaign(),
                 form=gameplay_form,
             )
 
@@ -188,10 +188,10 @@ class GameplayView(MethodView):
             return catalog.render(
                 "gameplay.FormWrapper",
                 character=await fetch_active_character(
-                    session=session, character_id=request.args.get("character_id", None)
+                    character_id=request.args.get("character_id", None)
                 ),
                 campaign=await fetch_active_campaign(
-                    session=session, campaign_id=request.args.get("campaign_id", None)
+                    campaign_id=request.args.get("campaign_id", None)
                 ),
                 dice_sizes=self.dice_size_values,
                 form=gameplay_form,
@@ -204,8 +204,8 @@ class GameplayView(MethodView):
         # If not an HTMX request, return the entire page
         return catalog.render(
             "gameplay",
-            character=await fetch_active_character(session=session),
-            campaign=await fetch_active_campaign(session=session),
+            character=await fetch_active_character(),
+            campaign=await fetch_active_campaign(),
             dice_sizes=self.dice_size_values,
             form=gameplay_form,
         )

@@ -56,6 +56,7 @@ def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no
     logging.getLogger("quart.app").setLevel(level=ValentinaConfig().webui_log_level.upper())
     logging.getLogger("quart_wtf").setLevel(level=ValentinaConfig().webui_log_level.upper())
     logging.getLogger("jinjax").setLevel(level="INFO")
+    logging.getLogger("asyncio").setLevel(level="ERROR")
 
     for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
         logging.getLogger(service).setLevel(level=aws_log_level.upper())

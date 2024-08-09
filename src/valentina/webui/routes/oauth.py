@@ -49,7 +49,7 @@ async def callback() -> Any:
 
     if len(matched_guilds) == 1:
         session["GUILD_ID"] = matched_guilds[0]["id"]
-        await update_session(session)
+        await update_session()
         return redirect(url_for("index"))
 
     session["matched_guilds"] = matched_guilds

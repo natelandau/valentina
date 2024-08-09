@@ -21,7 +21,7 @@ async def select_guild() -> str | Response:
 
         session["GUILD_ID"] = int(form["guild_id"])
         del session["matched_guilds"]
-        await update_session(session)
+        await update_session()
 
         return redirect(url_for("homepage.homepage"))
 

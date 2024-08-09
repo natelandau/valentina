@@ -1,11 +1,11 @@
 """Helpers for the webui."""
 
 from loguru import logger
-from quart import render_template
-from quart.sessions import SessionMixin
+from quart import render_template, session
 from werkzeug.exceptions import HTTPException
 
 from valentina.models import Campaign, Character, Guild, User
+from valentina.utils import ValentinaConfig, console
 
 
 async def error_handler(exc: HTTPException) -> str:
@@ -19,7 +19,7 @@ async def error_handler(exc: HTTPException) -> str:
 
 
 async def fetch_active_campaign(
-    session: SessionMixin, campaign_id: str = "", fetch_links: bool = False
+    campaign_id: str = "", fetch_links: bool = False
 ) -> Campaign | None:
     """Update and return the active campaign from the session."""
     if len(session["GUILD_CAMPAIGNS"]) == 0:
@@ -46,7 +46,7 @@ async def fetch_active_campaign(
 
 
 async def fetch_active_character(
-    session: SessionMixin, character_id: str = "", fetch_links: bool = False
+    character_id: str = "", fetch_links: bool = False
 ) -> Character | None:
     """Update and return the active character from the session."""
     if len(session["USER_CHARACTERS"]) == 0:
@@ -72,7 +72,7 @@ async def fetch_active_character(
     return await Character.get(character_id, fetch_links=fetch_links)
 
 
-async def fetch_guild(session: SessionMixin, fetch_links: bool = True) -> Guild:
+async def fetch_guild(fetch_links: bool = False) -> Guild:
     """Fetch the database Guild based on Discord guild_id from the session. Updates the session with the guild name.
 
     Args:
@@ -92,7 +92,7 @@ async def fetch_guild(session: SessionMixin, fetch_links: bool = True) -> Guild:
     return guild
 
 
-async def fetch_user(session: SessionMixin, fetch_links: bool = True) -> User:
+async def fetch_user(fetch_links: bool = False) -> User:
     """Fetch the database User based on Discord user_id from the session.
 
     Args:
@@ -117,7 +117,7 @@ async def fetch_user(session: SessionMixin, fetch_links: bool = True) -> User:
     return user
 
 
-async def fetch_user_characters(session: SessionMixin, fetch_links: bool = True) -> list[Character]:
+async def fetch_user_characters(fetch_links: bool = True) -> list[Character]:
     """Fetch the user's characters and return them as a list. Updates the session with a dictionary of character names and ids.
 
     Args:
@@ -144,7 +144,7 @@ async def fetch_user_characters(session: SessionMixin, fetch_links: bool = True)
     return characters
 
 
-async def fetch_campaigns(session: SessionMixin, fetch_links: bool = True) -> list[Campaign]:
+async def fetch_campaigns(fetch_links: bool = True) -> list[Campaign]:
     """Fetch the guild's campaign and return them as a list. Updates the session with a dictionary of campaign names and ids.
 
     Args:
@@ -170,14 +170,20 @@ async def fetch_campaigns(session: SessionMixin, fetch_links: bool = True) -> li
     return campaigns
 
 
-async def update_session(session: SessionMixin) -> None:
+async def update_session() -> None:
     """Make updates to the session based on the user's current state.
 
     Args:
         session (SessionMixin): The session to update.
     """
     logger.debug("Updating session")
-    await fetch_guild(session, fetch_links=False)
-    await fetch_user(session, fetch_links=False)
-    await fetch_user_characters(session, fetch_links=False)
-    await fetch_campaigns(session, fetch_links=False)
+    await fetch_guild(fetch_links=False)
+    await fetch_user(fetch_links=False)
+    await fetch_user_characters(fetch_links=False)
+    await fetch_campaigns(fetch_links=False)
+
+    if ValentinaConfig().webui_log_level.upper() in ["DEBUG", "TRACE"]:
+        console.rule("Session")
+        for key, value in session.items():
+            console.log(f"{key}={value}")
+        console.rule()
