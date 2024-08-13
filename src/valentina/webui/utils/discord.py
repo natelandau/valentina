@@ -4,6 +4,7 @@ import inspect
 from datetime import UTC, datetime
 from typing import Literal
 
+from flask_discord.models import User as FlaskDiscordUser
 from loguru import logger
 
 from valentina.constants import EmbedColor
@@ -89,3 +90,20 @@ async def post_to_audit_log(msg: str, level: str = "INFO", view: str = "") -> No
 async def post_to_error_log(msg: str, level: str = "ERROR", view: str = "") -> None:
     """Send a message to the error log channel for a guild."""
     await log_message("error", msg, level, view)
+
+
+async def send_user_dm(user: FlaskDiscordUser, message: str) -> dict | str:
+    """Send private message message in Discord to a user.
+
+    Args:
+        user (FlaskDiscordUser): The user to send the message to.
+        message (str): The message to send.
+    """
+    dm_channel = discord_oauth.bot_request(
+        "/users/@me/channels", "POST", json={"recipient_id": user.id}
+    )
+    return discord_oauth.bot_request(
+        f"/channels/{dm_channel['id']}/messages",
+        "POST",
+        json={"content": message},
+    )

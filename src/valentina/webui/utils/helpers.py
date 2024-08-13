@@ -1,21 +1,10 @@
 """Helpers for the webui."""
 
 from loguru import logger
-from quart import render_template, session
-from werkzeug.exceptions import HTTPException
+from quart import session
 
 from valentina.models import Campaign, Character, Guild, User
 from valentina.utils import ValentinaConfig, console
-
-
-async def error_handler(exc: HTTPException) -> str:
-    """Use a custom error handler for HTTP exceptions."""
-    return await render_template(
-        "error.html",
-        detail=exc.description,
-        status_code=exc.code,
-        page_title=f"{exc.code} Error",
-    )
 
 
 async def fetch_active_campaign(

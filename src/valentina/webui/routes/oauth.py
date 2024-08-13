@@ -11,13 +11,13 @@ from valentina.webui.utils import update_session
 bp = Blueprint("oauth", __name__)
 
 
-@bp.route("/login/")
+@bp.route("/login")
 async def login() -> Any:
     """Login route."""
     return discord_oauth.create_session()
 
 
-@bp.route("/logout/")
+@bp.route("/logout")
 async def logout() -> Any:
     """Login route."""
     session.clear()
@@ -25,7 +25,7 @@ async def logout() -> Any:
     return redirect(url_for("homepage.homepage"))
 
 
-@bp.route("/callback/")
+@bp.route("/callback")
 async def callback() -> Any:
     """Callback route."""
     discord_oauth.callback()

@@ -23,12 +23,12 @@ campaign_bp.add_url_rule(
 
 character_bp = Blueprint("character", __name__)
 character_bp.add_url_rule(
-    "/create_full/",
+    "/create_full",
     view_func=CreateCharacterStart.as_view("create_full_start"),
     methods=["GET"],
 )
 character_bp.add_url_rule(
-    "/create_full/1/",
+    "/create_full/1",
     view_func=CreateCharacterStep1.as_view("create_full_1"),
     methods=["GET", "POST"],
 )
@@ -38,7 +38,7 @@ character_bp.add_url_rule(
     methods=["GET", "POST"],
 )
 character_bp.add_url_rule(
-    "/create_full/3/<string:character_id>/",
+    "/create_full/3/<string:character_id>",
     view_func=CreateCharacterStep3.as_view("create_full_3"),
     methods=["GET", "POST"],
 )
@@ -51,9 +51,9 @@ character_bp.add_url_rule(
 )
 
 gameplay_bp = Blueprint("gameplay", __name__)
-gameplay_bp.add_url_rule("/gameplay/", view_func=GameplayView.as_view("gameplay"), methods=["GET"])
+gameplay_bp.add_url_rule("/gameplay", view_func=GameplayView.as_view("gameplay"), methods=["GET"])
 gameplay_bp.add_url_rule(
-    "/gameplay/diceroll/",
+    "/gameplay/diceroll",
     view_func=DiceRollView.as_view("diceroll"),
     methods=["GET", "POST"],
 )

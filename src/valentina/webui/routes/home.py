@@ -12,7 +12,7 @@ bp = Blueprint("homepage", __name__)
 bp.add_url_rule("/", view_func=HomepageView.as_view("homepage"), methods=["GET"])
 
 
-@bp.route("/select-guild/", methods=["GET", "POST"])
+@bp.route("/select-guild", methods=["GET", "POST"])
 @requires_authorization
 async def select_guild() -> str | Response:
     """Select a guild to play in."""
