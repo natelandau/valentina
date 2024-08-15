@@ -6,7 +6,6 @@ from wtforms.validators import DataRequired, Length, Optional
 
 from valentina.constants import CharClass, HunterCreed, VampireClan
 from valentina.models import Character
-from valentina.utils import console
 
 
 class CharacterCreateFullStep1(QuartForm):
@@ -58,7 +57,6 @@ class CharacterCreateFullStep1(QuartForm):
 
     async def async_validators_lastname(self, lastname: StringField) -> None:
         """Check if the first + lastname are unique in the database."""
-        console.log("async_validate_lastname")
         name_first = self.firstname.data
         name_last = lastname.data
 
@@ -68,12 +66,11 @@ class CharacterCreateFullStep1(QuartForm):
             ).count()
             > 0
         ):
-            msg = "Character names must not already exist."
+            msg = "Character name must not already exist."
             raise ValidationError(msg)
 
     async def async_validators_firstname(self, firstname: StringField) -> None:
         """Check if the first + lastname are unique in the database."""
-        console.log("async_validate_lastname")
         name_first = firstname.data
         name_last = self.lastname.data
 
@@ -83,7 +80,7 @@ class CharacterCreateFullStep1(QuartForm):
             ).count()
             > 0
         ):
-            msg = "Character names must not already exist."
+            msg = "Character name must not already exist."
             raise ValidationError(msg)
 
 

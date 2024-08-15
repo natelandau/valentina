@@ -4,34 +4,44 @@
     dice_sizes:list[int],
     form:ValentinaForm,
 #}
-<form hx-post="{{ url_for("gameplay.diceroll") }}"
-      hx-target="#main-content"
-      hx-trigger="submit"
-      class="py-3">
-    <input type="hidden" id="tab" name="tab" value="throw" />
-    <div class="row">
-        <div class="col">
-            <label for="dice_size" class="form-label">Dice Size</label>
-            <div class="input-group mb-3">
-                {# <label class="input-group-text">Dice Size</label> #}
-                <select class="form-select" name="dice_size">
-                    {% for dice_size in dice_sizes | sort %}
-                        <option value="{{ dice_size }}" {% if dice_size == 10 %}selected{% endif %}>{{ dice_size }}</option>
-                    {% endfor %}
-                </select>
+{% if not campaign and not character %}
+    <div class="alert alert-danger" role="alert">Select a character and a campaign</div>
+{% elif not campaign %}
+    <div class="alert alert-danger" role="alert">Select a campaign</div>
+{% elif not character %}
+    <div class="alert alert-danger" role="alert">Select a character</div>
+{% else %}
+    <form hx-post="{{ url_for("gameplay.diceroll") }}"
+          hx-target="#main-content"
+          hx-trigger="submit"
+          class="py-3">
+        <input type="hidden" id="tab" name="tab" value="throw" />
+        <div class="row">
+            <div class="col">
+                <label for="dice_size" class="form-label">Dice Size</label>
+                <div class="input-group mb-3">
+                    {# <label class="input-group-text">Dice Size</label> #}
+                    <select class="form-select" name="dice_size">
+                        {% for dice_size in dice_sizes | sort %}
+                            <option value="{{ dice_size }}" {% if dice_size == 10 %}selected{% endif %}>{{ dice_size }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col">
+                <global.valentinaform.Increment label="Dice Pool" name="pool" start-val="1" form={{ form }} />
+            </div>
+            <div class="col">
+                <global.valentinaform.Increment label="Difficulty" name="difficulty" start-val="6" form={{ form }} />
             </div>
         </div>
-        <div class="col">
-            <global.valentinaform.Increment label="Dice Pool" name="pool" start-val="1" form={{ form }} />
-        </div>
-        <div class="col">
-            <global.valentinaform.Increment label="Difficulty" name="difficulty" start-val="6" form={{ form }} />
-        </div>
-    </div>
-    <div class="row">
-        <div class="col">
-            <global.valentinaform.Increment label="Desperation Dice" name="desperation_dice" start-val="0" max-val={{ campaign.desperation }} form={{ form }} />
-        </div>
-    </div>
-    <button class="btn btn-primary" value="submit">Roll Dice</button>
-</form>
+        {% if campaign %}
+            <div class="row">
+                <div class="col">
+                    <global.valentinaform.Increment label="Desperation Dice" name="desperation_dice" start-val="0" max-val={{ campaign.desperation }} form={{ form }} />
+                </div>
+            </div>
+        {% endif %}
+        <button class="btn btn-primary" value="submit">Roll Dice</button>
+    </form>
+{% endif %}

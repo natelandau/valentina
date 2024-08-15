@@ -450,20 +450,70 @@ class Character(Document):
             dict[str, str]: Dictionary with character attributes.
         """
         attributes = [
-            ("Age", str(self.age)),
-            ("Auspice", self.auspice),
-            ("Breed", self.breed),
-            ("Clan", self.clan_name),
-            ("Class", self.char_class_name),
+            ("Class", self.char_class_name if self.char_class_name else "-"),
             ("Concept", self.concept_name),
-            ("Creed", self.creed_name),
-            ("Demeanor", self.demeanor),
+            ("Demeanor", self.demeanor if self.demeanor else "-"),
+            ("Nature", self.nature if self.nature else "-"),
+            (
+                "Auspice",
+                self.auspice
+                if self.auspice
+                else "-"
+                if self.char_class_name.lower() == "werewolf"
+                else None,
+            ),
+            (
+                "Breed",
+                self.breed
+                if self.breed
+                else "-"
+                if self.char_class_name.lower() == "werewolf"
+                else None,
+            ),
+            (
+                "Clan",
+                self.clan_name
+                if self.clan_name
+                else "-"
+                if self.char_class_name.lower() == "vampire"
+                else None,
+            ),
+            (
+                "Creed",
+                self.creed_name
+                if self.creed_name
+                else "-"
+                if self.char_class_name.lower() == "hunter"
+                else None,
+            ),
             ("Essence", self.essence),
-            ("Generation", self.generation),
-            ("Nature", self.nature),
-            ("Sire", self.sire),
+            (
+                "Generation",
+                self.generation
+                if self.generation
+                else "-"
+                if self.char_class_name.lower() == "vampire"
+                else None,
+            ),
+            (
+                "Sire",
+                self.sire
+                if self.sire
+                else "-"
+                if self.char_class_name.lower() == "vampire"
+                else None,
+            ),
             ("Tradition", self.tradition),
-            ("Tribe", self.tribe),
+            (
+                "Tribe",
+                self.tribe
+                if self.tribe
+                else "-"
+                if self.char_class_name.lower() == "werewolf"
+                else None,
+            ),
+            ("Date of Birth", self.dob.strftime("%Y-%m-%d") if self.dob else "-"),
+            ("Age", str(self.age)),
         ]
 
         # Create dictionary using a comprehension with conditional inclusion

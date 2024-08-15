@@ -42,9 +42,11 @@
         <div class="col">
             <global.valentinaform.Increment label="Difficulty" name="difficulty" start-val="6" form={{ form }} />
         </div>
-        <div class="col">
-            <global.valentinaform.Increment label="Desperation Dice" name="desperation_dice" start-val="0" max-val={{ campaign.desperation }} form={{ form }} />
-        </div>
+        {% if campaign %}
+            <div class="col">
+                <global.valentinaform.Increment label="Desperation Dice" name="desperation_dice" start-val="0" max-val={{ campaign.desperation }} form={{ form }} />
+            </div>
+        {% endif %}
     </div>
     <button class="btn btn-primary" value="submit">Roll Dice</button>
 </form>

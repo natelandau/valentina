@@ -17,7 +17,7 @@ from valentina.utils.helpers import get_max_trait_value
 from valentina.webui import catalog
 from valentina.webui.utils.discord import post_to_audit_log, post_to_error_log
 from valentina.webui.utils.helpers import update_session
-from valentina.webui.WTForms.forms import (
+from valentina.webui.WTForms.character_create_full import (
     CharacterCreateFullStep1,
     HunterClassSpecifics,
     VampireClassSpecifics,

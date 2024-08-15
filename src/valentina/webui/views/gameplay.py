@@ -137,17 +137,30 @@ class GameplayView(MethodView):
 
     async def handle_form_tabs(self) -> str:
         """Tab switcher for the gameplay template."""
+        campaign = await fetch_active_campaign(fetch_links=True)
+        character = await fetch_active_character(fetch_links=True)
+        error_msg = None
+
+        if not character and not campaign:
+            error_msg = "Select a character and a campaign"
+        elif not character:
+            error_msg = "Select a character"
+        elif not campaign:
+            error_msg = "Select a campaign"
+
+        if error_msg:
+            return f'<div class="alert alert-danger" role="alert">{error_msg}</div>'
+
         if request.args.get("tab") == "throw":
             return catalog.render(
                 "gameplay.FormTabThrow",
-                character=await fetch_active_character(fetch_links=True),
-                campaign=await fetch_active_campaign(),
+                character=character,
+                campaign=campaign,
                 dice_sizes=self.dice_size_values,
                 form=gameplay_form,
             )
 
         if request.args.get("tab") == "traits":
-            character = await fetch_active_character(fetch_links=True)
             traits = (
                 await CharacterTrait.find(CharacterTrait.character == str(character.id))
                 .sort(+CharacterTrait.name)
@@ -157,7 +170,7 @@ class GameplayView(MethodView):
             return catalog.render(
                 "gameplay.FormTabTraits",
                 traits=traits,
-                campaign=await fetch_active_campaign(),
+                campaign=campaign,
                 form=gameplay_form,
             )
 
@@ -166,7 +179,7 @@ class GameplayView(MethodView):
             return catalog.render(
                 "gameplay.FormTabMacros",
                 macros=user.macros,
-                campaign=await fetch_active_campaign(),
+                campaign=campaign,
                 form=gameplay_form,
             )
 
@@ -181,7 +194,7 @@ class GameplayView(MethodView):
             FormHeader  - The controller for selecting characters and campaigns
             FormTab...  -  The diceroll tabs, each with their own name corresponding to the tab name
         """
-        # Handle changes from the form header
+        # Handle changes from the form header where character and campaign are selected
         if request.headers.get("HX-Request") and (
             request.args.get("character_id", None) or request.args.get("campaign_id", None)
         ):

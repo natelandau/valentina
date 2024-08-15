@@ -4,6 +4,7 @@ from quart import Blueprint
 
 from valentina.webui.views import (
     CampaignView,
+    CharacterEdit,
     CharacterView,
     CreateCharacterStart,
     CreateCharacterStep1,
@@ -42,11 +43,14 @@ character_bp.add_url_rule(
     view_func=CreateCharacterStep3.as_view("create_full_3"),
     methods=["GET", "POST"],
 )
-
-
 character_bp.add_url_rule(
     "/character/<string:character_id>",
     view_func=CharacterView.as_view("character_view"),
+    methods=["GET", "POST"],
+)
+character_bp.add_url_rule(
+    "/character/<string:character_id>/edit",
+    view_func=CharacterEdit.as_view("character_edit"),
     methods=["GET", "POST"],
 )
 
