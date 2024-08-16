@@ -9,6 +9,7 @@ from hypercorn.asyncio import serve
 from hypercorn.config import Config
 from loguru import logger
 from quart import Quart, redirect, request
+from quart_session import Session
 from werkzeug.wrappers.response import Response
 
 from valentina.utils import ValentinaConfig
@@ -36,6 +37,13 @@ discord_oauth = DiscordOAuth2Session(app)
 register_filters(app)
 register_error_handlers(app)
 catalog = register_jinjax_catalog(app)
+app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_URI"] = (
+    (f"redis://:{ValentinaConfig().redis_password}@{ValentinaConfig().redis_addr}")
+    if {ValentinaConfig().redis_addr}
+    else f"redis://{ValentinaConfig().redis_addr}"
+)
+Session(app)
 
 
 def import_blueprints() -> None:

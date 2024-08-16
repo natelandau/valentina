@@ -52,8 +52,9 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     webui_base_url: str = ""
     discord_oauth_secret: str = ""
     discord_oauth_client_id: str = ""
-    # Default secret key is for development only, generate a new one for production and set it in .env.secrets
-    webui_secret_key: str = "308e16c33ac9d2afff8829363687d293"
+    redis_password: str = ""
+    redis_addr: str = "127.0.0.1:6379"
+    webui_secret_key: str = ""
 
     CONFIG_SOURCES: ClassVar[ConfigSources | None] = [
         EnvSource(prefix="VALENTINA_", file=DIR / ".env", allow_all=True),
