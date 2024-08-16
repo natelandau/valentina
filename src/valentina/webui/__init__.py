@@ -2,6 +2,7 @@
 
 import quart_flask_patch  # isort: skip # noqa: F401
 import asyncio
+import os
 from pathlib import Path
 
 from flask_discord import DiscordOAuth2Session
@@ -17,11 +18,8 @@ from valentina.webui.utils.errors import register_error_handlers
 from valentina.webui.utils.jinja_filters import register_filters
 from valentina.webui.utils.jinjax import register_jinjax_catalog
 
-# Allow insecure transport for debugging from localhost
-if ValentinaConfig().webui_debug:
-    import os
-
-    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+# Allow insecure transport for OAuth2. This is used for development or when running behind a reverse proxy.
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
 template_dir = Path(__file__).parent / "templates"
