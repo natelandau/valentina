@@ -25,6 +25,7 @@ if ValentinaConfig().webui_debug:
 
 
 template_dir = Path(__file__).parent / "templates"
+static_dir = Path(__file__).parent / "static"
 app = Quart(
     __name__, template_folder=str(template_dir), static_url_path="/static", static_folder="static"
 )
