@@ -202,47 +202,48 @@
     target-version = "py311"
     [tool.ruff.lint]
         ignore = [
-            "ANN001",  # Missing type annotation for function argument `cls`
-            "ANN002",  # Missing type annotation for `*args`
-            "ANN003",  # Missing type annotation for `**kwargs`
-            "ANN101",  # missing-type-self
-            "ANN204",  # Missing return type annotation for special method `__init__`
-            "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed,
-            "B006",    # mutable-argument-default
-            "B008",    # function-call-in-default-argument
-            "COM812",  # Trailing comma missing"
-            "CPY001",  # Missing copyright notice at top of file
-            "D107",    # undocumented-public-init
+            "ANN001",   # Missing type annotation for function argument `cls`
+            "ANN002",   # Missing type annotation for `*args`
+            "ANN003",   # Missing type annotation for `**kwargs`
+            "ANN101",   # missing-type-self
+            "ANN204",   # Missing return type annotation for special method `__init__`
+            "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed,
+            "ASYNC110", # Use `anyio.Event` instead of awaiting `anyio.sleep` in a `while` loop
+            "B006",     # mutable-argument-default
+            "B008",     # function-call-in-default-argument
+            "COM812",   # Trailing comma missing"
+            "CPY001",   # Missing copyright notice at top of file
+            "D107",     # undocumented-public-init
             "D203",
             "D204",
             "D213",
             "D215",
             "D404",
-            "D406",    # new-line-after-section-name
-            "D407",    # dashed-underline-after-section
-            "D408",    # section-underline-after-name
-            "D409",    # section-underline-matches-section-length
-            "D413",    # blank-line-after-last-section
-            "DTZ",     # TODO: Fix naive datetime usage
+            "D406",     # new-line-after-section-name
+            "D407",     # dashed-underline-after-section
+            "D408",     # section-underline-after-name
+            "D409",     # section-underline-matches-section-length
+            "D413",     # blank-line-after-last-section
+            "DTZ",      # TODO: Fix naive datetime usage
             "E266",
             "E501",
-            "FBT001",  # Boolean-typed positional argument in function definition
-            "FBT002",  # Boolean-typed positional argument in function definition
-            "FIX002",  # Line contains TODO, consider resolving the issue"
-            "ISC001",  # single-line-implicit-string-concatenation
-            "N805",    # invalid-first-argument-name-for-method
-            "PD011",   # Use `.to_numpy()` instead of `.values`"
+            "FBT001",   # Boolean-typed positional argument in function definition
+            "FBT002",   # Boolean-typed positional argument in function definition
+            "FIX002",   # Line contains TODO, consider resolving the issue"
+            "ISC001",   # single-line-implicit-string-concatenation
+            "N805",     # invalid-first-argument-name-for-method
+            "PD011",    # Use `.to_numpy()` instead of `.values`"
             "PGH003",
-            "PIE796",  # Enum contains duplicate value
-            "PLR0913", # too-many-arguments
+            "PIE796",   # Enum contains duplicate value
+            "PLR0913",  # too-many-arguments
             "PLR0917",
-            "RSE102",  # Unnecessary parentheses on raised exception"
+            "RSE102",   # Unnecessary parentheses on raised exception"
             "S307",
-            "S311",    # suspicious-non-cryptographic-random-usage
-            "S603",    #`subprocess` call: check for execution of untrusted input
-            "TD002",   # Missing author in TODO
-            "TD003",   # Missing issue link on the line following this TODO
-            "UP007",   # non-pep604-annotation
+            "S311",     # suspicious-non-cryptographic-random-usage
+            "S603",     #`subprocess` call: check for execution of untrusted input
+            "TD002",    # Missing author in TODO
+            "TD003",    # Missing issue link on the line following this TODO
+            "UP007",    # non-pep604-annotation
         ]
 
         per-file-ignores = { "main.py" = [
