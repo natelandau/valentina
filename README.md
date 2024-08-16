@@ -2,7 +2,24 @@
 
 # Valentina
 
-A discord bot to manage roll playing sessions for a highly customized version of Vampire the Masquerade. Major differences from the published game are:
+A Discord bot and optional web service to manage roll playing sessions for a highly customized version of the White Wolf series of TTRPGs. This project is not affiliated with White Wolf or [Paradox Interactive](https://www.paradoxinteractive.com/).
+
+## Topline Features
+
+-   Character creation and management
+-   Campaign management
+-   Dice rolling
+-   Storyteller tools
+-   Other niceties such as:
+    -   Optional Web UI
+    -   Github integration
+    -   Image uploads
+    -   Statistic tracking
+    -   And more!
+
+## Ruleset Overview
+
+Major differences from the games published by White Wolf are:
 
 1. Dice are rolled as a single pool of D10s with a set difficulty. The number of success determines the outcome of the roll.
 
@@ -16,54 +33,74 @@ To play with traditional rules I strongly recommend you use [Inconnu Bot](https:
 
 **For more information on the features and functionality, see the [User Guide](user_guide.md)**
 
-## Install and run
+# Install and run
 
-### Prerequisites
+## Prerequisites
 
 Before running Valentina, the following must be configured or installed.
 
+<details>
+<summary>Discord Bot</summary>
+
 -   Docker and Docker Compose
 -   A valid Discord Bot token. Instructions for this can be found on [Discord's Developer Portal](https://discord.com/developers/docs/getting-started)
--   To use image uploads, an AWS S3 Bucket must be configured with appropriate permissions. _(Instructions on how to do this are out of scope for this document)_
 
-    -   Public must be able to read objects from the bucket
-    -   An IAM role must be created with read/write/list access and the credentials added to the environment variables.
+</details>
 
-        ```json
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "GetBucketLocation",
-                    "Effect": "Allow",
-                    "Action": ["s3:GetBucketLocation"],
-                    "Resource": ["arn:aws:s3:::Bucket-Name"]
-                },
-                {
-                    "Sid": "ListObjectsInBucket",
-                    "Effect": "Allow",
-                    "Action": ["s3:ListBucket"],
-                    "Resource": ["arn:aws:s3:::Bucket-Name"]
-                },
-                {
-                    "Sid": "AllObjectActions",
-                    "Effect": "Allow",
-                    "Action": "s3:*Object",
-                    "Resource": ["arn:aws:s3:::Bucket-Name/*"]
-                }
-            ]
-        }
-        ```
+<details>
+<summary>Web UI (Optional)</summary>
 
-### Run the bot
+-   A Redis instance for caching. This can be run locally or in a cloud service.
+-   Discord OAuth credentials for the bot. Instructions for this can be found on [Discord's Developer Portal](https://discord.com/developers/docs/topics/oauth2)
+-   Ability to run the Docker container on a public IP address or domain name. This is outside the scope of this document.
+</details>
+
+<details>
+<summary>Image Uploads (Optional)</summary>
+To allow image uploads, an AWS S3 bucket must be configured with appropriate permissions. Instructions for this can be found on the [AWS Documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html)
+
+-   Public must be able to read objects from the bucket
+-   An IAM role must be created with read/write/list access and the credentials added to the environment variables.
+
+    ```json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "GetBucketLocation",
+                "Effect": "Allow",
+                "Action": ["s3:GetBucketLocation"],
+                "Resource": ["arn:aws:s3:::Bucket-Name"]
+            },
+            {
+                "Sid": "ListObjectsInBucket",
+                "Effect": "Allow",
+                "Action": ["s3:ListBucket"],
+                "Resource": ["arn:aws:s3:::Bucket-Name"]
+            },
+            {
+                "Sid": "AllObjectActions",
+                "Effect": "Allow",
+                "Action": "s3:*Object",
+                "Resource": ["arn:aws:s3:::Bucket-Name/*"]
+            }
+        ]
+    }
+    ```
+
+</details>
+
+## Run the bot
 
 1. Copy the `docker-compose.yml` file to a directory on your machine
 2. Edit the `docker-compose.yml` file
     - In the `volumes` section replace `/path/to/data` with the directory to hold persistent storage
-    - In the `environment` section add correct values to each environment variable. All available environment variables are below.
+    - In the `environment` section add correct values to each environment variable.
 3. Run `docker compose up`
 
-#### Environment Variables
+### Environment Variables
+
+Settings for Valentina are controlled by environment variables. The following is a list of the available variables and their default values.
 
 | Variable | Default Value | Usage |
 | --- | --- | --- |
@@ -83,14 +120,25 @@ Before running Valentina, the following must be configured or installed.
 | VALENTINA_MONGO_DATABASE_NAME | `valentina` | Production Database name |
 | VALENTINA_GITHUB_REPO |  | Optional: Sets the Github repo to use for Github integration `username/repo` |
 | VALENTINA_GITHUB_TOKEN |  | Optional: Sets the Github API Access token to use for Github integration |
+| VALENTINA_WEBUI_ENABLE | `false` | Optional: Enables the web UI. Set to `true` to enable. |
+| VALENTINA_WEBUI_HOST | `127.0.0.1` | Set the host IP for the web UI. |
+| VALENTINA_WEBUI_PORT | `8000` | Set the port for the web UI. |
+| VALENTINA_WEBUI_LOG_LEVEL | `INFO` | Sets the log level for the web UI. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| VALENTINA_WEBUI_BASE_URL | `http://127.0.0.1:8088` | Base URL for the web service. |
+| VALENTINA_WEBUI_DEBUG | `false` | Enables debug mode for the web UI. Set to `true` to enable. |
+| VALENTINA_REDIS_ADDRESS | `127.0.0.1:6379` | Sets the IP and port for the Redis instance |
+| VALENTINA_REDIS_PASSWORD |  | Optional: Sets the password for the Redis instance |
+| VALENTINA_WEBUI_SECRET_KEY |  | Sets the secret key for the web UI. This is required to run the web UI. |
+| VALENTINA_DISCORD_OAUTH_SECRET |  | Sets the secret for the Discord OAuth. This is required to run the web UI. |
+| VALENTINA_DISCORD_OAUTH_CLIENT_ID |  | Sets the ID for the Discord OAuth. This is required to run the web UI. |
 
 ---
 
-## Contributing
+# Contributing
 
 ## Setup: Once per project
 
-1. Install Python 3.11 and [Poetry](https://python-poetry.org)
+1. Install Python >= 3.11 and [Poetry](https://python-poetry.org)
 2. Clone this repository. `git clone https://github.com/natelandau/valentina.git`
 3. Install the Poetry environment with `poetry install`.
 4. Activate your Poetry environment with `poetry shell`.
@@ -114,6 +162,24 @@ Before running Valentina, the following must be configured or installed.
 -   Run `poetry remove {package}` from within the development environment to uninstall a runtime dependency and remove it from `pyproject.toml` and `poetry.lock`.
 -   Run `poetry update` from within the development environment to upgrade all dependencies to the latest versions allowed by `pyproject.toml`.
 
+## Packages Used
+
+**Discord Bot**
+
+-   [Pycord](https://docs.pycord.dev/en/stable/) - Discord API wrapper
+-   [Beanie ODM](https://beanie-odm.dev/) - MongoDB ODM
+-   [Typer](https://typer.tiangolo.com/) - CLI app framework
+-   [ConfZ](https://confz.readthedocs.io/en/latest/index.html) - Configuration management
+-   [Loguru](https://loguru.readthedocs.io/en/stable/) - Logging
+
+**Web UI**
+
+-   [Quart](https://quart.palletsprojects.com/en/latest/index.html) - Async web framework based on Flask
+-   [Bootstrap](https://getbootstrap.com/) - Frontend framework for the web UI
+-   [Jinja](https://jinja.palletsprojects.com/en/3.0.x/) - Templating engine for the web UI
+-   [JinjaX](https://jinjax.scaletti.dev/) - Super components powers for your Jinja templates
+-   [quart-wtf](https://quart-wtf.readthedocs.io/en/latest/index.html) - Integration of Quart and WTForms including CSRF and file uploading.
+
 ## Testing MongoDB locally
 
 To run the tests associated with the MongoDB database, you must have MongoDB installed locally. The easiest way to do this is with Docker. Set two additional environment variables to allow the tests to connect to the local MongoDB instance.
@@ -124,6 +190,10 @@ To run the tests associated with the MongoDB database, you must have MongoDB ins
 | VALENTINA_TEST_MONGO_DATABASE_NAME | `test_db`                   | Name of the database used for testing        |
 
 NOTE: Github CI integrations will ignore these variables and run the tests against a Mongo instance within the workflows.
+
+## Running the webui locally
+
+A convenience script that runs the webui locally without the Discord bot is available. After setting the required environment variables, and entering the Virtual Environment simply type `webui`. Note, a Redis instance is still required..
 
 ## Troubleshooting
 
