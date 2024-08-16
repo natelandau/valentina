@@ -1,0 +1,28 @@
+{# def
+    character:Character,
+    inventory:list[CharacterInventoryItem]=[]
+#}
+{# TODO: Add and edit items #}
+<h2 class="mb-4">Inventory</h2>
+<div class="row row-cols-1 row-cols-sm-2">
+    {% if not inventory %}
+        <div class="col">
+            <p>No items in inventory</p>
+        </div>
+    {% else %}
+        {% for key, values in inventory.items() %}
+            <div class="col">
+                <h4>{{ key | capitalize }}</h4>
+                <hr>
+                <dl class="row">
+                    {% for item in values %}
+                        <dt class="col-sm-3">{{ item.name | from_markdown | safe }}</dt>
+                        <dd class="col-sm-9">
+                            {{ item.description | from_markdown | safe }}
+                        </dd>
+                    {% endfor %}
+                </dl>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>

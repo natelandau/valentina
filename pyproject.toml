@@ -15,24 +15,34 @@
 
     [tool.poetry.scripts] # https://python-poetry.org/docs/pyproject/#scripts
         valentina = "valentina.main:app"
+        webui     = "valentina.debug_webui:dev"
 
     [tool.poetry.dependencies]
-        aiofiles = "^24.1.0"
-        arrow    = "^1.3.0"
-        beanie   = "^1.25.0"
-        boto3    = "^1.34.142"
-        confz    = "^2.0.1"
-        faker    = "^26.0.0"
-        inflect  = "^7.3.1"
-        loguru   = "^0.7.2"
-        numpy    = "^2.0.0"
-        py-cord  = "^2.5.0"
-        pydantic = "^2.8.2"
-        pygithub = "^2.3.0"
-        python   = ">=3.11,<3.13"
-        rich     = "^13.7.1"
-        semver   = "^3.0.2"
-        typer    = "^0.12.3"
+        aiofiles          = "^24.1.0"
+        arrow             = "^1.3.0"
+        beanie            = "^1.25.0"
+        boto3             = "^1.34.142"
+        confz             = "^2.0.1"
+        faker             = "^26.0.0"
+        flask-discord     = "^0.1.69"
+        inflect           = "^7.3.1"
+        jinjax            = "^0.43"
+        loguru            = "^0.7.2"
+        markdown2         = "^2.5.0"
+        markupsafe        = "^2.1.5"
+        numpy             = "^2.0.0"
+        py-cord           = "^2.5.0"
+        pydantic          = "^2.8.2"
+        pygithub          = "^2.3.0"
+        python            = ">=3.11,<3.13"
+        quart             = "^0.19.6"
+        quart-flask-patch = "^0.3.0"
+        quart-session     = "^3.0.0"
+        quart-wtforms     = "^1.0.1"
+        redis             = "^5.0.8"
+        rich              = "^13.7.1"
+        semver            = "^3.0.2"
+        typer             = "^0.12.3"
 
     [tool.poetry.group.test.dependencies]
         dirty-equals   = "^0.7.1.post0"
@@ -48,11 +58,12 @@
     [tool.poetry.group.dev.dependencies]
         commitizen     = "^3.27.0"
         coverage       = "^7.5.4"
+        djlint         = "^1.34.1"
         mypy           = "^1.10.1"
         pdoc           = "^14.4.0"
         poethepoet     = "^0.26.1"
         pre-commit     = "^3.7.1"
-        ruff           = ">=0.5.1"
+        ruff           = "^0.6.0"
         shellcheck-py  = "^0.9.0.6"
         types-aiofiles = "^23.2.0.0"
         typos          = "^1.23.2"
@@ -113,6 +124,11 @@
 [tool.coverage.xml]
     output = "reports/coverage.xml"
 
+[tool.djlint]
+    extend_exclude = ".vscode, .github, .git, .ruff_cache, .pytest_cache, __pycache__, .mypy_cache, .venv, tests, src/valentina/cogs, src/valentina/models, src/valentina/utils, src/valentina/views, tests"
+    ignore         = "H030,H031,H021,H006,H013"
+    # ignore_case    = true
+    use_gitignore = true
 [tool.mypy] # https://mypy.readthedocs.io/en/latest/config_file.html
     disallow_any_unimported = false
     disallow_subclassing_any = false
@@ -186,47 +202,48 @@
     target-version = "py311"
     [tool.ruff.lint]
         ignore = [
-            "ANN001",  # Missing type annotation for function argument `cls`
-            "ANN002",  # Missing type annotation for `*args`
-            "ANN003",  # Missing type annotation for `**kwargs`
-            "ANN101",  # missing-type-self
-            "ANN204",  # Missing return type annotation for special method `__init__`
-            "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed,
-            "B006",    # mutable-argument-default
-            "B008",    # function-call-in-default-argument
-            "COM812",  # Trailing comma missing"
-            "CPY001",  # Missing copyright notice at top of file
-            "D107",    # undocumented-public-init
+            "ANN001",   # Missing type annotation for function argument `cls`
+            "ANN002",   # Missing type annotation for `*args`
+            "ANN003",   # Missing type annotation for `**kwargs`
+            "ANN101",   # missing-type-self
+            "ANN204",   # Missing return type annotation for special method `__init__`
+            "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed,
+            "ASYNC110", # Use `anyio.Event` instead of awaiting `anyio.sleep` in a `while` loop
+            "B006",     # mutable-argument-default
+            "B008",     # function-call-in-default-argument
+            "COM812",   # Trailing comma missing"
+            "CPY001",   # Missing copyright notice at top of file
+            "D107",     # undocumented-public-init
             "D203",
             "D204",
             "D213",
             "D215",
             "D404",
-            "D406",    # new-line-after-section-name
-            "D407",    # dashed-underline-after-section
-            "D408",    # section-underline-after-name
-            "D409",    # section-underline-matches-section-length
-            "D413",    # blank-line-after-last-section
-            "DTZ",     # TODO: Fix naive datetime usage
+            "D406",     # new-line-after-section-name
+            "D407",     # dashed-underline-after-section
+            "D408",     # section-underline-after-name
+            "D409",     # section-underline-matches-section-length
+            "D413",     # blank-line-after-last-section
+            "DTZ",      # TODO: Fix naive datetime usage
             "E266",
             "E501",
-            "FBT001",  # Boolean-typed positional argument in function definition
-            "FBT002",  # Boolean-typed positional argument in function definition
-            "FIX002",  # Line contains TODO, consider resolving the issue"
-            "ISC001",  # single-line-implicit-string-concatenation
-            "N805",    # invalid-first-argument-name-for-method
-            "PD011",   # Use `.to_numpy()` instead of `.values`"
+            "FBT001",   # Boolean-typed positional argument in function definition
+            "FBT002",   # Boolean-typed positional argument in function definition
+            "FIX002",   # Line contains TODO, consider resolving the issue"
+            "ISC001",   # single-line-implicit-string-concatenation
+            "N805",     # invalid-first-argument-name-for-method
+            "PD011",    # Use `.to_numpy()` instead of `.values`"
             "PGH003",
-            "PIE796",  # Enum contains duplicate value
-            "PLR0913", # too-many-arguments
+            "PIE796",   # Enum contains duplicate value
+            "PLR0913",  # too-many-arguments
             "PLR0917",
-            "RSE102",  # Unnecessary parentheses on raised exception"
+            "RSE102",   # Unnecessary parentheses on raised exception"
             "S307",
-            "S311",    # suspicious-non-cryptographic-random-usage
-            "S603",    #`subprocess` call: check for execution of untrusted input
-            "TD002",   # Missing author in TODO
-            "TD003",   # Missing issue link on the line following this TODO
-            "UP007",   # non-pep604-annotation
+            "S311",     # suspicious-non-cryptographic-random-usage
+            "S603",     #`subprocess` call: check for execution of untrusted input
+            "TD002",    # Missing author in TODO
+            "TD003",    # Missing issue link on the line following this TODO
+            "UP007",    # non-pep604-annotation
         ]
 
         per-file-ignores = { "main.py" = [

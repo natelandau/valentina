@@ -1,0 +1,43 @@
+{# def
+    character:Character = None,
+    campaign:Campaign=None,
+    roll:Diceroll,
+    result_image_url:str = "",
+    result_div_class:str = "",
+    rolled_traits:dict[str,int] = {},
+#}
+<div class="row h-100 fade-in">
+    <div class="col {{ result_div_class }} position-relative">
+        <p class="text-end">
+            You rolled <span class="font-monospace">{{ roll.pool }}{{ roll.dice_type.name | lower }}</span>
+        </p>
+        <h3>{{ roll.roll_result_humanized | upper }}</h3>
+        <p class="fw-medium fs-5">{{ roll.num_successes_humanized | title }}</p>
+        <div class="h5 pb-2 mt-4 border-bottom border-secondary">Rolled Dice</div>
+        <h2>
+            {{ roll.dice_as_emoji_images }}
+            {% if roll.desperation_roll %}+ {{ roll.desperation_dice_as_emoji_images }}{% endif %}
+        </h2>
+        {% if roll.desperation_roll and roll.desperation_botches > 0 %}
+            {# TODO: Add modal for selecting overreach or entering despair #}
+            <p>You botched one of your desperation rolls.  You must enter despair or overreach and increase danger by 1.</p>
+        {% endif %}
+        {% if rolled_traits %}
+            <div class="h5 pb-2 mt-4 border-bottom border-secondary">Traits Rolled</div>
+            <div class="row">
+                {% for key, value in rolled_traits.items() %}
+                    <div class="col">
+                        <p>
+                            <span class="fw-medium">{{ key }}</span>
+                            <br>
+                            (<span class="font-monospace">{{ value }} dice</span>)
+                        </p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+    <div class="col h-100">
+        <img src="{{ result_image_url }}" class="img-fluid" alt="Result Image">
+    </div>
+</div>

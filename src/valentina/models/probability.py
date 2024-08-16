@@ -96,8 +96,8 @@ class Probability:
 
         for _ in range(self.trials):
             roll = DiceRoll(
-                self.ctx,
                 pool=self.pool,
+                ctx=self.ctx,
                 difficulty=self.difficulty,
                 dice_size=self.dice_size,
             )

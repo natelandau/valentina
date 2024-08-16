@@ -1,0 +1,38 @@
+{# def
+    macros:list[UserMacro] = [],
+    campaign:Campaign = None,
+    form:ValentinaForm,
+#}
+<form hx-post="{{ url_for("gameplay.diceroll") }}"
+      hx-target="#main-content"
+      hx-trigger="submit"
+      class="pb-3">
+    <input type="hidden" id="dice_size" name="dice_size" value="10" />
+    <input type="hidden" id="tab" name="tab" value="macros" />
+    <div class="row">
+        <div class="col">
+            <div class="input-group mb-3">
+                <label class="input-group-text">Macro</label>
+                <select class="form-select" name="macro">
+                    <option value='{}' selected></option>
+                    {% for macro in macros %}
+                        <option value='{"trait1": "{{ macro.trait_one }}", "trait2": "{{ macro.trait_two }}", "name": "{{ macro.name }}", "abbreviation": "{{ macro.abbreviation }}" }'>
+                            {{ macro.name }} ({{ macro.trait_one | lower }} + {{ macro.trait_two | lower }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <global.valentinaform.Increment label="Difficulty" name="difficulty" start-val="6" form={{ form }} />
+        </div>
+        {% if campaign %}
+            <div class="col">
+                <global.valentinaform.Increment label="Desperation Dice" name="desperation_dice" start-val="0" max-val={{ campaign.desperation }} form={{ form }} />
+            </div>
+        {% endif %}
+    </div>
+    <button class="btn btn-primary" value="submit">Roll Dice</button>
+</form>

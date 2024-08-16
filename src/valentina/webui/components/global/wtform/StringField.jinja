@@ -1,0 +1,31 @@
+{# def
+    field:Field,
+    join_label:bool=False,
+    floating_label:bool=False,
+#}
+{% set label_text = field.label.text~'' if field.flags.required else field.label.text %}
+{% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data else "" %}
+{% if join_label %}
+    <div class="mb-3" id="{{ field.id }}-container">
+        <div class="input-group">
+            <global.wtform.partials.JoinLabelText>{{ label_text }}</global.wtform.partials.JoinLabelText>
+            {{ field(**{"class":"form-control"~valid_css}) }}
+            {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
+        </div>
+        {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
+    </div>
+{% elif floating_label %}
+    <div class="mb-3 form-floating" id="{{ field.id }}-container">
+        {{ field(**{"class":"form-control"~valid_css, "placeholder":""}) }}
+        <label for="{{ field.id }}">{{ label_text }}</label>
+        {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
+        {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
+    </div>
+{% else %}
+    <div class="mb-3" id="{{ field.id }}-container">
+        <label for="{{ field.id }}" class="form-label">{{ label_text }}</label>
+        {{ field(**{"class":"form-control"~valid_css, "placeholder":""}) }}
+        {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
+        {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
+    </div>
+{% endif %}

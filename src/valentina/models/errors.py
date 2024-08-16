@@ -88,6 +88,11 @@ class ErrorReporter:
             log_msg = f"ERROR: Bot tried to run `/{ctx.command}` without the correct permissions"
             show_traceback = True
 
+        if isinstance(error, errors.NoCTXError):
+            user_msg = "Sorry, something went wrong. This has been reported."
+            log_msg = "ERROR: No context provided"
+            show_traceback = True
+
         if isinstance(error, commands.BadArgument):
             user_msg = "Invalid argument provided"
 

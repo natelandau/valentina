@@ -1,0 +1,11 @@
+{# def
+    number: int,
+    url: str = "",
+    text: str,
+    target: str,
+#}
+<button class="nav-link active"
+        hx-get="{{ url }}"
+        hx-target="{{ target }}"
+        @click="currentTab = {{ number }}"
+        :class="{ 'active fw-bold': currentTab === {{ number }} }">{{ text }}</button>

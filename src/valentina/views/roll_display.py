@@ -53,8 +53,8 @@ class RollDisplay:
 
         description = f"""\
 ### {self.ctx.author.mention} rolled `{self.desperation_pool + self.roll.pool}{self.roll.dice_type.name.lower()}`
-## {self.roll.embed_title}
-{self.roll.embed_description}
+## {self.roll.roll_result_humanized.upper()}
+**{self.roll.num_successes_humanized}**
 """
 
         embed = discord.Embed(

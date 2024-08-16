@@ -1,0 +1,52 @@
+{# def
+    traits:List[CharacterTrait] = [],
+    campaign:Campaign = None,
+    form:ValentinaForm,
+#}
+<form hx-post="{{ url_for("gameplay.diceroll") }}"
+      hx-target="#main-content"
+      hx-trigger="submit"
+      class="pb-3">
+    <input type="hidden" id="dice_size" name="dice_size" value="10" />
+    <input type="hidden" id="tab" name="tab" value="traits" />
+    <div class="row">
+        <div class="col">
+            <label for="trait1" class="form-label">Trait 1</label>
+            <div class="input-group mb-3">
+                {# <label class="input-group-text">Trait 1</label> #}
+                <select class="form-select" name="trait1">
+                    <option value='{}' selected></option>
+                    {% for trait in traits %}
+                        <option value='{"id": "{{ trait.id }}", "value": {{ trait.value }}, "name": "{{ trait.name }}" }'>
+                            {{ trait.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col">
+            <label for="trait2" class="form-label">Trait 2</label>
+            <div class="input-group mb-3">
+                <select class="form-select" name="trait2">
+                    <option value='{}' selected></option>
+                    {% for trait in traits %}
+                        <option value='{"id": "{{ trait.id }}", "value": {{ trait.value }}, "name": "{{ trait.name }}" }'>
+                            {{ trait.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <global.valentinaform.Increment label="Difficulty" name="difficulty" start-val="6" form={{ form }} />
+        </div>
+        {% if campaign %}
+            <div class="col">
+                <global.valentinaform.Increment label="Desperation Dice" name="desperation_dice" start-val="0" max-val={{ campaign.desperation }} form={{ form }} />
+            </div>
+        {% endif %}
+    </div>
+    <button class="btn btn-primary" value="submit">Roll Dice</button>
+</form>

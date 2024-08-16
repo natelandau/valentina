@@ -30,3 +30,5 @@
 -   [x] Refactor: Centralize pagination for long responses
 -   [x] Statistics: Track per campaign stats
 -   [x] Storyteller: Associate storyteller characters with campaigns
+-   [ ] WebUI: Allow production callback url in bot oath settings from Discord developer portal
+-   [ ] WebUI: Add bind to `0.0.0.0:8000` before release

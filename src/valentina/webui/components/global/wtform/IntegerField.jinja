@@ -1,0 +1,32 @@
+{# def
+    field:Field,
+    join_label:bool=False,
+#}
+{# USAGE:
+    This field creates an integer up/down field between min and max values using AlpinJS for the dynamic functionality.
+
+    Min, max, and start are set by passing the render_kw dictionary to the field at WTForm creation time.  Example: ender_kw={"min": 0,"max": 5, "start": 1}.  Note, render_kw does not replace the need for validators such as NumberRange()
+#}
+{% set label_text = field.label.text~"*" if field.flags.required else field.label.text %}
+{% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data else "" %}
+{% set min_val = field.render_kw.get('min', 0) %}
+{% set max_val = field.render_kw.get('max', 100) %}
+{% set start_val = field.render_kw.get('start', 0) %}
+<div x-data="{ currentVal: {{ start_val }}, minVal: {{ min_val }}, maxVal: {{ max_val }}, decimalPoints: 0, incrementAmount: 1 }">
+    {% if not join_label %}<label for="{{ field.id }}" class="form-label">{{ label_text }}</label>{% endif %}
+    <div @dblclick.prevent
+         class="input-group mb-3"
+         id="{{ field.id }}-container">
+        {% if join_label %}<label for="field.id" class="input-group-text">{{ label_text }}</label>{% endif %}
+        <button class="btn btn-outline-secondary"
+                type="button"
+                id="button-addon1"
+                @click="currentVal = Math.max(minVal, currentVal - incrementAmount)">-</button>
+        {{ field(**{"class":"form-control"~valid_css, "x-model":"currentVal.toFixed(decimalPoints)","readonly":""}) }}
+        <button class="btn btn-outline-secondary"
+                type="button"
+                id="button-addon1"
+                @click="currentVal = Math.min(maxVal, currentVal + incrementAmount)">+</button>
+        {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
+    </div>
+</div>

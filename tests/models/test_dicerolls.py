@@ -10,6 +10,21 @@ from valentina.utils import errors
 
 @pytest.mark.no_db()
 @pytest.mark.parametrize(
+    ("guild_id", "author_id", "author_name"), [(None, 1, "name"), (1, None, "name"), (1, 1, None)]
+)
+def test_fail_without_init_data(guild_id, author_id, author_name) -> None:
+    """Ensure that Roll fails without the required data.
+
+    GIVEN a call to Roll
+    WHEN the required data is not provided
+    THEN raise an exception
+    """
+    with pytest.raises(errors.ValidationError):
+        DiceRoll(guild_id=guild_id, author_id=author_id, author_name=author_name, pool=1)
+
+
+@pytest.mark.no_db()
+@pytest.mark.parametrize(
     (
         "pool",
         "dice_size",
@@ -29,7 +44,7 @@ def test_rolling_dice(mock_ctx1, pool: int, dice_size: int) -> None:
     THEN assert that the correct number of dice are rolled with the correct dice type.
     """
     for _ in range(100):
-        roll = DiceRoll(mock_ctx1, pool, dice_size=dice_size, difficulty=1)
+        roll = DiceRoll(pool=pool, ctx=mock_ctx1, dice_size=dice_size, difficulty=1)
         assert len(roll.roll) == pool
         assert all(1 <= die <= dice_size for die in roll.roll)
 
@@ -80,7 +95,7 @@ def test_roll_successes(
     """
     mocker.patch.object(DiceRoll, "roll", roll)
 
-    roll = DiceRoll(mock_ctx1, pool=3, difficulty=6)
+    roll = DiceRoll(pool=3, ctx=mock_ctx1, difficulty=6)
     assert roll.botches == botches
     assert roll.criticals == criticals
     assert roll.failures == failures
@@ -93,7 +108,7 @@ def test_roll_successes(
 async def test_not_d10(mock_ctx1):
     """Ensure that customizations for non-d10 dice are applied correctly."""
     # GIVEN a roll with a non-d10 dice
-    roll = DiceRoll(mock_ctx1, pool=3, dice_size=6, difficulty=6)
+    roll = DiceRoll(ctx=mock_ctx1, pool=3, dice_size=6, difficulty=6)
     assert roll.result_type == RollResultType.OTHER
 
 
@@ -106,28 +121,28 @@ def test_roll_exceptions(mock_ctx1):
     THEN raise the appropriate exception
     """
     with pytest.raises(errors.ValidationError, match="Pool cannot be less than 0."):
-        DiceRoll(mock_ctx1, pool=-1)
+        DiceRoll(ctx=mock_ctx1, pool=-1)
 
     with pytest.raises(
         errors.ValidationError, match="Difficulty cannot exceed the size of the dice."
     ):
-        DiceRoll(mock_ctx1, difficulty=11, pool=1)
+        DiceRoll(ctx=mock_ctx1, difficulty=11, pool=1)
 
     with pytest.raises(errors.ValidationError, match="Pool cannot exceed 100."):
-        DiceRoll(mock_ctx1, pool=101)
+        DiceRoll(ctx=mock_ctx1, pool=101)
 
     with pytest.raises(errors.ValidationError, match="Difficulty cannot be less than 0."):
-        DiceRoll(mock_ctx1, difficulty=-1, pool=1)
+        DiceRoll(ctx=mock_ctx1, difficulty=-1, pool=1)
 
     with pytest.raises(errors.ValidationError, match="Invalid dice size"):
-        DiceRoll(mock_ctx1, difficulty=6, pool=6, dice_size=3)
+        DiceRoll(ctx=mock_ctx1, difficulty=6, pool=6, dice_size=3)
 
 
 @pytest.mark.drop_db()
 async def test_log_roll(mock_ctx1):
     """Test diceroll logging to the database."""
     # GIVEN a diceroll object and a list of two traits
-    d = DiceRoll(mock_ctx1, pool=3, dice_size=10, difficulty=6)
+    d = DiceRoll(ctx=mock_ctx1, pool=3, dice_size=10, difficulty=6)
     traits = ["test_trait1", "test_trait2"]
 
     # WHEN the log_roll method is called

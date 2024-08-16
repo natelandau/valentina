@@ -1,0 +1,9 @@
+{# def
+    justified: bool = False,
+    tab_type:str = "nav-tabs"
+#}
+{# tab_type options: nav-tabs nav-pills nav-underline #}
+<ul class="nav {{ tab_type }} {% if justified %}nav-justified{% endif %} my-3"
+    x-data="{ currentTab: 1 }">
+    {{ content }}
+</ul>

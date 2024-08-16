@@ -1,0 +1,42 @@
+{# def
+    statistics:dict[str,str],
+    with_title:bool=True,
+    title:str="Statistics"
+#}
+{% if with_title %}<h2>{{ title }}</h2>{% endif %}
+<div class="row">
+    <div class="col col-lg-4 col-md-6">
+        <div class="table-responsive">
+            <table class="table table-borderless table-sm">
+                <tr>
+                    <td>Total Rolls</td>
+                    <td>{{ statistics.total_rolls }}</td>
+                </tr>
+                <tr>
+                    <td>Avg. Difficulty</td>
+                    <td>{{ statistics.average_difficulty }}</td>
+                </tr>
+                <tr>
+                    <td>Avg. Pool</td>
+                    <td>{{ statistics.average_pool }}</td>
+                </tr>
+                <tr>
+                    <td>Avg. Criticals</td>
+                    <td>{{ statistics.criticals }} ({{ statistics.criticals_percentage }}%)</td>
+                </tr>
+                <tr>
+                    <td>Avg. Successes</td>
+                    <td>{{ statistics.successes }} ({{ statistics.successes_percentage }}%)</td>
+                </tr>
+                <tr>
+                    <td>Avg. Failures</td>
+                    <td>{{ statistics.failures }} ({{ statistics.failures_percentage }}%)</td>
+                </tr>
+                <tr>
+                    <td>Avg. Botches</td>
+                    <td>{{ statistics.botches }} ({{ statistics.botches_percentage }}%)</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>

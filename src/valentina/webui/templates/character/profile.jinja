@@ -1,0 +1,26 @@
+{# def
+    character: Character
+#}
+{% if character.bio %}
+    <h3>Biography</h3>
+    {{ character.bio | from_markdown | safe }}
+{% endif %}
+{% if character.notes %}
+    <hr>
+    <h3>Notes</h3>
+    <ul>
+        {% for note in character.notes %}<li>{{ note.text | from_markdown | safe }}</li>{% endfor %}
+    </ul>
+{% endif %}
+{% if character.sheet_sections %}
+    <hr>
+    <h3>Sheet Sections</h3>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4">
+        {% for section in character.sheet_sections | sort(attribute="title") %}
+            <div class="col">
+                <h4>{{ section.title | escape }}</h4>
+                {{ section.content | from_markdown | safe }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

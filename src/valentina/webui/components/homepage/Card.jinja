@@ -1,0 +1,19 @@
+{# def
+    title: str,
+    icon:str=None,
+#}
+{# USAGE:
+    Icon: The name of a font-awesome icon to display in the card title.
+    Content: All paragraphs should have class "card-text" to style them consistently
+#}
+<div class="col">
+    <div class="card h-100 border border-2 shadow bg-light-subtle">
+        <div class="card-body">
+            <h4 class="card-title pb-2 border-bottom">
+                {% if icon %}<i class="fa fa-{{ icon }}"></i>{% endif %}
+                {{ title }}
+            </h4>
+            {{ content }}
+        </div>
+    </div>
+</div>

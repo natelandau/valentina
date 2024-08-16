@@ -1,0 +1,47 @@
+{# def
+    form:ValentinaForm,
+    name:str,
+    label:str,
+    value:str="",
+    description:str = "",
+    type:str = "text",
+    required:bool = False,
+    is_valid:bool = False,
+    is_invalid:bool = False,
+    error_msg:str="",
+#}
+{% set valid_css = " is-invalid" if is_invalid else " is-valid" if is_valid else "" %}
+{% set value_insert = 'value="'~value~'"' if value else "" %}
+{% if form.join_labels %}
+    <div class="mb-3" {{ form.hx_command_outer(name) }}>
+        <div class="input-group">
+            <span class="input-group-text">{{ label }}</span>
+            <input type="{{ type }}" class="form-control {{ valid_css }}" id="{{ name }}" name="{{ name }}" {{ value_insert }} {{ form.hx_command_input(name=name) }}>
+            <img id="indicator-{{ name }}"
+                 src="{{ url_for('static', filename='spinners/bars.svg') }}"
+                 class="htmx-indicator" />
+            {% if error_msg and is_invalid %}<div class="invalid-feedback">{{ error_msg }}</div>{% endif %}
+        </div>
+        {% if description %}<div class="form-text">{{ description }}</div>{% endif %}
+    </div>
+{% elif form.floating_labels %}
+    <div class="mb-3 form-floating" {{ form.hx_command_outer(name) }}>
+        <input type="{{ type }}" class="form-control {{ valid_css }}" id="{{ name }}" name="{{ name }}" placeholder="{{ label }}"{{ value_insert }} {{ form.hx_command_input(name=name) }}>
+        <img id="indicator-{{ name }}"
+             src="{{ url_for('static', filename='spinners/bars.svg') }}"
+             class="htmx-indicator" />
+        <label for="{{ name }}">{{ label }}</label>
+        {% if error_msg and is_invalid %}<div class="invalid-feedback">{{ error_msg }}</div>{% endif %}
+        {% if description %}<div class="form-text">{{ description }}</div>{% endif %}
+    </div>
+{% else %}
+    <div class="mb-3" {{ form.hx_command_outer(name) }}>
+        <label for="{{ name }}">{{ label }}</label>
+        <input type="{{ type }}" class="form-control {{ valid_css }}" id="{{ name }}" name="{{ name }}" {{ value_insert }} {{ form.hx_command_input(name) }}>
+        <img id="indicator-{{ name }}"
+             src="{{ url_for('static', filename='spinners/bars.svg') }}"
+             class="htmx-indicator" />
+        {% if error_msg and is_invalid %}<div class="invalid-feedback">{{ error_msg }}</div>{% endif %}
+        {% if description %}<div class="form-text">{{ description }}</div>{% endif %}
+    </div>
+{% endif %}

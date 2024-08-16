@@ -235,3 +235,21 @@ class ValidationError(Exception):
             msg += f"\nRaised from: {e.__class__.__name__}: {e}"
 
         super().__init__(msg, *args, **kwargs)
+
+
+class NoCTXError(Exception):
+    """Raised when the context was not passed."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "The context object was not passed."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)

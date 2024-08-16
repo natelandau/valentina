@@ -62,7 +62,6 @@ class ValentinaContext(discord.ApplicationContext):
             name2 = inspect.stack()[2].filename.split("/")[-2].split(".")[0]
             name3 = inspect.stack()[2].filename.split("/")[-1].split(".")[0]
             new_name = f"{name1}.{name2}.{name3}"
-
         else:
             name1 = inspect.stack()[1].filename.split("/")[-3].split(".")[0]
             name2 = inspect.stack()[1].filename.split("/")[-2].split(".")[0]
@@ -522,14 +521,20 @@ class Valentina(commands.Bot):
         for member in guild.members:
             if not member.bot:
                 logger.debug(f"DATABASE: Update user `{member.name}`")
+
                 user = await User.find_one(User.id == member.id).upsert(
                     Set(
                         {
                             "date_modified": datetime.now(UTC).replace(microsecond=0),
                             "name": member.display_name,
+                            "avatar_url": str(member.display_avatar.url),
                         }
                     ),
-                    on_insert=User(id=member.id, name=member.display_name),
+                    on_insert=User(
+                        id=member.id,
+                        name=member.display_name,
+                        avatar_url=str(member.display_avatar.url),
+                    ),
                     response_type=UpdateResponse.NEW_DOCUMENT,
                 )
                 if guild.id not in user.guilds:
@@ -559,7 +564,7 @@ class Valentina(commands.Bot):
             await asyncio.sleep(10)
 
         # Needed for computing uptime
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(UTC)
 
         if not self.welcomed:
             await self.change_presence(
@@ -589,6 +594,11 @@ class Valentina(commands.Bot):
 
         self.welcomed = True
         logger.info(f"{self.user} is ready")
+
+        if ValentinaConfig().webui_enable:
+            from valentina.webui import run_webserver
+
+            await run_webserver()
 
     # Define a custom application context class
     async def get_application_context(  # type: ignore

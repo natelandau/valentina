@@ -1,0 +1,69 @@
+{# def
+    character:Character = None,
+    campaign:Campaign = None,
+#}
+{% if character %}
+    {% set character_id_as_string = character.id | string() %}
+{% else %}
+    {% set character_id_as_string = "" %}
+{% endif %}
+{% if campaign %}
+    {% set campaign_id_as_string = campaign.id | string() %}
+{% else %}
+    {% set campaign_id_as_string = "" %}
+{% endif %}
+<form hx-get hx-trigger="change" hx-target="#form-column">
+    <div class="input-group mb-3 pt-3">
+        <label class="input-group-text">Character</label>
+        {% if session["USER_CHARACTERS"] | length > 1 %}
+            <select class="form-select" name="character_id">
+                <option value="" {% if not character %}selected{% endif %}></option>
+                {% for character_name, character_id in session['USER_CHARACTERS'].items() %}
+                    <option value="{{ character_id }}"
+                            {% if character_id == character_id_as_string %}selected{% endif %}>
+                        {{ character_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        {% elif session["USER_CHARACTERS"] | length == 1 %}
+            {% for character_name, character_id in session['USER_CHARACTERS'].items() %}
+                {% if loop.first %}
+                    <span class="form-text ps-1">{{ character_name }}</span>
+                    <input type="hidden"
+                           id="character_id"
+                           value="{{ character_id }}"
+                           name="character_id">
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <span class="form-text ps-1">Please <a href="{{ url_for("character.create_full") }}">create a character</a></span>
+        {% endif %}
+    </div>
+    <div class="input-group mb-3">
+        <label class="input-group-text">Campaign</label>
+        {% if session["GUILD_CAMPAIGNS"] | length > 1 %}
+            <select class="form-select" name="campaign_id">
+                <option value="" {% if not campaign %}selected{% endif %}></option>
+                {% for campaign_name, campaign_id in session['GUILD_CAMPAIGNS'].items() %}
+                    <option value="{{ campaign_id }}"
+                            {% if campaign_id == campaign_id_as_string %}selected{% endif %}>
+                        {{ campaign_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        {% elif session["GUILD_CAMPAIGNS"] | length == 1 %}
+            {% for campaign_name, campaign_id in session['GUILD_CAMPAIGNS'].items() %}
+                {% if loop.first %}
+                    <span class="form-text ps-1">{{ campaign_name }}</span>
+                    <input type="hidden"
+                           id="campaign_id"
+                           value="{{ campaign_id }}"
+                           name="campaign_id">
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            {# TODO: link to create a campaign #}
+            <span class="form-text ps-1">Please create a Campaign</span>
+        {% endif %}
+    </div>
+</form>

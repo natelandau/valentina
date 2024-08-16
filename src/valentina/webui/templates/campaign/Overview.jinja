@@ -1,0 +1,21 @@
+{# def
+    campaign: Campaign
+#}
+<div class="row justify-content-start">
+    <div class="col-2 sticky-top ps-0">
+        <table class="table table-sm table-borderless table-light border border-dark-subtle rounded-5">
+            <tr>
+                <th>Danger</th>
+                <td>{{ campaign.danger }}</td>
+            </tr>
+            <tr>
+                <th>Desperation</th>
+                <td>{{ campaign.desperation }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="col">
+        <h3>Description</h3>
+        {{ (campaign.description | from_markdown | safe) if campaign.description else "<p>No Description</p>" }}
+    </div>
+</div>

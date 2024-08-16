@@ -1,16 +1,19 @@
 ---
-version: '3.8'
+version: "3.8"
 services:
-  valentina:
-    image: ghcr.io/natelandau/valentina:latest
-    hostname: valentina
-    container_name: valentina
-    network_mode: "bridge"
-    volumes:
-      - path/to/dir:/valentina          # Persistent storage for the database
-    environment:
-      - VALENTINA_DISCORD_TOKEN=TOKEN   # Your discord bot token
-      - VALENTINA_GUILDS=ID1,ID2        # Guild IDs where you will run the bot, comma separated
-      - VALENTINA_OWNER_IDS=ID1,ID2     # Discord user IDs for bot owners
-      - VALENTINA_LOG_LEVEL=INFO        # TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL
-    restart: unless-stopped
+    valentina:
+        image: ghcr.io/natelandau/valentina:latest
+        hostname: valentina
+        container_name: valentina
+        network_mode: "bridge"
+        # Uncomment if using the web interface
+        # ports:
+        #     - ${VALENTINA_WEBUI_PORT}:${VALENTINA_WEBUI_PORT}
+        volumes:
+            - path/to/dir:/valentina # Persistent storage for the database
+        environment:
+            - VALENTINA_DISCORD_TOKEN=TOKEN # Your discord bot token
+            - VALENTINA_GUILDS=ID1,ID2 # Guild IDs where you will run the bot, comma separated
+            - VALENTINA_OWNER_IDS=ID1,ID2 # Discord user IDs for bot owners
+            - VALENTINA_LOG_LEVEL=INFO # TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL
+        restart: unless-stopped

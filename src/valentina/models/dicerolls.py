@@ -1,6 +1,6 @@
 """Models for dice rolls."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import inflect
 from loguru import logger
@@ -8,6 +8,7 @@ from loguru import logger
 from valentina.constants import MAX_POOL_SIZE, DiceType, EmbedColor, RollResultType
 from valentina.models import Campaign, Character, Guild, RollStatistic
 from valentina.utils import errors, random_num
+from valentina.utils.helpers import convert_int_to_emoji
 
 p = inflect.engine()
 
@@ -45,8 +46,8 @@ class DiceRoll:
         is_critical (bool): Whether the roll is a critical success.
         is_failure (bool): Whether the roll is a failure.
         is_success (bool): Whether the roll is a success.
-        embed_title (str): The title of the roll response embed.
-        embed_description (str): The description of the roll response embed.
+        roll_result_humanized (str): The result of the roll, humanized
+        num_successes_humanized (str): The number of successes, humanized
         pool (int): The pool's total size, including hunger.
         result (int): The number of successes after accounting for botches and cancelling ones and tens.
         result_type(RollResultType): The result type of the roll.
@@ -56,29 +57,42 @@ class DiceRoll:
 
     def __init__(
         self,
-        ctx: "ValentinaContext",
         pool: int,
+        ctx: Optional["ValentinaContext"] = None,
         difficulty: int = 6,
         dice_size: int = 10,
         character: Character = None,
         desperation_pool: int = 0,
         campaign: Campaign = None,
+        guild_id: int | None = None,
+        author_id: int | None = None,
+        author_name: str | None = None,
     ) -> None:
         """A container class that determines the result of a roll.
 
         Args:
-            ctx (ValentinaContext): The context of the command.
+            author_id (int, optional): The author ID to log the roll for. Defaults to None.
+            author_name (str, optional): The author name to log the roll for. Defaults to None.
+            campaign (Campaign, optional): The campaign to log the roll for. Defaults to None.
+            character (Character, optional): The character to log the roll for. Defaults to None.
+            ctx (ValentinaContext, optional): The context of the command.
+            desperation_pool (int): The number of dice to roll from the desperation pool. Defaults to 0.
             dice_size (int, optional): The size of the dice. Defaults to 10.
             difficulty (int, optional): The difficulty of the roll. Defaults to 6.
+            guild_id (int, optional): The guild ID to log the roll for. Defaults to None.
             pool (int): The pool's total size, including hunger
-            character (Character, optional): The character to log the roll for. Defaults to None.
-            desperation_pool (int): The number of dice to roll from the desperation pool. Defaults to 0.
-            campaign (Campaign, optional): The campaign to log the roll for. Defaults to None.
         """
         self.ctx = ctx
         self.character = character
         self.desperation_pool = desperation_pool
         self.campaign = campaign
+        self.guild_id = guild_id
+        self.author_id = author_id
+        self.author_name = author_name
+
+        if not self.ctx and (not self.guild_id or not self.author_id or not self.author_name):
+            msg = "A context must be provided if guild_id, author_id, or author_name are not provided."
+            raise errors.ValidationError(msg)
 
         dice_size_values = [member.value for member in DiceType]
         if dice_size not in dice_size_values:
@@ -102,6 +116,8 @@ class DiceRoll:
 
         self.difficulty = difficulty
         self.pool = pool
+
+        # Set property defaults
         self._roll: list[int] = None
         self._desperation_roll: list[int] = None
         self._botches: int = None
@@ -111,6 +127,8 @@ class DiceRoll:
         self._result: int = None
         self._result_type: RollResultType = None
         self._desperation_botches: int = None
+        self._dice_as_emoji_images: str = None
+        self._desperation_dice_as_emoji_images: str = None
 
     def _calculate_result(self) -> RollResultType:
         """Calculate the result type of the roll."""
@@ -139,8 +157,8 @@ class DiceRoll:
         # Log the roll to the database
         if self.dice_type == DiceType.D10:
             stat = RollStatistic(
-                guild=self.ctx.guild.id,
-                user=self.ctx.author.id,
+                guild=self.guild_id or self.ctx.guild.id,
+                user=self.author_id or self.ctx.author.id,
                 character=str(self.character.id) if self.character else None,
                 result=self.result_type,
                 pool=self.pool,
@@ -151,7 +169,7 @@ class DiceRoll:
             await stat.insert()
 
             logger.debug(
-                f"DICEROLL: {self.ctx.author.display_name} rolled {self.roll} for {self.result_type.name}"
+                f"DICEROLL: {self.author_name or self.ctx.author.display_name} rolled {self.roll} for {self.result_type.name}"
             )
 
     @property
@@ -166,7 +184,7 @@ class DiceRoll:
     def roll(self) -> list[int]:
         """Roll the dice and return the results."""
         if not self._roll:
-            self._roll = [random_num(self.dice_type.value) for x in range(self.pool)]
+            self._roll = [int(random_num(self.dice_type.value)) for x in range(self.pool)]
 
         return self._roll
 
@@ -268,7 +286,7 @@ class DiceRoll:
 
     async def thumbnail_url(self) -> str:  # pragma: no cover
         """Determine the thumbnail to use for the Discord embed."""
-        guild = await Guild.get(self.ctx.guild.id)
+        guild = await Guild.get(self.guild_id or self.ctx.guild.id)
         return await guild.fetch_diceroll_thumbnail(self.result_type)
 
     @property
@@ -284,25 +302,43 @@ class DiceRoll:
         return color_map[self.result_type].value
 
     @property
-    def embed_title(self) -> str:  # pragma: no cover
-        """The title of the roll response embed."""
+    def roll_result_humanized(self) -> str:
+        """The humanized result of the dice roll. ie - "botch", "2 successes", etc."""
         title_map = {
             RollResultType.OTHER: "Dice roll",
-            RollResultType.BOTCH: "__**BOTCH!**__",
-            RollResultType.CRITICAL: "__**CRITICAL SUCCESS!**__",
-            RollResultType.SUCCESS: f"**{self.result} {p.plural_noun('SUCCESS', self.result)}**",
-            RollResultType.FAILURE: f"**{self.result} {p.plural_noun('SUCCESS', self.result)}**",
+            RollResultType.BOTCH: "Botch!",
+            RollResultType.CRITICAL: "Critical Success!",
+            RollResultType.SUCCESS: "Success",
+            RollResultType.FAILURE: "Failure",
         }
         return title_map[self.result_type]
 
     @property
-    def embed_description(self) -> str:  # pragma: no cover
-        """The description of the roll response embed."""
+    def num_successes_humanized(self) -> str:
+        """The number of successes rolled written as `x successess`."""
         description_map = {
             RollResultType.OTHER: "",
             RollResultType.BOTCH: f"{self.result} {p.plural_noun('Success', self.result)}",
             RollResultType.CRITICAL: f"{self.result} {p.plural_noun('Success', self.result)}",
-            RollResultType.SUCCESS: "",
-            RollResultType.FAILURE: "",
+            RollResultType.SUCCESS: f"{self.result} {p.plural_noun('SUCCESS', self.result)}",
+            RollResultType.FAILURE: f"{self.result} {p.plural_noun('SUCCESS', self.result)}",
         }
         return description_map[self.result_type]
+
+    @property
+    def dice_as_emoji_images(self) -> str:
+        """Return the rolled dice as emoji images."""
+        if not self._dice_as_emoji_images:
+            self._dice_as_emoji_images = " ".join(
+                f"{convert_int_to_emoji(die, images=True)}" for die in sorted(self.roll)
+            )
+        return self._dice_as_emoji_images
+
+    @property
+    def desperation_dice_as_emoji_images(self) -> str:
+        """Return the rolled desperation dice as emoji images."""
+        if not self._desperation_dice_as_emoji_images:
+            self._desperation_dice_as_emoji_images = " ".join(
+                f"{convert_int_to_emoji(die, images=True)}" for die in sorted(self.desperation_roll)
+            )
+        return self._desperation_dice_as_emoji_images

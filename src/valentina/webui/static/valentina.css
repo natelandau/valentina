@@ -1,0 +1,77 @@
+form pre {
+    margin-bottom:0;
+    font-weight:700;
+}
+
+.htmx-indicator{
+    display:none;
+}
+.htmx-request .htmx-indicator{
+    display:inline;
+}
+.htmx-request.htmx-indicator{
+    display:inline;
+}
+
+/* apply img-hover class to img tag */
+.img-hover {
+	-webkit-filter: grayscale(0) blur(0);
+	filter: grayscale(0) blur(0);
+	-webkit-transition: .4s ease-in-out;
+	transition: .4s ease-in-out;
+}
+
+.img-hover:hover {
+	-webkit-filter: grayscale(10%) blur(1px);
+	filter: grayscale(10%) blur(1px);
+}
+
+
+/* Add the `fade-in` class to any content for a fade-in effect */
+.fade-in {
+    opacity: 1;
+    animation-name: fadeInOpacity;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-in;
+    animation-duration: 0.6s;
+}
+
+@keyframes fadeInOpacity {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Add text in middle of horizontal rule */
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    font-size: 1.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--bs-heading-color);
+    /* margin-block-start: 1em;
+    margin-block-end: 1em; */
+    margin: 1rem 0;
+    text-transform: uppercase;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #333;
+  opacity: .25;
+}
+
+.separator:not(:empty)::before {
+  margin-right: .25em;
+}
+
+.separator:not(:empty)::after {
+  margin-left: .25em;
+}

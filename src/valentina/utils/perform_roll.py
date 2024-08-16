@@ -38,7 +38,7 @@ async def perform_roll(  # pragma: no cover
         desperation_pool (int, optional): The number of dice in the desperation pool. Defaults to 0.
     """
     roll = DiceRoll(
-        ctx,
+        ctx=ctx,
         pool=pool,
         difficulty=difficulty,
         dice_size=dice_size,
