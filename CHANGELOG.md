@@ -1,3 +1,9 @@
+## v3.0.0 (2024-08-16)
+
+### Feat
+
+- **webui**: initial web ui release (#171)
+
 ## v2.6.0 (2024-06-24)
 
 ### Feat
