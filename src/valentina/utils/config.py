@@ -55,6 +55,7 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     redis_password: str = ""
     redis_addr: str = "127.0.0.1:6379"
     webui_secret_key: str = ""
+    webui_behind_reverse_proxy: ENV_BOOLEAN = False
 
     CONFIG_SOURCES: ClassVar[ConfigSources | None] = [
         EnvSource(prefix="VALENTINA_", file=DIR / ".env", allow_all=True),

@@ -131,6 +131,7 @@ Settings for Valentina are controlled by environment variables. The following is
 | VALENTINA_WEBUI_SECRET_KEY |  | Sets the secret key for the web UI. This is required to run the web UI. |
 | VALENTINA_DISCORD_OAUTH_SECRET |  | Sets the secret for the Discord OAuth. This is required to run the web UI. |
 | VALENTINA_DISCORD_OAUTH_CLIENT_ID |  | Sets the ID for the Discord OAuth. This is required to run the web UI. |
+| VALENTINA_WEBUI_BEHIND_REVERSE_PROXY | `false` | Set to `true` if the web UI is behind a reverse proxy. |
 
 ---
 
