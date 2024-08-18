@@ -1,3 +1,11 @@
+## v3.0.1 (2024-08-18)
+
+### Fix
+
+- **webui**: add user guide to nav bar (#172)
+- **webui**: use X-Forwarded-For when behind reverse proxy
+- **webui**: fix insecure transport for oauth when behind reverse proxy
+
 ## v3.0.0 (2024-08-16)
 
 ### Feat
