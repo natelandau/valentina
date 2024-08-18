@@ -75,7 +75,7 @@ class CreateCharacterStart(MethodView):
 
     async def get(self) -> str:
         """Process initial page load."""
-        return catalog.render("character_create_full")
+        return catalog.render("character_create_full.Main")
 
 
 class CreateCharacterStep1(MethodView):

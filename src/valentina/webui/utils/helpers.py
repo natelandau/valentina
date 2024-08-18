@@ -171,7 +171,10 @@ async def update_session() -> None:
     await fetch_user_characters(fetch_links=False)
     await fetch_campaigns(fetch_links=False)
 
-    if ValentinaConfig().webui_log_level.upper() in ["DEBUG", "TRACE"]:
+    if ValentinaConfig().webui_debug and ValentinaConfig().webui_log_level.upper() in [
+        "DEBUG",
+        "TRACE",
+    ]:
         console.rule("Session")
         for key, value in session.items():
             console.log(f"{key}={value}")

@@ -71,7 +71,7 @@
                     <optgroup label="──────────">
                     </optgroup>
                     {% for name, id in session['GUILD_CAMPAIGNS'].items() %}
-                        <option value="{{ url_for("campaign.view_campaign",  campaign_id=id) }}">{{ name }}</option>
+                        <option value="{{ url_for("campaign.campaign_view",  campaign_id=id) }}">{{ name }}</option>
                     {% endfor %}
                 </select>
             </div>

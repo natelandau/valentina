@@ -3,14 +3,15 @@
     join_label:bool = False,
     floating_label:bool = False,
     post_url:str = "",
-    character:Character,
+    campaign:Campaign,
 #}
+<h3>Edit Campaign</h3>
 <form method="post"
       id="{{ form._prefix }}form"
       hx-post="{{ post_url }}"
       novalidate
       hx-indicator="#spinner"
-      hx-target="#form-container"
+      hx-target="#campaign-content"
       hx-swap="innerHTML"
       encoding="application/x-www-form-urlencoded">
     <global.WTFormElements form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} />
@@ -19,6 +20,6 @@
            name="submit"
            type="submit"
            value="Submit">
-    <a href="{{ url_for("character.character_view", character_id=character.id) }}"
+    <a href="{{ url_for("campaign.campaign_view", campaign_id=campaign.id) }}"
        class="btn btn-outline-secondary ms-2">Cancel</a>
 </form>

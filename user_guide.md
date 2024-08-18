@@ -73,7 +73,7 @@ For example, if you often need to roll for _perception_ and _alertness_, you can
 Here's how you can work with macros:
 
 -   **Creating a Macro**: Use `/macro create` to define a new macro. You'll need to specify the name and the associated stats or commands.
--   **Using a Macro**: Once created, you can roll a macro using `/roll macro <macro_name>`. The system will compute the dice based on the skills associated with the macro.
+-   **Using a Macro**: Once created, you can roll a macro using `/roll macro [macro_name]`. The system will compute the dice based on the skills associated with the macro.
 -   **Note:** Using Macros: Macros are tied to users, not characters, and can be used across characters.
 
 Macros are a powerful tool to enhance your gaming experience, allowing for quicker and more streamlined gameplay.
@@ -90,9 +90,9 @@ Macros are a powerful tool to enhance your gaming experience, allowing for quick
 Rolling dice is a core part of gameplay. Valentina Noir provides the following commands to roll dice:
 
 -   **Rolling D10s**: Use `/roll throw` to roll any number of D10s against an optional difficulty (default is 6).
--   **Rolling Traits**: Use `/roll traits <trait_name> <trait_name>` to roll a trait. For example, `/roll traits strength brawl` will compute the correct dice to roll based on your character.
--   **Rolling a Macro**: Use `/roll macro <macro_name>` to roll a macro. For example, `/roll macro pa` will roll the macro `pa` that you created earlier.
--   **Rolling Arbitrary Dice**: Use `/roll <dice>` to roll arbitrary dice. For example, `/roll 3d6` will roll 3 six-sided dice.
+-   **Rolling Traits**: Use `/roll traits [trait_name] [trait_name]` to roll a trait. For example, `/roll traits strength brawl` will compute the correct dice to roll based on your character.
+-   **Rolling a Macro**: Use `/roll macro [macro_name]` to roll a macro. For example, `/roll macro pa` will roll the macro `pa` that you created earlier.
+-   **Rolling Arbitrary Dice**: Use `/roll [dice]` to roll arbitrary dice. For example, `/roll 3d6` will roll 3 six-sided dice.
 
 The core mechanics of gameplay in Valentina Noir differ from the published Vampire the Masquerade game. Unless otherwise specified, all rolls are made as a pool of D10s with a set difficulty. The pool is determined by the number of dots for the two traits.
 
@@ -119,7 +119,7 @@ The outcome of the role is defined as:
 
 Campaigns are the backbone of your role-playing adventure in Valentina Noir. They span across multiple gaming sessions and help in organizing the story, keeping track of characters and events, and providing a cohesive narrative structure. Regularly updating chapters and making use of NPCs and notes ensures that information is not lost in between gaming sessions.
 
-Campaigns are organized into books and each book can have multiple chapters.
+**Campaigns are organized into books and each book can have multiple chapters.**
 
 When a campaign is created, channels will be created for each book and character. This allows for easy organization and management of the campaign. Add notes in the chapter channels to keep track of important information. Players can easily roll dice and manage their characters by using those commands in their character's campaign channel.
 

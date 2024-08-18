@@ -14,8 +14,12 @@
             </tr>
         </table>
     </div>
-    <div class="col">
-        <h3>Description</h3>
+    <div class="col" id="campaign-content">
+        {# This content is overwritten by the CampaignOverviewSnippet view when edited #}
+        <h3 style="display:inline;">Campaign Description</h3>
+        <button class="btn btn-sm btn-outline-primary float-end"
+                hx-get="{{ url_for("campaign.campaign_overview", campaign_id=campaign.id, view="edit") }}"
+                hx-target="#campaign-content">Edit description</button>
         {{ (campaign.description | from_markdown | safe) if campaign.description else "<p>No Description</p>" }}
     </div>
 </div>

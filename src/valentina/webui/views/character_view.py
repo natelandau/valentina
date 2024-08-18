@@ -118,24 +118,24 @@ class CharacterView(MethodView):
         """Handle htmx tab requests."""
         if request.args.get("tab") == "sheet":
             return catalog.render(
-                "character.Sheet",
+                "character_view.Sheet",
                 character=character,
                 traits=await self.get_character_sheet_traits(character),
             )
 
         if request.args.get("tab") == "inventory":
             return catalog.render(
-                "character.Inventory",
+                "character_view.Inventory",
                 character=character,
                 inventory=await self.get_character_inventory(character),
             )
 
         if request.args.get("tab") == "profile":
-            return catalog.render("character.profile", character=character)
+            return catalog.render("character_view.profile", character=character)
 
         if request.args.get("tab") == "images":
             return catalog.render(
-                "character.Images",
+                "character_view.Images",
                 character=character,
                 images=await self.get_character_image_urls(character),
             )
@@ -144,7 +144,7 @@ class CharacterView(MethodView):
             stats_engine = Statistics(guild_id=session["GUILD_ID"])
 
             return catalog.render(
-                "character.Statistics",
+                "character_view.Statistics",
                 character=character,
                 statistics=await stats_engine.character_statistics(character, as_json=True),
             )
@@ -160,7 +160,7 @@ class CharacterView(MethodView):
             return await self.handle_tabs(character)
 
         return catalog.render(
-            "character",
+            "character_view.Main",
             character=character,
             traits=await self.get_character_sheet_traits(character),
             success_msg=success_msg,
@@ -240,7 +240,7 @@ class CharacterEdit(MethodView):
         form = await self._build_form(character)
 
         return catalog.render(
-            "character_edit",
+            "character_edit.Main",
             character=character,
             form=form,
             join_label=self.join_label,
