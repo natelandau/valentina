@@ -51,7 +51,7 @@
                         {% for c_name, c_id in session["GUILD_CAMPAIGNS"].items() %}
                             <li>
                                 <a class="dropdown-item"
-                                   href="{{ url_for("campaign.view_campaign",  campaign_id=c_id) }}">{{ c_name }}</a>
+                                   href="{{ url_for("campaign.campaign_view",  campaign_id=c_id) }}">{{ c_name }}</a>
                             </li>
                         {% endfor %}
                     </ul>

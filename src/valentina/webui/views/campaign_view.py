@@ -21,16 +21,16 @@ class CampaignView(MethodView):
     async def handle_tabs(self, campaign: Campaign) -> str:
         """Handle HTMX tabs for the campaign view."""
         if request.args.get("tab") == "overview":
-            return catalog.render("campaign.Overview", campaign=campaign)
+            return catalog.render("campaign_view.Overview", campaign=campaign)
 
         if request.args.get("tab") == "books":
             return catalog.render(
-                "campaign.Books", campaign=campaign, books=await campaign.fetch_books()
+                "campaign_view.Books", campaign=campaign, books=await campaign.fetch_books()
             )
 
         if request.args.get("tab") == "characters":
             return catalog.render(
-                "campaign.Characters",
+                "campaign_view.Characters",
                 campaign=campaign,
                 characters=await campaign.fetch_characters(),
             )
@@ -38,7 +38,7 @@ class CampaignView(MethodView):
         if request.args.get("tab") == "statistics":
             stats_engine = Statistics(guild_id=session["GUILD_ID"])
             return catalog.render(
-                "campaign.Statistics",
+                "campaign_view.Statistics",
                 campaign=campaign,
                 statistics=await stats_engine.campaign_statistics(campaign, as_json=True),
             )
@@ -55,4 +55,4 @@ class CampaignView(MethodView):
         if request.headers.get("HX-Request"):
             return await self.handle_tabs(campaign)
 
-        return catalog.render("campaign", campaign=campaign)
+        return catalog.render("campaign_view.Main", campaign=campaign)

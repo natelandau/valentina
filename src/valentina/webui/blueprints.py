@@ -17,7 +17,7 @@ from valentina.webui.views import (
 campaign_bp = Blueprint("campaign", __name__)
 campaign_bp.add_url_rule(
     "/campaign/<string:campaign_id>",
-    view_func=CampaignView.as_view("view_campaign"),
+    view_func=CampaignView.as_view("campaign_view"),
     methods=["GET", "POST"],
 )
 

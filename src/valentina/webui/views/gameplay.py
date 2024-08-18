@@ -216,7 +216,7 @@ class GameplayView(MethodView):
 
         # If not an HTMX request, return the entire page
         return catalog.render(
-            "gameplay",
+            "gameplay.Main",
             character=await fetch_active_character(),
             campaign=await fetch_active_campaign(),
             dice_sizes=self.dice_size_values,
