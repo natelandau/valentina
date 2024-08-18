@@ -14,7 +14,7 @@
 {% if campaign.npcs %}
     <h4>NPCs</h4>
     <ul>
-        {% for npc in campaign.npcs | sort(attribute="full_name") %}
+        {% for npc in campaign.npcs | sort(attribute="name") %}
             <li>
                 <strong>{{ npc.name | escape }}</strong> {{ npc.description | from_markdown | safe }}
             </li>
