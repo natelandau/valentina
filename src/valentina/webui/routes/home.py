@@ -1,5 +1,7 @@
 """Routes for the home page."""
 
+from pathlib import Path
+
 from flask_discord import requires_authorization
 from quart import Blueprint, redirect, request, send_from_directory, session, url_for
 from quart.wrappers.response import Response as QuartResponse
@@ -36,3 +38,12 @@ async def select_guild() -> str | Response:
 async def static_from_root() -> QuartResponse:
     """Serve a static file from the root directory."""
     return await send_from_directory(static_dir, request.path[1:])
+
+
+@bp.route("/user-guide")
+async def user_guide() -> str:
+    """Serve the user guide."""
+    path_to_guide = Path(__file__).parent.parent.parent.parent.parent / "user_guide.md"
+    guide_content = path_to_guide.read_text()
+
+    return catalog.render("user_guide", guide=guide_content)
