@@ -3,6 +3,7 @@
 from quart import Blueprint
 
 from valentina.webui.views import (
+    CampaignOverviewSnippet,
     CampaignView,
     CharacterEdit,
     CharacterView,
@@ -20,7 +21,11 @@ campaign_bp.add_url_rule(
     view_func=CampaignView.as_view("campaign_view"),
     methods=["GET", "POST"],
 )
-
+campaign_bp.add_url_rule(
+    "/campaign/<string:campaign_id>/overview",
+    view_func=CampaignOverviewSnippet.as_view("campaign_overview"),
+    methods=["GET", "POST"],
+)
 
 character_bp = Blueprint("character", __name__)
 character_bp.add_url_rule(
