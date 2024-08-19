@@ -1,5 +1,6 @@
 """Main file which instantiates the bot and runs it."""
 
+import os
 from pathlib import Path
 from time import sleep
 from typing import Optional
@@ -9,7 +10,7 @@ import typer
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.utils import ValentinaConfig, instantiate_logger
+from valentina.utils import ValentinaConfig, console, instantiate_logger
 from valentina.utils.database import test_db_connection
 
 from .__version__ import __version__
@@ -33,6 +34,17 @@ def main(
     ),
 ) -> None:
     """Run Valentina."""
+    if os.environ["VALENTINA_TRACE"]:
+        console.rule("Env Vars")
+        for key, value in os.environ.items():
+            if key not in {"PS1", "LS_COLORS", "PATH"}:
+                console.log(f"{key}: {value}")
+
+        console.rule("ValentinaConfig")
+        settings_object = ValentinaConfig().model_dump(mode="python")
+        for key, value in settings_object.items():
+            console.log(f"{key}: {value}")
+
     # Instantiate the logger
     instantiate_logger()
 
