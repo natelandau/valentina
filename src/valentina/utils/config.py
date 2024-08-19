@@ -49,7 +49,7 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     webui_port: str = "8000"
     webui_log_level: str = "INFO"
     webui_debug: ENV_BOOLEAN = False
-    webui_base_url: str = ""
+    webui_base_url: str = "http://127.0.0.1:8088"
     discord_oauth_secret: str = ""
     discord_oauth_client_id: str = ""
     redis_password: str = ""
