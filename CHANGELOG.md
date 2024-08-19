@@ -1,3 +1,9 @@
+## v3.0.2 (2024-08-19)
+
+### Fix
+
+- **webui**: work through cloudflared tunnel
+
 ## v3.0.1 (2024-08-18)
 
 ### Fix
