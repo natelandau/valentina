@@ -1,3 +1,9 @@
+## v3.0.3 (2024-08-19)
+
+### Fix
+
+- add VALENTINA_TRACE environment variable
+
 ## v3.0.2 (2024-08-19)
 
 ### Fix
