@@ -1,10 +1,13 @@
 """Gather configuration from environment variables."""
 
+import os
 from pathlib import Path
 from typing import Annotated, ClassVar
 
 from confz import BaseConfig, ConfigSources, EnvSource
 from pydantic import BeforeValidator
+
+from .console import console
 
 DIR = Path(__file__).parents[3].absolute()
 
@@ -61,3 +64,16 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
         EnvSource(prefix="VALENTINA_", file=DIR / ".env", allow_all=True),
         EnvSource(prefix="VALENTINA_", file=DIR / ".env.secrets", allow_all=True),
     ]
+
+
+def debug_environment_variables() -> None:
+    """Print environment variables and ValentinaConfig settings to the console."""
+    console.rule("Env Vars")
+    for key, value in os.environ.items():
+        if key not in {"PS1", "LS_COLORS", "PATH"}:
+            console.log(f"{key}: {value}")
+
+    console.rule("ValentinaConfig")
+    settings_object = ValentinaConfig().model_dump(mode="python")
+    for key, value in settings_object.items():
+        console.log(f"{key}: {value}")
