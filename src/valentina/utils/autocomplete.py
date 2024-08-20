@@ -27,15 +27,16 @@ MAX_OPTION_LENGTH = 99
 
 ################## Character Autocomplete Functions ##################
 async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Generate a list of all type_player characters in the guild for autocomplete.
+    """Generate a list of all player characters in the guild for autocomplete.
 
-    This function fetches all player characters for the guild, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
+    Fetch all player characters for the guild, filter them based on the user's input,
+    and return a list of OptionChoice objects to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
 
     Returns:
-        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list which contains character names and character ids.
+        list[OptionChoice]: A list of OptionChoice objects containing character names and IDs.
     """
     # Fetch and prepare player characters
     all_chars_owners = sorted(
@@ -74,15 +75,16 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
 async def select_campaign_any_player_character(
     ctx: discord.AutocompleteContext,
 ) -> list[OptionChoice]:  # pragma: no cover
-    """Generate a list of all type_player characters associated with a specific campaign.
+    """Generate a list of all player characters associated with a specific campaign.
 
-    This function fetches all player characters for the guild, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
+    Fetch all player characters for the campaign, filter them based on the user's input,
+    and return a list of OptionChoice objects to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
 
     Returns:
-        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list which contains character names and character ids.
+        list[discord.OptionChoice]: A list of OptionChoice objects containing character names and IDs for the autocomplete list.
     """
     channel_objects = await fetch_channel_object(ctx, raise_error=False)
     campaign = channel_objects.campaign
@@ -127,15 +129,16 @@ async def select_campaign_any_player_character(
 async def select_campaign_character_from_user(
     ctx: discord.AutocompleteContext,
 ) -> list[OptionChoice]:
-    """Generate a list of the user's available characters associated with a campaign for autocomplete.
+    """Generate a list of the user's available characters for autocomplete.
 
-    This function fetches all alive player characters for the user, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
+    Fetch all player characters for the user in the current campaign, filter them based on user input,
+    and return a list of OptionChoice objects for autocomplete.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
 
     Returns:
-        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list.
+        list[discord.OptionChoice]: A list of OptionChoice objects for the autocomplete list.
     """
     channel_objects = await fetch_channel_object(ctx, raise_error=False)
     campaign = channel_objects.campaign
@@ -202,7 +205,17 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
 async def select_aws_object_from_guild(
     ctx: discord.AutocompleteContext,
 ) -> list[OptionChoice]:  # pragma: no cover
-    """Populate the autocomplete list for the aws_object option based on the user's input."""
+    """Populate the autocomplete list for the aws_object option based on the user's input.
+
+    Fetch AWS objects associated with the current guild and generate autocomplete options.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context object containing interaction details.
+
+    Returns:
+        list[OptionChoice]: A list of OptionChoice objects representing AWS objects,
+                            limited to MAX_OPTION_LIST_SIZE.
+    """
     aws_svc = AWSService()
 
     guild_prefix = f"{ctx.interaction.guild.id}/"
@@ -215,7 +228,16 @@ async def select_aws_object_from_guild(
 async def select_changelog_version_1(
     ctx: discord.AutocompleteContext,
 ) -> list[str]:  # pragma: no cover
-    """Populate the autocomplete for the version option. This is for the first of two options."""
+    """Populate the autocomplete for the first version option.
+
+    Generate a list of changelog versions that start with the user's input.
+
+    Args:
+        ctx: The autocomplete context containing the interaction details.
+
+    Returns:
+        A list of version strings matching the user's input, limited to MAX_OPTION_LIST_SIZE.
+    """
     bot = cast(Valentina, ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
 
@@ -227,7 +249,16 @@ async def select_changelog_version_1(
 async def select_changelog_version_2(
     ctx: discord.AutocompleteContext,
 ) -> list[str]:  # pragma: no cover
-    """Populate the autocomplete for the version option. This is for the second of two options."""
+    """Populate the autocomplete for the second version option.
+
+    Generate a list of changelog versions that start with the user's input.
+
+    Args:
+        ctx: The autocomplete context containing the interaction details.
+
+    Returns:
+        A list of version strings matching the user's input, limited to MAX_OPTION_LIST_SIZE.
+    """
     bot = cast(Valentina, ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
 
@@ -237,19 +268,20 @@ async def select_changelog_version_2(
 
 
 async def select_book(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
-    """Populate the autocomplete for the chapter option.
+    """Populate the autocomplete for the book option.
 
-    This function fetches the active campaign from the bot's campaign service,
-    fetches all books of that campaign, sorts them by book number,
-    and filters them based on the starting string of the book name.
-    If the number of books reaches a maximum size, it stops appending more books.
-    If there is no active campaign, it returns a list with a single string "No active campaign".
+    Fetch the active campaign, retrieve all books for that campaign, sort them by book number,
+    and filter based on the user's input. If no active campaign is found, return a single option
+    indicating this. If the number of books exceeds the maximum allowed options, return all
+    matching books up to the limit.
 
     Args:
-        ctx (discord.AutocompleteContext): The context in which the function is called.
+        ctx (discord.AutocompleteContext): The context of the autocomplete interaction.
 
     Returns:
-        list[OptionChoice]: A list of available chapter names mapped to book database id.
+        list[OptionChoice]: A list of OptionChoice objects representing available books.
+            Each option contains the book number and name as the label, and the book's
+            database ID as the value.
     """
     # Fetch the active campaign
     channel_objects = await fetch_channel_object(ctx, raise_error=False)
@@ -272,11 +304,15 @@ async def select_book(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
 async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available campaigns for the guild.
 
+    Fetch and sort non-deleted campaigns for the current guild, then filter based on user input.
+    If too many options are available, return a single option prompting for more specific input.
+
     Args:
-        ctx (discord.AutocompleteContext): The context in which the function is called.
+        ctx (discord.AutocompleteContext): The autocomplete context containing interaction details.
 
     Returns:
-        list[OptionChoice]: A list of available campaign names and db ids.
+        list[OptionChoice]: A list of OptionChoice objects representing available campaigns.
+            Each option contains the campaign name as the label and the campaign's database ID as the value.
     """
     all_campaigns = sorted(
         await Campaign.find(
@@ -304,17 +340,16 @@ async def select_campaign(ctx: discord.AutocompleteContext) -> list[OptionChoice
 async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Populate the autocomplete for the chapter option.
 
-    This function fetches the active book based on the Discord channel,
-    fetches all chapters of that book, sorts them by chapter number,
-    and filters them based on the starting string of the chapter name.
-    If the number of chapters reaches a maximum size, it stops appending more chapters.
-    If there is no active campaign, it returns a list with a single string "No active campaign".
+    Fetch the active book for the current channel, retrieve its chapters, sort them by number,
+    and filter based on user input. If no active book is found, return a single option indicating this.
 
     Args:
-        ctx (discord.AutocompleteContext): The context in which the function is called.
+        ctx (discord.AutocompleteContext): The autocomplete context containing interaction details.
 
     Returns:
-        list[OptionChoice]: A list of available chapter names mapped to chapter.number.
+        list[OptionChoice]: A list of OptionChoice objects representing available chapters.
+            Each option contains the chapter number and name as the label, and the chapter's
+            database ID as the value.
     """
     # Fetch the active campaign
     channel_objects = await fetch_channel_object(ctx, raise_error=False)
@@ -336,19 +371,17 @@ async def select_chapter_old(
 ) -> list[OptionChoice]:  # pragma: no cover
     """Populate the autocomplete for the chapter option.
 
-    This function fetches the active campaign from the bot's campaign service,
-    fetches all chapters of that campaign, sorts them by chapter number,
-    and filters them based on the starting string of the chapter name.
-    If the number of chapters reaches a maximum size, it stops appending more chapters.
-    If there is no active campaign, it returns a list with a single string "No active campaign".
-
-    TODO: Remove this after migration to the new chapter system.
+    Fetch the active campaign, retrieve its chapters, sort them by number,
+    and filter based on user input. If no active campaign is found, return a single option indicating this.
 
     Args:
-        ctx (discord.AutocompleteContext): The context in which the function is called.
+        ctx (discord.AutocompleteContext): The autocomplete context containing interaction details.
 
     Returns:
-        list[OptionChoice]: A list of available chapter names mapped to chapter.number.
+        list[OptionChoice]: A list of OptionChoice objects representing available chapters.
+            Each option contains the chapter number and name as the label, and the chapter number as the value.
+
+    TODO: Remove this after migration to the new chapter system.
     """
     # Fetch the active campaign
     channel_objects = await fetch_channel_object(ctx, raise_error=False)
@@ -369,15 +402,14 @@ async def select_chapter_old(
 async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available character classes.
 
-    This function fetches the available character classes, sorts them by name,
-    and filters them based on the starting string of the class name.
-    If the number of classes reaches a maximum size, it stops appending more classes.
+    Fetch available character classes, sort them by name, and filter based on user input.
 
     Args:
-        ctx (discord.AutocompleteContext): The context in which the function is called.
+        ctx (discord.AutocompleteContext): The autocomplete context containing interaction details.
 
     Returns:
-        list[OptionChoice]: A list of available character class names.
+        list[OptionChoice]: A list of OptionChoice objects representing available character classes.
+            Each option contains the class name as both the label and the value.
     """
     # Filter and return character class names
     return [
@@ -390,15 +422,14 @@ async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoi
 async def select_char_concept(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available character concepts.
 
-    This function fetches the available character concepts, sorts them by name,
-    and filters them based on the starting string of the argument.
-    If the number of concepts reaches a maximum size, it stops appending more classes.
+    Fetch available character concepts and filter based on user input.
 
     Args:
-        ctx (discord.AutocompleteContext): The context in which the function is called.
+        ctx (discord.AutocompleteContext): The autocomplete context containing interaction details.
 
     Returns:
-        list[OptionChoice]: A list of available character concepts.
+        list[OptionChoice]: A list of OptionChoice objects representing available character concepts.
+            Each option contains the concept name (title-cased) as the label and the concept name (uppercase) as the value.
     """
     # Filter and return character class names
     return [

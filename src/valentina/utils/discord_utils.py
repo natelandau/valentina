@@ -22,14 +22,13 @@ async def assert_permissions(
 ) -> None:  # pragma: no cover
     """Check if the bot has the required permissions to run the command.
 
-    This method verifies that the bot has the necessary permissions specified in the `permissions` argument. If any required permissions are missing, it raises a `BotMissingPermissionsError`.
+    Verify that the bot has the necessary permissions specified in the permissions argument.
+    Raise an error if any required permissions are missing.
 
     Args:
         ctx (ValentinaContext): The context object containing the bot's permissions.
-        **permissions (bool): A dictionary of permissions to check, where the key is the permission name and the value is the required state (True/False).
-
-    Returns:
-        None
+        **permissions (bool): Key-value pairs of permissions to check. Keys are permission
+            names and values are the required states (True/False).
 
     Raises:
         BotMissingPermissionsError: If any required permissions are missing.
@@ -43,11 +42,11 @@ async def assert_permissions(
 async def create_storyteller_role(guild: discord.Guild) -> discord.Role:  # pragma: no cover
     """Create or update the storyteller role for the guild.
 
-    This method ensures a "Storyteller" role exists in the guild with the appropriate permissions.
-    If the role does not exist, it is created. If it exists, its permissions are updated.
+    Create a "Storyteller" role if it doesn't exist, or update its permissions if it does.
+    The role is given specific permissions suitable for a storyteller in a role-playing game context.
 
     Args:
-        guild (discord.Guild): The guild where the role should be created or updated.
+        guild (discord.Guild): The Discord guild to create or update the role in.
 
     Returns:
         discord.Role: The created or updated "Storyteller" role.
@@ -98,16 +97,16 @@ async def create_storyteller_role(guild: discord.Guild) -> discord.Role:  # prag
 
 
 async def create_player_role(guild: discord.Guild) -> discord.Role:  # pragma: no cover
-    """Create or update the player role for the guild.
+    """Create or update the Player role in a Discord guild.
 
-    This method ensures a "Player" role exists in the guild with the appropriate permissions.
-    If the role does not exist, it is created. If it exists, its permissions are updated.
+    This function creates a new Player role if it doesn't exist, or updates an existing one.
+    The role is set with specific permissions suitable for regular players in the game.
 
     Args:
-        guild (discord.Guild): The guild where the role should be created or updated.
+        guild (discord.Guild): The Discord guild where the role should be created or updated.
 
     Returns:
-        discord.Role: The created or updated "Player" role.
+        discord.Role: The created or updated Player role.
     """
     player = discord.utils.get(guild.roles, name="Player", mentionable=True, hoist=True)
 
@@ -153,17 +152,17 @@ async def create_player_role(guild: discord.Guild) -> discord.Role:  # pragma: n
 
 
 def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
-    """Translate a ChannelPermission enum to a discord.PermissionOverwrite object.
+    """Create a Discord PermissionOverwrite object based on the requested permission level.
 
-    Takes a requested channel permission represented as an enum and
-    sets the properties of a discord.PermissionOverwrite object
-    to match those permissions.
+    This function maps a ChannelPermission enum to a set of Discord permissions,
+    creating a PermissionOverwrite object with the appropriate settings.
 
     Args:
-        requested_permission (ChannelPermission): The channel permission enum.
+        requested_permission (ChannelPermission): The desired permission level for the channel.
 
     Returns:
-        discord.PermissionOverwrite: Permission settings as a Discord object.
+        discord.PermissionOverwrite: A PermissionOverwrite object with the permissions set
+        according to the requested permission level.
     """
     # Map each ChannelPermission to the properties that should be False
     permission_mapping: dict[ChannelPermission, dict[str, bool]] = {
@@ -220,9 +219,9 @@ async def fetch_channel_object(
     need_character: bool = False,
     need_campaign: bool = False,
 ) -> ChannelObjects:
-    """Determine the type of channel the command was invoked in and fetch the associated objects.
+    """Determine the channel type and fetch associated objects.
 
-    This method identifies the channel type and fetches the related campaign, book, and character objects. It raises errors if specified conditions are not met.
+    Identify the channel type and fetch related campaign, book, and character objects. Raise errors if specified conditions are not met.
 
     Args:
         ctx (discord.ApplicationContext | discord.AutocompleteContext | commands.Context): The context containing the channel object.

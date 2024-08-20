@@ -25,7 +25,14 @@ ENV_BOOLEAN = Annotated[
 
 #### NEW CONFIG ####
 class ValentinaConfig(BaseConfig):  # type: ignore [misc]
-    """Valentina configuration."""
+    """Define and manage configuration settings for the Valentina application.
+
+    Utilize environment variables and configuration files to set up and control
+    various aspects of the application, including database connections, API keys,
+    logging preferences, and web interface settings. Implement type checking and
+    validation for configuration values to ensure proper functionality and
+    security across different deployment environments.
+    """
 
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
@@ -49,7 +56,7 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     # WebUI Configuration
     webui_enable: ENV_BOOLEAN = False
     webui_host: str = "127.0.0.1"
-    webui_port: str = "8000"
+    webui_port: str = "8088"
     webui_log_level: str = "INFO"
     webui_debug: ENV_BOOLEAN = False
     webui_base_url: str = "http://127.0.0.1:8088"

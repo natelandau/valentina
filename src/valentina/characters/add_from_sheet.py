@@ -2,7 +2,7 @@
 
 import asyncio
 import uuid
-from typing import Any
+from collections.abc import Callable
 
 import discord
 from beanie import WriteRules
@@ -74,7 +74,14 @@ class RatingView(discord.ui.View):
 
 
 class AddFromSheetWizard:
-    """A character generation wizard that walks the user through setting a value for each trait. This is used for entering a character that has already been created from a physical character sheet."""
+    """A character generation wizard for entering pre-existing characters.
+
+    This wizard guides the user through the process of setting values for each trait
+    of a character that has already been created on a physical character sheet.
+    It provides an interactive interface to input trait values systematically,
+    ensuring all necessary information is captured for the digital representation
+    of the character.
+    """
 
     def __init__(
         self,
@@ -151,7 +158,19 @@ class AddFromSheetWizard:
     async def __finalize_character(
         self,
     ) -> None:
-        """Add the character to the database and inform the user they are done."""
+        """Finalize character creation and notify the user.
+
+        Add the character to the database, create associated traits, link to a campaign
+        if applicable, update the user's character list, create a character channel
+        if in a campaign, and send a confirmation message to the user.
+
+        This method handles the final steps of character creation after all traits
+        have been input by the user.
+
+        Raises:
+            discord.errors.HTTPException: If there's an error creating the character's channel.
+            beanie.exceptions.DocumentSaveError: If there's an error saving the character or user data.
+        """
         # Add the character to the database
         await self.character.insert()
 
@@ -210,7 +229,22 @@ class AddFromSheetWizard:
     async def __send_messages(
         self, *, interaction: discord.Interaction | None = None, message: str | None = None
     ) -> None:
-        """Query a trait."""
+        """Send messages to query trait information during character creation.
+
+        This method handles the process of sending messages to the user to gather
+        trait information for character creation. It prepares and sends an embed
+        with the current trait being queried, and sets up the view for user interaction.
+
+        Args:
+            interaction (discord.Interaction | None): The interaction object if this
+                method is called in response to a user interaction. Defaults to None.
+            message (str | None): An optional message to include in the embed description.
+                Defaults to None.
+
+        Raises:
+            discord.errors.HTTPException: If there's an error sending the message.
+            discord.errors.Forbidden: If the bot doesn't have permission to send messages.
+        """
         trait_name, trait_category = self.trait_list[0]
 
         description = "This wizard will guide you through the character creation process.\n\n"
@@ -248,14 +282,32 @@ class AddFromSheetWizard:
             await interaction.response.edit_message(embed=embed, view=self.view)
 
     async def __timeout(self) -> None:
-        """Inform the user they took too long."""
+        """Inform the user that their character generation session has timed out due to inactivity.
+
+        This method is called when the user fails to respond within the allotted time during
+        the character creation process. It sends a message to the user, cancels the character
+        generation, and logs the timeout event.
+
+        Raises:
+            discord.errors.HTTPException: If there's an error sending the message.
+            discord.errors.Forbidden: If the bot doesn't have permission to send messages.
+        """
         errmsg = f"Due to inactivity, your character generation on **{self.ctx.guild.name}** has been canceled."
         await self.edit_message(content=errmsg, embed=None, view=None)
         logger.info("CHARGEN: Timed out")
 
     @property
-    def edit_message(self) -> Any:
-        """Get the proper edit method for editing our message outside of an interaction."""
+    def edit_message(self) -> Callable:
+        """Get the appropriate edit method for modifying messages outside of an interaction.
+
+        Returns:
+            Callable: The edit method to use. If self.msg exists, returns self.msg.edit,
+                      otherwise returns self.ctx.respond.
+
+        This property determines the correct method to use for editing messages
+        in different contexts, allowing for flexible message manipulation
+        throughout the character creation process.
+        """
         if self.msg:
             return self.msg.edit
         return self.ctx.respond

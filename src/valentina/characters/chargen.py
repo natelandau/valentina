@@ -130,11 +130,15 @@ class CharacterPickerButtons(discord.ui.View):  # pragma: no cover
 class BeginCancelCharGenButtons(discord.ui.View):  # pragma: no cover
     """Manage buttons for initiating or canceling the character generation process.
 
+    This view provides buttons for users to either start rolling characters or cancel the process.
+
     Args:
-    author (Union[discord.User, discord.Member, None]): The author of the interaction.
+        author (discord.User | discord.Member | None): The author of the interaction.
+            If provided, only this user can interact with the buttons.
 
     Attributes:
-    roll (bool): Whether to roll for characters.
+        roll (bool | None): Indicates whether to roll for characters.
+            Set to True if the roll button is clicked, False if cancelled, None otherwise.
     """
 
     def __init__(self, author: discord.User | discord.Member | None = None):
@@ -188,14 +192,17 @@ class BeginCancelCharGenButtons(discord.ui.View):  # pragma: no cover
 class UpdateCharacterButtons(discord.ui.View):  # pragma: no cover
     """Manage buttons for updating a character's attributes.
 
+    This view provides interactive buttons for various character update operations,
+    such as renaming the character or reallocating attribute dots.
+
     Args:
         ctx (ValentinaContext): The context of the Discord application.
         character (Character): The character to update.
-        author (Union[discord.User, discord.Member, None]): The author of the interaction.
+        author (discord.User | discord.Member | None): The author of the interaction.
 
     Attributes:
-        updated (bool): Whether the character has been updated.
-        done (bool): Whether the update process is done.
+        updated (bool): Indicates whether the character has been updated.
+        done (bool): Indicates whether the update process is complete.
     """
 
     def __init__(
@@ -343,7 +350,26 @@ class FreebiePointsButtons(discord.ui.View):  # pragma: no cover
 
 
 class RNGCharGen:
-    """Randomly generate different parts of a character."""
+    """Randomly generate different parts of a character.
+
+    This class provides methods to randomly generate various aspects of a character,
+    including attributes, abilities, and other traits based on the specified
+    experience level and campaign settings.
+
+    Args:
+        ctx (ValentinaContext): The context of the Discord application.
+        user (User): The user for whom the character is being generated.
+        experience_level (RNGCharLevel, optional): The experience level for character generation.
+            Defaults to a random level if not specified.
+        campaign (Campaign, optional): The campaign associated with the character.
+            Defaults to None.
+
+    Attributes:
+        ctx (ValentinaContext): The context of the Discord application.
+        user (User): The user for whom the character is being generated.
+        experience_level (RNGCharLevel): The experience level for character generation.
+        campaign (Campaign): The campaign associated with the character, if any.
+    """
 
     def __init__(
         self,
@@ -361,11 +387,16 @@ class RNGCharGen:
     def _redistribute_trait_values(
         traits: list[CharacterTrait], concept: CharacterConcept
     ) -> list[CharacterTrait]:
-        """Redistribute trait values based on the concept. This method ensures that specific traits associated with a concept have high values for the specified traits.
+        """Redistribute trait values based on the character concept.
+
+        Ensure that specific traits associated with a concept have high values by
+        redistributing points from less important traits. The redistribution process
+        continues until all concept-specific traits have a value of at least 3, or
+        until no more redistribution is possible.
 
         Args:
-            traits (list[CharacterTrait]): The traits to redistribute.
-            concept (CharacterConcept): The concept to use for redistribution.
+            traits (list[CharacterTrait]): The list of traits to redistribute.
+            concept (CharacterConcept): The character concept to use for redistribution.
 
         Returns:
             list[CharacterTrait]: The updated list of CharacterTrait objects after redistribution.
@@ -398,17 +429,17 @@ class RNGCharGen:
         return traits
 
     def _adjust_value_based_on_level(self, value: int) -> int:
-        """Adjust the discipline value based on the character's level.
+        """Adjust the discipline value based on the character's experience level.
 
-        For advanced and elite levels, the value is incremented by 1.
-        For new characters, the value is capped at 3.
-        The final value is constrained between 1 and 5.
+        Modify the given discipline value according to the character's experience level.
+        Increment the value for advanced and elite levels, cap it for new and intermediate
+        characters, and ensure the final value is within the valid range.
 
         Args:
             value (int): The initial discipline value.
 
         Returns:
-            int: The adjusted discipline value.
+            int: The adjusted discipline value, constrained between 1 and 5.
         """
         # Increment value for advanced and elite levels
         if self.experience_level in {RNGCharLevel.ADVANCED, RNGCharLevel.ELITE}:
@@ -438,20 +469,27 @@ class RNGCharGen:
         nationality: str = "us",
         nickname_is_class: bool = False,
     ) -> Character:
-        """Generate's the base character based on random values.
+        """Generate a base character with random attributes.
 
-        A base character consists of a combination of the following:
+        Generate a base character with randomly selected attributes including class,
+        concept, clan (for vampires), creed (for hunters), and name. Traits and
+        customizations are not included in this base generation.
 
-        - A random class
-        - A random concept
-        - A random clan (if applicable)
-        - A random creed (if applicable)
-        - A random name
-
-        Traits and customizations are to be added later.
+        Args:
+            char_class (CharClass | None): Specific character class. If None, randomly selected.
+            concept (CharacterConcept | None): Specific character concept. If None, randomly selected.
+            clan (VampireClan | None): Specific vampire clan. If None, randomly selected for vampires.
+            creed (HunterCreed | None): Specific hunter creed. If None, randomly selected for hunters.
+            player_character (bool): Whether the character is a player character.
+            storyteller_character (bool): Whether the character is a storyteller character.
+            developer_character (bool): Whether the character is a developer character.
+            chargen_character (bool): Whether the character is generated through character generation.
+            gender (Literal["male", "female"] | None): Gender for name generation.
+            nationality (str): Nationality for name generation. Defaults to "us".
+            nickname_is_class (bool): Whether to use the class name as a nickname.
 
         Returns:
-            Character: The generated character.
+            Character: The generated base character.
         """
         # Grab random name
         name_first, name_last = await fetch_random_name(gender=gender, country=nationality)
@@ -513,7 +551,25 @@ class RNGCharGen:
     ) -> Character:
         """Generate a full character with random values.
 
-        This method generates a full character with random values for all traits and abilities and adds it to the database. This is primarily used for Storytellers to quickly create NPCs.
+        Generate a complete character with randomized values for all traits and abilities,
+        and add it to the database. This method is primarily used by Storytellers for
+        quick NPC creation.
+
+        Args:
+            char_class (CharClass | None): The character's class. If None, a random class is chosen.
+            concept (CharacterConcept | None): The character's concept. If None, a random concept is chosen.
+            clan (VampireClan | None): The character's clan (for vampires). If None, a random clan is chosen.
+            creed (HunterCreed | None): The character's creed (for hunters). If None, a random creed is chosen.
+            player_character (bool): Whether this is a player character. Defaults to False.
+            storyteller_character (bool): Whether this is a storyteller character. Defaults to False.
+            developer_character (bool): Whether this is a developer character. Defaults to False.
+            chargen_character (bool): Whether this character was created through character generation. Defaults to False.
+            gender (Literal["male", "female"] | None): The character's gender. If None, a random gender is chosen.
+            nationality (str): The character's nationality. Defaults to "us".
+            nickname_is_class (bool): Whether to use the character's class as their nickname. Defaults to False.
+
+        Returns:
+            Character: The fully generated character object.
         """
         filtered_locals = {k: v for k, v in locals().items() if k != "self"}
 
@@ -530,8 +586,15 @@ class RNGCharGen:
     async def random_attributes(self, character: Character) -> Character:
         """Randomly generate attributes for the character.
 
+        Generate and assign random attribute values for the given character based on their
+        concept, class, and experience level. This method handles the distribution of
+        attribute dots across physical, social, and mental categories.
+
         Args:
             character (Character): The character for which to generate attributes.
+
+        Returns:
+            Character: The updated character object with randomly generated attributes.
         """
         logger.debug(f"Generate attribute values for {character.name}")
 
@@ -594,8 +657,14 @@ class RNGCharGen:
     async def random_abilities(self, character: Character) -> Character:
         """Randomly generate abilities for the character.
 
+        This method creates and assigns random ability values to the given character,
+        taking into account the character's concept and experience level.
+
         Args:
             character (Character): The character for which to generate abilities.
+
+        Returns:
+            Character: The updated character with randomly generated abilities.
         """
         logger.debug(f"Generate ability values for {character.name}")
 
@@ -656,11 +725,15 @@ class RNGCharGen:
     async def random_disciplines(self, character: Character) -> Character:
         """Randomly generate disciplines for the character.
 
+        Generate and assign random discipline values for a given character based on their clan
+        and experience level. This method handles the logic for determining which disciplines
+        to assign and their values.
+
         Args:
             character (Character): The character for which to generate disciplines.
 
         Returns:
-            Character: The updated character.
+            Character: The character with updated disciplines.
         """
         logger.debug(f"Generate discipline values for {character.name}")
 
@@ -713,11 +786,15 @@ class RNGCharGen:
     async def random_virtues(self, character: Character) -> Character:
         """Randomly generate virtues for the character.
 
+        Generate and assign random virtue values for the given character based on their
+        character class and the current experience level. The method calculates the total
+        number of dots to distribute among virtues and assigns them randomly.
+
         Args:
             character (Character): The character for which to generate virtues.
 
         Returns:
-            Character: The updated character.
+            Character: The updated character with newly generated virtue traits.
         """
         logger.debug(f"Generate virtue values for {character.name}")
 
@@ -754,13 +831,17 @@ class RNGCharGen:
         return character
 
     async def random_backgrounds(self, character: Character) -> Character:
-        """Randomly generate backgrounds for the character.
+        """Generate random backgrounds for the character.
+
+        Generate and assign random background values for the given character based on their
+        character class and the current experience level. The method calculates the total
+        number of dots to distribute among backgrounds and assigns them randomly.
 
         Args:
             character (Character): The character for which to generate backgrounds.
 
         Returns:
-            Character: The updated character.
+            Character: The updated character with newly generated background traits.
         """
         logger.debug(f"Generate background values for {character.name}")
 
@@ -801,11 +882,16 @@ class RNGCharGen:
     async def random_willpower(self, character: Character) -> Character:
         """Randomly generate willpower for the character.
 
+        Generate and assign willpower trait for the character based on their existing
+        Self-Control and Courage traits. If applicable, also generate and assign
+        a Humanity trait based on the character's Conscience trait.
+
         Args:
             character (Character): The character for which to generate willpower.
 
         Returns:
-            Character: The updated character.
+            Character: The updated character with newly generated willpower
+                       and potentially humanity traits.
         """
         logger.debug(f"Generate willpower values for {character.name}")
 
@@ -849,11 +935,15 @@ class RNGCharGen:
     async def random_hunter_traits(self, character: Character) -> Character:
         """Randomly generate hunter traits for the character.
 
+        Generate and assign hunter-specific traits such as Willpower, Conviction,
+        and Edges based on the character's creed and experience level. If the
+        character doesn't have a creed, a random one is assigned.
+
         Args:
             character (Character): The character for which to generate hunter traits.
 
         Returns:
-            Character: The updated character.
+            Character: The updated character with newly generated hunter traits.
         """
         if character.char_class != CharClass.HUNTER:
             return character
@@ -916,11 +1006,15 @@ class RNGCharGen:
     async def concept_special_abilities(self, character: Character) -> Character:
         """Assign special abilities based on the character's concept.
 
+        This method assigns special abilities to a character based on their concept,
+        but only if the character is a Mortal. For non-Mortal characters, it returns
+        the character unchanged.
+
         Args:
-            character (Character): The character for which to assign special abilities.
+            character (Character): The character to assign special abilities to.
 
         Returns:
-            Character: The updated character.
+            Character: The updated character with assigned special abilities.
         """
         if character.char_class != CharClass.MORTAL:
             return character
@@ -955,14 +1049,8 @@ class RNGCharGen:
 class CharGenWizard:  # pragma: no cover
     """Guide the user through a step-by-step character generation process.
 
-    Args:
-        ctx (ValentinaContext): The context of the Discord application.
-        campaign (Campaign): The campaign for which the character is being created.
-        user (GuildUser): The user who is creating the character.
-        hidden (bool, optional): Whether the interaction is hidden. Defaults to True.
-
-    Attributes:
-        paginator (pages.Paginator): Container for the paginator.
+    This class manages the interactive process of creating a new character,
+    handling user inputs and generating character attributes.
     """
 
     # TODO: Allow the user to select their special ability when a choice is available
@@ -990,7 +1078,20 @@ class CharGenWizard:  # pragma: no cover
 
     @staticmethod
     def _special_ability_char_sheet_text(character: Character) -> str:
-        """Generate the special abilities text for the character sheet."""
+        """Generate the special abilities text for the character sheet.
+
+        Generate and format the special abilities text for a character's sheet,
+        specifically for mortal characters. For non-mortal characters, return None.
+
+        Args:
+            character (Character): The character object for which to generate
+                the special abilities text.
+
+        Returns:
+            str | None: A formatted string containing the character's concept,
+                description, and special abilities if the character is a mortal.
+                Returns None for non-mortal characters.
+        """
         # Extract concept information for mortals
         if character.char_class.name == CharClass.MORTAL.name:
             concept_info = CharacterConcept[character.concept_name].value
@@ -1020,14 +1121,16 @@ class CharGenWizard:  # pragma: no cover
     ) -> discord.Embed:
         """Create an embed for the character sheet.
 
+        Generate and return a Discord embed representing a character sheet.
+
         Args:
             character (Character): The character for which to create the embed.
-            title (str | None, optional): The title of the embed. Defaults to None.
-            prefix (str | None, optional): The prefix for the description. Defaults to None.
-            suffix (str | None, optional): The suffix for the description. Defaults to None.
+            title (str | None): The title of the embed. If None, uses the character's name.
+            prefix (str | None): Additional text to prepend to the embed description.
+            suffix (str | None): Additional text to append to the embed description.
 
         Returns:
-            discord.Embed: The created embed.
+            discord.Embed: The created embed containing the character sheet information.
         """
         # Create the embed
         return await sheet_embed(
@@ -1042,11 +1145,16 @@ class CharGenWizard:  # pragma: no cover
     async def _cancel_character_generation(
         self, msg: str | None = None, characters: list[Character] = []
     ) -> None:
-        """Cancel the character generation process.
+        """Cancel the character generation process and clean up resources.
+
+        This method handles the cancellation of character generation, deleting any partially
+        created characters and displaying a cancellation message to the user.
 
         Args:
-            msg (str, optional): Message to display. Defaults to None.
-            characters (list[Character], optional): The characters to delete. Defaults to [].
+            msg (str | None): Custom message to display upon cancellation. If None, a default
+                message is used.
+            characters (list[Character]): List of Character objects to be deleted. These are
+                typically partially created characters that need to be removed from the database.
         """
         if not msg:
             msg = "No character was created."
@@ -1065,8 +1173,12 @@ class CharGenWizard:  # pragma: no cover
     async def start(self, restart: bool = False) -> None:
         """Initiate the character generation wizard.
 
+        Start or restart the character generation process, presenting the user with
+        instructional embeds and options to begin or cancel character creation.
+
         Args:
-            restart (bool, optional): Whether to restart the wizard. Defaults to False.
+            restart (bool): If True, restart the wizard with existing paginator.
+                If False, create a new paginator. Defaults to False.
         """
         logger.debug("Starting the character generation wizard.")
 
@@ -1136,12 +1248,15 @@ Once you select a character you can re-allocate dots and change the name, but yo
     async def present_character_choices(self) -> None:
         """Guide the user through the character selection process.
 
-        This method generates three random characters for the user to choose from.
-        It then presents these characters using a paginator. The user can either
-        select a character, reroll for new characters, or cancel the process.
+        Generate three random characters and present them to the user for selection.
+        Display character details using a paginator, allowing the user to review
+        and choose a character, reroll for new options, or cancel the process.
+
+        This method handles the core logic of character generation and selection,
+        including trait assignment and presentation of character options.
 
         Returns:
-            None: This method returns nothing.
+            None
         """
         logger.debug("Starting the character selection process")
 
@@ -1252,11 +1367,11 @@ Once you select a character you can re-allocate dots and change the name, but yo
     async def finalize_character_selection(self, character: Character) -> None:
         """Review and finalize the selected character.
 
-        This method presents the user with an updated character sheet.
-        The user can either finalize the character or make additional changes.
+        Present the user with an updated character sheet and allow them to finalize
+        the character or make additional changes.
 
         Args:
-            character (Character): The selected character to review.
+            character (Character): The selected character to review and finalize.
         """
         logger.debug(f"CHARGENL Update the character: {character.full_name}")
 
@@ -1291,13 +1406,17 @@ Once you select a character you can re-allocate dots and change the name, but yo
             await self.campaign.sort_channels(self.ctx)
 
     async def spend_freebie_points(self, character: Character) -> Character:
-        """Spend freebie points.
+        """Spend freebie points on a character.
+
+        Present the user with an interface to allocate freebie points to various
+        character traits. This method handles the process of spending freebie points,
+        updating the character sheet, and finalizing the character creation.
 
         Args:
-            character (Character): The character for which to spend freebie points.
+            character (Character): The character to spend freebie points on.
 
         Returns:
-            Character: The created character.
+            Character: The updated character after spending freebie points.
         """
         logger.debug(f"Spending freebie points for {character.name}")
 

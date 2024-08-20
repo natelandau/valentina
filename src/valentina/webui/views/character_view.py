@@ -49,7 +49,20 @@ class CharacterView(MethodView):
     async def get_character_sheet_traits(
         self, character: Character
     ) -> dict[str, dict[str, list[CharacterTrait]]]:
-        """Returns all character traits grouped by character sheet section and category."""
+        """Return all character traits grouped by character sheet section and category.
+
+        Retrieve the character's traits from the database and organize them into a
+        dictionary grouped by character sheet sections and categories. Only include
+        traits with non-zero values, unless the category is configured to show zero values.
+
+        Args:
+            character (Character): The character whose traits are to be retrieved and grouped.
+
+        Returns:
+            dict[str, dict[str, list[CharacterTrait]]]: A nested dictionary where the top-level
+                keys are section names, the second-level keys are category names, and the values
+                are lists of `CharacterTrait` objects associated with each category.
+        """
         character_traits = await CharacterTrait.find(
             CharacterTrait.character == str(character.id)
         ).to_list()
@@ -77,7 +90,19 @@ class CharacterView(MethodView):
         return sheet_traits
 
     async def get_character_inventory(self, character: Character) -> dict:
-        """Get the character's inventory."""
+        """Retrieve and return the character's inventory organized by item type.
+
+        Fetch the inventory items associated with the specified character from the
+        database, grouping them by their item type. Empty item type groups are
+        removed from the final inventory dictionary.
+
+        Args:
+            character (Character): The character whose inventory is to be retrieved.
+
+        Returns:
+            dict: A dictionary where the keys are item types and the values are lists
+                of `InventoryItem` objects. Empty item type groups are excluded.
+        """
         inventory: dict[str, list[InventoryItem]] = {}
         for x in InventoryItemType:
             inventory[x.name] = []
@@ -91,7 +116,18 @@ class CharacterView(MethodView):
         return {k: v for k, v in inventory.items() if v}
 
     async def process_form_data(self, character: Character) -> None:
-        """Process form data and update character attributes."""
+        """Process form data and update character attributes accordingly.
+
+        Iterate over the form data, updating the character's attributes if they exist
+        and the value is not "None". Escape any non-empty values to prevent injection.
+        Log a warning if an attribute in the form does not exist on the character object.
+
+        Args:
+            character (Character): The character object to be updated with the form data.
+
+        Returns:
+            None
+        """
         form = await request.form
 
         # Iterate over all form fields and update character attributes if they exist and are not "None"
@@ -109,13 +145,38 @@ class CharacterView(MethodView):
         await character.save()
 
     async def get_character_image_urls(self, character: Character) -> list[str]:
-        """Get image URLs for a character."""
+        """Retrieve and return a list of image URLs for the specified character.
+
+        Fetch the URLs of the character's images stored in AWS by utilizing the
+        AWS service.
+
+        Args:
+            character (Character): The character whose image URLs are to be retrieved.
+
+        Returns:
+            list[str]: A list of URLs corresponding to the character's images.
+        """
         aws_svc = AWSService()
 
         return [aws_svc.get_url(x) for x in character.images]
 
     async def handle_tabs(self, character: Character) -> str:
-        """Handle htmx tab requests."""
+        """Handle HTMX tab requests and render the appropriate content.
+
+        Based on the "tab" query parameter, render and return the corresponding
+        section of the character view, such as the character sheet, inventory,
+        profile, images, or statistics. If the requested tab is not recognized,
+        return a 404 error.
+
+        Args:
+            character (Character): The character for which the tab content is to be rendered.
+
+        Returns:
+            str: The rendered HTML content for the selected tab.
+
+        Raises:
+            404: If the requested tab is not recognized.
+        """
         if request.args.get("tab") == "sheet":
             return catalog.render(
                 "character_view.Sheet",

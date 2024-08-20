@@ -1,4 +1,9 @@
-"""Quart application for the Valentina web interface."""
+"""Define and configure the Quart application for the Valentina web interface.
+
+This module initializes the Quart application, sets up Discord OAuth2 integration,
+configures session management with Redis, and registers custom filters, error handlers,
+and JinjaX templates. It serves as the main entry point for the Valentina web UI.
+"""
 
 import quart_flask_patch  # isort: skip # noqa: F401
 import asyncio
@@ -36,9 +41,11 @@ discord_oauth = DiscordOAuth2Session(app)
 register_filters(app)
 register_error_handlers(app)
 catalog = register_jinjax_catalog(app)
+
+# Configure the session to use Redis for storage.
 app.config["SESSION_TYPE"] = "redis"
 app.config["SESSION_REVERSE_PROXY"] = bool(ValentinaConfig().webui_behind_reverse_proxy)
-app.config["SESSION_PROTECTION"] = True
+app.config["SESSION_PROTECTION"] = False
 app.config["SESSION_URI"] = (
     (f"redis://:{ValentinaConfig().redis_password}@{ValentinaConfig().redis_addr}")
     if {ValentinaConfig().redis_addr}
@@ -48,7 +55,12 @@ Session(app)
 
 
 def import_blueprints() -> None:
-    """Import routes to avoid circular imports."""
+    """Register all the blueprints with the Flask application.
+
+    Call this function to import and register the application's blueprints to
+    avoid circular import issues. It should be invoked during the application
+    setup phase.
+    """
     from .blueprints import campaign_bp, character_bp, gameplay_bp
     from .routes import home, oauth
 
@@ -60,13 +72,35 @@ def import_blueprints() -> None:
 
 
 def create_dev_app() -> Quart:
-    """Create a new Quart app with the given configuration. This is used for development only."""
-    # Always import blueprints to avoid circular imports
+    """Create and configure a Quart application for development.
+
+    Create a Quart app configured for development purposes. Perform the following actions:
+    1. Import and register all necessary blueprints.
+    2. Set up a database connection pool initialization before the server starts.
+    3. Configure error handling and request preprocessing.
+
+    This function should be used to set up the application in a development environment,
+    ensuring all components are properly initialized and connected.
+
+    Returns:
+        Quart: A configured Quart application instance ready for development use.
+    """
     import_blueprints()
 
     @app.before_serving
     async def create_db_pool() -> None:
-        """Initialize the database connection pool."""
+        """Initialize the database connection pool before the Quart application starts serving.
+
+        Attempt to establish a connection to the database. If the initial connection fails:
+        1. Log the error encountered during the connection attempt.
+        2. Wait for 60 seconds before retrying.
+        3. Repeat the process until a successful connection is established.
+
+        This ensures that the application will eventually connect to the database, even if it's
+        temporarily unavailable during startup. The function will not return until a successful
+        connection is made, preventing the application from serving requests without a valid
+        database connection.
+        """
         import pymongo
 
         from valentina.utils.database import init_database
@@ -84,7 +118,10 @@ def create_dev_app() -> Quart:
     def remove_trailing_slash() -> Response:
         """Redirect requests with trailing slashes to the correct URL.
 
-        example.com/url/ -> example.com/url
+        Redirect URLs that end with a trailing slash (e.g., example.com/url/)
+        to their non-slash counterparts (e.g., example.com/url) using a 301
+        permanent redirect. If the URL does not end with a slash, allow the
+        request to proceed as normal.
         """
         request_path: str = request.path
         if request_path != "/" and request_path.endswith("/"):
@@ -96,7 +133,21 @@ def create_dev_app() -> Quart:
 
 
 async def run_webserver() -> None:
-    """Run the web server in production."""
+    """Run the Quart web server in a production environment.
+
+    Configure and start the Hypercorn server with settings derived from the application's configuration. This function performs the following tasks:
+
+    1. Import necessary blueprints to avoid circular imports.
+    2. Set up a request handler to remove trailing slashes from URLs.
+    3. Create a Hypercorn configuration object with settings from ValentinaConfig.
+    4. Start the server using the configured Hypercorn instance.
+
+    Call this function to initiate the server in production mode. The server will run
+    indefinitely until manually stopped or an unhandled exception occurs.
+
+    Note: Ensure all required configurations are properly set in ValentinaConfig
+    before calling this function.
+    """
     # Imnport these here to avoid circular imports
     import_blueprints()
 
@@ -104,7 +155,10 @@ async def run_webserver() -> None:
     def remove_trailing_slash() -> Response:
         """Redirect requests with trailing slashes to the correct URL.
 
-        example.com/url/ -> example.com/url
+        Redirect URLs that end with a trailing slash (e.g., example.com/url/)
+        to their non-slash counterparts (e.g., example.com/url) using a 301
+        permanent redirect. If the URL does not end with a slash, allow the
+        request to proceed as normal.
         """
         request_path: str = request.path
         if request_path != "/" and request_path.endswith("/"):

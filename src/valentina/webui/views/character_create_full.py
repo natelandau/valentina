@@ -34,7 +34,13 @@ class FormSessionManager:
         self.key = "CharacterCreateFullData"
 
     def _clear_if_expired(self) -> None:
-        """Clear the session data if it has expired."""
+        """Clear session data if it has expired.
+
+        Check if the session contains data associated with the key. If the data
+        has an expiration time and it is earlier than the current time, clear
+        the data from the session.
+
+        """
         if self.key not in session:
             return
 
@@ -45,7 +51,15 @@ class FormSessionManager:
             self.clear_data()
 
     def write_data(self, data: dict) -> None:
-        """Write data to the session."""
+        """Write data to the session with an expiration time.
+
+        Clear existing session data if it has expired. Then, write the provided
+        data to the session under the specified key. If no expiration time is
+        set, add a default expiration of 10 minutes from the current time.
+
+        Args:
+            data (dict): The data to be written to the session.
+        """
         self._clear_if_expired()
 
         if self.key not in session:
@@ -59,12 +73,28 @@ class FormSessionManager:
         session[self.key].update(data)
 
     def read_data(self) -> dict:
-        """Read data from the session."""
+        """Read data from the session.
+
+        Clear session data if it has expired, then return the current data
+        associated with the specified key. If no data exists, return an empty
+        dictionary.
+
+        Returns:
+            dict: The session data associated with the key, or an empty dictionary
+        if no data is found.
+        """
         self._clear_if_expired()
         return session.get(self.key, {})
 
     def clear_data(self) -> None:
-        """Clear the data from the session."""
+        """Clear the data associated with the key from the session.
+
+        Remove the session data corresponding to the specified key. If the key
+        does not exist in the session, do nothing.
+
+        Returns:
+            None
+        """
         session.pop(self.key, None)
 
 
@@ -74,7 +104,13 @@ class CreateCharacterStart(MethodView):
     decorators: ClassVar = [requires_authorization]
 
     async def get(self) -> str:
-        """Process initial page load."""
+        """Process the initial page load.
+
+        Render and return the main template for the character creation page.
+
+        Returns:
+            str: The rendered HTML content for the character creation page.
+        """
         return catalog.render("character_create_full.Main")
 
 
@@ -89,7 +125,15 @@ class CreateCharacterStep1(MethodView):
         self.join_label = True
 
     async def get(self) -> str:
-        """Process initial page load."""
+        """Process the initial page load for the first step of character creation.
+
+        Create and return a form for the first step of character creation. If
+        there is existing form data stored in the session, prepopulate the form
+        fields with this data, which is useful when navigating back to this step.
+
+        Returns:
+            str: The rendered HTML content for the first step of the character creation process.
+        """
         form = await CharacterCreateFullStep1().create_form()
 
         # If form data for this step is already in the session, populate the form with it. Usefed for going "back" in the form process.
@@ -104,7 +148,21 @@ class CreateCharacterStep1(MethodView):
         )
 
     async def post(self) -> str | Response:
-        """Process form responses."""
+        """Process form submissions for the first step of character creation.
+
+        Validate the submitted form data. If valid, create a new character object
+        with the provided data and save it to the database. Store the form data
+        in the session and redirect to the next step in the character creation
+        process based on the selected character class. If the form validation
+        fails, re-render the form with validation errors.
+
+        Returns:
+            str: The rendered HTML content for the first step of the character
+                    creation process if validation fails.
+            Response: A redirect to the appropriate next step in the character
+                        creation process if the form is successfully validated and the
+                        character is created.
+        """
         form = await CharacterCreateFullStep1().create_form()
         if await form.validate_on_submit():
             character = Character(
@@ -157,7 +215,19 @@ class CreateCharacterStep2(MethodView):
         self.join_label = True
 
     def _get_class_specific_form(self, char_class: str) -> QuartForm | None:
-        """Return the form for the selected class specific items."""
+        """Return the form for the selected character class.
+
+        Based on the provided character class, return the corresponding form
+        for class-specific items. If the class is not recognized, return None.
+
+        Args:
+            char_class (str): The character class for which to retrieve the form
+                                (e.g., "vampire", "hunter", "werewolf").
+
+        Returns:
+            QuartForm | None: The form corresponding to the selected character
+                                class, or None if the class is not recognized.
+        """
         if char_class:
             match char_class.lower():
                 case "vampire":
@@ -170,7 +240,23 @@ class CreateCharacterStep2(MethodView):
         return None
 
     async def get(self, character_id: str, char_class: str) -> str:
-        """Process initial page load."""
+        """Process the initial page load for the second step of character creation.
+
+        Validate that both a character ID and character class are provided. If valid,
+        retrieve and create the form corresponding to the character class. If form data
+        is already stored in the session (useful for navigating back), prepopulate the
+        form fields with this data. Render and return the form for this step.
+
+        Args:
+            character_id (str): The unique identifier of the character being created.
+            char_class (str): The character class to determine which form to render.
+
+        Returns:
+            str: The rendered HTML content for the second step of the character creation process.
+
+        Raises:
+            400: If either the character ID or character class is not provided.
+        """
         if not character_id or not char_class:
             await post_to_error_log(
                 msg="No character ID or char_class provided to CreateCharacterStep2",
@@ -195,7 +281,26 @@ class CreateCharacterStep2(MethodView):
         )
 
     async def post(self, character_id: str, char_class: str) -> str | Response:
-        """Process form responses."""
+        """Process form submissions for the second step of character creation.
+
+        Validate that both a character ID and character class are provided. Retrieve
+        and validate the form data specific to the character class. If valid, update
+        the character with the provided data and save it to the database. Store the
+        form data in the session and redirect to the next step in the character
+        creation process. If validation fails, re-render the form with errors.
+
+        Args:
+            character_id (str): The unique identifier of the character being created.
+            char_class (str): The character class to determine which form to process.
+
+        Returns:
+            str: The rendered HTML content for the second step of the character creation process if validation fails.
+            Response: A redirect to the next step in the character creation process if the form is successfully validated and the character is updated.
+
+        Raises:
+            400: If either the character ID or character class is not provided.
+            401: If the character ID is not found during the form processing.
+        """
         if not character_id or not char_class:
             await post_to_error_log(
                 msg="No character ID or char_class provided to CreateCharacterStep2",
@@ -266,7 +371,18 @@ class CreateCharacterStep3(MethodView):
         )
 
     async def _fetch_trait_names(self, category: TraitCategory, character: Character) -> list[str]:
-        """Fetch the trait names for the selected category."""
+        """Fetch the trait names for a given category and character class.
+
+        Retrieve and return a list of trait names by combining common traits
+        and class-specific traits for the selected category.
+
+        Args:
+            category (TraitCategory): The category of traits to fetch.
+            character (Character): The character whose class-specific traits are needed.
+
+        Returns:
+            list[str]: A list of trait names for the given category and character class.
+        """
         return list(category.value.COMMON) + list(
             getattr(category.value, character.char_class_name)
         )
@@ -274,7 +390,20 @@ class CreateCharacterStep3(MethodView):
     async def _fetch_sheet_traits(
         self, character: Character
     ) -> dict[str, dict[str, dict[str, int]]]:
-        """Fetch the traits for the character sheet."""
+        """Fetch and organize traits for the character sheet.
+
+        Retrieve traits for each section of the character sheet, organizing them
+        by section and category. The traits are sorted according to their defined
+        order, and their maximum values are determined.
+
+        Args:
+            character (Character): The character for whom the traits are being fetched.
+
+        Returns:
+            dict[str, dict[str, dict[str, int]]]: A nested dictionary where the top-level keys
+            are the section names, the second-level keys are the category names, and the
+            innermost keys are trait names with their corresponding maximum values.
+        """
         sheet_traits: dict[str, dict[str, dict[str, int]]] = {}
         for sheet_section in sorted(CharSheetSection, key=lambda x: x.value["order"]):
             sheet_traits[sheet_section.name] = {}
@@ -296,7 +425,21 @@ class CreateCharacterStep3(MethodView):
         return sheet_traits
 
     async def get(self, character_id: str) -> str:
-        """Process initial page load."""
+        """Process the initial page load for the third step of character creation.
+
+        Validate the presence of a character ID, then fetch the character and
+        its associated traits to render the character sheet. If no character ID
+        is provided, log the error and abort the request with a 400 status.
+
+        Args:
+            character_id (str): The unique identifier of the character being created.
+
+        Returns:
+            str: The rendered HTML content for the third step of the character creation process.
+
+        Raises:
+            400: If the character ID is not provided.
+        """
         if not character_id:
             await post_to_error_log(
                 msg="No character ID provided to CreateCharacterStep3",
@@ -315,7 +458,24 @@ class CreateCharacterStep3(MethodView):
         )
 
     async def post(self, character_id: str) -> str | Response:
-        """Process form responses."""
+        """Process form submissions for the third step of character creation.
+
+        Validate the presence of a character ID, then retrieve the character and
+        process the submitted form data. Extract traits from the form, create
+        `CharacterTrait` objects, and save them to the character. Clear session
+        data, log the creation, update the session, and redirect to the character
+        view with a success message.
+
+        Args:
+            character_id (str): The unique identifier of the character being created.
+
+        Returns:
+            str: The rendered HTML content if an error occurs.
+            Response: A redirect to the character view page upon successful creation.
+
+        Raises:
+            400: If the character ID is not provided.
+        """
         if not character_id:
             await post_to_error_log(
                 msg="No character ID provided to CreateCharacterStep3",

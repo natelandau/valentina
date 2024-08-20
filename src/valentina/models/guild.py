@@ -63,7 +63,11 @@ class GuildChannels(BaseModel):
 
 
 class Guild(Document):
-    """Represents a guild in the database."""
+    """Represent a Discord guild in the database.
+
+    This class models a Discord guild (server) and stores relevant information
+    such as campaigns, channel IDs, permissions, and roll result thumbnails.
+    """
 
     id: int  # type: ignore [assignment]
 
@@ -156,8 +160,11 @@ class Guild(Document):
     async def setup_roles(self, guild: discord.Guild) -> None:  # pragma: no cover
         """Create or update the guild's roles.
 
+        Create or update the storyteller and player roles for the given guild.
+        Ensure these roles exist and have the appropriate permissions.
+
         Args:
-            guild (discord.Guild): The guild to create/update roles for.
+            guild (discord.Guild): The Discord guild to create or update roles for.
         """
         # Create roles
         await create_storyteller_role(guild)
@@ -165,10 +172,14 @@ class Guild(Document):
         logger.debug(f"GUILD: Roles created/updated on {self.name}")
 
     async def delete_campaign(self, campaign: "Campaign") -> None:
-        """Delete a campaign from the guild. Remove the campaign from the guild's list of campaigns and delete the campaign from the database.
+        """Delete a campaign from the guild and mark it as deleted in the database.
+
+        Remove the campaign from the guild's list of campaigns and mark it as deleted
+        in the database. This method does not permanently delete the campaign data,
+        but rather sets a flag to indicate its deleted status.
 
         Args:
-            campaign (Campaign): The campaign to delete.
+            campaign (Campaign): The campaign object to be deleted.
         """
         if campaign in self.campaigns:
             self.campaigns.remove(campaign)
@@ -197,14 +208,16 @@ class Guild(Document):
         )
 
     async def fetch_diceroll_thumbnail(self, result: RollResultType) -> str:
-        """Take a string and return a random gif url.
+        """Fetch a random thumbnail URL for a given roll result type.
+
+        Retrieve a random thumbnail URL from a combined list of default thumbnails
+        and guild-specific thumbnails for the specified roll result type.
 
         Args:
-            ctx (): The application context.
-            result (RollResultType): The roll result type.
+            result (RollResultType): The roll result type to fetch a thumbnail for.
 
         Returns:
-            Optional[str]: The thumbnail URL, or None if no thumbnail is found.
+            str | None: A random thumbnail URL if available, or None if no thumbnails are found.
         """
         # Get the list of default thumbnails for the result type
         thumb_list = DICEROLL_THUMBS.get(result.name, [])

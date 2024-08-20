@@ -59,10 +59,19 @@ class ChangelogPoster:  # pragma: no cover
         self.posted = False  # Flag to indicate if the changelog has been posted
 
     async def _get_channel_from_ctx(self) -> discord.TextChannel | None:
-        """Get the changelog channel from the guild settings.
+        """Retrieve the changelog channel from the guild settings.
+
+        Fetch the guild object using the context's guild ID and use it to obtain
+        the designated changelog channel. This method relies on the existence of
+        a valid context (self.ctx) to function properly.
 
         Returns:
-            discord.TextChannel | None: The changelog channel if it exists, None otherwise.
+            discord.TextChannel | None: The designated changelog channel if it exists
+                and can be fetched, None otherwise.
+
+        Note:
+            This method assumes that the Guild model has a method called
+            'fetch_changelog_channel' which returns the appropriate channel object.
         """
         if self.ctx:
             guild = await Guild.get(self.ctx.guild.id)
@@ -71,10 +80,16 @@ class ChangelogPoster:  # pragma: no cover
         return None
 
     async def _validate_channel(self) -> bool:
-        """Validate that the channel exists.
+        """Validate the existence of the changelog channel.
+
+        Verify that a valid channel for posting the changelog exists. If no channel
+        is set, attempt to retrieve it from the guild settings using the context.
 
         Returns:
-            bool: True if the channel exists, False otherwise.
+            bool: True if a valid changelog channel exists, False otherwise.
+
+        Note:
+            This method may update the `self.channel` attribute if it's not already set.
         """
         if not self.channel:
             self.channel = await self._get_channel_from_ctx()
@@ -97,7 +112,22 @@ class ChangelogPoster:  # pragma: no cover
         return True
 
     def _validate_versions(self, oldest_version: str, newest_version: str) -> tuple[str, str]:
-        """Validate the input to the ChangelogPoster."""
+        """Validate the version inputs for the ChangelogPoster.
+
+        Compare the oldest and newest version strings to ensure they are in the correct order.
+        Check if the provided versions exist in the changelog.
+
+        Args:
+            oldest_version (str): The oldest version to include in the changelog.
+            newest_version (str): The newest version to include in the changelog.
+
+        Returns:
+            tuple[str, str]: A tuple containing the validated oldest and newest versions.
+
+        Raises:
+            commands.BadArgument: If the oldest version is newer than the newest version.
+            errors.VersionNotFoundError: If neither version is found in the changelog.
+        """
         if oldest_version and newest_version and semver.compare(oldest_version, newest_version) > 0:
             msg = (
                 f"Oldest version `{oldest_version}` is newer than newest version `{newest_version}`"
@@ -122,7 +152,19 @@ class ChangelogPoster:  # pragma: no cover
         return self.changelog.has_updates()
 
     async def post(self) -> None:
-        """Post the changelog to the specified channel."""
+        """Post the changelog to the specified Discord channel.
+
+        Validate the channel, check for updates, and send the changelog as an embed.
+        If no updates are found, log the information or respond to the context
+        with an error message. Use personality in the embed if specified.
+
+        Raises:
+            discord.errors.Forbidden: If the bot lacks permissions to send messages.
+            discord.errors.HTTPException: If sending the message fails.
+
+        Note:
+            This method sets the 'posted' attribute to True upon successful posting.
+        """
         if not await self._validate_channel():
             return
 
@@ -153,7 +195,13 @@ class ChangelogPoster:  # pragma: no cover
 
 
 class ChangelogParser:
-    """Helper class for parsing changelogs."""
+    """Parse and process changelog files.
+
+    Provide methods to read, interpret, and manipulate changelog entries.
+    Handle version comparisons, category filtering, and data extraction
+    from structured changelog files. Support various output formats
+    for changelog information, including Discord embeds.
+    """
 
     def __init__(
         self,
@@ -197,11 +245,33 @@ class ChangelogParser:
 
     @staticmethod
     def __check_version_schema(version: str) -> bool:
-        """Check if the version string is in the correct format."""
+        """Check if the version string follows the correct format.
+
+        Validate that the given version string adheres to the semantic versioning
+        format (MAJOR.MINOR.PATCH). Use a regular expression to ensure the string
+        contains three groups of digits separated by periods.
+
+        Args:
+            version (str): The version string to be checked.
+
+        Returns:
+            bool: True if the version string is valid, False otherwise.
+        """
         return bool(re.match(r"^(\d+\.\d+\.\d+)$", version))
 
     def __get_changelog(self) -> str:
-        """Get the changelog from the file."""
+        """Read and return the contents of the changelog file.
+
+        Attempt to read the changelog file from the specified path. If the file
+        exists, return its contents as a string. If the file is not found, log
+        an error and raise a FileNotFoundError.
+
+        Returns:
+            str: The contents of the changelog file.
+
+        Raises:
+            FileNotFoundError: If the changelog file does not exist at the specified path.
+        """
         if not self.path.exists():
             logger.error(f"Changelog file not found at {self.path}")
             raise FileNotFoundError
@@ -209,13 +279,20 @@ class ChangelogParser:
         return self.path.read_text()
 
     def __parse_changelog(self) -> dict[str, dict[str, str | list[str]]]:  # noqa: C901
-        """Parse the changelog into a dictionary.
+        """Parse the changelog into a structured dictionary.
 
-        Loop through each line in the changelog, identifying the version and category of each entry.
-        Store these in a nested dictionary, keyed first by the version and then by the category.
+        Iterate through each line of the changelog, identifying version numbers, dates, and categories.
+        Construct a nested dictionary where:
+        - The outer key is the version number
+        - The inner keys are 'date' and category names
+        - The values are either the release date (string) or lists of changelog entries
+
+        Respect version boundaries set by oldest_version and newest_version attributes.
+        Skip parsing for versions outside these boundaries or when exclude_oldest_version is True.
 
         Returns:
-            Dict[str, Dict[str, List[str]]]: A nested dictionary containing all changelog information.
+            dict[str, dict[str, str | list[str]]]: A nested dictionary containing structured changelog information.
+                Format: {version: {'date': date_string, category1: [entries], category2: [entries], ...}}
         """
         # Prepare compiled regular expressions
         version_re = re.compile(r"## v(\d+\.\d+\.\d+)")
@@ -287,11 +364,14 @@ class ChangelogParser:
     def __clean_changelog(self) -> None:
         """Clean up the changelog dictionary by removing excluded categories and empty versions.
 
-        This function modifies `self.changelog_dict` to remove any versions that have only one item
-        (i.e., only a date and no other changes). It also removes categories that are in the exclusion list.
+        Remove categories listed in the exclusion list from all versions in the changelog.
+        Delete any versions that contain only a date entry and no other changes.
+        Modify the `self.changelog_dict` in-place to reflect these changes.
+
+        This method ensures that the changelog contains only relevant and non-empty entries.
 
         Returns:
-        None
+            None
         """
         # Remove excluded categories
         categories_to_remove: dict[str, list[str]] = {
@@ -311,26 +391,53 @@ class ChangelogParser:
             self.changelog_dict.pop(key)
 
     def has_updates(self) -> bool:
-        """Check if there are any meaningful updates in the changelog other than the date.
+        """Check for meaningful updates in the changelog.
 
-        This function modifies `self.changelog_dict` to remove any versions that have only one item (i.e., only a date and no other changes).
+        Determine if the changelog contains any significant updates beyond just date changes.
+        Remove versions from `self.changelog_dict` that only contain a date entry and no other changes.
+        This modification ensures that only versions with actual content are considered.
 
         Returns:
-            bool: True if there are meaningful updates, False otherwise.
+            bool: True if meaningful updates exist, False if the changelog is empty or contains only date changes.
+
+        Note:
+            This method modifies the `self.changelog_dict` in-place by removing versions without substantial changes.
         """
         # Return False if the dictionary is empty; True otherwise
         return bool(self.changelog_dict)
 
     def list_of_versions(self) -> list[str]:
-        """Get a list of all versions in the changelog.
+        """Return a sorted list of all versions in the changelog.
+
+        This method retrieves all version keys from the changelog dictionary,
+        sorts them using semantic versioning rules, and returns them in
+        descending order (latest version first).
 
         Returns:
-            list[str]: A list of all versions in the changelog.
+            list[str]: A sorted list of all version strings in the changelog,
+                       ordered from newest to oldest.
+
+        Note:
+            The sorting is performed using the semver.Version.parse method,
+            ensuring proper semantic versioning order.
         """
         return sorted(self.changelog_dict.keys(), key=semver.Version.parse, reverse=True)
 
     def get_text(self) -> str:
-        """Generate a text version of the changelog."""
+        """Generate a text version of the changelog.
+
+        Create a formatted string representation of the changelog, including version numbers,
+        dates, categories, and individual entries. Organize the content hierarchically with
+        version headers, category subheaders, and bulleted entries. Append a link to the full
+        changelog on GitHub at the end of the text.
+
+        Returns:
+            str: A formatted string containing the entire changelog text.
+
+        Note:
+            This method iterates through the `self.changelog_dict` to construct the text,
+            skipping the 'date' key when processing categories.
+        """
         description = ""
 
         # Loop through each version in the changelog
@@ -357,10 +464,16 @@ class ChangelogParser:
         return description
 
     def get_embed(self) -> discord.Embed:
-        """Generate an embed for the changelog.
+        """Generate a Discord embed containing the changelog information.
+
+        Create a Discord embed object that includes the full changelog text.
+        Set the embed's description to include a header and the formatted
+        changelog content. If a bot instance is available, set the embed's
+        thumbnail to the bot's avatar.
 
         Returns:
-            discord.Embed: The changelog embed.
+            discord.Embed: An embed object containing the formatted changelog
+                           information, ready to be sent in a Discord message.
         """
         description = ""
 
@@ -377,10 +490,21 @@ class ChangelogParser:
         return embed
 
     def get_embed_personality(self) -> discord.Embed:  # pragma: no cover
-        """Generate an embed for the changelog.
+        """Generate a Discord embed for the changelog with a personalized touch.
+
+        Create a Discord embed that presents the changelog information in a
+        more engaging and character-specific manner. This method adds a
+        randomized, personality-driven introduction to the changelog content.
+
+        The embed includes:
+        - A randomized introductory sentence describing Valentina's update.
+        - The full changelog text.
+        - A note about viewing specific versions.
+        - The bot's avatar as the thumbnail (if available).
 
         Returns:
-            discord.Embed: The changelog embed.
+            discord.Embed: A Discord embed object containing the personalized
+                           changelog information, ready to be sent as a message.
         """
         # Create and populate the embed description
         description = f"Valentina, your {random.choice(['honored', 'admired', 'distinguished', 'celebrated', 'hallowed', 'prestigious', 'acclaimed', 'favorite', 'friendly neighborhood', 'prized', 'treasured', 'number one', 'esteemed', 'venerated', 'revered', 'feared'])} {random.choice(BOT_DESCRIPTIONS)}, has {random.choice(['been granted new powers', 'leveled up', 'spent experience points', 'gained new abilities', 'been bitten by a radioactive spider', 'spent willpower points', 'been updated', 'squashed bugs and gained new features',])}!\n"

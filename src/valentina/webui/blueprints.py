@@ -1,4 +1,4 @@
-"""Routes for the webui module."""
+"""Blueprints for the webui module."""
 
 from quart import Blueprint
 

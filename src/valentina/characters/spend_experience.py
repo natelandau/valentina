@@ -19,7 +19,21 @@ from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons
 
 
 class SpendFreebiePoints(discord.ui.View):
-    """Guide the user through spending freebie points."""
+    """Guide the user through the process of spending freebie points on character traits.
+
+    This class provides a wizard-like interface for users to allocate their
+    character's freebie points to various traits. It handles the selection of
+    trait categories, individual traits, and the allocation of points.
+
+    Attributes:
+        ctx (ValentinaContext): The context of the Discord application.
+        character (Character): The character on which freebie points are being spent.
+        trait_category (TraitCategory): The selected category of traits.
+        trait (CharacterTrait): The specific trait selected for point allocation.
+        msg (discord.WebhookMessage): The message used for user interaction.
+        cancelled (bool): Flag indicating if the wizard process was cancelled.
+
+    """
 
     # TODO: Add merits/flaws/backgrounds or other areas not on sheet
 

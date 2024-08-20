@@ -27,7 +27,18 @@ class DiceRollView(MethodView):
         self.session = session
 
     def get_result_div_classes(self, result_type: RollResultType) -> str:
-        """Return any classes to be added to the div."""
+        """Return CSS classes for the result div based on the roll result type.
+
+        Determine and return the appropriate CSS classes to style the result div
+        according to the provided `result_type`. The classes will indicate success,
+        failure, or a critical/botch outcome.
+
+        Args:
+            result_type (RollResultType): The type of roll result (e.g., critical, success, failure, botch).
+
+        Returns:
+            str: A string containing the CSS classes to be applied to the result div.
+        """
         if result_type in {RollResultType.CRITICAL, RollResultType.SUCCESS}:
             return "bg-success-subtle border border-success border-2"
 
@@ -40,13 +51,16 @@ class DiceRollView(MethodView):
         return "border border-2"
 
     async def process_traits_form(self, form: dict) -> tuple[int, dict[str, int]]:
-        """Process the trait rolling form.
+        """Process the form data for trait rolling.
+
+        Calculate the total dice pool based on the provided trait values and
+        compile a dictionary of the selected traits and their values.
 
         Args:
-            form (dict): The form data.
+            form (dict): The form data containing trait information.
 
         Returns:
-            tuple[int, dic[str,int]]: The pool and a dict of trait names and values.
+            tuple[int, dict[str, int]]: A tuple containing the total dice pool (sum of trait values) and a dictionary mapping trait names to their respective values.
         """
         trait1 = json.loads(form.get("trait1", {}))
         trait2 = json.loads(form.get("trait2", {}))
@@ -63,11 +77,15 @@ class DiceRollView(MethodView):
     async def process_macros_form(self, form: dict) -> tuple[int, dict[str, int]]:
         """Process the macro rolling form.
 
+        Retrieve the active character and use the macro data from the form to
+        calculate the total dice pool and compile a dictionary of the selected
+        traits and their values.
+
         Args:
-            form (dict): The form data.
+            form (dict): The form data containing macro information.
 
         Returns:
-            tuple[int, dic[str,int]]: The pool and a dict of trait names and values.
+            tuple[int, dict[str, int]]: A tuple containing the total dice pool (sum of trait values) and a dictionary mapping trait names to their respective values.
         """
         character = await fetch_active_character(fetch_links=True)
 
@@ -136,7 +154,18 @@ class GameplayView(MethodView):
         self.dice_size_values = [member.value for member in DiceType]
 
     async def handle_form_tabs(self) -> str:
-        """Tab switcher for the gameplay template."""
+        """Switch tabs for the gameplay template based on the selected tab.
+
+        Fetch the active campaign and character, displaying an error message if either is missing.
+        Depending on the tab specified in the request, render the appropriate tab content
+        (e.g., "throw", "traits", "macros"). If an unrecognized tab is requested, return a 404 error.
+
+        Returns:
+            str: The rendered HTML content for the selected tab or an error message if applicable.
+
+        Raises:
+            404: If the requested tab is not recognized.
+        """
         campaign = await fetch_active_campaign(fetch_links=True)
         character = await fetch_active_character(fetch_links=True)
         error_msg = None

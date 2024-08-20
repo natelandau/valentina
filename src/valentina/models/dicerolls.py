@@ -17,42 +17,28 @@ if TYPE_CHECKING:
 
 
 class DiceRoll:
-    """A container class that determines the result of a roll and logs dicerolls to the database.
+    """Represent a dice roll and its results.
 
-    Dice rolling mechanics are based on our unique system, which is loosely based on the Storyteller system. The following rules apply only to throws of 10 sided dice.
+    This class encapsulates the logic for performing a dice roll, including
+    handling different pool sizes, difficulties, and dice types. It also
+    manages the recording of roll statistics and provides methods for
+    interpreting and presenting roll results.
 
-    * A roll is made up of a pool of dice, which is the total number of dice rolled.
-    * The difficulty is the number that must be rolled on the dice to count as a success.
-    * The dice type is the type of dice rolled. (Default is a d10.)
-    * Ones negate two successes
-    * Tens count as two successes
-    * Ones and tens cancel each other out
-    * A botch occurs when the result of all dice is less than 0
-    * A critical occurs when the roll is a success and the number of 10s rolled is greater than half the pool
-    * A failure occurs when the number of dice rolled above the difficulty is zero after accounting for cancelling ones and tens
-    * A success occurs when the number of dice rolled above the difficulty is greater than zero after accounting for cancelling ones and tens
-    * The result of a roll is the number of successes after accounting for botches and cancelling ones and tens
+    Use this class to:
+    - Create and execute dice rolls with various parameters
+    - Calculate and interpret roll results
+    - Log roll statistics for characters, campaigns, and guilds
+    - Generate formatted output for displaying roll results
 
     Attributes:
-        botches (int): The number of ones in the dice.
-        criticals (int): The number of rolled criticals (Highest number on dice).
-        desperation_roll (list[int]): A list of the result all rolled desperation dice.
-        desperation_botches (int): The number of ones in the desperation dice.
-        dice_type (DiceType): The type of dice to roll.
-        difficulty (int): The difficulty of the roll.
-        embed_color (int): The color of the embed.
-        failures (int): The number of unsuccessful dice not including botches.
-        is_botch (bool): Whether the roll is a botch.
-        is_critical (bool): Whether the roll is a critical success.
-        is_failure (bool): Whether the roll is a failure.
-        is_success (bool): Whether the roll is a success.
-        roll_result_humanized (str): The result of the roll, humanized
-        num_successes_humanized (str): The number of successes, humanized
-        pool (int): The pool's total size, including hunger.
-        result (int): The number of successes after accounting for botches and cancelling ones and tens.
-        result_type(RollResultType): The result type of the roll.
-        roll (list[int]): A list of the result all rolled dice.
-        successes (int): The number of successful dice not including criticals.
+        ctx (Optional[ValentinaContext]): The context of the command, if available
+        character (Optional[Character]): The character associated with the roll
+        desperation_pool (int): Number of dice in the desperation pool
+        campaign (Optional[Campaign]): The campaign associated with the roll
+        guild_id (Optional[int]): The ID of the guild where the roll was made
+        author_id (Optional[int]): The ID of the user who made the roll
+        author_name (Optional[str]): The name of the user who made the roll
+        dice_type (DiceType): The type of dice used for the roll
     """
 
     def __init__(
@@ -68,20 +54,7 @@ class DiceRoll:
         author_id: int | None = None,
         author_name: str | None = None,
     ) -> None:
-        """A container class that determines the result of a roll.
-
-        Args:
-            author_id (int, optional): The author ID to log the roll for. Defaults to None.
-            author_name (str, optional): The author name to log the roll for. Defaults to None.
-            campaign (Campaign, optional): The campaign to log the roll for. Defaults to None.
-            character (Character, optional): The character to log the roll for. Defaults to None.
-            ctx (ValentinaContext, optional): The context of the command.
-            desperation_pool (int): The number of dice to roll from the desperation pool. Defaults to 0.
-            dice_size (int, optional): The size of the dice. Defaults to 10.
-            difficulty (int, optional): The difficulty of the roll. Defaults to 6.
-            guild_id (int, optional): The guild ID to log the roll for. Defaults to None.
-            pool (int): The pool's total size, including hunger
-        """
+        """A container class that determines the result of a roll."""
         self.ctx = ctx
         self.character = character
         self.desperation_pool = desperation_pool
@@ -131,7 +104,21 @@ class DiceRoll:
         self._desperation_dice_as_emoji_images: str = None
 
     def _calculate_result(self) -> RollResultType:
-        """Calculate the result type of the roll."""
+        """Calculate and return the result type of the roll.
+
+        Determine the outcome of the dice roll based on the dice type, result value,
+        and pool size. Use the following criteria:
+
+        - For non-d10 dice: Always return RollResultType.OTHER.
+        - For d10 dice:
+          - If result < 0: Return RollResultType.BOTCH.
+          - If result == 0: Return RollResultType.FAILURE.
+          - If result > pool: Return RollResultType.CRITICAL.
+          - Otherwise: Return RollResultType.SUCCESS.
+
+        Returns:
+            RollResultType: The calculated result type of the roll.
+        """
         if self.dice_type != DiceType.D10:
             return RollResultType.OTHER
 
@@ -147,10 +134,21 @@ class DiceRoll:
         return RollResultType.SUCCESS
 
     async def log_roll(self, traits: list[str] = []) -> None:
-        """Log the roll to the database.
+        """Log the roll to the database for statistical analysis.
+
+        Record the details of the current dice roll in the database, including
+        information about the roll result, character, and associated traits.
+        This method is crucial for maintaining historical data and generating
+        roll statistics.
 
         Args:
-            traits (list[str], optional): The traits to log the roll for. Defaults to [].
+            traits (list[str], optional): A list of trait names associated with
+                the roll. Use this to track which character traits were involved
+                in the roll. Defaults to an empty list.
+
+        Note:
+            This method only logs d10 rolls to the database. Other dice types
+            are not recorded for statistical purposes.
         """
         # Ensure the user in the database to avoid foreign key errors
 
@@ -174,7 +172,19 @@ class DiceRoll:
 
     @property
     def result_type(self) -> RollResultType:
-        """Retrieve the result type of the roll."""
+        """Determine and return the result type of the roll.
+
+        Calculate the result type based on the roll outcome if not already determined.
+        The result type is cached to avoid recalculation on subsequent accesses.
+
+        Returns:
+            RollResultType: An enum representing the outcome of the roll
+                (e.g., BOTCH, FAILURE, SUCCESS, CRITICAL).
+
+        Note:
+            This property uses lazy evaluation, calculating the result type
+            only when first accessed and storing it for future use.
+        """
         if not self._result_type:
             self._result_type = self._calculate_result()
 
@@ -182,7 +192,19 @@ class DiceRoll:
 
     @property
     def roll(self) -> list[int]:
-        """Roll the dice and return the results."""
+        """Roll the dice and return the results.
+
+        Generate random numbers for each die in the pool and store them.
+        If the roll has not been performed yet, execute it and cache the results.
+        Return the list of rolled values.
+
+        Returns:
+            list[int]: A list of integers representing the results of the dice roll.
+
+        Note:
+            This property uses lazy evaluation, performing the roll only when
+            first accessed and storing the results for future use.
+        """
         if not self._roll:
             self._roll = [int(random_num(self.dice_type.value)) for x in range(self.pool)]
 
@@ -190,7 +212,19 @@ class DiceRoll:
 
     @property
     def desperation_roll(self) -> list[int]:
-        """Roll the desperation dice and return the results."""
+        """Roll the desperation dice and return the results.
+
+        Generate random numbers for each die in the desperation pool and store them.
+        If the desperation roll has not been performed yet, execute it and cache the results.
+        Return the list of rolled values for the desperation dice.
+
+        Returns:
+            list[int]: A list of integers representing the results of the desperation dice roll.
+
+        Note:
+            This property uses lazy evaluation, performing the roll only when
+            first accessed and storing the results for future use.
+        """
         if not self._desperation_roll:
             self._desperation_roll = [
                 random_num(self.dice_type.value) for x in range(self.desperation_pool)
@@ -200,7 +234,15 @@ class DiceRoll:
 
     @property
     def botches(self) -> int:
-        """Retrieve the number of ones in the dice."""
+        """Calculate and return the number of botches (ones) in the dice roll.
+
+        Count the number of dice that rolled a 1, which are considered botches.
+        Include both regular and desperation dice in the count if applicable.
+        Use lazy evaluation to calculate the result only when first accessed.
+
+        Returns:
+            int: The total number of botches (ones) in the dice roll.
+        """
         if not self._botches:
             if self.desperation_pool > 0:
                 desperation_botches = self.desperation_roll.count(1)
@@ -212,7 +254,18 @@ class DiceRoll:
 
     @property
     def desperation_botches(self) -> int:
-        """Retrieve the number of ones in the desperation dice."""
+        """Calculate and return the number of botches in the desperation dice roll.
+
+        Count the number of ones (botches) rolled on the desperation dice.
+        Use lazy evaluation to calculate the result only when first accessed.
+        Cache the result for subsequent accesses to improve performance.
+
+        Returns:
+            int: The number of ones (botches) in the desperation dice roll.
+
+        Note:
+            This property returns 0 if there is no desperation pool.
+        """
         if not self._desperation_botches and self.desperation_pool > 0:
             self._desperation_botches = self.desperation_roll.count(1)
 
@@ -220,7 +273,16 @@ class DiceRoll:
 
     @property
     def criticals(self) -> int:
-        """Retrieve the number of rolled criticals (Highest number on dice)."""
+        """Calculate and return the number of critical successes in the dice roll.
+
+        Count the number of dice that rolled the highest possible value for the
+        given dice type, which are considered critical successes. Include both
+        regular and desperation dice in the count if applicable. Use lazy
+        evaluation to calculate the result only when first accessed.
+
+        Returns:
+            int: The total number of critical successes in the dice roll.
+        """
         if not self._criticals:
             if self.desperation_pool > 0:
                 desperation_criticals = self.desperation_roll.count(self.dice_type.value)
@@ -232,7 +294,18 @@ class DiceRoll:
 
     @property
     def failures(self) -> int:
-        """Retrieve the number of unsuccessful dice not including botches."""
+        """Calculate and return the number of failed dice rolls, excluding botches.
+
+        Count the dice rolls that are above 1 (not botches) but below the difficulty threshold.
+        This property represents unsuccessful attempts that are not critical failures.
+
+        Returns:
+            int: The number of failed dice rolls, not including botches.
+
+        Note:
+            This property uses lazy evaluation and caches the result for subsequent accesses.
+            It includes both regular and desperation dice rolls if applicable.
+        """
         if not self._failures:
             count = 0
             for die in self.roll:
@@ -251,7 +324,18 @@ class DiceRoll:
 
     @property
     def successes(self) -> int:
-        """Retrieve the total number of dice which beat the difficulty not including criticals."""
+        """Calculate and return the total number of successful dice rolls, excluding criticals.
+
+        Count the dice rolls that meet or exceed the difficulty threshold but are not
+        critical successes. Include both regular and desperation dice if applicable.
+
+        Returns:
+            int: The number of successful dice rolls, not including criticals.
+
+        Note:
+            Use lazy evaluation to calculate the result only when first accessed.
+            Cache the result for subsequent accesses to improve performance.
+        """
         if not self._successes:
             count = 0
             for die in self.roll:
@@ -270,7 +354,17 @@ class DiceRoll:
 
     @property
     def result(self) -> int:
-        """Retrieve the number of successes to count."""
+        """Calculate and return the final result of the dice roll.
+
+        Determine the total number of successes to count, considering criticals,
+        failures, and botches. For d10 rolls, apply special rules for criticals
+        and botches. Use lazy evaluation to calculate the result only when first
+        accessed and cache it for subsequent accesses.
+
+        Returns:
+            int: The final result of the dice roll, representing the total
+                 number of successes to count.
+        """
         if not self._result:
             if self.dice_type != DiceType.D10:
                 self._result = self.successes + self.criticals - self.failures - self.botches
@@ -285,13 +379,33 @@ class DiceRoll:
         return self._result
 
     async def thumbnail_url(self) -> str:  # pragma: no cover
-        """Determine the thumbnail to use for the Discord embed."""
+        """Determine and return the thumbnail URL for the Discord embed.
+
+        Fetch the appropriate thumbnail URL based on the roll result type from the
+        Guild's custom roll result thumbnails. If no custom thumbnail is set, use
+        the default thumbnail for the given result type.
+
+        Returns:
+            str: The URL of the thumbnail image to be used in the Discord embed.
+        """
         guild = await Guild.get(self.guild_id or self.ctx.guild.id)
         return await guild.fetch_diceroll_thumbnail(self.result_type)
 
     @property
     def embed_color(self) -> int:  # pragma: no cover
-        """Determine the Discord embed color based on the result of the roll."""
+        """Determine the Discord embed color based on the result of the roll.
+
+        Return an integer color value corresponding to the roll result type.
+        Use predefined color mappings for different roll outcomes:
+        - OTHER: Info color
+        - BOTCH: Error color
+        - CRITICAL: Success color
+        - SUCCESS: Success color
+        - FAILURE: Warning color
+
+        Returns:
+            int: The color value to be used in the Discord embed.
+        """
         color_map = {
             RollResultType.OTHER: EmbedColor.INFO,
             RollResultType.BOTCH: EmbedColor.ERROR,
@@ -303,7 +417,15 @@ class DiceRoll:
 
     @property
     def roll_result_humanized(self) -> str:
-        """The humanized result of the dice roll. ie - "botch", "2 successes", etc."""
+        """Return a human-readable description of the dice roll result.
+
+        Generate a concise, user-friendly string that describes the outcome of the dice roll.
+        The description varies based on the roll's result type, providing context-appropriate
+        feedback such as "Botch!", "Critical Success!", or a specific number of successes.
+
+        Returns:
+            str: A human-readable string describing the roll result, e.g., "Botch!", "2 successes", etc.
+        """
         title_map = {
             RollResultType.OTHER: "Dice roll",
             RollResultType.BOTCH: "Botch!",
@@ -315,7 +437,16 @@ class DiceRoll:
 
     @property
     def num_successes_humanized(self) -> str:
-        """The number of successes rolled written as `x successess`."""
+        """Return the number of successes as a humanized string.
+
+        Generate a string representation of the number of successes rolled,
+        formatted as 'x successes'. Use proper pluralization for 'success'
+        based on the number of successes.
+
+        Returns:
+            str: A human-readable string describing the number of successes,
+                 e.g., '1 success', '2 successes', etc.
+        """
         description_map = {
             RollResultType.OTHER: "",
             RollResultType.BOTCH: f"{self.result} {p.plural_noun('Success', self.result)}",
@@ -327,7 +458,20 @@ class DiceRoll:
 
     @property
     def dice_as_emoji_images(self) -> str:
-        """Return the rolled dice as emoji images."""
+        """Convert the rolled dice values to emoji images and return as a string.
+
+        Generate a string representation of the dice roll results using emoji images.
+        Sort the dice values in ascending order before conversion. Use the
+        convert_int_to_emoji function to transform each die value into its
+        corresponding emoji image.
+
+        Returns:
+            str: A space-separated string of emoji images representing the rolled dice.
+
+        Note:
+            This property uses lazy evaluation, generating the emoji string only
+            when first accessed and caching it for future use.
+        """
         if not self._dice_as_emoji_images:
             self._dice_as_emoji_images = " ".join(
                 f"{convert_int_to_emoji(die, images=True)}" for die in sorted(self.roll)
@@ -336,7 +480,20 @@ class DiceRoll:
 
     @property
     def desperation_dice_as_emoji_images(self) -> str:
-        """Return the rolled desperation dice as emoji images."""
+        """Convert the rolled desperation dice values to emoji images and return as a string.
+
+        Generate a string representation of the desperation dice roll results using emoji images.
+        Sort the dice values in ascending order before conversion. Use the
+        convert_int_to_emoji function to transform each die value into its
+        corresponding emoji image.
+
+        Returns:
+            str: A space-separated string of emoji images representing the rolled desperation dice.
+
+        Note:
+            This property uses lazy evaluation, generating the emoji string only
+            when first accessed and caching it for future use.
+        """
         if not self._desperation_dice_as_emoji_images:
             self._desperation_dice_as_emoji_images = " ".join(
                 f"{convert_int_to_emoji(die, images=True)}" for die in sorted(self.desperation_roll)
