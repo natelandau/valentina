@@ -1,4 +1,11 @@
-"""Models for Valentina."""
+"""Define and export models for the Valentina application.
+
+The models defined here represent different entities in the application, such as
+campaigns, characters, guilds, and users. They are used for data persistence,
+business logic, and interaction with the database.
+
+Import this module to access all Valentina models in other parts of the application.
+"""
 
 from .campaign import (
     Campaign,

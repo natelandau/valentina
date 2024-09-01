@@ -9,9 +9,6 @@ from valentina.utils import ValentinaConfig, instantiate_logger
 from valentina.utils.database import init_database
 from valentina.webui import create_dev_app
 
-# async def run_webserver() -> None:
-#     pass
-
 
 async def create_db_pool() -> None:
     """Initialize the database connection pool."""

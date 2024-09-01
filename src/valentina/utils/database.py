@@ -23,7 +23,15 @@ from valentina.utils import ValentinaConfig
 
 
 def test_db_connection() -> bool:  # pragma: no cover
-    """Test the database connection using pymongo."""
+    """Test the database connection using pymongo.
+
+    This function attempts to establish a connection to the MongoDB database
+    using the configuration specified in ValentinaConfig. It uses a short
+    timeout to quickly determine if the connection can be established.
+
+    Returns:
+        bool: True if the connection is successful, False otherwise.
+    """
     logger.debug("DB: Testing connection...")
     mongo_uri = ValentinaConfig().mongo_uri
 
@@ -38,11 +46,14 @@ def test_db_connection() -> bool:  # pragma: no cover
 
 
 async def init_database(client=None, database=None) -> None:  # type: ignore [no-untyped-def]
-    """Initialize the database. If a client is not provided, one will be created.
+    """Initialize the database connection and set up Beanie ODM.
+
+    This function initializes the database connection using the provided client or creates a new one if not provided.
+    It then sets up the Beanie ODM with the specified document models.
 
     Args:
-        client (AsyncIOMotorClient, optional): The database client. Defaults to None.
-        database (AsyncIOMotorClient, optional): The database. Defaults to None.
+        client (AsyncIOMotorClient, optional): The existing database client. If None, a new client will be created.
+        database (AsyncIOMotorDatabase, optional): The existing database instance. If None, a new database will be selected from the client.
     """
     logger.debug("DB: Initializing...")
     mongo_uri = ValentinaConfig().mongo_uri

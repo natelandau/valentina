@@ -1,10 +1,13 @@
 """Gather configuration from environment variables."""
 
+import os
 from pathlib import Path
 from typing import Annotated, ClassVar
 
 from confz import BaseConfig, ConfigSources, EnvSource
 from pydantic import BeforeValidator
+
+from .console import console
 
 DIR = Path(__file__).parents[3].absolute()
 
@@ -22,7 +25,14 @@ ENV_BOOLEAN = Annotated[
 
 #### NEW CONFIG ####
 class ValentinaConfig(BaseConfig):  # type: ignore [misc]
-    """Valentina configuration."""
+    """Define and manage configuration settings for the Valentina application.
+
+    Utilize environment variables and configuration files to set up and control
+    various aspects of the application, including database connections, API keys,
+    logging preferences, and web interface settings. Implement type checking and
+    validation for configuration values to ensure proper functionality and
+    security across different deployment environments.
+    """
 
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
@@ -46,7 +56,7 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     # WebUI Configuration
     webui_enable: ENV_BOOLEAN = False
     webui_host: str = "127.0.0.1"
-    webui_port: str = "8000"
+    webui_port: str = "8088"
     webui_log_level: str = "INFO"
     webui_debug: ENV_BOOLEAN = False
     webui_base_url: str = "http://127.0.0.1:8088"
@@ -61,3 +71,16 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
         EnvSource(prefix="VALENTINA_", file=DIR / ".env", allow_all=True),
         EnvSource(prefix="VALENTINA_", file=DIR / ".env.secrets", allow_all=True),
     ]
+
+
+def debug_environment_variables() -> None:
+    """Print environment variables and ValentinaConfig settings to the console."""
+    console.rule("Env Vars")
+    for key, value in os.environ.items():
+        if key not in {"PS1", "LS_COLORS", "PATH"}:
+            console.log(f"{key}: {value}")
+
+    console.rule("ValentinaConfig")
+    settings_object = ValentinaConfig().model_dump(mode="python")
+    for key, value in settings_object.items():
+        console.log(f"{key}: {value}")

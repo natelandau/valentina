@@ -9,7 +9,7 @@ from valentina.constants import RollResultType
 from valentina.models import RollStatistic, Statistics
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_guild_statistics_no_results(mock_ctx1):
     """Test pulling guild statistics."""
     # GIVEN a guild with no statistics
@@ -28,7 +28,7 @@ async def test_guild_statistics_no_results(mock_ctx1):
     assert result == "\n## Roll statistics for guild `Test Guild`\nNo statistics found"
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_guild_statistics_results(mock_ctx1):
     """Test pulling guild statistics."""
     # GIVEN a guild with statistics
@@ -75,7 +75,7 @@ async def test_guild_statistics_results(mock_ctx1):
     assert "Successful Rolls ........ 1   (50.00%)" in result.description
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_user_statistics_no_results(mock_ctx1):
     """Test pulling user statistics."""
     # GIVEN a user with no statistics
@@ -94,7 +94,7 @@ async def test_user_statistics_no_results(mock_ctx1):
     assert result == "\nNo statistics found"
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_user_statistics_results(mock_ctx1):
     """Test pulling user statistics."""
     # GIVEN a user with statistics
@@ -142,7 +142,7 @@ async def test_user_statistics_results(mock_ctx1):
     assert "Definitions:" not in result.description
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_character_statistics_no_results(mock_ctx1, character_factory):
     """Test pulling character_statistics."""
     # GIVEN a character with no statistics
@@ -263,7 +263,7 @@ async def test_campaign_statistics_results(mock_ctx1, character_factory, campaig
     assert "Definitions:" not in result.description
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_guild_statistics_results_json(mock_ctx1):
     """Test pulling guild statistics as a json object."""
     # GIVEN a guild with statistics

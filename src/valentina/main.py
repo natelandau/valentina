@@ -10,7 +10,7 @@ import typer
 from loguru import logger
 
 from valentina.models.bot import Valentina
-from valentina.utils import ValentinaConfig, console, instantiate_logger
+from valentina.utils import ValentinaConfig, debug_environment_variables, instantiate_logger
 from valentina.utils.database import test_db_connection
 
 from .__version__ import __version__
@@ -34,16 +34,9 @@ def main(
     ),
 ) -> None:
     """Run Valentina."""
-    if os.environ["VALENTINA_TRACE"]:
-        console.rule("Env Vars")
-        for key, value in os.environ.items():
-            if key not in {"PS1", "LS_COLORS", "PATH"}:
-                console.log(f"{key}: {value}")
-
-        console.rule("ValentinaConfig")
-        settings_object = ValentinaConfig().model_dump(mode="python")
-        for key, value in settings_object.items():
-            console.log(f"{key}: {value}")
+    # Print environment variables and ValentinaConfig settings if VALENTINA_TRACE is set
+    if os.environ.get("VALENTINA_TRACE"):
+        debug_environment_variables()
 
     # Instantiate the logger
     instantiate_logger()

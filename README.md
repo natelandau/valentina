@@ -122,7 +122,7 @@ Settings for Valentina are controlled by environment variables. The following is
 | VALENTINA_GITHUB_TOKEN |  | Optional: Sets the Github API Access token to use for Github integration |
 | VALENTINA_WEBUI_ENABLE | `false` | Optional: Enables the web UI. Set to `true` to enable. |
 | VALENTINA_WEBUI_HOST | `127.0.0.1` | Set the host IP for the web UI. Note: when running in Docker this should always be `0.0.0.0` |
-| VALENTINA_WEBUI_PORT | `8000` | Set the port for the web UI. |
+| VALENTINA_WEBUI_PORT | `8088` | Set the port for the web UI. |
 | VALENTINA_WEBUI_LOG_LEVEL | `INFO` | Sets the log level for the web UI. One of `TRACE`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | VALENTINA_WEBUI_BASE_URL | `http://127.0.0.1:8088` | Base URL for the web service. |
 | VALENTINA_WEBUI_DEBUG | `false` | Enables debug mode for the web UI. Set to `true` to enable. |

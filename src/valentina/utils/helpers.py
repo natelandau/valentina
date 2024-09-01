@@ -81,15 +81,18 @@ def convert_int_to_emoji(num: int, markdown: bool = False, images: bool = False)
 
 
 def random_num(ceiling: int = 100) -> int:
-    """Get a random number between 1 and the specified ceiling.
+    """Generate a random integer within a specified range.
 
-    This method returns a random integer between 1 and the given ceiling (inclusive).
+    Generate and return a random integer between 1 and the given ceiling (inclusive).
 
     Args:
         ceiling (int, optional): The upper limit for the random number. Defaults to 100.
 
     Returns:
         int: A random integer between 1 and the ceiling.
+
+    Raises:
+        ValueError: If ceiling is less than 1.
     """
     return _rng.integers(1, ceiling + 1)
 
@@ -99,14 +102,16 @@ async def fetch_random_name(
 ) -> list[tuple[str, str]] | tuple[str, str]:  # pragma: no cover
     """Fetch a random name from the randomuser.me API.
 
+    Retrieve one or more random names from the randomuser.me API based on specified criteria.
+
     Args:
-        country (str, optional): The country to fetch the name from. Defaults to "us".
-        results (int, optional): The number of results to fetch. Defaults to 1.
-        gender (str, optional): The gender of the name to fetch. Defaults to None
+        gender (str | None): The gender of the name to fetch. If None, a random gender is chosen.
+        country (str): The country code to fetch the name from. Defaults to "us".
+        results (int): The number of results to fetch. Defaults to 1.
 
     Returns:
-        list[tuple[str, str]] | tuple[str, str]: A list of tuples containing the first and last name. If only one result, a single tuple is returned.
-
+        list[tuple[str, str]] | tuple[str, str]: If results > 1, returns a list of tuples containing
+        (first_name, last_name). If results == 1, returns a single tuple (first_name, last_name).
     """
     if not gender:
         gender = random.choice(["male", "female"])
@@ -133,24 +138,35 @@ async def fetch_random_name(
 def divide_total_randomly(
     total: int, num: int, max_value: int | None = None, min_value: int = 0
 ) -> list[int]:
-    """Divide a total into 'num' random segments whose sum equals the total.
+    """Divide a total into random segments with specified constraints.
 
-    This function divides a given 'total' into 'num' elements, each with a random value.
-    The sum of these elements will always equal 'total'. If 'max_value' is provided,
-    no single element will be greater than this value. Additionally, no element will ever
-    be less than or equal to 0.
+    Generate a list of random integers that sum up to a given total. The function ensures
+    that each segment falls within the specified minimum and maximum values (if provided).
+    This can be useful for various applications such as resource allocation, random
+    character attribute generation in games, or any scenario requiring a random
+    distribution of a total value.
+
+    The algorithm uses an iterative approach to adjust the randomly generated segments
+    until they meet all specified constraints. It first generates random values within
+    the allowed range, then iteratively adjusts these values to meet the total sum
+    requirement while respecting the min and max constraints.
 
     Args:
-        total (int): The total sum to be divided.
-        num (int): The number of segments to divide the total into.
-        max_value (int | None): The maximum value any single element can have.
-        min_value (int): The minimum value any single element can have. Defaults to 0.
+        total (int): The total sum to be divided. Must be a positive integer.
+        num (int): The number of segments to divide the total into. Must be a positive integer.
+        max_value (int | None): The maximum value for any single segment. If None, no upper
+            limit is applied beyond the total itself.
+        min_value (int): The minimum value for any single segment. Defaults to 0. Must be
+            non-negative and less than or equal to max_value (if specified).
 
     Returns:
-        list[int]: A list of integers representing the divided segments.
+        list[int]: A list of integers representing the divided segments. The length of the
+            list will be equal to 'num', and the sum of all elements will equal 'total'.
 
     Raises:
-        ValueError: If the total cannot be divided as per the given constraints.
+        ValueError: If the total cannot be divided according to the given constraints. This
+            can occur if the total is less than num * min_value, if max_value is less than
+            min_value, or if num * max_value is less than total.
     """
     if total < num * min_value or (max_value is not None and max_value < min_value):
         msg = "Impossible to divide under given constraints."
@@ -271,7 +287,20 @@ def get_trait_new_value(trait: str, category: str) -> int:
 
 
 async def fetch_data_from_url(url: str) -> io.BytesIO:  # pragma: no cover
-    """Fetch data from a URL to be used to upload to Amazon S3."""
+    """Fetch data from a URL and return it as a BytesIO object.
+
+    This function retrieves data from a specified URL and returns it as a BytesIO object,
+    which can be used for further processing or uploading to services like Amazon S3.
+
+    Args:
+        url (str): The URL from which to fetch the data.
+
+    Returns:
+        io.BytesIO: A BytesIO object containing the fetched data.
+
+    Raises:
+        errors.URLNotAvailableError: If the URL cannot be accessed or returns a non-200 status code.
+    """
     async with ClientSession() as session, session.get(url) as resp:
         if resp.status != 200:  # noqa: PLR2004
             msg = f"Could not fetch data from {url}"
@@ -322,5 +351,9 @@ def truncate_string(text: str, max_length: int = 1000) -> str:
 
 
 def time_now() -> datetime:
-    """Return the current time in UTC."""
+    """Return the current time in UTC.
+
+    Returns:
+        datetime: The current UTC time with microseconds set to 0.
+    """
     return datetime.now(UTC).replace(microsecond=0)

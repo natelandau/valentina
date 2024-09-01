@@ -40,14 +40,38 @@ if TYPE_CHECKING:
 
 
 class CharacterSheetSection(BaseModel):
-    """Represents a character sheet section as a subdocument within Character."""
+    """Represent a character sheet section as a subdocument within Character.
+
+    Use this class to define and manage individual sections of a character sheet.
+    Each section includes a title and content, allowing for structured organization
+    of character information. Implement this class as an embedded document within
+    the Character model to maintain a clear hierarchy of character data.
+
+    Attributes:
+        title (str): The heading or name of the character sheet section.
+        content (str): The detailed information or text content of the section.
+
+    Note:
+        Ensure proper integration with the parent Character document for seamless
+        data management and retrieval.
+    """
 
     title: str
     content: str
 
 
 class CharacterTrait(Document):
-    """Represents a character trait value as a subdocument within Character."""
+    """Represent a character trait value as a subdocument within Character.
+
+    Use this class to define and manage individual traits for a character.
+    Each trait includes properties such as category, name, value, and maximum value.
+    Implement methods to handle trait-specific operations and provide convenient
+    access to trait information.
+
+    Note:
+    - This class is designed to be embedded within the Character document.
+    - Ensure proper indexing of the 'character' field for efficient querying.
+    """
 
     category_name: str  # TraitCategory enum name
     character: Indexed(str)  # type: ignore [valid-type]
@@ -69,7 +93,14 @@ class CharacterTrait(Document):
 
 
 class InventoryItem(Document):
-    """Represents an item in a character's inventory."""
+    """Represent an item in a character's inventory.
+
+    Use this class to create, manage, and store information about items
+    that characters possess. Each item includes details such as its name,
+    description, and type. Ensure that the 'character' field is properly
+    indexed for efficient querying and retrieval of inventory items
+    associated with specific characters.
+    """
 
     character: Indexed(str)  # type: ignore [valid-type]
     name: str
@@ -78,7 +109,17 @@ class InventoryItem(Document):
 
 
 class Character(Document):
-    """Represents a character in the database."""
+    """Represent a character in the database.
+
+    This class defines the structure and properties of a character entity.
+    It includes fields for basic information, traits, inventory, notes,
+    and various character-specific attributes. Use this class to create,
+    retrieve, update, and manage character data in the database.
+
+    The Character model supports different character types (e.g., player,
+    storyteller, debug) and game-specific attributes (e.g., clan, breed,
+    auspice) for various role-playing game systems.
+    """
 
     char_class_name: str  # CharClass enum name
     date_created: datetime = Field(default_factory=time_now)
@@ -187,7 +228,7 @@ class Character(Document):
     async def add_image(self, extension: str, data: bytes) -> str:  # pragma: no cover
         """Add an image to a character and upload it to Amazon S3.
 
-        This function generates a unique key for the image, uploads the image to S3, and updates the character in the database to include the new image.
+        Generate a unique key for the image, uploads the image to S3, and updates the character in the database to include the new image.
 
         Args:
             extension (str): The file extension of the image.
@@ -225,7 +266,26 @@ class Character(Document):
         display_on_sheet: bool = True,
         is_custom: bool = True,
     ) -> "CharacterTrait":
-        """Create a new trait."""
+        """Create a new trait for the character.
+
+        Add a new trait to the character's list of traits. Check if the trait already exists,
+        determine if it's a custom trait, and set the appropriate maximum value. Save the new
+        trait to the database and update the character's trait list.
+
+        Args:
+            category (TraitCategory): The category of the trait.
+            name (str): The name of the trait.
+            value (int): The initial value of the trait.
+            max_value (int | None, optional): The maximum value for the trait. Defaults to None.
+            display_on_sheet (bool, optional): Whether to display the trait on the character sheet. Defaults to True.
+            is_custom (bool, optional): Whether the trait is custom. Defaults to True.
+
+        Returns:
+            CharacterTrait: The newly created trait object.
+
+        Raises:
+            errors.TraitExistsError: If a trait with the same name and category already exists for the character.
+        """
         # Check if the trait already exists
         for trait in cast(list[CharacterTrait], self.traits):
             if trait.name == name and trait.category_name == category.name.upper():
@@ -261,15 +321,22 @@ class Character(Document):
     ) -> bool:
         """Associate a character with a campaign.
 
-        This method associates the character with the specified campaign, updates the database,
-        confirms the character's channel, and sorts the campaign channels.
+        Associate the character with the specified campaign, update the database,
+        confirm the character's channel, and sort the campaign channels. If the
+        character is already associated with the given campaign, no action is taken.
 
         Args:
-            ctx (ValentinaContext): The context object containing guild information.
-            new_campaign (Campaign): The new campaign to associate with the character.
+            ctx (ValentinaContext): The context object containing guild information
+                and other relevant data for the operation.
+            new_campaign (Campaign): The campaign to associate with the character.
 
         Returns:
-            bool: True if the character was successfully associated with the new campaign, False if already associated.
+            bool: True if the character was successfully associated with the new
+                campaign, False if the character was already associated with the
+                campaign.
+
+        Raises:
+            None, but may propagate exceptions from called methods.
         """
         if self.campaign == str(new_campaign.id):
             logger.debug(f"Character {self.name} is already associated with {new_campaign.name}")
@@ -285,16 +352,26 @@ class Character(Document):
     async def confirm_channel(
         self, ctx: "ValentinaContext", campaign: Optional["Campaign"]
     ) -> discord.TextChannel | None:
-        """Confirm or create the channel for the character within the campaign.
+        """Confirm or create the character's channel within the campaign.
 
-        This method ensures the character's channel exists within the campaign's category. It updates the channel information in the database if necessary, renames it if it has the wrong name, or creates a new one if it doesn't exist.
+        Ensure the character's channel exists within the campaign's category. Update the channel
+        information in the database if necessary. Rename the channel if it has the wrong name.
+        Create a new channel if it doesn't exist.
+
+        Follow these steps:
+        1. Fetch the campaign if not provided.
+        2. Retrieve the campaign's category and channels.
+        3. Check if the channel name or ID exists in the category.
+        4. Update the database with the channel ID if the name exists but ID is missing.
+        5. Rename the channel if it exists with the wrong name.
+        6. Create a new channel if it doesn't exist.
 
         Args:
-            ctx (ValentinaContext): The context object containing guild information.
-            campaign (Optional[Campaign]): The campaign object. If not provided, it will be fetched using the character's campaign ID.
+            ctx (ValentinaContext): The context object containing guild information and bot instance.
+            campaign (Optional[Campaign]): The campaign object. If not provided, fetch it using the character's campaign ID.
 
         Returns:
-            discord.TextChannel | None: The channel object if found or created, otherwise None.
+            discord.TextChannel | None: The channel object if found or created, None if the campaign category doesn't exist.
         """
         campaign = campaign or await Campaign.get(self.campaign)
         if not campaign:
@@ -352,12 +429,15 @@ class Character(Document):
         return discord.utils.get(channels, name=self.channel_name)
 
     async def delete_channel(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Delete the channel associated with the character.
+        """Delete the channel associated with the character and update the character's information.
 
-        This method removes the channel linked to the character from the guild and updates the character's channel information.
+        Remove the Discord channel linked to this character from the guild.
+        Update the character's channel information to reflect the deletion.
+        If no channel is associated or the channel doesn't exist, do nothing.
 
         Args:
-            ctx (ValentinaContext): The context object containing guild information.
+            ctx (ValentinaContext): The context object containing guild information
+                and other relevant data for the operation.
 
         Returns:
             None
@@ -377,11 +457,12 @@ class Character(Document):
     async def delete_image(self, key: str) -> None:  # pragma: no cover
         """Delete a character's image from both the character data and Amazon S3.
 
-        This method updates the character's data to remove the image reference
-        and also deletes the actual image stored in Amazon S3.
+        Remove the specified image key from the character's data and delete the
+        corresponding image file from Amazon S3 storage. This method ensures
+        that both the database reference and the actual image file are removed.
 
         Args:
-            key (str): The key representing the image to be deleted.
+            key (str): The unique identifier of the image to be deleted.
 
         Returns:
             None
@@ -409,16 +490,24 @@ class Character(Document):
     async def update_channel_permissions(
         self, ctx: "ValentinaContext", campaign: "Campaign"
     ) -> discord.TextChannel | None:  # pragma: no cover
-        """Update the permissions for the character's channel.
+        """Update the permissions and settings for the character's Discord channel.
 
-        This method updates the permissions for a character's channel, renames it, and sets the appropriate category and topic. Run this method after updating the character's user_owner.
+        Update the permissions, name, category, and topic for a character's Discord channel.
+        This method should be called after updating the character's user_owner.
+
+        Perform the following actions:
+        1. Retrieve the channel using the stored channel ID.
+        2. Generate a new channel name based on the character's name.
+        3. Fetch the user object for the character's owner.
+        4. Locate the appropriate category for the campaign.
+        5. Update the channel's name, category, permissions, and topic.
 
         Args:
-            ctx (ValentinaContext): The context object containing guild information.
+            ctx (ValentinaContext): The context object containing guild and bot information.
             campaign (Campaign): The campaign object to which the character belongs.
 
         Returns:
-            discord.TextChannel | None: The updated channel object, or None if the channel does not exist.
+            discord.TextChannel | None: The updated channel object if successful, or None if the channel does not exist.
         """
         if not self.channel:
             return None
@@ -441,13 +530,19 @@ class Character(Document):
         )
 
     def sheet_section_top_items(self) -> dict[str, str]:
-        """Return the items to populate the top portion of a character sheet.
+        """Generate a dictionary of key attributes for the top section of a character sheet.
 
-        Populate a dictionary with attributes that are present in the character
-        and return the dictionary with properly titled values.
+        Compile a dictionary containing essential character attributes for display
+        in the top portion of a character sheet. Include attributes such as class,
+        concept, demeanor, nature, and class-specific traits (e.g., clan for vampires,
+        auspice for werewolves). Omit attributes that are not applicable or not set.
+
+        Format attribute names as properly titled keys and ensure all values are
+        strings, using '-' for missing or inapplicable attributes.
 
         Returns:
-            dict[str, str]: Dictionary with character attributes.
+            dict[str, str]: A dictionary of character attributes, where keys are
+            attribute names and values are their corresponding string representations.
         """
         attributes = [
             ("Class", self.char_class_name if self.char_class_name else "-"),

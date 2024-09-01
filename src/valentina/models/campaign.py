@@ -299,11 +299,18 @@ class Campaign(Document):
     ) -> tuple[discord.CategoryChannel, list[discord.TextChannel]]:
         """Fetch the campaign category channels in the guild.
 
+        Retrieve the category channel and its associated text channels for the current campaign
+        from the guild. Iterate through all categories in the guild to find the one matching
+        the campaign's category ID.
+
         Args:
             ctx (ValentinaContext): The context object containing guild information.
 
         Returns:
-            tuple[discord.CategoryChannel, list[discord.TextChannel]]: A tuple containing the campaign category channel and a list of text channels within that category. If the category is not found, returns (None, []).
+            tuple[discord.CategoryChannel, list[discord.TextChannel]]: A tuple containing:
+                - The campaign category channel (discord.CategoryChannel or None if not found)
+                - A list of text channels within that category (empty list if category not found)
+
         """
         for category, channels in ctx.guild.by_category():
             if category and category.id == self.channel_campaign_category:
@@ -315,14 +322,14 @@ class Campaign(Document):
     def _custom_channel_sort(channel: discord.TextChannel) -> tuple[int, str]:  # pragma: no cover
         """Generate a custom sorting key for campaign channels.
 
-        This method prioritizes channels based on their channel names.
+        Prioritize channels based on their names, assigning a numeric value
+        for sorting order.
 
         Args:
-            channel (discord.TextChannel): The channel to generate the sort key for.
+            channel (discord.TextChannel): The Discord text channel to generate the sort key for.
 
         Returns:
-            tuple[int, str]: A tuple indicating the sort priority and the channel name.
-
+            tuple[int, str]: A tuple containing the sort priority (int) and the channel name (str).
         """
         if channel.name.startswith(Emoji.SPARKLES.value):
             return (0, channel.name)
@@ -342,10 +349,11 @@ class Campaign(Document):
         return (5, channel.name)
 
     async def create_channels(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Create and organize the campaign channels in the guild.
+        """Create and organize campaign channels in the guild.
 
-        This method ensures the campaign category and its channels are correctly created and named.
-        If the campaign category already exists, it renames it if necessary. Then, it creates the necessary channels for books and characters, confirming their existence and respecting the rate limits.
+        Create a campaign category if it doesn't exist, or rename it if necessary.
+        Ensure all required channels (books, characters, etc.) are created and properly named.
+        Respect Discord rate limits during channel creation and modification.
 
         Args:
             ctx (ValentinaContext): The context object containing guild information.
@@ -396,10 +404,11 @@ class Campaign(Document):
         logger.info(f"All channels confirmed for campaign '{self.name}' in '{ctx.guild.name}'")
 
     async def delete_channels(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Delete the channels associated with the campaign.
+        """Delete all channels associated with the campaign.
 
-        This method removes all channels related to the campaign, including book channels,
-        character channels, storyteller channel, general channel, and the campaign category channel.
+        Remove book channels, character channels, storyteller channel, general channel,
+        and the campaign category channel. Update the campaign object to reflect the
+        deleted channels.
 
         Args:
             ctx (ValentinaContext): The context object containing guild information.
@@ -439,7 +448,8 @@ class Campaign(Document):
     async def fetch_characters(self) -> list[Character]:
         """Fetch all player characters in the campaign.
 
-        This method retrieves a list of all player characters associated with the campaign.
+        Retrieve a list of all player characters associated with the current campaign.
+        Filter characters to include only those marked as player characters.
 
         Returns:
             list[Character]: A list of Character objects representing player characters in the campaign.

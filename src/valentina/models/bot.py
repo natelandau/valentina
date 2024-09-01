@@ -39,10 +39,21 @@ from valentina.utils.discord_utils import set_channel_perms
 
 # Subclass discord.ApplicationContext to create custom application context
 class ValentinaContext(discord.ApplicationContext):
-    """A custom application context for Valentina."""
+    """Extend discord.ApplicationContext with Valentina-specific functionality.
+
+    Provide custom methods and properties for handling Valentina's command context.
+    Implement logging capabilities and embed creation for consistent message formatting.
+    """
 
     def log_command(self, msg: str, level: LogLevel = LogLevel.INFO) -> None:  # pragma: no cover
-        """Log the command to the console and log file."""
+        """Log the executed command with contextual information.
+
+        Log the command details to both console and log file, including the author,
+        command name, and channel where it was executed. Determine the appropriate
+        log level and construct a detailed log message with the command's context.
+        Use introspection to identify the calling function and create a hierarchical
+        logger name for better traceability.
+        """
         author = f"@{self.author.display_name}" if hasattr(self, "author") else None
         command = f"'/{self.command.qualified_name}'" if hasattr(self, "command") else None
         channel = f"#{self.channel.name}" if hasattr(self, "channel") else None
@@ -73,13 +84,18 @@ class ValentinaContext(discord.ApplicationContext):
         )
 
     def _message_to_embed(self, message: str) -> discord.Embed:  # pragma: no cover
-        """Convert a string message to a discord embed.
+        """Convert a string message to a Discord embed.
+
+        Create a Discord embed object from the given message string. Set the embed's
+        color based on the command category, add a timestamp, and include footer
+        information about the command, user, and channel. The embed's title is set
+        to the input message.
 
         Args:
-            message (str): The message to be converted.
+            message (str): The message to be used as the embed's title.
 
         Returns:
-            discord.Embed: The created embed.
+            discord.Embed: A fully formatted Discord embed object.
         """
         # Set color based on command
         if hasattr(self, "command") and (
@@ -118,17 +134,18 @@ class ValentinaContext(discord.ApplicationContext):
     async def post_to_error_log(
         self, message: str | discord.Embed, error: Exception
     ) -> None:  # pragma: no cover
-        """Send an error message or embed to the guild's error log channel.
+        """Post an error message or embed to the guild's error log channel.
 
-        If the error log channel exists, convert the input message to an embed if it's a string and send it to the guild's error log channel.
+        Convert the input message to an embed if it's a string. Attempt to send the
+        error information to the guild's designated error log channel. If the message
+        is too long, send a truncated version with basic error details.
 
         Args:
-            ctx (discord.ApplicationContext): The context for the discord command.
-            message (str|discord.Embed): The error message or embed to send to the channel.
-            error (Exception): The exception that triggered the error log message.
+            message (str | discord.Embed): The error message or embed to send.
+            error (Exception): The exception that triggered the error log.
 
         Raises:
-            discord.DiscordException: If the error message could not be sent to the channel.
+            discord.DiscordException: If the error message cannot be sent to the channel.
         """
         # Get the database guild object and error log channel
         guild = await Guild.get(self.guild.id)
@@ -149,16 +166,15 @@ class ValentinaContext(discord.ApplicationContext):
                 await error_log_channel.send(embed=embed)
 
     async def post_to_audit_log(self, message: str | discord.Embed) -> None:  # pragma: no cover
-        """Send a message to the audit log channel for a guild.
+        """Send a message to the guild's audit log channel.
 
-        If a string is passed in, an embed will be created from it. If an embed is passed in, it will be sent as is.
+        Convert the input message to an embed if it's a string, otherwise send the provided embed. Log the message content to the command log. Attempt to send the message to the guild's designated audit log channel.
 
         Args:
-            ctx (discord.ApplicationContext): The context in which the command was invoked.
-            message (str|discord.Embed): The message to be sent to the log channel.
+            message (str | discord.Embed): The message or embed to send to the audit log.
 
         Raises:
-            discord.DiscordException: If the message could not be sent.
+            errors.MessageTooLongError: If the message exceeds Discord's character limit.
         """
         # Get the database guild object and error log channel
         guild = await Guild.get(self.guild.id)
@@ -179,13 +195,17 @@ class ValentinaContext(discord.ApplicationContext):
                 raise errors.MessageTooLongError from e
 
     async def can_kill_character(self, character: Character) -> bool:
-        """Check if the user can kill the character.
+        """Determine if the user has permission to kill the specified character.
+
+        Check the user's permissions against the guild's settings to decide if they
+        can kill the given character. Consider the user's role, guild permissions,
+        and character ownership when making this determination.
 
         Args:
-            character (Character): The character to check.
+            character (Character): The character to potentially kill.
 
         Returns:
-            bool: True if the user can kill the character, False otherwise.
+            bool: True if the user has permission to kill the character, False otherwise.
         """
         # Always allow administrators to kill characters
         if isinstance(self.author, discord.Member) and self.author.guild_permissions.administrator:
@@ -216,13 +236,19 @@ class ValentinaContext(discord.ApplicationContext):
         return True
 
     async def can_manage_traits(self, character: Character) -> bool:
-        """Check if the user can manage traits for the character.
+        """Determine if the user has permission to manage traits for the specified character.
+
+        Check the user's permissions against the guild's settings to decide if they
+        can manage traits for the given character. Consider the user's role, guild
+        permissions, character ownership, and time since character creation when
+        making this determination.
 
         Args:
-            character (Character): The character to check.
+            character (Character): The character whose traits may be managed.
 
         Returns:
-            bool: True if the user can manage traits for the character, False otherwise.
+            bool: True if the user has permission to manage the character's traits,
+                  False otherwise.
         """
         # Always allow administrators to manage traits
         if isinstance(self.author, discord.Member) and self.author.guild_permissions.administrator:
@@ -264,13 +290,19 @@ class ValentinaContext(discord.ApplicationContext):
         return True
 
     async def can_grant_xp(self, user: User) -> bool:
-        """Check if the user can grant xp to the user.
+        """Determine if the current user has permission to grant XP to the specified user.
+
+        Check the guild's XP granting permission settings and the current user's roles
+        to determine if they are allowed to grant XP. This method considers various
+        scenarios such as unrestricted access, player-only restrictions, and
+        storyteller-only permissions.
 
         Args:
-            user (User): The user to check.
+            user (User): The target user to whom XP might be granted.
 
         Returns:
-            bool: True if the user can grant xp to the user, False otherwise.
+            bool: True if the current user has permission to grant XP to the specified user,
+                  False otherwise.
         """
         # Always allow administrators to manage traits
         if isinstance(self.author, discord.Member) and self.author.guild_permissions.administrator:
@@ -301,10 +333,15 @@ class ValentinaContext(discord.ApplicationContext):
         return True
 
     async def can_manage_campaign(self) -> bool:
-        """Check if the user can manage the campaign.
+        """Determine if the current user has permission to manage the campaign.
+
+        Check the guild's campaign management permission settings and the current user's roles
+        to determine if they are allowed to manage the campaign. Consider various scenarios
+        such as unrestricted access and storyteller-only permissions. Always allow
+        administrators to manage campaigns.
 
         Returns:
-            bool: True if the user can manage the campaign, False otherwise.
+            bool: True if the user has permission to manage the campaign, False otherwise.
         """
         # Always allow administrators to manage traits
         if isinstance(self.author, discord.Member) and self.author.guild_permissions.administrator:
@@ -338,20 +375,20 @@ class ValentinaContext(discord.ApplicationContext):
         category: discord.CategoryChannel | None = None,
         permissions_user_post: discord.User | None = None,
     ) -> discord.TextChannel:  # pragma: no cover
-        """Create or update a channel in the guild.
+        """Create or update a channel in the guild with specified permissions and attributes.
 
-        Either create a new text channel in the guild or update an existing one based on the name. Set permissions for default role, player role, and storyteller role. If a member is a bot, set permissions to manage.
+        Create a new text channel or update an existing one based on the provided name. Set permissions for default role, player role, and storyteller role. Automatically grant manage permissions to bot members. If specified, set posting permissions for a specific user.
 
         Args:
-            permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]): The permissions for the channel.
-            channel (discord.TextChannel, optional): The channel to update. Defaults to None.
-            name (str, optional): The name of the channel. Defaults to None.
-            topic (str, optional): The topic of the channel. Defaults to None.
-            category (discord.CategoryChannel, optional): The category of the channel. Defaults to None.
-            permissions_user_post (discord.User, optional): The user to set permissions for posting. Defaults to None.
+            permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]): Permissions for default role, player role, and storyteller role respectively.
+            channel (discord.TextChannel, optional): Existing channel to update. Defaults to None.
+            name (str, optional): Name for the channel. Defaults to None.
+            topic (str, optional): Topic description for the channel. Defaults to None.
+            category (discord.CategoryChannel, optional): Category to place the channel in. Defaults to None.
+            permissions_user_post (discord.User, optional): User to grant posting permissions. Defaults to None.
 
         Returns:
-            discord.TextChannel: The created or updated text channel.
+            discord.TextChannel: The newly created or updated text channel.
         """
         # Fetch roles
         player_role = discord.utils.get(self.guild.roles, name="Player")
@@ -413,7 +450,13 @@ class ValentinaContext(discord.ApplicationContext):
 
 
 class Valentina(commands.Bot):
-    """Subclass discord.Bot."""
+    """Extend the discord.Bot class to create a custom bot implementation.
+
+    Enhance the base discord.Bot with additional functionality
+    specific to the Valentina bot. Include custom attributes, methods,
+    and event handlers to manage bot state, load cogs, initialize the database,
+    and handle server connections.
+    """
 
     def __init__(self, parent_dir: Path, version: str, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -433,7 +476,12 @@ class Valentina(commands.Bot):
         logger.debug(f"COGS: Loaded {len(self.cogs)} cogs")
 
     async def on_connect(self) -> None:
-        """Perform early setup."""
+        """Perform early setup tasks when the bot connects to Discord.
+
+        Initialize the MongoDB database connection, retrying if necessary.
+        Log connection details and bot information upon successful connection.
+        Synchronize commands with Discord.
+        """
         # Initialize the mongodb database
         while True:
             try:
@@ -458,7 +506,14 @@ class Valentina(commands.Bot):
         logger.info("CONNECT: Commands synced")
 
     async def post_changelog_to_guild(self, guild: discord.Guild) -> None:
-        """Update the changelog."""
+        """Post the latest changelog updates to the specified guild.
+
+        Retrieve the most recent version from global properties and compare it with the
+        guild's last posted changelog version. If updates are available, fetch the
+        changelog, post it to the designated channel, and update the guild's changelog
+        version in the database. Handle potential errors during the process and log
+        relevant information.
+        """
         db_global_properties = await GlobalProperty.find_one()
 
         # Post Changelog to the #changelog channel, if set
@@ -502,7 +557,13 @@ class Valentina(commands.Bot):
 
     @staticmethod
     async def _provision_guild(guild: discord.Guild) -> None:
-        """Provision a guild on connect."""
+        """Provision a guild upon connection to Discord.
+
+        Set up the necessary database entries, roles, and configurations for a newly
+        connected guild. Update existing guild information if already present. Process
+        guild members, ensuring their information is current in the database. Perform
+        any required data migrations or updates for existing campaigns.
+        """
         logger.info(f"CONNECT: Provision {guild.name} ({guild.id})")
 
         # Add/Update the guild in the database
@@ -557,7 +618,17 @@ class Valentina(commands.Bot):
         logger.info(f"CONNECT: Playing on {guild.name} ({guild.id})")
 
     async def on_ready(self) -> None:
-        """Override on_ready. Additional functionality is in the on_ready listener in event_listener.py."""
+        """Override the on_ready method to initialize essential bot tasks.
+
+        Perform core setup operations when the bot becomes ready. Wait for full
+        connection, set the bot's presence, initialize the database, and provision
+        connected guilds. Set the start time for uptime calculations and manage
+        version tracking in the database. Initiate the web server if enabled in
+        the configuration.
+
+        Additional functionality is implemented in the on_ready listener within
+        event_listener.py.
+        """
         await self.wait_until_ready()
         while not self.connected:
             logger.warning("CONNECT: Waiting for connection...")
@@ -604,5 +675,17 @@ class Valentina(commands.Bot):
     async def get_application_context(  # type: ignore
         self, interaction: discord.Interaction, cls=ValentinaContext
     ) -> discord.ApplicationContext:
-        """Override the get_application_context method to use my custom context."""
+        """Override the get_application_context method to use a custom context.
+
+        Return a ValentinaContext instance instead of the default ApplicationContext.
+        This allows for custom functionality and attributes specific to the Valentina
+        bot to be available in all command interactions.
+
+        Args:
+            interaction (discord.Interaction): The interaction object from Discord.
+            cls (Type[ValentinaContext], optional): The context class to use. Defaults to ValentinaContext.
+
+        Returns:
+            ValentinaContext: A custom application context for Valentina bot interactions.
+        """
         return await super().get_application_context(interaction, cls=cls)

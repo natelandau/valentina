@@ -55,10 +55,31 @@ class CampaignChapterConverter(Converter):
 
 
 class ValidCampaign(Converter):
-    """A converter to grab a campaign object from it's name."""
+    """Convert a campaign name to a Campaign object.
+
+    This converter takes a campaign name as input and retrieves the corresponding
+    Campaign object from the database. It ensures that the provided name
+    corresponds to a valid, existing campaign. If the campaign is not found,
+    raise a BadArgument exception.
+    """
 
     async def convert(self, ctx: commands.Context, argument: str) -> Campaign:  # noqa: ARG002
-        """Convert from mongo db id to campaign object."""
+        """Convert a MongoDB ID to a Campaign object.
+
+        Retrieve a Campaign object from the database using the provided MongoDB ID.
+        If a matching campaign is found, return the Campaign object. Otherwise,
+        raise a BadArgument exception with an appropriate error message.
+
+        Args:
+            ctx (commands.Context): The context of the command invocation.
+            argument (str): The MongoDB ID of the campaign to retrieve.
+
+        Returns:
+            Campaign: The retrieved Campaign object.
+
+        Raises:
+            BadArgument: If no campaign is found with the given ID.
+        """
         campaign = await Campaign.get(argument, fetch_links=True)
 
         if campaign:
@@ -69,10 +90,21 @@ class ValidCampaign(Converter):
 
 
 class ValidCampaignBook(Converter):  # pragma: no cover
-    """A converter that converts a book id to a CampaignBook object."""
+    """Convert a book ID to a CampaignBook object."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> CampaignBook:  # noqa: ARG002
-        """Validate and normalize book ids."""
+        """Convert a book ID to a CampaignBook object.
+
+        Args:
+            ctx: The context of the command invocation.
+            argument: The book ID to convert.
+
+        Returns:
+            CampaignBook: The retrieved CampaignBook object.
+
+        Raises:
+            BadArgument: If no book is found with the given ID.
+        """
         book = await CampaignBook.get(argument)
         if book:
             return book
@@ -82,10 +114,21 @@ class ValidCampaignBook(Converter):  # pragma: no cover
 
 
 class ValidCampaignBookChapter(Converter):  # pragma: no cover
-    """A converter that converts a book id to a CampaignBookChapter object."""
+    """Convert a chapter ID to a CampaignBookChapter object."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> CampaignBookChapter:  # noqa: ARG002
-        """Validate and normalize book ids."""
+        """Convert a chapter ID to a CampaignBookChapter object.
+
+        Args:
+            ctx: The context of the command invocation.
+            argument: The chapter ID to convert.
+
+        Returns:
+            CampaignBookChapter: The retrieved CampaignBookChapter object.
+
+        Raises:
+            BadArgument: If no chapter is found with the given ID.
+        """
         chapter = await CampaignBookChapter.get(argument)
         if chapter:
             return chapter
@@ -95,10 +138,22 @@ class ValidCampaignBookChapter(Converter):  # pragma: no cover
 
 
 class ValidBookNumber(Converter):
-    """A converter that ensures a requested book number is valid."""
+    """Convert and validate a book number for an active campaign."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> int:
-        """Validate and normalize book numbers."""
+        """Convert and validate a book number for an active campaign.
+
+        Args:
+            ctx: The context of the command invocation.
+            argument: The book number to convert and validate.
+
+        Returns:
+            int: The validated book number.
+
+        Raises:
+            BadArgument: If no active campaign is found, the argument is not a valid integer,
+                         the book number is less than 1, or the book number is not part of the active campaign.
+        """
         channel_objects = await fetch_channel_object(ctx, raise_error=False)
         campaign = channel_objects.campaign
 
@@ -126,10 +181,22 @@ class ValidBookNumber(Converter):
 
 
 class ValidChapterNumber(Converter):
-    """A converter that ensures a requested chapter number is valid."""
+    """Convert and validate a chapter number for a book."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> int:
-        """Validate and normalize chapter numbers."""
+        """Convert and validate a chapter number for a book.
+
+        Args:
+            ctx: The context of the command invocation.
+            argument: The chapter number to convert and validate.
+
+        Returns:
+            int: The validated chapter number.
+
+        Raises:
+            BadArgument: If the argument is not a valid integer, the chapter number is less than 1,
+                         or the chapter number is not part of the book.
+        """
         channel_objects = await fetch_channel_object(ctx, raise_error=False)
         book = channel_objects.book
         book_chapter_numbers = [x.number for x in await book.fetch_chapters()]
