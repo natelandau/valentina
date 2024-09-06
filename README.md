@@ -132,6 +132,7 @@ Settings for Valentina are controlled by environment variables. The following is
 | VALENTINA_DISCORD_OAUTH_SECRET |  | Sets the secret for the Discord OAuth. This is required to run the web UI. |
 | VALENTINA_DISCORD_OAUTH_CLIENT_ID |  | Sets the ID for the Discord OAuth. This is required to run the web UI. |
 | VALENTINA_WEBUI_BEHIND_REVERSE_PROXY | `false` | Set to `true` if the web UI is behind a reverse proxy. |
+| VALENTINA_WEBUI_ACCESS_LOG | `/valentina/access.log` | Sets the file to write access logs to.<br />Note, this is the directory used within the Docker container |
 
 ---
 
@@ -199,3 +200,18 @@ A convenience script that runs the webui locally without the Discord bot is avai
 ## Troubleshooting
 
 If connecting to Discord with the bot fails due to a certificate error, run `scripts/install_certifi.py` to install the latest certificate bundle.
+
+## Access logs from the webui
+
+Set the location of the access logs with the `VALENTINA_WEBUI_ACCESS_LOG` environment variable.
+
+These logs can be parsed with any web log parser. For example, with goaccess:
+
+```bash
+goaccess access.log \
+    --log-format='[%d %t %z] [%^] [%^] %h %^ %^ [%^ %^] "%m %U %^" %s %b "%R" "%u"' \
+    --date-format=%Y-%m-%d \
+    --time-format='%T' \
+    --tz=America/New_York \
+    --no-ip-validation # Optional: Disables IP validation for local testing
+```

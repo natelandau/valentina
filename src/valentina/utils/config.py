@@ -55,6 +55,7 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
 
     # WebUI Configuration
     webui_enable: ENV_BOOLEAN = False
+    webui_access_log: str = "/valentina/access.log"
     webui_host: str = "127.0.0.1"
     webui_port: str = "8088"
     webui_log_level: str = "INFO"

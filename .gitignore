@@ -8,6 +8,8 @@ tmp
 
 # Testing during development
 test_cog.py
+*.rdb
+report.html
 
 # Databases
 *.sqlite*

@@ -63,7 +63,7 @@
         pdoc           = "^14.4.0"
         poethepoet     = "^0.26.1"
         pre-commit     = "^3.7.1"
-        ruff           = "^0.6.3"
+        ruff           = "^0.6.4"
         shellcheck-py  = "^0.9.0.6"
         types-aiofiles = "^23.2.0.0"
         typos          = "^1.23.2"
@@ -129,6 +129,7 @@
     ignore         = "H030,H031,H021,H006,H013"
     # ignore_case    = true
     use_gitignore = true
+
 [tool.mypy] # https://mypy.readthedocs.io/en/latest/config_file.html
     disallow_any_unimported = false
     disallow_subclassing_any = false

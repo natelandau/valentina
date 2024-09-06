@@ -170,4 +170,8 @@ async def run_webserver() -> None:
     hypercorn_config.bind = [f"{ValentinaConfig().webui_host}:{ValentinaConfig().webui_port}"]
     hypercorn_config.loglevel = ValentinaConfig().webui_log_level.upper()
     hypercorn_config.use_reloader = ValentinaConfig().webui_debug
+    hypercorn_config.accesslog = ValentinaConfig().webui_access_log
+    hypercorn_config.access_log_format = (
+        '%(h)s %(l)s %(l)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s'
+    )
     await serve(app, hypercorn_config, shutdown_trigger=lambda: asyncio.Future())
