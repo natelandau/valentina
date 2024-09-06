@@ -471,7 +471,7 @@ class Developer(commands.Cog):
         log_lines = []
 
         logfile = ValentinaConfig().log_file
-        async with aiofiles.open(logfile, mode="r") as f:
+        async with aiofiles.open(logfile) as f:
             async for line in f:
                 if "has connected to Gateway" not in line:
                     log_lines.append(line)

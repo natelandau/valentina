@@ -13,6 +13,7 @@ from pathlib import Path
 from flask_discord import DiscordOAuth2Session
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
+from hypercorn.middleware import ProxyFixMiddleware
 from loguru import logger
 from quart import Quart, redirect, request
 from quart_session import Session
@@ -174,4 +175,10 @@ async def run_webserver() -> None:
     hypercorn_config.access_log_format = (
         '%(h)s %(l)s %(l)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s'
     )
-    await serve(app, hypercorn_config, shutdown_trigger=lambda: asyncio.Future())
+
+    # Pass x-forwarded-for header if behind a reverse proxy
+    # https://hypercorn.readthedocs.io/en/latest/how_to_guides/proxy_fix.html
+    if ValentinaConfig().webui_behind_reverse_proxy:
+        proxied_app = ProxyFixMiddleware(app, mode="legacy", trusted_hops=1)
+
+    await serve(proxied_app, hypercorn_config, shutdown_trigger=lambda: asyncio.Future())
