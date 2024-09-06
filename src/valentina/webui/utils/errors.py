@@ -34,7 +34,7 @@ def register_error_handlers(app: Quart) -> None:
         return redirect(url_for("oauth.login"))
 
     @app.errorhandler(HTTPException)
-    async def error_handler(exc: HTTPException) -> str:
+    async def error_handler(exc: HTTPException) -> tuple[str, int]:
         """Handle HTTP exceptions by rendering a custom error page.
 
         Args:
@@ -48,4 +48,4 @@ def register_error_handlers(app: Quart) -> None:
             detail=exc.description,
             status_code=exc.code,
             page_title=f"{exc.code} Error",
-        )
+        ), exc.code

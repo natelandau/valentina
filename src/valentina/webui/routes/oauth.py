@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from loguru import logger
 from quart import Blueprint, abort, redirect, session, url_for
 
 from valentina.models import User
@@ -38,6 +39,7 @@ async def callback() -> Any:
     # Deny access to users who aren't playing in a guild
     # TODO: Add a custom page for this
     if not db_user:
+        logger.error(f"User {user.id} is not in the database.")
         abort(403)
 
     matched_guilds = [
@@ -50,7 +52,7 @@ async def callback() -> Any:
     if len(matched_guilds) == 1:
         session["GUILD_ID"] = matched_guilds[0]["id"]
         await update_session()
-        return redirect(url_for("index"))
+        return redirect(url_for("homepage.homepage"))
 
     session["matched_guilds"] = matched_guilds
     return redirect(url_for("homepage.select_guild"))
