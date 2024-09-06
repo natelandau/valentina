@@ -1,3 +1,13 @@
+## v3.0.4 (2024-09-06)
+
+### Fix
+
+- **webui**: fix redirect error after logging in
+
+### Refactor
+
+- cleanup env var trace and improve docstrings (#174)
+
 ## v3.0.3 (2024-08-19)
 
 ### Fix
