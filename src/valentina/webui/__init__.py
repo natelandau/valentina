@@ -180,5 +180,6 @@ async def run_webserver() -> None:
     # https://hypercorn.readthedocs.io/en/latest/how_to_guides/proxy_fix.html
     if ValentinaConfig().webui_behind_reverse_proxy:
         proxied_app = ProxyFixMiddleware(app, mode="legacy", trusted_hops=1)
-
-    await serve(proxied_app, hypercorn_config, shutdown_trigger=lambda: asyncio.Future())
+        await serve(proxied_app, hypercorn_config, shutdown_trigger=lambda: asyncio.Future())
+    else:
+        await serve(app, hypercorn_config, shutdown_trigger=lambda: asyncio.Future())

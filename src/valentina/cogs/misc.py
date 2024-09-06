@@ -2,7 +2,7 @@
 """Miscellaneous commands."""
 
 import random
-from datetime import datetime
+from datetime import UTC, datetime
 
 import arrow
 import discord
@@ -43,7 +43,7 @@ class Misc(commands.Cog):
         ),
     ) -> None:
         """View information about the server."""
-        delta_uptime = datetime.utcnow() - self.bot.start_time
+        delta_uptime = datetime.now(UTC) - self.bot.start_time
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
         minutes, _ = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
