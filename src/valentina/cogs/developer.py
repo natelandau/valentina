@@ -2,7 +2,7 @@
 """Commands for bot development."""
 
 import random
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import aiofiles
@@ -495,7 +495,7 @@ class Developer(commands.Cog):
         ),
     ) -> None:
         """Show server status information."""
-        delta_uptime = datetime.utcnow() - self.bot.start_time
+        delta_uptime = datetime.now(UTC) - self.bot.start_time
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
