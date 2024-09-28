@@ -138,20 +138,25 @@ Settings for Valentina are controlled by environment variables. The following is
 
 # Contributing
 
+This project uses [uv](https://docs.astral.sh/uv/) to manage Python requirements and virtual environments.
+
 ## Setup: Once per project
 
-1. Install Python >= 3.11 and [Poetry](https://python-poetry.org)
+1. Install [uv](https://docs.astral.sh/uv/)
 2. Clone this repository. `git clone https://github.com/natelandau/valentina.git`
-3. Install the Poetry environment with `poetry install`.
-4. Activate your Poetry environment with `poetry shell`.
+3. Install the virtual environment with `uv sync`.
+4. Activate your virtual environment with `source .venv/bin/activate`
 5. Install the pre-commit hooks with `pre-commit install --install-hooks`.
-6. Before running valentina locally, set the minimum required ENV variables with `export VAR=abc`
+6. Install a local MongoDB instance for testing. The easiest way to do this is with [Docker](https://hub.docker.com/_/mongo). `docker run -d -p 27017:27017 --name valentina-mongo mongo:latest` will start a MongoDB instance on port `27017`.
+7. Before running valentina locally, set the minimum required ENV variables with `export VAR=abc` or add them to a `.env` file within the project root.
     - `VALENTINA_DISCORD_TOKEN`
     - `VALENTINA_GUILDS`
     - `VALENTINA_OWNER_IDS`
     - `VALENTINA_LOG_FILE`
     - `VALENTINA_MONGO_URI`
     - `VALENTINA_MONGO_DATABASE_NAME`
+    - `VALENTINA_TEST_MONGO_URI=mongodb://localhost:27017`
+    - `VALENTINA_TEST_MONGO_DATABASE_NAME=valentina_test_db`
 
 ## Developing
 
@@ -160,9 +165,8 @@ Settings for Valentina are controlled by environment variables. The following is
 -   Run `poe` from within the development environment to print a list of [Poe the Poet](https://github.com/nat-n/poethepoet) tasks available to run on this project. Common commands:
     -   `poe lint` runs all linters
     -   `poe test` runs all tests with Pytest
--   Run `poetry add {package}` from within the development environment to install a runtime dependency and add it to `pyproject.toml` and `poetry.lock`.
--   Run `poetry remove {package}` from within the development environment to uninstall a runtime dependency and remove it from `pyproject.toml` and `poetry.lock`.
--   Run `poetry update` from within the development environment to upgrade all dependencies to the latest versions allowed by `pyproject.toml`.
+-   Run `uv add {package}` from within the development environment to install a run time dependency and add it to `pyproject.toml` and `uv.lock`.
+-   Run `uv remove {package}` from within the development environment to uninstall a run time dependency and remove it from `pyproject.toml` and `uv.lock`.
 
 ## Packages Used
 
@@ -182,20 +186,14 @@ Settings for Valentina are controlled by environment variables. The following is
 -   [JinjaX](https://jinjax.scaletti.dev/) - Super components powers for your Jinja templates
 -   [quart-wtf](https://quart-wtf.readthedocs.io/en/latest/index.html) - Integration of Quart and WTForms including CSRF and file uploading.
 
-## Testing MongoDB locally
-
-To run the tests associated with the MongoDB database, you must have MongoDB installed locally. The easiest way to do this is with Docker. Set two additional environment variables to allow the tests to connect to the local MongoDB instance.
-
-| Variable                           | Default Value               | Usage                                        |
-| ---------------------------------- | --------------------------- | -------------------------------------------- |
-| VALENTINA_TEST_MONGO_URI           | `mongodb://localhost:27017` | URI to the MongoDB instance used for testing |
-| VALENTINA_TEST_MONGO_DATABASE_NAME | `test_db`                   | Name of the database used for testing        |
-
-NOTE: Github CI integrations will ignore these variables and run the tests against a Mongo instance within the workflows.
-
 ## Running the webui locally
 
-A convenience script that runs the webui locally without the Discord bot is available. After setting the required environment variables, and entering the Virtual Environment simply type `webui`. Note, a Redis instance is still required..
+A convenience script that runs the webui locally without the Discord bot is available to speed development of web features.
+
+1. Set the required environment variables in a `.env` file.
+2. Run `uv sync` to install the required packages.
+3. Activate the virtual environment with `source .venv/bin/activate`.
+4. Run the webui with `webui`.
 
 ## Troubleshooting
 
