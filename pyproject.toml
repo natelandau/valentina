@@ -10,7 +10,7 @@
         "beanie>=1.26.0,<2.0.0",
         "boto3>=1.35.24,<2.0.0",
         "confz>=2.0.1",
-        "faker>=29.0.0",
+        "faker>=30.0.0",
         "flask-discord>=0.1.69",
         "inflect>=7.4.0",
         "jinjax>=0.46",
@@ -25,7 +25,7 @@
         "quart-session>=3.0.0",
         "quart-wtforms>=1.0.2",
         "quart>=0.19.6",
-        "redis>=5.0.8",
+        "redis>=5.1.0",
         "rich>=13.8.1",
         "semver>=3.0.2",
         "typer>=0.12.5,<0.13.0",
@@ -34,7 +34,7 @@
     license = "AGPL-3.0-or-later"
     name = "valentina"
     readme = "README.md"
-    requires-python = ">=3.11,<3.12"
+    requires-python = ">=3.11,<3.13"
     version = "3.0.4"
     [project.urls]
         homepage   = "https://github.com/natelandau/valentina"
@@ -46,12 +46,12 @@
 
 [tool.uv]
     dev-dependencies = [
-        "commitizen>=3.29.0",
+        "commitizen>=3.29.1",
         "coverage>=7.6.1",
         "dirty-equals>=0.8.0",
         "djlint>=1.35.2",
         "mypy>=1.11.2",
-        "poethepoet>=0.28.0",
+        "poethepoet>=0.29.0",
         "polyfactory>=2.17.0",
         "pre-commit>=3.8.0",
         "pytest-asyncio>=0.24.0",
@@ -61,7 +61,7 @@
         "pytest-sugar>=1.0.0",
         "pytest-xdist>=3.6.1",
         "pytest>=8.3.3",
-        "ruff>=0.6.7",
+        "ruff>=0.6.8",
         "shellcheck-py>=0.10.0.1",
         "types-aiofiles>=24.1.0.20240626",
         "typos>=1.24.6",

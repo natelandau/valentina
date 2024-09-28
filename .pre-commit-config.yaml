@@ -5,7 +5,7 @@ default_stages: [commit, manual]
 fail_fast: true
 repos:
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: v3.29.0
+    rev: v3.29.1
     hooks:
       - id: commitizen
       #   - id: commitizen-branch
@@ -59,7 +59,7 @@ repos:
         entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-    rev: "v0.6.7"
+    rev: "v0.6.8"
     hooks:
       - id: ruff
         exclude: tests/
