@@ -1,29 +1,14 @@
 ---
-name: "Automated Tests"
+name: "Upload to Codecov"
 
 on:
-    workflow_call:
     workflow_dispatch:
-    push:
-        paths:
-            - ".github/workflows/automated-tests.yml"
-            - ".github/actions/**"
-            - "**.py"
-            - "pyproject.toml"
-            - "poetry.lock"
+    workflow_run:
+        workflows: ["Automated Tests"]
+        types:
+            - completed
         branches:
             - main
-    pull_request:
-        types:
-            - opened
-            - reopened
-            - synchronize
-        paths:
-            - ".github/workflows/automated-tests.yml"
-            - ".github/actions/**"
-            - "**.py"
-            - "pyproject.toml"
-            - "poetry.lock"
 
 env:
     VALENTINA_LOG_FILE: "/tmp/valentina.log"
@@ -40,12 +25,13 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    test-python-code:
+    upload-coverage:
         runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
         strategy:
             fail-fast: true
             matrix:
-                python-version: ["3.11", "3.12"]
+                python-version: ["3.11"]
         steps:
             - name: Harden Security Runner
               uses: step-security/harden-runner@v2
@@ -79,10 +65,23 @@ jobs:
             # Run tests
             # ----------------------------------------------
 
-            - name: lint with ruff
-              shell: bash
-              run: uv run ruff check --no-fix src/
+            - name: Run tests with pytest
+              run: |
+                  uv run coverage run
+                  uv run coverage report
+                  uv run coverage xml
+            # ----------------------------------------------
+            #             upload coverage stats
+            # ----------------------------------------------
+            - name: Upload coverage
+              uses: codecov/codecov-action@v4
+              with:
+                  files: reports/coverage.xml
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-            - name: Run tests
-              shell: bash
-              run: uv run pytest tests/
+    on-failure:
+        runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        steps:
+            - run: echo 'The triggering workflow failed'

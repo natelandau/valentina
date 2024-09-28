@@ -1,73 +1,72 @@
 [build-system]
-    build-backend = "poetry.core.masonry.api"
-    requires      = ["poetry-core>=1.0.0"]
+    build-backend = "hatchling.build"
+    requires      = ["hatchling"]
 
-[tool.poetry]
-    authors     = ["nate landau <valentina@natenate.org>"]
+[project]
+    authors = [{ name = "Nate Landau", email = "valentina@natenate.org" }]
+    dependencies = [
+        "aiofiles>=24.1.0",
+        "arrow>=1.3.0",
+        "beanie>=1.26.0,<2.0.0",
+        "boto3>=1.35.24,<2.0.0",
+        "confz>=2.0.1,<3.0.0",
+        "faker>=30.0.0",
+        "flask-discord>=0.1.69",
+        "inflect>=7.4.0",
+        "jinjax>=0.46",
+        "loguru>=0.7.2",
+        "markdown2>=2.5.0",
+        "markupsafe>=2.1.5",
+        "numpy>=2.1.1,<2.2.0",
+        "py-cord>=2.6.1,<2.7.0",
+        "pydantic>=2.9.2,<3.0.0",
+        "pygithub>=2.4.0,<3.0.0",
+        "quart-flask-patch>=0.3.0",
+        "quart-session>=3.0.0",
+        "quart-wtforms>=1.0.2",
+        "quart>=0.19.6",
+        "redis>=5.1.0,<6.0.0",
+        "rich>=13.8.1",
+        "semver>=3.0.2",
+        "typer>=0.12.5,<0.13.0",
+    ]
     description = "Valentina is a Discord bot that helps you run TTRPGs."
-    homepage    = "https://github.com/natelandau/valentina"
-    keywords    = []
-    license     = "AGPL-3.0-or-later"
-    name        = "valentina"
-    readme      = "README.md"
-    repository  = "https://github.com/natelandau/valentina"
-    version     = "3.0.4"
+    license = "AGPL-3.0-or-later"
+    name = "valentina"
+    readme = "README.md"
+    requires-python = ">=3.11,<3.13"
+    version = "3.0.4"
+    [project.urls]
+        homepage   = "https://github.com/natelandau/valentina"
+        repository = "https://github.com/natelandau/valentina"
 
-    [tool.poetry.scripts] # https://python-poetry.org/docs/pyproject/#scripts
+    [project.scripts]
         valentina = "valentina.main:app"
         webui     = "valentina.debug_webui:dev"
 
-    [tool.poetry.dependencies]
-        aiofiles          = "^24.1.0"
-        arrow             = "^1.3.0"
-        beanie            = "^1.25.0"
-        boto3             = "^1.34.142"
-        confz             = "^2.0.1"
-        faker             = "^26.0.0"
-        flask-discord     = "^0.1.69"
-        inflect           = "^7.3.1"
-        jinjax            = "^0.43"
-        loguru            = "^0.7.2"
-        markdown2         = "^2.5.0"
-        markupsafe        = "^2.1.5"
-        numpy             = "^2.0.0"
-        py-cord           = "^2.5.0"
-        pydantic          = "^2.8.2"
-        pygithub          = "^2.3.0"
-        python            = ">=3.11,<3.13"
-        quart             = "^0.19.6"
-        quart-flask-patch = "^0.3.0"
-        quart-session     = "^3.0.0"
-        quart-wtforms     = "^1.0.1"
-        redis             = "^5.0.8"
-        rich              = "^13.7.1"
-        semver            = "^3.0.2"
-        typer             = "^0.12.3"
-
-    [tool.poetry.group.test.dependencies]
-        dirty-equals   = "^0.7.1.post0"
-        polyfactory    = "^2.16.2"
-        pytest         = "^8.2.2"
-        pytest-asyncio = "^0.23.6"
-        pytest-clarity = "^1.0.1"
-        pytest-env     = "^1.1.3"
-        pytest-mock    = "^3.14.0"
-        pytest-sugar   = "^1.0.0"
-        pytest-xdist   = "^3.6.1"
-
-    [tool.poetry.group.dev.dependencies]
-        commitizen     = "^3.27.0"
-        coverage       = "^7.5.4"
-        djlint         = "^1.34.1"
-        mypy           = "^1.10.1"
-        pdoc           = "^14.4.0"
-        poethepoet     = "^0.26.1"
-        pre-commit     = "^3.7.1"
-        ruff           = "^0.6.4"
-        shellcheck-py  = "^0.9.0.6"
-        types-aiofiles = "^23.2.0.0"
-        typos          = "^1.23.2"
-        yamllint       = "^1.35.1"
+[tool.uv]
+    dev-dependencies = [
+        "commitizen>=3.29.1",
+        "coverage>=7.6.1",
+        "dirty-equals>=0.8.0",
+        "djlint>=1.35.2",
+        "mypy>=1.11.2,<2.0.0",
+        "poethepoet>=0.29.0",
+        "polyfactory>=2.17.0",
+        "pre-commit>=3.8.0",
+        "pytest-asyncio>=0.24.0",
+        "pytest-clarity>=1.0.1",
+        "pytest-env>=1.1.5",
+        "pytest-mock>=3.14.0",
+        "pytest-sugar>=1.0.0",
+        "pytest-xdist>=3.6.1",
+        "pytest>=8.3.3",
+        "ruff>=0.6.8",
+        "shellcheck-py>=0.10.0.1",
+        "types-aiofiles>=24.1.0.20240626",
+        "typos>=1.24.6",
+        "yamllint>=1.35.1",
+    ]
 
 [tool.commitizen]
     bump_message               = "bump(release): v$current_version → v$new_version"
@@ -75,7 +74,8 @@
     tag_format                 = "v$version"
     update_changelog_on_bump   = true
     version                    = "3.0.4"
-    version_files              = ["pyproject.toml:version", "src/valentina/__version__.py:__version__"]
+    version_files              = ["src/valentina/__version__.py:__version__"]
+    version_provider           = "pep621"
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/latest/config.html#report
     exclude_lines = [
@@ -117,6 +117,7 @@
         "src/valentina/utils/errors.py",
         "src/valentina/utils/logging.py",
         "src/valentina/views/*",
+        "src/valentina/webui/*",                        # TODO: Add tests for webui
         "tests/*",
     ]
     source = ["src"]
@@ -294,14 +295,14 @@
 
 [tool.poe.tasks]
 
-    [tool.poe.tasks.docs]
-        cmd = """
-    pdoc
-      --docformat google
-      --output-directory docs
-      src/valentina
-    """
-        help = "Generate this package's docs"
+    [tool.poe.tasks.upgrade]
+        help = "Upgrade packages and pre-commit hooks"
+        shell = """
+        echo "-- Upgrading packages --" &&
+        uv lock --upgrade &&
+        echo "-- Autoupdating pre-commit --" &&
+        pre-commit autoupdate
+        """
 
     [tool.poe.tasks.lint]
         help = "Lint this package"
