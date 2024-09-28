@@ -80,14 +80,6 @@ jobs:
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-            # ----------------------------------------------
-            # Cleanup cache
-            # ----------------------------------------------
-
-            - name: Minimize uv cache
-              shell: bash
-              run: uv cache prune --ci
-
     on-failure:
         runs-on: ubuntu-latest
         if: ${{ github.event.workflow_run.conclusion == 'failure' }}

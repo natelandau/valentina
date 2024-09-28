@@ -89,11 +89,3 @@ jobs:
                   draft: true
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            # ----------------------------------------------
-            # Cleanup cache
-            # ----------------------------------------------
-
-            - name: Minimize uv cache
-              shell: bash
-              run: uv cache prune --ci

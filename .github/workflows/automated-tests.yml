@@ -86,11 +86,3 @@ jobs:
             - name: Run tests
               shell: bash
               run: uv run pytest tests/
-
-            # ----------------------------------------------
-            # Cleanup cache
-            # ----------------------------------------------
-
-            - name: Minimize uv cache
-              shell: bash
-              run: uv cache prune --ci
