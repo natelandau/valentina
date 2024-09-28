@@ -17,23 +17,16 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Set up uv
-      shell: bash
-      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+    - name: Setup uv with cache
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Restore uv cache
-      uses: actions/cache@v4
-      with:
-        path: /tmp/.uv-cache
-        key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
-        restore-keys: |
-          uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
-          uv-${{ runner.os }}
+      shell: bash
+      run: uv python install ${{ matrix.python-version }}
 
     - name: Install the project
       shell: bash
