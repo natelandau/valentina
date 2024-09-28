@@ -6,9 +6,9 @@ services:
         hostname: valentina
         container_name: valentina
         network_mode: "bridge"
-        # Uncomment if using the web interface
+        # Uncomment the following line to enable the web interface
         # ports:
-        #     - ${VALENTINA_WEBUI_PORT}:${VALENTINA_WEBUI_PORT}
+        #     - 8080:8080
         volumes:
             - path/to/dir:/valentina # Persistent storage for the database
         environment:

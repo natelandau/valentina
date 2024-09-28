@@ -46,10 +46,11 @@ async def _init_database(request):
         )
 
         yield
+        client.close()
 
 
 ### Mock discord.py objects ###
-@pytest.fixture()
+@pytest.fixture
 def mock_bot(mocker):
     """A mock of a discord.Bot object."""
     mock_bot = mocker.MagicMock()
@@ -57,7 +58,7 @@ def mock_bot(mocker):
     return mock_bot
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_discord_campaign_category_channel(mocker):
     """A mock of a discord.CategoryChannel object associated with a campaign."""
     mock_channel_category = mocker.MagicMock()
@@ -68,7 +69,7 @@ def mock_discord_campaign_category_channel(mocker):
     return mock_channel_category
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_discord_unassociated_category_channel(mocker):
     """A mock of a discord.CategoryChannel object associated with a campaign."""
     mock_channel = mocker.MagicMock()
@@ -77,7 +78,7 @@ def mock_discord_unassociated_category_channel(mocker):
     return mock_channel
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_discord_unassociated_channel(mocker, mock_discord_unassociated_category_channel):
     """A mock of a discord.Channel object associated with a book."""
     mock_channel = mocker.MagicMock()
@@ -87,7 +88,7 @@ def mock_discord_unassociated_channel(mocker, mock_discord_unassociated_category
     return mock_channel
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_discord_character_channel(mocker, mock_discord_campaign_category_channel):
     """A mock of a discord.Channel object associated with a character."""
     mock_channel = mocker.MagicMock()
@@ -98,7 +99,7 @@ def mock_discord_character_channel(mocker, mock_discord_campaign_category_channe
     return mock_channel
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_discord_book_channel(mocker, mock_discord_campaign_category_channel):
     """A mock of a discord.Channel object associated with a book."""
     mock_channel = mocker.MagicMock()
@@ -108,7 +109,7 @@ def mock_discord_book_channel(mocker, mock_discord_campaign_category_channel):
     return mock_channel
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_interaction1(mocker, mock_guild1, mock_member, mock_discord_character_channel):
     """A mock of a discord.Interaction object run in a character channel."""
     mock_interaction = mocker.MagicMock()
@@ -122,7 +123,7 @@ def mock_interaction1(mocker, mock_guild1, mock_member, mock_discord_character_c
     return mock_interaction
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_member(mocker):
     """A mock of a discord.Member object."""
     mock_role_one = mocker.MagicMock()
@@ -145,7 +146,7 @@ def mock_member(mocker):
     return mock_member
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_member2(mocker):
     """A mock of a discord.Member object."""
     mock_role_one = mocker.MagicMock()
@@ -173,7 +174,7 @@ def mock_member2(mocker):
     return mock_member
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_guild1(mocker):
     """A mock of a discord.Guild object."""
     # Mock the ctx.guild object matches the mock database
@@ -186,7 +187,7 @@ def mock_guild1(mocker):
     return mock_guild
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_guild2(mocker):
     """A mock of a discord.Guild object."""
     # Mock the ctx.guild object matches the mock database
@@ -200,7 +201,7 @@ def mock_guild2(mocker):
 
 
 @pytest_asyncio.fixture()
-async def async_mock_ctx1(  # noqa: RUF029
+async def async_mock_ctx1(
     mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_character_channel
 ):
     """Create an async mock context object with user 1 run in a character channel."""
@@ -233,7 +234,7 @@ async def async_mock_ctx1(  # noqa: RUF029
     return mock_ctx
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_character_channel):
     """Create a mock context object with user 1 run in a character channel."""
     # Mock the ctx.bot object
@@ -256,7 +257,7 @@ def mock_ctx1(mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_
     return mock_ctx
 
 
-@pytest.fixture()
+@pytest.fixture
 def caplog(caplog):
     """Override and wrap the caplog fixture with one of our own. This fixes a problem where loguru logs could not be captured by caplog."""
     logger.remove()  # remove default handler, if it exists
@@ -274,7 +275,7 @@ def caplog(caplog):
     return caplog
 
 
-@pytest.fixture()
+@pytest.fixture
 def debug():
     """Print debug information to the console. This is used to debug tests while writing them."""
 

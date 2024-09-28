@@ -4,119 +4,112 @@ default_install_hook_types: [commit-msg, pre-commit]
 default_stages: [commit, manual]
 fail_fast: true
 repos:
-    - repo: "https://github.com/commitizen-tools/commitizen"
-      rev: v3.29.0
-      hooks:
-          - id: commitizen
-          #   - id: commitizen-branch
-          #     stages:
-          #         - push
+  - repo: "https://github.com/commitizen-tools/commitizen"
+    rev: v3.29.0
+    hooks:
+      - id: commitizen
+      #   - id: commitizen-branch
+      #     stages:
+      #         - push
 
-    - repo: "https://github.com/pre-commit/pygrep-hooks"
-      rev: v1.10.0
-      hooks:
-          - id: python-check-mock-methods
-          - id: python-no-eval
-          - id: python-no-log-warn
-          - id: python-use-type-annotations
-          - id: rst-backticks
-          - id: rst-directive-colons
-          - id: rst-inline-touching-normal
-          - id: text-unicode-replacement-char
+  - repo: "https://github.com/pre-commit/pygrep-hooks"
+    rev: v1.10.0
+    hooks:
+      - id: python-check-mock-methods
+      - id: python-no-eval
+      - id: python-no-log-warn
+      - id: python-use-type-annotations
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
+      - id: text-unicode-replacement-char
 
-    - repo: "https://github.com/pre-commit/pre-commit-hooks"
-      rev: v4.6.0
-      hooks:
-          - id: check-added-large-files
-          - id: check-ast
-          - id: check-builtin-literals
-          - id: check-case-conflict
-          - id: check-docstring-first
-          - id: check-json
-            exclude: .devcontainer/|.vscode/
-          - id: check-merge-conflict
-          - id: check-shebang-scripts-are-executable
-          - id: check-symlinks
-          - id: check-toml
-          - id: check-vcs-permalinks
-          - id: check-xml
-          - id: check-yaml
-          - id: debug-statements
-          - id: detect-private-key
-          - id: fix-byte-order-marker
-          - id: mixed-line-ending
-          - id: trailing-whitespace
-            types: [python]
-            args: [--markdown-linebreak-ext=md]
-          - id: end-of-file-fixer
-            types: [python]
+  - repo: "https://github.com/pre-commit/pre-commit-hooks"
+    rev: v4.6.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-json
+        exclude: .devcontainer/|.vscode/
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-vcs-permalinks
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
+      - id: detect-private-key
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+        types: [python]
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+        types: [python]
 
-    - repo: "https://github.com/adrienverge/yamllint.git"
-      rev: v1.35.1
-      hooks:
-          - id: yamllint
-            files: ^.*\.(yaml|yml)$
-            entry: yamllint --strict --config-file .yamllint.yml
+  - repo: "https://github.com/adrienverge/yamllint.git"
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        files: ^.*\.(yaml|yml)$
+        entry: yamllint --strict --config-file .yamllint.yml
 
-    - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-      rev: "v0.6.3"
-      hooks:
-          - id: ruff
-            exclude: tests/
-          - id: ruff-format
+  - repo: "https://github.com/charliermarsh/ruff-pre-commit"
+    rev: "v0.6.7"
+    hooks:
+      - id: ruff
+        exclude: tests/
+      - id: ruff-format
 
-    - repo: "https://github.com/crate-ci/typos"
-      rev: typos-dict-v0.11.27
-      hooks:
-          - id: typos
+  - repo: "https://github.com/crate-ci/typos"
+    rev: v1.24.6
+    hooks:
+      - id: typos
 
-    - repo: "https://github.com/djlint/djLint"
-      rev: v1.35.2
-      hooks:
-          - id: djlint
-            args: ["--configuration", "pyproject.toml"]
+  - repo: "https://github.com/djlint/djLint"
+    rev: v1.35.2
+    hooks:
+      - id: djlint
+        args: ["--configuration", "pyproject.toml"]
 
-    - repo: local
-      hooks:
-          # This calls a custom pre-commit script.
-          # Disable if you don't have it.
-          - id: stopwords
-            name: stopwords
-            entry: git-stopwords
-            # args: ["-v"]
-            language: system
-            pass_filenames: true
-            types: [text]
+  - repo: local
+    hooks:
+      # This calls a custom pre-commit script.
+      # Disable if you don't have it.
+      - id: stopwords
+        name: stopwords
+        entry: git-stopwords
+        # args: ["-v"]
+        language: system
+        pass_filenames: true
+        types: [text]
 
-          - id: shellcheck
-            name: shellcheck
-            entry: shellcheck --check-sourced --severity=warning
-            language: system
-            types: [shell]
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck --check-sourced --severity=warning
+        language: system
+        types: [shell]
 
-          - id: poetry-check
-            name: poetry check
-            entry: poetry check
-            language: system
-            files: pyproject.toml
-            pass_filenames: false
+      - id: mypy
+        name: mypy
+        entry: mypy --config-file pyproject.toml
+        exclude: tests/
+        language: system
+        types: [python]
 
-          - id: mypy
-            name: mypy
-            entry: mypy --config-file pyproject.toml
-            exclude: tests/
-            language: system
-            types: [python]
-
-          - id: pytest
-            name: pytest
-            entry: poe test
-            language: system
-            pass_filenames: false
-            files: |
-                (?x)^(
-                src/|
-                tests/|
-                poetry\.lock|
-                pyproject\.toml
-                )
+      - id: pytest
+        name: pytest
+        entry: poe test
+        language: system
+        pass_filenames: false
+        files: |
+          (?x)^(
+          src/|
+          tests/|
+          poetry\.lock|
+          pyproject\.toml
+          )

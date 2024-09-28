@@ -1,29 +1,14 @@
 ---
-name: "Automated Tests"
+name: "Upload to Codecov"
 
 on:
-    workflow_call:
     workflow_dispatch:
-    push:
-        paths:
-            - ".github/workflows/automated-tests.yml"
-            - ".github/actions/**"
-            - "**.py"
-            - "pyproject.toml"
-            - "poetry.lock"
+    workflow_run:
+        workflows: ["Automated Tests"]
+        types:
+            - completed
         branches:
             - main
-    pull_request:
-        types:
-            - opened
-            - reopened
-            - synchronize
-        paths:
-            - ".github/workflows/automated-tests.yml"
-            - ".github/actions/**"
-            - "**.py"
-            - "pyproject.toml"
-            - "poetry.lock"
 
 env:
     VALENTINA_LOG_FILE: "/tmp/valentina.log"
@@ -40,8 +25,9 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    test-python-code:
+    upload-coverage:
         runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
         strategy:
             fail-fast: true
             matrix:
@@ -79,13 +65,20 @@ jobs:
             # Run tests
             # ----------------------------------------------
 
-            - name: lint with ruff
-              shell: bash
-              run: uv run ruff check --no-fix src/
-
-            - name: Run tests
-              shell: bash
-              run: uv run pytest tests/
+            - name: Run tests with pytest
+              run: |
+                  uv run coverage run
+                  uv run coverage report
+                  uv run coverage xml
+            # ----------------------------------------------
+            #             upload coverage stats
+            # ----------------------------------------------
+            - name: Upload coverage
+              uses: codecov/codecov-action@v4
+              with:
+                  files: reports/coverage.xml
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
             # ----------------------------------------------
             # Cleanup cache
@@ -94,3 +87,9 @@ jobs:
             - name: Minimize uv cache
               shell: bash
               run: uv cache prune --ci
+
+    on-failure:
+        runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        steps:
+            - run: echo 'The triggering workflow failed'

@@ -1,0 +1,11 @@
+# Exclude directories and files that are not needed in the container
+__pycache__
+.DS_Store
+.github
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.venv
+*.log
+reports
+tmp
