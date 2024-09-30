@@ -8,112 +8,91 @@ and JinjaX templates. It serves as the main entry point for the Valentina web UI
 import quart_flask_patch  # isort: skip # noqa: F401
 import asyncio
 import os
-from pathlib import Path
+from typing import Literal
 
 from flask_discord import DiscordOAuth2Session
 from hypercorn.asyncio import serve
-from hypercorn.config import Config
+from hypercorn.config import Config as HypercornConfig
 from hypercorn.middleware import ProxyFixMiddleware
 from loguru import logger
 from quart import Quart, redirect, request
 from quart_session import Session
 from werkzeug.wrappers.response import Response
 
-from valentina.utils import ValentinaConfig
+from valentina.constants import WEBUI_ROOT_PATH
+from valentina.utils import ValentinaConfig, console
+from valentina.webui.utils.blueprints import import_all_bps
 from valentina.webui.utils.errors import register_error_handlers
-from valentina.webui.utils.jinja_filters import register_filters
 from valentina.webui.utils.jinjax import register_jinjax_catalog
 
 # Allow insecure transport for OAuth2. This is used for development or when running behind a reverse proxy.
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-
-template_dir = Path(__file__).parent / "templates"
-static_dir = Path(__file__).parent / "static"
-app = Quart(
-    __name__, template_folder=str(template_dir), static_url_path="/static", static_folder="static"
-)
-app.config["SECRET_KEY"] = ValentinaConfig().webui_secret_key
-app.config["DISCORD_CLIENT_ID"] = ValentinaConfig().discord_oauth_client_id
-app.config["DISCORD_CLIENT_SECRET"] = ValentinaConfig().discord_oauth_secret
-app.config["DISCORD_REDIRECT_URI"] = f"{ValentinaConfig().webui_base_url}/callback"
-app.config["DISCORD_BOT_TOKEN"] = ValentinaConfig().discord_token
-discord_oauth = DiscordOAuth2Session(app)
-register_filters(app)
-register_error_handlers(app)
-catalog = register_jinjax_catalog(app)
-
-# Configure the session to use Redis for storage.
-app.config["SESSION_TYPE"] = "redis"
-app.config["SESSION_REVERSE_PROXY"] = bool(ValentinaConfig().webui_behind_reverse_proxy)
-app.config["SESSION_PROTECTION"] = False
-app.config["SESSION_URI"] = (
-    (f"redis://:{ValentinaConfig().redis_password}@{ValentinaConfig().redis_addr}")
-    if {ValentinaConfig().redis_addr}
-    else f"redis://{ValentinaConfig().redis_addr}"
-)
-Session(app)
+discord_oauth = DiscordOAuth2Session()
+catalog = register_jinjax_catalog()
 
 
-def import_blueprints() -> None:
-    """Register all the blueprints with the Flask application.
+def create_app(environment: Literal["Production", "Development", "Testing"]) -> Quart:
+    """Create and configure a Quart application for the Valentina web interface.
 
-    Call this function to import and register the application's blueprints to
-    avoid circular import issues. It should be invoked during the application
-    setup phase.
-    """
-    from .blueprints import campaign_bp, character_bp, gameplay_bp
-    from .routes import home, oauth
+    Args:
+        environment (Literal["Production", "Development", "Testing"]): The environment in which the application will run to determine the configuration settings.
 
-    app.register_blueprint(campaign_bp)
-    app.register_blueprint(character_bp)
-    app.register_blueprint(home.bp)
-    app.register_blueprint(oauth.bp)
-    app.register_blueprint(gameplay_bp)
-
-
-def create_dev_app() -> Quart:
-    """Create and configure a Quart application for development.
-
-    Create a Quart app configured for development purposes. Perform the following actions:
-    1. Import and register all necessary blueprints.
-    2. Set up a database connection pool initialization before the server starts.
-    3. Configure error handling and request preprocessing.
-
-    This function should be used to set up the application in a development environment,
-    ensuring all components are properly initialized and connected.
 
     Returns:
-        Quart: A configured Quart application instance ready for development use.
+        Quart: A configured Quart application instance ready for use.
     """
-    import_blueprints()
+    app = Quart(
+        __name__,
+        template_folder=str(WEBUI_ROOT_PATH / "shared"),
+        static_url_path="/static",
+        static_folder="static",
+    )
+    app.config.from_object(f"valentina.webui.config.{environment}")
 
-    @app.before_serving
-    async def create_db_pool() -> None:
-        """Initialize the database connection pool before the Quart application starts serving.
+    register_error_handlers(app)
+    discord_oauth.init_app(app)
+    console.log("importing blueprints")
+    import_all_bps(app)
+    app.jinja_env.globals["catalog"] = catalog
 
-        Attempt to establish a connection to the database. If the initial connection fails:
-        1. Log the error encountered during the connection attempt.
-        2. Wait for 60 seconds before retrying.
-        3. Repeat the process until a successful connection is established.
+    catalog.jinja_env.globals.update(app.jinja_env.globals)
+    catalog.jinja_env.filters.update(app.jinja_env.filters)
+    catalog.jinja_env.tests.update(app.jinja_env.tests)
+    catalog.jinja_env.extensions.update(app.jinja_env.extensions)
 
-        This ensures that the application will eventually connect to the database, even if it's
-        temporarily unavailable during startup. The function will not return until a successful
-        connection is made, preventing the application from serving requests without a valid
-        database connection.
-        """
-        import pymongo
+    if app.config.get("SESSION_TYPE", "").lower() == "redis":
+        Session(app)
 
-        from valentina.utils.database import init_database
+    if environment == "Development":
+        app.config["SESSION_COOKIE_SECURE"] = False
 
-        while True:
-            try:
-                await init_database()
-            except pymongo.errors.ServerSelectionTimeoutError as e:
-                logger.error(f"DB: Failed to initialize database: {e}")
-                await asyncio.sleep(60)
-            else:
-                break
+        @app.before_serving
+        async def create_db_pool() -> None:
+            """Initialize the database connection pool before the Quart application starts serving.
+
+            Attempt to establish a connection to the database. If the initial connection fails:
+            1. Log the error encountered during the connection attempt.
+            2. Wait for 60 seconds before retrying.
+            3. Repeat the process until a successful connection is established.
+
+            This ensures that the application will eventually connect to the database, even if it's
+            temporarily unavailable during startup. The function will not return until a successful
+            connection is made, preventing the application from serving requests without a valid
+            database connection.
+            """
+            import pymongo
+
+            from valentina.utils.database import init_database
+
+            while True:
+                try:
+                    await init_database()
+                except pymongo.errors.ServerSelectionTimeoutError as e:
+                    logger.error(f"DB: Failed to initialize database: {e}")
+                    await asyncio.sleep(60)
+                else:
+                    break
 
     @app.before_request
     def remove_trailing_slash() -> Response:
@@ -149,25 +128,9 @@ async def run_webserver() -> None:
     Note: Ensure all required configurations are properly set in ValentinaConfig
     before calling this function.
     """
-    # Imnport these here to avoid circular imports
-    import_blueprints()
+    app = create_app(environment="Production")
 
-    @app.before_request
-    def remove_trailing_slash() -> Response:
-        """Redirect requests with trailing slashes to the correct URL.
-
-        Redirect URLs that end with a trailing slash (e.g., example.com/url/)
-        to their non-slash counterparts (e.g., example.com/url) using a 301
-        permanent redirect. If the URL does not end with a slash, allow the
-        request to proceed as normal.
-        """
-        request_path: str = request.path
-        if request_path != "/" and request_path.endswith("/"):
-            return redirect(request_path[:-1], 301)
-
-        return None
-
-    hypercorn_config = Config()
+    hypercorn_config = HypercornConfig()
     hypercorn_config.bind = [f"{ValentinaConfig().webui_host}:{ValentinaConfig().webui_port}"]
     hypercorn_config.loglevel = ValentinaConfig().webui_log_level.upper()
     hypercorn_config.use_reloader = ValentinaConfig().webui_debug

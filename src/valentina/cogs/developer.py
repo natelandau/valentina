@@ -3,7 +3,6 @@
 
 import random
 from datetime import UTC, datetime
-from pathlib import Path
 
 import aiofiles
 import discord
@@ -16,6 +15,7 @@ from loguru import logger
 
 from valentina.characters import RNGCharGen
 from valentina.constants import (
+    COGS_PATH,
     PREF_MAX_EMBED_CHARACTERS,
     CharClass,
     EmbedColor,
@@ -406,7 +406,7 @@ class Developer(commands.Cog):
             return
 
         count = 0
-        for cog in Path(self.bot.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
+        for cog in COGS_PATH.glob("*.py"):
             if cog.stem[0] != "_":
                 count += 1
                 self.bot.reload_extension(f"valentina.cogs.{cog.stem}")

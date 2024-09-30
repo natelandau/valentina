@@ -3,30 +3,15 @@
 ### Fix
 
 - **webui**: fix redirect error after logging in
+- add VALENTINA_TRACE environment variable
+- **webui**: work through cloudflared tunnel
+- **webui**: add user guide to nav bar (#172)
+- **webui**: use X-Forwarded-For when behind reverse proxy
+- **webui**: fix insecure transport for oauth when behind reverse proxy
 
 ### Refactor
 
 - cleanup env var trace and improve docstrings (#174)
-
-## v3.0.3 (2024-08-19)
-
-### Fix
-
-- add VALENTINA_TRACE environment variable
-
-## v3.0.2 (2024-08-19)
-
-### Fix
-
-- **webui**: work through cloudflared tunnel
-
-## v3.0.1 (2024-08-18)
-
-### Fix
-
-- **webui**: add user guide to nav bar (#172)
-- **webui**: use X-Forwarded-For when behind reverse proxy
-- **webui**: fix insecure transport for oauth when behind reverse proxy
 
 ## v3.0.0 (2024-08-16)
 
@@ -63,11 +48,6 @@
 - **changelog**: don't repost version on bot connect (#156)
 - fewer errant line breaks in embeds (#155)
 - **gameplay**: improve roll display (#154)
-
-## v2.4.1 (2024-06-14)
-
-### Fix
-
 - fix bot missing required package
 
 ## v2.4.0 (2024-06-14)
@@ -81,11 +61,6 @@
 ### Fix
 
 - **campaign**: improve campaign deletion (#153)
-
-## v2.3.1 (2024-06-09)
-
-### Fix
-
 - fix bug where `/roll throw` was broken
 
 ## v2.3.0 (2024-06-09)
@@ -103,17 +78,12 @@
 
 - **user**: user_info now displays when no experience (#144)
 - **chargen**: remove unused characters from db when cancelled (#137)
+- **gameplay**: cleanup reroll buttons after 60 seconds
+- autocomplete sorts traits alphabetically
 
 ### Refactor
 
 - improve type hints (#146)
-
-## v2.2.1 (2024-03-03)
-
-### Fix
-
-- **gameplay**: cleanup reroll buttons after 60 seconds
-- autocomplete sorts traits alphabetically
 
 ## v2.2.0 (2024-01-29)
 
@@ -191,16 +161,11 @@
 - **bot**: autoresponses only fire once on full words
 - **admin**: add guild emoji as file or url
 - **character**: alive characters no longer marked dead on character sheets
+- fix error loading characters
 
 ### Refactor
 
 - **character**: clean up `set_default_data_values`
-
-## v1.10.1 (2023-09-16)
-
-### Fix
-
-- fix error loading characters
 
 ## v1.10.0 (2023-09-16)
 
@@ -215,27 +180,12 @@
 - **admin**: add interaction user to check to `/admin settings`
 - **storyteller**: update traits displays friendly error when trait not found
 - **bot**: send changelog on connect (#56)
+- **admin**: fix error in `/admin settings`
 
 ### Refactor
 
 - **bot**: add newly joined guilds to the database
-
-## v1.9.3 (2023-09-10)
-
-### Refactor
-
 - **bot**: separate guild provisioning in `on_ready`
-
-## v1.9.2 (2023-09-10)
-
-### Fix
-
-- **admin**: fix error in `/admin settings`
-
-## v1.9.1 (2023-09-10)
-
-### Refactor
-
 - **bot**: log additional steps in `on_ready`
 
 ## v1.9.0 (2023-09-10)
@@ -319,11 +269,6 @@
 - **xp**: fix error computing experience points
 - **bot**: improve audit logging (#41)
 - improve display of probabilities and statistics
-
-## v1.4.1 (2023-08-18)
-
-### Fix
-
 - **help**: improve user guide (#39)
 
 ### Refactor
@@ -358,11 +303,6 @@
 
 - **gameplay**: write user to db before logging roll (#36)
 - **errors**: include traceback in error logs
-
-## v1.2.1 (2023-08-12)
-
-### Fix
-
 - **errors**: improve error logging (#33)
 
 ## v1.2.0 (2023-08-09)
@@ -376,42 +316,17 @@
 ### Fix
 
 - **chronicle**: improve chronicle display
+- **gameplay**: fix dicerolls
+- **gameplay**: stop rerolls
+- **character**: always show second page of character sheet
+- **character**: compute age from chronicle date
+- **character**: initital implementation of character age
+- **character**: update xp cost and base skills
 
 ### Refactor
 
 - **character**: improve character service (#32)
 - improve database services (#31)
-
-## v1.1.5 (2023-07-22)
-
-### Fix
-
-- **gameplay**: fix dicerolls
-
-## v1.1.4 (2023-07-22)
-
-### Fix
-
-- **gameplay**: stop rerolls
-
-## v1.1.3 (2023-07-22)
-
-### Fix
-
-- **character**: always show second page of character sheet
-
-## v1.1.2 (2023-07-22)
-
-### Fix
-
-- **character**: compute age from chronicle date
-
-## v1.1.1 (2023-07-22)
-
-### Fix
-
-- **character**: initital implementation of character age
-- **character**: update xp cost and base skills
 
 ## v1.1.0 (2023-07-21)
 
@@ -419,26 +334,17 @@
 
 - **admin**: setting management (#24)
 
-## v1.0.3 (2023-07-19)
-
 ### Fix
 
 - **character**: add profile for characters
 - **chronicle**: fix broken `chronicle delete` command
 - **reference**: add thaumaturgy reference
 - **logging**: improve logging
+- **character**: fix calculating experience totals
 
 ### Refactor
 
 - combine all modals into single file
-
-## v1.0.2 (2023-07-17)
-
-### Fix
-
-- **character**: fix calculating experience totals
-
-## v1.0.1 (2023-07-17)
 
 ## v1.0.0 (2023-07-17)
 
@@ -470,17 +376,7 @@
 ### Fix
 
 - **character**: remove incorrect werewolf traits
-
-## v0.11.2 (2023-07-05)
-
-### Fix
-
 - **admin**: create on-demand database backups
-
-## v0.11.1 (2023-07-03)
-
-### Fix
-
 - **chronicle**: find chapters by name
 - **chronicle**: fix chronicle delete
 
@@ -489,6 +385,7 @@
 ### Feat
 
 - **diceroll**: reroll dice as needed
+- **admin**: owners can shutdown the bot
 
 ### Fix
 
@@ -496,33 +393,15 @@
 - **character**: allow claiming character with another claiemd
 - **xp**: spend xp on custom traits
 - **diceroll**: second trait required
-
-## v0.10.3 (2023-07-02)
-
-### Fix
-
 - **diceroll**: cleanup dice roll embeds
 - **chronicle**: send chronicle recaps via DM
 - fix markdown error in trait update embed
 - **chronicle**: delete chronicles
-
-## v0.10.2 (2023-07-02)
-
-### Fix
-
 - **admin**: add uptime
 - **chronicle**: add chronical overviews
 - **help**: add chronicles to walkthrough
 - **chronicle**: don't log confirmation embeds
 - **database**: use ISO8601 for backup timestampes
-
-## v0.10.1 (2023-07-02)
-
-## v0.10.0 (2023-07-02)
-
-### Feat
-
-- **admin**: owners can shutdown the bot
 
 ## v0.9.0 (2023-07-02)
 
@@ -534,28 +413,13 @@
 
 - use `guild_svc` during bot connection
 - **admin**: add database version to `ping`
-
-## v0.8.3 (2023-07-01)
-
-### Fix
-
 - **reference**: add links to discipline reference
 - **reference**: add reference info for magic and exp costs
 - minor updates to confirmation embeds
-
-## v0.8.2 (2023-07-01)
-
-### Fix
-
 - **admin**: use async routines to read log file
 - **database**: automatic database backups
 - **character**: add `security` trait
 - minor text changes
-
-## v0.8.1 (2023-06-30)
-
-### Fix
-
 - **admin**: improve clearing the cache
 
 ### Refactor
@@ -603,22 +467,18 @@
 - **database**: add user who created character
 - **xp**: add cool points to`/xp` command
 - **help**: allow getting help for `help` command
+- **character**: add optional max value for custom traits
 
 ### Refactor
 
 - **character**: simplify properties during chargen
-
-## v0.6.1 (2023-06-24)
-
-### Fix
-
-- **character**: add optional max value for custom traits
 
 ## v0.6.0 (2023-06-24)
 
 ### Feat
 
 - **character**: add and manage custom sections (#11)
+- add macros for quick dice rolling (#10)
 
 ### Fix
 
@@ -626,27 +486,13 @@
 - add cache for custom traits
 - **macros**: add embed when no macros to list
 - **characters**: remove duplicated message when no characters to list
-
-## v0.5.1 (2023-06-21)
-
-### Fix
-
 - **help**: sort commands in help views
+- **database**: cleanup version management
 
 ### Refactor
 
 - remove unused code
 - favor `ctx` in database services
-
-## v0.5.0 (2023-06-21)
-
-### Feat
-
-- add macros for quick dice rolling (#10)
-
-### Fix
-
-- **database**: cleanup version management
 
 ## v0.4.0 (2023-06-20)
 
@@ -659,17 +505,7 @@
 
 - **character**: remove `music` ability
 - minor text changes
-
-## v0.3.2 (2023-06-18)
-
-### Fix
-
 - **config**: loosen capitalization rules for log levels
-
-## v0.3.1 (2023-06-17)
-
-### Fix
-
 - **character**: fix broken modal
 
 ### Refactor

@@ -42,7 +42,7 @@
 
     [project.scripts]
         valentina = "valentina.main:app"
-        webui     = "valentina.debug_webui:dev"
+        webui     = "valentina.webui_dev_cli:cli"
 
 [tool.uv]
     dev-dependencies = [
@@ -243,6 +243,7 @@
             "S307",
             "S311",     # suspicious-non-cryptographic-random-usage
             "S603",     #`subprocess` call: check for execution of untrusted input
+            "TD001",    # invalid-todo-tag
             "TD002",    # Missing author in TODO
             "TD003",    # Missing issue link on the line following this TODO
             "UP007",    # non-pep604-annotation
