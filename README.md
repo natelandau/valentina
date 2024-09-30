@@ -198,6 +198,32 @@ A convenience script that runs the webui locally without the Discord bot is avai
 3. Activate the virtual environment with `source .venv/bin/activate`.
 4. Run the webui with `webui`.
 
+## Development Notes
+
+<details>
+<summary>WebUI Concepts</summary>
+Pages and functionality for the web UI are managed within the `valentina/webui` directory. Each page is a separate blueprint that is imported into the Quart app.
+
+All blueprints following the file structure below will be **automatically registered with the Quart app**.
+
+```
+webui/blueprints
+  └── [blueprint_name]
+      ├── __init__.py
+      ├── blueprint.py
+      ├── route.py
+      └── templates
+          └── [blue_print_name]
+```
+
+-   `__init__.py` - Empty file to mark the directory as part of the Python package.
+-   `blueprint.py` - Contains the `blueprint` object to be automatically registered with the Quart app.
+-   `route.py` - Contains the route definitions for the blueprint.
+-   `templates/blueprint_name` - Contains the Jinja templates for the blueprint. These are added as a top-level folder in the JinJax catalog and can be imported into templates.
+-   Any other files required for the blueprint.
+
+</details>
+
 ## Troubleshooting
 
 If connecting to Discord with the bot fails due to a certificate error, run `scripts/install_certifi.py` to install the latest certificate bundle.

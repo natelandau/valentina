@@ -8,7 +8,6 @@ and JinjaX templates. It serves as the main entry point for the Valentina web UI
 import quart_flask_patch  # isort: skip # noqa: F401
 import asyncio
 import os
-from pathlib import Path
 
 from flask_discord import DiscordOAuth2Session
 from hypercorn.asyncio import serve
@@ -19,7 +18,9 @@ from quart import Quart, redirect, request
 from quart_session import Session
 from werkzeug.wrappers.response import Response
 
+from valentina.constants import WEBUI_ROOT_PATH
 from valentina.utils import ValentinaConfig
+from valentina.webui.utils.blueprints import import_all_bps
 from valentina.webui.utils.errors import register_error_handlers
 from valentina.webui.utils.jinja_filters import register_filters
 from valentina.webui.utils.jinjax import register_jinjax_catalog
@@ -27,11 +28,13 @@ from valentina.webui.utils.jinjax import register_jinjax_catalog
 # Allow insecure transport for OAuth2. This is used for development or when running behind a reverse proxy.
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
+blueprint_folder = WEBUI_ROOT_PATH / "blueprints"
 
-template_dir = Path(__file__).parent / "templates"
-static_dir = Path(__file__).parent / "static"
 app = Quart(
-    __name__, template_folder=str(template_dir), static_url_path="/static", static_folder="static"
+    __name__,
+    template_folder=str(WEBUI_ROOT_PATH / "shared"),
+    static_url_path="/static",
+    static_folder="static",
 )
 app.config["SECRET_KEY"] = ValentinaConfig().webui_secret_key
 app.config["DISCORD_CLIENT_ID"] = ValentinaConfig().discord_oauth_client_id
@@ -41,7 +44,7 @@ app.config["DISCORD_BOT_TOKEN"] = ValentinaConfig().discord_token
 discord_oauth = DiscordOAuth2Session(app)
 register_filters(app)
 register_error_handlers(app)
-catalog = register_jinjax_catalog(app)
+catalog = register_jinjax_catalog(app, blueprint_folder)
 
 # Configure the session to use Redis for storage.
 app.config["SESSION_TYPE"] = "redis"
@@ -54,22 +57,7 @@ app.config["SESSION_URI"] = (
 )
 Session(app)
 
-
-def import_blueprints() -> None:
-    """Register all the blueprints with the Flask application.
-
-    Call this function to import and register the application's blueprints to
-    avoid circular import issues. It should be invoked during the application
-    setup phase.
-    """
-    from .blueprints import campaign_bp, character_bp, gameplay_bp
-    from .routes import home, oauth
-
-    app.register_blueprint(campaign_bp)
-    app.register_blueprint(character_bp)
-    app.register_blueprint(home.bp)
-    app.register_blueprint(oauth.bp)
-    app.register_blueprint(gameplay_bp)
+app = import_all_bps(app, blueprint_folder)
 
 
 def create_dev_app() -> Quart:
@@ -86,7 +74,6 @@ def create_dev_app() -> Quart:
     Returns:
         Quart: A configured Quart application instance ready for development use.
     """
-    import_blueprints()
 
     @app.before_serving
     async def create_db_pool() -> None:
@@ -149,8 +136,6 @@ async def run_webserver() -> None:
     Note: Ensure all required configurations are properly set in ValentinaConfig
     before calling this function.
     """
-    # Imnport these here to avoid circular imports
-    import_blueprints()
 
     @app.before_request
     def remove_trailing_slash() -> Response:

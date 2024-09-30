@@ -1,0 +1,11 @@
+<div class="py-4 px-5 mt-5 rounded-3 border shadow-lg w-50">
+    <h3 class="mb-3">Get started</h3>
+    <p>
+        This wizard will guide you through the process of entering a new character into the system. It is recommended that you have already created your character on paper before starting this process. This will make it easier to enter the information into the system.
+    </p>
+    <button class="btn btn-success btn-lg"
+            hx-get="{{ url_for('character_create.create_1') }}"
+            hx-target="#create-character-container">
+        Create character&nbsp;&nbsp;<span class="fa-solid fa-circle-right fa-xl"></span>
+    </button>
+</div>
