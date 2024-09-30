@@ -138,11 +138,11 @@ async def fetch_user(fetch_links: bool = False) -> User:
     user = await User.get(session["USER_ID"], fetch_links=fetch_links)
 
     if session.get("USER_NAME", None) != user.name:
-        logger.warning("Updating session with user name")
+        logger.debug("Update session with user name")
         session["USER_NAME"] = user.name
 
     if session.get("USER_AVATAR_URL", None) != user.avatar_url:
-        logger.warning("Updating session with user avatar")
+        logger.debug("Update session with user avatar")
         session["USER_AVATAR_URL"] = user.avatar_url
 
     return user
@@ -178,7 +178,7 @@ async def fetch_user_characters(fetch_links: bool = True) -> list[Character]:
 
     character_dict = dict(sorted({x.name: str(x.id) for x in characters}.items()))
     if session.get("USER_CHARACTERS", None) != character_dict:
-        logger.warning("Updating session with characters")
+        logger.debug("Update session with characters")
         session["USER_CHARACTERS"] = character_dict
 
     return characters
@@ -213,7 +213,7 @@ async def fetch_campaigns(fetch_links: bool = True) -> list[Campaign]:
 
     campaigns_dict = dict(sorted({x.name: str(x.id) for x in campaigns}.items()))
     if session.get("GUILD_CAMPAIGNS", None) != campaigns_dict:
-        logger.warning("Updating session with campaigns")
+        logger.debug("Update session with campaigns")
         session["GUILD_CAMPAIGNS"] = campaigns_dict
 
     return campaigns

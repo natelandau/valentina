@@ -1,15 +1,14 @@
 """Gather configuration from environment variables."""
 
 import os
-from pathlib import Path
 from typing import Annotated, ClassVar
 
 from confz import BaseConfig, ConfigSources, EnvSource
 from pydantic import BeforeValidator
 
-from .console import console
+from valentina.constants import PROJECT_ROOT_PATH
 
-DIR = Path(__file__).parents[3].absolute()
+from .console import console
 
 
 def convert_to_boolean(value: str) -> bool:
@@ -69,8 +68,8 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     webui_behind_reverse_proxy: ENV_BOOLEAN = False
 
     CONFIG_SOURCES: ClassVar[ConfigSources | None] = [
-        EnvSource(prefix="VALENTINA_", file=DIR / ".env", allow_all=True),
-        EnvSource(prefix="VALENTINA_", file=DIR / ".env.secrets", allow_all=True),
+        EnvSource(prefix="VALENTINA_", file=PROJECT_ROOT_PATH / ".env", allow_all=True),
+        EnvSource(prefix="VALENTINA_", file=PROJECT_ROOT_PATH / ".env.secrets", allow_all=True),
     ]
 
 

@@ -1,7 +1,6 @@
 """Main file which instantiates the bot and runs it."""
 
 import os
-from pathlib import Path
 from time import sleep
 from typing import Optional
 
@@ -52,7 +51,6 @@ def main(
         debug_guilds=[int(g) for g in ValentinaConfig().guilds.split(",")],
         intents=intents,
         owner_ids=[int(o) for o in ValentinaConfig().owner_ids.split(",")],
-        parent_dir=Path(__file__).parents[2].absolute(),
         command_prefix="∑",  # Effectively remove the command prefix by setting it to 'sigma'
         version=__version__,
     )

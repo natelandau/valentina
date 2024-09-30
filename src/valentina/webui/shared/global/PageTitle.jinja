@@ -1,0 +1,24 @@
+{# def
+    right_button:bool = False,
+    right_button_text:str = "",
+    right_button_url:str = "",
+    right_button_two:bool = False,
+    right_button_two_text:str = "",
+    right_button_two_url:str = "",
+#}
+{% if not right_button %}
+    <div class="border-bottom border-secondary-subtle mb-5">
+        <h1 class="display-3 pb-1">{{ content }}</h1>
+    </div>
+{% else %}
+    <div class="border-bottom border-secondary-subtle mb-5">
+        <h1 class="display-3 pb-1 " style="display:inline;">{{ content }}</h1>
+        {% if right_button_two %}
+            <a href="{{ right_button_two_url }}"
+               class="btn btn-sm btn-outline-primary float-end ms-2">{{ right_button_two_text }}</a>
+        {% endif %}
+        <a href="{{ right_button_url }}"
+           class="btn btn-sm btn-outline-primary float-end">{{ right_button_text }}</a>
+    </div>
+{% endif %}
+{# <button type="button" class="btn btn-info">Info</button> #}

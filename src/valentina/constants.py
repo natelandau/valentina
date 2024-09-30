@@ -27,7 +27,16 @@ CHANGELOG_EXCLUDE_CATEGORIES = [
     "ci",
     "build",
 ]
-CHANGELOG_PATH = Path(__file__).parent / "../../CHANGELOG.md"
+
+# Paths within the project
+PROJECT_ROOT_PATH = Path(__file__).parents[2].absolute()
+CHANGELOG_PATH = PROJECT_ROOT_PATH / "CHANGELOG.md"
+USER_GUIDE_PATH = PROJECT_ROOT_PATH / "user_guide.md"
+WEBUI_ROOT_PATH = PROJECT_ROOT_PATH / "src" / "valentina" / "webui"
+WEBUI_STATIC_DIR_PATH = WEBUI_ROOT_PATH / "static"
+BLUEPRINT_FOLDER_PATH = WEBUI_ROOT_PATH / "blueprints"
+COGS_PATH = PROJECT_ROOT_PATH / "src" / "valentina" / "cogs"
+
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
 DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
 MAX_BUTTONS_PER_ROW = 5

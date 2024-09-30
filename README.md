@@ -168,23 +168,26 @@ This project uses [uv](https://docs.astral.sh/uv/) to manage Python requirements
 -   Run `uv add {package}` from within the development environment to install a run time dependency and add it to `pyproject.toml` and `uv.lock`.
 -   Run `uv remove {package}` from within the development environment to uninstall a run time dependency and remove it from `pyproject.toml` and `uv.lock`.
 
-## Packages Used
+## Third Party Package Documentation
+
+Many Python packages are used in this project. Here are some of the most important ones with links to their documentation:
 
 **Discord Bot**
 
--   [Pycord](https://docs.pycord.dev/en/stable/) - Discord API wrapper
 -   [Beanie ODM](https://beanie-odm.dev/) - MongoDB ODM
--   [Typer](https://typer.tiangolo.com/) - CLI app framework
 -   [ConfZ](https://confz.readthedocs.io/en/latest/index.html) - Configuration management
 -   [Loguru](https://loguru.readthedocs.io/en/stable/) - Logging
+-   [Pycord](https://docs.pycord.dev/en/stable/) - Discord API wrapper
+-   [Typer](https://typer.tiangolo.com/) - CLI app framework
 
 **Web UI**
 
--   [Quart](https://quart.palletsprojects.com/en/latest/index.html) - Async web framework based on Flask
 -   [Bootstrap](https://getbootstrap.com/) - Frontend framework for the web UI
+-   [HTMX](https://htmx.org/) - High level library for AJAX, WebSockets, and server sent events
 -   [Jinja](https://jinja.palletsprojects.com/en/3.0.x/) - Templating engine for the web UI
 -   [JinjaX](https://jinjax.scaletti.dev/) - Super components powers for your Jinja templates
 -   [quart-wtf](https://quart-wtf.readthedocs.io/en/latest/index.html) - Integration of Quart and WTForms including CSRF and file uploading.
+-   [Quart](https://quart.palletsprojects.com/en/latest/index.html) - Async web framework based on Flask
 
 ## Running the webui locally
 
@@ -194,6 +197,32 @@ A convenience script that runs the webui locally without the Discord bot is avai
 2. Run `uv sync` to install the required packages.
 3. Activate the virtual environment with `source .venv/bin/activate`.
 4. Run the webui with `webui`.
+
+## Development Notes
+
+<details>
+<summary>WebUI Concepts</summary>
+Pages and functionality for the web UI are managed within the `valentina/webui` directory. Each page is a separate blueprint that is imported into the Quart app.
+
+All blueprints following the file structure below will be **automatically registered with the Quart app**.
+
+```
+webui/blueprints
+  └── [blueprint_name]
+      ├── __init__.py
+      ├── blueprint.py
+      ├── route.py
+      └── templates
+          └── [blue_print_name]
+```
+
+-   `__init__.py` - Empty file to mark the directory as part of the Python package.
+-   `blueprint.py` - Contains the `blueprint` object to be automatically registered with the Quart app.
+-   `route.py` - Contains the route definitions for the blueprint.
+-   `templates/blueprint_name` - Contains the Jinja templates for the blueprint. These are added as a top-level folder in the JinJax catalog and can be imported into templates.
+-   Any other files required for the blueprint.
+
+</details>
 
 ## Troubleshooting
 
