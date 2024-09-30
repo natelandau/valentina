@@ -3,7 +3,6 @@
 import asyncio
 import inspect
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import Any
 
 import arrow
@@ -16,6 +15,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import (
+    COGS_PATH,
     ChannelPermission,
     EmbedColor,
     LogLevel,
@@ -458,17 +458,16 @@ class Valentina(commands.Bot):
     and handle server connections.
     """
 
-    def __init__(self, parent_dir: Path, version: str, *args: Any, **kwargs: Any):
+    def __init__(self, version: str, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
-        self.parent_dir = parent_dir
         self.version = version
         self.owner_channels = [int(x) for x in ValentinaConfig().owner_channels.split(",")]
 
         # Load Cogs
         # #######################
-        for cog in Path(self.parent_dir / "src" / "valentina" / "cogs").glob("*.py"):
+        for cog in COGS_PATH.glob("*.py"):
             if cog.stem[0] != "_":
                 logger.info(f"COGS: Loading - {cog.stem}")
                 self.load_extension(f"valentina.cogs.{cog.stem}")

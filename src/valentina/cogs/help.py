@@ -1,13 +1,12 @@
 # mypy: disable-error-code="valid-type"
 """Help Command for Valentina."""
 
-from pathlib import Path
-
 import discord
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
 
+from valentina.constants import USER_GUIDE_PATH
 from valentina.models.bot import Valentina, ValentinaContext
 from valentina.utils import ValentinaConfig
 from valentina.views import auto_paginate, present_embed
@@ -155,12 +154,11 @@ class Help(commands.Cog):
         ),
     ) -> None:
         """A walkthrough of Valentina Noir."""
-        path = Path(__file__).parent / "../../../user_guide.md"
-        if not path.exists():
-            logger.error(f"User Guide file not found at {path}")
+        if not USER_GUIDE_PATH.exists():
+            logger.error(f"User Guide file not found at {USER_GUIDE_PATH}")
             raise FileNotFoundError
 
-        user_guide = path.read_text()
+        user_guide = USER_GUIDE_PATH.read_text()
         await auto_paginate(
             ctx=ctx,
             title="Valentina User Guide",
