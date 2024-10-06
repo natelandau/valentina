@@ -14,8 +14,7 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.models import CampaignChapter
-from valentina.utils.converters import (
+from valentina.discord.utils.converters import (
     CampaignChapterConverter,
     ValidBookNumber,
     ValidCampaign,
@@ -31,6 +30,7 @@ from valentina.utils.converters import (
     ValidTraitCategory,
     ValidYYYYMMDD,
 )
+from valentina.models import CampaignChapter
 
 
 @pytest.mark.no_db

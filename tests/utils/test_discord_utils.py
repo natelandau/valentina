@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from valentina.constants import ChannelPermission
-from valentina.utils.discord_utils import set_channel_perms
+from valentina.discord.utils.discord_utils import set_channel_perms
 
 
 class PermissionOverwriteMock(MagicMock):

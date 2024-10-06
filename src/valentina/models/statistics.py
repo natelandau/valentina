@@ -13,7 +13,7 @@ from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
 if TYPE_CHECKING:
-    from valentina.models.bot import ValentinaContext
+    from valentina.discord.bot import ValentinaContext
 
 
 class RollStatistic(Document):

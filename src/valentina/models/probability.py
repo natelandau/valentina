@@ -14,7 +14,7 @@ from valentina.models import DiceRoll
 from valentina.utils.helpers import time_now
 
 if TYPE_CHECKING:
-    from valentina.models.bot import ValentinaContext
+    from valentina.discord.bot import ValentinaContext
 # Constants for emoji thresholds
 SUCCESS_HIGHEST_THRESHOLD = 90
 SUCCESS_HIGH_THRESHOLD = 65
