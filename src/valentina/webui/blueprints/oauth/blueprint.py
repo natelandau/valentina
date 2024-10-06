@@ -13,13 +13,13 @@ blueprint = Blueprint("oauth", __name__)
 
 
 @blueprint.route("/login")
-async def login() -> Any:
+async def login() -> Any:  # pragma: no cover
     """Login route."""
     return discord_oauth.create_session()
 
 
 @blueprint.route("/logout")
-async def logout() -> Any:
+async def logout() -> Any:  # pragma: no cover
     """Login route."""
     session.clear()
     discord_oauth.revoke()
@@ -27,7 +27,7 @@ async def logout() -> Any:
 
 
 @blueprint.route("/callback")
-async def callback() -> Any:
+async def callback() -> Any:  # pragma: no cover
     """Callback route."""
     discord_oauth.callback()
 

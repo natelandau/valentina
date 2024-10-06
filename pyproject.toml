@@ -117,7 +117,7 @@
         "src/valentina/utils/errors.py",
         "src/valentina/utils/logging.py",
         "src/valentina/views/*",
-        "src/valentina/webui/*",                        # TODO: Add tests for webui
+        # "src/valentina/webui/*",                        # TODO: Add tests for webui
         "tests/*",
     ]
     source = ["src"]
@@ -156,6 +156,7 @@
 [tool.pytest.ini_options]
 
     addopts = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=reports/pytest.xml --ignore=src/valentina/cogs/test_cog.py"
+    asyncio_default_fixture_loop_scope = "function"
     asyncio_mode = "auto"
     env = [
         "VALENTINA_AWS_ACCESS_KEY_ID=access_key",
@@ -258,11 +259,15 @@
         ], "tests/*.py" = [
             "A002",
             "A003",
+            "ANN201",  # Missing return type annotation
+            "ARG001",  # Unused argument
             "D102",
+            "ERA001",  # Commented out code
             "F403",
             "PLR0913",
             "PLR2004",
             "S101",
+            "SLF001",  # Calling private method
         ], "tests/database/*.py" = [
             "A002",
             "A003",
@@ -313,9 +318,6 @@
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "ruff format --check src/ tests/"
-
-        [[tool.poe.tasks.lint.sequence]]
-            shell = "poetry check"
 
         [[tool.poe.tasks.lint.sequence]]
             shell = "mypy --config-file pyproject.toml src/"

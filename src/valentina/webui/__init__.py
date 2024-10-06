@@ -61,10 +61,10 @@ def create_app(environment: Literal["Production", "Development", "Testing"]) -> 
     catalog.jinja_env.tests.update(app.jinja_env.tests)
     catalog.jinja_env.extensions.update(app.jinja_env.extensions)
 
-    if app.config.get("SESSION_TYPE", "").lower() == "redis":
+    if app.config.get("SESSION_TYPE", "").lower() == "redis":  # pragma: no cover
         Session(app)
 
-    if environment == "Development":
+    if environment == "Development":  # pragma: no cover
         app.config["SESSION_COOKIE_SECURE"] = False
 
         @app.before_serving
@@ -112,7 +112,7 @@ def create_app(environment: Literal["Production", "Development", "Testing"]) -> 
     return app
 
 
-async def run_webserver() -> None:
+async def run_webserver() -> None:  # pragma: no cover
     """Run the Quart web server in a production environment.
 
     Configure and start the Hypercorn server with settings derived from the application's configuration. This function performs the following tasks:

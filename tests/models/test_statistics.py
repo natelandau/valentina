@@ -3,8 +3,8 @@
 
 import discord
 import pytest
-from tests.factories import *
 
+from tests.factories import *
 from valentina.constants import RollResultType
 from valentina.models import RollStatistic, Statistics
 

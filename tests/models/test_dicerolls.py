@@ -8,7 +8,7 @@ from valentina.models import DiceRoll, RollStatistic
 from valentina.utils import errors
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 @pytest.mark.parametrize(
     ("guild_id", "author_id", "author_name"), [(None, 1, "name"), (1, None, "name"), (1, 1, None)]
 )
@@ -23,7 +23,7 @@ def test_fail_without_init_data(guild_id, author_id, author_name) -> None:
         DiceRoll(guild_id=guild_id, author_id=author_id, author_name=author_name, pool=1)
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 @pytest.mark.parametrize(
     (
         "pool",
@@ -49,7 +49,7 @@ def test_rolling_dice(mock_ctx1, pool: int, dice_size: int) -> None:
         assert all(1 <= die <= dice_size for die in roll.roll)
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 @pytest.mark.parametrize(
     (
         "roll",
@@ -104,7 +104,7 @@ def test_roll_successes(
     assert roll.result_type == result_type
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_not_d10(mock_ctx1):
     """Ensure that customizations for non-d10 dice are applied correctly."""
     # GIVEN a roll with a non-d10 dice
@@ -112,7 +112,7 @@ async def test_not_d10(mock_ctx1):
     assert roll.result_type == RollResultType.OTHER
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_roll_exceptions(mock_ctx1):
     """Ensure that Roll raises exceptions when appropriate.
 
@@ -138,7 +138,7 @@ def test_roll_exceptions(mock_ctx1):
         DiceRoll(ctx=mock_ctx1, difficulty=6, pool=6, dice_size=3)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_log_roll(mock_ctx1):
     """Test diceroll logging to the database."""
     # GIVEN a diceroll object and a list of two traits

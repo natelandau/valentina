@@ -164,10 +164,7 @@ class CharacterView(MethodView):
     async def handle_tabs(self, character: Character) -> str:
         """Handle HTMX tab requests and render the appropriate content.
 
-        Based on the "tab" query parameter, render and return the corresponding
-        section of the character view, such as the character sheet, inventory,
-        profile, images, or statistics. If the requested tab is not recognized,
-        return a 404 error.
+        Based on the "tab" query parameter, render and return the corresponding section of the character view, such as the character sheet, inventory, profile, images, or statistics. If the requested tab is not recognized, return a 404 error.
 
         Args:
             character (Character): The character for which the tab content is to be rendered.
