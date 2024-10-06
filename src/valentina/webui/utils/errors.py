@@ -22,7 +22,7 @@ def register_error_handlers(app: Quart) -> None:
     """
 
     @app.errorhandler(Unauthorized)
-    async def redirect_unauthorized(e: type[Exception] | int) -> Response:  # noqa: ARG001
+    async def redirect_unauthorized(e: type[Exception] | int) -> Response:  # noqa: ARG001 # pragma: no cover
         """Redirect unauthorized users to the login page.
 
         Args:

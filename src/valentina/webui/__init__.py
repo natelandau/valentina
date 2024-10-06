@@ -20,7 +20,7 @@ from quart_session import Session
 from werkzeug.wrappers.response import Response
 
 from valentina.constants import WEBUI_ROOT_PATH
-from valentina.utils import ValentinaConfig, console
+from valentina.utils import ValentinaConfig
 from valentina.webui.utils.blueprints import import_all_bps
 from valentina.webui.utils.errors import register_error_handlers
 from valentina.webui.utils.jinjax import register_jinjax_catalog
@@ -52,7 +52,6 @@ def create_app(environment: Literal["Production", "Development", "Testing"]) -> 
 
     register_error_handlers(app)
     discord_oauth.init_app(app)
-    console.log("importing blueprints")
     import_all_bps(app)
     app.jinja_env.globals["catalog"] = catalog
 
