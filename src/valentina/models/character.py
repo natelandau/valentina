@@ -35,8 +35,8 @@ from valentina.utils.helpers import get_max_trait_value, num_to_circles, time_no
 from .note import Note
 
 if TYPE_CHECKING:
+    from valentina.discord.bot import ValentinaContext
     from valentina.models import Campaign  # noqa: TCH004
-    from valentina.models.bot import ValentinaContext
 
 
 class CharacterSheetSection(BaseModel):

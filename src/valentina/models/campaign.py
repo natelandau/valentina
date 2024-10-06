@@ -26,7 +26,7 @@ from .character import Character
 from .note import Note
 
 if TYPE_CHECKING:
-    from valentina.models.bot import ValentinaContext
+    from valentina.discord.bot import ValentinaContext
 
 
 class CampaignChapter(BaseModel):

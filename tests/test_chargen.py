@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from rich import print
 
-from valentina.characters.chargen import RNGCharGen
 from valentina.constants import (
     CharacterConcept,
     CharClass,
@@ -15,6 +14,7 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
+from valentina.discord.characters.chargen import RNGCharGen
 from valentina.models import Character, CharacterTrait
 
 from .conftest import GUILD_ID
@@ -29,7 +29,7 @@ async def test_generate_full_character(
     """Test the generate_full_character method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a user, campaign, and a character generator
     user = user_factory.build(characters=[])
@@ -140,7 +140,7 @@ async def test_rngchargen_generate_base_character(
     """Test the generate_base_character method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a user and a character generator
 
@@ -229,7 +229,7 @@ async def test_random_attributes(
     """Test the random_abilities method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
@@ -302,7 +302,7 @@ async def test_random_abilities(
     """Test the random_abilities method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
@@ -355,7 +355,7 @@ async def test_random_disciplines(
     """Test the random_disciplines method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
@@ -391,7 +391,7 @@ async def test_random_virtues(user_factory, mock_ctx1, char_class, level, modifi
     """Test the andom_virtues method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
@@ -429,7 +429,7 @@ async def test_concept_special_abilities(
     """Test the concept_special_abilities method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()

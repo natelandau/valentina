@@ -5,8 +5,8 @@ import pytest
 
 from tests.factories import *
 from valentina.constants import TraitCategory
+from valentina.discord.utils import autocomplete
 from valentina.models import CharacterSheetSection
-from valentina.utils import autocomplete
 
 
 @pytest.mark.drop_db

@@ -8,8 +8,8 @@ import pytest
 from rich.console import Console
 from tests.factories import *
 
-from valentina.cogs.experience import Experience
 from valentina.constants import TraitCategory
+from valentina.discord.cogs.experience import Experience
 from valentina.models import CampaignExperience, CharacterTrait, User
 from valentina.utils import errors
 

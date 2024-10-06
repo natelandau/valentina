@@ -8,7 +8,7 @@ import discord
 import typer
 from loguru import logger
 
-from valentina.models.bot import Valentina
+from valentina.discord.bot import Valentina
 from valentina.utils import ValentinaConfig, debug_environment_variables, instantiate_logger
 from valentina.utils.database import test_db_connection
 
