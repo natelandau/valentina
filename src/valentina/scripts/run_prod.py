@@ -8,11 +8,10 @@ import discord
 import typer
 from loguru import logger
 
+from valentina.__version__ import __version__
 from valentina.discord.bot import Valentina
 from valentina.utils import ValentinaConfig, debug_environment_variables, instantiate_logger
 from valentina.utils.database import test_db_connection
-
-from .__version__ import __version__
 
 # Instantiate Typer
 app = typer.Typer(add_completion=False, no_args_is_help=True, rich_markup_mode="rich")
@@ -22,7 +21,7 @@ typer.rich_utils.STYLE_HELPTEXT = ""
 def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
-        print(f"{__package__} version: {__version__}")  # noqa: T201
+        print(f"valentina {__version__}")  # noqa: T201
         raise typer.Exit()
 
 

@@ -41,8 +41,8 @@
         repository = "https://github.com/natelandau/valentina"
 
     [project.scripts]
-        valentina = "valentina.main:app"
-        webui     = "valentina.webui_dev_cli:cli"
+        valentina = "valentina.scripts.run_prod:app"
+        webui     = "valentina.scripts.run_webui_dev:cli"
 
 [tool.uv]
     dev-dependencies = [
@@ -112,11 +112,11 @@
         "src/valentina/discord/characters/spend_experience.py",
         "src/valentina/discord/cogs/*",                         # TODO: Add tests for cogs
         "src/valentina/discord/utils/discord_utils.py",
-        "src/valentina/main.py",
+        "src/valentina/discord/views/*",
         "src/valentina/models/errors.py",
+        "src/valentina/scripts/*",
         "src/valentina/utils/errors.py",
         "src/valentina/utils/logging.py",
-        "src/valentina/views/*",
         "tests/*",
     ]
     source = ["src"]
@@ -249,7 +249,7 @@
             "UP007",    # non-pep604-annotation
         ]
 
-        per-file-ignores = { "main.py" = [
+        per-file-ignores = { "scripts/*.py" = [
             "PLR0912",
             "PLR0913",
         ], "migrations/*.py" = [

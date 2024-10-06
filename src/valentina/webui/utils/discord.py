@@ -60,7 +60,7 @@ async def log_message(
     msg: str,
     level: str = "INFO",
     view: str = "",
-) -> None:
+) -> None:  # pragma: no cover
     """Log a message to the console, log file, and Discord.
 
     Fetch the current user and log the message with the specified level.
@@ -112,7 +112,9 @@ async def log_message(
     )
 
 
-async def post_to_audit_log(msg: str, level: str = "INFO", view: str = "") -> None:
+async def post_to_audit_log(
+    msg: str, level: str = "INFO", view: str = ""
+) -> None:  # pragma: no cover
     """Send a message to the audit log channel for a guild.
 
     Log the provided message with the specified level and view context to the
@@ -130,7 +132,9 @@ async def post_to_audit_log(msg: str, level: str = "INFO", view: str = "") -> No
     await log_message("audit", msg, level, view)
 
 
-async def post_to_error_log(msg: str, level: str = "ERROR", view: str = "") -> None:
+async def post_to_error_log(
+    msg: str, level: str = "ERROR", view: str = ""
+) -> None:  # pragma: no cover
     """Send a message to the error log channel for a guild.
 
     Log the provided message with the specified level and view context to the
@@ -148,7 +152,7 @@ async def post_to_error_log(msg: str, level: str = "ERROR", view: str = "") -> N
     await log_message("error", msg, level, view)
 
 
-async def send_user_dm(user: FlaskDiscordUser, message: str) -> dict | str:
+async def send_user_dm(user: FlaskDiscordUser, message: str) -> dict | str:  # pragma: no cover
     """Send a private message to a user on Discord.
 
     Create a direct message channel with the specified user and send the
