@@ -2,8 +2,8 @@
 """Test the User model."""
 
 import pytest
-from tests.factories import *
 
+from tests.factories import *
 from valentina.utils import errors
 
 
@@ -87,7 +87,7 @@ async def test_spend_spend_campaign_xp(user_factory, campaign_factory) -> None:
         await user.spend_campaign_xp(campaign, 100)
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_all_user_characters(mock_guild1, user_factory, character_factory) -> None:
     """Test methods related to working with characters associated with the user."""
     # GIVEN a users and three characters

@@ -31,7 +31,7 @@ class PermissionOverwriteMock(MagicMock):
 
 
 @patch("discord.PermissionOverwrite", new_callable=PermissionOverwriteMock)
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_set_channel_perms(mock_permission_overwrite):
     """Test the set_channel_perms function.
 

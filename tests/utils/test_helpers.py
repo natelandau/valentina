@@ -7,7 +7,7 @@ from valentina.utils import ValentinaConfig, errors
 from valentina.utils.helpers import divide_total_randomly, num_to_circles
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 @pytest.mark.parametrize(
     ("total", "num", "max_value", "min_value"),
     [
@@ -35,17 +35,17 @@ def test_divide_total_randomly(total, num, max_value, min_value):
 
 def test_divide_total_randomly_raises_error() -> None:
     """Test that divide_total_randomly raises errors when it should."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Impossible to divide"):
         divide_total_randomly(1, 2, min_value=1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Impossible to divide"):
         divide_total_randomly(10, 2, 5, 6)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Impossible to divide"):
         divide_total_randomly(10, 2, 3)
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 @pytest.mark.parametrize(
     ("num", "maximum", "expected"),
     [(0, 5, "○○○○○"), (3, 5, "●●●○○"), (5, None, "●●●●●"), (6, 5, "●●●●●●"), (0, 10, "○○○○○○○○○○")],

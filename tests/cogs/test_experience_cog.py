@@ -4,8 +4,6 @@
 When pycord updated to v2.5.0 these tests broke. To fix them, the ctx needs to be added twice to each call to a cog. This is because the ctx is now the first argument in the method signature. This is a breaking change in pycord 2.5.0. 😕
 """
 
-from unittest.mock import AsyncMock
-
 import pytest
 from rich.console import Console
 from tests.factories import *
@@ -18,7 +16,7 @@ from valentina.utils import errors
 c = Console()
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory):
     """Test the xp_add command."""
     # GIVEN a mock context, a user, and a campaign
@@ -48,7 +46,7 @@ async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
     assert db_user.fetch_campaign_xp(campaign) == (10, 10, 0)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_cp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory):
     """Test the cp_add command."""
     # GIVEN a mock context, a user, and a campaign
@@ -78,7 +76,7 @@ async def test_cp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
 
 
 # @pytest.mark.skip(reason="Broke with pycord 2.5.0")
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_xp_spend(
     async_mock_ctx1, mock_bot, user_factory, campaign_factory, trait_factory, character_factory
 ):
@@ -120,7 +118,7 @@ async def test_xp_spend(
     assert db_trait.value == 3
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_xp_spend_not_enough_xp(
     async_mock_ctx1, mock_bot, user_factory, campaign_factory, trait_factory, character_factory
 ):

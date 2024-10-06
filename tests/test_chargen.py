@@ -21,7 +21,7 @@ from .conftest import GUILD_ID
 from .factories import *
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 @pytest.mark.parametrize(("char_class"), [(None), (CharClass.VAMPIRE), (CharClass.HUNTER)])
 async def test_generate_full_character(
     user_factory, campaign_factory, mock_ctx1, mocker, char_class
