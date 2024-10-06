@@ -24,7 +24,7 @@ GUILD_ID = 1
 
 ## Database initialization ##
 @pytest_asyncio.fixture(autouse=True)
-async def _init_database(request):
+async def _init_database(request) -> None:
     """Initialize the database."""
     if "no_db" in request.keywords:
         # when '@pytest.mark.no_db()' is called, this fixture will not run

@@ -13,14 +13,14 @@ from valentina.constants import (
 )
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_random_vampire_clan() -> None:
     """Test the random_vampire_clan function."""
     result = VampireClan.random_member()
     assert result.name in VampireClan.__members__
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_character_concept_random_member():
     """Test the CharacterConcept enum."""
     for _ in range(50):
@@ -28,7 +28,7 @@ def test_character_concept_random_member():
         assert CharacterConcept[random.name] == random
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_concept_get_member_by_value():
     """Test the CharacterConcept enum get_member_by_value method."""
     # GIVEN a CharacterConcept member
@@ -56,7 +56,7 @@ def test_concept_get_member_by_value():
         assert result == member
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_trait_category_enum():
     """Test the TraitCategory enum."""
     assert TraitCategory.PHYSICAL.get_trait_list(CharClass.MORTAL) == [
@@ -80,7 +80,7 @@ def test_trait_category_enum():
     ]
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_char_class_random_member():
     """Test the CharClass enum."""
     for _ in range(50):
@@ -93,7 +93,7 @@ def test_char_class_random_member():
         assert result != CharClass.OTHER
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_char_class_get_member_by_value():
     """Test the CharClass enum get_member_by_value method."""
     # GIVEN a CharClass member
@@ -123,7 +123,7 @@ def test_char_class_get_member_by_value():
         CharClass.get_member_by_value(101)
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_char_class_playable_classes():
     """Test the CharClass enum playable_classes method."""
     # WHEN the playable_classes method is called
@@ -137,7 +137,7 @@ def test_char_class_playable_classes():
     assert CharClass.MORTAL in result
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_hunter_creed_random_member():
     """Test the HunterCreed enum."""
     for _ in range(50):
@@ -145,7 +145,7 @@ def test_hunter_creed_random_member():
         assert HunterCreed[random.name] == random
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_hunter_creed_get_member_by_value():
     """Test the HunterCreed enum get_member_by_value method."""
     # GIVEN a HunterCreed member

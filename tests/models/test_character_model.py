@@ -3,8 +3,8 @@
 
 import pytest
 from rich import print
-from tests.factories import *
 
+from tests.factories import *
 from valentina.constants import CharacterConcept, CharClass, HunterCreed, TraitCategory, VampireClan
 from valentina.models import Character, CharacterTrait
 from valentina.utils import errors
@@ -32,7 +32,7 @@ async def test_create_new(character_factory):
     assert character.creed == HunterCreed.AVENGER
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_custom_enum_names(character_factory):
     """Test creating a character with invalid enum names."""
     # GIVEN a character
@@ -51,7 +51,7 @@ async def test_custom_enum_names(character_factory):
         assert character.char_class
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_full_name(character_factory):
     """Test the full_name computed property."""
     # GIVEN a character
@@ -72,7 +72,7 @@ async def test_full_name(character_factory):
     assert character.full_name == "John 'JD' Doe"
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_add_custom_trait(character_factory):
     """Test the add_trait method."""
     # GIVEN a character
@@ -97,7 +97,7 @@ async def test_add_custom_trait(character_factory):
     assert all_traits[0].is_custom
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_add_trait(character_factory):
     """Test the add_trait method."""
     # GIVEN a character
@@ -123,7 +123,7 @@ async def test_add_trait(character_factory):
     assert not all_traits[0].is_custom
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_add_trait_already_exists(character_factory, trait_factory):
     """Test the add_trait method."""
     # GIVEN a character
@@ -138,7 +138,7 @@ async def test_add_trait_already_exists(character_factory, trait_factory):
         await character.add_trait(TraitCategory.PHYSICAL, "Strength", 2, 10)
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_fetch_trait_by_name(character_factory, trait_factory):
     """Test the fetch_trait_by_name method."""
     # GIVEN a character with a traits

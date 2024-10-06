@@ -4,17 +4,17 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from tests.conftest import GUILD_ID
 
+from tests.conftest import GUILD_ID
 from valentina.models import AWSService
 from valentina.utils import errors
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_get_key_prefix(mock_ctx1):
     """Test get_key_prefix."""
     with pytest.raises(errors.ValidationError):
-        AWSService.get_key_prefix(mock_ctx1, "something") == ""
+        AWSService.get_key_prefix(mock_ctx1, "something") == ""  # noqa: B015
 
     assert AWSService.get_key_prefix(mock_ctx1, "guild") == str(GUILD_ID)
     assert AWSService.get_key_prefix(mock_ctx1, "user") == "1/users/1"
@@ -22,7 +22,7 @@ def test_get_key_prefix(mock_ctx1):
     assert AWSService.get_key_prefix(mock_ctx1, "campaign", campaign_id=200) == "1/campaigns/200"
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 def test_get_url(mocker):
     """Test get_url."""
     # GIVEN a patched boto3 client

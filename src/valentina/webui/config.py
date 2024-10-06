@@ -36,3 +36,4 @@ class Testing(Config):
     """Testing environment configuration."""
 
     TESTING = True
+    SECRET_KEY = "9a2b67970e3b47618342c41210c5e194"  # noqa: S105

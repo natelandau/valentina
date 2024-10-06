@@ -2,14 +2,14 @@
 """Test the autocomplete functions."""
 
 import pytest
-from tests.factories import *
 
+from tests.factories import *
 from valentina.constants import TraitCategory
-from valentina.models import Campaign, CharacterSheetSection
+from valentina.models import CharacterSheetSection
 from valentina.utils import autocomplete
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_campaign(campaign_factory, mock_ctx1):
     """Test the select_campaign function."""
     # GIVEN a campaign in the database
@@ -31,7 +31,7 @@ async def test_select_campaign(campaign_factory, mock_ctx1):
     assert result[0].value == str(campaign.id)
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_select_vampire_clan(mock_ctx1):
     """Test the select_vampire_clan function."""
     # GIVEN a mock context
@@ -55,7 +55,7 @@ async def test_select_vampire_clan(mock_ctx1):
     assert len(result) == 0
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_select_char_class(mock_ctx1):
     """Test the select_char_class function."""
     # GIVEN a mock context
@@ -79,7 +79,7 @@ async def test_select_char_class(mock_ctx1):
     assert len(result) == 0
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_select_char_concept(mock_ctx1):
     """Test the select_char_concept function."""
     # GIVEN a mock context
@@ -103,7 +103,7 @@ async def test_select_char_concept(mock_ctx1):
     assert len(result) == 0
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_select_char_level(mock_ctx1):
     """Test the select_char_level function."""
     # GIVEN a mock context
@@ -127,7 +127,7 @@ async def test_select_char_level(mock_ctx1):
     assert len(result) == 0
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_select_trait_category(mock_ctx1):
     """Test the select_trait_category function."""
     # GIVEN a mock context
@@ -151,7 +151,7 @@ async def test_select_trait_category(mock_ctx1):
     assert len(result) == 0
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_storyteller_character(mock_ctx1, character_factory):
     """Test the select_storyteller_character function."""
     # GIVEN two characters in the database and a mock_ context
@@ -189,7 +189,7 @@ async def test_select_storyteller_character(mock_ctx1, character_factory):
     assert result[0].value == str(character1.id)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_chapter(
     mock_ctx1, book_factory, book_chapter_factory, mock_discord_book_channel
 ):
@@ -215,7 +215,7 @@ async def test_select_chapter(
     assert result[0].value == str(chapter_object.id)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_book_from_channel(
     mock_ctx1, book_factory, campaign_factory, mock_discord_book_channel
 ):
@@ -239,7 +239,7 @@ async def test_select_book_from_channel(
     assert result[0].value == str(book_object.id)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_book_no_campaign(
     mock_ctx1, book_factory, campaign_factory, mock_discord_unassociated_channel
 ):
@@ -262,7 +262,7 @@ async def test_select_book_no_campaign(
     assert "No active campaign" in result[0].name
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_char_trait(mock_ctx1, character_factory, trait_factory):
     """Test the select_char_trait function."""
     # GIVEN a character with a trait and a user with an active character
@@ -292,7 +292,7 @@ async def test_select_char_trait(mock_ctx1, character_factory, trait_factory):
     assert result[0].value == str(trait.id)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_char_trait_no_channel(mock_ctx1, character_factory, trait_factory):
     """Test the select_char_trait function."""
     # GIVEN a database without a character associated with the channel where the command is run
@@ -322,7 +322,7 @@ async def test_select_char_trait_no_channel(mock_ctx1, character_factory, trait_
     assert result[0].name == "Rerun command in a character channel"
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_char_trait_two(mock_ctx1, character_factory, trait_factory):
     """Test the select_char_trait_two function."""
     # GIVEN a character with a trait and a user with an active character
@@ -352,7 +352,7 @@ async def test_select_char_trait_two(mock_ctx1, character_factory, trait_factory
     assert result[0].value == str(trait.id)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_custom_section(mock_ctx1, character_factory, user_factory):
     """Test the select_custom_section function."""
     # GIVEN a character with a custom section and a user with an active character
@@ -382,7 +382,7 @@ async def test_select_custom_section(mock_ctx1, character_factory, user_factory)
     assert result[0].value == "0"
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_campaign_character_from_user(
     mock_ctx1, character_factory, user_factory, campaign_factory
 ):
@@ -443,7 +443,7 @@ async def test_select_campaign_character_from_user(
     assert result[0].value == str(character1.id)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_any_player_character(mock_ctx1, character_factory, user_factory):
     """Test the select_any_player_character function."""
     user = user_factory.build(id=mock_ctx1.author.id, name="mock_user")
@@ -493,7 +493,7 @@ async def test_select_any_player_character(mock_ctx1, character_factory, user_fa
     assert result[0].value == str(character1.id)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_trait_from_char_option(mock_ctx1, character_factory, trait_factory):
     """Test the select_trait_from_char_option function."""
     trait = trait_factory.build(
@@ -522,7 +522,7 @@ async def test_select_trait_from_char_option(mock_ctx1, character_factory, trait
     assert result[0].value == str(trait.id)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_select_trait_from_char_option_two(mock_ctx1, character_factory, trait_factory):
     """Test the select_trait_from_char_option_two function."""
     trait = trait_factory.build(

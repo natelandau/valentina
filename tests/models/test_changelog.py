@@ -80,7 +80,7 @@ sample_changelog = """
 """
 
 
-@pytest.fixture()
+@pytest.fixture
 def changelog(tmp_path, mocker):
     """Create a sample changelog file."""
     changelog = tmp_path / "CHANGELOG.md"
@@ -171,7 +171,7 @@ def test_changelog_init(changelog, mock_bot):
     }
 
 
-def test__clean_changelog(changelog, mock_bot):  # noqa: ARG001
+def test__clean_changelog(changelog, mock_bot):
     """Test the __clean_changelog method."""
     parser = ChangelogParser(
         mock_bot,
@@ -220,14 +220,14 @@ def test__clean_changelog(changelog, mock_bot):  # noqa: ARG001
     }
 
 
-def test_changelog_list_of_versions(changelog, mock_bot):  # noqa: ARG001
+def test_changelog_list_of_versions(changelog, mock_bot):
     """Test the ChangelogParser list_of_versions property."""
     parser = ChangelogParser(mock_bot, oldest_version="1.1.0", newest_version="2.0.0")
 
     assert parser.list_of_versions() == ["2.0.0", "1.1.0"]
 
 
-def test_changelog_has_updates(changelog, mock_bot):  # noqa: ARG001
+def test_changelog_has_updates(changelog, mock_bot):
     """Test the ChangelogParser has_updates method."""
     parser = ChangelogParser(mock_bot)
     assert parser.has_updates() is True
@@ -237,7 +237,7 @@ def test_changelog_has_updates(changelog, mock_bot):  # noqa: ARG001
     assert parser.has_updates() is False
 
 
-def test_changelog_get_embed(changelog, mock_bot):  # noqa: ARG001
+def test_changelog_get_embed(changelog, mock_bot):
     """Test the ChangelogParser get_embed method."""
     parser = ChangelogParser(mock_bot, oldest_version="1.1.0", newest_version="1.1.0")
 
@@ -259,7 +259,7 @@ View the [full changelog on Github](https://github.com/natelandau/valentina/rele
     )
 
 
-def test_changelog_get_embed_exclude_oldest(changelog, mock_bot):  # noqa: ARG001
+def test_changelog_get_embed_exclude_oldest(changelog, mock_bot):
     """Test the ChangelogParser get_embed method with exclude_oldest."""
     parser = ChangelogParser(
         mock_bot, oldest_version="1.1.0", newest_version="2.0.0", exclude_oldest_version=True

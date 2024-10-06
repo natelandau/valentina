@@ -5,8 +5,8 @@ import datetime
 
 import pytest
 from discord.ext.commands import BadArgument
-from tests.factories import *
 
+from tests.factories import *
 from valentina.constants import (
     CharacterConcept,
     CharClass,
@@ -33,7 +33,7 @@ from valentina.utils.converters import (
 )
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_valid_char_class():
     """Test the ValidCharClass converter."""
     # GIVEN a ctx objext
@@ -48,7 +48,7 @@ async def test_valid_char_class():
         await ValidCharClass().convert(None, "NOT A CLASS")
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_valid_character_concept():
     """Test the ValidCharacterConcept converter."""
     # GIVEN a ctx objext
@@ -63,7 +63,7 @@ async def test_valid_character_concept():
         await ValidCharacterConcept().convert(None, "NOT_EXISTS")
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_valid_rng_level():
     """Test the ValidCharacterLevel converter."""
     # GIVEN a ctx objext
@@ -78,7 +78,7 @@ async def test_valid_rng_level():
         await ValidCharacterLevel().convert(None, "NOT_EXISTS")
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_valid_character_name():
     """Test the ValidCharacterName converter."""
     # WHEN the converter is called with a valid name
@@ -100,7 +100,7 @@ async def test_valid_character_name():
         await ValidCharacterName().convert(None, "Test!Name")
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_valid_clan():
     """Test the ValidClan converter."""
     # WHEN the converter is called with a valid class name
@@ -160,7 +160,7 @@ async def test_valid_campaign(campaign_factory):
         await ValidCampaign().convert(None, "6542b9437aac63f18a1fc237")
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_valid_image_url():
     """Test the ValidImageURL converter."""
     # WHEN the converter is called with an invalid url
@@ -169,7 +169,7 @@ async def test_valid_image_url():
         await ValidImageURL().convert(None, "not a url")
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_valid_trait_category():
     """Test the ValidTraitCategory converter."""
     # WHEN the converter is called with a valid trait category
@@ -182,7 +182,7 @@ async def test_valid_trait_category():
         await ValidTraitCategory().convert(None, "not_valid")
 
 
-@pytest.mark.no_db()
+@pytest.mark.no_db
 async def test_valid_yyyymmdd():
     """Test the ValidYYYYMMDD converter."""
     # WHEN the converter is called with a valid date
@@ -195,7 +195,7 @@ async def test_valid_yyyymmdd():
         await ValidYYYYMMDD().convert(None, "01-01-2021")
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_valid_chapter_number(
     mock_ctx1, book_chapter_factory, book_factory, mock_discord_book_channel
 ):
@@ -227,7 +227,7 @@ async def test_valid_chapter_number(
         await ValidChapterNumber().convert(mock_ctx1, 2)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_campaign_chapter_converter(mock_ctx1, campaign_factory):
     """Test the CampaignChapterConverter converter.
 
@@ -259,7 +259,7 @@ async def test_campaign_chapter_converter(mock_ctx1, campaign_factory):
         await CampaignChapterConverter().convert(mock_ctx1, 0)
 
 
-@pytest.mark.drop_db()
+@pytest.mark.drop_db
 async def test_valid_book_number(mock_ctx1, campaign_factory, book_factory):
     """Test the ValidBookNumber converter."""
     book = book_factory.build()
