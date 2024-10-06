@@ -13,7 +13,7 @@ from valentina.utils.helpers import convert_int_to_emoji
 p = inflect.engine()
 
 if TYPE_CHECKING:
-    from valentina.models.bot import ValentinaContext
+    from valentina.discord.bot import ValentinaContext
 
 
 class DiceRoll:

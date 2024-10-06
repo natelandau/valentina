@@ -26,13 +26,13 @@ from valentina.constants import (
     PermissionsManageTraits,
     RollResultType,
 )
+from valentina.discord.utils.discord_utils import create_player_role, create_storyteller_role
 from valentina.utils import errors
-from valentina.utils.discord_utils import create_player_role, create_storyteller_role
 from valentina.utils.helpers import time_now
 
 if TYPE_CHECKING:
+    from valentina.discord.bot import ValentinaContext
     from valentina.models import Campaign
-    from valentina.models.bot import ValentinaContext
 
 
 class GuildRollResultThumbnail(BaseModel):

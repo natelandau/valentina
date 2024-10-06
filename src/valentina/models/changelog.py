@@ -20,7 +20,7 @@ from valentina.utils import errors
 from .guild import Guild
 
 if TYPE_CHECKING:
-    from valentina.models.bot import ValentinaContext
+    from valentina.discord.bot import ValentinaContext
 
 
 class ChangelogPoster:  # pragma: no cover

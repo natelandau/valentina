@@ -35,7 +35,7 @@ USER_GUIDE_PATH = PROJECT_ROOT_PATH / "user_guide.md"
 WEBUI_ROOT_PATH = PROJECT_ROOT_PATH / "src" / "valentina" / "webui"
 WEBUI_STATIC_DIR_PATH = WEBUI_ROOT_PATH / "static"
 BLUEPRINT_FOLDER_PATH = WEBUI_ROOT_PATH / "blueprints"
-COGS_PATH = PROJECT_ROOT_PATH / "src" / "valentina" / "cogs"
+COGS_PATH = PROJECT_ROOT_PATH / "src" / "valentina" / "discord" / "cogs"
 
 COOL_POINT_VALUE = 10  # 1 cool point equals this many xp
 DEFAULT_DIFFICULTY = 6  # Default difficulty for a roll
