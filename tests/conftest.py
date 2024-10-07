@@ -225,12 +225,6 @@ async def async_mock_ctx1(
     mock_ctx.post_to_audit_log = AsyncMock()
     mock_ctx.post_to_error_log = AsyncMock()
 
-    # Mock permissions as True
-    mock_ctx.can_grant_xp = AsyncMock(return_value=True)
-    mock_ctx.can_kill_character = AsyncMock(return_value=True)
-    mock_ctx.can_manage_traits = AsyncMock(return_value=True)
-    mock_ctx.can_manage_campaign = AsyncMock(return_value=True)
-
     return mock_ctx
 
 

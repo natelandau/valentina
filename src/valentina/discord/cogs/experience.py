@@ -12,7 +12,7 @@ from valentina.discord.utils.autocomplete import select_char_trait
 from valentina.discord.utils.converters import ValidTraitFromID
 from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.views import confirm_action, present_embed
-from valentina.models import User
+from valentina.models import PermissionManager, User
 from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
 
 p = inflect.engine()
@@ -49,7 +49,8 @@ class Experience(commands.Cog):
         else:
             user = await User.get(user.id)
 
-        if not await ctx.can_grant_xp(user):
+        permission_mngr = PermissionManager(ctx.guild.id)
+        if not await permission_mngr.can_grant_xp(author_id=ctx.author.id, target_id=user.id):
             await present_embed(
                 ctx,
                 title="You do not have permission to add experience to this user",
@@ -99,7 +100,8 @@ class Experience(commands.Cog):
         else:
             user = await User.get(user.id)
 
-        if not await ctx.can_grant_xp(user):
+        permission_mngr = PermissionManager(ctx.guild.id)
+        if not await permission_mngr.can_grant_xp(author_id=ctx.author.id, target_id=user.id):
             await present_embed(
                 ctx,
                 title="You do not have permission to add experience to this user",
