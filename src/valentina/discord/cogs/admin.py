@@ -207,7 +207,7 @@ class AdminCog(commands.Cog):
     @user.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def add_role(
+    async def role_add(
         self,
         ctx: ValentinaContext,
         member: discord.Member,
@@ -229,6 +229,34 @@ class AdminCog(commands.Cog):
             return
 
         await member.add_roles(role, reason=reason)
+
+        await msg.edit_original_response(embed=confirmation_embed, view=None)
+
+    @user.command()
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def role_remove(
+        self,
+        ctx: ValentinaContext,
+        member: discord.Member,
+        role: discord.Role,
+        reason: Option(str, description="Reason for removing role", default="No reason provided"),
+        hidden: Option(
+            bool,
+            description="Make the response visible only to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Add user to role."""
+        # Confirm the action
+        title = f"Remove {role.name} from {member.display_name}"
+        is_confirmed, msg, confirmation_embed = await confirm_action(
+            ctx, title, description=reason, hidden=hidden
+        )
+        if not is_confirmed:
+            return
+
+        await member.remove_roles(role, reason=reason)
 
         await msg.edit_original_response(embed=confirmation_embed, view=None)
 

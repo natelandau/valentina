@@ -382,6 +382,7 @@ class Valentina(commands.Bot):
         self.version = version
         self.owner_channels = [int(x) for x in ValentinaConfig().owner_channels.split(",")]
         self.sync_from_web.start()
+        self.sync_roles_to_db.start()
 
         # Load Cogs
         # #######################
@@ -616,5 +617,47 @@ class Valentina(commands.Bot):
 
     @sync_from_web.before_loop
     async def before_sync_from_web(self) -> None:
+        """Wait for the bot to be ready before starting the sync_from_web task."""
+        await self.wait_until_ready()
+
+    @tasks.loop(minutes=10)
+    async def sync_roles_to_db(self) -> None:
+        """Log Storytellers and administrators to the database."""
+        logger.info("SYNC: Running sync_roles_to_db task")
+        for guild in self.guilds:
+            guild_db_obj = await Guild.get(guild.id)
+            for member in [x for x in guild.members if not x.bot]:
+                if (
+                    member.guild_permissions.administrator
+                    and member.id not in guild_db_obj.administrators
+                ):
+                    guild_db_obj.administrators.append(member.id)
+                    await guild_db_obj.save()
+                    logger.info(f"PERMS: Add {member.name} as administrator in database")
+                if (
+                    not member.guild_permissions.administrator
+                    and member.id in guild_db_obj.administrators
+                ):
+                    guild_db_obj.administrators.remove(member.id)
+                    await guild_db_obj.save()
+                    logger.info(f"PERMS: Remove {member.name} as administrator in database")
+                if (
+                    any(role.name in ("Storyteller", "@Storyteller") for role in member.roles)
+                    and member.id not in guild_db_obj.storytellers
+                ):
+                    guild_db_obj.storytellers.append(member.id)
+                    await guild_db_obj.save()
+                    logger.info(f"PERMS: Add {member.name} as @Storyteller in database")
+
+                if (
+                    not any(role.name in ("Storyteller", "@Storyteller") for role in member.roles)
+                    and member.id in guild_db_obj.storytellers
+                ):
+                    guild_db_obj.storytellers.remove(member.id)
+                    await guild_db_obj.save()
+                    logger.info(f"PERMS: Remove {member.name} as @Storyteller in database")
+
+    @sync_roles_to_db.before_loop
+    async def before_sync_roles_to_db(self) -> None:
         """Wait for the bot to be ready before starting the sync_from_web task."""
         await self.wait_until_ready()
