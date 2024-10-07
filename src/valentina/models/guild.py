@@ -79,6 +79,8 @@ class Guild(Document):
     name: str
     permissions: GuildPermissions = GuildPermissions()
     roll_result_thumbnails: list[GuildRollResultThumbnail] = Field(default_factory=list)
+    storytellers: list[int] = Field(default_factory=list)
+    administrators: list[int] = Field(default_factory=list)
 
     @before_event(Insert, Replace, Save, Update, SaveChanges)
     async def update_modified_date(self) -> None:

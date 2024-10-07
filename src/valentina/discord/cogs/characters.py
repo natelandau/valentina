@@ -49,7 +49,7 @@ from valentina.discord.views import (
     present_embed,
     show_sheet,
 )
-from valentina.models import AWSService, Character, CharacterSheetSection, User
+from valentina.models import AWSService, Character, CharacterSheetSection, PermissionManager, User
 from valentina.utils import errors
 from valentina.utils.helpers import (
     fetch_data_from_url,
@@ -73,6 +73,33 @@ class CharactersCog(commands.Cog, name="Character"):
     section = chars.create_subgroup("section", "Work with character custom sections")
     trait = chars.create_subgroup("trait", "Work with character traits")
     admin = chars.create_subgroup("admin", "Admin commands for characters")
+
+    async def check_mng_trait_perms(self, ctx: ValentinaContext, character_id: str) -> bool:
+        """Check if the user has permissions to run a command that manages traits.
+
+        Args:
+            ctx (ValentinaContext): The context of the command
+            character_id (str): The character ID
+
+        Returns:
+            bool: True if the user has permissions; otherwise, False
+        """
+        permission_mngr = PermissionManager(ctx.guild.id)
+
+        if not await permission_mngr.can_manage_traits(
+            author_id=ctx.author.id, character_id=character_id
+        ):
+            await present_embed(
+                ctx,
+                title="Permission error",
+                description="You do not have permissions to run this command\nSpeak to an administrator",
+                level="error",
+                ephemeral=True,
+                delete_after=30,
+            )
+            return False
+
+        return True
 
     @chars.command(name="add", description="Add a character to Valentina from a sheet")
     async def add_character(
@@ -249,8 +276,8 @@ class CharactersCog(commands.Cog, name="Character"):
         character = channel_objects.character
         campaign = channel_objects.campaign
 
-        # Guard statement: check permissions
-        if not await ctx.can_kill_character(character):
+        permission_mngr = PermissionManager(ctx.guild.id)
+        if not await permission_mngr.can_kill_character(ctx.author.id, str(character.id)):
             await present_embed(
                 ctx,
                 title="Permission error",
@@ -451,15 +478,7 @@ class CharactersCog(commands.Cog, name="Character"):
         channel_objects = await fetch_channel_object(ctx, need_character=True)
         character = channel_objects.character
 
-        if not await ctx.can_manage_traits(character):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to add traits to this character\nSpeak to an administrator",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not await self.check_mng_trait_perms(ctx, str(character.id)):
             return
 
         title = f"Add trait: `{name.title()}` at `{value}` dots for {character.name}"
@@ -497,16 +516,7 @@ class CharactersCog(commands.Cog, name="Character"):
         channel_objects = await fetch_channel_object(ctx, need_character=True)
         character = channel_objects.character
 
-        # Guard statement: check permissions
-        if not await ctx.can_manage_traits(character):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to update traits on this character\nSpeak to an administrator or spend xp.",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not await self.check_mng_trait_perms(ctx, str(character.id)):
             return
 
         if not 0 <= new_value <= trait.max_value:
@@ -555,16 +565,7 @@ class CharactersCog(commands.Cog, name="Character"):
         channel_objects = await fetch_channel_object(ctx, need_character=True)
         character = channel_objects.character
 
-        # Guard statement: check permissions
-        if not await ctx.can_manage_traits(character):
-            await present_embed(
-                ctx,
-                title="Permission error",
-                description="You do not have permissions to delete traits from this character",
-                level="error",
-                ephemeral=True,
-                delete_after=30,
-            )
+        if not await self.check_mng_trait_perms(ctx, str(character.id)):
             return
 
         title = f"Delete trait `{trait.name}` from `{character.name}`"

@@ -44,6 +44,7 @@ from valentina.models import (
     CampaignBookChapter,
     CampaignNPC,
     Guild,
+    PermissionManager,
 )
 from valentina.utils.helpers import truncate_string
 
@@ -65,7 +66,9 @@ class CampaignCog(commands.Cog):
 
     async def check_permissions(self, ctx: ValentinaContext) -> bool:
         """Check if the user has permissions to run the command."""
-        if not await ctx.can_manage_campaign():
+        permission_mngr = PermissionManager(ctx.guild.id)
+
+        if not await permission_mngr.can_manage_campaign(ctx.author.id):
             await present_embed(
                 ctx,
                 title="Permission error",
