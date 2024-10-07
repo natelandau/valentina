@@ -92,6 +92,10 @@ class Emoji(Enum):
     WARNING = "⚠️"
     WEREWOLF = "🐺"
     YES = "✅"
+    CHANNEL_PLAYER = "👤"
+    CHANNEL_PRIVATE = "🔒"
+    CHANNEL_GENERAL = "✨"
+    CHANNEL_PLAYER_DEAD = "💀"
 
 
 class LogLevel(StrEnum):
@@ -104,6 +108,24 @@ class LogLevel(StrEnum):
     SUCCESS = "SUCCESS"
     ERROR = "ERROR"
     CRITICAL = "CRITICAL"
+
+
+class DBSyncUpdateType(str, Enum):
+    """Type of update to sync between web and discord."""
+
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+
+
+class DBSyncModelType(str, Enum):
+    """Model type to sync between web and discord."""
+
+    CAMPAIGN = "campaign"
+    CHARACTER = "character"
+    GUILD = "guild"
+    ROLE = "role"
+    USER = "user"
 
 
 class ChannelPermission(Enum):
@@ -119,8 +141,8 @@ class ChannelPermission(Enum):
 class CampaignChannelName(Enum):
     """Enum for common campaign channel names."""
 
-    GENERAL = f"{Emoji.SPARKLES.value}-general"
-    STORYTELLER = f"{Emoji.LOCK.value}-storyteller"
+    GENERAL = f"{Emoji.CHANNEL_GENERAL.value}-general"
+    STORYTELLER = f"{Emoji.CHANNEL_PRIVATE.value}-storyteller"
 
 
 class DiceType(Enum):

@@ -3,15 +3,26 @@
 from typing import ClassVar
 
 from flask_discord import requires_authorization
-from loguru import logger
-from markupsafe import escape
-from quart import abort, render_template, request, session, url_for
+from quart import abort, request, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
 
-from valentina.constants import CharSheetSection, InventoryItemType, TraitCategory
-from valentina.models import AWSService, Character, CharacterTrait, InventoryItem, Statistics
+from valentina.constants import (
+    CharSheetSection,
+    DBSyncModelType,
+    DBSyncUpdateType,
+    InventoryItemType,
+    TraitCategory,
+)
+from valentina.models import (
+    AWSService,
+    Character,
+    CharacterTrait,
+    InventoryItem,
+    Statistics,
+    WebDiscordSync,
+)
 from valentina.webui import catalog
 from valentina.webui.utils.discord import post_to_audit_log
 from valentina.webui.utils.helpers import update_session
@@ -116,35 +127,6 @@ class CharacterView(MethodView):
         # remove all empty dictionary entries
         return {k: v for k, v in inventory.items() if v}
 
-    async def process_form_data(self, character: Character) -> None:
-        """Process form data and update character attributes accordingly.
-
-        Iterate over the form data, updating the character's attributes if they exist
-        and the value is not "None". Escape any non-empty values to prevent injection.
-        Log a warning if an attribute in the form does not exist on the character object.
-
-        Args:
-            character (Character): The character object to be updated with the form data.
-
-        Returns:
-            None
-        """
-        form = await request.form
-
-        # Iterate over all form fields and update character attributes if they exist and are not "None"
-        for key, value in form.items():
-            if hasattr(character, key):
-                v = value if value != "" else None
-                if getattr(character, key) != v:
-                    setattr(character, key, escape(v) if v else None)
-
-            if not hasattr(character, key):
-                logger.warning(f"Character attribute {key} not found.")
-
-            # TODO: Implement channel renaming
-
-        await character.save()
-
     async def get_character_image_urls(self, character: Character) -> list[str]:
         """Retrieve and return a list of image URLs for the specified character.
 
@@ -223,25 +205,6 @@ class CharacterView(MethodView):
             character=character,
             traits=await self.get_character_sheet_traits(character),
             success_msg=success_msg,
-        )
-
-    async def post(self, character_id: str = "") -> str:
-        """Handle POST requests."""
-        character = await self.get_character_object(character_id)
-        traits = await self.get_character_sheet_traits(character)
-        inventory = await self.get_character_inventory(character)
-        stats_engine = Statistics(guild_id=session["GUILD_ID"])
-        statistics = await stats_engine.character_statistics(character, as_json=True)
-
-        await self.process_form_data(character)
-
-        return await render_template(
-            "character.html",
-            character=character,
-            traits=traits,
-            inventory_item_types=inventory,
-            args=request.args,
-            statistics=statistics,
         )
 
 
@@ -338,6 +301,16 @@ class CharacterEdit(MethodView):
                     setattr(character, key, form_data[key])
 
             if has_updates:
+                sync_object = WebDiscordSync(
+                    object_id=str(character.id),
+                    object_type=DBSyncModelType.CHARACTER,
+                    update_type=DBSyncUpdateType.UPDATE,
+                    target="discord",
+                    guild_id=str(session["GUILD_ID"]),
+                    user_id=str(session["DISCORD_USER_ID"]),
+                )
+                await sync_object.save()
+
                 await character.save()
                 await post_to_audit_log(
                     msg=f"Character {character.name} edited",
@@ -352,7 +325,9 @@ class CharacterEdit(MethodView):
             response.headers["hx-redirect"] = url_for(
                 "character_view.view",
                 character_id=character_id,
-                success_msg="Character updated!" if has_updates else "No changes made.",
+                success_msg="<strong>Character updated!</strong><br><small>Changes will be reflected in Discord within ten minutes.</small>"
+                if has_updates
+                else "No changes made.",
             )
             return response
 

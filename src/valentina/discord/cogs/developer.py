@@ -23,6 +23,7 @@ from valentina.constants import (
 )
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.characters import RNGCharGen
+from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_aws_object_from_guild,
     select_changelog_version_1,
@@ -44,6 +45,7 @@ from valentina.models import (
     InventoryItem,
     RollProbability,
     User,
+    WebDiscordSync,
 )
 from valentina.utils import ValentinaConfig, instantiate_logger
 
@@ -56,8 +58,6 @@ class Developer(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot: Valentina = bot
         self.aws_svc = AWSService()
-
-    ### BOT ADMINISTRATION COMMANDS ################################################################
 
     developer = discord.SlashCommandGroup(
         "developer",
@@ -89,6 +89,43 @@ class Developer(commands.Cog):
         "View bot statistics",
         default_member_permissions=discord.Permissions(administrator=True),
     )
+    maintenance = developer.create_subgroup(
+        "maintenance",
+        "maintenance commands",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
+
+    ## MAINTENANCE COMMANDS ################################################################
+    @maintenance.command(
+        name="clear_sync_cache", description="Clear processed web/discord sync data from the DB"
+    )
+    @commands.is_owner()
+    async def clear_sync_cache(
+        self,
+        ctx: ValentinaContext,
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Clears processed web/discord sync data from the database."""
+        processed_syncs = await WebDiscordSync.find(WebDiscordSync.processed == True).to_list()  # noqa: E712
+
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx,
+            title=f"Delete {len(processed_syncs)} processed syncs from the database",
+            hidden=hidden,
+            audit=False,
+        )
+
+        if not is_confirmed:
+            return
+
+        for sync in processed_syncs:
+            await sync.delete()
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### S3 COMMANDS ################################################################
     @s3.command(
@@ -225,8 +262,10 @@ class Developer(commands.Cog):
 
         # Create discord channels and add campaigns to the guild
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
+
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
         for campaign in created_campaigns:
-            await campaign.create_channels(ctx)
+            await channel_manager.confirm_campaign_channels(campaign)
             guild.campaigns.append(campaign)
 
         await guild.save()
