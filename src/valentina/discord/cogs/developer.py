@@ -45,6 +45,7 @@ from valentina.models import (
     InventoryItem,
     RollProbability,
     User,
+    WebDiscordSync,
 )
 from valentina.utils import ValentinaConfig, instantiate_logger
 
@@ -57,8 +58,6 @@ class Developer(commands.Cog):
     def __init__(self, bot: Valentina) -> None:
         self.bot: Valentina = bot
         self.aws_svc = AWSService()
-
-    ### BOT ADMINISTRATION COMMANDS ################################################################
 
     developer = discord.SlashCommandGroup(
         "developer",
@@ -90,6 +89,43 @@ class Developer(commands.Cog):
         "View bot statistics",
         default_member_permissions=discord.Permissions(administrator=True),
     )
+    maintenance = developer.create_subgroup(
+        "maintenance",
+        "maintenance commands",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
+
+    ## MAINTENANCE COMMANDS ################################################################
+    @maintenance.command(
+        name="clear_sync_cache", description="Clear processed web/discord sync data from the DB"
+    )
+    @commands.is_owner()
+    async def clear_sync_cache(
+        self,
+        ctx: ValentinaContext,
+        hidden: Option(
+            bool,
+            description="Make the interaction only visible to you (default true).",
+            default=True,
+        ),
+    ) -> None:
+        """Clears processed web/discord sync data from the database."""
+        processed_syncs = await WebDiscordSync.find(WebDiscordSync.processed == True).to_list()  # noqa: E712
+
+        is_confirmed, interaction, confirmation_embed = await confirm_action(
+            ctx,
+            title=f"Delete {len(processed_syncs)} processed syncs from the database",
+            hidden=hidden,
+            audit=False,
+        )
+
+        if not is_confirmed:
+            return
+
+        for sync in processed_syncs:
+            await sync.delete()
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### S3 COMMANDS ################################################################
     @s3.command(

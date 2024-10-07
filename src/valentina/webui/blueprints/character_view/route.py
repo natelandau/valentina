@@ -325,7 +325,9 @@ class CharacterEdit(MethodView):
             response.headers["hx-redirect"] = url_for(
                 "character_view.view",
                 character_id=character_id,
-                success_msg="Character updated!" if has_updates else "No changes made.",
+                success_msg="<strong>Character updated!</strong><br><small>Changes will be reflected in Discord within ten minutes.</small>"
+                if has_updates
+                else "No changes made.",
             )
             return response
 

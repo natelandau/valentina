@@ -53,6 +53,37 @@ class ChannelManager:
 
         return (5, channel.name)
 
+    async def _confirm_campaign_common_channels(
+        self,
+        campaign: Campaign,
+        category: discord.CategoryChannel,
+        channels: list[discord.TextChannel],
+    ) -> None:
+        """Ensure common campaign channels exist and are up-to-date.
+
+        This method checks for the existence of common campaign channels within the specified category.
+        If a channel does not exist, it creates it. If a channel exists but its ID does not match the
+        database, it updates the database with the correct ID.
+
+        Args:
+            campaign (Campaign): The campaign object containing channel information.
+            category (discord.CategoryChannel): The category under which the channels should exist.
+            channels (list[discord.TextChannel]): The list of existing channels in the category.
+        """
+        for channel_db_key, channel_name in CAMPAIGN_COMMON_CHANNELS.items():
+            await asyncio.sleep(1)  # Keep the rate limit happy
+            channel_db_id = getattr(campaign, channel_db_key, None)
+            channel = await self.confirm_channel_in_category(
+                existing_category=category,
+                existing_channels=channels,
+                channel_name=channel_name,
+                channel_db_id=channel_db_id,
+            )
+
+            if not channel_db_id or channel_db_id != channel.id:
+                setattr(campaign, channel_db_key, channel.id)
+                await campaign.save()
+
     def _determine_channel_permissions(
         self, channel_name: str
     ) -> tuple[ChannelPermission, ChannelPermission, ChannelPermission]:
@@ -248,7 +279,22 @@ class ChannelManager:
     async def confirm_book_channel(
         self, book: CampaignBook, campaign: Optional[Campaign]
     ) -> discord.TextChannel | None:
-        """TKTK."""
+        """Confirm and retrieve the Discord text channel associated with a given campaign book.
+
+        This method ensures that the specified campaign book has an associated text channel
+        within the campaign's category. If the campaign is not provided, it fetches the campaign
+        using the book's campaign ID. It then verifies the existence of the campaign's category
+        and channels, creating or confirming the required text channel for the book.
+
+        Args:
+            book (CampaignBook): The campaign book for which the text channel is to be confirmed.
+            campaign (Optional[Campaign]): The campaign associated with the book. If not provided,
+                                           it will be fetched using the book's campaign ID.
+
+        Returns:
+            discord.TextChannel | None: The confirmed or newly created Discord text channel for the book, or None if the campaign category does not exist.
+        """
+        logger.debug(f"Confirming channel for book {book.number}. {book.name}")
         if not campaign:
             campaign = await Campaign.get(book.campaign)
 
@@ -271,124 +317,15 @@ class ChannelManager:
         await asyncio.sleep(1)  # Keep the rate limit happy
         return channel
 
-    async def confirm_character_channel(
-        self, character: Character, campaign: Optional[Campaign]
-    ) -> discord.TextChannel | None:
-        """TKTK."""
-        logger.debug(f"Confirming channel for character {character.name}")
+    async def confirm_campaign_channels(self, campaign: Campaign) -> None:
+        """Confirm and manage the channels for a given campaign.
 
-        if not campaign:
-            return None
-
-        category, channels = await self.fetch_campaign_category_channels(campaign=campaign)
-
-        # If the campaign category channel does not exist, return None
-        if not category:
-            return None
-
-        owned_by_user = discord.utils.get(self.guild.members, id=character.user_owner)
-        channel_name = character.channel_name
-        channel_db_id = character.channel
-
-        channel = await self.confirm_channel_in_category(
-            existing_category=category,
-            existing_channels=channels,
-            channel_name=channel_name,
-            channel_db_id=channel_db_id,
-            owned_by_user=owned_by_user,
-            topic=f"Character channel for {character.name}",
-        )
-        await character.update_channel_id(channel)
-
-        await asyncio.sleep(1)  # Keep the rate limit happy
-        return channel
-
-    async def delete_book_channel(self, book: CampaignBook) -> None:
-        """Delete the channel associated with the book."""
-        if not book.channel:
-            return
-
-        channel = self.guild.get_channel(book.channel)
-        if channel:
-            await self.delete_channel(channel)
-
-        book.channel = None
-        await book.save()
-
-    async def delete_character_channel(self, character: Character) -> None:
-        """Delete the channel associated with the character."""
-        if not character.channel:
-            return
-
-        channel = self.guild.get_channel(character.channel)
-        if channel:
-            await self.delete_channel(channel)
-
-        character.channel = None
-        await character.save()
-
-    async def fetch_campaign_category_channels(
-        self, campaign: Campaign
-    ) -> tuple[discord.CategoryChannel, list[discord.TextChannel]]:
-        """Fetch the campaign's channels in the guild.
-
-        Retrieve the category channel and its child text channels for the current campaign
-        from the Discord guild.
+        This method ensures that the necessary category and channels for the campaign exist,
+        are correctly named, and are recorded in the database.
 
         Args:
-            campaign (Campaign): The campaign to fetch the channels for.
-
-        Returns:
-            tuple[discord.CategoryChannel, list[discord.TextChannel]]: A tuple containing:
-                - The campaign category channel (discord.CategoryChannel or None if not found)
-                - A list of text channels within that category (empty list if category not found)
-
+            campaign (Campaign): The campaign object containing details about the campaign.
         """
-        for category, channels in self.guild.by_category():
-            if category and category.id == campaign.channel_campaign_category:
-                return category, [x for x in channels if isinstance(x, discord.TextChannel)]
-
-        return None, []
-
-    async def sort_campaign_channels(self, campaign: Campaign) -> None:
-        """TKTK."""
-        for category, channels in self.guild.by_category():
-            if category and category.id == campaign.channel_campaign_category:
-                sorted_channels = sorted(channels, key=self._channel_sort_order)  # type: ignore[arg-type]
-                for i, channel in enumerate(sorted_channels):
-                    if channel.position and channel.position == i:
-                        continue
-                    await channel.edit(position=i)
-                    await asyncio.sleep(2)  # Keep the rate limit happy
-
-                logger.debug(f"Sorted channels: {[channel.name for channel in sorted_channels]}")
-                break
-
-        logger.info(f"Channels sorted for campaign '{campaign.name}' in '{self.guild.name}'")
-
-    async def _confirm_campaign_common_channels(
-        self,
-        campaign: Campaign,
-        category: discord.CategoryChannel,
-        channels: list[discord.TextChannel],
-    ) -> None:
-        """TKTK."""
-        for channel_db_key, channel_name in CAMPAIGN_COMMON_CHANNELS.items():
-            await asyncio.sleep(1)  # Keep the rate limit happy
-            channel_db_id = getattr(campaign, channel_db_key, None)
-            channel = await self.confirm_channel_in_category(
-                existing_category=category,
-                existing_channels=channels,
-                channel_name=channel_name,
-                channel_db_id=channel_db_id,
-            )
-
-            if not channel_db_id or channel_db_id != channel.id:
-                setattr(campaign, channel_db_key, channel.id)
-                await campaign.save()
-
-    async def confirm_campaign_channels(self, campaign: Campaign) -> None:
-        """TKTK."""
         # Confirm the campaign category channel exists and is recorded in the database
         campaign_category_channel_name = (
             f"{Emoji.BOOKS.value}-{campaign.name.lower().replace(' ', '-')}"
@@ -471,28 +408,70 @@ class ChannelManager:
 
         logger.info(f"All channels confirmed for campaign '{campaign.name}' in '{self.guild.name}'")
 
-    async def delete_channel(
-        self,
-        channel: discord.TextChannel
-        | discord.CategoryChannel
-        | discord.VoiceChannel
-        | discord.ForumChannel
-        | discord.StageChannel
-        | int,
-    ) -> None:
-        """TKTK."""
-        if isinstance(channel, int):
-            channel = self.guild.get_channel(channel)
+    async def confirm_character_channel(
+        self, character: Character, campaign: Optional[Campaign]
+    ) -> discord.TextChannel | None:
+        """Confirm the existence of a character-specific text channel within a campaign category.
 
-        if not channel:
+        This method checks if a text channel for a given character exists within the specified campaign's category. If the campaign or category does not exist, it returns None. Otherwise, it ensures the channel exists, updates the character's channel ID, and returns the channel.
+
+        Args:
+            character (Character): The character for whom the channel is being confirmed.
+            campaign (Optional[Campaign]): The campaign within which to confirm the character's channel.
+
+        Returns:
+            discord.TextChannel | None: The confirmed text channel for the character, or None if the campaign or category does not exist.
+        """
+        logger.debug(f"Confirming channel for character {character.name}")
+
+        if not campaign:
+            return None
+
+        category, channels = await self.fetch_campaign_category_channels(campaign=campaign)
+
+        # If the campaign category channel does not exist, return None
+        if not category:
+            return None
+
+        owned_by_user = discord.utils.get(self.guild.members, id=character.user_owner)
+        channel_name = character.channel_name
+        channel_db_id = character.channel
+
+        channel = await self.confirm_channel_in_category(
+            existing_category=category,
+            existing_channels=channels,
+            channel_name=channel_name,
+            channel_db_id=channel_db_id,
+            owned_by_user=owned_by_user,
+            topic=f"Character channel for {character.name}",
+        )
+        await character.update_channel_id(channel)
+
+        await asyncio.sleep(1)  # Keep the rate limit happy
+        return channel
+
+    async def delete_book_channel(self, book: CampaignBook) -> None:
+        """Delete the Discord channel associated with the given book.
+
+        Args:
+            book (CampaignBook): The book object containing the channel information.
+        """
+        if not book.channel:
             return
 
-        logger.debug(f"GUILD: Delete channel '{channel.name}' on '{self.guild.name}'")
-        await channel.delete()
-        await asyncio.sleep(1)  # Keep the rate limit happy
+        channel = self.guild.get_channel(book.channel)
+        if channel:
+            await self.delete_channel(channel)
+
+        book.channel = None
+        await book.save()
 
     async def delete_campaign_channels(self, campaign: Campaign) -> None:
-        """Delete all channels associated with the campaign."""
+        """Delete all Discord channels associated with the given campaign.
+
+        Args:
+            campaign (Campaign): The campaign object whose channels are to be deleted.
+        """
         for book in await campaign.fetch_books():
             await self.delete_book_channel(book)
 
@@ -511,3 +490,92 @@ class ChannelManager:
             campaign.channel_campaign_category = None
             await campaign.save()
             await asyncio.sleep(1)
+
+    async def delete_channel(
+        self,
+        channel: discord.TextChannel
+        | discord.CategoryChannel
+        | discord.VoiceChannel
+        | discord.ForumChannel
+        | discord.StageChannel
+        | int,
+    ) -> None:
+        """Delete a specified channel from the guild.
+
+        This method deletes a given channel from the guild. The channel can be specified
+        as a discord.TextChannel, discord.CategoryChannel, discord.VoiceChannel,
+        discord.ForumChannel, discord.StageChannel, or an integer representing the channel ID.
+
+        Args:
+            channel (discord.TextChannel | int): The channel to delete.
+        """
+        if isinstance(channel, int):
+            channel = self.guild.get_channel(channel)
+
+        if not channel:
+            return
+
+        logger.debug(f"GUILD: Delete channel '{channel.name}' on '{self.guild.name}'")
+        await channel.delete()
+        await asyncio.sleep(1)  # Keep the rate limit happy
+
+    async def delete_character_channel(self, character: Character) -> None:
+        """Delete the channel associated with the character.
+
+        Args:
+            character (Character): The character object containing the channel information.
+        """
+        if not character.channel:
+            return
+
+        channel = self.guild.get_channel(character.channel)
+        if channel:
+            await self.delete_channel(channel)
+
+        character.channel = None
+        await character.save()
+
+    async def fetch_campaign_category_channels(
+        self, campaign: Campaign
+    ) -> tuple[discord.CategoryChannel, list[discord.TextChannel]]:
+        """Fetch the campaign's channels in the guild.
+
+        Retrieve the category channel and its child text channels for the current campaign
+        from the Discord guild.
+
+        Args:
+            campaign (Campaign): The campaign to fetch the channels for.
+
+        Returns:
+            tuple[discord.CategoryChannel, list[discord.TextChannel]]: A tuple containing:
+                - The campaign category channel (discord.CategoryChannel or None if not found)
+                - A list of text channels within that category (empty list if category not found)
+        """
+        for category, channels in self.guild.by_category():
+            if category and category.id == campaign.channel_campaign_category:
+                return category, [x for x in channels if isinstance(x, discord.TextChannel)]
+
+        return None, []
+
+    async def sort_campaign_channels(self, campaign: Campaign) -> None:
+        """Sort the campaign's channels within its category.
+
+        This method sorts the channels within the campaign's category based on a custom sorting order.
+        It ensures that the channels are positioned correctly according to the defined sort order.
+
+        Args:
+            campaign (Campaign): The campaign object containing details about the campaign.
+        """
+        for category, channels in self.guild.by_category():
+            if category and category.id == campaign.channel_campaign_category:
+                sorted_channels = sorted(channels, key=self._channel_sort_order)  # type: ignore[arg-type]
+                for i, channel in enumerate(sorted_channels):
+                    if channel.position and channel.position == i:
+                        continue
+                    await channel.edit(position=i)
+                    await asyncio.sleep(2)  # Keep the rate limit happy
+
+                logger.debug(f"Sorted channels: {[channel.name for channel in sorted_channels]}")
+                break
+
+        logger.info(f"Channels sorted for campaign '{campaign.name}' in '{self.guild.name}'")

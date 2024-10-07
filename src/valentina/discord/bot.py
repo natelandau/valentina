@@ -16,7 +16,6 @@ from loguru import logger
 
 from valentina.constants import (
     COGS_PATH,
-    ChannelPermission,
     EmbedColor,
     LogLevel,
     PermissionManageCampaign,
@@ -24,7 +23,7 @@ from valentina.constants import (
     PermissionsKillCharacter,
     PermissionsManageTraits,
 )
-from valentina.discord.models import ChannelManager, SyncDiscordFromWebManager
+from valentina.discord.models import SyncDiscordFromWebManager
 from valentina.models import (
     Campaign,
     ChangelogPoster,
@@ -366,40 +365,6 @@ class ValentinaContext(discord.ApplicationContext):
 
         return True
 
-    async def channel_update_or_add(
-        self,
-        permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
-        channel: discord.TextChannel | None = None,
-        name: str | None = None,
-        topic: str | None = None,
-        category: discord.CategoryChannel | None = None,
-        permissions_user_post: discord.User | None = None,
-    ) -> discord.TextChannel:  # pragma: no cover
-        """Create or update a channel in the guild with specified permissions and attributes.
-
-        Create a new text channel or update an existing one based on the provided name. Set permissions for default role, player role, and storyteller role. Automatically grant manage permissions to bot members. If specified, set posting permissions for a specific user.
-
-        Args:
-            permissions (tuple[ChannelPermission, ChannelPermission, ChannelPermission]): Permissions for default role, player role, and storyteller role respectively.
-            channel (discord.TextChannel, optional): Existing channel to update. Defaults to None.
-            name (str, optional): Name for the channel. Defaults to None.
-            topic (str, optional): Topic description for the channel. Defaults to None.
-            category (discord.CategoryChannel, optional): Category to place the channel in. Defaults to None.
-            permissions_user_post (discord.User, optional): User to grant posting permissions. Defaults to None.
-
-        Returns:
-            discord.TextChannel: The newly created or updated text channel.
-        """
-        channel_manager = ChannelManager(guild=self.guild, user=self.author)
-        return await channel_manager.channel_update_or_add(
-            permissions=permissions,
-            channel=channel,
-            name=name,
-            topic=topic,
-            category=category,
-            permissions_user_post=permissions_user_post,
-        )
-
 
 class Valentina(commands.Bot):
     """Extend the discord.Bot class to create a custom bot implementation.
@@ -642,7 +607,7 @@ class Valentina(commands.Bot):
         """
         return await super().get_application_context(interaction, cls=cls)
 
-    @tasks.loop(minutes=2)
+    @tasks.loop(minutes=5)
     async def sync_from_web(self) -> None:
         """Sync objects from the webui to Discord."""
         logger.debug("SYNC: Running sync_from_web task")
