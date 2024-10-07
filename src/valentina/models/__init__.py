@@ -19,6 +19,7 @@ from .database import GlobalProperty
 from .guild import Guild, GuildChannels, GuildPermissions, GuildRollResultThumbnail
 from .note import Note
 from .user import CampaignExperience, User, UserMacro
+from .web_discord_sync import WebDiscordSync
 
 from .aws import AWSService  # isort: skip
 from .statistics import Statistics, RollStatistic  # isort: skip
@@ -53,4 +54,5 @@ __all__ = [
     "Statistics",
     "User",
     "UserMacro",
+    "WebDiscordSync",
 ]

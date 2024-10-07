@@ -23,6 +23,7 @@ from valentina.constants import (
     VampireClan,
 )
 from valentina.discord.bot import Valentina, ValentinaContext
+from valentina.discord.models import ChannelManager
 from valentina.discord.views import ChangeNameModal, sheet_embed
 from valentina.models import Campaign, Character, CharacterSheetSection, CharacterTrait, User
 from valentina.utils import random_num
@@ -1402,8 +1403,12 @@ Once you select a character you can re-allocate dots and change the name, but yo
         if self.campaign:
             character.campaign = str(self.campaign.id)
             await character.save()
-            await character.confirm_channel(self.ctx, self.campaign)
-            await self.campaign.sort_channels(self.ctx)
+
+            channel_manager = ChannelManager(guild=self.ctx.guild, user=self.ctx.author)
+            await channel_manager.confirm_character_channel(
+                character=character, campaign=self.campaign
+            )
+            await channel_manager.sort_campaign_channels(self.campaign)
 
     async def spend_freebie_points(self, character: Character) -> Character:
         """Spend freebie points on a character.

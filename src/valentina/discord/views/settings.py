@@ -18,6 +18,7 @@ from valentina.constants import (
     PermissionsManageTraits,
 )
 from valentina.discord.bot import Valentina, ValentinaContext
+from valentina.discord.models import ChannelManager
 from valentina.discord.views import CancelButton
 from valentina.models import Guild
 
@@ -166,11 +167,9 @@ class SettingsChannelSelect(discord.ui.View):
             channel (discord.TextChannel): The selected Discord text channel.
         """
         if enable and channel is not None:
-            # Ensure the channel exists and has the right permissions
-            await self.ctx.channel_update_or_add(
-                channel=channel,
-                topic=self.channel_topic,
-                permissions=self.permissions,
+            channel_manager = ChannelManager(guild=self.ctx.guild, user=self.ctx.author)
+            await channel_manager.channel_update_or_add(
+                channel=channel, topic=self.channel_topic, permissions=self.permissions
             )
 
             # Update the settings in the database

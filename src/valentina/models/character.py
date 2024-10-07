@@ -1,6 +1,5 @@
 """Character models for Valentina."""
 
-import asyncio
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional, Union, cast
 
@@ -20,7 +19,6 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from valentina.constants import (
-    CHANNEL_PERMISSIONS,
     CharacterConcept,
     CharClass,
     Emoji,
@@ -35,8 +33,7 @@ from valentina.utils.helpers import get_max_trait_value, num_to_circles, time_no
 from .note import Note
 
 if TYPE_CHECKING:
-    from valentina.discord.bot import ValentinaContext
-    from valentina.models import Campaign  # noqa: TCH004
+    from valentina.models import Campaign
 
 
 class CharacterSheetSection(BaseModel):
@@ -185,7 +182,7 @@ class Character(Document):
     @property
     def channel_name(self) -> str:
         """Channel name for the book."""
-        emoji = Emoji.SILHOUETTE.value if self.is_alive else Emoji.DEAD.value
+        emoji = Emoji.CHANNEL_PLAYER.value if self.is_alive else Emoji.CHANNEL_PLAYER_DEAD.value
 
         return f"{emoji}-{self.name.lower().replace(' ', '-')}"
 
@@ -316,9 +313,7 @@ class Character(Document):
 
         return new_trait
 
-    async def associate_with_campaign(  # pragma: no cover
-        self, ctx: "ValentinaContext", new_campaign: "Campaign"
-    ) -> bool:
+    async def associate_with_campaign(self, new_campaign: "Campaign") -> bool:
         """Associate a character with a campaign.
 
         Associate the character with the specified campaign, update the database,
@@ -334,9 +329,6 @@ class Character(Document):
             bool: True if the character was successfully associated with the new
                 campaign, False if the character was already associated with the
                 campaign.
-
-        Raises:
-            None, but may propagate exceptions from called methods.
         """
         if self.campaign == str(new_campaign.id):
             logger.debug(f"Character {self.name} is already associated with {new_campaign.name}")
@@ -345,114 +337,7 @@ class Character(Document):
         self.campaign = str(new_campaign.id)
         await self.save()
 
-        await self.confirm_channel(ctx, new_campaign)
-        await new_campaign.sort_channels(ctx)
         return True
-
-    async def confirm_channel(
-        self, ctx: "ValentinaContext", campaign: Optional["Campaign"]
-    ) -> discord.TextChannel | None:
-        """Confirm or create the character's channel within the campaign.
-
-        Ensure the character's channel exists within the campaign's category. Update the channel
-        information in the database if necessary. Rename the channel if it has the wrong name.
-        Create a new channel if it doesn't exist.
-
-        Follow these steps:
-        1. Fetch the campaign if not provided.
-        2. Retrieve the campaign's category and channels.
-        3. Check if the channel name or ID exists in the category.
-        4. Update the database with the channel ID if the name exists but ID is missing.
-        5. Rename the channel if it exists with the wrong name.
-        6. Create a new channel if it doesn't exist.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild information and bot instance.
-            campaign (Optional[Campaign]): The campaign object. If not provided, fetch it using the character's campaign ID.
-
-        Returns:
-            discord.TextChannel | None: The channel object if found or created, None if the campaign category doesn't exist.
-        """
-        campaign = campaign or await Campaign.get(self.campaign)
-        if not campaign:
-            return None
-
-        category, channels = await campaign.fetch_campaign_category_channels(ctx)
-
-        if not category:
-            return None
-
-        is_channel_name_in_category = any(self.channel_name == channel.name for channel in channels)
-        is_channel_id_in_category = (
-            any(self.channel == channel.id for channel in channels) if self.channel else False
-        )
-        owned_by_user = discord.utils.get(ctx.bot.users, id=self.user_owner)
-
-        # If channel name exists in category but not in database, add channel id to self
-        if is_channel_name_in_category and not self.channel:
-            await asyncio.sleep(1)  # Keep the rate limit happy
-            for channel in channels:
-                if channel.name == self.channel_name:
-                    self.channel = channel.id
-                    await self.save()
-                    return channel
-
-        # If channel.id exists but has wrong name, rename it
-        elif self.channel and is_channel_id_in_category and not is_channel_name_in_category:
-            channel_object = next(
-                (channel for channel in channels if self.channel == channel.id), None
-            )
-            return await ctx.channel_update_or_add(
-                channel=channel_object,
-                name=self.channel_name,
-                category=category,
-                permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
-                permissions_user_post=owned_by_user,
-                topic=f"Character channel for {self.name}",
-            )
-
-        # If channel does not exist, create it
-        elif not is_channel_name_in_category:
-            await asyncio.sleep(1)  # Keep the rate limit happy
-            book_channel = await ctx.channel_update_or_add(
-                name=self.channel_name,
-                category=category,
-                permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
-                permissions_user_post=owned_by_user,
-                topic=f"Character channel for {self.name}",
-            )
-            self.channel = book_channel.id
-            await self.save()
-            return book_channel
-
-        await asyncio.sleep(1)  # Keep the rate limit happy
-        return discord.utils.get(channels, name=self.channel_name)
-
-    async def delete_channel(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Delete the channel associated with the character and update the character's information.
-
-        Remove the Discord channel linked to this character from the guild.
-        Update the character's channel information to reflect the deletion.
-        If no channel is associated or the channel doesn't exist, do nothing.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild information
-                and other relevant data for the operation.
-
-        Returns:
-            None
-        """
-        if not self.channel:
-            return
-
-        channel = ctx.guild.get_channel(self.channel)
-
-        if not channel:
-            return
-
-        await channel.delete()
-        self.channel = None
-        await self.save()
 
     async def delete_image(self, key: str) -> None:  # pragma: no cover
         """Delete a character's image from both the character data and Amazon S3.
@@ -486,48 +371,6 @@ class Character(Document):
                 return trait
 
         return None
-
-    async def update_channel_permissions(
-        self, ctx: "ValentinaContext", campaign: "Campaign"
-    ) -> discord.TextChannel | None:  # pragma: no cover
-        """Update the permissions and settings for the character's Discord channel.
-
-        Update the permissions, name, category, and topic for a character's Discord channel.
-        This method should be called after updating the character's user_owner.
-
-        Perform the following actions:
-        1. Retrieve the channel using the stored channel ID.
-        2. Generate a new channel name based on the character's name.
-        3. Fetch the user object for the character's owner.
-        4. Locate the appropriate category for the campaign.
-        5. Update the channel's name, category, permissions, and topic.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild and bot information.
-            campaign (Campaign): The campaign object to which the character belongs.
-
-        Returns:
-            discord.TextChannel | None: The updated channel object if successful, or None if the channel does not exist.
-        """
-        if not self.channel:
-            return None
-
-        channel = ctx.guild.get_channel(self.channel)
-        channel_name = f"{Emoji.SILHOUETTE.value}-{self.name.lower().replace(' ', '-')}"
-        owned_by_user = discord.utils.get(ctx.bot.users, id=self.user_owner)
-        category = discord.utils.get(ctx.guild.categories, id=campaign.channel_campaign_category)
-
-        if not channel:
-            return None
-
-        return await ctx.channel_update_or_add(
-            channel=channel,
-            name=channel_name,
-            category=category,
-            permissions=CHANNEL_PERMISSIONS["campaign_character_channel"],
-            permissions_user_post=owned_by_user,
-            topic=f"Character channel for {self.name}",
-        )
 
     def sheet_section_top_items(self) -> dict[str, str]:
         """Generate a dictionary of key attributes for the top section of a character sheet.
@@ -617,3 +460,13 @@ class Character(Document):
             for name, value in attributes
             if value and value != "None"
         }
+
+    async def update_channel_id(self, channel: discord.TextChannel) -> None:
+        """Update the character's channel ID in the database.
+
+        Args:
+            channel (discord.TextChannel): The character's channel.
+        """
+        if self.channel != channel.id:
+            self.channel = channel.id
+            await self.save()

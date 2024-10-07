@@ -12,6 +12,7 @@ from discord.ext.commands import MemberConverter
 
 from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
 from valentina.discord.bot import Valentina, ValentinaContext
+from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import select_any_player_character, select_campaign
 from valentina.discord.utils.converters import ValidCampaign, ValidCharacterObject, ValidImageURL
 from valentina.discord.utils.discord_utils import assert_permissions
@@ -75,9 +76,11 @@ class AdminCog(commands.Cog):
             return
 
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
+
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
         for campaign in guild.campaigns:
-            await campaign.delete_channels(ctx)
-            await campaign.create_channels(ctx)
+            await channel_manager.delete_campaign_channels(campaign)
+            await channel_manager.confirm_campaign_channels(campaign)
 
         await msg.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -123,7 +126,12 @@ class AdminCog(commands.Cog):
         if not is_confirmed:
             return
 
-        await character.associate_with_campaign(ctx, campaign)
+        await character.associate_with_campaign(campaign)
+
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.delete_character_channel(character)
+        await channel_manager.confirm_character_channel(character=character, campaign=campaign)
+        await channel_manager.sort_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -151,8 +159,9 @@ class AdminCog(commands.Cog):
         if not is_confirmed:
             return
 
-        for c in guild.campaigns:
-            await c.delete_channels(ctx)
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        for campaign in guild.campaigns:
+            await channel_manager.delete_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -187,7 +196,9 @@ class AdminCog(commands.Cog):
         await user.remove_character(character)
         await user.save()
 
-        await character.delete_channel(ctx)
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.delete_character_channel(character)
+
         await character.delete(link_rule=DeleteRules.DELETE_LINKS)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)

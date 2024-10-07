@@ -168,6 +168,13 @@ This project uses [uv](https://docs.astral.sh/uv/) to manage Python requirements
 -   Run `uv add {package}` from within the development environment to install a run time dependency and add it to `pyproject.toml` and `uv.lock`.
 -   Run `uv remove {package}` from within the development environment to uninstall a run time dependency and remove it from `pyproject.toml` and `uv.lock`.
 
+## Common Patterns
+
+Documentation for common patterns used in development are available here:
+
+-   [Developing the Discord bot](docs/discord.md)
+-   [Developing the WebUI](docs/webui.md)
+
 ## Third Party Package Documentation
 
 Many Python packages are used in this project. Here are some of the most important ones with links to their documentation:
