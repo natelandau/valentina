@@ -105,7 +105,6 @@ class SettingsFlags(discord.ui.View):
 
         # Get the custom_id of the button that was pressed
         response = int(interaction.data.get("custom_id", None))  # type: ignore [call-overload]
-        logger.warning(f"SettingsFlags.button_callback: {self.key}: {response}")
 
         # Update the database
         setattr(self.guild.permissions, self.key, response)

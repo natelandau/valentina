@@ -2,10 +2,9 @@
 
 import asyncio
 import inspect
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
-import arrow
 import discord
 import pymongo
 import semver
@@ -18,16 +17,11 @@ from valentina.constants import (
     COGS_PATH,
     EmbedColor,
     LogLevel,
-    PermissionManageCampaign,
-    PermissionsGrantXP,
-    PermissionsKillCharacter,
-    PermissionsManageTraits,
 )
 from valentina.discord.models import SyncDiscordFromWebManager
 from valentina.models import (
     Campaign,
     ChangelogPoster,
-    Character,
     GlobalProperty,
     Guild,
     User,
@@ -192,178 +186,6 @@ class ValentinaContext(discord.ApplicationContext):
                 await audit_log_channel.send(embed=embed)
             except discord.HTTPException as e:
                 raise errors.MessageTooLongError from e
-
-    async def can_kill_character(self, character: Character) -> bool:
-        """Determine if the user has permission to kill the specified character.
-
-        Check the user's permissions against the guild's settings to decide if they
-        can kill the given character. Consider the user's role, guild permissions,
-        and character ownership when making this determination.
-
-        Args:
-            character (Character): The character to potentially kill.
-
-        Returns:
-            bool: True if the user has permission to kill the character, False otherwise.
-        """
-        # Always allow administrators to kill characters
-        if isinstance(self.author, discord.Member) and self.author.guild_permissions.administrator:
-            return True
-
-        # Grab the setting from the guild
-        guild = await Guild.get(self.guild.id)
-        try:
-            setting = PermissionsKillCharacter(guild.permissions.kill_character)
-        except KeyError:
-            setting = PermissionsKillCharacter.CHARACTER_OWNER_ONLY
-
-        if setting == PermissionsKillCharacter.UNRESTRICTED:
-            return True
-
-        if setting == PermissionsKillCharacter.CHARACTER_OWNER_ONLY and isinstance(
-            self.author, discord.Member
-        ):
-            return self.author.id == character.user_owner or "Storyteller" in [
-                x.name for x in self.author.roles
-            ]
-
-        if setting == PermissionsKillCharacter.STORYTELLER_ONLY and isinstance(
-            self.author, discord.Member
-        ):
-            return "Storyteller" in [x.name for x in self.author.roles]
-
-        return True
-
-    async def can_manage_traits(self, character: Character) -> bool:
-        """Determine if the user has permission to manage traits for the specified character.
-
-        Check the user's permissions against the guild's settings to decide if they
-        can manage traits for the given character. Consider the user's role, guild
-        permissions, character ownership, and time since character creation when
-        making this determination.
-
-        Args:
-            character (Character): The character whose traits may be managed.
-
-        Returns:
-            bool: True if the user has permission to manage the character's traits,
-                  False otherwise.
-        """
-        # Always allow administrators to manage traits
-        if isinstance(self.author, discord.Member) and self.author.guild_permissions.administrator:
-            return True
-
-        # Grab the setting from the guild
-        guild = await Guild.get(self.guild.id)
-        try:
-            setting = PermissionsManageTraits(guild.permissions.manage_traits)
-        except KeyError:
-            setting = PermissionsManageTraits.WITHIN_24_HOURS
-
-            # Check permissions based on the setting
-        if setting == PermissionsManageTraits.UNRESTRICTED:
-            return True
-
-        if setting == PermissionsManageTraits.CHARACTER_OWNER_ONLY and isinstance(
-            self.author, discord.Member
-        ):
-            is_character_owner = self.author.id == character.user_owner
-            is_storyteller = "Storyteller" in [role.name for role in self.author.roles]
-            return is_character_owner or is_storyteller
-
-        if setting == PermissionsManageTraits.WITHIN_24_HOURS and isinstance(
-            self.author, discord.Member
-        ):
-            is_storyteller = "Storyteller" in [role.name for role in self.author.roles]
-            is_character_owner = self.author.id == character.user_owner
-            is_within_24_hours = arrow.utcnow() - arrow.get(character.created) <= timedelta(
-                hours=24
-            )
-            return is_storyteller or (is_character_owner and is_within_24_hours)
-
-        if setting == PermissionsManageTraits.STORYTELLER_ONLY and isinstance(
-            self.author, discord.Member
-        ):
-            return "Storyteller" in [role.name for role in self.author.roles]
-
-        return True
-
-    async def can_grant_xp(self, user: User) -> bool:
-        """Determine if the current user has permission to grant XP to the specified user.
-
-        Check the guild's XP granting permission settings and the current user's roles
-        to determine if they are allowed to grant XP. This method considers various
-        scenarios such as unrestricted access, player-only restrictions, and
-        storyteller-only permissions.
-
-        Args:
-            user (User): The target user to whom XP might be granted.
-
-        Returns:
-            bool: True if the current user has permission to grant XP to the specified user,
-                  False otherwise.
-        """
-        # Always allow administrators to manage traits
-        if isinstance(self.author, discord.Member) and self.author.guild_permissions.administrator:
-            return True
-
-        # Grab the setting from the guild
-        guild = await Guild.get(self.guild.id)
-        try:
-            setting = PermissionsGrantXP(guild.permissions.grant_xp)
-        except KeyError:
-            setting = PermissionsGrantXP.PLAYER_ONLY
-
-            # Check permissions based on the setting
-        if setting == PermissionsGrantXP.UNRESTRICTED:
-            return True
-
-        if isinstance(self.author, discord.Member) and setting == PermissionsGrantXP.PLAYER_ONLY:
-            is_user = self.author.id == user.id
-            is_storyteller = "Storyteller" in [role.name for role in self.author.roles]
-            return is_user or is_storyteller
-
-        if (
-            isinstance(self.author, discord.Member)
-            and setting == PermissionsGrantXP.STORYTELLER_ONLY
-        ):
-            return "Storyteller" in [role.name for role in self.author.roles]
-
-        return True
-
-    async def can_manage_campaign(self) -> bool:
-        """Determine if the current user has permission to manage the campaign.
-
-        Check the guild's campaign management permission settings and the current user's roles
-        to determine if they are allowed to manage the campaign. Consider various scenarios
-        such as unrestricted access and storyteller-only permissions. Always allow
-        administrators to manage campaigns.
-
-        Returns:
-            bool: True if the user has permission to manage the campaign, False otherwise.
-        """
-        # Always allow administrators to manage traits
-        if isinstance(self.author, discord.Member) and self.author.guild_permissions.administrator:
-            return True
-
-        # Grab the setting from the guild
-        guild = await Guild.get(self.guild.id)
-        try:
-            setting = PermissionManageCampaign(guild.permissions.manage_campaign)
-        except KeyError:
-            setting = PermissionManageCampaign.STORYTELLER_ONLY
-
-        # Check permissions based on the setting
-        if setting == PermissionManageCampaign.UNRESTRICTED:
-            return True
-
-        if (
-            isinstance(self.author, discord.Member)
-            and setting == PermissionManageCampaign.STORYTELLER_ONLY
-        ):
-            return "Storyteller" in [role.name for role in self.author.roles]
-
-        return True
 
 
 class Valentina(commands.Bot):
@@ -634,6 +456,7 @@ class Valentina(commands.Bot):
                     guild_db_obj.administrators.append(member.id)
                     await guild_db_obj.save()
                     logger.info(f"PERMS: Add {member.name} as administrator in database")
+
                 if (
                     not member.guild_permissions.administrator
                     and member.id in guild_db_obj.administrators
@@ -641,6 +464,7 @@ class Valentina(commands.Bot):
                     guild_db_obj.administrators.remove(member.id)
                     await guild_db_obj.save()
                     logger.info(f"PERMS: Remove {member.name} as administrator in database")
+
                 if (
                     any(role.name in ("Storyteller", "@Storyteller") for role in member.roles)
                     and member.id not in guild_db_obj.storytellers

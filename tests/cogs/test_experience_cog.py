@@ -17,7 +17,7 @@ c = Console()
 
 
 @pytest.mark.drop_db
-async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory):
+async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, guild_factory, campaign_factory):
     """Test the xp_add command."""
     # GIVEN a mock context, a user, and a campaign
     user = user_factory.build(
@@ -27,6 +27,9 @@ async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
         macros=[],
     )
     await user.insert()
+
+    guild = guild_factory.build(id=async_mock_ctx1.guild.id, administrators=[user.id])
+    await guild.insert()
 
     campaign = campaign_factory.build()
     await campaign.insert()
@@ -47,7 +50,7 @@ async def test_xp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
 
 
 @pytest.mark.drop_db
-async def test_cp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory):
+async def test_cp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory, guild_factory):
     """Test the cp_add command."""
     # GIVEN a mock context, a user, and a campaign
     user = user_factory.build(
@@ -57,6 +60,9 @@ async def test_cp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
         macros=[],
     )
     await user.insert()
+
+    guild = guild_factory.build(id=async_mock_ctx1.guild.id, administrators=[user.id])
+    await guild.insert()
 
     campaign = campaign_factory.build()
     await campaign.insert()
@@ -78,7 +84,13 @@ async def test_cp_add(async_mock_ctx1, mock_bot, user_factory, campaign_factory)
 # @pytest.mark.skip(reason="Broke with pycord 2.5.0")
 @pytest.mark.drop_db
 async def test_xp_spend(
-    async_mock_ctx1, mock_bot, user_factory, campaign_factory, trait_factory, character_factory
+    async_mock_ctx1,
+    mock_bot,
+    user_factory,
+    campaign_factory,
+    trait_factory,
+    character_factory,
+    guild_factory,
 ):
     """Test the xp_spend command."""
     # GIVEN a mock context, a user, a trait, and a campaign
@@ -103,6 +115,9 @@ async def test_xp_spend(
     )
     await user.insert()
 
+    guild = guild_factory.build(id=async_mock_ctx1.guild.id, administrators=[user.id])
+    await guild.insert()
+
     # WHEN the xp_add command is called
     await Experience(bot=mock_bot).xp_spend(
         async_mock_ctx1,
@@ -120,7 +135,13 @@ async def test_xp_spend(
 
 @pytest.mark.drop_db
 async def test_xp_spend_not_enough_xp(
-    async_mock_ctx1, mock_bot, user_factory, campaign_factory, trait_factory, character_factory
+    async_mock_ctx1,
+    mock_bot,
+    user_factory,
+    campaign_factory,
+    trait_factory,
+    character_factory,
+    guild_factory,
 ):
     """Test the cp_add command."""
     campaign = campaign_factory.build()
@@ -144,6 +165,9 @@ async def test_xp_spend_not_enough_xp(
         macros=[],
     )
     await user.insert()
+
+    guild = guild_factory.build(id=async_mock_ctx1.guild.id, administrators=[user.id])
+    await guild.insert()
 
     # WHEN the xp_add command is called
     with pytest.raises(errors.NotEnoughExperienceError):
