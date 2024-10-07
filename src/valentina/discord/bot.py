@@ -11,7 +11,7 @@ import pymongo
 import semver
 from beanie import UpdateResponse
 from beanie.operators import Set
-from discord.ext import commands
+from discord.ext import commands, tasks
 from loguru import logger
 
 from valentina.constants import (
@@ -24,6 +24,7 @@ from valentina.constants import (
     PermissionsKillCharacter,
     PermissionsManageTraits,
 )
+from valentina.discord.models import ChannelManager, SyncDiscordFromWebManager
 from valentina.models import (
     Campaign,
     ChangelogPoster,
@@ -34,8 +35,6 @@ from valentina.models import (
 )
 from valentina.utils import ValentinaConfig, errors
 from valentina.utils.database import init_database
-
-from valentina.discord.utils.discord_utils import set_channel_perms  # isort:skip
 
 
 # Subclass discord.ApplicationContext to create custom application context
@@ -391,63 +390,15 @@ class ValentinaContext(discord.ApplicationContext):
         Returns:
             discord.TextChannel: The newly created or updated text channel.
         """
-        # Fetch roles
-        player_role = discord.utils.get(self.guild.roles, name="Player")
-        storyteller_role = discord.utils.get(self.guild.roles, name="Storyteller")
-
-        # Initialize permission overwrites
-        overwrites = {
-            self.guild.default_role: set_channel_perms(permissions[0]),
-            player_role: set_channel_perms(permissions[1]),
-            storyteller_role: set_channel_perms(permissions[2]),
-            **{
-                user: set_channel_perms(ChannelPermission.MANAGE)
-                for user in self.guild.members
-                if user.bot
-            },
-        }
-
-        if permissions_user_post:
-            overwrites[permissions_user_post] = set_channel_perms(ChannelPermission.POST)
-
-        formatted_name = name.lower().strip().replace(" ", "-") if name else None
-
-        if name and not channel:
-            for existing_channel in self.guild.text_channels:
-                # If channel already exists in a specified category, edit it
-                if (
-                    category
-                    and existing_channel.category == category
-                    and existing_channel.name == formatted_name
-                ) or (not category and existing_channel.name == formatted_name):
-                    logger.debug(f"GUILD: Update channel '{channel.name}' on '{self.guild.name}'")
-                    await existing_channel.edit(
-                        name=formatted_name or channel.name,
-                        overwrites=overwrites,
-                        topic=topic or channel.topic,
-                        category=category or channel.category,
-                    )
-                    return existing_channel
-
-            # Create the channel if it doesn't exist
-            logger.debug(f"GUILD: Create channel '{name}' on '{self.guild.name}'")
-            return await self.guild.create_text_channel(
-                name=formatted_name,
-                overwrites=overwrites,
-                topic=topic,
-                category=category,
-            )
-
-        # Update existing channel
-        logger.debug(f"GUILD: Update channel '{channel.name}' on '{self.guild.name}'")
-        await channel.edit(
-            name=name or channel.name,
-            overwrites=overwrites,
-            topic=topic or channel.topic,
-            category=category or channel.category,
+        channel_manager = ChannelManager(guild=self.guild, user=self.author)
+        return await channel_manager.channel_update_or_add(
+            permissions=permissions,
+            channel=channel,
+            name=name,
+            topic=topic,
+            category=category,
+            permissions_user_post=permissions_user_post,
         )
-
-        return channel
 
 
 class Valentina(commands.Bot):
@@ -465,6 +416,7 @@ class Valentina(commands.Bot):
         self.welcomed = False
         self.version = version
         self.owner_channels = [int(x) for x in ValentinaConfig().owner_channels.split(",")]
+        self.sync_from_web.start()
 
         # Load Cogs
         # #######################
@@ -689,3 +641,15 @@ class Valentina(commands.Bot):
             ValentinaContext: A custom application context for Valentina bot interactions.
         """
         return await super().get_application_context(interaction, cls=cls)
+
+    @tasks.loop(minutes=2)
+    async def sync_from_web(self) -> None:
+        """Sync objects from the webui to Discord."""
+        logger.debug("SYNC: Running sync_from_web task")
+        sync_discord = SyncDiscordFromWebManager(self)
+        await sync_discord.run()
+
+    @sync_from_web.before_loop
+    async def before_sync_from_web(self) -> None:
+        """Wait for the bot to be ready before starting the sync_from_web task."""
+        await self.wait_until_ready()

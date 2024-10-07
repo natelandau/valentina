@@ -19,6 +19,7 @@ from valentina.constants import (
 )
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.characters import AddFromSheetWizard, RNGCharGen
+from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_any_player_character,
     select_char_class,
@@ -624,7 +625,8 @@ class StoryTeller(commands.Cog):
         character.user_owner = new_owner.id
         await character.save()
 
-        await character.update_channel_permissions(ctx, campaign)
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.confirm_character_channel(character=character, campaign=campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

@@ -11,6 +11,7 @@ from loguru import logger
 
 from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor, TraitCategory
 from valentina.discord.bot import ValentinaContext
+from valentina.discord.models import ChannelManager
 from valentina.models import Campaign, Character, CharacterTrait, User
 from valentina.utils.helpers import get_max_trait_value
 
@@ -200,8 +201,11 @@ class AddFromSheetWizard:
 
         # Create channel
         if self.campaign:
-            await self.character.confirm_channel(self.ctx, self.campaign)
-            await self.campaign.sort_channels(self.ctx)
+            channel_manager = ChannelManager(guild=self.ctx.guild, user=self.ctx.author)
+            await channel_manager.confirm_character_channel(
+                character=self.character, campaign=self.campaign
+            )
+            await channel_manager.sort_campaign_channels(self.campaign)
 
         # Respond to the user
         embed = discord.Embed(

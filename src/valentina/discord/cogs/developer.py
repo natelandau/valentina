@@ -23,6 +23,7 @@ from valentina.constants import (
 )
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.characters import RNGCharGen
+from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_aws_object_from_guild,
     select_changelog_version_1,
@@ -225,8 +226,10 @@ class Developer(commands.Cog):
 
         # Create discord channels and add campaigns to the guild
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
+
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
         for campaign in created_campaigns:
-            await campaign.create_channels(ctx)
+            await channel_manager.confirm_campaign_channels(campaign)
             guild.campaigns.append(campaign)
 
         await guild.save()

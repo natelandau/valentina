@@ -1,8 +1,7 @@
 """Campaign models for Valentina."""
 
-import asyncio
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 import discord
 from beanie import (
@@ -16,17 +15,13 @@ from beanie import (
     Update,
     before_event,
 )
-from loguru import logger
 from pydantic import BaseModel, Field
 
-from valentina.constants import CHANNEL_PERMISSIONS, CampaignChannelName, Emoji
+from valentina.constants import Emoji
 from valentina.utils.helpers import time_now
 
 from .character import Character
 from .note import Note
-
-if TYPE_CHECKING:
-    from valentina.discord.bot import ValentinaContext
 
 
 class CampaignChapter(BaseModel):
@@ -101,94 +96,15 @@ class CampaignBook(Document):
             key=lambda x: x.number,
         )
 
-    async def delete_channel(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Delete the channel associated with the book.
-
-        This method removes the channel linked to the book from the guild and updates the book's channel information.
+    async def update_channel_id(self, channel: discord.TextChannel) -> None:
+        """Update the book's channel ID in the database.
 
         Args:
-            ctx (ValentinaContext): The context object containing guild information.
-
-        Returns:
-            None
+            channel (discord.TextChannel): The book's channel.
         """
-        if not self.channel:
-            return
-
-        channel = ctx.guild.get_channel(self.channel)
-
-        if not channel:
-            return
-
-        await channel.delete()
-        self.channel = None
-        await self.save()
-
-    async def confirm_channel(
-        self, ctx: "ValentinaContext", campaign: Optional["Campaign"]
-    ) -> discord.TextChannel | None:
-        """Confirm or create the channel for the book within the campaign.
-
-        This method ensures the book's channel exists within the campaign's category. It updates the channel information in the database if necessary, renames a channel if it has the wrong name, or creates a new one if it doesn't exist.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild information.
-            campaign (Optional[Campaign]): The campaign object. If not provided, it will be fetched using the book's campaign ID.
-
-        Returns:
-            discord.TextChannel | None: The channel object if found or created, otherwise None.
-        """
-        campaign = campaign or await Campaign.get(self.campaign)
-        if not campaign:
-            return None
-
-        category, channels = await campaign.fetch_campaign_category_channels(ctx)
-
-        if not category:
-            return None
-
-        is_channel_name_in_category = any(self.channel_name == channel.name for channel in channels)
-        is_channel_id_in_category = (
-            any(self.channel == channel.id for channel in channels) if self.channel else False
-        )
-
-        # If channel name exists in category but not in database, add channel id to self
-        if is_channel_name_in_category and not self.channel:
-            await asyncio.sleep(1)  # Keep the rate limit happy
-            for channel in channels:
-                if channel.name == self.channel_name:
-                    self.channel = channel.id
-                    await self.save()
-                    return channel
-
-        # If channel.id exists but has wrong name, rename it
-        elif self.channel and is_channel_id_in_category and not is_channel_name_in_category:
-            channel_object = next(
-                (channel for channel in channels if self.channel == channel.id), None
-            )
-            return await ctx.channel_update_or_add(
-                channel=channel_object,
-                name=self.channel_name,
-                category=category,
-                permissions=CHANNEL_PERMISSIONS["default"],
-                topic=f"Channel for book {self.number}. {self.name}",
-            )
-
-        # If channel does not exist, create it
-        elif not is_channel_name_in_category:
-            await asyncio.sleep(1)  # Keep the rate limit happy
-            book_channel = await ctx.channel_update_or_add(
-                name=self.channel_name,
-                category=category,
-                permissions=CHANNEL_PERMISSIONS["default"],
-                topic=f"Channel for Chapter {self.number}. {self.name}",
-            )
-            self.channel = book_channel.id
+        if not self.channel or self.channel != channel.id:
+            self.channel = channel.id
             await self.save()
-            return book_channel
-
-        await asyncio.sleep(1)  # Keep the rate limit happy
-        return discord.utils.get(channels, name=self.channel_name)
 
 
 class Campaign(Document):
@@ -214,236 +130,6 @@ class Campaign(Document):
     async def update_modified_date(self) -> None:
         """Update the date_modified field."""
         self.date_modified = time_now()
-
-    async def _confirm_common_channels(
-        self,
-        ctx: "ValentinaContext",
-        category: discord.CategoryChannel,
-        channels: list[discord.TextChannel],
-    ) -> None:  # pragma: no cover
-        """Create or update common campaign channels in the guild.
-
-        This method ensures that the common channels (e.g., storyteller and general channels)
-        are created or updated as necessary in the specified category. It checks existing
-        channels, updates database references, and creates new channels if necessary.
-
-        Args:
-            ctx (ValentinaContext): The context of the command invocation.
-            category (discord.CategoryChannel): The category where common channels are managed.
-            channels (list[discord.TextChannel]): The list of existing text channels in the category.
-
-        Returns:
-            None: This function does not return a value.
-        """
-        # Static channels
-        common_channel_list = {  # channel_db_key: channel_name
-            "channel_storyteller": CampaignChannelName.STORYTELLER.value,
-            "channel_general": CampaignChannelName.GENERAL.value,
-        }
-        for channel_db_key, channel_name in common_channel_list.items():
-            # Set permissions
-            if channel_name.startswith(Emoji.LOCK.value):
-                permissions = CHANNEL_PERMISSIONS["storyteller_channel"]
-            else:
-                permissions = CHANNEL_PERMISSIONS["default"]
-
-            channel_db_id = getattr(self, channel_db_key, None)
-
-            channel_name_in_category = any(channel_name == channel.name for channel in channels)
-            channel_id_in_category = (
-                any(channel_db_id == channel.id for channel in channels) if channel_db_id else False
-            )
-
-            if channel_name_in_category and not channel_db_id:
-                await asyncio.sleep(1)  # Keep the rate limit happy
-                for channel in channels:
-                    if channel.name == channel_name:
-                        setattr(self, channel_db_key, channel.id)
-                        await self.save()
-
-                logger.info(
-                    f"Channel {channel_name} exists in {category} but not in database. Add channel id to database."
-                )
-
-            elif channel_db_id and channel_id_in_category and not channel_name_in_category:
-                channel_object = next(
-                    (channel for channel in channels if channel_db_id == channel.id), None
-                )
-                await asyncio.sleep(1)  # Keep the rate limit happy
-                await ctx.channel_update_or_add(
-                    channel=channel_object,
-                    name=channel_name,
-                    category=category,
-                    permissions=permissions,
-                )
-
-                logger.info(
-                    f"Channel {channel_name} exists in database and {category} but name is different. Renamed channel."
-                )
-
-            elif not channel_name_in_category:
-                await asyncio.sleep(1)  # Keep the rate limit happy
-                created_channel = await ctx.channel_update_or_add(
-                    name=channel_name,
-                    category=category,
-                    permissions=permissions,
-                )
-                setattr(self, channel_db_key, created_channel.id)
-                await self.save()
-                logger.info(
-                    f"Channel {channel_name} does not exist in {category}. Create new channel and add to database"
-                )
-
-    async def fetch_campaign_category_channels(
-        self, ctx: "ValentinaContext"
-    ) -> tuple[discord.CategoryChannel, list[discord.TextChannel]]:
-        """Fetch the campaign category channels in the guild.
-
-        Retrieve the category channel and its associated text channels for the current campaign
-        from the guild. Iterate through all categories in the guild to find the one matching
-        the campaign's category ID.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild information.
-
-        Returns:
-            tuple[discord.CategoryChannel, list[discord.TextChannel]]: A tuple containing:
-                - The campaign category channel (discord.CategoryChannel or None if not found)
-                - A list of text channels within that category (empty list if category not found)
-
-        """
-        for category, channels in ctx.guild.by_category():
-            if category and category.id == self.channel_campaign_category:
-                return category, channels
-
-        return None, []
-
-    @staticmethod
-    def _custom_channel_sort(channel: discord.TextChannel) -> tuple[int, str]:  # pragma: no cover
-        """Generate a custom sorting key for campaign channels.
-
-        Prioritize channels based on their names, assigning a numeric value
-        for sorting order.
-
-        Args:
-            channel (discord.TextChannel): The Discord text channel to generate the sort key for.
-
-        Returns:
-            tuple[int, str]: A tuple containing the sort priority (int) and the channel name (str).
-        """
-        if channel.name.startswith(Emoji.SPARKLES.value):
-            return (0, channel.name)
-
-        if channel.name.startswith(Emoji.BOOK.value):
-            return (1, channel.name)
-
-        if channel.name.startswith(Emoji.LOCK.value):
-            return (2, channel.name)
-
-        if channel.name.startswith(Emoji.SILHOUETTE.value):
-            return (3, channel.name)
-
-        if channel.name.startswith(Emoji.DEAD.value):
-            return (4, channel.name)
-
-        return (5, channel.name)
-
-    async def create_channels(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Create and organize campaign channels in the guild.
-
-        Create a campaign category if it doesn't exist, or rename it if necessary.
-        Ensure all required channels (books, characters, etc.) are created and properly named.
-        Respect Discord rate limits during channel creation and modification.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild information.
-
-        Returns:
-            None
-        """
-        category_name = f"{Emoji.BOOKS.value}-{self.name.lower().replace(' ', '-')}"
-
-        if self.channel_campaign_category:
-            channel_object = ctx.guild.get_channel(self.channel_campaign_category)
-
-            if not channel_object:
-                category = await ctx.guild.create_category(category_name)
-                self.channel_campaign_category = category.id
-                logger.debug(f"Campaign category '{category_name}' created in '{ctx.guild.name}'")
-                await self.save()
-
-            elif channel_object.name != category_name:
-                await channel_object.edit(name=category_name)
-                logger.debug(f"Campaign category '{category_name}' renamed in '{ctx.guild.name}'")
-
-            else:
-                logger.debug(f"Category {category_name} already exists in {ctx.guild.name}")
-        else:
-            category = await ctx.guild.create_category(category_name)
-            self.channel_campaign_category = category.id
-            await self.save()
-            logger.debug(f"Campaign category '{category_name}' created in '{ctx.guild.name}'")
-
-        # Create the channels
-        for category, channels in ctx.guild.by_category():
-            if category and category.id == self.channel_campaign_category:
-                await self._confirm_common_channels(ctx, category=category, channels=channels)
-                await asyncio.sleep(1)  # Keep the rate limit happy
-
-                for book in await self.fetch_books():
-                    await book.confirm_channel(ctx, campaign=self)
-                    await asyncio.sleep(1)  # Keep the rate limit happy
-
-                for character in await self.fetch_characters():
-                    await character.confirm_channel(ctx, campaign=self)
-                    await asyncio.sleep(1)  # Keep the rate limit happy
-                break
-
-        await self.sort_channels(ctx)
-
-        logger.info(f"All channels confirmed for campaign '{self.name}' in '{ctx.guild.name}'")
-
-    async def delete_channels(self, ctx: "ValentinaContext") -> None:  # pragma: no cover
-        """Delete all channels associated with the campaign.
-
-        Remove book channels, character channels, storyteller channel, general channel,
-        and the campaign category channel. Update the campaign object to reflect the
-        deleted channels.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild information.
-
-        Returns:
-            None
-        """
-        for book in await self.fetch_books():
-            await book.delete_channel(ctx)
-
-        for character in await self.fetch_characters():
-            await character.delete_channel(ctx)
-
-        if self.channel_storyteller:
-            channel = ctx.guild.get_channel(self.channel_storyteller)
-
-            if channel:
-                await channel.delete()
-                self.channel_storyteller = None
-
-        if self.channel_general:
-            channel = ctx.guild.get_channel(self.channel_general)
-
-            if channel:
-                await channel.delete()
-                self.channel_general = None
-
-        if self.channel_campaign_category:
-            category = ctx.guild.get_channel(self.channel_campaign_category)
-
-            if category:
-                await category.delete()
-                self.channel_campaign_category = None
-
-        await self.save()
 
     async def fetch_characters(self) -> list[Character]:
         """Fetch all player characters in the campaign.
@@ -471,28 +157,3 @@ class Campaign(Document):
             self.books,  # type: ignore [arg-type]
             key=lambda x: x.number,
         )
-
-    async def sort_channels(self, ctx: "ValentinaContext") -> None:
-        """Sort the campaign channels in the guild.
-
-        This method sorts the campaign channels within their category according to a custom sorting key.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild information.
-
-        Returns:
-            None
-        """
-        for category, channels in ctx.guild.by_category():
-            if category and category.id == self.channel_campaign_category:
-                sorted_channels = sorted(channels, key=self._custom_channel_sort)
-                for i, channel in enumerate(sorted_channels):
-                    if channel.position and channel.position == i:
-                        continue
-                    await channel.edit(position=i)
-                    await asyncio.sleep(2)  # Keep the rate limit happy
-
-                logger.debug(f"Sorted channels: {[channel.name for channel in sorted_channels]}")
-                break
-
-        logger.info(f"Channels sorted for campaign '{self.name}' in '{ctx.guild.name}'")

@@ -17,6 +17,7 @@ from valentina.constants import (
 )
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.characters import AddFromSheetWizard, CharGenWizard
+from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_any_player_character,
     select_campaign,
@@ -271,8 +272,9 @@ class CharactersCog(commands.Cog, name="Character"):
         await character.save()
 
         if campaign:
-            await character.confirm_channel(ctx, campaign)
-            await campaign.sort_channels(ctx)
+            channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+            await channel_manager.confirm_character_channel(character=character, campaign=campaign)
+            await channel_manager.sort_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -309,8 +311,9 @@ class CharactersCog(commands.Cog, name="Character"):
         await character.save()
 
         if campaign:
-            await character.confirm_channel(ctx, campaign)
-            await campaign.sort_channels(ctx)
+            channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+            await channel_manager.confirm_character_channel(character=character, campaign=campaign)
+            await channel_manager.sort_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -838,7 +841,12 @@ class CharactersCog(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        await character.associate_with_campaign(ctx, campaign)
+        await character.associate_with_campaign(campaign)
+
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.delete_character_channel(character)
+        await channel_manager.confirm_character_channel(character=character, campaign=campaign)
+        await channel_manager.sort_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -885,7 +893,8 @@ class CharactersCog(commands.Cog, name="Character"):
         character.user_owner = new_owner.id
         await character.save()
 
-        await character.update_channel_permissions(ctx, campaign)
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.confirm_character_channel(character=character, campaign=campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

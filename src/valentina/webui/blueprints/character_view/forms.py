@@ -6,7 +6,6 @@ from quart_wtf import QuartForm
 from wtforms import DateField, HiddenField, StringField, SubmitField, ValidationError
 from wtforms.validators import DataRequired, Length, Optional
 
-from valentina.utils import console
 from valentina.webui.utils.forms import validate_unique_character_name
 
 
@@ -18,7 +17,6 @@ class EmptyForm(QuartForm):
 
     async def async_validators_name_last(self, name_last: StringField) -> None:
         """Check if the first + lastname are unique in the database."""
-        console.log(f"{self.character_id.data=}")
         if not await validate_unique_character_name(
             name_first=self.name_first.data,
             name_last=name_last.data,
@@ -29,7 +27,6 @@ class EmptyForm(QuartForm):
 
     async def async_validators_name_first(self, name_first: StringField) -> None:
         """Check if the first + lastname are unique in the database."""
-        console.log(f"{self.character_id.data=}")
         if not await validate_unique_character_name(
             name_first=name_first.data,
             name_last=self.name_last.data,

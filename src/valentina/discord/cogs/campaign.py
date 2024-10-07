@@ -11,6 +11,7 @@ from loguru import logger
 
 from valentina.constants import MAX_FIELD_COUNT, EmbedColor
 from valentina.discord.bot import Valentina, ValentinaContext
+from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_book,
     select_campaign,
@@ -171,7 +172,8 @@ class CampaignCog(commands.Cog):
 
         await guild.save()
 
-        await campaign.create_channels(ctx)
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.confirm_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -230,7 +232,9 @@ class CampaignCog(commands.Cog):
 
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         await guild.delete_campaign(campaign)
-        await campaign.delete_channels(ctx)
+
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.delete_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
@@ -522,7 +526,9 @@ class CampaignCog(commands.Cog):
         await book.insert()
         campaign.books.append(book)
         await campaign.save()
-        await campaign.create_channels(ctx)
+
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.confirm_campaign_channels(campaign)
 
         await ctx.post_to_audit_log(
             f"Create book: `{book.number}. {book.name}` in `{campaign.name}`",
@@ -615,7 +621,9 @@ class CampaignCog(commands.Cog):
         await book.save()
 
         if original_name != name:
-            await campaign.create_channels(ctx)
+            channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+            await channel_manager.confirm_book_channel(book=book, campaign=campaign)
+            await channel_manager.sort_campaign_channels(campaign)
 
         await ctx.post_to_audit_log(f"Update book: `{book.name}` in `{campaign.name}`")
 
@@ -660,7 +668,10 @@ class CampaignCog(commands.Cog):
             return
 
         original_number = book.number
-        await book.delete_channel(ctx)
+
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        await channel_manager.delete_book_channel(book)
+
         await book.delete()
         campaign.books = [x for x in campaign.books if x.id != book.id]  # type: ignore [attr-defined]
         await campaign.save()
@@ -669,7 +680,7 @@ class CampaignCog(commands.Cog):
         for b in [x for x in await campaign.fetch_books() if x.number > original_number]:
             b.number -= 1
             await b.save()
-            await b.confirm_channel(ctx, campaign)
+            await channel_manager.confirm_book_channel(book=b, campaign=campaign)
             await asyncio.sleep(1)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
@@ -731,6 +742,8 @@ class CampaignCog(commands.Cog):
         # Update the number of the selected book
         book.number = new_number
 
+        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+
         # Adjust the numbers of the other books
         if new_number > original_number:
             # Shift books down if the new number is higher
@@ -738,7 +751,7 @@ class CampaignCog(commands.Cog):
                 if original_number < b.number <= new_number:
                     b.number -= 1
                     await b.save()
-                    await b.confirm_channel(ctx, campaign)
+                    await channel_manager.confirm_book_channel(book=b, campaign=campaign)
                     await asyncio.sleep(1)
         else:
             # Shift books up if the new number is lower
@@ -746,13 +759,14 @@ class CampaignCog(commands.Cog):
                 if new_number <= b.number < original_number:
                     b.number += 1
                     await b.save()
-                    await b.confirm_channel(ctx, campaign)
+                    await channel_manager.confirm_book_channel(book=b, campaign=campaign)
                     await asyncio.sleep(1)
 
         # Save the selected book with its new number
         await book.save()
-        await book.confirm_channel(ctx, campaign)
-        await campaign.sort_channels(ctx)
+
+        await channel_manager.confirm_book_channel(book=book, campaign=campaign)
+        await channel_manager.sort_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
