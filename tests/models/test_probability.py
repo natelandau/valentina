@@ -5,7 +5,6 @@ import re
 
 import discord
 import pytest
-from rich import print
 
 from tests.helpers import Regex
 from valentina.models import Probability, RollProbability

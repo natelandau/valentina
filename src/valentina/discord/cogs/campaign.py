@@ -277,7 +277,7 @@ class CampaignCog(commands.Cog):
 
         text = f"## {len(guild.campaigns)} {p.plural_noun('campaign', len(guild.campaigns))} on `{ctx.guild.name}`\n"
         for c in sorted(guild.campaigns, key=lambda x: x.name):
-            characters = await c.fetch_characters()
+            characters = await c.fetch_player_characters()
             text += f"### **{c.name}**\n"
             text += f"{c.description}\n" if c.description else ""
             text += f"- `{len(c.books)}` {p.plural_noun('book', len(c.books))}\n"

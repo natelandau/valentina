@@ -15,28 +15,44 @@
 <form hx-get hx-trigger="change" hx-target="#form-column">
     <div class="input-group mb-3 pt-3">
         <label class="input-group-text">Character</label>
-        {% if session["USER_CHARACTERS"] | length > 1 %}
+        {% if session["IS_STORYTELLER"] %}
             <select class="form-select" name="character_id">
                 <option value="" {% if not character %}selected{% endif %}></option>
-                {% for character_name, character_id in session['USER_CHARACTERS'].items() %}
-                    <option value="{{ character_id }}"
-                            {% if character_id == character_id_as_string %}selected{% endif %}>
-                        {{ character_name }}
+                <option disabled>───── PLAYER CHARACTERS ─────</option>
+                {% for char in session['ALL_CHARACTERS'] %}
+                    <option value="{{ char.id }}"
+                            {% if char.id == character_id_as_string %}selected{% endif %}>
+                        {{ char.name }} ({{ char.owner_name }})
                     </option>
                 {% endfor %}
+                <option disabled>───── STORYTELLER CHARACTERS ─────</option>
+                {% for char in session['STORYTELLER_CHARACTERS'] %}
+                    <option value="{{ char.id }}"
+                            {% if char.id == character_id_as_string %}selected{% endif %}>{{ char.name }}</option>
+                {% endfor %}
             </select>
-        {% elif session["USER_CHARACTERS"] | length == 1 %}
-            {% for character_name, character_id in session['USER_CHARACTERS'].items() %}
-                {% if loop.first %}
-                    <span class="form-text ps-1">{{ character_name }}</span>
-                    <input type="hidden"
-                           id="character_id"
-                           value="{{ character_id }}"
-                           name="character_id">
-                {% endif %}
-            {% endfor %}
         {% else %}
-            <span class="form-text ps-1">Please <a href="{{ url_for("character.create_full") }}">create a character</a></span>
+            {% if session["USER_CHARACTERS"] | length > 1 %}
+                <select class="form-select" name="character_id">
+                    <option value="" {% if not character %}selected{% endif %}></option>
+                    {% for char in session['USER_CHARACTERS'] %}
+                        <option value="{{ char.id }}"
+                                {% if char.id == character_id_as_string %}selected{% endif %}>{{ char.name }}</option>
+                    {% endfor %}
+                </select>
+            {% elif session["USER_CHARACTERS"] | length == 1 %}
+                {% for char in session['USER_CHARACTERS'] %}
+                    {% if loop.first %}
+                        <span class="form-text ps-1">{{ char.name }}</span>
+                        <input type="hidden"
+                               id="{{ char.id }}"
+                               value="{{ char.id }}"
+                               name="{{ char.id }}">
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <span class="form-text ps-1">Please <a href="{{ url_for('character.create_full') }}">create a character</a></span>
+            {% endif %}
         {% endif %}
     </div>
     <div class="input-group mb-3">

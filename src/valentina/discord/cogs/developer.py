@@ -26,11 +26,12 @@ from valentina.discord.characters import RNGCharGen
 from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_aws_object_from_guild,
+    select_campaign,
     select_changelog_version_1,
     select_changelog_version_2,
     select_char_class,
 )
-from valentina.discord.utils.converters import ValidCharClass
+from valentina.discord.utils.converters import ValidCampaign, ValidCharClass
 from valentina.discord.views import confirm_action, present_embed
 from valentina.models import (
     AWSService,
@@ -233,6 +234,15 @@ class Developer(commands.Cog):
             )
             created_characters.append(character)
 
+        for _ in range(3):
+            character = await chargen.generate_full_character(
+                developer_character=True,
+                storyteller_character=True,
+                char_class=random.choice(CharClass.playable_classes()),
+                nickname_is_class=True,
+            )
+            created_characters.append(character)
+
         # Add inventory & custom sections to characters and associate characters with campaigns
         for character in created_characters:
             for _ in range(3):
@@ -279,8 +289,23 @@ class Developer(commands.Cog):
     async def create_test_characters(
         self,
         ctx: ValentinaContext,
+        char_type: Option(
+            str,
+            description="Type of characters to create",
+            choices=["player", "storyteller"],
+            required=True,
+        ),
+        campaign: Option(
+            ValidCampaign,
+            description="Name of the campaign",
+            required=True,
+            autocomplete=select_campaign,
+        ),
         number: Option(
-            int, description="The number of characters to create (default 1)", default=1
+            int,
+            description="The number of characters to create (default 1)",
+            default=1,
+            required=True,
         ),
         character_class: Option(
             ValidCharClass,
@@ -294,9 +319,10 @@ class Developer(commands.Cog):
             bool,
             description="Make the response only visible to you (default true).",
             default=True,
+            required=False,
         ),
     ) -> None:
-        """Create test characters in the database for the current guild."""
+        """Create test characters in the database and create associated channels on Discord."""
         title = (
             f"Create `{number}` of test {p.plural_noun('character', number)} on `{ctx.guild.name}`"
         )
@@ -312,22 +338,33 @@ class Developer(commands.Cog):
         for _ in range(number):
             character = await chargen.generate_full_character(
                 developer_character=True,
-                player_character=True,
+                player_character=char_type == "player",
+                storyteller_character=char_type == "storyteller",
                 char_class=character_class,
                 nickname_is_class=True,
+                chargen_character=True,
             )
+
+            character.campaign = str(campaign.id)
+            await character.save()
+
+            channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+            await channel_manager.confirm_character_channel(character=character, campaign=campaign)
 
             await present_embed(
                 ctx,
                 title="Test Character Created",
                 fields=[
-                    ("Name", character.name),
+                    ("Character", f"{character.full_name}"),
                     ("Owner", f"[{ctx.author.id}] {ctx.author.display_name}"),
+                    ("Type", f"{char_type} character"),
+                    ("Campaign", campaign.name),
                 ],
                 level="success",
                 ephemeral=hidden,
             )
 
+        await channel_manager.sort_campaign_channels(campaign)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @guild.command()

@@ -1,10 +1,53 @@
 """Helpers for the webui."""
 
+from dataclasses import dataclass
+
 from loguru import logger
 from quart import session
 
 from valentina.models import Campaign, Character, Guild, User
 from valentina.utils import ValentinaConfig, console
+
+
+@dataclass
+class CharacterSessionObject:
+    """Representation of a character to be stored in the session.
+
+    Objects can not be stored directly in the session, but dict can.  Add to session as `CharacterSessionObject.__dict__`
+    """
+
+    id: str
+    name: str
+    campaign_name: str
+    campaign_id: str
+    owner_name: str
+    owner_id: int
+
+
+async def _char_owner_name(char: Character) -> str:
+    """Get the username of a character owner.
+
+    Args:
+        char (Character): The character object to get the owner name of.
+
+    Returns:
+        str: The name of the character owner.
+    """
+    user = await User.get(char.user_owner, fetch_links=False)
+    return user.name
+
+
+async def _char_campaign_name(char: Character) -> str:
+    """Get the name of a character's campaign.
+
+    Args:
+        char (Character): The character object to get the campaign name of.
+
+    Returns:
+        str: The name of the character's campaign.
+    """
+    campaign = await Campaign.get(char.campaign, fetch_links=False)
+    return campaign.name
 
 
 async def fetch_active_campaign(
@@ -66,9 +109,7 @@ async def fetch_active_character(
         return None
 
     if len(session["USER_CHARACTERS"]) == 1:
-        return await Character.get(
-            next(iter(session["USER_CHARACTERS"].values())), fetch_links=fetch_links
-        )
+        return await Character.get(session["USER_CHARACTERS"][0]["id"], fetch_links=fetch_links)
 
     existing_character_id = session.get("ACTIVE_CHARACTER_ID", None)
 
@@ -176,10 +217,120 @@ async def fetch_user_characters(fetch_links: bool = True) -> list[Character]:
         fetch_links=fetch_links,
     ).to_list()
 
-    character_dict = dict(sorted({x.name: str(x.id) for x in characters}.items()))
-    if session.get("USER_CHARACTERS", None) != character_dict:
-        logger.debug("Update session with characters")
-        session["USER_CHARACTERS"] = character_dict
+    character_session_list = sorted(
+        [
+            CharacterSessionObject(
+                id=str(x.id),
+                name=x.name,
+                campaign_name=await _char_campaign_name(x),
+                campaign_id=x.campaign,
+                owner_name=await _char_owner_name(x),
+                owner_id=x.user_owner,
+            ).__dict__
+            for x in characters
+        ],
+        key=lambda x: x["name"],
+    )
+    if session.get("USER_CHARACTERS", None) != character_session_list:
+        logger.debug("Update session with users' characters")
+        session["USER_CHARACTERS"] = character_session_list
+
+    return characters
+
+
+async def fetch_all_characters(fetch_links: bool = True) -> list[Character]:
+    """Fetch the all player characters in the guild and update the session with their names and IDs.
+
+    Retrieve all the player characters within the current guild from the database,
+    optionally fetching linked objects. Update the session with a dictionary mapping
+    character names to their IDs if the session data has changed.
+
+    Args:
+        fetch_links (bool): Whether to fetch the database-linked objects.
+
+    Returns:
+        list[Character]: A list of characters owned by the user within the current guild.
+
+    Raises:
+        None: If the user ID or guild ID is not found in the session, the session is cleared and an empty list is returned.
+    """
+    # Guard clause to prevent mangled session data
+    if not session.get("USER_ID", None) or not session.get("GUILD_ID", None):
+        session.clear()
+        return []
+
+    characters = await Character.find(
+        Character.guild == session["GUILD_ID"],
+        Character.type_player == True,  # noqa: E712
+        fetch_links=fetch_links,
+    ).to_list()
+
+    character_session_list = sorted(
+        [
+            CharacterSessionObject(
+                id=str(x.id),
+                name=x.name,
+                campaign_name=await _char_campaign_name(x),
+                campaign_id=x.campaign,
+                owner_name=await _char_owner_name(x),
+                owner_id=x.user_owner,
+            ).__dict__
+            for x in characters
+        ],
+        key=lambda x: x["name"],
+    )
+    if session.get("ALL_CHARACTERS", None) != character_session_list:
+        logger.debug("Update session with all player characters")
+        session["ALL_CHARACTERS"] = character_session_list
+
+    return characters
+
+
+async def fetch_storyteller_characters(fetch_links: bool = True) -> list[Character]:
+    """Fetch the all storyteller characters in the guild and update the session with their names and IDs.
+
+    Retrieve all the storyteller characters within the current guild from the database,
+    optionally fetching linked objects. Update the session with a dictionary mapping
+    character names to their IDs if the session data has changed.
+
+    Args:
+        fetch_links (bool): Whether to fetch the database-linked objects.
+
+    Returns:
+        list[Character]: A list of characters owned by the user within the current guild.
+
+    Raises:
+        None: If the user ID or guild ID is not found in the session, the session is cleared and an empty list is returned.
+    """
+    # Guard clause to prevent mangled session data
+    if not session.get("USER_ID", None) or not session.get("GUILD_ID", None):
+        session.clear()
+        return []
+
+    characters = await Character.find(
+        Character.guild == session["GUILD_ID"],
+        Character.type_storyteller == True,  # noqa: E712
+        fetch_links=fetch_links,
+    ).to_list()
+
+    character_session_list = sorted(
+        [
+            CharacterSessionObject(
+                id=str(x.id),
+                name=x.name,
+                campaign_name=await _char_campaign_name(x),
+                campaign_id=x.campaign,
+                owner_name=await _char_owner_name(x),
+                owner_id=x.user_owner,
+            ).__dict__
+            for x in characters
+        ],
+        key=lambda x: x["name"],
+    )
+
+    if session.get("STORYTELLER_CHARACTERS", None) != character_session_list:
+        logger.debug("Update session with storyteller characters")
+        session["STORYTELLER_CHARACTERS"] = character_session_list
 
     return characters
 
@@ -219,6 +370,19 @@ async def fetch_campaigns(fetch_links: bool = True) -> list[Campaign]:
     return campaigns
 
 
+async def is_storyteller() -> bool:
+    """Check if the user is a Storyteller in the active campaign."""
+    user = await fetch_user(fetch_links=False)
+    guild = await fetch_guild(fetch_links=False)
+    is_storyteller_bool = user.id in guild.storytellers
+
+    if session.get("IS_STORYTELLER", None) != is_storyteller_bool:
+        logger.debug("Update session with user name")
+        session["IS_STORYTELLER"] = is_storyteller_bool
+
+    return is_storyteller_bool
+
+
 async def update_session() -> None:
     """Update the session with the user's current state.
 
@@ -234,6 +398,9 @@ async def update_session() -> None:
     await fetch_user(fetch_links=False)
     await fetch_user_characters(fetch_links=False)
     await fetch_campaigns(fetch_links=False)
+    await fetch_all_characters(fetch_links=False)
+    await fetch_storyteller_characters(fetch_links=False)
+    await is_storyteller()
 
     if ValentinaConfig().webui_debug and ValentinaConfig().webui_log_level.upper() in [
         "DEBUG",

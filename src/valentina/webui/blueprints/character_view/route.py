@@ -21,6 +21,7 @@ from valentina.models import (
     CharacterTrait,
     InventoryItem,
     Statistics,
+    User,
     WebDiscordSync,
 )
 from valentina.webui import catalog
@@ -39,7 +40,7 @@ class CharacterView(MethodView):
     def __init__(self) -> None:
         self.session = session  # Assuming session is defined globally or passed in some way
 
-    async def get_character_object(self, character_id: str) -> Character:
+    async def _get_character_object(self, character_id: str) -> Character:
         """Get a character db object by ID.
 
         Args:
@@ -58,7 +59,7 @@ class CharacterView(MethodView):
 
         return character
 
-    async def get_character_sheet_traits(
+    async def _get_character_sheet_traits(
         self, character: Character
     ) -> dict[str, dict[str, list[CharacterTrait]]]:
         """Return all character traits grouped by character sheet section and category.
@@ -101,7 +102,7 @@ class CharacterView(MethodView):
 
         return sheet_traits
 
-    async def get_character_inventory(self, character: Character) -> dict:
+    async def _get_character_inventory(self, character: Character) -> dict:
         """Retrieve and return the character's inventory organized by item type.
 
         Fetch the inventory items associated with the specified character from the
@@ -127,7 +128,7 @@ class CharacterView(MethodView):
         # remove all empty dictionary entries
         return {k: v for k, v in inventory.items() if v}
 
-    async def get_character_image_urls(self, character: Character) -> list[str]:
+    async def _get_character_image_urls(self, character: Character) -> list[str]:
         """Retrieve and return a list of image URLs for the specified character.
 
         Fetch the URLs of the character's images stored in AWS by utilizing the
@@ -143,13 +144,14 @@ class CharacterView(MethodView):
 
         return [aws_svc.get_url(x) for x in character.images]
 
-    async def handle_tabs(self, character: Character) -> str:
+    async def _handle_tabs(self, character: Character, character_owner: User) -> str:
         """Handle HTMX tab requests and render the appropriate content.
 
         Based on the "tab" query parameter, render and return the corresponding section of the character view, such as the character sheet, inventory, profile, images, or statistics. If the requested tab is not recognized, return a 404 error.
 
         Args:
             character (Character): The character for which the tab content is to be rendered.
+            character_owner (User): The owner of the character.
 
         Returns:
             str: The rendered HTML content for the selected tab.
@@ -161,14 +163,15 @@ class CharacterView(MethodView):
             return catalog.render(
                 "character_view.Sheet",
                 character=character,
-                traits=await self.get_character_sheet_traits(character),
+                traits=await self._get_character_sheet_traits(character),
+                character_owner=character_owner,
             )
 
         if request.args.get("tab") == "inventory":
             return catalog.render(
                 "character_view.Inventory",
                 character=character,
-                inventory=await self.get_character_inventory(character),
+                inventory=await self._get_character_inventory(character),
             )
 
         if request.args.get("tab") == "profile":
@@ -178,7 +181,7 @@ class CharacterView(MethodView):
             return catalog.render(
                 "character_view.Images",
                 character=character,
-                images=await self.get_character_image_urls(character),
+                images=await self._get_character_image_urls(character),
             )
 
         if request.args.get("tab") == "statistics":
@@ -195,16 +198,18 @@ class CharacterView(MethodView):
     async def get(self, character_id: str = "") -> str:
         """Handle GET requests."""
         success_msg = request.args.get("success_msg")
-        character = await self.get_character_object(character_id)
+        character = await self._get_character_object(character_id)
+        character_owner = await User.get(character.user_owner, fetch_links=False)
 
         if request.headers.get("HX-Request"):
-            return await self.handle_tabs(character)
+            return await self._handle_tabs(character, character_owner=character_owner)
 
         return catalog.render(
             "character_view.Main",
             character=character,
-            traits=await self.get_character_sheet_traits(character),
+            traits=await self._get_character_sheet_traits(character),
             success_msg=success_msg,
+            character_owner=character_owner,
         )
 
 

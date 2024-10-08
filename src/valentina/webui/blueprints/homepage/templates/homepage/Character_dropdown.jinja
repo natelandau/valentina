@@ -1,0 +1,28 @@
+{# def
+    character_type: Literal['storyteller', 'player'],
+#}
+{# djlint:off J018 #}
+<select class="form-select"
+        aria-label="Default select example"
+        x-model="character_url"
+        name="character">
+    <option selected>Select character</option>
+    <option disabled>──────────</option>
+    {% if character_type == 'player' %}
+        {% if session['IS_STORYTELLER'] %}
+            {% for char in session['ALL_CHARACTERS'] %}
+                <option value="{{ url_for('character_view.view',  character_id=char.id) }}">
+                    {{ char.name }} ({{ char.owner_name }})
+                </option>
+            {% endfor %}
+        {% else %}
+            {% for char in session['USER_CHARACTERS'] %}
+                <option value="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }}</option>
+            {% endfor %}
+        {% endif %}
+    {% elif character_type == 'storyteller' %}
+        {% for char in session['STORYTELLER_CHARACTERS'] %}
+            <option value="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }}</option>
+        {% endfor %}
+    {% endif %}
+</select>

@@ -1,0 +1,25 @@
+{# def
+    homepage_description: str,
+#}
+<PageLayout>
+<div class="py-5 mt-5">
+    <div class="row flex-lg-row-reverse align-items-center g-5 py-5 rounded-3 border shadow-lg">
+        <div class="col-10 col-sm-8 col-lg-6">
+            <img src="{{ url_for('static', filename='valentina_avatar.png') }}"
+                 class="d-block mx-lg-auto img-fluid"
+                 alt="Bootstrap Themes"
+                 width="700"
+                 height="500"
+                 loading="lazy">
+        </div>
+        <div class="col-lg-6">
+            <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">Valentina Noir</h1>
+            <p class="lead">{{ homepage_description }}</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a href="{{ url_for('oauth.login') }}"
+                   class="btn btn-primary btn-lg px-4 me-md-2">Log In</a>
+            </div>
+        </div>
+    </div>
+</div>
+</PageLayout>

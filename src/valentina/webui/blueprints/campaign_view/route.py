@@ -53,7 +53,7 @@ class CampaignView(MethodView):
             return catalog.render(
                 "campaign_view.Characters",
                 campaign=campaign,
-                characters=await campaign.fetch_characters(),
+                characters=await campaign.fetch_player_characters(),
             )
 
         if request.args.get("tab") == "statistics":

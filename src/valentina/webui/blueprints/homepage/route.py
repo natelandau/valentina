@@ -20,6 +20,9 @@ class HomepageView(MethodView):
         await update_session()
 
         if not discord_oauth.authorized or not session["USER_ID"]:
-            return catalog.render("homepage", homepage_description=homepage_description)
+            return catalog.render(
+                "homepage.Anonymous",
+                homepage_description=homepage_description,
+            )
 
-        return catalog.render("homepage", homepage_description=homepage_description)
+        return catalog.render("homepage.Loggedin")
