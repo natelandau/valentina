@@ -53,6 +53,53 @@ class ChannelManager:
 
         return (5, channel.name)
 
+    async def _remove_unused_campaign_channels(
+        self, campaign: Campaign, channels: list[discord.TextChannel]
+    ) -> None:
+        """Remove any unused campaign channels."""
+        for channel in channels:
+            if channel.name.startswith(Emoji.BOOK.value) and not any(
+                book.channel == channel.id for book in await campaign.fetch_books()
+            ):
+                await self.delete_channel(channel)
+                await asyncio.sleep(1)
+
+            if (
+                channel.name.startswith(Emoji.CHANNEL_PLAYER.value)
+                or channel.name.startswith(Emoji.CHANNEL_PLAYER_DEAD.value)
+            ) and not any(
+                character.channel == channel.id
+                for character in await campaign.fetch_player_characters()
+            ):
+                await self.delete_channel(channel)
+                await asyncio.sleep(1)
+
+            if (
+                channel.name.startswith(
+                    f"{Emoji.CHANNEL_PRIVATE.value}{Emoji.CHANNEL_PLAYER.value}"
+                )
+                or channel.name.startswith(
+                    f"{Emoji.CHANNEL_PRIVATE.value}{Emoji.CHANNEL_PLAYER_DEAD.value}"
+                )
+                and not any(
+                    character.channel == channel.id
+                    for character in await campaign.fetch_storyteller_characters()
+                )
+            ):
+                await self.delete_channel(channel)
+                await asyncio.sleep(1)
+
+            if (
+                channel.name.startswith(f"{Emoji.CHANNEL_PRIVATE.value}-")
+                or channel.name.startswith(f"{Emoji.CHANNEL_GENERAL.value}-")
+                and not (
+                    campaign.channel_storyteller != channel.id
+                    or campaign.channel_general != channel.id
+                )
+            ):
+                await self.delete_channel(channel)
+                await asyncio.sleep(1)
+
     async def _confirm_campaign_common_channels(
         self,
         campaign: Campaign,
@@ -372,37 +419,16 @@ class ChannelManager:
             await self.confirm_book_channel(book=book, campaign=campaign)
             await asyncio.sleep(1)
 
-        for character in await campaign.fetch_characters():
+        for character in await campaign.fetch_player_characters():
+            await self.confirm_character_channel(character=character, campaign=campaign)
+            await asyncio.sleep(1)
+
+        for character in await campaign.fetch_storyteller_characters():
             await self.confirm_character_channel(character=character, campaign=campaign)
             await asyncio.sleep(1)
 
         # Remove any channels that should not exist
-        for channel in channels:
-            if channel.name.startswith(Emoji.BOOK.value) and not any(
-                book.channel == channel.id for book in await campaign.fetch_books()
-            ):
-                await self.delete_channel(channel)
-                await asyncio.sleep(1)
-
-            if (
-                channel.name.startswith(Emoji.CHANNEL_PLAYER.value)
-                or channel.name.startswith(Emoji.CHANNEL_PLAYER_DEAD.value)
-            ) and not any(
-                character.channel == channel.id for character in await campaign.fetch_characters()
-            ):
-                await self.delete_channel(channel)
-                await asyncio.sleep(1)
-
-            if (
-                channel.name.startswith(Emoji.CHANNEL_PRIVATE.value)
-                or channel.name.startswith(Emoji.CHANNEL_GENERAL.value)
-                and not (
-                    campaign.channel_storyteller != channel.id
-                    or campaign.channel_general != channel.id
-                )
-            ):
-                await self.delete_channel(channel)
-                await asyncio.sleep(1)
+        await self._remove_unused_campaign_channels(campaign, channels)
 
         await self.sort_campaign_channels(campaign)
 
@@ -475,7 +501,10 @@ class ChannelManager:
         for book in await campaign.fetch_books():
             await self.delete_book_channel(book)
 
-        for character in await campaign.fetch_characters():
+        for character in await campaign.fetch_player_characters():
+            await self.delete_character_channel(character)
+
+        for character in await campaign.fetch_storyteller_characters():
             await self.delete_character_channel(character)
 
         for channel_db_key in CAMPAIGN_COMMON_CHANNELS:

@@ -12,6 +12,7 @@ from quart.typing import TestClientProtocol
 from tests.factories import *
 from valentina.models import Campaign, Character, Guild
 from valentina.webui import create_app
+from valentina.webui.utils.helpers import CharacterSessionObject
 
 
 @pytest.fixture
@@ -46,6 +47,7 @@ def mock_session() -> Callable[[], dict[str, Any]]:
             "USER_AVATAR_URL": f"https://cdn.discordapp.com/avatars/{random.randint(100000000000000, 999999999999999)}/{random.randint(100000000000000, 999999999999999)}.png?size=1024",
             "USER_ID": user_id,
             "USER_NAME": user_name,
+            "IS_STORYTELLER": False,
         }
 
         if authorized:
@@ -67,7 +69,42 @@ def mock_session() -> Callable[[], dict[str, Any]]:
                 }
             )
 
-        mock_session["USER_CHARACTERS"] = {c.name: str(c.id) for c in characters}
+        mock_session["ALL_CHARACTERS"] = [
+            CharacterSessionObject(
+                id=str(x.id),
+                name=x.name,
+                campaign_name="mock campaign name",
+                campaign_id=x.campaign,
+                owner_name="mock owner name",
+                owner_id=x.user_owner,
+            ).__dict__
+            for x in characters
+        ]
+
+        mock_session["USER_CHARACTERS"] = [
+            CharacterSessionObject(
+                id=str(x.id),
+                name=x.name,
+                campaign_name="mock campaign name",
+                campaign_id=x.campaign,
+                owner_name="mock owner name",
+                owner_id=x.user_owner,
+            ).__dict__
+            for x in characters
+        ]
+
+        mock_session["STORYTELLER_CHARACTERS"] = [
+            CharacterSessionObject(
+                id=str(x.id),
+                name=x.name,
+                campaign_name="mock campaign name",
+                campaign_id=x.campaign,
+                owner_name="mock owner name",
+                owner_id=x.user_owner,
+            ).__dict__
+            for x in characters
+        ]
+
         mock_session["GUILD_CAMPAIGNS"] = {c.name: str(c.id) for c in campaigns}
 
         if active_character:

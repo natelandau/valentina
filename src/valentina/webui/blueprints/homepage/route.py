@@ -7,7 +7,7 @@ from quart.views import MethodView
 
 from valentina.constants import BOT_DESCRIPTIONS
 from valentina.webui import catalog, discord_oauth
-from valentina.webui.utils import is_storyteller, update_session
+from valentina.webui.utils import update_session
 
 homepage_description = f"Valentina, your {random.choice(['honored', 'admired', 'distinguished', 'celebrated', 'hallowed', 'prestigious', 'acclaimed', 'favorite', 'friendly neighborhood', 'prized', 'treasured', 'number one', 'esteemed', 'venerated', 'revered', 'feared'])} {random.choice(BOT_DESCRIPTIONS)}, is ready for you!\n"
 
@@ -25,7 +25,4 @@ class HomepageView(MethodView):
                 homepage_description=homepage_description,
             )
 
-        return catalog.render(
-            "homepage.Loggedin",
-            is_storyteller=await is_storyteller(),
-        )
+        return catalog.render("homepage.Loggedin")

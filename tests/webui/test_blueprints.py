@@ -21,9 +21,13 @@ from tests.factories import *
         ("GET", "/does_not_exist", {}, 404),
     ],
 )
-@pytest.mark.no_db
-async def test_routes(debug, test_client, path, data, method, status_code) -> None:
+@pytest.mark.drop_db
+async def test_routes(
+    mocker, debug, test_client, mock_session, path, data, method, status_code
+) -> None:
     """Test routes return 200."""
+    mocker.patch("valentina.webui.utils.helpers.is_storyteller", return_value=False)
+
     if method == "GET":
         response = await test_client.get(path, data=data, follow_redirects=True)
     elif method == "POST":

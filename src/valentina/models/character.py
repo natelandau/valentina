@@ -182,8 +182,11 @@ class Character(Document):
     @property
     def channel_name(self) -> str:
         """Channel name for the book."""
-        emoji = Emoji.CHANNEL_PLAYER.value if self.is_alive else Emoji.CHANNEL_PLAYER_DEAD.value
+        if self.type_storyteller:
+            emoji = Emoji.CHANNEL_PLAYER.value if self.is_alive else Emoji.CHANNEL_PLAYER_DEAD.value
+            return f"{Emoji.CHANNEL_PRIVATE.value}{emoji}-{self.name.lower().replace(' ', '-')}"
 
+        emoji = Emoji.CHANNEL_PLAYER.value if self.is_alive else Emoji.CHANNEL_PLAYER_DEAD.value
         return f"{emoji}-{self.name.lower().replace(' ', '-')}"
 
     @property

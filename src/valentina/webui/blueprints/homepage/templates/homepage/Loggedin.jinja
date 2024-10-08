@@ -1,17 +1,46 @@
 {# def
-    is_storyteller: bool,
+
 #}
 <PageLayout>
 {% set card_style = "card h-100 border border-2 shadow bg-light-subtle" %}
 <global.PageTitle>Welcome {{ session["USER_NAME"] }}</global.PageTitle>
 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
-    <homepage.Card title="Characters" icon="users">
+    {# ----- STORYTELLER CHARACTERS ----- #}
+    {% if session['IS_STORYTELLER'] %}
+        <homepage.Card title="Storyteller Characters" icon="users">
+        <div class="row row-cols-2">
+            <div class="col border-end border-1">
+                <p class="card-text">View storyteller characters</p>
+                <div x-data="{character_url: null}">
+                    <div class="mb-3">
+                        <homepage.Character_dropdown character-type="storyteller" />
+                    </div>
+                    {# djlint:off J018 #}
+                    <a x-bind:href="character_url"
+                       er
+                       href="character_url"
+                       class="btn btn-primary">Go</a>
+                </div>
+            </div>
+            <div class="col ps-4 h-100 d-inline-block">
+                <p class="card-text">Or create a new storyteller character</p>
+                <br>
+                <a type="button"
+                   class="btn btn-primary align-text-bottom"
+                   href="{{ url_for('character_create.start') }}">Create</a>
+            </div>
+        </div>
+        </homepage.Card>
+    {% endif %}
+    {# ----- PLAYER CHARACTERS ----- #}
+    {% set player_card_title = 'Player Characters' if session['IS_STORYTELLER'] else 'Your Characters' %}
+    <homepage.Card title={{ player_card_title }} icon="users">
     <div class="row row-cols-2">
         <div class="col border-end border-1">
             <p class="card-text">
                 View
-                {% if is_storyteller %}
-                    all
+                {% if session['IS_STORYTELLER'] %}
+                    all player
                 {% else %}
                     your
                 {% endif %}
@@ -19,7 +48,7 @@
             </p>
             <div x-data="{character_url: null}">
                 <div class="mb-3">
-                    <homepage.Character_dropdown is-storyteller={{ is_storyteller }} />
+                    <homepage.Character_dropdown character-type="player" />
                 </div>
                 {# djlint:off J018 #}
                 <a x-bind:href="character_url"
@@ -37,6 +66,7 @@
         </div>
     </div>
     </homepage.Card>
+    {# ----- CAMPAIGNS ----- #}
     <homepage.Card title="Campaigns" icon="book">
     <p class="card-text">View the guild's campaigns</p>
     <div x-data="{campaign_url: null}">
@@ -59,6 +89,7 @@
            class="btn btn-primary">Go</a>
     </div>
     </homepage.Card>
+    {# ----- GAMEPLAY ----- #}
     <homepage.Card title="Gameplay" icon="dice">
     <p class="card-text">Roll dice for your characters.</p>
     <a href="{{ url_for('gameplay.gameplay') }}" class="btn btn-primary">Go</a>

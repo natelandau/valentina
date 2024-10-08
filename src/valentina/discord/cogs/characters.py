@@ -189,7 +189,7 @@ class CharactersCog(commands.Cog, name="Character"):
             )
             return
 
-        # This paginator must not be hidden - Regression in pycord 2.5.0
+        # TODO: This paginator must not be hidden - Regression in pycord 2.5.0
         wizard = CharGenWizard(
             ctx, campaign=campaign, user=user, experience_level=RNGCharLevel.NEW, hidden=False
         )

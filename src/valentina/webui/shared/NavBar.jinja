@@ -19,27 +19,72 @@
                        aria-current="page"
                        href="{{ url_for('gameplay.gameplay') }}"><i class="fa-solid fa-dice"></i>&nbsp;Roll Dice</a>
                 </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle btn btn-dark me-2"
-                       href="#"
-                       role="button"
-                       data-bs-toggle="dropdown"
-                       aria-expanded="false"><i class="fa-solid fa-users"></i>&nbsp;Characters</a>
-                    <ul class="dropdown-menu">
-                        {% for c_name, c_id in session["USER_CHARACTERS"].items() %}
+                {% if session["IS_STORYTELLER"] %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle btn btn-dark me-2"
+                           href="#"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false"><i class="fa-solid fa-users"></i>&nbsp;Player Characters</a>
+                        <ul class="dropdown-menu">
+                            {% for char in session["ALL_CHARACTERS"] %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }} ({{ char.owner_name }})</a>
+                                </li>
+                            {% endfor %}
                             <li>
-                                <a class="dropdown-item"
-                                   href="{{ url_for('character_view.view',  character_id=c_id) }}">{{ c_name }}</a>
+                                <hr class="dropdown-divider">
                             </li>
-                        {% endfor %}
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('character_create.start') }}">Create new character</a>
-                        </li>
-                    </ul>
-                </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('character_create.start') }}">Create new player character</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle btn btn-dark me-2"
+                           href="#"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false"><i class="fa-solid fa-users"></i>&nbsp;Storyteller Characters</a>
+                        <ul class="dropdown-menu">
+                            {% for char in session["STORYTELLER_CHARACTERS"] %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }}</a>
+                                </li>
+                            {% endfor %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('character_create.start') }}">Create new storyteller character</a>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle btn btn-dark me-2"
+                           href="#"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false"><i class="fa-solid fa-users"></i>&nbsp;Characters</a>
+                        <ul class="dropdown-menu">
+                            {% for char in session["USER_CHARACTERS"] %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }}</a>
+                                </li>
+                            {% endfor %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('character_create.start') }}">Create new character</a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle btn btn-dark me-2"
                        href="#"

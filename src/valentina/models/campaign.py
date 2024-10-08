@@ -131,7 +131,7 @@ class Campaign(Document):
         """Update the date_modified field."""
         self.date_modified = time_now()
 
-    async def fetch_characters(self) -> list[Character]:
+    async def fetch_player_characters(self) -> list[Character]:
         """Fetch all player characters in the campaign.
 
         Retrieve a list of all player characters associated with the current campaign.
@@ -143,6 +143,20 @@ class Campaign(Document):
         return await Character.find(
             Character.campaign == str(self.id),
             Character.type_player == True,  # noqa: E712
+        ).to_list()
+
+    async def fetch_storyteller_characters(self) -> list[Character]:
+        """Fetch all storyteller characters in the campaign.
+
+        Retrieve a list of all player characters associated with the current campaign.
+        Filter characters to include only those marked as player characters.
+
+        Returns:
+            list[Character]: A list of Character objects representing player characters in the campaign.
+        """
+        return await Character.find(
+            Character.campaign == str(self.id),
+            Character.type_storyteller == True,  # noqa: E712
         ).to_list()
 
     async def fetch_books(self) -> list[CampaignBook]:
