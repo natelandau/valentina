@@ -184,6 +184,41 @@ async def fetch_user_characters(fetch_links: bool = True) -> list[Character]:
     return characters
 
 
+async def fetch_all_characters(fetch_links: bool = True) -> list[Character]:
+    """Fetch the all player characters in the guild and update the session with their names and IDs.
+
+    Retrieve all the player characters within the current guild from the database,
+    optionally fetching linked objects. Update the session with a dictionary mapping
+    character names to their IDs if the session data has changed.
+
+    Args:
+        fetch_links (bool): Whether to fetch the database-linked objects.
+
+    Returns:
+        list[Character]: A list of characters owned by the user within the current guild.
+
+    Raises:
+        None: If the user ID or guild ID is not found in the session, the session is cleared and an empty list is returned.
+    """
+    # Guard clause to prevent mangled session data
+    if not session.get("USER_ID", None) or not session.get("GUILD_ID", None):
+        session.clear()
+        return []
+
+    characters = await Character.find(
+        Character.guild == session["GUILD_ID"],
+        Character.type_player == True,  # noqa: E712
+        fetch_links=fetch_links,
+    ).to_list()
+
+    character_dict = dict(sorted({x.name: str(x.id) for x in characters}.items()))
+    if session.get("ALL_CHARACTERS", None) != character_dict:
+        logger.debug("Update session with characters")
+        session["ALL_CHARACTERS"] = character_dict
+
+    return characters
+
+
 async def fetch_campaigns(fetch_links: bool = True) -> list[Campaign]:
     """Fetch the guild's campaigns and update the session with their names and IDs.
 
@@ -234,6 +269,7 @@ async def update_session() -> None:
     await fetch_user(fetch_links=False)
     await fetch_user_characters(fetch_links=False)
     await fetch_campaigns(fetch_links=False)
+    await fetch_all_characters(fetch_links=False)
 
     if ValentinaConfig().webui_debug and ValentinaConfig().webui_log_level.upper() in [
         "DEBUG",
@@ -243,3 +279,10 @@ async def update_session() -> None:
         for key, value in session.items():
             console.log(f"{key}={value}")
         console.rule()
+
+
+async def is_storyteller() -> bool:
+    """Check if the user is a Storyteller in the active campaign."""
+    user = await fetch_user(fetch_links=False)
+    guild = await fetch_guild(fetch_links=False)
+    return user.id in guild.storytellers

@@ -22,4 +22,4 @@ async def user_guide() -> str:
     """Serve the user guide."""
     guide_content = USER_GUIDE_PATH.read_text()
 
-    return catalog.render("user_guide", guide=guide_content)
+    return catalog.render("static_files.UserGuide", guide=guide_content)

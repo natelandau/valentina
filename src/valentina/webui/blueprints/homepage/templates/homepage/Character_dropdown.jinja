@@ -1,0 +1,19 @@
+{# def
+    is_storyteller: bool,
+#}
+<select class="form-select"
+        aria-label="Default select example"
+        x-model="character_url"
+        name="character">
+    <option selected>Select character</option>
+    <option disabled>──────────</option>
+    {% if is_storyteller %}
+        {% for name, id in session['ALL_CHARACTERS'].items() %}
+            <option value="{{ url_for('character_view.view',  character_id=id) }}">{{ name }}</option>
+        {% endfor %}
+    {% else %}
+        {% for name, id in session['USER_CHARACTERS'].items() %}
+            <option value="{{ url_for('character_view.view',  character_id=id) }}">{{ name }}</option>
+        {% endfor %}
+    {% endif %}
+</select>

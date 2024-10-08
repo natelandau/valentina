@@ -28,4 +28,6 @@ async def select_guild() -> str | Response:
 
     user = discord_oauth.fetch_user()
 
-    return catalog.render("guild_select", user=user, matched_guilds=session["matched_guilds"])
+    return catalog.render(
+        "homepage.GuildSelect", user=user, matched_guilds=session["matched_guilds"]
+    )
