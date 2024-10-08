@@ -3,9 +3,18 @@
     <p>
         This wizard will guide you through the process of entering a new character into the system. It is recommended that you have already created your character on paper before starting this process. This will make it easier to enter the information into the system.
     </p>
+    {% if session["IS_STORYTELLER"] %}
+        <button class="btn btn-success btn-lg mb-3"
+                hx-get="{{ url_for('character_create.create_1', character_type='storyteller') }}"
+                hx-target="#create-character-container">
+            Create Storyteller Character&nbsp;&nbsp;<span class="fa-solid fa-circle-right fa-xl"></span>
+        </button>
+    {% endif %}
     <button class="btn btn-success btn-lg"
-            hx-get="{{ url_for('character_create.create_1') }}"
+            hx-get="{{ url_for('character_create.create_1', character_type='player') }}"
             hx-target="#create-character-container">
-        Create character&nbsp;&nbsp;<span class="fa-solid fa-circle-right fa-xl"></span>
+        Create
+        {% if session["IS_STORYTELLER"] %}Player{% endif %}
+        Character&nbsp;&nbsp;<span class="fa-solid fa-circle-right fa-xl"></span>
     </button>
 </div>

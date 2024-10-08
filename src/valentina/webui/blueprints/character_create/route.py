@@ -144,7 +144,10 @@ class CreateCharacterStep1(MethodView):
             "character_create.Step1",
             form=form,
             join_label=self.join_label,
-            post_url=url_for("character_create.create_1"),
+            post_url=url_for(
+                "character_create.create_1",
+                character_type=request.args.get("character_type", "player"),
+            ),
         )
 
     async def post(self) -> str | Response:
@@ -164,6 +167,7 @@ class CreateCharacterStep1(MethodView):
                         character is created.
         """
         form = await CharacterCreateStep1().create_form()
+
         if await form.validate_on_submit():
             character = Character(
                 campaign=session.get("ACTIVE_CAMPAIGN_ID", None),
@@ -172,7 +176,8 @@ class CreateCharacterStep1(MethodView):
                 name_last=form.data.get("lastname") if form.data.get("lastname") else None,
                 name_nick=form.data.get("nickname") if form.data.get("nickname") else None,
                 char_class_name=form.data.get("char_class"),
-                type_player=True,
+                type_player=request.args.get("character_type", "player") == "player",
+                type_storyteller=request.args.get("character_type", "player") == "storyteller",
                 user_creator=session.get("USER_ID", None),
                 user_owner=session.get("USER_ID", None),
                 demeanor=form.data.get("demeanor") if form.data.get("demeanor") else None,
