@@ -128,7 +128,14 @@
     extend_exclude = ".vscode, .github, .git, .ruff_cache, .pytest_cache, __pycache__, .mypy_cache, .venv, tests, src/valentina/discord, src/valentina/models, src/valentina/utils, src/valentina/views, tests"
     ignore         = "H030,H031,H021,H006,H013"
     # ignore_case    = true
-    use_gitignore = true
+    # format_attribute_template_tags = true
+    blank_line_after_tag  = "load,extends,include,set"
+    blank_line_before_tag = "load,extends,include,set"
+    custom_html           = "PageLayout"
+    indent                = 4
+    max_blank_lines       = 1
+    max_line_length       = 100
+    use_gitignore         = true
 
 [tool.mypy] # https://mypy.readthedocs.io/en/latest/config_file.html
     disallow_any_unimported = false

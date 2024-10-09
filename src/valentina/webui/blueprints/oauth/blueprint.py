@@ -28,7 +28,15 @@ async def logout() -> Any:  # pragma: no cover
 
 @blueprint.route("/callback")
 async def callback() -> Any:  # pragma: no cover
-    """Callback route."""
+    """Callback route.  Sets initial session variables.
+
+    session["USER_ID"] = user.id
+
+    # if one guild, set GUILD_ID
+    session["GUILD_ID"] = guiid.id
+    # if multiple guilds, set matched_guilds
+    session["matched_guilds"] = matched_guilds
+    """
     discord_oauth.callback()
 
     user = discord_oauth.fetch_user()
