@@ -6,11 +6,11 @@ from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
 import pytest
-import pytest_asyncio
 from quart.typing import TestClientProtocol
 
 from tests.factories import *
 from valentina.models import Campaign, Character, Guild
+from valentina.utils import console
 from valentina.webui import create_app
 from valentina.webui.utils.helpers import CharacterSessionObject
 

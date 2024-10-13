@@ -7,12 +7,13 @@ from discord.commands import Option
 from discord.ext import commands
 
 from valentina.constants import TraitCategory, XPMultiplier
+from valentina.controllers import PermissionManager
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.utils.autocomplete import select_char_trait
 from valentina.discord.utils.converters import ValidTraitFromID
 from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.views import confirm_action, present_embed
-from valentina.models import PermissionManager, User
+from valentina.models import User
 from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
 
 p = inflect.engine()

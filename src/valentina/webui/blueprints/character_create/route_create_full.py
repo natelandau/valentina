@@ -98,22 +98,6 @@ class FormSessionManager:
         session.pop(self.key, None)
 
 
-class CreateCharacterStart(MethodView):
-    """Create a character step 1."""
-
-    decorators: ClassVar = [requires_authorization]
-
-    async def get(self) -> str:
-        """Process the initial page load.
-
-        Render and return the main template for the character creation page.
-
-        Returns:
-            str: The rendered HTML content for the character creation page.
-        """
-        return catalog.render("character_create.Main")
-
-
 class CreateCharacterStep1(MethodView):
     """Create a character step 1. Loads HTMX partials for the first form."""
 
@@ -147,6 +131,7 @@ class CreateCharacterStep1(MethodView):
             post_url=url_for(
                 "character_create.create_1",
                 character_type=request.args.get("character_type", "player"),
+                campaign_id=request.args.get("campaign_id", None),
             ),
         )
 
@@ -168,9 +153,11 @@ class CreateCharacterStep1(MethodView):
         """
         form = await CharacterCreateStep1().create_form()
 
+        campaign_id = str(request.args.get("campaign_id", session.get("ACTIVE_CAMPAIGN_ID", None)))
+
         if await form.validate_on_submit():
             character = Character(
-                campaign=session.get("ACTIVE_CAMPAIGN_ID", None),
+                campaign=campaign_id,
                 guild=session.get("GUILD_ID", None),
                 name_first=form.data.get("firstname") if form.data.get("firstname") else None,
                 name_last=form.data.get("lastname") if form.data.get("lastname") else None,

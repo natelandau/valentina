@@ -21,8 +21,8 @@ from valentina.constants import (
     InventoryItemType,
     LogLevel,
 )
+from valentina.controllers import RNGCharGen
 from valentina.discord.bot import Valentina, ValentinaContext
-from valentina.discord.characters import RNGCharGen
 from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_aws_object_from_guild,
@@ -223,7 +223,7 @@ class Developer(commands.Cog):
 
         # Characters
         user = await User.get(ctx.author.id)
-        chargen = RNGCharGen(ctx, user)
+        chargen = RNGCharGen(guild_id=ctx.guild.id, user=user)
         created_characters = []
         for _ in range(3):
             character = await chargen.generate_full_character(
@@ -334,7 +334,7 @@ class Developer(commands.Cog):
 
         user = await User.get(ctx.author.id)
 
-        chargen = RNGCharGen(ctx, user)
+        chargen = RNGCharGen(guild_id=ctx.guild.id, user=user)
         for _ in range(number):
             character = await chargen.generate_full_character(
                 developer_character=True,

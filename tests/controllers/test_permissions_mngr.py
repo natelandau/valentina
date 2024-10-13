@@ -12,7 +12,7 @@ from valentina.constants import (
     PermissionsKillCharacter,
     PermissionsManageTraits,
 )
-from valentina.models import PermissionManager
+from valentina.controllers import PermissionManager
 from valentina.models.guild import GuildPermissions
 
 

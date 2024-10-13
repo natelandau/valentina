@@ -18,7 +18,6 @@ from .character import Character, CharacterSheetSection, CharacterTrait, Invento
 from .database import GlobalProperty
 from .guild import Guild, GuildChannels, GuildPermissions, GuildRollResultThumbnail
 from .note import Note
-from .permission_mngr import PermissionManager
 from .user import CampaignExperience, User, UserMacro
 from .web_discord_sync import WebDiscordSync
 
@@ -49,7 +48,6 @@ __all__ = [
     "GuildRollResultThumbnail",
     "InventoryItem",
     "Note",
-    "PermissionManager",
     "Probability",
     "RollProbability",
     "RollStatistic",

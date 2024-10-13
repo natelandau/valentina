@@ -15,6 +15,7 @@ from valentina.constants import (
     Emoji,
     RNGCharLevel,
 )
+from valentina.controllers import PermissionManager
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.characters import AddFromSheetWizard, CharGenWizard
 from valentina.discord.models import ChannelManager
@@ -49,7 +50,7 @@ from valentina.discord.views import (
     present_embed,
     show_sheet,
 )
-from valentina.models import AWSService, Character, CharacterSheetSection, PermissionManager, User
+from valentina.models import AWSService, Character, CharacterSheetSection, User
 from valentina.utils import errors
 from valentina.utils.helpers import (
     fetch_data_from_url,

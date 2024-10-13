@@ -8,9 +8,8 @@ from valentina.constants import (
     PermissionsKillCharacter,
     PermissionsManageTraits,
 )
-
-from .character import Character
-from .guild import Guild, GuildPermissions
+from valentina.models.character import Character
+from valentina.models.guild import Guild, GuildPermissions
 
 
 class PermissionManager:
