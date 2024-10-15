@@ -101,7 +101,7 @@ def __embed1(  # noqa: C901
 
     # Add the trait sections to the sheet
     # Sort by character sheet section
-    for section in sorted(CharSheetSection, key=lambda x: x.value["order"]):
+    for section in sorted(CharSheetSection, key=lambda x: x.value.order):
         if section != CharSheetSection.NONE:
             embed.add_field(
                 name="\u200b",

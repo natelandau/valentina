@@ -304,13 +304,26 @@ class XPMultiplier(Enum):
     ### DISCORD SETTINGS ###
 
 
-class CharSheetSection(Enum):
-    """Enum for character sheet sections. Rollups of TraitCategory."""
+@dataclass(frozen=True, eq=True, order=True)
+class CharSheetSectionModel:
+    """Describes the sections of a character sheet.
 
-    ATTRIBUTES: ClassVar[typed_dicts.CharSheetSectionDict] = {"name": "Attributes", "order": 1}
-    ABILITIES: ClassVar[typed_dicts.CharSheetSectionDict] = {"name": "Abilities", "order": 2}
-    ADVANTAGES: ClassVar[typed_dicts.CharSheetSectionDict] = {"name": "Advantages", "order": 3}
-    NONE: ClassVar[typed_dicts.CharSheetSectionDict] = {"name": "None", "order": 4}
+    Attributes:
+        name (str): The name of the section
+        order (int): The order in which the section appears on the charactrer sheet
+    """
+
+    order: int
+    name: str
+
+
+class CharSheetSection(Enum):
+    """Enum for top level sections which contain TraitCategories in a character sheet."""
+
+    ATTRIBUTES = CharSheetSectionModel(name="Attributes", order=1)
+    ABILITIES = CharSheetSectionModel(name="Abilities", order=2)
+    ADVANTAGES = CharSheetSectionModel(name="Advantages", order=3)
+    NONE = CharSheetSectionModel(name="None", order=4)
 
 
 # Enums linked to the Database

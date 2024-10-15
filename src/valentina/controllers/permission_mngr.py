@@ -1,6 +1,7 @@
 """Manage entitlements for Valentina models."""
 
 from datetime import UTC, datetime, timedelta
+from typing import assert_never
 
 from valentina.constants import (
     PermissionManageCampaign,
@@ -75,16 +76,18 @@ class PermissionManager:
         except KeyError:
             setting = PermissionsGrantXP.PLAYER_ONLY
 
-        # If unrestricted, allow the user to grant XP
-        if setting == PermissionsGrantXP.UNRESTRICTED:
-            return True
+        match setting:
+            case PermissionsGrantXP.UNRESTRICTED:
+                return True
+            case PermissionsGrantXP.PLAYER_ONLY:
+                if not await self._author_is_storyteller(author_id):
+                    return author_id == target_id
+                return True
+            case PermissionsGrantXP.STORYTELLER_ONLY:
+                return await self._author_is_storyteller(author_id)
 
-        # If set to "player only" allow a user to set their own xp
-        if setting == PermissionsGrantXP.PLAYER_ONLY and author_id == target_id:
-            return True
-
-        # Finally, allow storytellers to grant XP and deny all others
-        return await self._author_is_storyteller(author_id)
+            case _:
+                assert_never()
 
     async def can_manage_campaign(self, author_id: int) -> bool:
         """Determine if the current user has permission to manage the campaign.
@@ -111,12 +114,15 @@ class PermissionManager:
         except KeyError:
             setting = PermissionManageCampaign.STORYTELLER_ONLY
 
-        # If unrestricted, allow the user to manage the campaign
-        if setting == PermissionManageCampaign.UNRESTRICTED:
-            return True
+        match setting:
+            case PermissionManageCampaign.UNRESTRICTED:
+                return True
 
-        # Finally, allow storytellers to grant XP and deny all others
-        return await self._author_is_storyteller(author_id)
+            case PermissionManageCampaign.STORYTELLER_ONLY:
+                return await self._author_is_storyteller(author_id)
+
+            case _:
+                assert_never()
 
     async def can_manage_traits(self, author_id: int, character_id: str) -> bool:
         """Determine if the user has permission to manage traits for the specified character.
@@ -146,26 +152,32 @@ class PermissionManager:
             setting = PermissionsManageTraits.WITHIN_24_HOURS
 
         # Allow the user to manage traits if the setting is unrestricted
-        if setting == PermissionsManageTraits.UNRESTRICTED:
-            return True
+        match setting:
+            case PermissionsManageTraits.UNRESTRICTED:
+                return True
 
-        character = await Character.get(character_id)
+            case PermissionsManageTraits.CHARACTER_OWNER_ONLY:
+                character = await Character.get(character_id)
+                return (author_id == character.user_owner) or await self._author_is_storyteller(
+                    author_id
+                )
 
-        if setting == PermissionsManageTraits.CHARACTER_OWNER_ONLY:
-            return (author_id == character.user_owner) or await self._author_is_storyteller(
-                author_id
-            )
+            case PermissionsManageTraits.WITHIN_24_HOURS:
+                character = await Character.get(character_id)
+                author_is_owner = author_id == character.user_owner
+                is_within_24_hours = datetime.now(UTC) - character.date_created <= timedelta(
+                    hours=24
+                )
 
-        if setting == PermissionsManageTraits.WITHIN_24_HOURS:
-            author_is_owner = author_id == character.user_owner
+                return (
+                    author_is_owner and is_within_24_hours
+                ) or await self._author_is_storyteller(author_id)
 
-            is_within_24_hours = datetime.now(UTC) - character.date_created <= timedelta(hours=24)
+            case PermissionsManageTraits.STORYTELLER_ONLY:
+                return await self._author_is_storyteller(author_id)
 
-            return (author_is_owner and is_within_24_hours) or await self._author_is_storyteller(
-                author_id
-            )
-
-        return await self._author_is_storyteller(author_id)
+            case _:
+                assert_never()
 
     async def can_kill_character(self, author_id: int, character_id: str) -> bool:
         """Determine if the user has permission to kill the specified character.
@@ -192,15 +204,18 @@ class PermissionManager:
         except KeyError:
             setting = PermissionsKillCharacter.CHARACTER_OWNER_ONLY
 
-        # Unrestricted access
-        if setting == PermissionsKillCharacter.UNRESTRICTED:
-            return True
+        match setting:
+            case PermissionsKillCharacter.UNRESTRICTED:
+                return True
 
-        character = await Character.get(character_id)
+            case PermissionsKillCharacter.CHARACTER_OWNER_ONLY:
+                character = await Character.get(character_id)
+                return author_id == character.user_owner or await self._author_is_storyteller(
+                    author_id
+                )
 
-        # Restrict access to character owners and storytellers
-        if setting == PermissionsKillCharacter.CHARACTER_OWNER_ONLY:
-            return author_id == character.user_owner or await self._author_is_storyteller(author_id)
+            case PermissionsKillCharacter.STORYTELLER_ONLY:
+                return await self._author_is_storyteller(author_id)
 
-        # Lastly, only allow storytellers to kill characters
-        return await self._author_is_storyteller(author_id)
+            case _:
+                assert_never()
