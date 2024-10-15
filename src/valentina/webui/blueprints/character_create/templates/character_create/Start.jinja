@@ -1,0 +1,180 @@
+{# def
+    selected_campaign: Campaign | None,
+    available_experience: int | None,
+    rng_class_snippet: str,
+#}
+<PageLayout title="Create Character">
+    <global.PageTitle>Create New Character</global.PageTitle>
+
+    <div id="create-character-container">
+        {# campaign select#}
+        {% if session["GUILD_CAMPAIGNS"] | length > 1 %}
+            <div class="row mb-3 px-3">
+                <div class="card" style="padding-left:0; padding-right:0;">
+                    {% if not selected_campaign %}
+                        <div class="card-header">
+                            <h4>Select campaign:</h4>
+                        </div>
+                        <div class="card-body">
+                            <form hx-post="{{- url_for('character_create.start') -}}"
+                                  hx-trigger="change"
+                                  hx-target="body">
+                                <select class="form-select" name="campaign">
+                                    <option selected>Select Campaign</option>
+                                    <option disabled>──────────</option>
+                                    {% for campaign, id in session["GUILD_CAMPAIGNS"].items() %}
+                                        <option value="{{ id }}">{{ campaign }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </div>
+                    {% else %}
+                        <div class="card-body">
+                            Character will be created in campaign: <strong><a href="{{- url_for('campaign.campaign_view',  campaign_id=selected_campaign.id) -}}">{{ selected_campaign.name }}</a></strong>
+                            <button type="button"
+                                    class="btn btn-outline-primary ms-2"
+                                    style="--bs-btn-padding-y: .15rem;
+                                           --bs-btn-padding-x: .3rem;
+                                           --bs-btn-font-size: .55rem"
+                                    hx-post="{{- url_for('character_create.start') -}}"
+                                    hx-trigger="click"
+                                    hx-target="body"
+                                    value="true"
+                                    name="reset_campaign">Change</button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif not session["GUILD_CAMPAIGNS"] %}
+            <div class="alert alert-danger" role="alert">
+                <strong>A campaign must be created before you can create a character.</strong>
+            </div>
+        {% endif %}
+        {# / campaign select #}
+        <div class="row">
+            {# From sheet #}
+            <div class="col">
+                <div class="card h-100 border border-secondary-subtle bg-light-subtle">
+                    <div class="card-header">
+                        <h4>Add Character from Sheet</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>
+                            This wizard will guide you through the process of <strong>entering a new character into the system by hand</strong>. It is recommended that you have already created your character on paper before starting this process. This will make it easier to enter the information into the system.
+                        </p>
+
+                        <div class="alert alert-info" role="alert">This action is free and costs no experience.</div>
+                    </div>
+                    <div class="card-footer">
+                        {% if selected_campaign %}
+                            {% if session["IS_STORYTELLER"] %}
+                                <button class="btn btn-primary my-2"
+                                        hx-get="{{- url_for('character_create.create_1', character_type='storyteller', campaign_id=selected_campaign.id) -}}"
+                                        hx-target="#create-character-container"
+                                        hx-indicator="#spinner-storyteller">
+                                    Create Storyteller Character
+                                </button>
+                                <img id="spinner-storyteller"
+                                     src="{{ url_for('static', filename='spinners/bars.svg') }}"
+                                     class="htmx-indicator" />
+                            {% endif %}
+                            <button class="btn btn-primary my-2"
+                                    hx-get="{{- url_for('character_create.create_1', character_type='player', campaign_id=selected_campaign.id) -}}"
+                                    hx-target="#create-character-container"
+                                    hx-indicator="#spinner-player">
+                                Create
+                                {% if session["IS_STORYTELLER"] %}Player{% endif %}
+                                Character
+                            </button>
+                            <img id="spinner-storyteller"
+                                 src="{{ url_for('static', filename='spinners/bars.svg') }}"
+                                 class="htmx-indicator" />
+
+                        {% else %}
+                            <span class="d-inline-block"
+                                  tabindex="0"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-title="Select campaign before continuing">
+                                <button class="btn btn-primary my-2" disabled>Create Character</button>
+                            </span>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
+            {# / Sheet #}
+            {# From RNG #}
+            <div class="col">
+                <div class="card h-100 border border-secondary-subtle bg-light-subtle">
+                    <div class="card-header">
+                        <h4>
+                            <h4>Roll a Random Character</h4>
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        {% if not session["IS_STORYTELLER"] %}
+                            {% if available_experience and available_experience < 10 %}
+                                <div class="alert alert-danger" role="alert">
+                                    <p>
+                                        <strong>This action requires at least <code>10</code> XP. You only have <code>{{ available_experience }}</code> XP.</strong>
+                                        <br>
+                                        Go attack a demon, woo a Toreador, or solve a mystery and come back when you've been granted some experience
+                                    </p>
+                                </div>
+                            {% else %}
+                                <p>
+                                    For the cost of <code>10</code> XP, I will generate three characters for you to choose between.  You select the one you want to keep.
+                                </p>
+                            {% endif %}
+                        {% else %}
+                            <p>Generate three randomly generated characters for you to choose between.</p>
+                        {% endif %}
+                        <p>
+                            We roll percentile dice to select a class and a concept for each character.  The concept guides your character's background and grants unique bonuses to mortals.
+                        </p>
+                        <p>
+                            <strong>Once you select a character you can re-allocate dots and spend freebie points, but you cannot change the concept, class, or clan.</strong>
+                        </p>
+                        <h5>Percentile chances</h5>
+                        {{ rng_class_snippet }}
+
+                    </div>
+                    <div class="card-footer">
+                        {% if selected_campaign %}
+                            {% if not session["IS_STORYTELLER"] and available_experience and available_experience < 10 %}
+                                <span class="d-inline-block"
+                                      tabindex="0"
+                                      data-bs-toggle="tooltip"
+                                      data-bs-title="Must have a least 10xp">
+                                    <button class="btn btn-primary my-2" disabled>Roll a character</button>
+                                </span>
+                            {% else %}
+                                {% if session["IS_STORYTELLER"] %}
+                                    <a class="btn btn-primary my-2"
+                                       href="{{ url_for('character_create.rng', character_type='storyteller',campaign_id=selected_campaign.id) }}">
+                                        Roll a Storyteller Character
+                                    </a>
+                                {% endif %}
+                                <a class="btn btn-primary my-2"
+                                   href="{{ url_for('character_create.rng', character_type='player',campaign_id=selected_campaign.id) }}">
+                                    Roll a
+                                    {% if session["IS_STORYTELLER"] %}Player{% endif %}
+                                    Character
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="d-inline-block"
+                                  tabindex="0"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-title="Select campaign before continuing">
+                                <button class="btn btn-primary my-2" disabled>Roll a character</button>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {# / RNG#}
+        </div>
+    </div>
+
+</PageLayout>

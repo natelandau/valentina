@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional, Union, cast
 
 import discord
+import inflect
 from beanie import (
     Document,
     Indexed,
@@ -34,6 +35,10 @@ from .note import Note
 
 if TYPE_CHECKING:
     from valentina.models import Campaign
+
+
+p = inflect.engine()
+p.defnoun("Ability", "Abilities")
 
 
 class CharacterSheetSection(BaseModel):
@@ -341,6 +346,32 @@ class Character(Document):
         await self.save()
 
         return True
+
+    def concept_description(self) -> str:
+        """Return a text description of the character's concept and special abilities.
+
+        Returns:
+            str: A text description of the character's concept and special abilities.
+        """
+        if not self.concept_name:
+            return ""
+
+        concept_info = CharacterConcept[self.concept_name].value
+
+        if self.char_class_name == CharClass.MORTAL.name:
+            # Generate special abilities list
+            special_abilities_list = [
+                f"{i}. **{ability['name']}:** {ability['description']}\n"
+                for i, ability in enumerate(concept_info.abilities, start=1)
+            ]
+            special_abilities = f'\n\n**Special {p.plural_noun("Ability", len(concept_info.abilities))}:**\n\n{"".join(special_abilities_list)}'
+        else:
+            special_abilities = ""
+
+        return f"""
+**{self.name} is a {concept_info.name}** - {concept_info.description}
+{special_abilities}
+"""
 
     async def delete_image(self, key: str) -> None:  # pragma: no cover
         """Delete a character's image from both the character data and Amazon S3.

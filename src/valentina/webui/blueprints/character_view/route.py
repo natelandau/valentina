@@ -10,7 +10,6 @@ from werkzeug.wrappers.response import Response
 
 from valentina.constants import (
     CharSheetSection,
-    DBSyncModelType,
     DBSyncUpdateType,
     InventoryItemType,
     TraitCategory,
@@ -22,11 +21,10 @@ from valentina.models import (
     InventoryItem,
     Statistics,
     User,
-    WebDiscordSync,
 )
 from valentina.webui import catalog
+from valentina.webui.utils import sync_char_to_discord, update_session
 from valentina.webui.utils.discord import post_to_audit_log
-from valentina.webui.utils.helpers import update_session
 
 from . import form_fields
 from .forms import EmptyForm
@@ -306,15 +304,7 @@ class CharacterEdit(MethodView):
                     setattr(character, key, form_data[key])
 
             if has_updates:
-                sync_object = WebDiscordSync(
-                    object_id=str(character.id),
-                    object_type=DBSyncModelType.CHARACTER,
-                    update_type=DBSyncUpdateType.UPDATE,
-                    target="discord",
-                    guild_id=str(session["GUILD_ID"]),
-                    user_id=str(session["DISCORD_USER_ID"]),
-                )
-                await sync_object.save()
+                await sync_char_to_discord(character, DBSyncUpdateType.UPDATE)
 
                 await character.save()
                 await post_to_audit_log(

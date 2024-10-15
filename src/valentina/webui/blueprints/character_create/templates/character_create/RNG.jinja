@@ -1,0 +1,82 @@
+{# def
+    selected_campaign: Campaign | None,
+    remaining_xp: int | None,
+    rng_characters: List[Character],
+    character_type: str,
+#}
+<PageLayout title="Roll RNG Character">
+    <global.PageTitle>Roll RNG Character</global.PageTitle>
+    {% if remaining_xp %}
+        <div class="alert alert-success" role="alert">
+            You spent 10 XP to roll a random character. You have {{ remaining_xp }} XP remaining.
+        </div>
+    {% endif %}
+
+    <h3>Character Choices</h3>
+    <p>Below are the characters that were rolled.  Select one to add to your campaign.</p>
+    <div class="row">
+        {% for character in rng_characters %}
+
+            {% set vampire_clan = " (" ~ character.clan_name.lower().title().replace("_", " ") ~ ")" if character.clan_name  else "" %}
+
+            <div class="col">
+                <div class="card h-100 border border-secondary-subtle bg-light-subtle">
+                    <div class="card-header">
+                        <h4>{{ character.full_name }}</h4>
+                        {{ character.char_class.name.lower().title() ~ vampire_clan }}
+
+                    </div>
+                    <div class="card-body">
+                        {# <h4 class="card-title pb-2 border-bottom">{{ accordion_title }}</h4> #}
+                        {{ character.concept_description() | from_markdown }}
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary"
+                                type="button"
+                                hx-post="{{- url_for('character_create.rng', character_type=character_type,campaign_id=selected_campaign.id) -}}"
+                                hx-trigger="click"
+                                hx-target="body"
+                                hx-indicator="#spinner{{- loop.index -}}"
+                                value="{{ loop.index }}"
+                                name="char_select">Select</button>
+                        <img id="spinner{{- loop.index -}}"
+                             src="{{ url_for('static', filename='spinners/bars.svg') }}"
+                             class="htmx-indicator" />
+                    </div>
+                </div>
+            </div>
+
+        {% endfor %}
+    </div>
+    <div class="row mt-4 mb-5">
+        <div class="col bg-secondary-subtle text-secondary-emphasis p-3 border border-secondary-subtle rounded ">
+            <p>
+                Don't like any of these characters?  You can re-roll three new ones
+                {% if not session["IS_STORYTELLER"] %}for and additional 10 XP{% endif %}
+                .
+            </p>
+
+            {% if session["IS_STORYTELLER"] or remaining_xp > 10 %}
+                <button class="btn btn-primary"
+                        type="button"
+                        hx-post="{{- url_for('character_create.rng', character_type=character_type,campaign_id=selected_campaign.id) -}}"
+                        hx-trigger="click"
+                        hx-target="body"
+                        hx-indicator="#spinner"
+                        value="true"
+                        name="reroll">Re-roll</button>
+                <img id="spinner"
+                     src="{{ url_for('static', filename='spinners/bars.svg') }}"
+                     class="htmx-indicator" />
+            </div>
+        {% else %}
+            <span class="d-inline-block"
+                  tabindex="0"
+                  data-bs-toggle="tooltip"
+                  data-bs-title="You need more xp to re-roll">
+                <button class="btn btn-primary" disabled>Re-roll</button>
+            </span>
+        {% endif %}
+    </div>
+
+</PageLayout>

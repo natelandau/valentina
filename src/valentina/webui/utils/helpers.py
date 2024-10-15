@@ -6,7 +6,8 @@ from loguru import logger
 from quart import abort, session
 from werkzeug.wrappers.response import Response
 
-from valentina.models import Campaign, Character, Guild, User
+from valentina.constants import DBSyncModelType, DBSyncUpdateType
+from valentina.models import Campaign, Character, Guild, User, WebDiscordSync
 from valentina.utils import ValentinaConfig, console
 
 
@@ -58,6 +59,9 @@ async def _char_campaign_name(char: Character) -> str:
         str: The name of the character's campaign.
     """
     campaign = await Campaign.get(char.campaign, fetch_links=False)
+    if not campaign:
+        return ""
+
     return campaign.name
 
 
@@ -82,23 +86,28 @@ async def fetch_active_campaign(
     if len(session["GUILD_CAMPAIGNS"]) == 0:
         return None
 
+    # If there is only one campaign, return that campaign
     if len(session["GUILD_CAMPAIGNS"]) == 1:
-        return await Campaign.get(
+        campaign = await Campaign.get(
             next(iter(session["GUILD_CAMPAIGNS"].values())), fetch_links=fetch_links
         )
+        session["ACTIVE_CAMPAIGN_ID"] = str(campaign.id)
+        return campaign
 
-    existing_campaign_id = session.get("ACTIVE_CAMPAIGN_ID", None)
+    # IF the session has an active campaign and no campaign ID is provided or if it matches the provided campaign ID, return that campaign
+    session_active_campaign = session.get("ACTIVE_CAMPAIGN_ID", None)
 
+    if (not campaign_id and session_active_campaign) or (
+        campaign_id and campaign_id == session_active_campaign
+    ):
+        return await Campaign.get(session_active_campaign, fetch_links=fetch_links)
+
+    # If no campaign id is provided, return None b/c we can't determine the active campaign
     if not campaign_id:
-        if existing_campaign_id:
-            return await Campaign.get(existing_campaign_id, fetch_links=fetch_links)
-
         return None
 
-    if existing_campaign_id == campaign_id:
-        return await Campaign.get(campaign_id, fetch_links=fetch_links)
-
-    session["ACTIVE_CAMPAIGN_ID"] = campaign_id
+    # If the provided campaign ID is different from the active campaign ID, update the session
+    session["ACTIVE_CAMPAIGN_ID"] = str(campaign_id)
     return await Campaign.get(campaign_id, fetch_links=fetch_links)
 
 
@@ -124,7 +133,9 @@ async def fetch_active_character(
         return None
 
     if len(session["USER_CHARACTERS"]) == 1:
-        return await Character.get(session["USER_CHARACTERS"][0]["id"], fetch_links=fetch_links)
+        char_id = str(session["USER_CHARACTERS"][0]["id"])
+        session["ACTIVE_CHARACTER_ID"] = char_id
+        return await Character.get(char_id, fetch_links=fetch_links)
 
     existing_character_id = session.get("ACTIVE_CHARACTER_ID", None)
 
@@ -137,7 +148,7 @@ async def fetch_active_character(
     if existing_character_id == character_id:
         return await Character.get(character_id, fetch_links=fetch_links)
 
-    session["ACTIVE_CHARACTER_ID"] = character_id
+    session["ACTIVE_CHARACTER_ID"] = str(character_id)
     return await Character.get(character_id, fetch_links=fetch_links)
 
 
@@ -411,3 +422,26 @@ async def update_session() -> None:
         for key, value in session.items():
             console.log(f"{key}={value}")
         console.rule()
+
+
+async def sync_char_to_discord(character: Character, update_type: DBSyncUpdateType) -> None:
+    """Sync a character to Discord.
+
+    Args:
+        character (Character): The character to sync.
+        update_type (str): The type of update to perform.
+
+    Returns:
+        None
+    """
+    # Create a sync object
+    sync = WebDiscordSync(
+        guild_id=character.guild,
+        object_id=str(character.id),
+        object_type=DBSyncModelType("character"),
+        update_type=DBSyncUpdateType(update_type),
+        target="discord",
+        user_id=character.user_owner,
+    )
+    await sync.save()
+    logger.info(f"WEBUI: Syncing character {character.full_name} to Discord")

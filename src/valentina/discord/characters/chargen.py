@@ -598,7 +598,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
         pages.extend(
             [
                 await self._generate_character_sheet_embed(
-                    character, suffix=self._special_ability_char_sheet_text(character)
+                    character, suffix=character.concept_description()
                 )
                 for character in characters
             ]
