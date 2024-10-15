@@ -5,10 +5,9 @@ from dataclasses import dataclass, field
 from enum import Enum, StrEnum
 from pathlib import Path
 from random import choice
+from typing import TypedDict
 
 import inflect
-
-from valentina import typed_dicts
 
 # Create an inflect engine to pluralize words.
 p = inflect.engine()
@@ -950,6 +949,15 @@ class RNGCharLevel(Enum):
         return choice(list(cls))
 
 
+class ConceptAbilityDict(TypedDict):
+    """Type for CharacterConcept.ability sub-dictionary used in CharacterConceptValue."""
+
+    name: str
+    description: str
+    traits: list[tuple[str, int, str]]
+    custom_sections: list[tuple[str, str]]
+
+
 @dataclass(frozen=True, eq=True)
 class CharacterConceptValue:
     """Class for the values of the CharacterConcept enum."""
@@ -961,7 +969,7 @@ class CharacterConceptValue:
     num_abilities: int
     ability_specialty: TraitCategory
     attribute_specialty: TraitCategory
-    abilities: list[typed_dicts.ConceptAbilityDict] = field(default_factory=list)
+    abilities: list[ConceptAbilityDict] = field(default_factory=list)
     specific_abilities: list[str] = field(default_factory=list)
 
 
