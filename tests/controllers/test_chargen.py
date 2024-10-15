@@ -1,11 +1,12 @@
 # type: ignore
 """Test the chargen module."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
-from rich import print
 
+from tests.conftest import GUILD_ID
+from tests.factories import *
 from valentina.constants import (
     CharacterConcept,
     CharClass,
@@ -14,11 +15,8 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.discord.characters.chargen import RNGCharGen
+from valentina.controllers import RNGCharGen
 from valentina.models import Character, CharacterTrait
-
-from .conftest import GUILD_ID
-from .factories import *
 
 
 @pytest.mark.drop_db
@@ -29,7 +27,7 @@ async def test_generate_full_character(
     """Test the generate_full_character method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.controllers.rng_chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a user, campaign, and a character generator
     user = user_factory.build(characters=[])
@@ -38,7 +36,9 @@ async def test_generate_full_character(
     campaign = campaign_factory.build()
     await campaign.insert()
 
-    char_gen = RNGCharGen(mock_ctx1, user, experience_level=RNGCharLevel.NEW, campaign=campaign)
+    char_gen = RNGCharGen(
+        guild_id=mock_ctx1.guild.id, user=user, experience_level=RNGCharLevel.NEW, campaign=campaign
+    )
 
     # WHEN generate_full_character is called
     character = await char_gen.generate_full_character(
@@ -140,12 +140,12 @@ async def test_rngchargen_generate_base_character(
     """Test the generate_base_character method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.controllers.rng_chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a user and a character generator
 
     user = user_factory.build()
-    char_gen = RNGCharGen(mock_ctx1, user)
+    char_gen = RNGCharGen(guild_id=mock_ctx1.guild.id, user=user)
 
     # WHEN generate_base is called
     character = await char_gen.generate_base_character(
@@ -229,11 +229,11 @@ async def test_random_attributes(
     """Test the random_abilities method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.controllers.rng_chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
-    char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
+    char_gen = RNGCharGen(guild_id=mock_ctx1.guild.id, user=user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
 
     # WHEN random_abilities is called with a character
@@ -302,11 +302,11 @@ async def test_random_abilities(
     """Test the random_abilities method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.controllers.rng_chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
-    char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
+    char_gen = RNGCharGen(guild_id=mock_ctx1.guild.id, user=user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
 
     # WHEN random_abilities is called with a character
@@ -355,11 +355,11 @@ async def test_random_disciplines(
     """Test the random_disciplines method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.controllers.rng_chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
-    char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
+    char_gen = RNGCharGen(guild_id=mock_ctx1.guild.id, user=user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class, clan=clan)
 
     # WHEN random_disciplines is called with a character
@@ -391,11 +391,11 @@ async def test_random_virtues(user_factory, mock_ctx1, char_class, level, modifi
     """Test the andom_virtues method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.controllers.rng_chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
-    char_gen = RNGCharGen(mock_ctx1, user, experience_level=level)
+    char_gen = RNGCharGen(guild_id=mock_ctx1.guild.id, user=user, experience_level=level)
     character = await char_gen.generate_base_character(char_class=char_class)
 
     # WHEN random_virtues is called with a character
@@ -429,11 +429,11 @@ async def test_concept_special_abilities(
     """Test the concept_special_abilities method."""
     # MOCK the call the fetch_random_name
     async_mock = AsyncMock(return_value=("mock_first", "mock_last"))
-    mocker.patch("valentina.discord.characters.chargen.fetch_random_name", side_effect=async_mock)
+    mocker.patch("valentina.controllers.rng_chargen.fetch_random_name", side_effect=async_mock)
 
     # GIVEN a character and a character generator
     user = user_factory.build()
-    char_gen = RNGCharGen(mock_ctx1, user)
+    char_gen = RNGCharGen(guild_id=mock_ctx1.guild.id, user=user)
     character = await char_gen.generate_base_character(char_class=char_class, concept=concept)
 
     # WHEN concept_special_abilities is called with a character

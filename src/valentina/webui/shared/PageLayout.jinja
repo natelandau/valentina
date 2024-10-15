@@ -1,4 +1,20 @@
-{# def title="" #}
+{# def
+    title:str ="" ,
+    success_msg:str ="",
+    error_msg:str ="",
+    warning_msg:str ="",
+    info_msg:str ="",
+#}
+{#
+    USAGE
+    Overall layout for the page. This includes the nav bar, alerts, and the content of the page. The nav bar is only included if the user is logged in.
+
+    To place an alert at the top of the page, call this template with one of the following variables:
+    - success_msg: str
+    - error_msg: str
+    - warning_msg: str
+    - info_msg: str
+#}
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
     <head>
@@ -34,9 +50,25 @@
     <body>
         {# include nav bar only when user is logged in #}
         {% if session["USER_ID"] is defined and session["GUILD_ID"] is defined %}<NavBar />{% endif %}
-        <div class="container mt-3">{{ content }}</div>
+        <div class="container mt-3">
+            {% if success_msg %}
+                <div class="alert alert-success" role="alert">{{ success_msg }}</div>
+            {% endif %}
+            {% if error_msg %}<div class="alert alert-danger" role="alert">{{ error_msg }}</div>{% endif %}
+            {% if warning_msg %}
+                <div class="alert alert-warning" role="alert">{{ warning_msg }}</div>
+            {% endif %}
+            {% if info_msg %}<div class="alert alert-info" role="alert">{{ info_msg }}</div>{% endif %}
+
+            {{ content }}
+        </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
                 integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
                 crossorigin="anonymous"></script>
+        <script>
+            // Enable tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+        </script>
     </body>
 </html>

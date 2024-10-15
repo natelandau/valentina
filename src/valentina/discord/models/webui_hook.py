@@ -3,7 +3,7 @@
 The webui has no idea of a discord ctx object which is required for creating, renaming, and deleting channels or permissions on Discord. We need to poll the database for changes and process them.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, assert_never
 
 import discord
 from loguru import logger
@@ -32,16 +32,22 @@ class SyncDiscordFromWebManager:
         # Process the change
         channel_manager = ChannelManager(guild=guild, user=member)
 
-        if sync.update_type in (DBSyncUpdateType.CREATE, DBSyncUpdateType.UPDATE):
-            character = await Character.get(sync.object_id)
-            campaign = await Campaign.get(character.campaign)
+        match sync.update_type:
+            case DBSyncUpdateType.CREATE | DBSyncUpdateType.UPDATE:
+                character = await Character.get(sync.object_id)
+                campaign = await Campaign.get(character.campaign)
 
-            await channel_manager.confirm_character_channel(character=character, campaign=campaign)
-            await channel_manager.sort_campaign_channels(campaign=campaign)
+                await channel_manager.confirm_character_channel(
+                    character=character, campaign=campaign
+                )
+                await channel_manager.sort_campaign_channels(campaign=campaign)
 
-        elif sync.update_type == DBSyncUpdateType.DELETE:
-            async for campaign in Campaign.find(Campaign.guild == sync.guild_id):
-                await channel_manager.confirm_campaign_channels(campaign=campaign)
+            case DBSyncUpdateType.DELETE:
+                async for campaign in Campaign.find(Campaign.guild == sync.guild_id):
+                    await channel_manager.confirm_campaign_channels(campaign=campaign)
+
+            case _:
+                assert_never(sync.update_type)
 
     async def run(self) -> None:
         """Run the sync process."""

@@ -11,13 +11,13 @@ from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
 
-from valentina.constants import CharSheetSection, TraitCategory
+from valentina.constants import CharSheetSection, DBSyncUpdateType, TraitCategory
 from valentina.models import Character, CharacterTrait
 from valentina.utils.helpers import get_max_trait_value
 from valentina.webui import catalog
 from valentina.webui.utils.discord import post_to_audit_log, post_to_error_log
 from valentina.webui.utils.forms import ValentinaForm
-from valentina.webui.utils.helpers import update_session
+from valentina.webui.utils.helpers import sync_char_to_discord, update_session
 
 from .forms.character_create_full import (
     CharacterCreateStep1,
@@ -98,22 +98,6 @@ class FormSessionManager:
         session.pop(self.key, None)
 
 
-class CreateCharacterStart(MethodView):
-    """Create a character step 1."""
-
-    decorators: ClassVar = [requires_authorization]
-
-    async def get(self) -> str:
-        """Process the initial page load.
-
-        Render and return the main template for the character creation page.
-
-        Returns:
-            str: The rendered HTML content for the character creation page.
-        """
-        return catalog.render("character_create.Main")
-
-
 class CreateCharacterStep1(MethodView):
     """Create a character step 1. Loads HTMX partials for the first form."""
 
@@ -147,6 +131,7 @@ class CreateCharacterStep1(MethodView):
             post_url=url_for(
                 "character_create.create_1",
                 character_type=request.args.get("character_type", "player"),
+                campaign_id=request.args.get("campaign_id", session.get("ACTIVE_CAMPAIGN_ID", "")),
             ),
         )
 
@@ -168,9 +153,11 @@ class CreateCharacterStep1(MethodView):
         """
         form = await CharacterCreateStep1().create_form()
 
+        campaign_id = str(request.args.get("campaign_id", session.get("ACTIVE_CAMPAIGN_ID", None)))
+
         if await form.validate_on_submit():
             character = Character(
-                campaign=session.get("ACTIVE_CAMPAIGN_ID", None),
+                campaign=campaign_id,
                 guild=session.get("GUILD_ID", None),
                 name_first=form.data.get("firstname") if form.data.get("firstname") else None,
                 name_last=form.data.get("lastname") if form.data.get("lastname") else None,
@@ -336,6 +323,12 @@ class CreateCharacterStep2(MethodView):
             character.tribe = form.data.get("tribe") if form.data.get("tribe") else None
             character.creed_name = form.data.get("creed") if form.data.get("creed") else None
             await character.save()
+
+            await sync_char_to_discord(character, DBSyncUpdateType.CREATE)
+            await post_to_audit_log(
+                msg=f"WEBUI: Character {character.full_name} created",
+                view=self.__class__.__name__,
+            )
 
             # Write the form data to the session
             self.session_data.write_data(form.data)
@@ -507,12 +500,6 @@ class CreateCharacterStep3(MethodView):
         character.traits = traits_to_add
         await character.save(link_rule=WriteRules.WRITE)
         self.session_data.clear_data()
-
-        # Log the result
-        await post_to_audit_log(
-            msg=f"New character created: {character.full_name}",
-            view=self.__class__.__name__,
-        )
 
         # Rebuild the session with the new character data
         await update_session()

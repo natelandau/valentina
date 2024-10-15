@@ -10,6 +10,7 @@ from discord.ext import commands
 from loguru import logger
 
 from valentina.constants import MAX_FIELD_COUNT, EmbedColor
+from valentina.controllers import PermissionManager
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
@@ -44,7 +45,6 @@ from valentina.models import (
     CampaignBookChapter,
     CampaignNPC,
     Guild,
-    PermissionManager,
 )
 from valentina.utils.helpers import truncate_string
 

@@ -17,12 +17,11 @@ class HomepageView(MethodView):
 
     async def get(self) -> str:
         """Handle GET requests."""
-        await update_session()
-
-        if not discord_oauth.authorized or not session["USER_ID"]:
+        if not discord_oauth.authorized or not session.get("USER_ID", None):
             return catalog.render(
                 "homepage.Anonymous",
                 homepage_description=homepage_description,
             )
 
+        await update_session()
         return catalog.render("homepage.Loggedin")

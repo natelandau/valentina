@@ -17,8 +17,9 @@ from valentina.constants import (
     DiceType,
     EmbedColor,
 )
+from valentina.controllers import RNGCharGen
 from valentina.discord.bot import Valentina, ValentinaContext
-from valentina.discord.characters import AddFromSheetWizard, RNGCharGen
+from valentina.discord.characters import AddFromSheetWizard
 from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_any_player_character,
@@ -246,7 +247,9 @@ class StoryTeller(commands.Cog):
         campaign = channel_objects.campaign
 
         user = await User.get(ctx.author.id, fetch_links=True)
-        chargen = RNGCharGen(ctx, user, experience_level=level, campaign=campaign)
+        chargen = RNGCharGen(
+            guild_id=ctx.guild.id, user=user, experience_level=level, campaign=campaign
+        )
         character = await chargen.generate_full_character(
             char_class=character_class,
             storyteller_character=True,

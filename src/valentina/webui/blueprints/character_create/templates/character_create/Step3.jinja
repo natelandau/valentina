@@ -8,7 +8,6 @@
           action="{{ post_url }}"
           encoding="application/x-www-form-urlencoded">
         {% for sheet_section, trait_category in sheet_traits.items() if trait_category %}
-            <hr>
             <div class="text-center">
                 <h3>{{ sheet_section }}</h3>
             </div>
@@ -22,7 +21,9 @@
                             {% for name, max_value in traits.items() %}
                                 <div class="col text-end">{{ name | capitalize }}:</div>
                                 <div class="col-auto">
+
                                     {% set field_name = category~'_'~name~'_'~max_value %}
+
                                     <global.valentinaform.TraitRadioToggle form={{ form }} name={{ field_name }} label={{ name }} max_value={{ max_value }} />
                                 </div>
                             {% endfor %}

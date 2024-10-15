@@ -6,7 +6,9 @@
     post_url:str = "",
 #}
 {# Determine the encoding type based on the presence of file fields #}
+
 {% set encoding = "multipart/form-data" if form.__iter__() | selectattr("type", "in", ["FileField","MultipleFileField"]) | list else "application/x-www-form-urlencoded" %}
+
 <div id="form-container">
     {% if progress %}
         <div class="progress mb-3"
