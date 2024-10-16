@@ -41,6 +41,7 @@ from valentina.models import (
     ChangelogPoster,
     Character,
     CharacterSheetSection,
+    CharacterTrait,
     GlobalProperty,
     Guild,
     InventoryItem,
@@ -431,6 +432,26 @@ class Developer(commands.Cog):
                 ),
                 ephemeral=True,
             )
+
+    @guild.command(description="Cleanup orphan DB entries which are not linked to parent objects")
+    @commands.is_owner()
+    @commands.guild_only()
+    async def purge_orphan_db_objects(self, ctx: ValentinaContext) -> None:
+        """Cleanup orphan CharacterTrait DB entries."""
+        title = "Purge orphan database entries"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title)
+        if not is_confirmed:
+            return
+
+        i = 0
+        async for trait in CharacterTrait.find_all():
+            if not Character.get(trait.character):
+                i += 1
+                await trait.delete()
+
+        confirmation_embed.description = f"Purged `{i}` stray CharacterTrait DB entries"
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### BOT COMMANDS ################################################################
 

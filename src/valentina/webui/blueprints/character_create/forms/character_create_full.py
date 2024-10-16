@@ -145,7 +145,7 @@ class HunterClassSpecifics(QuartForm):
 
     creed = SelectField(
         "Creed",
-        choices=[("", "-- Select --")] + [(x.name, x.value.get("name")) for x in HunterCreed],
+        choices=[("", "-- Select --")] + [(x.name, x.value.name) for x in HunterCreed],
         validators=[DataRequired()],
     )
     submit = SubmitField("Next")

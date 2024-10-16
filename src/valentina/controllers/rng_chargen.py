@@ -645,7 +645,7 @@ class RNGCharGen:
 
         conviction = CharacterTrait(
             name="Conviction",
-            value=creed.value["conviction"],
+            value=creed.value.conviction,
             character=str(character.id),
             category_name=TraitCategory.OTHER.name,
             max_value=get_max_trait_value("Conviction", TraitCategory.OTHER.name),
@@ -654,7 +654,7 @@ class RNGCharGen:
         character.traits.append(conviction)
 
         # Assign Edges
-        edges = creed.value["edges"]
+        edges = creed.value.edges
         starting_dots = 5
         extra_dots_map = {
             RNGCharLevel.NEW: 0,

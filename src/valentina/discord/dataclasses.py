@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from valentina.models import Campaign, CampaignBook, Character
 
 
-@dataclass
+@dataclass(eq=True)
 class ChannelObjects:
     """Dataclass for Channel Objects."""
 

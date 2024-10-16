@@ -403,7 +403,7 @@ class CreateCharacterStep3(MethodView):
             innermost keys are trait names with their corresponding maximum values.
         """
         sheet_traits: dict[str, dict[str, dict[str, int]]] = {}
-        for sheet_section in sorted(CharSheetSection, key=lambda x: x.value["order"]):
+        for sheet_section in sorted(CharSheetSection, key=lambda x: x.value.order):
             sheet_traits[sheet_section.name] = {}
 
             trait_categories = sorted(
