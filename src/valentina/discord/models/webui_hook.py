@@ -35,16 +35,29 @@ class SyncDiscordFromWebManager:
         match sync.update_type:
             case DBSyncUpdateType.CREATE | DBSyncUpdateType.UPDATE:
                 character = await Character.get(sync.object_id)
+                if not character:
+                    logger.error(f"Character {sync.object_id} not found in database")
+                    return
+
                 campaign = await Campaign.get(character.campaign)
+                if not campaign:
+                    logger.error(f"Campaign {character.campaign} not found in database")
+                    return
 
                 await channel_manager.confirm_character_channel(
                     character=character, campaign=campaign
                 )
                 await channel_manager.sort_campaign_channels(campaign=campaign)
+                logger.info(f"Synced character {character.name} from webui to discord")
 
             case DBSyncUpdateType.DELETE:
-                async for campaign in Campaign.find(Campaign.guild == sync.guild_id):
-                    await channel_manager.confirm_campaign_channels(campaign=campaign)
+                campaign = await Campaign.get(sync.guild_id)
+                if not campaign:
+                    logger.error(f"Campaign {sync.guild_id} not found in database")
+                    return
+
+                await channel_manager.confirm_campaign_channels(campaign=campaign)
+                logger.info(f"Synced deleted character {sync.object_id} from webui to discord")
 
             case _:
                 assert_never(sync.update_type)
@@ -60,4 +73,3 @@ class SyncDiscordFromWebManager:
             await self._process_character_change(sync)
 
             await sync.mark_processed()
-            logger.info(f"Synced character change from webui: {sync.object_id}")
