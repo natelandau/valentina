@@ -1,6 +1,6 @@
 {# def
     guide: str,
 #}
-<PageLayout title="User Guide">
-{{ guide | safe | from_markdown }}
+<PageLayout title="User Guide" _attrs={{ attrs }}>
+    {{ guide | safe | from_markdown }}
 </PageLayout>

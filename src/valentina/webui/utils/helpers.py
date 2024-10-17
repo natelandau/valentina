@@ -209,7 +209,7 @@ async def fetch_user(fetch_links: bool = False) -> User:
     return user
 
 
-async def fetch_user_characters(fetch_links: bool = True) -> list[Character]:
+async def fetch_user_characters(fetch_links: bool = False) -> list[Character]:
     """Fetch the user's characters and update the session with their names and IDs.
 
     Retrieve the characters owned by the user within the current guild from the database,
@@ -255,7 +255,7 @@ async def fetch_user_characters(fetch_links: bool = True) -> list[Character]:
     return characters
 
 
-async def fetch_all_characters(fetch_links: bool = True) -> list[Character]:
+async def fetch_all_characters(fetch_links: bool = False) -> list[Character]:
     """Fetch the all player characters in the guild and update the session with their names and IDs.
 
     Retrieve all the player characters within the current guild from the database,
@@ -300,7 +300,7 @@ async def fetch_all_characters(fetch_links: bool = True) -> list[Character]:
     return characters
 
 
-async def fetch_storyteller_characters(fetch_links: bool = True) -> list[Character]:
+async def fetch_storyteller_characters(fetch_links: bool = False) -> list[Character]:
     """Fetch the all storyteller characters in the guild and update the session with their names and IDs.
 
     Retrieve all the storyteller characters within the current guild from the database,

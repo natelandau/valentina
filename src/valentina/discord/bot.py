@@ -432,7 +432,7 @@ class Valentina(commands.Bot):
 
     @tasks.loop(minutes=5)
     async def sync_from_web(self) -> None:
-        """Sync objects from the webui to Discord."""
+        """Some changes made via the Webui are not automatically synced to Discord. For example, characters created on the web will not have their channels created on Discord. This task will periodically check for changes from the WebUI and sync them to Discord or vice-a-versa."""
         logger.debug("SYNC: Running sync_from_web task")
         sync_discord = SyncDiscordFromWebManager(self)
         await sync_discord.run()
@@ -444,7 +444,7 @@ class Valentina(commands.Bot):
 
     @tasks.loop(minutes=10)
     async def sync_roles_to_db(self) -> None:
-        """Log Storytellers and administrators to the database."""
+        """This task keeps guild-user role lists in sync with changes made to user roles using the Discord interface."""
         logger.info("SYNC: Running sync_roles_to_db task")
         for guild in self.guilds:
             guild_db_obj = await Guild.get(guild.id)

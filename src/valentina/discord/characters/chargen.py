@@ -11,6 +11,7 @@ from loguru import logger
 from numpy.random import default_rng
 
 from valentina.constants import (
+    STARTING_FREEBIE_POINTS,
     CharacterConcept,
     CharClass,
     EmbedColor,
@@ -648,7 +649,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
                 if c.id == selected_character.id:
                     # Add the player into the database
-                    c.freebie_points = 21
+                    c.freebie_points = STARTING_FREEBIE_POINTS
                     c.type_player = True
                     c.type_chargen = False
                     await c.save()

@@ -5,15 +5,17 @@
     floating_label:bool = False,
     post_url:str = "",
 #}
-<PageLayout title="{{ character.name_first }} {{ character.name_last }}">
-{% set link = url_for('character_view.edit', character_id=character.id) %}
-<div>
-    <global.PageTitle>Edit {{ character.full_name }}</global.PageTitle>
-</div>
-<div class="d-flex justify-content-center align-items-center ">
-    <div class="py-4 px-5 mt-5 rounded-3 border shadow-lg w-50"
-         id="form-container">
-        <character_edit.WTForm form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} post_url={{ post_url }} character={{ character }} />
+<PageLayout title={{ character.name }} _attrs={{ attrs }}>
+
+    {% set link = url_for('character_view.edit', character_id=character.id) %}
+
+    <div>
+        <global.PageTitle>Edit {{ character.full_name }}</global.PageTitle>
     </div>
-</div>
+    <div class="d-flex justify-content-center align-items-center ">
+        <div class="py-4 px-5 mt-5 rounded-3 border shadow-lg w-50"
+             id="form-container">
+            <character_edit.WTForm form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} post_url={{ post_url }} character={{ character }} />
+        </div>
+    </div>
 </PageLayout>
