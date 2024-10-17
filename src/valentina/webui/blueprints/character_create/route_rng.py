@@ -9,7 +9,7 @@ from quart import abort, request, session, url_for
 from quart.views import MethodView
 from werkzeug.wrappers.response import Response
 
-from valentina.constants import DBSyncUpdateType, RNGCharLevel
+from valentina.constants import STARTING_FREEBIE_POINTS, DBSyncUpdateType, RNGCharLevel
 from valentina.controllers import RNGCharGen
 from valentina.models import Character
 from valentina.webui import catalog
@@ -105,7 +105,7 @@ class CreateRNGCharacter(MethodView):
                     continue
 
                 # Add the selected character to the campaign and the player or storyteller
-                character.freebie_points = 21
+                character.freebie_points = STARTING_FREEBIE_POINTS
                 character.type_player = bool(request.args["character_type"] == "player")
                 character.type_storyteller = bool(request.args["character_type"] == "storyteller")
                 character.type_chargen = False

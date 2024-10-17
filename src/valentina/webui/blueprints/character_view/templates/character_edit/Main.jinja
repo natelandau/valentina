@@ -7,8 +7,6 @@
 #}
 <PageLayout title={{ character.name }} _attrs={{ attrs }}>
 
-    {% set link = url_for('character_view.edit', character_id=character.id) %}
-
     <div>
         <global.PageTitle>Edit {{ character.full_name }}</global.PageTitle>
     </div>

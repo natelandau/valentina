@@ -1,0 +1,12 @@
+{# def
+    character: Character,
+#}
+
+<div class="mb-4">
+    <a href="{{ url_for('character_view.edit', character_id=character.id) }}"
+       class="btn btn-primary">Edit Character</a>
+    {% if character.freebie_points > 0 %}
+        <a href="{{ url_for('character_edit.freebie', character_id=character.id) }}"
+           class="btn btn-primary">Spend Freebie Points</a>
+    {% endif %}
+</div>

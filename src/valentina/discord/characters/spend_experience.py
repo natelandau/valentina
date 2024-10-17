@@ -4,16 +4,10 @@ from typing import cast
 
 import discord
 
-from valentina.constants import (
-    CharClass,
-    EmbedColor,
-    Emoji,
-    TraitCategory,
-    XPMultiplier,
-)
+from valentina.constants import EmbedColor, Emoji, TraitCategory
+from valentina.controllers import TraitModifier
 from valentina.discord.bot import ValentinaContext
-from valentina.models import Character, CharacterTrait
-from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
+from valentina.models import Character, CharacterTrait, User
 
 from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons
 
@@ -159,22 +153,9 @@ class SpendFreebiePoints(discord.ui.View):
 
     async def _add_dot(self) -> Character:
         """Add a dot to the selected trait."""
-        # Compute the cost of the upgrade
+        trait_modifier = TraitModifier(self.character, await User.get(self.ctx.author.id))
 
-        # Find vampire clan disciplines
-        if self.character.char_class == CharClass.VAMPIRE:
-            # Get the multiplier for the trait
-            if self.trait.name in self.character.clan.value.disciplines:
-                multiplier = XPMultiplier.CLAN_DISCIPLINE.value
-            else:
-                multiplier = get_trait_multiplier(self.trait.name, self.trait_category.name)
-        else:
-            multiplier = get_trait_multiplier(self.trait.name, self.trait_category.name)
-
-        if self.trait.value == 0:
-            self.upgrade_cost = get_trait_new_value(self.trait.name, self.trait_category.name)
-        else:
-            self.upgrade_cost = (self.trait.value + 1) * multiplier
+        self.upgrade_cost = trait_modifier.cost_to_upgrade(self.trait)
 
         # Guard statement, cannot spend more points than available
         if self.upgrade_cost >= self.character.freebie_points:
@@ -183,10 +164,6 @@ class SpendFreebiePoints(discord.ui.View):
             )
             return None
 
-        # Make the database changes
-        self.character.freebie_points -= self.upgrade_cost
-        self.trait.value += 1
-        await self.trait.save()
-        await self.character.save()
+        await trait_modifier.upgrade_with_freebie(self.trait)
 
         return await Character.get(self.character.id, fetch_links=True)

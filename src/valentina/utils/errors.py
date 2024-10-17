@@ -126,6 +126,42 @@ class NoExperienceInCampaignError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class NotEnoughFreebiePointsError(Exception):
+    """Raised when there are not enough freebie points to upgrade a trait."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "Not enough freebie points to upgrade trait."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
+class TraitAtMaxValueError(Exception):
+    """Raised when a user tries to update a trait already at max value."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "Trait is already at max value."
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class NotEnoughExperienceError(DiscordException):
     """Raised when a user does not have enough experience to perform an action."""
 

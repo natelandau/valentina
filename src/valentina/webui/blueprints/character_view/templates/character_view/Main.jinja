@@ -5,14 +5,8 @@
 #}
 <PageLayout title={{ character.name }} _attrs={{ attrs }}>
     <global.PageTitle>{{ character.full_name }}</global.PageTitle>
-    <div class="mb-4">
-        <a href="{{ url_for('character_view.edit', character_id=character.id) }}"
-           class="btn btn-primary">Edit Character</a>
-        {% if character.freebie_points > 0 %}
-            <a href="{{ url_for('character_edit.freebie', character_id=character.id) }}"
-               class="btn btn-primary">Spend Freebie Points</a>
-        {% endif %}
-    </div>
+
+    {% include "character_view/EditButtons.jinja" %}
 
     {% include "character_view/tabs.html" %}
 
