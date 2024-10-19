@@ -45,18 +45,8 @@ class CreateRNGCharacter(MethodView):
 
         # Create three characters for the user to choose from
         characters = [
-            await chargen.generate_base_character(chargen_character=True) for _ in range(3)
+            await chargen.generate_full_character(chargen_character=True) for _ in range(3)
         ]
-
-        for character in characters:
-            await chargen.random_attributes(character)
-            await chargen.random_abilities(character)
-            await chargen.random_disciplines(character)
-            await chargen.random_virtues(character)
-            await chargen.random_backgrounds(character)
-            await chargen.random_willpower(character)
-            await chargen.random_hunter_traits(character)
-            await chargen.concept_special_abilities(character)
 
         # Add the created characters to the session so they can be acted upon in the next step
         # use a dictionary with the index as the key

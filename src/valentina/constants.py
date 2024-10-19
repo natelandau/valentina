@@ -50,21 +50,6 @@ STARTING_FREEBIE_POINTS = 21
 ### ENUMS ###
 
 
-class HTTPStatus(Enum):
-    """Enum for HTTP status codes."""
-
-    OK = 200
-    CREATED = 201
-    NO_CONTENT = 204
-    MOVED_PERMANENTLY = 301
-    BAD_REQUEST = 400
-    UNAUTHORIZED = 401
-    FORBIDDEN = 403
-    NOT_FOUND = 404
-    CONFLICT = 409
-    INTERNAL_SERVER_ERROR = 500
-
-
 class Emoji(Enum):
     """Enum for emojis."""
 
@@ -111,18 +96,6 @@ class Emoji(Enum):
     CHANNEL_PLAYER_DEAD = "💀"
 
 
-class LogLevel(StrEnum):
-    """Enum for logging levels."""
-
-    TRACE = "TRACE"
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    SUCCESS = "SUCCESS"
-    ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
-
-
 class DBSyncUpdateType(str, Enum):
     """Type of update to sync between web and discord."""
 
@@ -141,6 +114,13 @@ class DBSyncModelType(str, Enum):
     USER = "user"
 
 
+class CampaignChannelName(Enum):
+    """Enum for common campaign channel names."""
+
+    GENERAL = f"{Emoji.CHANNEL_GENERAL.value}-general"
+    STORYTELLER = f"{Emoji.CHANNEL_PRIVATE.value}-storyteller"
+
+
 class ChannelPermission(Enum):
     """Enum for permissions when creating a character. Default is UNRESTRICTED."""
 
@@ -151,11 +131,26 @@ class ChannelPermission(Enum):
     MANAGE = 4
 
 
-class CampaignChannelName(Enum):
-    """Enum for common campaign channel names."""
+@dataclass(frozen=True, eq=True, order=True)
+class CharSheetSectionModel:
+    """Describes the sections of a character sheet.
 
-    GENERAL = f"{Emoji.CHANNEL_GENERAL.value}-general"
-    STORYTELLER = f"{Emoji.CHANNEL_PRIVATE.value}-storyteller"
+    Attributes:
+        name (str): The name of the section
+        order (int): The order in which the section appears on the charactrer sheet
+    """
+
+    order: int
+    name: str
+
+
+class CharSheetSection(Enum):
+    """Enum for top level sections which contain TraitCategories in a character sheet."""
+
+    ATTRIBUTES = CharSheetSectionModel(name="Attributes", order=1)
+    ABILITIES = CharSheetSectionModel(name="Abilities", order=2)
+    ADVANTAGES = CharSheetSectionModel(name="Advantages", order=3)
+    NONE = CharSheetSectionModel(name="None", order=4)
 
 
 class DiceType(Enum):
@@ -187,6 +182,33 @@ class GithubIssueLabels(Enum):
     BUG = "bug"
     ENHANCEMENT = "enhancement"
     QUESTION = "question"
+
+
+class HTTPStatus(Enum):
+    """Enum for HTTP status codes."""
+
+    OK = 200
+    CREATED = 201
+    NO_CONTENT = 204
+    MOVED_PERMANENTLY = 301
+    BAD_REQUEST = 400
+    UNAUTHORIZED = 401
+    FORBIDDEN = 403
+    NOT_FOUND = 404
+    CONFLICT = 409
+    INTERNAL_SERVER_ERROR = 500
+
+
+class LogLevel(StrEnum):
+    """Enum for logging levels."""
+
+    TRACE = "TRACE"
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    SUCCESS = "SUCCESS"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
 
 
 class MaxTraitValue(Enum):
@@ -222,7 +244,7 @@ class MaxTraitValue(Enum):
     FLAWS = 5
     BACKGROUNDS = 5
     VIRTUES = 5
-    RENOWN = 5
+    RENOWN = 10
 
 
 class PermissionsManageTraits(Enum):
@@ -281,6 +303,7 @@ class XPNew(Enum):
     PHYSICAL = 5
     SOCIAL = 5
     MENTAL = 5
+    GIFTS = 7
 
 
 class XPMultiplier(Enum):
@@ -318,28 +341,6 @@ class XPMultiplier(Enum):
     CONVICTION = 2  # TODO: Get the actual number for this
 
     ### DISCORD SETTINGS ###
-
-
-@dataclass(frozen=True, eq=True, order=True)
-class CharSheetSectionModel:
-    """Describes the sections of a character sheet.
-
-    Attributes:
-        name (str): The name of the section
-        order (int): The order in which the section appears on the charactrer sheet
-    """
-
-    order: int
-    name: str
-
-
-class CharSheetSection(Enum):
-    """Enum for top level sections which contain TraitCategories in a character sheet."""
-
-    ATTRIBUTES = CharSheetSectionModel(name="Attributes", order=1)
-    ABILITIES = CharSheetSectionModel(name="Abilities", order=2)
-    ADVANTAGES = CharSheetSectionModel(name="Advantages", order=3)
-    NONE = CharSheetSectionModel(name="None", order=4)
 
 
 # Enums linked to the Database
@@ -487,6 +488,42 @@ class CharClass(Enum):
             list[CharClass]: A list of playable classes.
         """
         return [x for x in cls if x.value.playable]
+
+
+class CharGenHumans(Enum):
+    """Enum for RNG character generation of humans."""
+
+    CIVILIAN = (0, 60)
+    HUNTER = (61, 70)
+    WATCHER = (70, 79)
+    NUMINOUS = (90, 100)
+
+    @classmethod
+    def get_member_by_value(cls, value: int) -> "CharGenHumans":
+        """Find the corresponding enum member's name based on an integer value.
+
+        Args:
+            value (int): The integer value to look up.
+
+        Returns:
+            Optional[str]: The name of the enum member if found, otherwise None.
+        """
+        for member in cls:
+            min_val, max_val = member.value
+            if min_val <= value <= max_val:
+                return member
+
+        return None
+
+
+class InventoryItemType(Enum):
+    """Enum for types of inventory items."""
+
+    CONSUMABLE = "Consumable"
+    ENCHANTED = "Enchanted"
+    EQUIPMENT = "Equipment"
+    OTHER = "Other"
+    WEAPON = "Weapon"
 
 
 @dataclass(frozen=True, eq=True)
@@ -744,11 +781,11 @@ class TraitCategory(Enum):
         COMMON=[],
     )
     RENOWN = TraitCategoryValue(
-        classes=[CharClass.WEREWOLF],
+        classes=[CharClass.WEREWOLF, CharClass.CHANGELING],
         name="Renown",
         section=CharSheetSection.ADVANTAGES,
         order=16,
-        show_zero=False,
+        show_zero=True,
         COMMON=[],
         WEREWOLF=["Glory", "Honor", "Wisdom"],
         CHANGELING=["Glory", "Honor", "Wisdom"],
@@ -832,14 +869,387 @@ class TraitCategory(Enum):
         return self.value.COMMON + getattr(self.value, char_class.name)
 
 
-class InventoryItemType(Enum):
-    """Enum for types of inventory items."""
+@dataclass(frozen=True, eq=True)
+class HunterCreedValue:
+    """A value object for the HunterCreed enum."""
 
-    CONSUMABLE = "Consumable"
-    ENCHANTED = "Enchanted"
-    EQUIPMENT = "Equipment"
-    OTHER = "Other"
-    WEAPON = "Weapon"
+    name: str
+    description: str
+    conviction: int
+    attribute_specialty: TraitCategory
+    ability_specialty: TraitCategory
+    specific_abilities: list[str]
+    edges: list[str]
+    range: tuple[int, int]
+
+
+class HunterCreed(Enum):
+    """Enum for Hunter creeds."""
+
+    DEFENDER = HunterCreedValue(
+        name="Defender",
+        description="Protectors and _Defenders_ who seek to salvage or preserve what they can in the war against the unknown, perhaps to prove that the fight is worthwhile.",
+        conviction=3,
+        attribute_specialty=TraitCategory.MENTAL,
+        ability_specialty=TraitCategory.TALENTS,
+        specific_abilities=["Empathy"],
+        edges=["Ward", "Rejuvenate", "Brand", "Champion", "Burn"],
+        range=(1, 14),
+    )
+    INNOCENT = HunterCreedValue(
+        name="Innocent",
+        description="The curious, unabashed and wide-eyed, the _Innocent_ accept monsters on their own terms and seek simple resolution between creatures and humanity.",
+        conviction=3,
+        attribute_specialty=TraitCategory.SOCIAL,
+        ability_specialty=TraitCategory.TALENTS,
+        specific_abilities=["Empathy", "Subterfuge"],
+        edges=["Hide", "Illuminate", "Radiate", "Confront", "Blaze"],
+        range=(15, 28),
+    )
+    JUDGE = HunterCreedValue(
+        name="Judge",
+        description="The eyes and ears of the battle against monsters, _Judges_ seek to uphold the greater good, whether it means destroying creatures or sparing them and questioning other hunters' motives",
+        conviction=3,
+        attribute_specialty=TraitCategory.MENTAL,
+        ability_specialty=TraitCategory.KNOWLEDGES,
+        specific_abilities=["Investigation", "Law"],
+        edges=["Discern", "Burden", "Balance", "Pierce", "Expose"],
+        range=(29, 42),
+    )
+    MARTYR = HunterCreedValue(
+        name="Martyr",
+        description="Acting out of desperate passion, _Martyrs_ put themselves in harm's way to protect others or to alleviate some all-consuming guilt.",
+        conviction=4,
+        attribute_specialty=TraitCategory.PHYSICAL,
+        ability_specialty=TraitCategory.TALENTS,
+        specific_abilities=["Empathy", "Intimidation"],
+        edges=["Demand", "Witness", "Ravage", "Donate", "Payback"],
+        range=(43, 56),
+    )
+    REDEEMER = HunterCreedValue(
+        name="Redeemer",
+        description="Piercing the souls of the enemy, _Redeemers_ offer the hand of salvation to the deserving and strike down the irredeemable.",
+        conviction=3,
+        attribute_specialty=TraitCategory.PHYSICAL,
+        ability_specialty=TraitCategory.SKILLS,
+        specific_abilities=["Empathy"],
+        edges=["Bluster", "Insinuate", "Respire", "Becalm", "Suspend"],
+        range=(57, 71),
+    )
+    AVENGER = HunterCreedValue(
+        name="Avenger",
+        description="Holy terror personified, _Avengers_ accept only one end to the war: the destruction of the enemy.",
+        conviction=4,
+        attribute_specialty=TraitCategory.PHYSICAL,
+        ability_specialty=TraitCategory.SKILLS,
+        specific_abilities=["Firearms", "Dodge", "Brawl", "Melee"],
+        edges=["Cleave", "Trail", "Smolder", "Surge", "Smite"],
+        range=(72, 85),
+    )
+    VISIONARY = HunterCreedValue(
+        name="Visionary",
+        description="Introspective, questioning and doubtful, _Visionaries_ seek the ultimate goals of the war against the unknown, and they seek purpose for hunters as a whole.",
+        conviction=3,
+        attribute_specialty=TraitCategory.MENTAL,
+        ability_specialty=TraitCategory.SKILLS,
+        specific_abilities=["Leadership", "Expression", "Subterfuge", "Intimidation", "Occult"],
+        edges=["Foresee", "Pinpoint", "Delve", "Restore", "Augur"],
+        range=(86, 100),
+    )
+
+    @classmethod
+    def get_member_by_value(cls, value: int) -> "HunterCreed":
+        """Find the corresponding enum member's name based on an integer value.
+
+        Args:
+            value (int): The integer value to look up.
+
+        Returns:
+            Optional[str]: The enum member if found, otherwise None.
+        """
+        for member in cls:
+            min_val, max_val = member.value.range
+            if min_val <= value <= max_val:
+                return member
+        return None
+
+    @classmethod
+    def random_member(cls) -> "HunterCreed":
+        """Select a random member from the enum.
+
+        Returns:
+            HunterCreed: A random enum member.
+        """
+        return choice(list(cls))
+
+
+@dataclass(frozen=True, eq=True)
+class WerewolfBreedValue:
+    """A value object for the WerewolfBreed enum."""
+
+    name: str
+    starting_gnosis: int
+    starting_gifts: list[str]
+    link: str = ""
+
+
+class WerewolfBreed(Enum):
+    """Enum for Werewolf breeds."""
+
+    HOMID = WerewolfBreedValue(
+        name="Homid",
+        starting_gnosis=1,
+        starting_gifts=[
+            "Master of Fire",
+            "Persuasion",
+            "Smell of Man",
+        ],
+        link="https://whitewolf.fandom.com/wiki/Homid_(breed)",
+    )
+    METIS = WerewolfBreedValue(
+        name="Metis",
+        starting_gnosis=3,
+        starting_gifts=["Create Element", "Primal Anger", "Sense Wyrm", "Shed"],
+        link="https://whitewolf.fandom.com/wiki/Metis",
+    )
+    LUPUS = WerewolfBreedValue(
+        name="Lupus",
+        starting_gnosis=5,
+        starting_gifts=[
+            "Heightened Senses",
+            "Hare's Leap",
+            "Prey Mind",
+            "Sense Prey",
+            "Sense Wyld",
+        ],
+        link="https://whitewolf.fandom.com/wiki/Lupus_(breed)",
+    )
+
+    @classmethod
+    def random_member(cls) -> "WerewolfBreed":
+        """Select a random member from the enum.
+
+        Returns:
+            WerewolfBreed: A random enum member.
+        """
+        return choice(list(cls))
+
+
+@dataclass(frozen=True, eq=True)
+class WerewolfAuspiceValue:
+    """A value object for the WerewolfTribe enum."""
+
+    name: str
+    starting_rage: int
+    starting_gifts: list[str]
+    starting_wisdom: int
+    starting_glory: int
+    starting_honor: int
+    stereotype: str = ""
+
+
+class WerewolfAuspice(Enum):
+    """Enum for Werewolf auspices."""
+
+    RAGABASH = WerewolfAuspiceValue(
+        name="Ragabash",
+        starting_rage=1,
+        starting_gifts=["Blur of the Milky Eye", "Open Seal", "Scent of Running Water"],
+        stereotype="The Trickster",
+        starting_glory=1,
+        starting_honor=1,
+        starting_wisdom=1,
+    )
+    THEURGE = WerewolfAuspiceValue(
+        name="Theurge",
+        starting_rage=2,
+        starting_gifts=["Mother's Touch", "Spirit Speech", "Sense Wyrm"],
+        stereotype="The Seer",
+        starting_wisdom=3,
+        starting_glory=0,
+        starting_honor=0,
+    )
+    PHILODOX = WerewolfAuspiceValue(
+        name="Philodox",
+        starting_rage=3,
+        starting_gifts=["Resist Pain", "Scent of the True Form", "Truth of Gaia"],
+        stereotype="The Mediator",
+        starting_wisdom=0,
+        starting_glory=0,
+        starting_honor=3,
+    )
+    GALLIARD = WerewolfAuspiceValue(
+        name="Galliard",
+        starting_rage=4,
+        starting_gifts=["Beast Speech", "Call of the Wyld", "Mindspeak"],
+        stereotype="The Moon Dancer",
+        starting_wisdom=1,
+        starting_glory=2,
+        starting_honor=0,
+    )
+    AHROUN = WerewolfAuspiceValue(
+        name="Ahroun",
+        starting_rage=5,
+        starting_gifts=["Falling Touch", "Inspiration", "Razor Claws"],
+        stereotype="The Warrior",
+        starting_wisdom=0,
+        starting_glory=2,
+        starting_honor=1,
+    )
+
+    @classmethod
+    def random_member(cls) -> "WerewolfAuspice":
+        """Select a random member from the enum.
+
+        Returns:
+            WerewolfAuspice: A random enum member.
+        """
+        return choice(list(cls))
+
+
+@dataclass(frozen=True, eq=True)
+class WerewolfTribeValue:
+    """A value object for the WerewolfTribe enum."""
+
+    name: str
+    starting_tribal_gifts: list[str]
+    starting_willpower: int
+    totem: str = ""
+
+
+class WerewolfTribe(Enum):
+    """Enum for Werewolf tribes."""
+
+    BLACK_FURIES = WerewolfTribeValue(
+        name="Black Furies",
+        starting_tribal_gifts=["Breath of the Wyld", "Heightened Senses", "Sense Wyrm"],
+        starting_willpower=3,
+        totem="Pegasus",
+    )
+    BONE_GNARLERS = WerewolfTribeValue(
+        name="Bone Gnarlers",
+        starting_tribal_gifts=["Cooking", "Resist Toxin", "Tagalong"],
+        starting_willpower=4,
+        totem="Rat",
+    )
+    CHILDREN_OF_GAIA = WerewolfTribeValue(
+        name="Children of Gaia",
+        starting_tribal_gifts=["Mercy", "Mother's Touch", "Resist Pain"],
+        starting_willpower=4,
+        totem="Unicorn",
+    )
+    FIANNA = WerewolfTribeValue(
+        name="Fianna",
+        starting_tribal_gifts=["Faerie Light", "Persuasion", "Resist Toxin"],
+        starting_willpower=3,
+        totem="Stag",
+    )
+    GET_OF_FENRIS = WerewolfTribeValue(
+        name="Get of Fenris",
+        starting_tribal_gifts=["Razor Claws", "Resist Pain", "Visage of Fenris"],
+        starting_willpower=3,
+        totem="Fenris",
+    )
+    GLASS_WALKERS = WerewolfTribeValue(
+        name="Glass Walkers",
+        starting_tribal_gifts=["Control Simple Machine", "Diagnostics", "Trick Shot"],
+        starting_willpower=3,
+        totem="Cockroach",
+    )
+    RED_TALONS = WerewolfTribeValue(
+        name="Red Talons",
+        starting_tribal_gifts=["Beast Speech", "Scent of Running Water", "Wolf at the Door"],
+        starting_willpower=3,
+        totem="Falcon",
+    )
+    SHADOW_LORDS = WerewolfTribeValue(
+        name="Shadow Lords",
+        starting_tribal_gifts=["Aura of Confidence", "Fatal Flaw", "Seizing the Edge"],
+        starting_willpower=3,
+        totem="Grandfather Thunder",
+    )
+    SILENT_STRIDERS = WerewolfTribeValue(
+        name="Silent Striders",
+        starting_tribal_gifts=["Sense Wyrm", "Silence", "Speed of Thought"],
+        starting_willpower=3,
+        totem="Owl",
+    )
+    SILVER_FANGS = WerewolfTribeValue(
+        name="Silver Fangs",
+        starting_tribal_gifts=["Falcon's Grasp", "Lambent Flame", "Sense Wyrm"],
+        starting_willpower=3,
+        totem="Falcon",
+    )
+    UKTENA = WerewolfTribeValue(
+        name="Uktena",
+        starting_tribal_gifts=["Sense Magic", "Shroud", "Spirit Speech"],
+        starting_willpower=3,
+        totem="Uktena",
+    )
+    WENDIGO = WerewolfTribeValue(
+        name="Wendigo",
+        starting_tribal_gifts=["Call the Breeze", "Camouflage", "Resist Pain"],
+        starting_willpower=3,
+        totem="Wendigo",
+    )
+
+    @classmethod
+    def random_member(cls) -> "WerewolfTribe":
+        """Select a random member from the enum.
+
+        Returns:
+            WerewolfTribe: A random enum member.
+        """
+        return choice(list(cls))
+
+
+@dataclass(frozen=True, eq=True)
+class WerewolfMetisDeformityValue:
+    """A value object for the WerewolfDeformity enum."""
+
+    name: str
+    effect: str
+
+
+class WerewolfMetisDeformity(Enum):
+    """Enum for Werewolf deformities. All Metis breed characters start with one deformity."""
+
+    ALBINO = WerewolfMetisDeformityValue(
+        name="Albino", effect="+2 Penalty to perception in bright light"
+    )
+    BLIND = WerewolfMetisDeformityValue(
+        name="Blind", effect="Automatically fail all rolls involving sight"
+    )
+    FITS_OF_MADNESS = WerewolfMetisDeformityValue(
+        name="Fits of Madness",
+        effect="Must pass Willpower roll (8 Difficulty) when situations get tough",
+    )
+    HAIRLESS = WerewolfMetisDeformityValue(name="Hairless", effect="+1 difficulty to social rolls")
+    HORNS = WerewolfMetisDeformityValue(name="Horns", effect="+1 difficulty to social rolls")
+    HUNCHBACK = WerewolfMetisDeformityValue(
+        name="Hunchback", effect="+1 difficulty to social and dexterity rolls"
+    )
+    NO_SENSE_OF_SMELL = WerewolfMetisDeformityValue(
+        name="No Sense of Smell", effect="+2 difficulty to track prey with Primal Urge"
+    )
+    NO_TAIL = WerewolfMetisDeformityValue(
+        name="No Tail", effect="+1 difficulty to social rolls while in Lupus form"
+    )
+    SEIZURES = WerewolfMetisDeformityValue(
+        name="Seizures", effect="Must pass Willpower roll (8 Difficulty) when situations get tough"
+    )
+    TOUGH_HIDE = WerewolfMetisDeformityValue(
+        name="Tough Hide", effect="Appearance can not be great than 1 but +1 to soak"
+    )
+    WASTING_DISEASE = WerewolfMetisDeformityValue(
+        name="Wasting Disease", effect="+2 difficulty to Stamina rolls"
+    )
+    WEAK_IMMUNE_SYSTEM = WerewolfMetisDeformityValue(
+        name="Weak Immune System", effect="No Bruised health level"
+    )
+    WITHERED_LIMB = WerewolfMetisDeformityValue(
+        name="Withered Limb", effect="+2 difficulty to dexterity rolls when using effected limb"
+    )
 
 
 @dataclass(frozen=True, eq=True)
@@ -914,32 +1324,6 @@ class VampireClan(Enum):
             VampireClan: A random enum member.
         """
         return choice(list(cls))
-
-
-class CharGenHumans(Enum):
-    """Enum for RNG character generation of humans."""
-
-    CIVILIAN = (0, 60)
-    HUNTER = (61, 70)
-    WATCHER = (70, 79)
-    NUMINOUS = (90, 100)
-
-    @classmethod
-    def get_member_by_value(cls, value: int) -> "CharGenHumans":
-        """Find the corresponding enum member's name based on an integer value.
-
-        Args:
-            value (int): The integer value to look up.
-
-        Returns:
-            Optional[str]: The name of the enum member if found, otherwise None.
-        """
-        for member in cls:
-            min_val, max_val = member.value
-            if min_val <= value <= max_val:
-                return member
-
-        return None
 
 
 class RNGCharLevel(Enum):
@@ -1489,120 +1873,6 @@ class CharacterConcept(Enum):
 
         Returns:
             CharClass: A random enum member.
-        """
-        return choice(list(cls))
-
-
-@dataclass(frozen=True, eq=True)
-class HunterCreedValue:
-    """A value object for the HunterCreed enum."""
-
-    name: str
-    description: str
-    conviction: int
-    attribute_specialty: TraitCategory
-    ability_specialty: TraitCategory
-    specific_abilities: list[str]
-    edges: list[str]
-    range: tuple[int, int]
-
-
-class HunterCreed(Enum):
-    """Enum for Hunter creeds."""
-
-    DEFENDER = HunterCreedValue(
-        name="Defender",
-        description="Protectors and _Defenders_ who seek to salvage or preserve what they can in the war against the unknown, perhaps to prove that the fight is worthwhile.",
-        conviction=3,
-        attribute_specialty=TraitCategory.MENTAL,
-        ability_specialty=TraitCategory.TALENTS,
-        specific_abilities=["Empathy"],
-        edges=["Ward", "Rejuvenate", "Brand", "Champion", "Burn"],
-        range=(1, 14),
-    )
-    INNOCENT = HunterCreedValue(
-        name="Innocent",
-        description="The curious, unabashed and wide-eyed, the _Innocent_ accept monsters on their own terms and seek simple resolution between creatures and humanity.",
-        conviction=3,
-        attribute_specialty=TraitCategory.SOCIAL,
-        ability_specialty=TraitCategory.TALENTS,
-        specific_abilities=["Empathy", "Subterfuge"],
-        edges=["Hide", "Illuminate", "Radiate", "Confront", "Blaze"],
-        range=(15, 28),
-    )
-    JUDGE = HunterCreedValue(
-        name="Judge",
-        description="The eyes and ears of the battle against monsters, _Judges_ seek to uphold the greater good, whether it means destroying creatures or sparing them and questioning other hunters' motives",
-        conviction=3,
-        attribute_specialty=TraitCategory.MENTAL,
-        ability_specialty=TraitCategory.KNOWLEDGES,
-        specific_abilities=["Investigation", "Law"],
-        edges=["Discern", "Burden", "Balance", "Pierce", "Expose"],
-        range=(29, 42),
-    )
-    MARTYR = HunterCreedValue(
-        name="Martyr",
-        description="Acting out of desperate passion, _Martyrs_ put themselves in harm's way to protect others or to alleviate some all-consuming guilt.",
-        conviction=4,
-        attribute_specialty=TraitCategory.PHYSICAL,
-        ability_specialty=TraitCategory.TALENTS,
-        specific_abilities=["Empathy", "Intimidation"],
-        edges=["Demand", "Witness", "Ravage", "Donate", "Payback"],
-        range=(43, 56),
-    )
-    REDEEMER = HunterCreedValue(
-        name="Redeemer",
-        description="Piercing the souls of the enemy, _Redeemers_ offer the hand of salvation to the deserving and strike down the irredeemable.",
-        conviction=3,
-        attribute_specialty=TraitCategory.PHYSICAL,
-        ability_specialty=TraitCategory.SKILLS,
-        specific_abilities=["Empathy"],
-        edges=["Bluster", "Insinuate", "Respire", "Becalm", "Suspend"],
-        range=(57, 71),
-    )
-    AVENGER = HunterCreedValue(
-        name="Avenger",
-        description="Holy terror personified, _Avengers_ accept only one end to the war: the destruction of the enemy.",
-        conviction=4,
-        attribute_specialty=TraitCategory.PHYSICAL,
-        ability_specialty=TraitCategory.SKILLS,
-        specific_abilities=["Firearms", "Dodge", "Brawl", "Melee"],
-        edges=["Cleave", "Trail", "Smolder", "Surge", "Smite"],
-        range=(72, 85),
-    )
-    VISIONARY = HunterCreedValue(
-        name="Visionary",
-        description="Introspective, questioning and doubtful, _Visionaries_ seek the ultimate goals of the war against the unknown, and they seek purpose for hunters as a whole.",
-        conviction=3,
-        attribute_specialty=TraitCategory.MENTAL,
-        ability_specialty=TraitCategory.SKILLS,
-        specific_abilities=["Leadership", "Expression", "Subterfuge", "Intimidation", "Occult"],
-        edges=["Foresee", "Pinpoint", "Delve", "Restore", "Augur"],
-        range=(86, 100),
-    )
-
-    @classmethod
-    def get_member_by_value(cls, value: int) -> "HunterCreed":
-        """Find the corresponding enum member's name based on an integer value.
-
-        Args:
-            value (int): The integer value to look up.
-
-        Returns:
-            Optional[str]: The enum member if found, otherwise None.
-        """
-        for member in cls:
-            min_val, max_val = member.value.range
-            if min_val <= value <= max_val:
-                return member
-        return None
-
-    @classmethod
-    def random_member(cls) -> "HunterCreed":
-        """Select a random member from the enum.
-
-        Returns:
-            HunterCreed: A random enum member.
         """
         return choice(list(cls))
 

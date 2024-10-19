@@ -560,19 +560,8 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
         # Generate 3 characters
         characters = [
-            await self.engine.generate_base_character(chargen_character=True) for _ in range(3)
+            await self.engine.generate_full_character(chargen_character=True) for _ in range(3)
         ]
-
-        # TODO: Add traits to each character
-        for character in characters:
-            await self.engine.random_attributes(character)
-            await self.engine.random_abilities(character)
-            await self.engine.random_disciplines(character)
-            await self.engine.random_virtues(character)
-            await self.engine.random_backgrounds(character)
-            await self.engine.random_willpower(character)
-            await self.engine.random_hunter_traits(character)
-            await self.engine.concept_special_abilities(character)
 
         # Add the pages to the paginator
         description = f"## Created {len(characters)} {p.plural_noun('character', len(characters))} for you to choose from\n"

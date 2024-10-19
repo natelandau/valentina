@@ -111,7 +111,7 @@ class VampireClassSpecifics(QuartForm):
 
 
 class WerewolfClassSpecifics(QuartForm):
-    """Class specific items for Werewolfs."""
+    """Class specific items for Werewolves."""
 
     title = "Werewolf Class Specifics"
     prefix = "werewolf"
