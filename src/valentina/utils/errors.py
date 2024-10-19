@@ -144,6 +144,24 @@ class NotEnoughFreebiePointsError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class TraitAtMinValueError(Exception):
+    """Raised when a user tries to update a trait can not be lowered below 0."""
+
+    def __init__(
+        self,
+        msg: str | None = None,
+        e: Exception | None = None,
+        *args: str | int,
+        **kwargs: int | str | bool,
+    ):
+        if not msg:
+            msg = "Trait can not be lowered below 0"
+        if e:
+            msg += f"\nRaised from: {e.__class__.__name__}: {e}"
+
+        super().__init__(msg, *args, **kwargs)
+
+
 class TraitAtMaxValueError(Exception):
     """Raised when a user tries to update a trait already at max value."""
 

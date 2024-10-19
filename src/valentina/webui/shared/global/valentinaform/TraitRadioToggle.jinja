@@ -4,14 +4,25 @@
     name:str,
     label:str,
     current_value:int = 0,
+    hx_trigger:str = "",
+    hx_post:str = "",
+    hx_target:str = "",
 #}
-{% for i in range(max_value + 1) %}
+
+{% set max_val_int = max_value | int %}
+
+{% set current_value_int = current_value | int %}
+
+{% for i in range(max_val_int + 1) %}
     <input type="radio"
            class="btn-check"
            name="{{ name }}"
            id="{{ name }}_{{ i }}"
            autocomplete="off"
            value="{{ i }}"
-           {% if i == current_value %}checked{% endif %}>
+           {% if hx_trigger -%}hx-trigger="{{ hx_trigger }}"{%- endif %}
+           {% if hx_post -%}hx-post="{{ hx_post }}"{%- endif %}
+           {% if hx_target -%}hx-target="{{ hx_target }}"{%- endif %}
+           {% if i == current_value_int -%}checked{%- endif %}>
     <label class="btn btn-sm btn-outline-primary" for="{{ name }}_{{ i }}">{{ i }}</label>
 {% endfor %}

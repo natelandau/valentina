@@ -43,18 +43,29 @@ async def test_helper_functions(
 
     trait.value = 1
     assert trait_modifier.cost_to_upgrade(trait) == 4
-    assert trait_modifier.savings_from_downgrade(trait) == 3
+    assert trait_modifier.cost_to_upgrade(trait, amount=2) == 10
+    assert trait_modifier.cost_to_upgrade(trait, amount=4) == 28
+    with pytest.raises(errors.TraitAtMaxValueError):
+        assert trait_modifier.cost_to_upgrade(trait, amount=5)
+    assert trait_modifier.savings_from_downgrade(trait) == 2
+    with pytest.raises(errors.TraitAtMinValueError):
+        assert trait_modifier.savings_from_downgrade(trait, amount=2)
     assert trait_modifier._can_trait_be_downgraded(trait)
     assert trait_modifier._can_trait_be_upgraded(trait)
 
     trait.value = 0
-    assert trait_modifier.cost_to_upgrade(trait) == 3
-    assert trait_modifier.savings_from_downgrade(trait) == 0
-    assert not trait_modifier._can_trait_be_downgraded(trait)
+    assert trait_modifier.cost_to_upgrade(trait) == 2
+    with pytest.raises(errors.TraitAtMinValueError):
+        assert trait_modifier.savings_from_downgrade(trait)
+
+    with pytest.raises(errors.TraitAtMinValueError):
+        trait_modifier._can_trait_be_downgraded(trait)
+
     assert trait_modifier._can_trait_be_upgraded(trait)
 
     trait.value = 5
-    assert trait_modifier.cost_to_upgrade(trait) == 12
+    with pytest.raises(errors.TraitAtMaxValueError):
+        assert trait_modifier.cost_to_upgrade(trait)
     assert trait_modifier.savings_from_downgrade(trait) == 10
     with pytest.raises(errors.TraitAtMaxValueError):
         trait_modifier._can_trait_be_upgraded(trait)
@@ -126,8 +137,8 @@ async def test_downgrade_with_xp(
     trait.value = 0
 
     # THEN an error should be raised
-    downgraded_trait = await trait_modifier.downgrade_with_xp(trait, campaign)
-    assert user.fetch_campaign_xp(campaign) == (34, 30, 1)
+    with pytest.raises(errors.TraitAtMinValueError):
+        downgraded_trait = await trait_modifier.downgrade_with_xp(trait, campaign)
 
 
 @pytest.mark.drop_db
@@ -192,7 +203,5 @@ async def test_downgrade_with_freebie(
     trait.value = 0
 
     # THEN an error should be raised
-    # with pytest.raises(errors.TraitAtMinValueError):
-    downgraded_trait = await trait_modifier.downgrade_with_freebie(trait)
-    assert downgraded_trait.value == 0
-    assert character.freebie_points == 24
+    with pytest.raises(errors.TraitAtMinValueError):
+        downgraded_trait = await trait_modifier.downgrade_with_freebie(trait)

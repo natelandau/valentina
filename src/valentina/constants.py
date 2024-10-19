@@ -278,6 +278,9 @@ class XPNew(Enum):
     TALENTS = 3
     SKILLS = 3
     KNOWLEDGES = 3
+    PHYSICAL = 5
+    SOCIAL = 5
+    MENTAL = 5
 
 
 class XPMultiplier(Enum):

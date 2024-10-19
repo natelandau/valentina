@@ -59,6 +59,7 @@ class ErrorReporter:
             | errors.S3ObjectExistsError
             | errors.TraitExistsError
             | errors.TraitAtMaxValueError
+            | errors.TraitAtMinValueError
             | errors.NotEnoughFreebiePointsError,
         ):
             user_msg = str(error)
