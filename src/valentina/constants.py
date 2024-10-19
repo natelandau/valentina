@@ -45,9 +45,24 @@ MAX_POOL_SIZE = 100  # maximum number of dice that can be rolled
 PREF_MAX_EMBED_CHARACTERS = 1950  # Preferred maximum number of characters in an embed
 SPACER = "\u200b"  # Zero-width space
 VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
-
+STARTING_FREEBIE_POINTS = 21
 
 ### ENUMS ###
+
+
+class HTTPStatus(Enum):
+    """Enum for HTTP status codes."""
+
+    OK = 200
+    CREATED = 201
+    NO_CONTENT = 204
+    MOVED_PERMANENTLY = 301
+    BAD_REQUEST = 400
+    UNAUTHORIZED = 401
+    FORBIDDEN = 403
+    NOT_FOUND = 404
+    CONFLICT = 409
+    INTERNAL_SERVER_ERROR = 500
 
 
 class Emoji(Enum):
@@ -263,6 +278,9 @@ class XPNew(Enum):
     TALENTS = 3
     SKILLS = 3
     KNOWLEDGES = 3
+    PHYSICAL = 5
+    SOCIAL = 5
+    MENTAL = 5
 
 
 class XPMultiplier(Enum):

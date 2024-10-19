@@ -3,10 +3,9 @@
 from dataclasses import dataclass
 
 from loguru import logger
-from quart import abort, session
-from werkzeug.wrappers.response import Response
+from quart import Response, abort, session
 
-from valentina.constants import DBSyncModelType, DBSyncUpdateType
+from valentina.constants import DBSyncModelType, DBSyncUpdateType, HTTPStatus
 from valentina.models import Campaign, Character, Guild, User, WebDiscordSync
 from valentina.utils import ValentinaConfig, console
 
@@ -31,7 +30,7 @@ def _guard_against_mangled_session_data() -> Response | None:
     if not session.get("USER_ID", None) or not session.get("GUILD_ID", None):
         logger.warning("Mangled session data detected. Clearing session.")
         session.clear()
-        abort(500)
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Mangled session data detected.")
 
     return None
 
@@ -129,27 +128,28 @@ async def fetch_active_character(
     """
     _guard_against_mangled_session_data()
 
+    if character_id:
+        character = await Character.get(character_id, fetch_links=fetch_links)
+        if not character:
+            logger.error(f"WEBUI: Character {character_id} not found")
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Character not found.")
+        session["ACTIVE_CHARACTER_ID"] = str(character.id)
+        return character
+
     if len(session["USER_CHARACTERS"]) == 0:
         return None
 
     if len(session["USER_CHARACTERS"]) == 1:
-        char_id = str(session["USER_CHARACTERS"][0]["id"])
-        session["ACTIVE_CHARACTER_ID"] = char_id
-        return await Character.get(char_id, fetch_links=fetch_links)
-
-    existing_character_id = session.get("ACTIVE_CHARACTER_ID", None)
-
-    if not character_id:
-        if existing_character_id:
-            return await Character.get(existing_character_id, fetch_links=fetch_links)
-
+        session_character: list[CharacterSessionObject] = next(iter(session["USER_CHARACTERS"]), [])
+        if char_id := getattr(session_character, "id", None):
+            session["ACTIVE_CHARACTER_ID"] = char_id
+            return await Character.get(char_id, fetch_links=fetch_links)
         return None
 
-    if existing_character_id == character_id:
-        return await Character.get(character_id, fetch_links=fetch_links)
+    if existing_character_id := session.get("ACTIVE_CHARACTER_ID", None):
+        return await Character.get(existing_character_id, fetch_links=fetch_links)
 
-    session["ACTIVE_CHARACTER_ID"] = str(character_id)
-    return await Character.get(character_id, fetch_links=fetch_links)
+    return None
 
 
 async def fetch_guild(fetch_links: bool = False) -> Guild:
@@ -209,7 +209,7 @@ async def fetch_user(fetch_links: bool = False) -> User:
     return user
 
 
-async def fetch_user_characters(fetch_links: bool = True) -> list[Character]:
+async def fetch_user_characters(fetch_links: bool = False) -> list[Character]:
     """Fetch the user's characters and update the session with their names and IDs.
 
     Retrieve the characters owned by the user within the current guild from the database,
@@ -255,7 +255,7 @@ async def fetch_user_characters(fetch_links: bool = True) -> list[Character]:
     return characters
 
 
-async def fetch_all_characters(fetch_links: bool = True) -> list[Character]:
+async def fetch_all_characters(fetch_links: bool = False) -> list[Character]:
     """Fetch the all player characters in the guild and update the session with their names and IDs.
 
     Retrieve all the player characters within the current guild from the database,
@@ -300,7 +300,7 @@ async def fetch_all_characters(fetch_links: bool = True) -> list[Character]:
     return characters
 
 
-async def fetch_storyteller_characters(fetch_links: bool = True) -> list[Character]:
+async def fetch_storyteller_characters(fetch_links: bool = False) -> list[Character]:
     """Fetch the all storyteller characters in the guild and update the session with their names and IDs.
 
     Retrieve all the storyteller characters within the current guild from the database,

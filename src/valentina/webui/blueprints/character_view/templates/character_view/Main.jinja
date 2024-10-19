@@ -1,23 +1,12 @@
 {# def
     character:Character,
     traits:list[CharacterTrait]=[],
-    success_msg:str='',
     character_owner: User,
 #}
-<PageLayout title="{{ character.name_first }} {{ character.name_last }}">
-    {% if success_msg %}
-        <div class="alert alert-success" role="alert">{{ success_msg }}</div>
-    {% endif %}
+<PageLayout title={{ character.name }} _attrs={{ attrs }}>
+    <global.PageTitle>{{ character.full_name }}</global.PageTitle>
 
-    {% set link = url_for('character_view.edit', character_id=character.id) %}
-
-    <div>
-        <global.PageTitle right-button="true" right-button-url={{ link }} right-button-text="Edit character">{{ character.full_name }}</global.PageTitle>
-        {#
-        add a second button with right-button-two
-        right-button-two="true" right-button-two-url="{{ link }}" right-button-two-text="New button"
-    #}
-    </div>
+    {% include "character_view/EditButtons.jinja" %}
 
     {% include "character_view/tabs.html" %}
 

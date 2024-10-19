@@ -453,6 +453,28 @@ class Developer(commands.Cog):
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
+    @guild.command(description="Clean processed sync data from the database")
+    @commands.is_owner()
+    @commands.guild_only()
+    async def purge_processed_syncs(self, ctx: ValentinaContext) -> None:
+        """Cleanup orphan CharacterTrait DB entries."""
+        title = "Purge processed sync data from the database"
+        is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title)
+        if not is_confirmed:
+            return
+
+        i = 0
+        async for sync in WebDiscordSync.find(
+            WebDiscordSync.processed == True,  # noqa: E712
+            WebDiscordSync.guild_id == ctx.guild.id,
+        ):
+            i += 1
+            await sync.delete()
+
+        confirmation_embed.description = f"Purged `{i}` processed sync data entries"
+
+        await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
     ### BOT COMMANDS ################################################################
 
     @server.command(

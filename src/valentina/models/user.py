@@ -190,7 +190,9 @@ class User(Document):
 
         return new_xp
 
-    async def add_campaign_xp(self, campaign: Campaign, amount: int) -> int:
+    async def add_campaign_xp(
+        self, campaign: Campaign, amount: int, increase_lifetime: bool = True
+    ) -> int:
         """Add experience points to a user's campaign.
 
         Increase both the current and total experience points for the specified campaign.
@@ -199,6 +201,7 @@ class User(Document):
         Args:
             campaign (Campaign): The campaign to add experience points for.
             amount (int): The amount of experience points to add.
+            increase_lifetime (bool): Whether to increase the user's lifetime experience.
 
         Returns:
             int: The new current experience points for the campaign after addition.
@@ -214,7 +217,8 @@ class User(Document):
             self.campaign_experience[str(campaign.id)] = campaign_experience
 
         campaign_experience.xp_current += amount
-        campaign_experience.xp_total += amount
+        if increase_lifetime:
+            campaign_experience.xp_total += amount
         await self.save()
 
         return campaign_experience.xp_current

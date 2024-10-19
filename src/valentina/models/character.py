@@ -153,7 +153,7 @@ class Character(Document):
     age: int | None = None
     auspice: str | None = None
     bio: str | None = None
-    breed: str | None = None
+    breed: str | None = None  # WerewolfBreed enum name or other
     clan_name: str | None = None  # VampireClan enum name
     concept_name: str | None = None  # CharacterConcept enum name
     creed_name: str | None = None  # HunterCreed enum name

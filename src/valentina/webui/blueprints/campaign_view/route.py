@@ -6,6 +6,7 @@ from flask_discord import requires_authorization
 from quart import abort, request, session, url_for
 from quart.views import MethodView
 
+from valentina.constants import HTTPStatus
 from valentina.models import Campaign, Statistics
 from valentina.webui import catalog
 from valentina.webui.utils.helpers import update_session
@@ -64,7 +65,7 @@ class CampaignView(MethodView):
                 statistics=await stats_engine.campaign_statistics(campaign, as_json=True),
             )
 
-        return abort(404)
+        return abort(HTTPStatus.NOT_FOUND.value)
 
     async def get(self, campaign_id: str = "") -> str:
         """Handle GET requests for a specific campaign view.
@@ -97,7 +98,7 @@ class CampaignView(MethodView):
         """
         campaign = await Campaign.get(campaign_id, fetch_links=True)
         if not campaign:
-            abort(401)
+            abort(HTTPStatus.UNAUTHORIZED.value)
 
         if request.headers.get("HX-Request"):
             return await self.handle_tabs(campaign)
@@ -136,7 +137,7 @@ class CampaignOverviewSnippet(MethodView):
         """
         campaign = await Campaign.get(campaign_id, fetch_links=True)
         if not campaign:
-            abort(401)
+            abort(HTTPStatus.UNAUTHORIZED.value)
 
         if request.args.get("view") == "edit":
             form = await CampaignOverviewForm().create_form(
@@ -177,7 +178,7 @@ class CampaignOverviewSnippet(MethodView):
         """
         campaign = await Campaign.get(campaign_id, fetch_links=True)
         if not campaign:
-            abort(401)
+            abort(HTTPStatus.UNAUTHORIZED.value)
 
         form = await CampaignOverviewForm().create_form(
             data={"name": campaign.name, "description": campaign.description}

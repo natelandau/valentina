@@ -7,11 +7,11 @@
     right_button_two_url:str = "",
 #}
 {% if not right_button %}
-    <div class="border-bottom border-secondary-subtle mb-5">
+    <div class="border-bottom border-secondary-subtle mb-3">
         <h1 class="display-3 pb-1">{{ content }}</h1>
     </div>
 {% else %}
-    <div class="border-bottom border-secondary-subtle mb-5">
+    <div class="border-bottom border-secondary-subtle mb-3">
         <h1 class="display-3 pb-1 " style="display:inline;">{{ content }}</h1>
         {% if right_button_two %}
             <a href="{{ right_button_two_url }}"

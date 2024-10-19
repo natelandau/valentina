@@ -7,7 +7,7 @@ from flask_discord import requires_authorization
 from quart import abort, request, session
 from quart.views import MethodView
 
-from valentina.constants import DiceType, RollResultType
+from valentina.constants import DiceType, HTTPStatus, RollResultType
 from valentina.models import CharacterTrait, DiceRoll
 from valentina.webui import catalog
 from valentina.webui.utils import fetch_active_campaign, fetch_active_character, fetch_user
@@ -211,7 +211,7 @@ class GameplayView(MethodView):
                 form=gameplay_form,
             )
 
-        return abort(404)
+        return abort(HTTPStatus.NOT_FOUND.value)
 
     async def get(self) -> str:
         """Handle GET requests. Changes to the form made prior to dice-rolling are handled as GET requests.

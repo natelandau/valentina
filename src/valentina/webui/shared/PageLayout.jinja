@@ -1,9 +1,5 @@
 {# def
-    title:str ="" ,
-    success_msg:str ="",
-    error_msg:str ="",
-    warning_msg:str ="",
-    info_msg:str ="",
+    title:str ="",
 #}
 {#
     USAGE
@@ -51,14 +47,18 @@
         {# include nav bar only when user is logged in #}
         {% if session["USER_ID"] is defined and session["GUILD_ID"] is defined %}<NavBar />{% endif %}
         <div class="container mt-3">
-            {% if success_msg %}
-                <div class="alert alert-success" role="alert">{{ success_msg }}</div>
-            {% endif %}
-            {% if error_msg %}<div class="alert alert-danger" role="alert">{{ error_msg }}</div>{% endif %}
-            {% if warning_msg %}
-                <div class="alert alert-warning" role="alert">{{ warning_msg }}</div>
-            {% endif %}
-            {% if info_msg %}<div class="alert alert-info" role="alert">{{ info_msg }}</div>{% endif %}
+            {%- if attrs.get("success-msg", "") %}
+                <div class="alert alert-success" role="alert">{{ attrs.get("success-msg") }}</div>
+            {% endif -%}
+            {%- if attrs.get("error-msg", "") %}
+                <div class="alert alert-danger" role="alert">{{ attrs.get("error-msg") }}</div>
+            {% endif -%}
+            {%- if attrs.get("warning-msg", "") %}
+                <div class="alert alert-warning" role="alert">{{ attrs.get("warning-msg") }}</div>
+            {% endif -%}
+            {%- if attrs.get("info-msg", "") %}
+                <div class="alert alert-info" role="alert">{{ attrs.get("info-msg") }}</div>
+            {% endif -%}
 
             {{ content }}
         </div>

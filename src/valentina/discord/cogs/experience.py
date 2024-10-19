@@ -6,15 +6,13 @@ import inflect
 from discord.commands import Option
 from discord.ext import commands
 
-from valentina.constants import TraitCategory, XPMultiplier
-from valentina.controllers import PermissionManager
+from valentina.controllers import PermissionManager, TraitModifier
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.utils.autocomplete import select_char_trait
 from valentina.discord.utils.converters import ValidTraitFromID
 from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.views import confirm_action, present_embed
 from valentina.models import User
-from valentina.utils.helpers import get_trait_multiplier, get_trait_new_value
 
 p = inflect.engine()
 
@@ -151,6 +149,8 @@ class Experience(commands.Cog):
         campaign = channel_objects.campaign
         character = channel_objects.character
 
+        trait_controller = TraitModifier(character, await User.get(ctx.author.id))
+
         # Guard statement: fail if the trait is already at max value
         if trait.value >= trait.max_value:
             await present_embed(
@@ -162,39 +162,16 @@ class Experience(commands.Cog):
             )
             return
 
-        # Find the multiplier for the trait
-        if (
-            trait.category == TraitCategory.DISCIPLINES
-            and character.clan
-            and trait.name in character.clan.value.disciplines
-        ):
-            # Clan disciplines are cheaper
-            multiplier = XPMultiplier.CLAN_DISCIPLINE.value
-        else:
-            multiplier = get_trait_multiplier(trait.name, trait.category.name)
+        cost_to_upgrade = trait_controller.cost_to_upgrade(trait)
 
-        # Compute the cost of the upgrade
-        if trait.value == 0:
-            # First dots sometimes have a different cost
-            upgrade_cost = get_trait_new_value(trait.name, trait.category.name)
-        else:
-            upgrade_cost = (trait.value + 1) * multiplier
-
-        new_trait_value = trait.value + 1
-
-        title = f"Upgrade `{trait.name}` from `{trait.value}` {p.plural_noun('dot', trait.value)} to `{trait.value + 1}` {p.plural_noun('dot', trait.value + 1)} for `{upgrade_cost}` xp"
+        title = f"Upgrade `{trait.name}` from `{trait.value}` {p.plural_noun('dot', trait.value)} to `{trait.value + 1}` {p.plural_noun('dot', trait.value + 1)} for `{cost_to_upgrade}` xp"
         is_confirmed, msg, confirmation_embed = await confirm_action(
             ctx, title, hidden=hidden, audit=True
         )
         if not is_confirmed:
             return
 
-        # Make the updates
-        user = await User.get(ctx.author.id)
-
-        await user.spend_campaign_xp(campaign, upgrade_cost)
-        trait.value = new_trait_value
-        await trait.save()
+        await trait_controller.upgrade_with_xp(trait, campaign)
 
         # Send the confirmation message
         await msg.edit_original_response(embed=confirmation_embed, view=None)
