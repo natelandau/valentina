@@ -2,7 +2,6 @@
 """Test the webui blueprints."""
 
 import pytest
-from quart import session  # noqa: F401
 
 from tests.factories import *
 
@@ -46,8 +45,8 @@ async def test_character_view(debug, mock_session, test_client, character_factor
     character = character_factory.build()
     await character.insert()
 
-    async with test_client.session_transaction() as sess:
-        sess.update(mock_session(characters=[character]))
+    async with test_client.session_transaction() as session:
+        session.update(mock_session(characters=[character]))
 
     response = await test_client.get(f"/character/{character.id}", follow_redirects=True)
 
@@ -69,8 +68,8 @@ async def test_campaign_view(debug, mock_session, test_client, campaign_factory)
     campaign = campaign_factory.build()
     await campaign.insert()
 
-    async with test_client.session_transaction() as sess:
-        sess.update(mock_session(campaigns=[campaign]))
+    async with test_client.session_transaction() as session:
+        session.update(mock_session(campaigns=[campaign]))
 
     response = await test_client.get(f"/campaign/{campaign.id}", follow_redirects=True)
 
@@ -96,8 +95,8 @@ async def test_gameplay_view(
     await campaign.insert()
     await character.insert()
 
-    async with test_client.session_transaction() as sess:
-        sess.update(mock_session(campaigns=[campaign], characters=[character]))
+    async with test_client.session_transaction() as session:
+        session.update(mock_session(campaigns=[campaign], characters=[character]))
 
     response = await test_client.get("/gameplay", follow_redirects=True)
 

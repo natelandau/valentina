@@ -11,6 +11,7 @@ from werkzeug.wrappers.response import Response
 from valentina.constants import (
     CharSheetSection,
     DBSyncUpdateType,
+    HTTPStatus,
     InventoryItemType,
     TraitCategory,
 )
@@ -50,10 +51,10 @@ class CharacterView(MethodView):
         try:
             character = await Character.get(character_id, fetch_links=True)
         except ValueError:
-            abort(406)
+            abort(HTTPStatus.BAD_REQUEST.value)
 
         if not character:
-            abort(404)
+            abort(HTTPStatus.BAD_REQUEST.value)
 
         return character
 
@@ -191,7 +192,7 @@ class CharacterView(MethodView):
                 statistics=await stats_engine.character_statistics(character, as_json=True),
             )
 
-        return abort(404)
+        return abort(HTTPStatus.NOT_FOUND.value)
 
     async def get(self, character_id: str = "") -> str:
         """Handle GET requests."""
@@ -260,7 +261,7 @@ class CharacterEdit(MethodView):
         """Handle GET requests."""
         character = await Character.get(character_id)
         if not character:
-            abort(404)
+            abort(HTTPStatus.BAD_REQUEST.value)
 
         form = await self._build_form(character)
 
@@ -276,7 +277,7 @@ class CharacterEdit(MethodView):
         """Handle POST requests."""
         character = await Character.get(character_id)
         if not character:
-            abort(404)
+            abort(HTTPStatus.BAD_REQUEST.value)
 
         form = await self._build_form(character)
         if await form.validate_on_submit():

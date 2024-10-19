@@ -3,10 +3,9 @@
 from dataclasses import dataclass
 
 from loguru import logger
-from quart import abort, session
-from werkzeug.wrappers.response import Response
+from quart import Response, abort, session
 
-from valentina.constants import DBSyncModelType, DBSyncUpdateType
+from valentina.constants import DBSyncModelType, DBSyncUpdateType, HTTPStatus
 from valentina.models import Campaign, Character, Guild, User, WebDiscordSync
 from valentina.utils import ValentinaConfig, console
 
@@ -31,7 +30,7 @@ def _guard_against_mangled_session_data() -> Response | None:
     if not session.get("USER_ID", None) or not session.get("GUILD_ID", None):
         logger.warning("Mangled session data detected. Clearing session.")
         session.clear()
-        abort(500)
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Mangled session data detected.")
 
     return None
 

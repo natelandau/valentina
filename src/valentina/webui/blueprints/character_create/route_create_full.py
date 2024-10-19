@@ -11,7 +11,7 @@ from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
 
-from valentina.constants import CharSheetSection, DBSyncUpdateType, TraitCategory
+from valentina.constants import CharSheetSection, DBSyncUpdateType, HTTPStatus, TraitCategory
 from valentina.models import Character, CharacterTrait
 from valentina.utils.helpers import get_max_trait_value
 from valentina.webui import catalog
@@ -254,7 +254,7 @@ class CreateCharacterStep2(MethodView):
                 msg="No character ID or char_class provided to CreateCharacterStep2",
                 view=self.__class__.__name__,
             )
-            abort(400)
+            abort(HTTPStatus.BAD_REQUEST.value)
 
         class_form = self._get_class_specific_form(char_class)
         form = await class_form.create_form()
@@ -298,7 +298,7 @@ class CreateCharacterStep2(MethodView):
                 msg="No character ID or char_class provided to CreateCharacterStep2",
                 view=self.__class__.__name__,
             )
-            abort(400)
+            abort(HTTPStatus.BAD_REQUEST.value)
 
         class_form = self._get_class_specific_form(char_class)
         form = await class_form.create_form()
@@ -309,7 +309,7 @@ class CreateCharacterStep2(MethodView):
                     msg="No character ID  provided to CreateCharacterStep2",
                     view=self.__class__.__name__,
                 )
-                abort(401)
+                abort(HTTPStatus.UNAUTHORIZED.value)
 
             character = await Character.get(character_id)
 
@@ -443,7 +443,7 @@ class CreateCharacterStep3(MethodView):
                 msg="No character ID provided to CreateCharacterStep3",
                 view=self.__class__.__name__,
             )
-            abort(400)
+            abort(HTTPStatus.BAD_REQUEST.value)
 
         character = await Character.get(character_id, fetch_links=True)
         sheet_traits = await self._fetch_sheet_traits(character)
@@ -479,7 +479,7 @@ class CreateCharacterStep3(MethodView):
                 msg="No character ID provided to CreateCharacterStep3",
                 view=self.__class__.__name__,
             )
-            abort(400)
+            abort(HTTPStatus.BAD_REQUEST.value)
 
         character = await Character.get(character_id, fetch_links=True)
         form = await request.form

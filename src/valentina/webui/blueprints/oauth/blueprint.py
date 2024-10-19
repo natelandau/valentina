@@ -5,6 +5,7 @@ from typing import Any
 from loguru import logger
 from quart import Blueprint, abort, redirect, session, url_for
 
+from valentina.constants import HTTPStatus
 from valentina.models import User
 from valentina.webui import discord_oauth
 from valentina.webui.utils import update_session
@@ -48,14 +49,14 @@ async def callback() -> Any:  # pragma: no cover
     # TODO: Add a custom page for this
     if not db_user:
         logger.error(f"User {user.id} is not in the database.")
-        abort(403)
+        abort(HTTPStatus.BAD_REQUEST.value)
 
     matched_guilds = [
         {"id": x.id, "name": x.name} for x in user.fetch_guilds() if int(x.id) in db_user.guilds
     ]
 
     if not matched_guilds:
-        abort(403)
+        abort(HTTPStatus.BAD_REQUEST.value)
 
     if len(matched_guilds) == 1:
         session["GUILD_ID"] = matched_guilds[0]["id"]

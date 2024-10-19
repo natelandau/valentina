@@ -9,7 +9,7 @@ from quart import abort, request, session, url_for
 from quart.views import MethodView
 from werkzeug.wrappers.response import Response
 
-from valentina.constants import STARTING_FREEBIE_POINTS, DBSyncUpdateType, RNGCharLevel
+from valentina.constants import STARTING_FREEBIE_POINTS, DBSyncUpdateType, HTTPStatus, RNGCharLevel
 from valentina.controllers import RNGCharGen
 from valentina.models import Character
 from valentina.webui import catalog
@@ -133,4 +133,4 @@ class CreateRNGCharacter(MethodView):
                 }
             )
 
-        return abort(500)
+        return abort(HTTPStatus.INTERNAL_SERVER_ERROR.value)

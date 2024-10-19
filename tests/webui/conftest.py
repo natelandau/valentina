@@ -33,6 +33,7 @@ def mock_session() -> Callable[[], dict[str, Any]]:
         campaigns: list[Campaign] = [],
         active_character: Character | str = None,
         active_campaign: Campaign | str = None,
+        is_storyteller: bool = False,
         user_name: str = "test_user",
         guild_name: str = "test_guild",
         user_id: str = "1234567890",
@@ -124,6 +125,8 @@ def mock_session() -> Callable[[], dict[str, Any]]:
             )
         else:
             mock_session["ACTIVE_CAMPAIGN_ID"] = str(campaigns[0].id) if campaigns else ""
+
+        mock_session["IS_STORYTELLER"] = is_storyteller
 
         return mock_session
 
