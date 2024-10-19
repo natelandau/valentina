@@ -14,13 +14,18 @@ from valentina.constants import (
     RNGCharLevel,
     TraitCategory,
     VampireClan,
+    WerewolfAuspice,
+    WerewolfBreed,
+    WerewolfTribe,
 )
 from valentina.controllers import RNGCharGen
 from valentina.models import Character, CharacterTrait
 
 
 @pytest.mark.drop_db
-@pytest.mark.parametrize(("char_class"), [(None), (CharClass.VAMPIRE), (CharClass.HUNTER)])
+@pytest.mark.parametrize(
+    ("char_class"), [(None), (CharClass.VAMPIRE), (CharClass.HUNTER), (CharClass.WEREWOLF)]
+)
 async def test_generate_full_character(
     user_factory, campaign_factory, mock_ctx1, mocker, char_class
 ):
@@ -72,6 +77,18 @@ async def test_generate_full_character(
             ).count()
             == 1
         )
+
+    if character.char_class_name == CharClass.WEREWOLF.name:
+        assert character.tribe in WerewolfTribe.__members__
+        assert character.auspice in WerewolfAuspice.__members__
+        assert character.breed in WerewolfBreed.__members__
+        for trait in ("Rage", "Gnosis", "Willpower", "Rank", "Glory", "Honor", "Wisdom"):
+            assert (
+                await CharacterTrait.find(
+                    CharacterTrait.character == str(character.id), CharacterTrait.name == trait
+                ).count()
+                == 1
+            )
 
     assert await Character.get(character.id, fetch_links=True) == character
 

@@ -86,7 +86,7 @@ def __embed1(  # noqa: C901
             inline=True,
         )
 
-    if character.char_class == CharClass.WEREWOLF:
+    if character.char_class in (CharClass.WEREWOLF, CharClass.CHANGELING):
         embed.add_field(
             name="Tribe", value=character.tribe.title() if character.tribe else "-", inline=True
         )
@@ -97,6 +97,9 @@ def __embed1(  # noqa: C901
         )
         embed.add_field(
             name="Breed", value=character.breed.title() if character.breed else "-", inline=True
+        )
+        embed.add_field(
+            name="totem", value=character.totem.title() if character.totem else "-", inline=True
         )
 
     # Add the trait sections to the sheet

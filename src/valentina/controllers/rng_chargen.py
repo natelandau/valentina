@@ -14,6 +14,9 @@ from valentina.constants import (
     RNGCharLevel,
     TraitCategory,
     VampireClan,
+    WerewolfAuspice,
+    WerewolfBreed,
+    WerewolfTribe,
 )
 from valentina.models import Campaign, Character, CharacterSheetSection, CharacterTrait, User
 from valentina.utils import random_num
@@ -258,6 +261,7 @@ class RNGCharGen:
         character = await self.random_backgrounds(character)
         character = await self.random_willpower(character)
         character = await self.random_hunter_traits(character)
+        character = await self.random_werewolf_traits(character)
         return await self.concept_special_abilities(character)
 
     async def random_attributes(self, character: Character) -> Character:
@@ -570,28 +574,39 @@ class RNGCharGen:
             Character: The updated character with newly generated willpower
                        and potentially humanity traits.
         """
+        # Because Hunters, werewolves, and changelings have their own willpower system, we don't need to generate it for them here.
+        if character.char_class in (CharClass.HUNTER, CharClass.WEREWOLF, CharClass.CHANGELING):
+            return character
+
         logger.debug(f"Generate willpower values for {character.name}")
 
         if not any(x.name for x in character.traits if x.name == "Self-Control"):  # type: ignore [attr-defined]
-            return character
+            willpower = CharacterTrait(
+                name="Willpower",
+                value=4,  # Default to 4 if no Self-Control trait is found
+                character=str(character.id),
+                category_name=TraitCategory.OTHER.name,
+                max_value=10,
+            )
+        else:
+            courage = next(
+                x for x in cast(list[CharacterTrait], character.traits) if x.name == "Courage"
+            )
+            self_control = next(
+                x for x in cast(list[CharacterTrait], character.traits) if x.name == "Self-Control"
+            )
+            conscience = next(
+                x for x in cast(list[CharacterTrait], character.traits) if x.name == "Conscience"
+            )
 
-        courage = next(
-            x for x in cast(list[CharacterTrait], character.traits) if x.name == "Courage"
-        )
-        self_control = next(
-            x for x in cast(list[CharacterTrait], character.traits) if x.name == "Self-Control"
-        )
-        conscience = next(
-            x for x in cast(list[CharacterTrait], character.traits) if x.name == "Conscience"
-        )
+            willpower = CharacterTrait(
+                name="Willpower",
+                value=self_control.value + courage.value,
+                character=str(character.id),
+                category_name=TraitCategory.OTHER.name,
+                max_value=10,
+            )
 
-        willpower = CharacterTrait(
-            name="Willpower",
-            value=self_control.value + courage.value,
-            character=str(character.id),
-            category_name=TraitCategory.OTHER.name,
-            max_value=10,
-        )
         await willpower.insert()
         character.traits.append(willpower)
 
@@ -719,5 +734,113 @@ class RNGCharGen:
                         for title, content in ability["custom_sections"]
                     ]
                 )
+        await character.save()
+        return character
+
+    async def random_werewolf_traits(self, character: Character) -> Character:
+        """Randomly generate werewolf and changeling breed, traits, etc for the character.
+
+        TODO: Disambiguate Changelings and Werewolves
+
+        Args:
+            character (Character): The character for which to generate werewolf traits.
+
+        Returns:
+            Character: The updated character with newly generated werewolf traits.
+        """
+        if character.char_class not in (CharClass.WEREWOLF, CharClass.CHANGELING):
+            return character
+
+        breed = WerewolfBreed.random_member()
+        character.breed = breed.name
+        auspice = WerewolfAuspice.random_member()
+        character.auspice = auspice.name
+        tribe = WerewolfTribe.random_member()
+        character.tribe = tribe.name
+
+        character.totem = tribe.value.totem
+
+        willpower = CharacterTrait(
+            name="Willpower",
+            value=tribe.value.starting_willpower,
+            character=str(character.id),
+            category_name=TraitCategory.OTHER.name,
+            max_value=10,
+        )
+        await willpower.insert()
+        character.traits.append(willpower)
+
+        gnosis = CharacterTrait(
+            name="Gnosis",
+            value=breed.value.starting_gnosis,
+            character=str(character.id),
+            category_name=TraitCategory.OTHER.name,
+            max_value=10,
+        )
+        await gnosis.insert()
+        character.traits.append(gnosis)
+
+        rage = CharacterTrait(
+            name="Rage",
+            value=auspice.value.starting_rage,
+            character=str(character.id),
+            category_name=TraitCategory.OTHER.name,
+            max_value=get_max_trait_value("Rage", TraitCategory.OTHER.name),
+        )
+        await rage.insert()
+        character.traits.append(rage)
+
+        rank = CharacterTrait(
+            name="Rank",
+            value=1,
+            character=str(character.id),
+            category_name=TraitCategory.RENOWN.name,
+            max_value=5,
+        )
+        await rank.insert()
+        character.traits.append(rank)
+
+        glory = CharacterTrait(
+            name="Glory",
+            value=auspice.value.starting_glory,
+            character=str(character.id),
+            category_name=TraitCategory.RENOWN.name,
+            max_value=get_max_trait_value("Glory", TraitCategory.RENOWN.name),
+        )
+        await glory.insert()
+        character.traits.append(glory)
+
+        honor = CharacterTrait(
+            name="Honor",
+            value=auspice.value.starting_honor,
+            character=str(character.id),
+            category_name=TraitCategory.RENOWN.name,
+            max_value=get_max_trait_value("Honor", TraitCategory.RENOWN.name),
+        )
+        await honor.insert()
+        character.traits.append(honor)
+
+        wisdom = CharacterTrait(
+            name="Wisdom",
+            value=auspice.value.starting_wisdom,
+            character=str(character.id),
+            category_name=TraitCategory.RENOWN.name,
+            max_value=get_max_trait_value("Wisdom", TraitCategory.RENOWN.name),
+        )
+        await wisdom.insert()
+        character.traits.append(wisdom)
+
+        gifts = set(auspice.value.starting_gifts + breed.value.starting_gifts)
+        for gift in gifts:
+            trait = CharacterTrait(
+                name=gift,
+                value=1,
+                character=str(character.id),
+                category_name=TraitCategory.GIFTS.name,
+                max_value=1,
+            )
+            await trait.insert()
+            character.traits.append(trait)
+
         await character.save()
         return character

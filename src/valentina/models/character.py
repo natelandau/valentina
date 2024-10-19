@@ -151,7 +151,7 @@ class Character(Document):
 
     # Profile
     age: int | None = None
-    auspice: str | None = None
+    auspice: str | None = None  # WerewolfAuspice enum name
     bio: str | None = None
     breed: str | None = None  # WerewolfBreed enum name or other
     clan_name: str | None = None  # VampireClan enum name
@@ -164,7 +164,8 @@ class Character(Document):
     nature: str | None = None
     sire: str | None = None
     tradition: str | None = None
-    tribe: str | None = None
+    tribe: str | None = None  # WerewolfTribe enum name or other
+    totem: str | None = None
 
     @before_event(Insert, Replace, Save, Update, SaveChanges)
     async def update_modified_date(self) -> None:
@@ -431,7 +432,7 @@ class Character(Document):
                 self.auspice
                 if self.auspice
                 else "-"
-                if self.char_class_name.lower() == "werewolf"
+                if self.char_class_name.lower() in ("werewolf", "changeling")
                 else None,
             ),
             (
@@ -439,7 +440,15 @@ class Character(Document):
                 self.breed
                 if self.breed
                 else "-"
-                if self.char_class_name.lower() == "werewolf"
+                if self.char_class_name.lower() in ("werewolf", "changeling")
+                else None,
+            ),
+            (
+                "Totem",
+                self.totem
+                if self.totem
+                else "-"
+                if self.char_class_name.lower() in ("werewolf", "changeling")
                 else None,
             ),
             (
@@ -447,7 +456,7 @@ class Character(Document):
                 self.clan_name
                 if self.clan_name
                 else "-"
-                if self.char_class_name.lower() == "vampire"
+                if self.char_class_name.lower() in ("vampire")
                 else None,
             ),
             (
@@ -481,7 +490,7 @@ class Character(Document):
                 self.tribe
                 if self.tribe
                 else "-"
-                if self.char_class_name.lower() == "werewolf"
+                if self.char_class_name.lower() in ("werewolf", "changeling")
                 else None,
             ),
             ("Date of Birth", self.dob.strftime("%Y-%m-%d") if self.dob else "-"),
