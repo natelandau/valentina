@@ -2,36 +2,16 @@
     character: Character,
     character_owner: User,
     sheet_data: list[list[SheetSection]],
+    profile_data: dict[str,str],
 #}
 {# js bootstrap_initialize.js #}
-<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 px-lg-5">
-    {% for key, value in character.sheet_section_top_items().items() %}
+<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 ">
+    {% for key,value in profile_data.items() %}
         <div class="col" id="field-edit-wrapper">
             <h4>{{ key }}</h4>
             <p>{{ value }}</p>
         </div>
     {% endfor %}
-    {% if session["IS_STORYTELLER"] %}
-        <div class="col" id="field-edit-wrapper">
-            <h4>Character Type</h4>
-            <p>
-                {% if character.type_player %}Player Character{% endif %}
-                {% if character.type_storyteller %}Storyteller Character{% endif %}
-            </p>
-        </div>
-        <div class="col" id="field-edit-wrapper">
-            <h4>Character Owner</h4>
-            <p>
-                {% if character_owner.avatar_url %}
-                    <img src="{{ character_owner.avatar_url }}"
-                         width="30"
-                         height="30"
-                         class="rounded-circle">
-                {% endif %}
-                {{ character_owner.name }}
-            </p>
-        </div>
-    {% endif %}
 </div>
 {% for section in sheet_data %}
     <div class="separator">{{ section.section.name }}</div>

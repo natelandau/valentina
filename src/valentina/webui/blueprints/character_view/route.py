@@ -22,7 +22,7 @@ from valentina.models import (
     User,
 )
 from valentina.webui import catalog
-from valentina.webui.utils import sync_char_to_discord, update_session
+from valentina.webui.utils import is_storyteller, sync_char_to_discord, update_session
 from valentina.webui.utils.discord import post_to_audit_log
 
 from . import form_fields
@@ -115,11 +115,16 @@ class CharacterView(MethodView):
         """
         if request.args.get("tab") == "sheet":
             sheet_builder = CharacterSheetBuilder(character=character)
-            sheet_data = sheet_builder.fetch_sheet_data(show_zeros=False)
+            sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
+            storyteller_data = await is_storyteller()
+            profile_data = await sheet_builder.fetch_sheet_profile(
+                storyteller_view=storyteller_data
+            )
             return catalog.render(
                 "character_view.Sheet",
                 character=character,
                 sheet_data=sheet_data,
+                profile_data=profile_data,
                 character_owner=character_owner,
             )
 
@@ -161,11 +166,14 @@ class CharacterView(MethodView):
             return await self._handle_tabs(character, character_owner=character_owner)
 
         sheet_builder = CharacterSheetBuilder(character=character)
-        sheet_data = sheet_builder.fetch_sheet_data(show_zeros=False)
+        sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
+        storyteller_data = await is_storyteller()
+        profile_data = await sheet_builder.fetch_sheet_profile(storyteller_view=storyteller_data)
 
         return catalog.render(
             "character_view.Main",
             character=character,
+            profile_data=profile_data,
             sheet_data=sheet_data,
             success_msg=success_msg,
             character_owner=character_owner,

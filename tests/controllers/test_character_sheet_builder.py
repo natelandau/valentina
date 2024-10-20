@@ -9,8 +9,8 @@ from valentina.controllers import CharacterSheetBuilder
 
 
 @pytest.mark.drop_db
-async def test_fetch_sheet_data(debug, trait_factory, character_factory):
-    """Test the fetch_sheet_data method."""
+async def test_fetch_sheet_character_traits(debug, trait_factory, character_factory):
+    """Test the fetch_sheet_character_traits method."""
     char_class = CharClass.WEREWOLF
     character = character_factory.build(char_class=char_class.name)
     await character.insert()
@@ -21,7 +21,7 @@ async def test_fetch_sheet_data(debug, trait_factory, character_factory):
             await character.add_trait(category=cat, name=trait_name, value=1, max_value=5)
 
     sheet_builder = CharacterSheetBuilder(character=character)
-    sheet_data = sheet_builder.fetch_sheet_data(show_zeros=False)
+    sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
 
     # debug("sheet_data", sheet_data)
 
@@ -41,3 +41,45 @@ async def test_fetch_sheet_data(debug, trait_factory, character_factory):
     assert len(sheet_data[2].category) == 3
     assert sheet_data[2].category[0].category == TraitCategory.BACKGROUNDS
     assert len(sheet_data[2].category[0].traits) == 17
+
+
+@pytest.mark.parametrize(
+    ("char_class", "keys"),
+    [
+        (CharClass.MAGE, ["tradition", "essence"]),
+        (CharClass.VAMPIRE, ["generation", "sire", "clan"]),
+        (CharClass.WEREWOLF, ["tribe", "auspice", "breed", "totem"]),
+    ],
+)
+@pytest.mark.drop_db
+async def test_fetch_sheet_profile(debug, character_factory, user_factory, char_class, keys):
+    """Test the fetch_sheet_profile method."""
+    user = user_factory.build(name="test_user")
+    await user.insert()
+    character = character_factory.build(
+        user_owner=user.id, char_class_name=char_class.name, type_player=True
+    )
+    await character.insert()
+
+    common_profile_keys = ["class", "alive", "concept", "demeanor", "nature"]
+    storyteller_keys = ["player", "character type"]
+
+    # When checking for the player view
+    sheet_builder = CharacterSheetBuilder(character=character)
+    sheet_profile = await sheet_builder.fetch_sheet_profile()
+
+    # Then the profile should contain the expected keys
+    for key in keys + common_profile_keys:
+        assert key.title() in sheet_profile
+
+    for key in storyteller_keys:
+        assert key.title() not in sheet_profile
+
+    # When checking for the storyteller view
+    storyteller_sheet_profile = await sheet_builder.fetch_sheet_profile(storyteller_view=True)
+
+    # Then the profile should contain the expected keys
+    for key in keys + common_profile_keys + storyteller_keys:
+        assert key.title() in storyteller_sheet_profile
+
+    assert storyteller_sheet_profile["Player"] == "Test User"
