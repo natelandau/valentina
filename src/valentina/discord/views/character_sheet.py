@@ -1,6 +1,6 @@
 """View a character sheet."""
 
-from typing import Any, cast
+from typing import Any
 
 import arrow
 import discord
@@ -9,14 +9,13 @@ from discord.ext import pages
 from valentina.constants import (
     MAX_DOT_DISPLAY,
     CharClass,
-    CharSheetSection,
     EmbedColor,
     Emoji,
     InventoryItemType,
-    TraitCategory,
 )
+from valentina.controllers import CharacterSheetBuilder
 from valentina.discord.bot import ValentinaContext
-from valentina.models import AWSService, Character, CharacterTrait, Statistics
+from valentina.models import AWSService, Character, Statistics
 
 
 def __embed1(  # noqa: C901
@@ -102,33 +101,25 @@ def __embed1(  # noqa: C901
             name="totem", value=character.totem.title() if character.totem else "-", inline=True
         )
 
-    # Add the trait sections to the sheet
-    # Sort by character sheet section
-    for section in sorted(CharSheetSection, key=lambda x: x.value.order):
-        if section != CharSheetSection.NONE:
-            embed.add_field(
-                name="\u200b",
-                value=f"**{section.name.upper()}**",
-                inline=False,
-            )
-
-        # Sort by trait category
-        for cat in sorted(
-            [x for x in TraitCategory if x.value.section == section],
-            key=lambda x: x.value.order,
-        ):
-            # Find all character traits which match this trait category
+    sheet_builder = CharacterSheetBuilder(character=character)
+    sheet_data = sheet_builder.fetch_sheet_data()
+    for section in sheet_data:
+        embed.add_field(
+            name="\u200b",
+            value=f"**{section.section.name.upper()}**",
+            inline=False,
+        )
+        for category in section.category:
             trait_values = [
                 f"`{x.name:14}: {x.dots}`"
                 if x.max_value <= MAX_DOT_DISPLAY
                 else f"`{x.name:14}: {x.value}/{x.max_value}`"
-                for x in cast(list[CharacterTrait], character.traits)
-                if x.category_name == cat.name and not (x.value == 0 and not cat.value.show_zero)
+                for x in category.traits
             ]
-
-            # If traits were found, add them to the embed
             if trait_values:
-                embed.add_field(name=cat.name.title(), value="\n".join(trait_values), inline=True)
+                embed.add_field(
+                    name=category.category.name.title(), value="\n".join(trait_values), inline=True
+                )
 
     if desc_suffix:
         embed.add_field(name="\u200b", value=desc_suffix, inline=False)

@@ -9,16 +9,14 @@ from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
 
 from valentina.constants import (
-    CharSheetSection,
     DBSyncUpdateType,
     HTTPStatus,
     InventoryItemType,
-    TraitCategory,
 )
+from valentina.controllers import CharacterSheetBuilder
 from valentina.models import (
     AWSService,
     Character,
-    CharacterTrait,
     InventoryItem,
     Statistics,
     User,
@@ -57,49 +55,6 @@ class CharacterView(MethodView):
             abort(HTTPStatus.BAD_REQUEST.value)
 
         return character
-
-    async def _get_character_sheet_traits(
-        self, character: Character
-    ) -> dict[str, dict[str, list[CharacterTrait]]]:
-        """Return all character traits grouped by character sheet section and category.
-
-        Retrieve the character's traits from the database and organize them into a
-        dictionary grouped by character sheet sections and categories. Only include
-        traits with non-zero values, unless the category is configured to show zero values.
-
-        Args:
-            character (Character): The character whose traits are to be retrieved and grouped.
-
-        Returns:
-            dict[str, dict[str, list[CharacterTrait]]]: A nested dictionary where the top-level
-                keys are section names, the second-level keys are category names, and the values
-                are lists of `CharacterTrait` objects associated with each category.
-        """
-        character_traits = await CharacterTrait.find(
-            CharacterTrait.character == str(character.id)
-        ).to_list()
-
-        sheet_traits: dict[str, dict[str, list[CharacterTrait]]] = {}
-
-        for section in sorted(CharSheetSection, key=lambda x: x.value.order):
-            if section != CharSheetSection.NONE:
-                sheet_traits[section.name] = {}
-
-            # Sort by trait category
-            for cat in sorted(
-                [x for x in TraitCategory if x.value.section == section],
-                key=lambda x: x.value.order,
-            ):
-                for x in character_traits:
-                    if x.category_name == cat.name and not (
-                        x.value == 0 and not cat.value.show_zero
-                    ):
-                        try:
-                            sheet_traits[section.name][x.category_name].append(x)
-                        except KeyError:
-                            sheet_traits[section.name][x.category_name] = [x]
-
-        return sheet_traits
 
     async def _get_character_inventory(self, character: Character) -> dict:
         """Retrieve and return the character's inventory organized by item type.
@@ -159,10 +114,12 @@ class CharacterView(MethodView):
             404: If the requested tab is not recognized.
         """
         if request.args.get("tab") == "sheet":
+            sheet_builder = CharacterSheetBuilder(character=character)
+            sheet_data = sheet_builder.fetch_sheet_data(show_zeros=False)
             return catalog.render(
                 "character_view.Sheet",
                 character=character,
-                traits=await self._get_character_sheet_traits(character),
+                sheet_data=sheet_data,
                 character_owner=character_owner,
             )
 
@@ -203,10 +160,13 @@ class CharacterView(MethodView):
         if request.headers.get("HX-Request"):
             return await self._handle_tabs(character, character_owner=character_owner)
 
+        sheet_builder = CharacterSheetBuilder(character=character)
+        sheet_data = sheet_builder.fetch_sheet_data(show_zeros=False)
+
         return catalog.render(
             "character_view.Main",
             character=character,
-            traits=await self._get_character_sheet_traits(character),
+            sheet_data=sheet_data,
             success_msg=success_msg,
             character_owner=character_owner,
         )

@@ -513,3 +513,31 @@ class Character(Document):
         if self.channel != channel.id:
             self.channel = channel.id
             await self.save()
+
+    def fetch_traits_by_section(
+        self, category: TraitCategory, show_zeros: bool = False
+    ) -> list[CharacterTrait]:
+        """Fetch all traits for a specified category.
+
+        This method retrieves traits that belong to a given category. If `show_zeros` is set to True, traits with a value of zero will also be included in the result. Otherwise, traits with a value of zero will be excluded unless the category explicitly allows showing zero values.
+
+        Args:
+            category (TraitCategory): The category of traits to fetch.
+            show_zeros (bool, optional): Whether to include traits with a value of zero. Defaults to False.
+
+        Returns:
+            list[CharacterTrait]: A list of traits that match the specified category.
+        """
+        if show_zeros:
+            return [
+                x
+                for x in cast(list[CharacterTrait], self.traits)
+                if x.category_name == category.name
+            ]
+
+        return [
+            x
+            for x in cast(list[CharacterTrait], self.traits)
+            if x.category_name == category.name
+            and not (x.value == 0 and not category.value.show_zero)
+        ]

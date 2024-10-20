@@ -419,7 +419,7 @@ async def test_random_virtues(user_factory, mock_ctx1, char_class, level, modifi
     result = await char_gen.random_virtues(character)
 
     # THEN check virtues are set correctly
-    virtues_names = TraitCategory.VIRTUES.get_trait_list(char_class)
+    virtues_names = TraitCategory.VIRTUES.get_all_class_trait_names(char_class)
     virtues = result.traits
     assert len(virtues) == len(virtues_names)
 

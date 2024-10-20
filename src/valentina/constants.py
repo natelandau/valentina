@@ -152,6 +152,15 @@ class CharSheetSection(Enum):
     ADVANTAGES = CharSheetSectionModel(name="Advantages", order=3)
     NONE = CharSheetSectionModel(name="None", order=4)
 
+    @classmethod
+    def get_members_in_order(cls) -> list["CharSheetSection"]:
+        """Return a list of CharSheetSection members in order of their order value.
+
+        Returns:
+            list[CharSheetSection]: A list of CharSheetSection members.
+        """
+        return sorted(cls, key=lambda x: x.value.order)
+
 
 class DiceType(Enum):
     """Enum for types of dice."""
@@ -535,15 +544,15 @@ class TraitCategoryValue:
     order: int
     section: CharSheetSection
     show_zero: bool
-    COMMON: list[str] = field(default_factory=list, hash=True)
-    MORTAL: list[str] = field(default_factory=list, hash=True)
-    VAMPIRE: list[str] = field(default_factory=list, hash=True)
-    WEREWOLF: list[str] = field(default_factory=list, hash=True)
-    MAGE: list[str] = field(default_factory=list, hash=True)
-    GHOUL: list[str] = field(default_factory=list, hash=True)
-    CHANGELING: list[str] = field(default_factory=list, hash=True)
-    HUNTER: list[str] = field(default_factory=list, hash=True)
-    SPECIAL: list[str] = field(default_factory=list, hash=True)
+    COMMON: list[str] = field(default_factory=list)
+    MORTAL: list[str] = field(default_factory=list)
+    VAMPIRE: list[str] = field(default_factory=list)
+    WEREWOLF: list[str] = field(default_factory=list)
+    MAGE: list[str] = field(default_factory=list)
+    GHOUL: list[str] = field(default_factory=list)
+    CHANGELING: list[str] = field(default_factory=list)
+    HUNTER: list[str] = field(default_factory=list)
+    SPECIAL: list[str] = field(default_factory=list)
 
 
 class TraitCategory(Enum):
@@ -592,6 +601,7 @@ class TraitCategory(Enum):
             "Subterfuge",
         ],
         WEREWOLF=["Primal-Urge"],
+        CHANGELING=["Primal-Urge"],
         MAGE=["Awareness"],
         HUNTER=["Awareness", "Insight", "Persuasion"],
     )
@@ -731,6 +741,8 @@ class TraitCategory(Enum):
         ],
         VAMPIRE=["Generation", "Herd"],
         HUNTER=["Bystanders", "Destiny", "Exposure", "Patron"],
+        WEREWOLF=["Ancestors", "Totem", "Kinfolk", "Rites", "Fetish", "Pure Breed"],
+        CHANGELING=["Ancestors", "Totem", "Kinfolk", "Rites", "Fetish", "Pure Breed"],
     )
     MERITS = TraitCategoryValue(
         classes=[CharClass.COMMON],
@@ -852,13 +864,14 @@ class TraitCategory(Enum):
         MORTAL=["Humanity"],
         VAMPIRE=["Blood Pool", "Humanity"],
         WEREWOLF=["Gnosis", "Rage"],
+        CHANGELING=["Gnosis", "Rage"],
         MAGE=["Humanity", "Arete", "Quintessence"],
         GHOUL=["Humanity"],
         HUNTER=["Conviction"],
     )
 
-    def get_trait_list(self, char_class: CharClass) -> list[str]:
-        """Return a list of traits for the given character class.
+    def get_all_class_trait_names(self, char_class: CharClass) -> list[str]:
+        """Return a list of trait names for the given character class.
 
         Args:
             char_class (CharClass): The character class.
@@ -866,7 +879,17 @@ class TraitCategory(Enum):
         Returns:
             list[str]: A list of traits.
         """
-        return self.value.COMMON + getattr(self.value, char_class.name)
+        return self.value.COMMON + getattr(self.value, char_class.name, [])
+
+    @classmethod
+    def get_members_in_order(cls, section: CharSheetSection = None) -> list["TraitCategory"]:
+        """Return a list of TraitCategory members in order of their order value.
+
+        Returns:
+            list[TraitCategory]: A list of TraitCategory members.
+        """
+        members = [x for x in cls if section is None or x.value.section == section]
+        return sorted(members, key=lambda x: x.value.order)
 
 
 @dataclass(frozen=True, eq=True)

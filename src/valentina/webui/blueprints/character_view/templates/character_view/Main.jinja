@@ -1,7 +1,7 @@
 {# def
     character:Character,
-    traits:list[CharacterTrait]=[],
     character_owner: User,
+    sheet_data: list[SheetSection],
 #}
 <PageLayout title={{ character.name }} _attrs={{ attrs }}>
     <global.PageTitle>{{ character.full_name }}</global.PageTitle>
@@ -12,6 +12,6 @@
 
     <div id="main-content" class="mt-3 mx-auto px-lg-5">
         {# Include the default jinjax template include here for initial page load #}
-        <character_view.Sheet character={{ character }} traits={{ traits }} character_owner={{ character_owner }} />
+        <character_view.Sheet character={{ character }} traits={{ traits }} character_owner={{ character_owner }} sheet_data={{ sheet_data }} />
     </div>
 </PageLayout>
