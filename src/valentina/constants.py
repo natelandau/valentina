@@ -882,13 +882,27 @@ class TraitCategory(Enum):
         return self.value.COMMON + getattr(self.value, char_class.name, [])
 
     @classmethod
-    def get_members_in_order(cls, section: CharSheetSection = None) -> list["TraitCategory"]:
-        """Return a list of TraitCategory members in order of their order value.
+    def get_members_in_order(
+        cls, section: CharSheetSection = None, char_class: CharClass | None = None
+    ) -> list["TraitCategory"]:
+        """Return a list of TraitCategory members in order of their order value. This can be filtered by section and/or class.
+
+        Args:
+            section (CharSheetSection, optional): The character sheet section to filter by. Defaults to None.
+            char_class (CharClass, optional): The character class to filter by. Defaults to None.
 
         Returns:
             list[TraitCategory]: A list of TraitCategory members.
         """
-        members = [x for x in cls if section is None or x.value.section == section]
+        members = [
+            x
+            for x in cls
+            if (section is None or x.value.section == section)
+            and (
+                char_class is None
+                or (char_class in x.value.classes or CharClass.COMMON in x.value.classes)
+            )
+        ]
         return sorted(members, key=lambda x: x.value.order)
 
 

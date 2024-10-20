@@ -5,6 +5,16 @@ from typing import assert_never
 
 from valentina.constants import CharClass, CharSheetSection, Emoji, TraitCategory
 from valentina.models import Character, CharacterTrait, User
+from valentina.utils.helpers import get_max_trait_value
+
+
+@dataclass
+class TraitForCreation:
+    """A trait for editing on the character sheet. Data is used for creating a form for editing trait values and adding them to the character."""
+
+    name: str
+    max_value: int
+    category: TraitCategory
 
 
 @dataclass
@@ -12,7 +22,8 @@ class SectionCategory:
     """A list of traits for a specific category."""
 
     category: TraitCategory
-    traits: list[CharacterTrait]
+    traits: list[CharacterTrait] = field(default_factory=list)
+    traits_for_creation: list[TraitForCreation] = field(default_factory=list)
 
 
 @dataclass
@@ -20,7 +31,7 @@ class SheetSection:
     """A section of the character sheet."""
 
     section: CharSheetSection
-    category: list[SectionCategory] = field(default_factory=list)
+    categories: list[SectionCategory] = field(default_factory=list)
 
 
 class CharacterSheetBuilder:
@@ -57,7 +68,7 @@ class CharacterSheetBuilder:
                 continue
 
             # Get the traits for the section
-            category = [
+            categories = [
                 SectionCategory(category=cat, traits=traits)
                 for cat in TraitCategory.get_members_in_order(section=section)
                 if (
@@ -68,9 +79,55 @@ class CharacterSheetBuilder:
             ]
 
             # Add the section with its groups to the sheet
-            sheet.append(SheetSection(section=section, category=category))
+            sheet.append(SheetSection(section=section, categories=categories))
 
         return sheet
+
+    def fetch_all_possible_traits(self) -> list[SheetSection]:
+        """Fetches all possible traits for a character's class.  This method best suited for character creation where a form needs to be presented to the user for entering initial trait values.
+
+        Returns:
+            list[SheetSection]: A list of SheetSection objects representing the organized character sheet.
+        """
+        sheet: list[SheetSection] = []
+        for section in CharSheetSection.get_members_in_order():
+            if section == CharSheetSection.NONE:
+                continue
+
+            categories = []
+            for trait_cat in TraitCategory.get_members_in_order(
+                section=section, char_class=self.character.char_class
+            ):
+                traits_to_create = []
+                for trait_name in trait_cat.get_all_class_trait_names(
+                    char_class=self.character.char_class
+                ):
+                    trait_to_create = TraitForCreation(
+                        name=trait_name,
+                        category=trait_cat,
+                        max_value=get_max_trait_value(trait_name, trait_cat.name),
+                    )
+                    traits_to_create.append(trait_to_create)
+
+                categories.append(
+                    SectionCategory(category=trait_cat, traits_for_creation=traits_to_create)
+                )
+
+            sheet.append(SheetSection(section=section, categories=categories))
+
+        return sheet
+
+    def fetch_all_possible_traits_unorganized(self) -> list[TraitForCreation]:
+        """Fetches all possible traits for a character's class in a flat list.  This method best suited for character creation where a form needs to be presented to the user for entering initial trait values.
+
+        Returns:
+            list[TraitForCreation]: A flat list of TraitForCreation objects.
+        """
+        unorganised_traits = []
+        for s in self.fetch_all_possible_traits():
+            for category in s.categories:
+                unorganised_traits.extend(list(category.traits_for_creation))
+        return unorganised_traits
 
     async def fetch_sheet_profile(self, storyteller_view: bool = False) -> dict:
         """Fetches the character's profile information for the character sheet.

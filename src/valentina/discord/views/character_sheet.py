@@ -49,7 +49,7 @@ async def __embed1(
             value=f"**{section.section.name.upper()}**",
             inline=False,
         )
-        for category in section.category:
+        for category in section.categories:
             trait_values = [
                 f"`{x.name:14}: {x.dots}`"
                 if x.max_value <= MAX_DOT_DISPLAY

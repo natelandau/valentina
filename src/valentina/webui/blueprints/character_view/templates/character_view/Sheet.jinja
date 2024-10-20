@@ -5,6 +5,7 @@
     profile_data: dict[str,str],
 #}
 {# js bootstrap_initialize.js #}
+
 <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 ">
     {% for key,value in profile_data.items() %}
         <div class="col" id="field-edit-wrapper">
@@ -16,7 +17,7 @@
 {% for section in sheet_data %}
     <div class="separator">{{ section.section.name }}</div>
     <div class="row row-cols-1 row-cols-md-3 gy-5">
-        {% for category in section.category %}
+        {% for category in section.categories %}
             <div class="col">
                 <div class="text-center pe-5">
                     <h4>{{ category.category.name | title }}</h4>

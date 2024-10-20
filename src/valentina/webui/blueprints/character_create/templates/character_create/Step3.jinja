@@ -1,37 +1,41 @@
 {# def
     form:QuartForm,
-    sheet_traits:dict[dict[dict[str,str]]],
+    sheet_traits:list[SheetSection],
     post_url:str,
 #}
 <div>
     <form method="post"
           action="{{ post_url }}"
-          encoding="application/x-www-form-urlencoded">
-        {% for sheet_section, trait_category in sheet_traits.items() if trait_category %}
-            <div class="text-center">
-                <h3>{{ sheet_section }}</h3>
-            </div>
+          encoding="application/x-www-form-urlencoded"
+          class="mb-5">
+        {% for section in sheet_traits %}
+            <div class="separator">{{ section.section.name }}</div>
             <div class="row row-cols-1 row-cols-md-3">
-                {% for category, traits in trait_category.items() if traits %}
-                    <div class="col">
-                        <div class="text-center pe-5">
-                            <h4>{{ category | title }}</h4>
-                        </div>
-                        <div class="row row-cols-2">
-                            {% for name, max_value in traits.items() %}
-                                <div class="col text-end">{{ name | capitalize }}:</div>
-                                <div class="col-auto">
+                {% for category in section.categories %}
+                    {% if category.traits_for_creation %}
 
-                                    {% set field_name = category~'_'~name~'_'~max_value %}
+                        <div class="col">
+                            <div class="text-center pe-5">
+                                <h4>{{ category.category.name | title }}</h4>
+                            </div>
+                            <div class="row row-cols-2">
+                                {% for trait in category.traits_for_creation %}
+                                    <div class="col text-end">{{ trait.name | capitalize }}:</div>
+                                    <div class="col-auto">
 
-                                    <global.valentinaform.TraitRadioToggle form={{ form }} name={{ field_name }} label={{ name }} max_value={{ max_value }} />
-                                </div>
-                            {% endfor %}
+                                        {% set field_name = trait.category.name ~ '_' ~trait.name ~ '_' ~ trait.max_value %}
+
+                                        <global.valentinaform.TraitRadioToggle form={{ form }} name={{ field_name }} label={{ trait.name }} max_value={{ trait.max_value }} />
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
+                    {% endif %}
                 {% endfor %}
             </div>
+
         {% endfor %}
+
         <hr class="my-3">
         <button class="btn btn-success button-lg" type="submit">Create Character</button>
         <img id="spinner"

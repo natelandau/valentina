@@ -11,9 +11,9 @@ from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
 
-from valentina.constants import CharSheetSection, DBSyncUpdateType, HTTPStatus, TraitCategory
+from valentina.constants import DBSyncUpdateType, HTTPStatus
+from valentina.controllers import CharacterSheetBuilder
 from valentina.models import Character, CharacterTrait
-from valentina.utils.helpers import get_max_trait_value
 from valentina.webui import catalog
 from valentina.webui.utils.discord import post_to_audit_log, post_to_error_log
 from valentina.webui.utils.forms import ValentinaForm
@@ -368,60 +368,6 @@ class CreateCharacterStep3(MethodView):
             description="Enter the traits for your character.",
         )
 
-    async def _fetch_trait_names(self, category: TraitCategory, character: Character) -> list[str]:
-        """Fetch the trait names for a given category and character class.
-
-        Retrieve and return a list of trait names by combining common traits
-        and class-specific traits for the selected category.
-
-        Args:
-            category (TraitCategory): The category of traits to fetch.
-            character (Character): The character whose class-specific traits are needed.
-
-        Returns:
-            list[str]: A list of trait names for the given category and character class.
-        """
-        return list(category.value.COMMON) + list(
-            getattr(category.value, character.char_class_name)
-        )
-
-    async def _fetch_sheet_traits(
-        self, character: Character
-    ) -> dict[str, dict[str, dict[str, int]]]:
-        """Fetch and organize traits for the character sheet.
-
-        Retrieve traits for each section of the character sheet, organizing them
-        by section and category. The traits are sorted according to their defined
-        order, and their maximum values are determined.
-
-        Args:
-            character (Character): The character for whom the traits are being fetched.
-
-        Returns:
-            dict[str, dict[str, dict[str, int]]]: A nested dictionary where the top-level keys
-            are the section names, the second-level keys are the category names, and the
-            innermost keys are trait names with their corresponding maximum values.
-        """
-        sheet_traits: dict[str, dict[str, dict[str, int]]] = {}
-        for sheet_section in sorted(CharSheetSection, key=lambda x: x.value.order):
-            sheet_traits[sheet_section.name] = {}
-
-            trait_categories = sorted(
-                [x for x in TraitCategory if x.value.section == sheet_section],
-                key=lambda x: x.value.order,
-            )
-            for category in trait_categories:
-                if not sheet_traits[sheet_section.name].get(category.name):
-                    sheet_traits[sheet_section.name][category.name] = {}
-
-                traits = await self._fetch_trait_names(category=category, character=character)
-                for trait_name in traits:
-                    sheet_traits[sheet_section.name][category.name][trait_name] = (
-                        get_max_trait_value(trait_name, category.name)
-                    )
-
-        return sheet_traits
-
     async def get(self, character_id: str) -> str:
         """Process the initial page load for the third step of character creation.
 
@@ -446,7 +392,8 @@ class CreateCharacterStep3(MethodView):
             abort(HTTPStatus.BAD_REQUEST.value)
 
         character = await Character.get(character_id, fetch_links=True)
-        sheet_traits = await self._fetch_sheet_traits(character)
+        sheet_builder = CharacterSheetBuilder(character=character)
+        sheet_traits = sheet_builder.fetch_all_possible_traits()
 
         return catalog.render(
             "character_create.Step3",
