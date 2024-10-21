@@ -152,7 +152,7 @@ class CharacterSheetBuilder:
                     self.character.auspice.title() if self.character.auspice else "-"
                 )
                 profile["breed"] = self.character.breed.title() if self.character.breed else "-"
-                profile["totem"] = self.character.totem.title() if self.character.totem else "-"
+                profile["totem"] = self.character.totem.title() if self.character.totem else ""
             case CharClass.VAMPIRE:
                 profile["clan"] = self.character.clan.name.title() if self.character.clan else "-"
                 profile["generation"] = (

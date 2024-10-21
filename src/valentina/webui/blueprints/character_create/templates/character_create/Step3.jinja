@@ -15,20 +15,18 @@
                     {% if category.traits_for_creation %}
 
                         <div class="col">
-                            <div class="text-center pe-5">
+                            <div class="pe-5">
                                 <h4>{{ category.category.name | title }}</h4>
                             </div>
-                            <div class="row row-cols-2">
-                                {% for trait in category.traits_for_creation %}
-                                    <div class="col text-end">{{ trait.name | capitalize }}:</div>
-                                    <div class="col-auto">
 
-                                        {% set field_name = trait.category.name ~ '_' ~trait.name ~ '_' ~ trait.max_value %}
+                            {% for trait in category.traits_for_creation %}
 
-                                        <global.valentinaform.TraitRadioToggle form={{ form }} name={{ field_name }} label={{ trait.name }} max_value={{ trait.max_value }} />
-                                    </div>
-                                {% endfor %}
-                            </div>
+                                {% set field_name = trait.category.name ~ '_' ~trait.name ~ '_' ~ trait.max_value %}
+
+                                <global.valentinaform.TraitRadioToggle form={{ form }} name={{ field_name }} label={{ trait.name }} max_value={{ trait.max_value }} />
+
+                            {% endfor %}
+
                         </div>
                     {% endif %}
                 {% endfor %}

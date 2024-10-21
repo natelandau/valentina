@@ -49,7 +49,7 @@ async def test_fetch_sheet_character_traits(debug, trait_factory, character_fact
     [
         (CharClass.MAGE, ["tradition", "essence"]),
         (CharClass.VAMPIRE, ["generation", "sire", "clan"]),
-        (CharClass.WEREWOLF, ["tribe", "auspice", "breed", "totem"]),
+        (CharClass.WEREWOLF, ["tribe", "auspice", "breed"]),
     ],
 )
 @pytest.mark.drop_db

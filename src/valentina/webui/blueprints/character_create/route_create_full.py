@@ -226,7 +226,7 @@ class CreateCharacterStep2(MethodView):
                     return VampireClassSpecifics()
                 case "hunter":
                     return HunterClassSpecifics()
-                case "werewolf":
+                case "werewolf" | "changeling":
                     return WerewolfClassSpecifics()
 
         return None
