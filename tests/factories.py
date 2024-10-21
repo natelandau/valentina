@@ -168,6 +168,10 @@ class UserFactory(BeanieDocumentFactory[User]):
     __randomize_collection_length__ = True
 
     @classmethod
+    def name(cls) -> str:
+        return cls.__faker__.sentence(nb_words=2).rstrip(".")
+
+    @classmethod
     def characters(cls) -> list:
         return []
 

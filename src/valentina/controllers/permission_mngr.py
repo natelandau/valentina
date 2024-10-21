@@ -20,35 +20,6 @@ class PermissionManager:
         self.guild_id = guild_id
         self._guild_db_obj: Guild = None
 
-    async def _author_is_storyteller(self, author_id: int) -> bool:
-        """Determine if the author is a storyteller.
-
-        Args:
-            author_id (int): The ID of the author to check.
-
-        Returns:
-            bool: True if the author is a storyteller; otherwise, False.
-        """
-        if not self._guild_db_obj:
-            self._guild_db_obj = await Guild.get(self.guild_id)
-
-        # Finally, allow storytellers to grant XP and deny all others
-        return author_id in self._guild_db_obj.storytellers
-
-    async def _author_is_admin(self, author_id: int) -> bool:
-        """Determine if the author is an administrator.
-
-        Args:
-            author_id (int): The ID of the author to check.
-
-        Returns:
-            bool: True if the author is an administrator; otherwise, False.
-        """
-        if not self._guild_db_obj:
-            self._guild_db_obj = await Guild.get(self.guild_id)
-
-        return author_id in self._guild_db_obj.administrators
-
     async def _fetch_guild_permissions(self) -> GuildPermissions:
         """Retrieve the guild's permissions."""
         if not self._guild_db_obj:
@@ -66,7 +37,7 @@ class PermissionManager:
         Returns:
             bool: True if the user can grant XP; otherwise, False.
         """
-        if await self._author_is_admin(author_id):
+        if await self.is_admin(author_id):
             return True
 
         # Grab the setting from the database
@@ -80,11 +51,11 @@ class PermissionManager:
             case PermissionsGrantXP.UNRESTRICTED:
                 return True
             case PermissionsGrantXP.PLAYER_ONLY:
-                if not await self._author_is_storyteller(author_id):
+                if not await self.is_storyteller(author_id):
                     return author_id == target_id
                 return True
             case PermissionsGrantXP.STORYTELLER_ONLY:
-                return await self._author_is_storyteller(author_id)
+                return await self.is_storyteller(author_id)
 
             case _:
                 assert_never()
@@ -104,7 +75,7 @@ class PermissionManager:
             bool: True if the user has permission to manage the campaign, False otherwise.
         """
         # Always allow administrators to manage the campaign
-        if await self._author_is_admin(author_id):
+        if await self.is_admin(author_id):
             return True
 
         # Grab the setting from the database
@@ -119,7 +90,7 @@ class PermissionManager:
                 return True
 
             case PermissionManageCampaign.STORYTELLER_ONLY:
-                return await self._author_is_storyteller(author_id)
+                return await self.is_storyteller(author_id)
 
             case _:
                 assert_never()
@@ -141,7 +112,7 @@ class PermissionManager:
                   False otherwise.
         """
         # Always allow administrators to manage traits
-        if await self._author_is_admin(author_id):
+        if await self.is_admin(author_id):
             return True
 
         # Grab the setting from the database
@@ -158,9 +129,7 @@ class PermissionManager:
 
             case PermissionsManageTraits.CHARACTER_OWNER_ONLY:
                 character = await Character.get(character_id)
-                return (author_id == character.user_owner) or await self._author_is_storyteller(
-                    author_id
-                )
+                return (author_id == character.user_owner) or await self.is_storyteller(author_id)
 
             case PermissionsManageTraits.WITHIN_24_HOURS:
                 character = await Character.get(character_id)
@@ -169,12 +138,12 @@ class PermissionManager:
                     hours=24
                 )
 
-                return (
-                    author_is_owner and is_within_24_hours
-                ) or await self._author_is_storyteller(author_id)
+                return (author_is_owner and is_within_24_hours) or await self.is_storyteller(
+                    author_id
+                )
 
             case PermissionsManageTraits.STORYTELLER_ONLY:
-                return await self._author_is_storyteller(author_id)
+                return await self.is_storyteller(author_id)
 
             case _:
                 assert_never()
@@ -194,7 +163,7 @@ class PermissionManager:
             bool: True if the user has permission to kill the character, False otherwise.
         """
         # Always allow administrators to manage succeed
-        if await self._author_is_admin(author_id):
+        if await self.is_admin(author_id):
             return True
 
         # Grab the setting from the database
@@ -210,12 +179,39 @@ class PermissionManager:
 
             case PermissionsKillCharacter.CHARACTER_OWNER_ONLY:
                 character = await Character.get(character_id)
-                return author_id == character.user_owner or await self._author_is_storyteller(
-                    author_id
-                )
+                return author_id == character.user_owner or await self.is_storyteller(author_id)
 
             case PermissionsKillCharacter.STORYTELLER_ONLY:
-                return await self._author_is_storyteller(author_id)
+                return await self.is_storyteller(author_id)
 
             case _:
                 assert_never()
+
+    async def is_storyteller(self, author_id: int) -> bool:
+        """Determine if the author is a storyteller.
+
+        Args:
+            author_id (int): The ID of the author to check.
+
+        Returns:
+            bool: True if the author is a storyteller; otherwise, False.
+        """
+        if not self._guild_db_obj:
+            self._guild_db_obj = await Guild.get(self.guild_id)
+
+        # Finally, allow storytellers to grant XP and deny all others
+        return author_id in self._guild_db_obj.storytellers
+
+    async def is_admin(self, author_id: int) -> bool:
+        """Determine if the author is an administrator.
+
+        Args:
+            author_id (int): The ID of the author to check.
+
+        Returns:
+            bool: True if the author is an administrator; otherwise, False.
+        """
+        if not self._guild_db_obj:
+            self._guild_db_obj = await Guild.get(self.guild_id)
+
+        return author_id in self._guild_db_obj.administrators

@@ -5,7 +5,10 @@
 <div class="mb-4">
     {% if character.freebie_points > 0 %}
         <a href="{{ url_for('character_edit.finalize', character_id=character.id) }}"
-           class="btn btn-primary">Finalize this character</a>
+           class="btn btn-primary"
+           data-bs-toggle="tooltip"
+           data-bs-placement="top"
+           data-bs-title="{{ character.freebie_points }} freebie points remaining">Finalize this character</a>
     {% endif %}
     <a href="{{ url_for('character_view.edit', character_id=character.id) }}"
        class="btn btn-primary">Edit Profile</a>

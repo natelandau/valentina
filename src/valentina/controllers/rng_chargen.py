@@ -314,7 +314,7 @@ class RNGCharGen:
         for cat in [primary_category, secondary_category, tertiary_category]:
             category_dots = total_dots.pop(0)
 
-            category_traits = cat.get_trait_list(CharClass[character.char_class_name])
+            category_traits = cat.get_all_class_trait_names(CharClass[character.char_class_name])
 
             trait_values = divide_total_randomly(category_dots, len(category_traits), 5, 1)
 
@@ -379,7 +379,7 @@ class RNGCharGen:
         for cat in [primary_category, secondary_category, tertiary_category]:
             category_dots = total_dots.pop(0)
 
-            category_traits = cat.get_trait_list(CharClass[character.char_class_name])
+            category_traits = cat.get_all_class_trait_names(CharClass[character.char_class_name])
             trait_values = divide_total_randomly(category_dots, len(category_traits), 5, 0)
 
             # Create the attributes and assign them to the character
@@ -432,7 +432,7 @@ class RNGCharGen:
         }
 
         disciplines_to_set = clan.value.disciplines
-        other_disciplines = TraitCategory.DISCIPLINES.get_trait_list(
+        other_disciplines = TraitCategory.DISCIPLINES.get_all_class_trait_names(
             CharClass[character.char_class_name]
         )
         disciplines_to_set.extend(
@@ -480,7 +480,9 @@ class RNGCharGen:
         logger.debug(f"Generate virtue values for {character.name}")
 
         if not (
-            virtues := TraitCategory.VIRTUES.get_trait_list(CharClass[character.char_class_name])
+            virtues := TraitCategory.VIRTUES.get_all_class_trait_names(
+                CharClass[character.char_class_name]
+            )
         ):
             return character
 
@@ -528,7 +530,7 @@ class RNGCharGen:
 
         char_class = CharClass[character.char_class_name]
 
-        if not (backgrounds := TraitCategory.BACKGROUNDS.get_trait_list(char_class)):
+        if not (backgrounds := TraitCategory.BACKGROUNDS.get_all_class_trait_names(char_class)):
             return character
 
         extra_dots_map = {
@@ -610,7 +612,7 @@ class RNGCharGen:
         await willpower.insert()
         character.traits.append(willpower)
 
-        if "Humanity" in TraitCategory.OTHER.get_trait_list(character.char_class):
+        if "Humanity" in TraitCategory.OTHER.get_all_class_trait_names(character.char_class):
             humanity = CharacterTrait(
                 name="Humanity",
                 value=conscience.value,

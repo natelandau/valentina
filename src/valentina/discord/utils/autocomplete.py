@@ -201,6 +201,38 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
     return options or [OptionChoice("No characters available", "")]
 
 
+async def select_any_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
+    """Generate a list of available characters for autocomplete. This list will include all character types.
+
+    This function fetches all storyteller characters, filters them based on the user's input, and returns a list of OptionChoice objects to populate the autocomplete list.
+
+    Args:
+        ctx (discord.AutocompleteContext): The context object containing interaction and user details.
+
+    Returns:
+        list[OptionChoice]: A list of OptionChoice objects for the autocomplete list which contains character names and ids.
+    """
+    # Prepare character data
+    all_chars = [
+        (
+            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
+            character.id,
+        )
+        async for character in Character.find_many(
+            Character.guild == ctx.interaction.guild.id,
+        )
+    ]
+
+    # Generate options
+    options = [
+        OptionChoice(name, str(char_id))
+        for name, char_id in sorted(all_chars)
+        if name.lower().startswith(ctx.value.lower())
+    ][:MAX_OPTION_LIST_SIZE]
+
+    return options or [OptionChoice("No characters available", "")]
+
+
 ################## Autocomplete Functions ##################
 async def select_aws_object_from_guild(
     ctx: discord.AutocompleteContext,

@@ -407,103 +407,6 @@ class Character(Document):
 
         return None
 
-    def sheet_section_top_items(self) -> dict[str, str]:
-        """Generate a dictionary of key attributes for the top section of a character sheet.
-
-        Compile a dictionary containing essential character attributes for display
-        in the top portion of a character sheet. Include attributes such as class,
-        concept, demeanor, nature, and class-specific traits (e.g., clan for vampires,
-        auspice for werewolves). Omit attributes that are not applicable or not set.
-
-        Format attribute names as properly titled keys and ensure all values are
-        strings, using '-' for missing or inapplicable attributes.
-
-        Returns:
-            dict[str, str]: A dictionary of character attributes, where keys are
-            attribute names and values are their corresponding string representations.
-        """
-        attributes = [
-            ("Class", self.char_class_name if self.char_class_name else "-"),
-            ("Concept", self.concept_name),
-            ("Demeanor", self.demeanor if self.demeanor else "-"),
-            ("Nature", self.nature if self.nature else "-"),
-            (
-                "Auspice",
-                self.auspice
-                if self.auspice
-                else "-"
-                if self.char_class_name.lower() in ("werewolf", "changeling")
-                else None,
-            ),
-            (
-                "Breed",
-                self.breed
-                if self.breed
-                else "-"
-                if self.char_class_name.lower() in ("werewolf", "changeling")
-                else None,
-            ),
-            (
-                "Totem",
-                self.totem
-                if self.totem
-                else "-"
-                if self.char_class_name.lower() in ("werewolf", "changeling")
-                else None,
-            ),
-            (
-                "Clan",
-                self.clan_name
-                if self.clan_name
-                else "-"
-                if self.char_class_name.lower() in ("vampire")
-                else None,
-            ),
-            (
-                "Creed",
-                self.creed_name
-                if self.creed_name
-                else "-"
-                if self.char_class_name.lower() == "hunter"
-                else None,
-            ),
-            ("Essence", self.essence),
-            (
-                "Generation",
-                self.generation
-                if self.generation
-                else "-"
-                if self.char_class_name.lower() == "vampire"
-                else None,
-            ),
-            (
-                "Sire",
-                self.sire
-                if self.sire
-                else "-"
-                if self.char_class_name.lower() == "vampire"
-                else None,
-            ),
-            ("Tradition", self.tradition),
-            (
-                "Tribe",
-                self.tribe
-                if self.tribe
-                else "-"
-                if self.char_class_name.lower() in ("werewolf", "changeling")
-                else None,
-            ),
-            ("Date of Birth", self.dob.strftime("%Y-%m-%d") if self.dob else "-"),
-            ("Age", str(self.age)),
-        ]
-
-        # Create dictionary using a comprehension with conditional inclusion
-        return {
-            name: str(value).title().replace("_", " ")
-            for name, value in attributes
-            if value and value != "None"
-        }
-
     async def update_channel_id(self, channel: discord.TextChannel) -> None:
         """Update the character's channel ID in the database.
 
@@ -513,3 +416,31 @@ class Character(Document):
         if self.channel != channel.id:
             self.channel = channel.id
             await self.save()
+
+    def fetch_traits_by_section(
+        self, category: TraitCategory, show_zeros: bool = False
+    ) -> list[CharacterTrait]:
+        """Fetch all traits for a specified category.
+
+        This method retrieves traits that belong to a given category. If `show_zeros` is set to True, traits with a value of zero will also be included in the result. Otherwise, traits with a value of zero will be excluded unless the category explicitly allows showing zero values.
+
+        Args:
+            category (TraitCategory): The category of traits to fetch.
+            show_zeros (bool, optional): Whether to include traits with a value of zero. Defaults to False.
+
+        Returns:
+            list[CharacterTrait]: A list of traits that match the specified category.
+        """
+        if show_zeros:
+            return [
+                x
+                for x in cast(list[CharacterTrait], self.traits)
+                if x.category_name == category.name
+            ]
+
+        return [
+            x
+            for x in cast(list[CharacterTrait], self.traits)
+            if x.category_name == category.name
+            and not (x.value == 0 and not category.value.show_zero)
+        ]

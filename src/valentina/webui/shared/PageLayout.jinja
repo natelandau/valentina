@@ -46,7 +46,7 @@
     <body>
         {# include nav bar only when user is logged in #}
         {% if session["USER_ID"] is defined and session["GUILD_ID"] is defined %}<NavBar />{% endif %}
-        <div class="container mt-3">
+        <div class="container mt-3 mb-5">
             {%- if attrs.get("success-msg", "") %}
                 <div class="alert alert-success" role="alert">{{ attrs.get("success-msg") }}</div>
             {% endif -%}

@@ -4,7 +4,14 @@ from quart_wtf import QuartForm
 from wtforms import DateField, SelectField, StringField, SubmitField, ValidationError
 from wtforms.validators import DataRequired, Length, Optional
 
-from valentina.constants import CharClass, HunterCreed, VampireClan
+from valentina.constants import (
+    CharClass,
+    HunterCreed,
+    VampireClan,
+    WerewolfAuspice,
+    WerewolfBreed,
+    WerewolfTribe,
+)
 from valentina.models import Character
 
 
@@ -116,23 +123,20 @@ class WerewolfClassSpecifics(QuartForm):
     title = "Werewolf Class Specifics"
     prefix = "werewolf"
 
-    breed = StringField(
+    breed = SelectField(
         "Breed",
-        default="",
-        validators=[Optional()],
-        filters=[str.strip, str.title],
+        choices=[("", "-- Select --")] + [(x.name, x.value.name) for x in WerewolfBreed],
+        validators=[DataRequired()],
     )
-    auspice = StringField(
-        "Auspice",
-        default="",
-        validators=[Optional()],
-        filters=[str.strip, str.title],
+    auspice = SelectField(
+        "Breed",
+        choices=[("", "-- Select --")] + [(x.name, x.value.name) for x in WerewolfAuspice],
+        validators=[DataRequired()],
     )
-    tribe = StringField(
-        "Tribe",
-        default="",
-        validators=[Optional()],
-        filters=[str.strip, str.title],
+    tribe = SelectField(
+        "Breed",
+        choices=[("", "-- Select --")] + [(x.name, x.value.name) for x in WerewolfTribe],
+        validators=[DataRequired()],
     )
     submit = SubmitField("Next")
 

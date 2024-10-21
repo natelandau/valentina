@@ -18,19 +18,14 @@
         <div class="row row-cols-1 row-cols-md-3 gy-5">
             {% for category, traits in trait_category.items() %}
                 <div class="col">
-                    <div class="text-center pe-5">
+                    <div class="pe-5">
                         <h4>{{ category | title }}</h4>
                     </div>
-                    <div class="row row-cols-2">
-                        {% for trait in traits %}
-                            <div class="col text-end">{{ trait.name | capitalize }}:</div>
-                            <div class="col-auto">
-                                <form>
-                                    <global.valentinaform.TraitRadioToggle form={{ form }} name={{ trait.id | string }} label={{ trait.name }} max_value={{ trait.max_value }} current-value={{ trait.value }} hx-post={{ post_url }} hx_trigger="click" />
-                                </form>
-                            </div>
-                        {% endfor %}
-                    </div>
+                    {% for trait in traits %}
+                        <form>
+                            <global.valentinaform.TraitRadioToggle form={{ form }} name={{ trait.id | string }} label={{ trait.name }} max_value={{ trait.max_value }} current-value={{ trait.value }} hx-post={{ post_url }} hx_trigger="click" />
+                        </form>
+                    {% endfor %}
                 </div>
             {% endfor %}
         </div>
