@@ -133,6 +133,10 @@ class CreateCharacterStep1(MethodView):
                 character_type=request.args.get("character_type", "player"),
                 campaign_id=request.args.get("campaign_id", session.get("ACTIVE_CAMPAIGN_ID", "")),
             ),
+            error_msg=request.args.get("error_msg", ""),
+            success_msg=request.args.get("success_msg", ""),
+            info_msg=request.args.get("info_msg", ""),
+            warning_msg=request.args.get("warning_msg", ""),
         )
 
     async def post(self) -> str | Response:
@@ -454,6 +458,9 @@ class CreateCharacterStep3(MethodView):
             url_for(
                 "character_view.view",
                 character_id=character_id,
-                success_msg="Character created successfully!",
+                error_msg=request.args.get("error_msg", ""),
+                success_msg=request.args.get("success_msg", ""),
+                info_msg=request.args.get("info_msg", ""),
+                warning_msg=request.args.get("warning_msg", ""),
             )
         )

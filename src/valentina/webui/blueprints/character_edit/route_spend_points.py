@@ -27,7 +27,7 @@ class SpendPointsType(Enum):
 
 
 class SpendPoints(MethodView):
-    """View to manage freebie point spending. This page uses HTMX to validate each trait as it is changed."""
+    """View and manage upgrading/downgrading traits for a character. Depending on the route, different types of points can be spent.  Blueprints to this class must specify the SpendPointsType as part of the view_func."""
 
     decorators: ClassVar = [requires_authorization]
 
@@ -214,6 +214,8 @@ class SpendPoints(MethodView):
             post_url=url_for(f"character_edit.{self.spend_type.value}", character_id=character_id),
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
+            info_msg=request.args.get("info_msg", ""),
+            warning_msg=request.args.get("warning_msg", ""),
         )
 
     async def post(self, character_id: str = "") -> Response:

@@ -190,6 +190,8 @@ class CharacterView(MethodView):
             campaign_experience=await self._get_campaign_experience(character, character_owner),
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
+            info_msg=request.args.get("info_msg", ""),
+            warning_msg=request.args.get("warning_msg", ""),
         )
 
 
