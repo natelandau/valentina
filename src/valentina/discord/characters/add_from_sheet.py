@@ -9,11 +9,11 @@ from beanie import WriteRules
 from discord.ui import Button
 from loguru import logger
 
-from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor, TraitCategory
+from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor
+from valentina.controllers import CharacterSheetBuilder, TraitForCreation
 from valentina.discord.bot import ValentinaContext
 from valentina.discord.models import ChannelManager
 from valentina.models import Campaign, Character, CharacterTrait, User
-from valentina.utils.helpers import get_max_trait_value
 
 
 class RatingView(discord.ui.View):
@@ -21,8 +21,7 @@ class RatingView(discord.ui.View):
 
     def __init__(  # type: ignore [no-untyped-def]
         self,
-        trait_name: str,
-        trait_category: TraitCategory,
+        trait_to_enter: TraitForCreation,
         callback,
         failback,
     ) -> None:
@@ -32,9 +31,9 @@ class RatingView(discord.ui.View):
         self.failback = failback
 
         # Trait Info
-        self.trait_name = trait_name
-        self.trait_category = trait_category
-        self.max_value = get_max_trait_value(self.trait_name, self.trait_category.name)
+        self.trait_name = trait_to_enter.name
+        self.trait_category = trait_to_enter.category
+        self.max_value = trait_to_enter.max_value
 
         # Interaction Info
         self.ratings: dict[str, int] = {}
@@ -68,10 +67,9 @@ class RatingView(discord.ui.View):
         """Respond to the button."""
         button_id = interaction.data["custom_id"]
         rating = self.ratings.get(button_id, 0)
-        max_value = self.max_value
         self.last_interaction = interaction
 
-        await self.callback(rating, max_value, interaction)
+        await self.callback(rating, interaction)
 
 
 class AddFromSheetWizard:
@@ -99,16 +97,10 @@ class AddFromSheetWizard:
         self.completed_traits: list[dict] = []
         self.campaign = campaign
 
-    def __grab_trait_names(self) -> list[tuple[str, TraitCategory]]:
+    def __grab_trait_names(self) -> list[TraitForCreation]:
         """Get the character's traits."""
-        traits = []
-        for t in sorted(TraitCategory, key=lambda x: x.value.order):
-            traits.extend(
-                [(x, t) for x in t.value.COMMON]
-                + [(x, t) for x in getattr(t.value, self.character.char_class_name)]
-            )
-
-        return traits
+        sheet_builder = CharacterSheetBuilder(character=self.character)
+        return sheet_builder.fetch_all_class_traits_unorganized()
 
     async def begin_chargen(self) -> None:
         """Start the chargen wizard."""
@@ -121,9 +113,7 @@ class AddFromSheetWizard:
 
         return self.character
 
-    async def __view_callback(
-        self, rating: int, max_value: int, interaction: discord.Interaction
-    ) -> None:
+    async def __view_callback(self, rating: int, interaction: discord.Interaction) -> None:
         """Assign the next trait.
 
         Assign a value to the previously rated trait and display the next trait or finish creating the character if finished.
@@ -134,15 +124,15 @@ class AddFromSheetWizard:
             interaction (discord.Interaction): The interaction that triggered
         """
         # Create a CharacterTrait from the first trait in the list, and remove it from the list
-        trait_name, trait_category = self.trait_list.pop(0)
+        completed_trait = self.trait_list.pop(0)
 
         # Append to dict to be turned into Character Traits later
         self.completed_traits.append(
             {
-                "name": trait_name,
-                "category_name": trait_category.name,
+                "name": completed_trait.name,
+                "category_name": completed_trait.category.name,
                 "value": rating,
-                "max_value": max_value,
+                "max_value": completed_trait.max_value,
             }
         )
 
@@ -152,7 +142,7 @@ class AddFromSheetWizard:
         else:
             # Rate the next trait
             await self.__send_messages(
-                message=f"`{trait_name} set to {rating}`",
+                message=f"`{completed_trait.name} set to {rating}`",
                 interaction=interaction,
             )
 
@@ -249,7 +239,7 @@ class AddFromSheetWizard:
             discord.errors.HTTPException: If there's an error sending the message.
             discord.errors.Forbidden: If the bot doesn't have permission to send messages.
         """
-        trait_name, trait_category = self.trait_list[0]
+        trait_to_enter = self.trait_list[0]
 
         description = "This wizard will guide you through the character creation process.\n\n"
 
@@ -258,7 +248,7 @@ class AddFromSheetWizard:
 
         # Build the embed
         embed = discord.Embed(
-            title=f"Select the rating for: {trait_name}",
+            title=f"Select the rating for: {trait_to_enter.name}",
             description=description,
             color=0x7777FF,
         )
@@ -270,7 +260,7 @@ class AddFromSheetWizard:
 
         # Build the view with the first trait in the list. (Note, it is removed from the list in the callback)
 
-        self.view = RatingView(trait_name, trait_category, self.__view_callback, self.__timeout)
+        self.view = RatingView(trait_to_enter, self.__view_callback, self.__timeout)
 
         if self.msg is None:
             # Send DM with the character generation wizard as a DM. This is the first message.

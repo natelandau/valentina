@@ -13,7 +13,7 @@ from discord.ext.commands import MemberConverter
 from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.models import ChannelManager
-from valentina.discord.utils.autocomplete import select_any_player_character, select_campaign
+from valentina.discord.utils.autocomplete import select_any_character, select_campaign
 from valentina.discord.utils.converters import ValidCampaign, ValidCharacterObject, ValidImageURL
 from valentina.discord.utils.discord_utils import assert_permissions
 from valentina.discord.views import (
@@ -93,7 +93,7 @@ class AdminCog(commands.Cog):
         character: Option(
             ValidCharacterObject,
             description="The character to transfer",
-            autocomplete=select_any_player_character,
+            autocomplete=select_any_character,
             required=True,
         ),
         campaign: Option(
@@ -174,7 +174,7 @@ class AdminCog(commands.Cog):
         character: Option(
             ValidCharacterObject,
             description="The character to kill",
-            autocomplete=select_any_player_character,
+            autocomplete=select_any_character,
             required=True,
         ),
         hidden: Option(

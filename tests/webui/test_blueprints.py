@@ -40,13 +40,20 @@ async def test_routes(
 
 
 @pytest.mark.drop_db
-async def test_character_view(debug, mock_session, test_client, character_factory) -> None:
+async def test_character_view(
+    debug, mocker, mock_session, test_client, character_factory, user_factory
+) -> None:
     """Test the character blueprint."""
+    user = user_factory.build()
+    await user.insert()
     character = character_factory.build()
     await character.insert()
+    mocker.patch(
+        "valentina.webui.blueprints.character_view.route.is_storyteller", return_value=False
+    )
 
     async with test_client.session_transaction() as session:
-        session.update(mock_session(characters=[character]))
+        session.update(mock_session(characters=[character], user_name=user.name, user_id=user.id))
 
     response = await test_client.get(f"/character/{character.id}", follow_redirects=True)
 

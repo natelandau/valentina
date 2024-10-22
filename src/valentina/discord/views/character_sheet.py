@@ -1,33 +1,30 @@
 """View a character sheet."""
 
-from typing import Any, cast
+from typing import Any
 
 import arrow
 import discord
 from discord.ext import pages
 
-from valentina.constants import (
-    MAX_DOT_DISPLAY,
-    CharClass,
-    CharSheetSection,
-    EmbedColor,
-    Emoji,
-    InventoryItemType,
-    TraitCategory,
-)
+from valentina.constants import MAX_DOT_DISPLAY, EmbedColor, InventoryItemType
+from valentina.controllers import CharacterSheetBuilder, PermissionManager
 from valentina.discord.bot import ValentinaContext
-from valentina.models import AWSService, Character, CharacterTrait, Statistics
+from valentina.models import AWSService, Character, Statistics
 
 
-def __embed1(  # noqa: C901
+async def __embed1(
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
     desc_prefix: str | None = None,
     desc_suffix: str | None = None,
     show_footer: bool = True,
+    is_storyteller: bool = False,
 ) -> discord.Embed:
     """Builds the first embed of a character sheet. This embed contains the character's name, class, experience, cool points, and attributes and abilities."""
+    sheet_builder = CharacterSheetBuilder(character=character)
+    profile_data = await sheet_builder.fetch_sheet_profile(storyteller_view=is_storyteller)
+
     if title is None:
         title = character.full_name
 
@@ -39,96 +36,30 @@ def __embed1(  # noqa: C901
         footer += f"Last updated: {modified}"
         embed.set_footer(text=footer)
 
-    embed.add_field(
-        name="Alive",
-        value=Emoji.ALIVE.value if character.is_alive else Emoji.DEAD.value,
-    )
-
-    embed.add_field(
-        name="Class",
-        value=character.char_class_name.title() if character.char_class_name else "-",
-        inline=True,
-    )
-
-    embed.add_field(
-        name="Concept",
-        value=character.concept_name.title() if character.concept_name else "-",
-        inline=True,
-    )
-
-    if character.char_class == CharClass.HUNTER:
+    for key, value in profile_data.items():
         embed.add_field(
-            name="Creed",
-            value=character.creed_name.title() if character.creed_name else "-",
-            inline=True,
+            name=key,
+            value=value,
         )
 
-    if character.char_class == CharClass.VAMPIRE:
-        embed.add_field(name="Clan", value=character.clan.name.title(), inline=True)
+    sheet_data = sheet_builder.fetch_sheet_character_traits()
+    for section in sheet_data:
         embed.add_field(
-            name="Generation",
-            value=character.generation.title() if character.generation else "-",
-            inline=True,
+            name="\u200b",
+            value=f"**{section.section.name.upper()}**",
+            inline=False,
         )
-        embed.add_field(
-            name="Sire", value=character.sire.title() if character.sire else "-", inline=True
-        )
-
-    if character.char_class == CharClass.MAGE:
-        embed.add_field(
-            name="Tradition",
-            value=character.tradition.title() if character.tradition else "-",
-            inline=True,
-        )
-        embed.add_field(
-            name="Essence",
-            value=character.essence.title() if character.essence else "-",
-            inline=True,
-        )
-
-    if character.char_class in (CharClass.WEREWOLF, CharClass.CHANGELING):
-        embed.add_field(
-            name="Tribe", value=character.tribe.title() if character.tribe else "-", inline=True
-        )
-        embed.add_field(
-            name="Auspice",
-            value=character.auspice.title() if character.auspice else "-",
-            inline=True,
-        )
-        embed.add_field(
-            name="Breed", value=character.breed.title() if character.breed else "-", inline=True
-        )
-        embed.add_field(
-            name="totem", value=character.totem.title() if character.totem else "-", inline=True
-        )
-
-    # Add the trait sections to the sheet
-    # Sort by character sheet section
-    for section in sorted(CharSheetSection, key=lambda x: x.value.order):
-        if section != CharSheetSection.NONE:
-            embed.add_field(
-                name="\u200b",
-                value=f"**{section.name.upper()}**",
-                inline=False,
-            )
-
-        # Sort by trait category
-        for cat in sorted(
-            [x for x in TraitCategory if x.value.section == section],
-            key=lambda x: x.value.order,
-        ):
-            # Find all character traits which match this trait category
+        for category in section.categories:
             trait_values = [
                 f"`{x.name:14}: {x.dots}`"
                 if x.max_value <= MAX_DOT_DISPLAY
                 else f"`{x.name:14}: {x.value}/{x.max_value}`"
-                for x in cast(list[CharacterTrait], character.traits)
-                if x.category_name == cat.name and not (x.value == 0 and not cat.value.show_zero)
+                for x in category.traits
             ]
-
-            # If traits were found, add them to the embed
             if trait_values:
-                embed.add_field(name=cat.name.title(), value="\n".join(trait_values), inline=True)
+                embed.add_field(
+                    name=category.category.name.title(), value="\n".join(trait_values), inline=True
+                )
 
     if desc_suffix:
         embed.add_field(name="\u200b", value=desc_suffix, inline=False)
@@ -229,12 +160,17 @@ async def show_sheet(
     show_footer: bool = True,
 ) -> Any:
     """Show a character sheet."""
+    permission_mng = PermissionManager(ctx.guild.id)
+    is_storyteller = await permission_mng.is_storyteller(ctx.author.id)
+
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)
 
     embeds = []
     embeds.extend(
         [
-            __embed1(character, owned_by_user, show_footer=show_footer),
+            await __embed1(
+                character, owned_by_user, show_footer=show_footer, is_storyteller=is_storyteller
+            ),
             await __embed2(ctx, character, owned_by_user, show_footer=show_footer),
         ]
     )
@@ -263,12 +199,15 @@ async def sheet_embed(
     show_footer: bool = True,
 ) -> discord.Embed:
     """Return the first page of the sheet as an embed."""
+    permission_mng = PermissionManager(ctx.guild.id)
+    is_storyteller = await permission_mng.is_storyteller(ctx.author.id)
     owned_by_user = discord.utils.get(ctx.bot.users, id=character.user_owner)
-    return __embed1(
+    return await __embed1(
         character,
         owned_by_user=owned_by_user,
         title=title,
         desc_prefix=desc_prefix,
         desc_suffix=desc_suffix,
         show_footer=show_footer,
+        is_storyteller=is_storyteller,
     )

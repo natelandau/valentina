@@ -13,16 +13,23 @@
 
 {% set current_value_int = current_value | int %}
 
-{% for i in range(max_val_int + 1) %}
-    <input type="radio"
-           class="btn-check"
-           name="{{ name }}"
-           id="{{ name }}_{{ i }}"
-           autocomplete="off"
-           value="{{ i }}"
-           {% if hx_trigger -%}hx-trigger="{{ hx_trigger }}"{%- endif %}
-           {% if hx_post -%}hx-post="{{ hx_post }}"{%- endif %}
-           {% if hx_target -%}hx-target="{{ hx_target }}"{%- endif %}
-           {% if i == current_value_int -%}checked{%- endif %}>
-    <label class="btn btn-sm btn-outline-primary" for="{{ name }}_{{ i }}">{{ i }}</label>
-{% endfor %}
+<div class="btn-toolbar mb-2" role="toolbar">
+    <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-secondary" style="width: 7rem;">{{ label }}</button>
+        {% for i in range(max_val_int + 1) %}
+            {% if i == current_value_int -%}
+                <button type="button" class="btn btn-primary" disabled>{{ i }}</button>
+            {% else %}
+                <button type="button"
+                        class="btn btn-outline-primary"
+                        id="{{ name }}_{{ i }}"
+                        name="{{ name }}"
+                        value="{{ i }}"
+                        {% if hx_trigger -%}hx-trigger="{{ hx_trigger }}"{%- endif %}
+                        {% if hx_post -%}hx-post="{{ hx_post }}"{%- endif %}
+                        {% if hx_target -%}hx-target="{{ hx_target }}"{%- endif %}>{{ i }}</button>
+            {% endif %}
+
+        {% endfor %}
+    </div>
+</div>

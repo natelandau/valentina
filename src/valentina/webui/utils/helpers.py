@@ -152,6 +152,38 @@ async def fetch_active_character(
     return None
 
 
+async def fetch_campaigns(fetch_links: bool = True) -> list[Campaign]:
+    """Fetch the guild's campaigns and update the session with their names and IDs.
+
+    Retrieve the campaigns associated with the current guild from the database,
+    optionally fetching linked objects. Update the session with a dictionary
+    mapping campaign names to their IDs if the session data has changed.
+
+    Args:
+        fetch_links (bool): Whether to fetch the database-linked objects.
+
+    Returns:
+        list[Campaign]: A list of campaigns associated with the guild.
+
+    Raises:
+        None: If the guild ID is not found in the session, the session is cleared and an empty list is returned.
+    """
+    _guard_against_mangled_session_data()
+
+    campaigns = await Campaign.find(
+        Campaign.guild == session["GUILD_ID"],
+        Campaign.is_deleted == False,  # noqa: E712
+        fetch_links=fetch_links,
+    ).to_list()
+
+    campaigns_dict = dict(sorted({x.name: str(x.id) for x in campaigns}.items()))
+    if session.get("GUILD_CAMPAIGNS", None) != campaigns_dict:
+        logger.debug("Update session with campaigns")
+        session["GUILD_CAMPAIGNS"] = campaigns_dict
+
+    return campaigns
+
+
 async def fetch_guild(fetch_links: bool = False) -> Guild:
     """Fetch the Guild from the database based on the Discord guild_id stored in the session.
 
@@ -344,38 +376,6 @@ async def fetch_storyteller_characters(fetch_links: bool = False) -> list[Charac
         session["STORYTELLER_CHARACTERS"] = character_session_list
 
     return characters
-
-
-async def fetch_campaigns(fetch_links: bool = True) -> list[Campaign]:
-    """Fetch the guild's campaigns and update the session with their names and IDs.
-
-    Retrieve the campaigns associated with the current guild from the database,
-    optionally fetching linked objects. Update the session with a dictionary
-    mapping campaign names to their IDs if the session data has changed.
-
-    Args:
-        fetch_links (bool): Whether to fetch the database-linked objects.
-
-    Returns:
-        list[Campaign]: A list of campaigns associated with the guild.
-
-    Raises:
-        None: If the guild ID is not found in the session, the session is cleared and an empty list is returned.
-    """
-    _guard_against_mangled_session_data()
-
-    campaigns = await Campaign.find(
-        Campaign.guild == session["GUILD_ID"],
-        Campaign.is_deleted == False,  # noqa: E712
-        fetch_links=fetch_links,
-    ).to_list()
-
-    campaigns_dict = dict(sorted({x.name: str(x.id) for x in campaigns}.items()))
-    if session.get("GUILD_CAMPAIGNS", None) != campaigns_dict:
-        logger.debug("Update session with campaigns")
-        session["GUILD_CAMPAIGNS"] = campaigns_dict
-
-    return campaigns
 
 
 async def is_storyteller() -> bool:

@@ -9,22 +9,21 @@ from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
 
 from valentina.constants import (
-    CharSheetSection,
     DBSyncUpdateType,
     HTTPStatus,
     InventoryItemType,
-    TraitCategory,
 )
+from valentina.controllers import CharacterSheetBuilder
 from valentina.models import (
     AWSService,
+    Campaign,
     Character,
-    CharacterTrait,
     InventoryItem,
     Statistics,
     User,
 )
 from valentina.webui import catalog
-from valentina.webui.utils import sync_char_to_discord, update_session
+from valentina.webui.utils import fetch_user, is_storyteller, sync_char_to_discord, update_session
 from valentina.webui.utils.discord import post_to_audit_log
 
 from . import form_fields
@@ -57,49 +56,6 @@ class CharacterView(MethodView):
             abort(HTTPStatus.BAD_REQUEST.value)
 
         return character
-
-    async def _get_character_sheet_traits(
-        self, character: Character
-    ) -> dict[str, dict[str, list[CharacterTrait]]]:
-        """Return all character traits grouped by character sheet section and category.
-
-        Retrieve the character's traits from the database and organize them into a
-        dictionary grouped by character sheet sections and categories. Only include
-        traits with non-zero values, unless the category is configured to show zero values.
-
-        Args:
-            character (Character): The character whose traits are to be retrieved and grouped.
-
-        Returns:
-            dict[str, dict[str, list[CharacterTrait]]]: A nested dictionary where the top-level
-                keys are section names, the second-level keys are category names, and the values
-                are lists of `CharacterTrait` objects associated with each category.
-        """
-        character_traits = await CharacterTrait.find(
-            CharacterTrait.character == str(character.id)
-        ).to_list()
-
-        sheet_traits: dict[str, dict[str, list[CharacterTrait]]] = {}
-
-        for section in sorted(CharSheetSection, key=lambda x: x.value.order):
-            if section != CharSheetSection.NONE:
-                sheet_traits[section.name] = {}
-
-            # Sort by trait category
-            for cat in sorted(
-                [x for x in TraitCategory if x.value.section == section],
-                key=lambda x: x.value.order,
-            ):
-                for x in character_traits:
-                    if x.category_name == cat.name and not (
-                        x.value == 0 and not cat.value.show_zero
-                    ):
-                        try:
-                            sheet_traits[section.name][x.category_name].append(x)
-                        except KeyError:
-                            sheet_traits[section.name][x.category_name] = [x]
-
-        return sheet_traits
 
     async def _get_character_inventory(self, character: Character) -> dict:
         """Retrieve and return the character's inventory organized by item type.
@@ -143,6 +99,17 @@ class CharacterView(MethodView):
 
         return [aws_svc.get_url(x) for x in character.images]
 
+    async def _get_campaign_experience(self, character: Character, user: User) -> int:
+        """Retrieve and return the character's campaign experience."""
+        # Only users who own a character should be able to upgrade the character with their experience points.  In addition, storyteller characters do not require experience points to upgrade.
+        session_user = await fetch_user()
+        if int(session_user.id) != int(character.user_owner) or character.type_storyteller:
+            return 0
+
+        campaign = await Campaign.get(character.campaign)
+        campaign_experience, _, _ = user.fetch_campaign_xp(campaign)
+        return campaign_experience
+
     async def _handle_tabs(self, character: Character, character_owner: User) -> str:
         """Handle HTMX tab requests and render the appropriate content.
 
@@ -159,10 +126,17 @@ class CharacterView(MethodView):
             404: If the requested tab is not recognized.
         """
         if request.args.get("tab") == "sheet":
+            sheet_builder = CharacterSheetBuilder(character=character)
+            sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
+            storyteller_data = await is_storyteller()
+            profile_data = await sheet_builder.fetch_sheet_profile(
+                storyteller_view=storyteller_data
+            )
             return catalog.render(
                 "character_view.Sheet",
                 character=character,
-                traits=await self._get_character_sheet_traits(character),
+                sheet_data=sheet_data,
+                profile_data=profile_data,
                 character_owner=character_owner,
             )
 
@@ -196,19 +170,26 @@ class CharacterView(MethodView):
 
     async def get(self, character_id: str = "") -> str:
         """Handle GET requests."""
-        success_msg = request.args.get("success_msg")
         character = await self._get_character_object(character_id)
         character_owner = await User.get(character.user_owner, fetch_links=False)
 
         if request.headers.get("HX-Request"):
             return await self._handle_tabs(character, character_owner=character_owner)
 
+        sheet_builder = CharacterSheetBuilder(character=character)
+        sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
+        storyteller_data = await is_storyteller()
+        profile_data = await sheet_builder.fetch_sheet_profile(storyteller_view=storyteller_data)
+
         return catalog.render(
             "character_view.Main",
             character=character,
-            traits=await self._get_character_sheet_traits(character),
-            success_msg=success_msg,
+            profile_data=profile_data,
+            sheet_data=sheet_data,
             character_owner=character_owner,
+            campaign_experience=await self._get_campaign_experience(character, character_owner),
+            error_msg=request.args.get("error_msg", ""),
+            success_msg=request.args.get("success_msg", ""),
         )
 
 

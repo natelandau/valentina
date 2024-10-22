@@ -59,13 +59,13 @@ def test_concept_get_member_by_value():
 @pytest.mark.no_db
 def test_trait_category_enum():
     """Test the TraitCategory enum."""
-    assert TraitCategory.PHYSICAL.get_trait_list(CharClass.MORTAL) == [
+    assert TraitCategory.PHYSICAL.get_all_class_trait_names(CharClass.MORTAL) == [
         "Strength",
         "Dexterity",
         "Stamina",
     ]
 
-    assert TraitCategory.TALENTS.get_trait_list(CharClass.WEREWOLF) == [
+    assert TraitCategory.TALENTS.get_all_class_trait_names(CharClass.WEREWOLF) == [
         "Alertness",
         "Athletics",
         "Brawl",
