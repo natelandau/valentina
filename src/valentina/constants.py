@@ -248,7 +248,7 @@ class MaxTraitValue(Enum):
     KNOWLEDGES = 5
     DISCIPLINES = 5
     SPHERES = 5
-    GIFTS = 5
+    GIFTS = 1
     MERITS = 5
     FLAWS = 5
     BACKGROUNDS = 5
@@ -613,18 +613,23 @@ class TraitCategory(Enum):
         show_zero=True,
         COMMON=[
             "Animal Ken",
+            "Crafts",
             "Drive",
             "Etiquette",
             "Firearms",
+            "Larceny",
             "Melee",
             "Performance",
+            "Repair",
             "Security",
             "Stealth",
             "Survival",
         ],
-        MORTAL=["Crafts", "Larceny", "Repair"],
-        MAGE=["Crafts", "Technology"],
-        HUNTER=["Crafts", "Demolitions", "Larceny", "Technology", "Repair"],
+        MORTAL=["Demolitions", "Technology"],
+        MAGE=["Technology"],
+        HUNTER=["Demolitions", "Technology"],
+        WEREWOLF=[],
+        CHANGELING=[],
     )
     KNOWLEDGES = TraitCategoryValue(
         classes=[CharClass.COMMON],
@@ -644,7 +649,8 @@ class TraitCategory(Enum):
             "Politics",
             "Science",
         ],
-        WEREWOLF=["Rituals", "Enigmas"],
+        WEREWOLF=["Rituals", "Enigmas", "Cosmology", "Herbalism", "Wyrm Lore"],
+        CHANGELING=["Rituals", "Enigmas", "Cosmology", "Herbalism", "Wyrm Lore"],
         MAGE=["Cosmology", "Enigmas"],
     )
     SPHERES = TraitCategoryValue(
@@ -771,7 +777,6 @@ class TraitCategory(Enum):
         VAMPIRE=["Conscience", "Self-Control", "Courage"],
         MAGE=["Conscience", "Self-Control", "Courage"],
         GHOUL=["Conscience", "Self-Control", "Courage"],
-        CHANGELING=["Conscience", "Self-Control", "Courage"],
         HUNTER=["Mercy", "Vision", "Zeal"],
         SPECIAL=["Conscience", "Self-Control", "Courage"],
     )

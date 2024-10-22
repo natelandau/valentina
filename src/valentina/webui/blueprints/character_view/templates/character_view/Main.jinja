@@ -3,6 +3,7 @@
     character_owner: User,
     sheet_data: list[SheetSection],
     profile_data: dict[str,str],
+    campaign_experience: int = 0,
 #}
 <PageLayout title={{ character.name }} _attrs={{ attrs }}>
     <global.PageTitle>{{ character.full_name }}</global.PageTitle>

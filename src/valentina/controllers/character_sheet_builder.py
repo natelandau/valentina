@@ -16,6 +16,10 @@ class TraitForCreation:
     max_value: int
     category: TraitCategory
 
+    def __lt__(self, other: "TraitForCreation") -> bool:
+        """Sort by name."""
+        return self.name < other.name
+
 
 @dataclass
 class SectionCategory:
@@ -24,6 +28,11 @@ class SectionCategory:
     category: TraitCategory
     traits: list[CharacterTrait] = field(default_factory=list)
     traits_for_creation: list[TraitForCreation] = field(default_factory=list)
+
+    @property
+    def all_traits(self) -> list[CharacterTrait | TraitForCreation]:
+        """All traits for the category."""
+        return sorted(self.traits + self.traits_for_creation)
 
 
 @dataclass
@@ -83,7 +92,7 @@ class CharacterSheetBuilder:
 
         return sheet
 
-    def fetch_all_possible_traits(self) -> list[SheetSection]:
+    def fetch_all_class_traits(self) -> list[SheetSection]:
         """Fetches all possible traits for a character's class.  This method best suited for character creation where a form needs to be presented to the user for entering initial trait values.
 
         Returns:
@@ -117,14 +126,14 @@ class CharacterSheetBuilder:
 
         return sheet
 
-    def fetch_all_possible_traits_unorganized(self) -> list[TraitForCreation]:
+    def fetch_all_class_traits_unorganized(self) -> list[TraitForCreation]:
         """Fetches all possible traits for a character's class in a flat list.  This method best suited for character creation where a form needs to be presented to the user for entering initial trait values.
 
         Returns:
             list[TraitForCreation]: A flat list of TraitForCreation objects.
         """
         unorganised_traits = []
-        for s in self.fetch_all_possible_traits():
+        for s in self.fetch_all_class_traits():
             for category in s.categories:
                 unorganised_traits.extend(list(category.traits_for_creation))
         return unorganised_traits
@@ -193,3 +202,25 @@ class CharacterSheetBuilder:
             for k, v in profile.items()
             if v and v != "None"
         }
+
+    def fetch_character_plus_all_class_traits(self) -> list[SheetSection]:
+        """Fetches all a character's traits and suppliments them with all available traits for their character's class. This is useful for spending freebie points or experience points where players may want to assign points to traits their characters do not currently posses.
+
+            Merge the traits and traits_for_creation lists for each category to get a full list of possible traits for the character sheet.
+
+        Returns:
+            list[SheetSection]: A list of SheetSection objects representing the organized character sheet.
+        """
+        all_character_traits = self.fetch_sheet_character_traits(show_zeros=True)
+        all_class_traits = self.fetch_all_class_traits_unorganized()
+
+        for section in all_character_traits:
+            for category in section.categories:
+                all_class_category_traits = [
+                    t for t in all_class_traits if t.category == category.category
+                ]
+                for trait in all_class_category_traits:
+                    if trait.name not in [x.name for x in category.traits]:
+                        category.traits_for_creation.append(trait)
+
+        return all_character_traits

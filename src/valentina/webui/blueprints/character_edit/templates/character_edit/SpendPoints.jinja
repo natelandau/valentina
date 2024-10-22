@@ -1,0 +1,63 @@
+{# def
+    character:Character,
+    form:QuartForm,
+    post_url:str,
+    traits: list[SheetSection],
+    spend_type: SpendPointsType,
+    campaign_experience: int = 0,
+#}
+
+<PageLayout title="Spend {{ spend_type.value }} points" _attrs={{ attrs }}>
+    <global.PageTitle right_button="true" right_button_text="Go Back" right_button_url={{ url_for('character_view.view', character_id=character.id) }}>{{ character.name }}: Spend {{ spend_type.value | title }} Points</global.PageTitle>
+
+    <div class="alert alert-info">
+        Spend your {{ spend_type.value }} points to finalize your character.  Any trait values changed downward will have their value added to your {{ spend_type.value }} points.
+        <br>
+        <br>
+        {% if spend_type.name == "FREEBIE" %}
+            <span class="fs-5">You have <strong class="font-monospace">{{ character.freebie_points }}</strong> freebie points to spend.</span>
+        {% endif %}
+        {% if spend_type.name == "EXPERIENCE" %}
+            <span class="fs-5">You have <strong class="font-monospace">{{ campaign_experience }}</strong> experience points to spend.</span>
+        {% endif %}
+    </div>
+
+    {% for section in traits %}
+        <div class="separator">{{ section.section.name }}</div>
+        <div class="row row-cols-1 row-cols-md-3 gy-5">
+            {% for category in section.categories %}
+                <div class="col">
+                    <div class="pe-5">
+                        <h4>{{ category.category.name | title }}</h4>
+                    </div>
+                    {% for trait in category.all_traits %}
+
+                        {% set computed_id = trait.id if trait.id is defined else "NEW" ~ "_" ~ trait.name ~ "_" ~ trait.category.name ~ "_" ~ trait.max_value | string %}
+
+                        {% set current_value = trait.value if trait.value is defined else 0 %}
+
+                        <form>
+                            <global.valentinaform.TraitRadioToggle form={{ form }} name={{ computed_id | string }} label={{ trait.name }} max_value={{ trait.max_value }} current-value={{ current_value }} hx-post={{ post_url }} hx_trigger="click" />
+                        </form>
+                    {% endfor %}
+                    <form hx-post="{{ post_url }}" method="post">
+                        <div class="input-group" style="width: 17rem">
+
+                            {% set custom_id = "CUSTOM_" ~ category.category.name | string %}
+
+                            <input type="text"
+                                   name="{{ custom_id }}"
+                                   class="form-control form-control-sm"
+                                   placeholder="Add new trait"
+                                   aria-describedby="button-addon2">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    id="button-addon2"
+                                    type="submit">Add at 1 dot</button>
+                        </div>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+</PageLayout>

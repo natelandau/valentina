@@ -100,7 +100,7 @@ class AddFromSheetWizard:
     def __grab_trait_names(self) -> list[TraitForCreation]:
         """Get the character's traits."""
         sheet_builder = CharacterSheetBuilder(character=self.character)
-        return sheet_builder.fetch_all_possible_traits_unorganized()
+        return sheet_builder.fetch_all_class_traits_unorganized()
 
     async def begin_chargen(self) -> None:
         """Start the chargen wizard."""

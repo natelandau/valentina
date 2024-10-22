@@ -83,6 +83,10 @@ class CharacterTrait(Document):
     name: str
     value: int
 
+    def __lt__(self, other: "CharacterTrait") -> bool:
+        """Sort by name."""
+        return self.name < other.name
+
     @property
     def dots(self) -> str:
         """Return the trait's value as a string of dots."""
@@ -265,12 +269,13 @@ class Character(Document):
 
     async def add_trait(
         self,
-        category: TraitCategory,
-        name: str,
-        value: int,
+        category: TraitCategory | None = None,
+        name: str | None = None,
+        value: int | None = 0,
         max_value: int | None = None,
         display_on_sheet: bool = True,
         is_custom: bool = True,
+        character_trait: CharacterTrait | None = None,
     ) -> "CharacterTrait":
         """Create a new trait for the character.
 
@@ -285,6 +290,7 @@ class Character(Document):
             max_value (int | None, optional): The maximum value for the trait. Defaults to None.
             display_on_sheet (bool, optional): Whether to display the trait on the character sheet. Defaults to True.
             is_custom (bool, optional): Whether the trait is custom. Defaults to True.
+            character_trait (CharacterTrait): An existing trait object to add to the character. Defaults to None.
 
         Returns:
             CharacterTrait: The newly created trait object.
@@ -292,6 +298,23 @@ class Character(Document):
         Raises:
             errors.TraitExistsError: If a trait with the same name and category already exists for the character.
         """
+        await self.fetch_all_links()
+
+        if character_trait:
+            if character_trait.character != str(self.id):
+                character_trait.character = str(self.id)
+
+            await character_trait.save()
+
+            if character_trait not in self.traits:
+                self.traits.append(character_trait)
+                await self.save()
+            return character_trait
+
+        if not category or not name or not value:
+            msg = "Category, name, and value are required to create a new trait."
+            raise ValueError(msg)
+
         # Check if the trait already exists
         for trait in cast(list[CharacterTrait], self.traits):
             if trait.name == name and trait.category_name == category.name.upper():
@@ -432,15 +455,21 @@ class Character(Document):
             list[CharacterTrait]: A list of traits that match the specified category.
         """
         if show_zeros:
-            return [
+            return sorted(
+                [
+                    x
+                    for x in cast(list[CharacterTrait], self.traits)
+                    if x.category_name == category.name
+                ],
+                key=lambda x: x.name,
+            )
+
+        return sorted(
+            [
                 x
                 for x in cast(list[CharacterTrait], self.traits)
                 if x.category_name == category.name
-            ]
-
-        return [
-            x
-            for x in cast(list[CharacterTrait], self.traits)
-            if x.category_name == category.name
-            and not (x.value == 0 and not category.value.show_zero)
-        ]
+                and not (x.value == 0 and not category.value.show_zero)
+            ],
+            key=lambda x: x.name,
+        )

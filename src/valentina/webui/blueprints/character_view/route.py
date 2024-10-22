@@ -16,13 +16,14 @@ from valentina.constants import (
 from valentina.controllers import CharacterSheetBuilder
 from valentina.models import (
     AWSService,
+    Campaign,
     Character,
     InventoryItem,
     Statistics,
     User,
 )
 from valentina.webui import catalog
-from valentina.webui.utils import is_storyteller, sync_char_to_discord, update_session
+from valentina.webui.utils import fetch_user, is_storyteller, sync_char_to_discord, update_session
 from valentina.webui.utils.discord import post_to_audit_log
 
 from . import form_fields
@@ -98,6 +99,17 @@ class CharacterView(MethodView):
 
         return [aws_svc.get_url(x) for x in character.images]
 
+    async def _get_campaign_experience(self, character: Character, user: User) -> int:
+        """Retrieve and return the character's campaign experience."""
+        # Only users who own a character should be able to upgrade the character with their experience points.  In addition, storyteller characters do not require experience points to upgrade.
+        session_user = await fetch_user()
+        if int(session_user.id) != int(character.user_owner) or character.type_storyteller:
+            return 0
+
+        campaign = await Campaign.get(character.campaign)
+        campaign_experience, _, _ = user.fetch_campaign_xp(campaign)
+        return campaign_experience
+
     async def _handle_tabs(self, character: Character, character_owner: User) -> str:
         """Handle HTMX tab requests and render the appropriate content.
 
@@ -158,7 +170,6 @@ class CharacterView(MethodView):
 
     async def get(self, character_id: str = "") -> str:
         """Handle GET requests."""
-        success_msg = request.args.get("success_msg")
         character = await self._get_character_object(character_id)
         character_owner = await User.get(character.user_owner, fetch_links=False)
 
@@ -175,8 +186,10 @@ class CharacterView(MethodView):
             character=character,
             profile_data=profile_data,
             sheet_data=sheet_data,
-            success_msg=success_msg,
             character_owner=character_owner,
+            campaign_experience=await self._get_campaign_experience(character, character_owner),
+            error_msg=request.args.get("error_msg", ""),
+            success_msg=request.args.get("success_msg", ""),
         )
 
 

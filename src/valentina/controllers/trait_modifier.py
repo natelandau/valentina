@@ -50,6 +50,17 @@ class TraitModifier:
 
         return True
 
+    async def _save_trait(self, trait: CharacterTrait) -> None:
+        """Saves the updates to the trait and adds the trait to the character if it's not already there.
+
+        Args:
+            trait (CharacterTrait): The trait to add.
+        """
+        await trait.save()
+
+        await self.character.fetch_all_links()
+        await self.character.add_trait(character_trait=trait)
+
     def cost_to_upgrade(self, trait: CharacterTrait, amount: int = 1) -> int:
         """Calculate the cost to upgrade a trait.
 
@@ -122,26 +133,26 @@ class TraitModifier:
 
         return savings
 
-    async def upgrade_with_xp(
-        self, trait: CharacterTrait, campaign: "Campaign", amount: int = 1
+    async def downgrade_with_freebie(
+        self, trait: CharacterTrait, amount: int = 1
     ) -> CharacterTrait:
-        """Spend experience points to upgrade a trait.
+        """Downgrade a trait with freebie points.
 
         Args:
-            trait (CharacterTrait): The trait to upgrade.
-            campaign (Campaign): The campaign to spend experience points from.
-            amount (int): The amount of times to upgrade the trait. Defaults to 1.
+            trait (CharacterTrait): The trait to downgrade.
+            amount (int): The amount of times to downgrade the trait. Defaults to 1.
 
         Returns:
-            CharacterTrait: The upgraded trait.
+            CharacterTrait: The downgraded trait.
         """
-        self._can_trait_be_upgraded(trait, amount)
+        if self._can_trait_be_downgraded(trait, amount):
+            savings_from_downgrade = self.savings_from_downgrade(trait, amount)
 
-        cost_to_upgrade = self.cost_to_upgrade(trait, amount)
+            self.character.freebie_points = self.character.freebie_points + savings_from_downgrade
+            trait.value = trait.value - amount
 
-        await self.user.spend_campaign_xp(campaign, cost_to_upgrade)
-        trait.value = trait.value + amount
-        await trait.save()
+            await self.character.save()
+            await self._save_trait(trait)
 
         return trait
 
@@ -165,7 +176,7 @@ class TraitModifier:
                 campaign, savings_from_downgrade, increase_lifetime=False
             )
             trait.value = trait.value - amount
-            await trait.save()
+            await self._save_trait(trait)
 
         return trait
 
@@ -191,29 +202,29 @@ class TraitModifier:
         trait.value = trait.value + amount
 
         await self.character.save()
-        await trait.save()
+        await self._save_trait(trait)
 
         return trait
 
-    async def downgrade_with_freebie(
-        self, trait: CharacterTrait, amount: int = 1
+    async def upgrade_with_xp(
+        self, trait: CharacterTrait, campaign: "Campaign", amount: int = 1
     ) -> CharacterTrait:
-        """Downgrade a trait with freebie points.
+        """Spend experience points to upgrade a trait.
 
         Args:
-            trait (CharacterTrait): The trait to downgrade.
-            amount (int): The amount of times to downgrade the trait. Defaults to 1.
+            trait (CharacterTrait): The trait to upgrade.
+            campaign (Campaign): The campaign to spend experience points from.
+            amount (int): The amount of times to upgrade the trait. Defaults to 1.
 
         Returns:
-            CharacterTrait: The downgraded trait.
+            CharacterTrait: The upgraded trait.
         """
-        if self._can_trait_be_downgraded(trait, amount):
-            savings_from_downgrade = self.savings_from_downgrade(trait, amount)
+        self._can_trait_be_upgraded(trait, amount)
 
-            self.character.freebie_points = self.character.freebie_points + savings_from_downgrade
-            trait.value = trait.value - amount
+        cost_to_upgrade = self.cost_to_upgrade(trait, amount)
 
-            await self.character.save()
-            await trait.save()
+        await self.user.spend_campaign_xp(campaign, cost_to_upgrade)
+        trait.value = trait.value + amount
+        await self._save_trait(trait)
 
         return trait

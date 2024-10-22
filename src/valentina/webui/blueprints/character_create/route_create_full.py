@@ -393,7 +393,7 @@ class CreateCharacterStep3(MethodView):
 
         character = await Character.get(character_id, fetch_links=True)
         sheet_builder = CharacterSheetBuilder(character=character)
-        sheet_traits = sheet_builder.fetch_all_possible_traits()
+        sheet_traits = sheet_builder.fetch_all_class_traits()
 
         return catalog.render(
             "character_create.Step3",

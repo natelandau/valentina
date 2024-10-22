@@ -86,11 +86,11 @@ async def test_fetch_sheet_profile(debug, character_factory, user_factory, char_
     assert storyteller_sheet_profile["Player"] == "Test User"
 
 
-def test_fetch_all_possible_traits(debug, character_factory) -> None:
-    """Test the fetch_all_possible_traits method."""
+def test_fetch_all_class_traits(debug, character_factory) -> None:
+    """Test the fetch_all_class_traits method."""
     character = character_factory.build(char_class_name=CharClass.WEREWOLF.name)
     sheet_builder = CharacterSheetBuilder(character=character)
-    sheet_data = sheet_builder.fetch_all_possible_traits()
+    sheet_data = sheet_builder.fetch_all_class_traits()
 
     assert len(sheet_data) == 3
     assert sheet_data[0].section == CharSheetSection.ATTRIBUTES
@@ -107,5 +107,5 @@ def test_fetch_all_possible_traits(debug, character_factory) -> None:
     for background in ["Resources", "Contacts", "Allies", "Retainers", "Influence", "Pure Breed"]:
         assert background in [x.name for x in sheet_data[2].categories[0].traits_for_creation]
 
-    unorganized_traits = sheet_builder.fetch_all_possible_traits_unorganized()
-    assert len(unorganized_traits) == 64
+    unorganized_traits = sheet_builder.fetch_all_class_traits_unorganized()
+    assert len(unorganized_traits) == 70
