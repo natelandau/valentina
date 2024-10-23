@@ -29,7 +29,7 @@ from valentina.constants import (
 )
 from valentina.models.aws import AWSService
 from valentina.utils import errors
-from valentina.utils.helpers import get_max_trait_value, num_to_circles, time_now
+from valentina.utils.helpers import num_to_circles, time_now
 
 from .note import Note
 
@@ -269,28 +269,12 @@ class Character(Document):
 
     async def add_trait(
         self,
-        category: TraitCategory | None = None,
-        name: str | None = None,
-        value: int | None = 0,
-        max_value: int | None = None,
-        display_on_sheet: bool = True,
-        is_custom: bool = True,
-        character_trait: CharacterTrait | None = None,
+        trait: "CharacterTrait",
     ) -> "CharacterTrait":
-        """Create a new trait for the character.
-
-        Add a new trait to the character's list of traits. Check if the trait already exists,
-        determine if it's a custom trait, and set the appropriate maximum value. Save the new
-        trait to the database and update the character's trait list.
+        """Associate a trait with the character.
 
         Args:
-            category (TraitCategory): The category of the trait.
-            name (str): The name of the trait.
-            value (int): The initial value of the trait.
-            max_value (int | None, optional): The maximum value for the trait. Defaults to None.
-            display_on_sheet (bool, optional): Whether to display the trait on the character sheet. Defaults to True.
-            is_custom (bool, optional): Whether the trait is custom. Defaults to True.
-            character_trait (CharacterTrait): An existing trait object to add to the character. Defaults to None.
+            trait (CharacterTrait): The trait to add to the character.
 
         Returns:
             CharacterTrait: The newly created trait object.
@@ -300,50 +284,28 @@ class Character(Document):
         """
         await self.fetch_all_links()
 
-        if character_trait:
-            if character_trait.character != str(self.id):
-                character_trait.character = str(self.id)
+        for existing_trait in cast(list[CharacterTrait], self.traits):
+            # If the trait already exists in the character's trait list, return it
+            if trait.id == existing_trait.id:
+                await trait.save()
+                return trait
 
-            await character_trait.save()
+            # Because a user can manually create a trait with the same name, we need to check for that as well
+            if (
+                trait.name.lower() == existing_trait.name.lower()
+                and trait.category_name == existing_trait.category_name
+            ):
+                msg = f"Trait named '{trait.name}' already exists in category '{trait.category_name}' for character '{self.name}'"
+                raise errors.TraitExistsError(msg)
 
-            if character_trait not in self.traits:
-                self.traits.append(character_trait)
-                await self.save()
-            return character_trait
+        if trait.character != str(self.id):
+            trait.character = str(self.id)
 
-        if not category or not name or not value:
-            msg = "Category, name, and value are required to create a new trait."
-            raise ValueError(msg)
-
-        # Check if the trait already exists
-        for trait in cast(list[CharacterTrait], self.traits):
-            if trait.name == name and trait.category_name == category.name.upper():
-                raise errors.TraitExistsError
-
-        # Check if the trait is custom
-        if name.lower() in [x.lower() for x in category.value.COMMON] + [
-            x.lower() for x in getattr(category.value, self.char_class_name, [])
-        ]:
-            is_custom = False
-            max_value = get_max_trait_value(name, category.name)
-
-        # Create the new trait
-        new_trait = CharacterTrait(
-            category_name=category.name,
-            character=str(self.id),
-            name=name,
-            value=value,
-            display_on_sheet=display_on_sheet,
-            is_custom=is_custom,
-            max_value=max_value or get_max_trait_value(name, category.name),
-        )
-        await new_trait.save()
-
-        # Add the new trait to the character
-        self.traits.append(new_trait)
+        await trait.save()
+        self.traits.append(trait)
         await self.save()
 
-        return new_trait
+        return trait
 
     async def associate_with_campaign(self, new_campaign: "Campaign") -> bool:
         """Associate a character with a campaign.

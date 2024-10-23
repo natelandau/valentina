@@ -8,11 +8,22 @@ blueprint = Blueprint("character_edit", __name__)
 
 blueprint.add_url_rule(
     "/character/<string:character_id>/spendfreebie",
-    view_func=SpendPoints.as_view("freebie", spend_type=SpendPointsType.FREEBIE),
+    view_func=SpendPoints.as_view(
+        SpendPointsType.FREEBIE.value, spend_type=SpendPointsType.FREEBIE
+    ),
     methods=["GET", "POST"],
 )
 blueprint.add_url_rule(
     "/character/<string:character_id>/spendexperience",
-    view_func=SpendPoints.as_view("experience", spend_type=SpendPointsType.EXPERIENCE),
+    view_func=SpendPoints.as_view(
+        SpendPointsType.EXPERIENCE.value, spend_type=SpendPointsType.EXPERIENCE
+    ),
+    methods=["GET", "POST"],
+)
+blueprint.add_url_rule(
+    "/character/<string:character_id>/spendstoryteller",
+    view_func=SpendPoints.as_view(
+        SpendPointsType.STORYTELLER.value, spend_type=SpendPointsType.STORYTELLER
+    ),
     methods=["GET", "POST"],
 )

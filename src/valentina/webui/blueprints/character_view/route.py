@@ -178,8 +178,8 @@ class CharacterView(MethodView):
 
         sheet_builder = CharacterSheetBuilder(character=character)
         sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
-        storyteller_data = await is_storyteller()
-        profile_data = await sheet_builder.fetch_sheet_profile(storyteller_view=storyteller_data)
+        user_is_storyteller = await is_storyteller()
+        profile_data = await sheet_builder.fetch_sheet_profile(storyteller_view=user_is_storyteller)
 
         return catalog.render(
             "character_view.Main",

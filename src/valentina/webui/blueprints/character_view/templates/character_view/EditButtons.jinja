@@ -20,5 +20,8 @@
            data-bs-placement="top"
            data-bs-title="{{ campaign_experience }} experience points remaining">Spend experience</a>
     {% endif %}
-
+    {% if session["IS_STORYTELLER"] %}
+        <a href="{{ url_for('character_edit.storyteller', character_id=character.id) }}"
+           class="btn btn-info">Storyteller Update Character</a>
+    {% endif %}
 </div>

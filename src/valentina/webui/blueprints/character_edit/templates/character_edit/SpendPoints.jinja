@@ -8,17 +8,21 @@
 #}
 
 <PageLayout title="Spend {{ spend_type.value }} points" _attrs={{ attrs }}>
-    <global.PageTitle right_button="true" right_button_text="Go Back" right_button_url={{ url_for('character_view.view', character_id=character.id) }}>{{ character.name }}: Spend {{ spend_type.value | title }} Points</global.PageTitle>
+    <global.PageTitle right_button="true" right_button_text="Go Back" right_button_url={{ url_for('character_view.view', character_id=character.id) }}>Update {{ character.name }}</global.PageTitle>
 
     <div class="alert alert-info">
-        Spend your {{ spend_type.value }} points to finalize your character.  Any trait values changed downward will have their value added to your {{ spend_type.value }} points.
-        <br>
-        <br>
-        {% if spend_type.name == "FREEBIE" %}
-            <span class="fs-5">You have <strong class="font-monospace">{{ character.freebie_points }}</strong> freebie points to spend.</span>
-        {% endif %}
-        {% if spend_type.name == "EXPERIENCE" %}
-            <span class="fs-5">You have <strong class="font-monospace">{{ campaign_experience }}</strong> experience points to spend.</span>
+        {% if spend_type.name == "STORYTELLER" %}
+            Storytellers can update any character without needing experience.
+        {% else %}
+            Spend your {{ spend_type.value }} points to finalize your character.  Any trait values changed downward will have their value added to your {{ spend_type.value }} points.
+            <br>
+            <br>
+            {% if spend_type.name == "FREEBIE" %}
+                <span class="fs-5">You have <strong class="font-monospace">{{ character.freebie_points }}</strong> freebie points to spend.</span>
+            {% endif %}
+            {% if spend_type.name == "EXPERIENCE" %}
+                <span class="fs-5">You have <strong class="font-monospace">{{ campaign_experience }}</strong> experience points to spend.</span>
+            {% endif %}
         {% endif %}
     </div>
 

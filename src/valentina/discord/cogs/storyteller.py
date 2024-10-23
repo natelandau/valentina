@@ -55,7 +55,7 @@ from valentina.discord.views import (
     sheet_embed,
     show_sheet,
 )
-from valentina.models import AWSService, Character, User
+from valentina.models import AWSService, Character, CharacterTrait, User
 from valentina.utils.helpers import (
     fetch_data_from_url,
 )
@@ -459,7 +459,14 @@ class StoryTeller(commands.Cog):
         if not is_confirmed:
             return
 
-        await character.add_trait(category, name.title(), value, max_value=max_value)
+        trait = CharacterTrait(
+            name=name.title(),
+            category_name=category.name,
+            value=value,
+            max_value=max_value,
+            character=str(character.id),
+        )
+        await character.add_trait(trait)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

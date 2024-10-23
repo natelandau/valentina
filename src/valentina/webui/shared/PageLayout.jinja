@@ -48,7 +48,7 @@
         {% if session["USER_ID"] is defined and session["GUILD_ID"] is defined %}<NavBar />{% endif %}
 
         <div class="container mt-3 mb-5">
-            <div class="toast-container position-fixed bottom-0 end-0 p-3">
+            <div class="toast-container top-0 start-50 translate-middle-x mt-5 pt-5">
                 {%- if attrs.get("success-msg", "") %}
 
                     <div class="toast align-items-center text-bg-success border-0"
@@ -67,7 +67,7 @@
                     </div>
                 {% endif -%}
                 {%- if attrs.get("error-msg", "") %}
-                    <div class="toast align-items-center text-bg-success border-0"
+                    <div class="toast align-items-center text-bg-danger border-0"
                          role="alert"
                          aria-live="assertive"
                          aria-atomic="true">

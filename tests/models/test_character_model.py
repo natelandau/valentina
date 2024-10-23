@@ -73,114 +73,57 @@ async def test_full_name(character_factory):
 
 
 @pytest.mark.drop_db
-async def test_add_custom_trait(character_factory):
-    """Test the add_trait method."""
-    # GIVEN a character
-    character = character_factory.build()
-    await character.insert()
-
-    # WHEN adding a trait
-    trait = await character.add_trait(TraitCategory.BACKGROUNDS, "Something", 3, 5)
-
-    # THEN the trait is added to the character
-    assert len(character.traits) == 1
-    assert character.traits[0] == trait
-
-    # AND the trait is saved to the database
-    all_traits = await CharacterTrait.find_all().to_list()
-    assert len(all_traits) == 1
-    assert all_traits[0].name == "Something"
-    assert all_traits[0].value == 3
-    assert all_traits[0].max_value == 5
-    assert all_traits[0].category_name == TraitCategory.BACKGROUNDS.name
-    assert all_traits[0].character == str(character.id)
-    assert all_traits[0].is_custom
-
-
-@pytest.mark.drop_db
-async def test_add_trait(character_factory):
-    """Test the add_trait method."""
-    # GIVEN a character
-    character = character_factory.build()
-    await character.insert()
-
-    # WHEN adding a trait that exists in TraitCategory enum
-    trait = await character.add_trait(TraitCategory.PHYSICAL, "Strength", 2, 10)
-
-    # THEN the trait is added to the character
-    assert len(character.traits) == 1
-    assert character.traits[0] == trait
-
-    # AND the trait is saved to the database
-    # With the max_value reset to the enum defaults
-    all_traits = await CharacterTrait.find_all().to_list()
-    assert len(all_traits) == 1
-    assert all_traits[0].name == "Strength"
-    assert all_traits[0].value == 2
-    assert all_traits[0].max_value == 5
-    assert all_traits[0].category_name == TraitCategory.PHYSICAL.name
-    assert all_traits[0].character == str(character.id)
-    assert not all_traits[0].is_custom
-
-
-@pytest.mark.no_db
 async def test_add_trait_already_exists(character_factory, trait_factory):
     """Test the add_trait method."""
     # GIVEN a character with an existing trait
     trait = trait_factory.build(
         category_name=TraitCategory.PHYSICAL.name, name="Strength", value=2, max_value=10
     )
+    await trait.save()
     character = character_factory.build(traits=[trait])
+    await character.save()
 
-    # WHEN adding a trait that already exists on the character
+    # When the same trait is added a second time, the existing trait is returned
+    existing_trait = await CharacterTrait.get(trait.id)
+    assert await character.add_trait(existing_trait) == trait
+
+    # WHEN adding a new trait with the same name and category
     # THEN a TraitExistsError is raised
     with pytest.raises(errors.TraitExistsError):
-        await character.add_trait(TraitCategory.PHYSICAL, "Strength", 2, 10)
+        await character.add_trait(
+            CharacterTrait(
+                name="Strength",
+                category_name="PHYSICAL",
+                value=4,
+                max_value=5,
+                character=str(character.id),
+            )
+        )
 
 
 @pytest.mark.drop_db
-async def test_add_trait_no_values(character_factory):
-    """Test the add_trait method."""
-    # GIVEN a character
-    character = character_factory.build()
-    await character.insert()
-
-    # WHEN adding a trait without required values
-    # THEN a ValueError is raised
-    with pytest.raises(ValueError, match="required to create a new trait"):
-        await character.add_trait(name="Strength", value=1)
-    with pytest.raises(ValueError, match="required to create a new trait"):
-        await character.add_trait(name="Strength", category="PHYSICAL")
-    with pytest.raises(ValueError, match="required to create a new trait"):
-        await character.add_trait(value=1, category="PHYSICAL")
-
-
-@pytest.mark.drop_db
-async def test_add_trait_charactertrait(character_factory, trait_factory) -> None:
+async def test_add_trait(character_factory) -> None:
     """Test the add_trait method when providing a CharacterTrait."""
-    trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Strength", value=2, max_value=10
+    trait = CharacterTrait(
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Strength",
+        value=2,
+        max_value=10,
+        character="something",
     )
     await trait.insert()
     character = character_factory.build()
     await character.insert()
 
     # WHEN adding a CharacterTrait object to the character
-    new_trait = await character.add_trait(character_trait=trait)
+    new_trait = await character.add_trait(trait)
 
-    # THEN the trait is added to the character
+    # THEN the trait is added to the character and the database
     char = await Character.get(character.id, fetch_links=True)
     assert len(char.traits) == 1
     assert char.traits[0] == new_trait
     assert char.traits[0].character == str(char.id)
-
-    # When adding a trait that already exists on the character
-    # assert that no errors are raised
-    new_trait = await char.add_trait(character_trait=trait)
-    c = await Character.get(character.id, fetch_links=True)
-    assert len(c.traits) == 1
-    assert c.traits[0] == new_trait
-    assert c.traits[0].character == str(c.id)
+    assert await CharacterTrait.get(new_trait.id) == new_trait
 
 
 @pytest.mark.no_db

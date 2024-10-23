@@ -6,6 +6,7 @@ import pytest
 from tests.factories import *
 from valentina.constants import CharClass, CharSheetSection, TraitCategory
 from valentina.controllers import CharacterSheetBuilder
+from valentina.models import CharacterTrait
 from valentina.utils import console
 
 
@@ -19,7 +20,15 @@ async def test_fetch_sheet_character_traits(debug, trait_factory, character_fact
     # for section in CharSheetSection.get_members_in_order():
     for cat in TraitCategory.get_members_in_order():
         for trait_name in cat.get_all_class_trait_names(char_class=char_class):
-            await character.add_trait(category=cat, name=trait_name, value=1, max_value=5)
+            await character.add_trait(
+                CharacterTrait(
+                    name=trait_name,
+                    category_name=cat.name,
+                    value=1,
+                    max_value=5,
+                    character=str(character.id),
+                )
+            )
 
     sheet_builder = CharacterSheetBuilder(character=character)
     sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
