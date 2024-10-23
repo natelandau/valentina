@@ -15,7 +15,7 @@ from valentina.utils.helpers import get_max_trait_value
 from valentina.webui import catalog
 from valentina.webui.utils.discord import post_to_audit_log
 from valentina.webui.utils.forms import ValentinaForm
-from valentina.webui.utils.helpers import fetch_active_character, fetch_user, is_storyteller
+from valentina.webui.utils.helpers import fetch_active_character, fetch_user
 
 
 class SpendPointsType(Enum):
@@ -27,7 +27,7 @@ class SpendPointsType(Enum):
 
 
 class SpendPoints(MethodView):
-    """View to manage freebie point spending. This page uses HTMX to validate each trait as it is changed."""
+    """View and manage upgrading/downgrading traits for a character. Depending on the route, different types of points can be spent.  Blueprints to this class must specify the SpendPointsType as part of the view_func."""
 
     decorators: ClassVar = [requires_authorization]
 
@@ -40,88 +40,24 @@ class SpendPoints(MethodView):
         )
         self.spend_type = spend_type
 
-    async def _parse_form_data(
-        self, character: Character, form: dict
-    ) -> tuple[CharacterTrait, int]:
-        """Parse the form data to determine the trait to modify and the target value. If the CharacterTrait object is not alreadfy in the database, create a new one.
+    async def _get_campaign_experience(
+        self, character: "Character", character_owner: User = None
+    ) -> int:
+        """Get the experience points for the character's campaign.
 
         Args:
-            character (Character): The character to modify the trait for.
-            form (dict): The form data.
+            character (Character): The character to check.
+            character_owner (User, optional): The character's owner. Defaults to None.
 
         Returns:
-            tuple[CharacterTrait, int]: A tuple containing the trait to modify and the target value.
+            int: The experience points for the character's campaign.
         """
-        form_key = str(next(iter(form.keys())))
+        if not character_owner:
+            character_owner = await User.get(character.user_owner, fetch_links=False)
 
-        # Because we have a mix of existing traits and new traits, we need to create new traits if they don't exist
-        if form_key.lower().startswith("new_"):
-            target_value = int(next(iter(form.values())))
-            name, category, max_value = form_key.split("_")[1:]
-
-            trait = CharacterTrait(
-                name=name,
-                category_name=category,
-                max_value=int(max_value),
-                value=0,
-                is_custom=False,
-                character=str(character.id),
-            )
-
-        elif form_key.lower().startswith("custom_"):
-            custom_trait_name = next(iter(form.values()))
-            target_value = 1
-            category = form_key.split("_")[1]
-
-            trait = CharacterTrait(
-                name=custom_trait_name,
-                category_name=category,
-                max_value=get_max_trait_value(custom_trait_name, category),
-                value=0,
-                is_custom=True,
-                character=str(character.id),
-            )
-
-        else:
-            target_value = int(next(iter(form.values())))
-            trait = await CharacterTrait.get(form_key)
-
-        return trait, target_value
-
-    async def _upgrade_trait(
-        self, character: Character, trait: CharacterTrait, new_value: int
-    ) -> str:
-        """Upgrade a trait to a new value.
-
-        Args:
-            character (Character): The character to upgrade the trait for.
-            trait (CharacterTrait): The trait to upgrade.
-            new_value (int): The new value for the trait.
-
-        Returns:
-            str: The success message.
-        """
-        user = await fetch_user()
-        trait_modifier = TraitModifier(character, user)
-        difference = new_value - trait.value
-        cost = trait_modifier.cost_to_upgrade(trait, difference)
-
-        match self.spend_type:
-            case SpendPointsType.FREEBIE:
-                updated_trait = await trait_modifier.upgrade_with_freebie(trait, difference)
-            case SpendPointsType.EXPERIENCE:
-                campaign = await Campaign.get(character.campaign)
-                updated_trait = await trait_modifier.upgrade_with_xp(trait, campaign, difference)
-            case SpendPointsType.STORYTELLER:
-                # TODO: Add storyteller trait upgrading
-                pass
-            case _:
-                assert_never()
-
-        await post_to_audit_log(
-            msg=f"Upgraded {character.name}'s {trait.name} to {updated_trait.value} costing {cost} {self.spend_type.value} points"
-        )
-        return f"Upgraded {trait.name} to {updated_trait.value} for {cost} {self.spend_type.value} points"
+        campaign = await Campaign.get(character.campaign)
+        campaign_experience, _, _ = character_owner.fetch_campaign_xp(campaign)
+        return campaign_experience
 
     async def _downgrade_trait(
         self, character: Character, trait: CharacterTrait, new_value: int
@@ -150,34 +86,112 @@ class SpendPoints(MethodView):
                     trait, campaign, difference
                 )
             case SpendPointsType.STORYTELLER:
-                # TODO: Add storyteller trait downgrading
-                pass
+                if trait_modifier.can_trait_be_downgraded(trait, difference):
+                    trait.value = new_value
+                    downgraded_trait = await character.add_trait(trait)
             case _:
                 assert_never()
 
-        await post_to_audit_log(
-            msg=f"Downgraded {character.name}'s {trait.name} to {downgraded_trait.value} recouping {savings} {self.spend_type.value} points"
+        player_message = (
+            f" recouping {savings} {self.spend_type.value} points"
+            if self.spend_type != SpendPointsType.STORYTELLER
+            else ""
         )
-        return f"Downgraded {trait.name} to {downgraded_trait.value} for {savings} {self.spend_type.value} points"
+        await post_to_audit_log(
+            msg=f"Downgraded {character.name}'s {trait.name} to {downgraded_trait.value}{player_message}"
+        )
+        return f"Downgraded {trait.name} to {downgraded_trait.value}{player_message}"
 
-    async def _get_campaign_experience(
-        self, character: "Character", character_owner: User = None
-    ) -> int:
-        """Get the experience points for the character's campaign.
+    async def _parse_form_data(
+        self, character: Character, form: dict
+    ) -> tuple[CharacterTrait, int]:
+        """Parse the form data to determine the trait to modify and the target value. If the CharacterTrait object is not alreadfy in the database, create a new one.
 
         Args:
-            character (Character): The character to check.
-            character_owner (User, optional): The character's owner. Defaults to None.
+            character (Character): The character to modify the trait for.
+            form (dict): The form data.
 
         Returns:
-            int: The experience points for the character's campaign.
+            tuple[CharacterTrait, int]: A tuple containing the trait to modify and the target value.
         """
-        if not character_owner:
-            character_owner = await User.get(character.user_owner, fetch_links=False)
+        form_key = str(next(iter(form.keys())))
 
-        campaign = await Campaign.get(character.campaign)
-        campaign_experience, _, _ = character_owner.fetch_campaign_xp(campaign)
-        return campaign_experience
+        # Because we have a mix of existing traits and new traits, we need to create new traits if they don't exist
+        if form_key.lower().startswith("new_"):
+            target_value = int(next(iter(form.values())))
+            name, category, max_value = form_key.split("_")[1:]
+            trait = CharacterTrait(
+                name=name.strip().title(),
+                category_name=category.strip().upper(),
+                max_value=int(max_value),
+                value=0,
+                is_custom=False,
+                character=str(character.id),
+            )
+
+        elif form_key.lower().startswith("custom_"):
+            custom_trait_name = next(iter(form.values()))
+            target_value = 1
+            category = form_key.split("_")[1]
+            if not custom_trait_name:
+                msg = "Trait name can not be empty"
+                raise ValueError(msg)
+            trait = CharacterTrait(
+                name=custom_trait_name.strip().title(),
+                category_name=category.strip().upper(),
+                max_value=get_max_trait_value(
+                    custom_trait_name.strip().title(), category.strip().upper()
+                ),
+                value=0,
+                is_custom=True,
+                character=str(character.id),
+            )
+        else:
+            target_value = int(next(iter(form.values())))
+            trait = await CharacterTrait.get(form_key)
+
+        return trait, target_value
+
+    async def _upgrade_trait(
+        self, character: Character, trait: CharacterTrait, new_value: int
+    ) -> str:
+        """Upgrade a trait to a new value.
+
+        Args:
+            character (Character): The character to upgrade the trait for.
+            trait (CharacterTrait): The trait to upgrade.
+            new_value (int): The new value for the trait.
+
+        Returns:
+            str: The success message.
+        """
+        user = await fetch_user()
+        trait_modifier = TraitModifier(character, user)
+        difference = new_value - trait.value
+        cost = trait_modifier.cost_to_upgrade(trait, difference)
+
+        match self.spend_type:
+            case SpendPointsType.FREEBIE:
+                upgraded_trait = await trait_modifier.upgrade_with_freebie(trait, difference)
+            case SpendPointsType.EXPERIENCE:
+                campaign = await Campaign.get(character.campaign)
+                upgraded_trait = await trait_modifier.upgrade_with_xp(trait, campaign, difference)
+            case SpendPointsType.STORYTELLER:
+                if trait_modifier.can_trait_be_upgraded(trait, difference):
+                    trait.value = new_value
+                    upgraded_trait = await character.add_trait(trait)
+            case _:
+                assert_never()
+
+        player_message = (
+            f" for {cost} {self.spend_type.value} points"
+            if self.spend_type != SpendPointsType.STORYTELLER
+            else ""
+        )
+        await post_to_audit_log(
+            msg=f"Upgraded {character.name}'s {trait.name} to {upgraded_trait.value}{player_message}"
+        )
+        return f"Upgraded <strong>{trait.name}</strong> to {upgraded_trait.value}{player_message}"
 
     async def get(self, character_id: str = "") -> str | Response:
         """Manage GET requests."""
@@ -186,12 +200,20 @@ class SpendPoints(MethodView):
             abort(HTTPStatus.BAD_REQUEST.value)
 
         character_owner = await User.get(character.user_owner, fetch_links=False)
-        if not is_storyteller and character_owner.id != session.get("USER_ID"):
+        if not session["IS_STORYTELLER"] and character_owner.id != session.get("USER_ID"):
             return redirect(  # type: ignore [return-value]
                 url_for(
                     "character_view.view",
                     character_id=character_id,
                     error_msg="You do not have permission to edit this character",
+                )
+            )
+        if not session["IS_STORYTELLER"] and self.spend_type == SpendPointsType.STORYTELLER:
+            return redirect(  # type: ignore [return-value]
+                url_for(
+                    "character_view.view",
+                    character_id=character_id,
+                    error_msg="Only storytellers can update characters without spending points",
                 )
             )
 
@@ -214,6 +236,8 @@ class SpendPoints(MethodView):
             post_url=url_for(f"character_edit.{self.spend_type.value}", character_id=character_id),
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
+            info_msg=request.args.get("info_msg", ""),
+            warning_msg=request.args.get("warning_msg", ""),
         )
 
     async def post(self, character_id: str = "") -> Response:
@@ -223,7 +247,19 @@ class SpendPoints(MethodView):
             abort(HTTPStatus.BAD_REQUEST.value)
 
         form = await request.form
-        trait, target_value = await self._parse_form_data(character, form)
+
+        try:
+            trait, target_value = await self._parse_form_data(character, form)
+        except ValueError as e:
+            return Response(
+                headers={
+                    "HX-Redirect": url_for(
+                        f"character_edit.{self.spend_type.value}",
+                        character_id=str(character.id),
+                        error_msg=str(e),
+                    )
+                }
+            )
 
         success_msg = ""
         try:
@@ -231,53 +267,19 @@ class SpendPoints(MethodView):
                 success_msg = await self._upgrade_trait(character, trait, target_value)
             elif trait.value > target_value:
                 success_msg = await self._downgrade_trait(character, trait, target_value)
-        except errors.TraitAtMaxValueError:
+        except (
+            errors.TraitAtMaxValueError,
+            errors.NotEnoughFreebiePointsError,
+            errors.TraitExistsError,
+            errors.NotEnoughExperienceError,
+            errors.TraitAtMinValueError,
+        ) as e:
             return Response(
                 headers={
                     "HX-Redirect": url_for(
-                        "character_edit.freebie",
+                        f"character_edit.{self.spend_type.value}",
                         character_id=str(character.id),
-                        error_msg=f"{trait.name} is already at max value",
-                    )
-                }
-            )
-        except errors.NotEnoughFreebiePointsError:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_edit.freebie",
-                        character_id=str(character.id),
-                        error_msg=f"Not enough freebie points to upgrade {trait.name} to {target_value}",
-                    )
-                }
-            )
-        except errors.TraitExistsError:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_edit.freebie",
-                        character_id=str(character.id),
-                        error_msg=f'Trait <span class="font-monospace fw-bold">{trait.name}</span> already exists in <span class="font-monospace fw-bold">{trait.category.name.title()}</span>',
-                    )
-                }
-            )
-        except errors.NotEnoughExperienceError:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_edit.experience",
-                        character_id=str(character.id),
-                        error_msg=f"Not enough experience points to upgrade {trait.name} to {target_value}",
-                    )
-                }
-            )
-        except errors.TraitAtMinValueError:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_edit.experience",
-                        character_id=str(character.id),
-                        error_msg=f"{trait.name} can not be lowered below 0",
+                        error_msg=str(e),
                     )
                 }
             )

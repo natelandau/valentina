@@ -34,12 +34,12 @@ async def test_helper_functions(
     # WHEN the trait is upgraded with XP
     trait_modifier = TraitModifier(character=character, user=user)
 
-    trait_modifier._can_trait_be_upgraded(trait)
+    trait_modifier.can_trait_be_upgraded(trait)
 
     assert trait_modifier.cost_to_upgrade(trait) == 6
     assert trait_modifier.savings_from_downgrade(trait) == 4
-    assert trait_modifier._can_trait_be_downgraded(trait)
-    assert trait_modifier._can_trait_be_upgraded(trait)
+    assert trait_modifier.can_trait_be_downgraded(trait)
+    assert trait_modifier.can_trait_be_upgraded(trait)
 
     trait.value = 1
     assert trait_modifier.cost_to_upgrade(trait) == 4
@@ -50,8 +50,8 @@ async def test_helper_functions(
     assert trait_modifier.savings_from_downgrade(trait) == 2
     with pytest.raises(errors.TraitAtMinValueError):
         assert trait_modifier.savings_from_downgrade(trait, amount=2)
-    assert trait_modifier._can_trait_be_downgraded(trait)
-    assert trait_modifier._can_trait_be_upgraded(trait)
+    assert trait_modifier.can_trait_be_downgraded(trait)
+    assert trait_modifier.can_trait_be_upgraded(trait)
 
     trait.value = 0
     assert trait_modifier.cost_to_upgrade(trait) == 2
@@ -59,16 +59,16 @@ async def test_helper_functions(
         assert trait_modifier.savings_from_downgrade(trait)
 
     with pytest.raises(errors.TraitAtMinValueError):
-        trait_modifier._can_trait_be_downgraded(trait)
+        trait_modifier.can_trait_be_downgraded(trait)
 
-    assert trait_modifier._can_trait_be_upgraded(trait)
+    assert trait_modifier.can_trait_be_upgraded(trait)
 
     trait.value = 5
     with pytest.raises(errors.TraitAtMaxValueError):
         assert trait_modifier.cost_to_upgrade(trait)
     assert trait_modifier.savings_from_downgrade(trait) == 10
     with pytest.raises(errors.TraitAtMaxValueError):
-        trait_modifier._can_trait_be_upgraded(trait)
+        trait_modifier.can_trait_be_upgraded(trait)
 
 
 @pytest.mark.drop_db

@@ -18,7 +18,7 @@ class TraitModifier:
         self.character = character
         self.user = user
 
-    def _can_trait_be_upgraded(self, trait: CharacterTrait, amount: int = 1) -> bool:
+    def can_trait_be_upgraded(self, trait: CharacterTrait, amount: int = 1) -> bool:
         """Check if the trait can be upgraded.
 
         Args:
@@ -34,7 +34,7 @@ class TraitModifier:
 
         return True
 
-    def _can_trait_be_downgraded(self, trait: CharacterTrait, amount: int = 1) -> bool:
+    def can_trait_be_downgraded(self, trait: CharacterTrait, amount: int = 1) -> bool:
         """Check if the trait can be downgraded.
 
         Args:
@@ -50,16 +50,21 @@ class TraitModifier:
 
         return True
 
-    async def _save_trait(self, trait: CharacterTrait) -> None:
-        """Saves the updates to the trait and adds the trait to the character if it's not already there.
+    async def _save_trait(self, trait: CharacterTrait) -> CharacterTrait:
+        """Saves the updates to the trait and adds the trait to the character if it's not already there. We call the character.add_trait() method to confirm the trait is linked to the character and does not already exist.
 
         Args:
             trait (CharacterTrait): The trait to add.
-        """
-        await trait.save()
 
+        Returns:
+            CharacterTrait: The saved trait.
+
+        Raises:
+            errors.TraitExistsError: If the trait already exists. Inherited from the character.add_trait() method.
+        """
         await self.character.fetch_all_links()
-        await self.character.add_trait(character_trait=trait)
+        await self.character.add_trait(trait)
+        return trait
 
     def cost_to_upgrade(self, trait: CharacterTrait, amount: int = 1) -> int:
         """Calculate the cost to upgrade a trait.
@@ -145,7 +150,7 @@ class TraitModifier:
         Returns:
             CharacterTrait: The downgraded trait.
         """
-        if self._can_trait_be_downgraded(trait, amount):
+        if self.can_trait_be_downgraded(trait, amount):
             savings_from_downgrade = self.savings_from_downgrade(trait, amount)
 
             self.character.freebie_points = self.character.freebie_points + savings_from_downgrade
@@ -169,7 +174,7 @@ class TraitModifier:
         Returns:
             CharacterTrait: The downgraded trait.
         """
-        if self._can_trait_be_downgraded(trait, amount):
+        if self.can_trait_be_downgraded(trait, amount):
             savings_from_downgrade = self.savings_from_downgrade(trait, amount)
 
             await self.user.add_campaign_xp(
@@ -190,7 +195,7 @@ class TraitModifier:
         Returns:
             CharacterTrait: The upgraded trait.
         """
-        self._can_trait_be_upgraded(trait, amount)
+        self.can_trait_be_upgraded(trait, amount)
 
         cost_to_upgrade = self.cost_to_upgrade(trait, amount)
 
@@ -219,7 +224,7 @@ class TraitModifier:
         Returns:
             CharacterTrait: The upgraded trait.
         """
-        self._can_trait_be_upgraded(trait, amount)
+        self.can_trait_be_upgraded(trait, amount)
 
         cost_to_upgrade = self.cost_to_upgrade(trait, amount)
 

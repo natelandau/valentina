@@ -2,7 +2,7 @@
 
 import random
 
-from quart import session
+from quart import request, session
 from quart.views import MethodView
 
 from valentina.constants import BOT_DESCRIPTIONS
@@ -24,4 +24,10 @@ class HomepageView(MethodView):
             )
 
         await update_session()
-        return catalog.render("homepage.Loggedin")
+        return catalog.render(
+            "homepage.Loggedin",
+            error_msg=request.args.get("error_msg", ""),
+            success_msg=request.args.get("success_msg", ""),
+            info_msg=request.args.get("info_msg", ""),
+            warning_msg=request.args.get("warning_msg", ""),
+        )

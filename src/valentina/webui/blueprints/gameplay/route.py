@@ -249,4 +249,8 @@ class GameplayView(MethodView):
             campaign=await fetch_active_campaign(),
             dice_sizes=self.dice_size_values,
             form=gameplay_form,
+            error_msg=request.args.get("error_msg", ""),
+            success_msg=request.args.get("success_msg", ""),
+            info_msg=request.args.get("info_msg", ""),
+            warning_msg=request.args.get("warning_msg", ""),
         )

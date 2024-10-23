@@ -50,7 +50,7 @@ from valentina.discord.views import (
     present_embed,
     show_sheet,
 )
-from valentina.models import AWSService, Character, CharacterSheetSection, User
+from valentina.models import AWSService, Character, CharacterSheetSection, CharacterTrait, User
 from valentina.utils import errors
 from valentina.utils.helpers import (
     fetch_data_from_url,
@@ -488,8 +488,14 @@ class CharactersCog(commands.Cog, name="Character"):
         )
         if not is_confirmed:
             return
-
-        await character.add_trait(category, name.title(), value, max_value=max_value)
+        trait = CharacterTrait(
+            name=name.title(),
+            category_name=category.name,
+            value=value,
+            max_value=max_value or 5,
+            character=str(character.id),
+        )
+        await character.add_trait(trait)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
