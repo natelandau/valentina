@@ -26,7 +26,11 @@ class SelectTraitCategoryButtons(discord.ui.View):
 
         # Create a button for all trait categories on the character
         self.all_categories = sorted(
-            {t.category for t in cast(list[CharacterTrait], self.character.traits) if t.category},
+            {
+                t.trait_category
+                for t in cast(list[CharacterTrait], self.character.traits)
+                if t.trait_category
+            },
             key=lambda x: x.value.order,
         )
 

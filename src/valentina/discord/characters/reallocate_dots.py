@@ -128,7 +128,7 @@ class DotsReallocationWizard:
         available_traits = [
             trait
             for trait in cast(list[CharacterTrait], self.character.traits)
-            if trait.category == self.category and trait.value > 0
+            if trait.trait_category == self.category and trait.value > 0
         ]
 
         # Set up the view and embed to prompt the user to select a trait
@@ -163,7 +163,7 @@ class DotsReallocationWizard:
         available_traits = [
             trait
             for trait in cast(list[CharacterTrait], self.character.traits)
-            if trait.category == self.category and trait.value < trait.max_value
+            if trait.trait_category == self.category and trait.value < trait.max_value
         ]
 
         # Set up the view and embed to prompt the user to select a trait
