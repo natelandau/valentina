@@ -3,13 +3,10 @@
 from typing import ClassVar
 
 from flask_discord import requires_authorization
-from quart import abort, request, session, url_for
+from quart import abort, request, session
 from quart.views import MethodView
-from quart_wtf import QuartForm
-from werkzeug.wrappers.response import Response
 
 from valentina.constants import (
-    DBSyncUpdateType,
     HTTPStatus,
     InventoryItemType,
 )
@@ -23,11 +20,7 @@ from valentina.models import (
     User,
 )
 from valentina.webui import catalog
-from valentina.webui.utils import fetch_user, is_storyteller, sync_char_to_discord, update_session
-from valentina.webui.utils.discord import post_to_audit_log
-
-from . import form_fields
-from .forms import EmptyForm
+from valentina.webui.utils import fetch_user, is_storyteller
 
 
 class CharacterView(MethodView):
@@ -192,129 +185,4 @@ class CharacterView(MethodView):
             success_msg=request.args.get("success_msg", ""),
             info_msg=request.args.get("info_msg", ""),
             warning_msg=request.args.get("warning_msg", ""),
-        )
-
-
-class CharacterEdit(MethodView):
-    """View to handle character field edits.  Serves individual field forms for editing character attributes."""
-
-    decorators: ClassVar = [requires_authorization]
-
-    def __init__(self) -> None:
-        self.join_label = True
-        self.floating_label = False
-
-    async def _build_form(self, character: Character) -> QuartForm:
-        """Build the character edit form."""
-        data_from_db = {
-            "character_id": character.id,
-            "name_first": character.name_first if character.name_first else "",
-            "name_last": character.name_last if character.name_last else "",
-            "name_nick": character.name_nick if character.name_nick else "",
-            "demeanor": character.demeanor if character.demeanor else "",
-            "nature": character.nature if character.nature else "",
-            "dob": character.dob if character.dob else "",
-            "sire": character.sire if character.sire else "",
-            "generation": character.generation if character.generation else "",
-            "tribe": character.tribe if character.tribe else "",
-            "auspice": character.auspice if character.auspice else "",
-            "breed": character.breed if character.breed else "",
-        }
-
-        EmptyForm.character_id = form_fields.character_id
-        EmptyForm.name_first = form_fields.name_first
-        EmptyForm.name_last = form_fields.name_last
-        EmptyForm.name_nick = form_fields.name_nick
-        EmptyForm.demeanor = form_fields.demeanor
-        EmptyForm.nature = form_fields.nature
-        EmptyForm.dob = form_fields.dob
-
-        if character.char_class_name.lower() == "vampire":
-            EmptyForm.sire = form_fields.sire
-            EmptyForm.generation = form_fields.generation
-
-        if character.char_class_name.lower() == "werewolf":
-            EmptyForm.tribe = form_fields.tribe
-            EmptyForm.auspice = form_fields.auspice
-            EmptyForm.breed = form_fields.breed
-
-        return await EmptyForm().create_form(data=data_from_db)
-
-    async def get(self, character_id: str) -> str:
-        """Handle GET requests."""
-        character = await Character.get(character_id)
-        if not character:
-            abort(HTTPStatus.BAD_REQUEST.value)
-
-        form = await self._build_form(character)
-
-        return catalog.render(
-            "character_edit.Main",
-            character=character,
-            form=form,
-            join_label=self.join_label,
-            floating_label=self.floating_label,
-        )
-
-    async def post(self, character_id: str) -> str | Response:
-        """Handle POST requests."""
-        character = await Character.get(character_id)
-        if not character:
-            abort(HTTPStatus.BAD_REQUEST.value)
-
-        form = await self._build_form(character)
-        if await form.validate_on_submit():
-            form_data = {
-                k: v if v else None
-                for k, v in form.data.items()
-                if k not in {"submit", "character_id", "csrf_token"}
-            }
-
-            # Iterate over all form fields and update character attributes if they exist and are not "None"
-            has_updates = False
-            for key in form_data:
-                if (not form_data[key] and getattr(character, key)) or (
-                    form_data[key] and form_data[key] != getattr(character, key)
-                ):
-                    # dob field from form is datetime.date, but dob field from character is datetime.datetime. convert the character dob to date() for comparison
-                    if (
-                        key == "dob"
-                        and getattr(character, key)
-                        and form_data[key] == getattr(character, key).date()
-                    ):
-                        continue
-
-                    has_updates = True
-                    setattr(character, key, form_data[key])
-
-            if has_updates:
-                await sync_char_to_discord(character, DBSyncUpdateType.UPDATE)
-
-                await character.save()
-                await post_to_audit_log(
-                    msg=f"Character {character.name} edited",
-                    view=self.__class__.__name__,
-                )
-
-                # Rebuild the session with the new character data
-                await update_session()
-
-            # Redirect to the character view via htmx-redirect
-            response = Response()
-            response.headers["hx-redirect"] = url_for(
-                "character_view.view",
-                character_id=character_id,
-                success_msg="<strong>Character updated!</strong><br><small>Changes will be reflected in Discord within ten minutes.</small>"
-                if has_updates
-                else "No changes made.",
-            )
-            return response
-
-        # If POST request does not validate, return errors
-        return catalog.render(
-            "character_edit.WTForm",
-            form=form,
-            join_label=self.join_label,
-            floating_label=self.floating_label,
-            character=character,
         )

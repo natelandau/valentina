@@ -4,8 +4,7 @@
 #}
 
 <div class="mb-4">
-    <a href="{{ url_for('character_view.edit', character_id=character.id) }}"
-       class="btn btn-primary">Edit Profile</a>
+
     {% if character.freebie_points > 0 and session["USER_ID"] == character.user_owner %}
         <a href="{{ url_for('character_edit.freebie', character_id=character.id) }}"
            class="btn btn-primary"
@@ -19,6 +18,10 @@
            data-bs-toggle="tooltip"
            data-bs-placement="top"
            data-bs-title="{{ campaign_experience }} experience points remaining">Spend experience</a>
+    {% endif %}
+    {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+        <a href="{{ url_for('character_edit.profile', character_id=character.id) }}"
+           class="btn btn-primary">Edit Profile</a>
     {% endif %}
     {% if session["IS_STORYTELLER"] %}
         <a href="{{ url_for('character_edit.storyteller', character_id=character.id) }}"

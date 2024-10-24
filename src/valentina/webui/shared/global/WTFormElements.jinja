@@ -11,7 +11,9 @@
     </div>
 {% endif %}
 {% for field in form %}
+
     {% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data else "" %}
+
     {% if field.type == "SubmitField" %}
         <global.wtform.SubmitField field={{ field }} />
     {% elif field.type in ["CSRFTokenField","HiddenField"] %}
