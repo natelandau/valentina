@@ -16,13 +16,17 @@
                 </option>
             {% endfor %}
         {% else %}
-            {% for char in session['USER_CHARACTERS'] %}
-                <option value="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }}</option>
+            {% for char in session['ALL_CHARACTERS'] %}
+                <option value="{{ url_for('character_view.view',  character_id=char.id) }}">
+                    {{ char.name }} ({{ char.owner_name }})
+                </option>
             {% endfor %}
         {% endif %}
     {% elif character_type == 'storyteller' %}
         {% for char in session['STORYTELLER_CHARACTERS'] %}
-            <option value="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }}</option>
+            <option value="{{ url_for('character_view.view',  character_id=char.id) }}">
+                {{ char.name }}
+            </option>
         {% endfor %}
     {% endif %}
 </select>

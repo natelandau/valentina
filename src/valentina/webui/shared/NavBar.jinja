@@ -70,10 +70,10 @@
                            data-bs-toggle="dropdown"
                            aria-expanded="false"><i class="fa-solid fa-users"></i>&nbsp;Characters</a>
                         <ul class="dropdown-menu">
-                            {% for char in session["USER_CHARACTERS"] %}
+                            {% for char in session["ALL_CHARACTERS"] %}
                                 <li>
                                     <a class="dropdown-item"
-                                       href="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }}</a>
+                                       href="{{ url_for('character_view.view',  character_id=char.id) }}">{{ char.name }} ({{ char.owner_name }})</a>
                                 </li>
                             {% endfor %}
                             <li>
