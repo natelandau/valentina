@@ -731,6 +731,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/32/cc6b3a39f04c40c2860101046af6352ae7add90cbb2571915aca854b8bf1/jinjax-0.47-py3-none-any.whl", hash = "sha256:82c6b94932621bc4b15669fa402c2f8b00f61c598670f17acc98f42a1f381e62", size = 16705 },
 ]
 
+[package.optional-dependencies]
+whitenoise = [
+    { name = "whitenoise" },
+]
+
 [[package]]
 name = "jmespath"
 version = "1.0.1"
@@ -1813,7 +1818,7 @@ dependencies = [
     { name = "faker" },
     { name = "flask-discord" },
     { name = "inflect" },
-    { name = "jinjax" },
+    { name = "jinjax", extra = ["whitenoise"] },
     { name = "loguru" },
     { name = "markdown2" },
     { name = "markupsafe" },
@@ -1865,7 +1870,7 @@ requires-dist = [
     { name = "faker", specifier = ">=30.0.0" },
     { name = "flask-discord", specifier = ">=0.1.69" },
     { name = "inflect", specifier = ">=7.4.0" },
-    { name = "jinjax", specifier = ">=0.46" },
+    { name = "jinjax", extras = ["whitenoise"], specifier = ">=0.46" },
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "markdown2", specifier = ">=2.5.0" },
     { name = "markupsafe", specifier = ">=2.1.5" },
@@ -1940,6 +1945,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/0f/e2/6dbcaab07560909ff8f654d3a2e5a60552d937c909455211b1b36d7101dc/werkzeug-3.0.4.tar.gz", hash = "sha256:34f2371506b250df4d4f84bfe7b0921e4762525762bbd936614909fe25cd7306", size = 803966 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4b/84/997bbf7c2bf2dc3f09565c6d0b4959fefe5355c18c4096cfd26d83e0785b/werkzeug-3.0.4-py3-none-any.whl", hash = "sha256:02c9eb92b7d6c06f31a782811505d2157837cea66aaede3e217c7c27c039476c", size = 227554 },
+]
+
+[[package]]
+name = "whitenoise"
+version = "6.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/b8/86451d63ef5e1a9c480b52759d9db25ba85c3420ebdaf039057ed152a4c1/whitenoise-6.7.0.tar.gz", hash = "sha256:58c7a6cd811e275a6c91af22e96e87da0b1109e9a53bb7464116ef4c963bf636", size = 24973 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/42/68400d8ad59f67a1f7e12c2f39089ce005f08f73333f3e215f3d5ed6453c/whitenoise-6.7.0-py3-none-any.whl", hash = "sha256:a1ae85e01fdc9815d12fa33f17765bc132ed2c54fa76daf9e39e879dd93566f6", size = 19905 },
 ]
 
 [[package]]
