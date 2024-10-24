@@ -6,7 +6,7 @@
     character:Character,
 #}
 <form method="post"
-      id="{{ form._prefix }}form"
+      id="profile-form"
       hx-post="{{ post_url }}"
       novalidate
       hx-indicator="#spinner"
@@ -14,11 +14,7 @@
       hx-swap="innerHTML"
       encoding="application/x-www-form-urlencoded">
     <global.WTFormElements form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} />
-    <input class="btn btn-success"
-           id="submit"
-           name="submit"
-           type="submit"
-           value="Submit">
+
     <a href="{{ url_for('character_view.view', character_id=character.id) }}"
        class="btn btn-outline-secondary ms-2">Cancel</a>
 </form>

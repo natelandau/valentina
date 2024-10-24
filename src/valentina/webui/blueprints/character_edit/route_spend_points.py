@@ -27,7 +27,7 @@ class SpendPointsType(Enum):
 
 
 class SpendPoints(MethodView):
-    """View and manage upgrading/downgrading traits for a character. Depending on the route, different types of points can be spent.  Blueprints to this class must specify the SpendPointsType as part of the view_func."""
+    """Manage upgrading/downgrading traits for a character using different point types."""
 
     decorators: ClassVar = [requires_authorization]
 
@@ -43,14 +43,14 @@ class SpendPoints(MethodView):
     async def _get_campaign_experience(
         self, character: "Character", character_owner: User = None
     ) -> int:
-        """Get the experience points for the character's campaign.
+        """Retrieve experience points for the character's campaign.
 
         Args:
             character (Character): The character to check.
             character_owner (User, optional): The character's owner. Defaults to None.
 
         Returns:
-            int: The experience points for the character's campaign.
+            int: Campaign experience points.
         """
         if not character_owner:
             character_owner = await User.get(character.user_owner, fetch_links=False)
@@ -62,15 +62,15 @@ class SpendPoints(MethodView):
     async def _downgrade_trait(
         self, character: Character, trait: CharacterTrait, new_value: int
     ) -> str:
-        """Downgrade a trait to a new value.
+        """Reduce a trait's value and recoup points.
 
         Args:
-            character (Character): The character to upgrade the trait for.
-            trait (CharacterTrait): The trait to upgrade.
-            new_value (int): The new value for the trait.
+            character (Character): The character to modify.
+            trait (CharacterTrait): The trait to downgrade.
+            new_value (int): The target value for the trait.
 
         Returns:
-            str: The success message.
+            str: Success message describing the downgrade.
         """
         user = await fetch_user()
         trait_modifier = TraitModifier(character, user)
@@ -105,14 +105,19 @@ class SpendPoints(MethodView):
     async def _parse_form_data(
         self, character: Character, form: dict
     ) -> tuple[CharacterTrait, int]:
-        """Parse the form data to determine the trait to modify and the target value. If the CharacterTrait object is not alreadfy in the database, create a new one.
+        """Extract trait and target value from form data.
+
+        Create a new CharacterTrait if it doesn't exist in the database.
 
         Args:
-            character (Character): The character to modify the trait for.
-            form (dict): The form data.
+            character (Character): The character to modify.
+            form (dict): The submitted form data.
 
         Returns:
-            tuple[CharacterTrait, int]: A tuple containing the trait to modify and the target value.
+            tuple[CharacterTrait, int]: The trait to modify and its target value.
+
+        Raises:
+            ValueError: If a custom trait name is empty.
         """
         form_key = str(next(iter(form.keys())))
 
@@ -155,15 +160,15 @@ class SpendPoints(MethodView):
     async def _upgrade_trait(
         self, character: Character, trait: CharacterTrait, new_value: int
     ) -> str:
-        """Upgrade a trait to a new value.
+        """Increase a trait's value and spend points.
 
         Args:
-            character (Character): The character to upgrade the trait for.
+            character (Character): The character to modify.
             trait (CharacterTrait): The trait to upgrade.
-            new_value (int): The new value for the trait.
+            new_value (int): The target value for the trait.
 
         Returns:
-            str: The success message.
+            str: Success message describing the upgrade.
         """
         user = await fetch_user()
         trait_modifier = TraitModifier(character, user)
@@ -194,7 +199,17 @@ class SpendPoints(MethodView):
         return f"Upgraded <strong>{trait.name}</strong> to {upgraded_trait.value}{player_message}"
 
     async def get(self, character_id: str = "") -> str | Response:
-        """Manage GET requests."""
+        """Process GET requests for trait modification.
+
+        Args:
+            character_id (str, optional): The ID of the character to edit. Defaults to "".
+
+        Returns:
+            str | Response: Rendered template or redirect response.
+
+        Raises:
+            HTTPException: If the character is not found.
+        """
         character = await fetch_active_character(character_id, fetch_links=True)
         if not character:
             abort(HTTPStatus.BAD_REQUEST.value)
@@ -241,7 +256,17 @@ class SpendPoints(MethodView):
         )
 
     async def post(self, character_id: str = "") -> Response:
-        """Manage POST requests."""
+        """Process POST requests for trait modification.
+
+        Args:
+            character_id (str, optional): The ID of the character to edit. Defaults to "".
+
+        Returns:
+            Response: Redirect response after processing.
+
+        Raises:
+            HTTPException: If the character is not found.
+        """
         character = await fetch_active_character(character_id, fetch_links=True)
         if not character:
             abort(HTTPStatus.BAD_REQUEST.value)

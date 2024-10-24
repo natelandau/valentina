@@ -19,7 +19,7 @@ from valentina.constants import (
     WerewolfTribe,
 )
 from valentina.models import Campaign, Character, CharacterSheetSection, CharacterTrait, User
-from valentina.utils import random_num
+from valentina.utils import errors, random_num
 from valentina.utils.helpers import (
     divide_total_randomly,
     fetch_random_name,
@@ -327,12 +327,11 @@ class RNGCharGen:
                     character=str(character.id),
                     category_name=cat.name,
                 )
+                try:
+                    await character.add_trait(trait)
+                except errors.TraitExistsError as e:
+                    logger.warning(e)
 
-                await trait.insert()
-
-                character.traits.append(trait)
-
-        await character.save()
         return character
 
     async def random_abilities(self, character: Character) -> Character:
@@ -397,10 +396,11 @@ class RNGCharGen:
             traits = self._redistribute_trait_values(traits, concept)
 
             for trait in traits:
-                await trait.insert()
-                character.traits.append(trait)
+                try:
+                    await character.add_trait(trait)
+                except errors.TraitExistsError as e:
+                    logger.warning(e)
 
-        await character.save()
         return character
 
     async def random_disciplines(self, character: Character) -> Character:
@@ -458,10 +458,11 @@ class RNGCharGen:
                 character=str(character.id),
                 category_name=TraitCategory.DISCIPLINES.name,
             )
-            await trait.insert()
-            character.traits.append(trait)
+            try:
+                await character.add_trait(trait)
+            except errors.TraitExistsError as e:
+                logger.warning(e)
 
-        await character.save()
         return character
 
     async def random_virtues(self, character: Character) -> Character:
@@ -507,10 +508,11 @@ class RNGCharGen:
                 character=str(character.id),
                 category_name=TraitCategory.VIRTUES.name,
             )
-            await trait.insert()
-            character.traits.append(trait)
+            try:
+                await character.add_trait(trait)
+            except errors.TraitExistsError as e:
+                logger.warning(e)
 
-        await character.save()
         return character
 
     async def random_backgrounds(self, character: Character) -> Character:
@@ -556,10 +558,11 @@ class RNGCharGen:
                 character=str(character.id),
                 category_name=TraitCategory.BACKGROUNDS.name,
             )
-            await trait.insert()
-            character.traits.append(trait)
+            try:
+                await character.add_trait(trait)
+            except errors.TraitExistsError as e:
+                logger.warning(e)
 
-        await character.save()
         return character
 
     async def random_willpower(self, character: Character) -> Character:
@@ -609,8 +612,10 @@ class RNGCharGen:
                 max_value=10,
             )
 
-        await willpower.insert()
-        character.traits.append(willpower)
+            try:
+                await character.add_trait(willpower)
+            except errors.TraitExistsError as e:
+                logger.warning(e)
 
         if "Humanity" in TraitCategory.OTHER.get_all_class_trait_names(character.char_class):
             humanity = CharacterTrait(
@@ -620,10 +625,11 @@ class RNGCharGen:
                 category_name=TraitCategory.OTHER.name,
                 max_value=10,
             )
-            await humanity.insert()
-            character.traits.append(humanity)
+            try:
+                await character.add_trait(humanity)
+            except errors.TraitExistsError as e:
+                logger.warning(e)
 
-        await character.save()
         return character
 
     async def random_hunter_traits(self, character: Character) -> Character:
@@ -649,6 +655,7 @@ class RNGCharGen:
         except KeyError:
             creed = HunterCreed.random_member()
             character.creed_name = creed.name
+            await character.save()
 
         willpower = CharacterTrait(
             name="Willpower",
@@ -657,8 +664,10 @@ class RNGCharGen:
             category_name=TraitCategory.OTHER.name,
             max_value=10,
         )
-        await willpower.insert()
-        character.traits.append(willpower)
+        try:
+            await character.add_trait(willpower)
+        except errors.TraitExistsError as e:
+            logger.warning(e)
 
         conviction = CharacterTrait(
             name="Conviction",
@@ -667,8 +676,7 @@ class RNGCharGen:
             category_name=TraitCategory.OTHER.name,
             max_value=get_max_trait_value("Conviction", TraitCategory.OTHER.name),
         )
-        await conviction.insert()
-        character.traits.append(conviction)
+        await character.add_trait(conviction)
 
         # Assign Edges
         edges = creed.value.edges
@@ -683,18 +691,19 @@ class RNGCharGen:
         trait_values = divide_total_randomly(total_dots, len(edges), 5, 0)
 
         # Create the edges and assign them to the character
-        for e in edges:
+        for edge in edges:
             trait = CharacterTrait(
-                name=e,
+                name=edge,
                 value=trait_values.pop(0),
-                max_value=get_max_trait_value(e, TraitCategory.EDGES.name),
+                max_value=get_max_trait_value(edge, TraitCategory.EDGES.name),
                 character=str(character.id),
                 category_name=TraitCategory.EDGES.name,
             )
-            await trait.insert()
-            character.traits.append(trait)
+            try:
+                await character.add_trait(trait)
+            except errors.TraitExistsError as e:
+                logger.warning(e)
 
-        await character.save()
         return character
 
     async def concept_special_abilities(self, character: Character) -> Character:
@@ -726,8 +735,10 @@ class RNGCharGen:
                         character=str(character.id),
                         category_name=category,
                     )
-                    await trait.insert()
-                    character.traits.append(trait)
+                    try:
+                        await character.add_trait(trait)
+                    except errors.TraitExistsError as e:
+                        logger.warning(e)
 
             if isinstance(ability["custom_sections"], list):
                 character.sheet_sections.extend(
@@ -736,7 +747,8 @@ class RNGCharGen:
                         for title, content in ability["custom_sections"]
                     ]
                 )
-        await character.save()
+                await character.save()
+
         return character
 
     async def random_werewolf_traits(self, character: Character) -> Character:
@@ -759,78 +771,81 @@ class RNGCharGen:
         character.auspice = auspice.name
         tribe = WerewolfTribe.random_member()
         character.tribe = tribe.name
-
         character.totem = tribe.value.totem
+        await character.save()
+
+        extra_dots_map = {
+            RNGCharLevel.NEW: 0,
+            RNGCharLevel.INTERMEDIATE: 1,
+            RNGCharLevel.ADVANCED: 2,
+            RNGCharLevel.ELITE: 3,
+        }
 
         willpower = CharacterTrait(
             name="Willpower",
-            value=tribe.value.starting_willpower,
+            value=tribe.value.starting_willpower + extra_dots_map[self.experience_level],
             character=str(character.id),
             category_name=TraitCategory.OTHER.name,
             max_value=10,
         )
-        await willpower.insert()
-        character.traits.append(willpower)
+        try:
+            await character.add_trait(willpower)
+        except errors.TraitExistsError as e:
+            logger.warning(e)
 
         gnosis = CharacterTrait(
             name="Gnosis",
-            value=breed.value.starting_gnosis,
+            value=breed.value.starting_gnosis + extra_dots_map[self.experience_level],
             character=str(character.id),
             category_name=TraitCategory.OTHER.name,
             max_value=10,
         )
-        await gnosis.insert()
-        character.traits.append(gnosis)
+        await character.add_trait(gnosis)
 
         rage = CharacterTrait(
             name="Rage",
-            value=auspice.value.starting_rage,
+            value=auspice.value.starting_rage + extra_dots_map[self.experience_level],
             character=str(character.id),
             category_name=TraitCategory.OTHER.name,
             max_value=get_max_trait_value("Rage", TraitCategory.OTHER.name),
         )
-        await rage.insert()
-        character.traits.append(rage)
+        await character.add_trait(rage)
 
         rank = CharacterTrait(
             name="Rank",
-            value=1,
+            value=1 + extra_dots_map[self.experience_level],
             character=str(character.id),
             category_name=TraitCategory.RENOWN.name,
             max_value=5,
         )
-        await rank.insert()
-        character.traits.append(rank)
+        await character.add_trait(rank)
 
         glory = CharacterTrait(
             name="Glory",
-            value=auspice.value.starting_glory,
+            value=auspice.value.starting_glory + extra_dots_map[self.experience_level],
             character=str(character.id),
             category_name=TraitCategory.RENOWN.name,
             max_value=get_max_trait_value("Glory", TraitCategory.RENOWN.name),
         )
-        await glory.insert()
-        character.traits.append(glory)
+        await character.add_trait(glory)
 
         honor = CharacterTrait(
             name="Honor",
-            value=auspice.value.starting_honor,
+            value=auspice.value.starting_honor + extra_dots_map[self.experience_level],
             character=str(character.id),
             category_name=TraitCategory.RENOWN.name,
             max_value=get_max_trait_value("Honor", TraitCategory.RENOWN.name),
         )
-        await honor.insert()
-        character.traits.append(honor)
+        await character.add_trait(honor)
 
         wisdom = CharacterTrait(
             name="Wisdom",
-            value=auspice.value.starting_wisdom,
+            value=auspice.value.starting_wisdom + extra_dots_map[self.experience_level],
             character=str(character.id),
             category_name=TraitCategory.RENOWN.name,
             max_value=get_max_trait_value("Wisdom", TraitCategory.RENOWN.name),
         )
-        await wisdom.insert()
-        character.traits.append(wisdom)
+        await character.add_trait(wisdom)
 
         gifts = set(auspice.value.starting_gifts + breed.value.starting_gifts)
         for gift in gifts:
@@ -841,8 +856,9 @@ class RNGCharGen:
                 category_name=TraitCategory.GIFTS.name,
                 max_value=1,
             )
-            await trait.insert()
-            character.traits.append(trait)
+            try:
+                await character.add_trait(trait)
+            except errors.TraitExistsError as e:
+                logger.warning(e)
 
-        await character.save()
         return character

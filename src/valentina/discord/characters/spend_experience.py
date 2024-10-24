@@ -128,7 +128,7 @@ class SpendFreebiePoints(discord.ui.View):
         available_traits = [
             trait
             for trait in cast(list[CharacterTrait], self.character.traits)
-            if trait.category == self.trait_category and trait.value < trait.max_value
+            if trait.trait_category == self.trait_category and trait.value < trait.max_value
         ]
 
         # Set up the view and embed to prompt the user to select a trait

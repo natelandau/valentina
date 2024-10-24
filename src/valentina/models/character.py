@@ -93,8 +93,8 @@ class CharacterTrait(Document):
         return num_to_circles(self.value, self.max_value)
 
     @property
-    def category(self) -> TraitCategory:
-        """Return the trait's category."""
+    def trait_category(self) -> TraitCategory:
+        """Return the trait's category as a TraitCategory enum."""
         return TraitCategory[self.category_name] if self.category_name else None
 
 

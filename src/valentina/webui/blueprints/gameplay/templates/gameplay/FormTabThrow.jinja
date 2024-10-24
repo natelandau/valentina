@@ -11,7 +11,7 @@
 {% elif not character %}
     <div class="alert alert-danger" role="alert">Select a character</div>
 {% else %}
-    <form hx-post="{{ url_for("gameplay.diceroll") }}"
+    <form hx-post="{{ url_for('gameplay.diceroll') }}"
           hx-target="#main-content"
           hx-trigger="submit"
           class="py-3">
@@ -23,7 +23,9 @@
                     {# <label class="input-group-text">Dice Size</label> #}
                     <select class="form-select" name="dice_size">
                         {% for dice_size in dice_sizes | sort %}
-                            <option value="{{ dice_size }}" {% if dice_size == 10 %}selected{% endif %}>{{ dice_size }}</option>
+                            <option value="{{ dice_size }}" {% if dice_size == 10 %}selected{% endif %}>
+                                {{ dice_size }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>

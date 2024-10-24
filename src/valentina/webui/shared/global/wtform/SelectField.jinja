@@ -1,9 +1,13 @@
 {# def
     field:Field,
     join_label:bool=False,
+    floating_label:bool=False,
 #}
-{% set label_text = field.label.text~"" if field.flags.required else field.label.text %}
+
+{% set label_text = field.label.text ~ "" if field.flags.required else field.label.text %}
+
 {% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data else "" %}
+
 {% if join_label %}
     <div class="mb-3" id="{{ field.id }}-container">
         <div class="input-group">
@@ -12,6 +16,13 @@
             {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
             {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
         </div>
+    </div>
+{% elif floating_label %}
+    <div class="mb-3 form-floating" id="{{ field.id }}-container">
+        {{ field(**{"class":"form-select"~valid_css, "placeholder":""}) }}
+        <label for="{{ field.id }}" class="text-body-secondary">{{ label_text }}</label>
+        {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
+        {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
     </div>
 {% else %}
     <div class="mb-3" id="{{ field.id }}-container">
