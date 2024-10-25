@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional, Union, cast
+from uuid import UUID, uuid4
 
 import discord
 import inflect
@@ -60,6 +61,7 @@ class CharacterSheetSection(BaseModel):
 
     title: str
     content: str
+    uuid: UUID = Field(default_factory=uuid4)
 
 
 class CharacterTrait(Document):

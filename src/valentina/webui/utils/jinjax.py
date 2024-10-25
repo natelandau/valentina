@@ -1,5 +1,7 @@
 """Configure Jinjax for Valentina."""
 
+import re
+
 import jinjax
 from loguru import logger
 from markdown2 import markdown
@@ -24,6 +26,12 @@ def from_markdown(value: str) -> str:
     return markdown(value)
 
 
+def from_markdown_no_p(value: str) -> str:
+    """Strip enclosing paragraph marks, <p> ... </p>, which markdown() forces, and which interfere with some jinja2 layout."""
+    value = escape(value)
+    return re.sub("(^<P>|</P>$)", "", markdown(value), flags=re.IGNORECASE)
+
+
 def register_jinjax_catalog() -> jinjax.Catalog:
     """Register the JinJax catalog with the Quart application.
 
@@ -44,6 +52,7 @@ def register_jinjax_catalog() -> jinjax.Catalog:
         catalog.add_folder(template_folder)
 
     catalog.jinja_env.filters.update({"from_markdown": from_markdown})
+    catalog.jinja_env.filters.update({"from_markdown_no_p": from_markdown_no_p})
     catalog.jinja_env.trim_blocks = True
     catalog.jinja_env.lstrip_blocks = True
 

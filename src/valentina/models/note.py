@@ -36,7 +36,7 @@ class Note(Document):
         self.date_modified = time_now()
 
     async def display(self, ctx: "ValentinaContext") -> str:
-        """Display the note."""
+        """Display the note in markdown format."""
         creator = discord.utils.get(ctx.bot.users, id=self.created_by)
 
         return f"{self.text.capitalize()} _`@{creator.display_name if creator else 'Unknown'}`_"

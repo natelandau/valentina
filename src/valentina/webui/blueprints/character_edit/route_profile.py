@@ -7,7 +7,15 @@ from flask_discord import requires_authorization
 from quart import Response, abort, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
-from wtforms import DateField, HiddenField, SelectField, StringField, SubmitField, ValidationError
+from wtforms import (
+    DateField,
+    HiddenField,
+    SelectField,
+    StringField,
+    SubmitField,
+    TextAreaField,
+    ValidationError,
+)
 from wtforms.validators import DataRequired, Length, Optional
 
 from valentina.constants import (
@@ -104,6 +112,14 @@ class ProfileForm(QuartForm):
         filters=[str.strip, str.title],
     )
 
+    bio = TextAreaField(
+        "Biography",
+        default="",
+        validators=[Optional()],
+        filters=[str.strip],
+        description="Information about the character. Can have multiple paragraphs and use markdown for formatting.",
+    )
+
     submit = SubmitField("Submit")
     character_id = HiddenField()
 
@@ -150,6 +166,7 @@ class EditProfile(MethodView):
             "auspice": character.auspice if character.auspice else "",
             "breed": character.breed if character.breed else "",
             "clan_name": character.clan_name if character.clan_name else "",
+            "bio": character.bio if character.bio else "",
         }
 
         form = await ProfileForm().create_form(data=data_from_db)
