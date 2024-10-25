@@ -61,6 +61,7 @@ class RollSelector(MethodView):
                     campaign=campaign,
                     dice_sizes=[member.value for member in DiceType],
                     form=gameplay_form,
+                    roll_types=RollType,
                 )
             case RollType.TRAITS:
                 traits = (
@@ -74,6 +75,7 @@ class RollSelector(MethodView):
                     campaign=campaign,
                     character=character,
                     form=gameplay_form,
+                    roll_types=RollType,
                 )
             case RollType.MACROS:
                 user = await fetch_user()
@@ -83,6 +85,7 @@ class RollSelector(MethodView):
                     campaign=campaign,
                     character=character,
                     form=gameplay_form,
+                    roll_types=RollType,
                 )
             case _:
                 assert_never()
@@ -203,7 +206,7 @@ class RollResults(MethodView):
 
         form = await request.form
 
-        match RollType.get_member_by_value(request.args.get("tab", None)):
+        match RollType.get_member_by_value(form.get("roll_type", None)):
             case RollType.TRAITS:
                 pool, rolled_traits = await self._process_traits_form(form=form)
             case RollType.MACROS:
@@ -214,7 +217,7 @@ class RollResults(MethodView):
                 pool = int(form.get("pool", 1))
                 rolled_traits = {}
             case _:
-                assert_never()
+                assert_never(RollType)
 
         roll = DiceRoll(
             difficulty=int(form.get("difficulty", 1)),

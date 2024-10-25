@@ -3,13 +3,16 @@
     campaign:Campaign = None,
     dice_sizes:list[int],
     form:ValentinaForm,
+    roll_types:RollType,
 #}
+
+{% set roll_type = roll_types.THROW.value %}
 
 <form hx-post="{{ url_for('diceroll_modal.roll_results', character_id=character.id, campaign_id=campaign.id) }}"
       hx-target="#roll-results"
       hx-trigger="submit"
       class="py-3">
-    <input type="hidden" id="tab" name="tab" value="throw" />
+    <input type="hidden" id="roll_type" name="roll_type" value="{{ roll_type }}" />
     <input type="hidden"
            id="character_id"
            name="character_id"

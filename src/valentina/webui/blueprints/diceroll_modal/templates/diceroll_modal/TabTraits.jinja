@@ -3,13 +3,26 @@
     campaign:Campaign = None,
     form:ValentinaForm,
     character:Character,
+    roll_types:RollType,
 #}
+
+{% set roll_type = roll_types.TRAITS.value %}
+
 <form hx-post="{{ url_for('diceroll_modal.roll_results', character_id=character.id, campaign_id=campaign.id) }}"
       hx-target="#roll-results"
       hx-trigger="submit"
       class="pb-3">
     <input type="hidden" id="dice_size" name="dice_size" value="10" />
-    <input type="hidden" id="tab" name="tab" value="traits" />
+    <input type="hidden" id="roll_type" name="roll_type" value="{{ roll_type }}" />
+    <input type="hidden"
+           id="character_id"
+           name="character_id"
+           value="{{ character.id }}" />
+    <input type="hidden"
+           id="campaign_id"
+           name="campaign_id"
+           value="{{ campaign.id }}" />
+
     <div class="row">
         <div class="col">
             <label for="trait1" class="form-label">Trait 1</label>
