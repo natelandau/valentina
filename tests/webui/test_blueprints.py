@@ -4,6 +4,7 @@
 import pytest
 
 from tests.factories import *
+from valentina.webui.blueprints.character_view.route import CharacterViewTab
 
 
 @pytest.mark.parametrize(
@@ -41,12 +42,16 @@ async def test_routes(
 
 @pytest.mark.drop_db
 async def test_character_view(
-    debug, mocker, mock_session, test_client, character_factory, user_factory
+    debug, mocker, mock_session, test_client, campaign_factory, character_factory, user_factory
 ) -> None:
     """Test the character blueprint."""
     user = user_factory.build()
     await user.insert()
-    character = character_factory.build()
+
+    campaign = campaign_factory.build()
+    await campaign.insert()
+
+    character = character_factory.build(campaign=str(campaign.id))
     await character.insert()
     mocker.patch(
         "valentina.webui.blueprints.character_view.route.is_storyteller", return_value=False
@@ -59,7 +64,8 @@ async def test_character_view(
 
     assert response.status_code == 200
 
-    for tab in ("sheet", "inventory", "profile", "statistics"):
+    # Skip checking the images tab b/c mocking the AWS S3 bucket is difficult
+    for tab in [x.value for x in CharacterViewTab if x.name != "IMAGES"]:
         response = await test_client.get(
             f"/character/{character.id}?tab={tab}",
             headers={"HX-Request": "true"},
@@ -90,21 +96,3 @@ async def test_campaign_view(debug, mock_session, test_client, campaign_factory)
         )
         # debug("headers", response.headers)
         assert response.status_code == 200
-
-
-@pytest.mark.drop_db
-async def test_gameplay_view(
-    debug, mock_session, test_client, campaign_factory, character_factory
-) -> None:
-    """Test the gameplay blueprint."""
-    campaign = campaign_factory.build()
-    character = character_factory.build()
-    await campaign.insert()
-    await character.insert()
-
-    async with test_client.session_transaction() as session:
-        session.update(mock_session(campaigns=[campaign], characters=[character]))
-
-    response = await test_client.get("/gameplay", follow_redirects=True)
-
-    assert response.status_code == 200

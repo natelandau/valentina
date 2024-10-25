@@ -14,11 +14,6 @@
         <div class="vr mx-3 bg-secondary" style="opacity:0.5;"></div>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link btn btn-dark me-2"
-                       aria-current="page"
-                       href="{{ url_for('gameplay.gameplay') }}"><i class="fa-solid fa-dice"></i>&nbsp;Roll Dice</a>
-                </li>
                 {% if session["IS_STORYTELLER"] %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle btn btn-dark me-2"

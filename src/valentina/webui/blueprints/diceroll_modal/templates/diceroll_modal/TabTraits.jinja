@@ -2,9 +2,10 @@
     traits:List[CharacterTrait] = [],
     campaign:Campaign = None,
     form:ValentinaForm,
+    character:Character,
 #}
-<form hx-post="{{ url_for("gameplay.diceroll") }}"
-      hx-target="#main-content"
+<form hx-post="{{ url_for('diceroll_modal.roll_results', character_id=character.id, campaign_id=campaign.id) }}"
+      hx-target="#roll-results"
       hx-trigger="submit"
       class="pb-3">
     <input type="hidden" id="dice_size" name="dice_size" value="10" />

@@ -82,6 +82,18 @@ async def fetch_active_campaign(
     """
     _guard_against_mangled_session_data()
 
+    if campaign_id:
+        campaign = await Campaign.get(campaign_id, fetch_links=fetch_links)
+        if not campaign:
+            logger.error(f"WEBUI: Campaign {campaign_id} not found")
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Campaign not found.")
+
+        session["ACTIVE_CAMPAIGN_ID"] = str(campaign.id)
+        return campaign
+
+    if session_active_campaign := session.get("ACTIVE_CAMPAIGN_ID", None):
+        return await Campaign.get(session_active_campaign, fetch_links=fetch_links)
+
     if len(session["GUILD_CAMPAIGNS"]) == 0:
         return None
 
@@ -93,21 +105,8 @@ async def fetch_active_campaign(
         session["ACTIVE_CAMPAIGN_ID"] = str(campaign.id)
         return campaign
 
-    # IF the session has an active campaign and no campaign ID is provided or if it matches the provided campaign ID, return that campaign
-    session_active_campaign = session.get("ACTIVE_CAMPAIGN_ID", None)
-
-    if (not campaign_id and session_active_campaign) or (
-        campaign_id and campaign_id == session_active_campaign
-    ):
-        return await Campaign.get(session_active_campaign, fetch_links=fetch_links)
-
-    # If no campaign id is provided, return None b/c we can't determine the active campaign
-    if not campaign_id:
-        return None
-
-    # If the provided campaign ID is different from the active campaign ID, update the session
-    session["ACTIVE_CAMPAIGN_ID"] = str(campaign_id)
-    return await Campaign.get(campaign_id, fetch_links=fetch_links)
+    logger.warning("WEBUI: No active campaign found")
+    return None
 
 
 async def fetch_active_character(

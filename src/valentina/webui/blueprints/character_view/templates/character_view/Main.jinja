@@ -4,6 +4,10 @@
     sheet_data: list[SheetSection],
     profile_data: dict[str,str],
     campaign_experience: int = 0,
+    campaign: Campaign,
+    dice_sizes: list[int],
+    form: ValentinaForm,
+    tabs: CharacterViewTab,
 #}
 <PageLayout title={{ character.name }} _attrs={{ attrs }}>
     <global.PageTitle>{{ character.full_name }}</global.PageTitle>

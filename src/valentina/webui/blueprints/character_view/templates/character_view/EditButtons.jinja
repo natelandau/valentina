@@ -1,8 +1,3 @@
-{# def
-    character: Character,
-    campaign_experience: int = 0,
-#}
-
 <div class="mb-4">
 
     {% if character.freebie_points > 0 and session["USER_ID"] == character.user_owner %}
@@ -27,4 +22,17 @@
         <a href="{{ url_for('character_edit.storyteller', character_id=character.id) }}"
            class="btn btn-info">Storyteller Update Character</a>
     {% endif %}
+
+    <!-- Button trigger modal -->
+    <button type="button"
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#gameplayModal">
+        <i class="fa-solid fa-dice"></i>&nbsp;&nbsp;Roll Dice
+    </button>
+
+    {# The gameplay modal is included here so that it can be displayed when the button is clicked #}
+
+    {% include "character_view/GameplayModal.jinja" %}
+
 </div>
