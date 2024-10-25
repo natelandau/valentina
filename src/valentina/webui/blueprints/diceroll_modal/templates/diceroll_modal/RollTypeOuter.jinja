@@ -1,0 +1,30 @@
+{# def
+    character:Character,
+    campaign:Campaign,
+    dice_sizes:list[int],
+    form:ValentinaForm,
+    roll_types:RollType,
+#}
+<div class="row row-cols-1 row-cols-sm-2">
+    <div class="col col-sm-4 bg-light border">
+        <div id="form-column">
+
+            <global.TabGroup tab-type="nav-pills">
+            {% for roll_type in roll_types %}
+
+                {% set tab_text = "Throw Dice" if roll_type.name == "THROW" else "Roll " ~ roll_type.value %}
+
+                <global.TabItem url={{ url_for('diceroll_modal.roll_selector', character_id=character.id, campaign_id=campaign.id, tab=roll_type.value) }} text={{ tab_text | title }} number={{ loop.index }} target="#gameplay-form" />
+            {% endfor %}
+
+            </global.TabGroup>
+
+            <div id="gameplay-form">
+                {# We load the throw tab on first load. HTMX reloads this div when tabs are selected. #}
+                <diceroll_modal.TabThrow character={{ character }} campaign={{ campaign }} dice_sizes={{ dice_sizes }} form={{ form }} roll_types={{ roll_types }} />
+            </div>
+        </div>
+    </div>
+    {# This div is loaded by HTMX with the roll results when the form is submitted. #}
+    <div class="col col-sm-8" id="roll-results"></div>
+</div>

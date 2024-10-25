@@ -1,12 +1,14 @@
 """View character."""
 
-from typing import ClassVar
+from enum import Enum
+from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
 from quart import abort, request, session
 from quart.views import MethodView
 
 from valentina.constants import (
+    DiceType,
     HTTPStatus,
     InventoryItemType,
 )
@@ -20,7 +22,25 @@ from valentina.models import (
     User,
 )
 from valentina.webui import catalog
-from valentina.webui.utils import fetch_user, is_storyteller
+from valentina.webui.utils import fetch_active_campaign, fetch_user, is_storyteller
+from valentina.webui.utils.forms import ValentinaForm
+
+gameplay_form = ValentinaForm()
+
+
+class CharacterViewTab(Enum):
+    """Enum for the tabs of the character view."""
+
+    SHEET = "sheet"
+    INVENTORY = "inventory"
+    INFO = "info"
+    IMAGES = "images"
+    STATISTICS = "statistics"
+
+    @classmethod
+    def get_member_by_value(cls, value: str) -> "CharacterViewTab":
+        """Get a member of the enum by its value."""
+        return cls[value.upper()]
 
 
 class CharacterView(MethodView):
@@ -92,14 +112,15 @@ class CharacterView(MethodView):
 
         return [aws_svc.get_url(x) for x in character.images]
 
-    async def _get_campaign_experience(self, character: Character, user: User) -> int:
+    async def _get_campaign_experience(
+        self, character: Character, user: User, campaign: Campaign
+    ) -> int:
         """Retrieve and return the character's campaign experience."""
         # Only users who own a character should be able to upgrade the character with their experience points.  In addition, storyteller characters do not require experience points to upgrade.
         session_user = await fetch_user()
         if int(session_user.id) != int(character.user_owner) or character.type_storyteller:
             return 0
 
-        campaign = await Campaign.get(character.campaign)
         campaign_experience, _, _ = user.fetch_campaign_xp(campaign)
         return campaign_experience
 
@@ -118,53 +139,51 @@ class CharacterView(MethodView):
         Raises:
             404: If the requested tab is not recognized.
         """
-        if request.args.get("tab") == "sheet":
-            sheet_builder = CharacterSheetBuilder(character=character)
-            sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
-            storyteller_data = await is_storyteller()
-            profile_data = await sheet_builder.fetch_sheet_profile(
-                storyteller_view=storyteller_data
-            )
-            return catalog.render(
-                "character_view.Sheet",
-                character=character,
-                sheet_data=sheet_data,
-                profile_data=profile_data,
-                character_owner=character_owner,
-            )
+        match CharacterViewTab.get_member_by_value(request.args.get("tab", None)):
+            case CharacterViewTab.SHEET:
+                sheet_builder = CharacterSheetBuilder(character=character)
+                sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
+                storyteller_data = await is_storyteller()
+                profile_data = await sheet_builder.fetch_sheet_profile(
+                    storyteller_view=storyteller_data
+                )
+                return catalog.render(
+                    "character_view.Sheet",
+                    character=character,
+                    sheet_data=sheet_data,
+                    profile_data=profile_data,
+                    character_owner=character_owner,
+                )
+            case CharacterViewTab.INVENTORY:
+                return catalog.render(
+                    "character_view.Inventory",
+                    character=character,
+                    inventory=await self._get_character_inventory(character),
+                )
+            case CharacterViewTab.INFO:
+                return catalog.render("character_view.Info", character=character)
+            case CharacterViewTab.IMAGES:
+                return catalog.render(
+                    "character_view.Images",
+                    character=character,
+                    images=await self._get_character_image_urls(character),
+                )
+            case CharacterViewTab.STATISTICS:
+                stats_engine = Statistics(guild_id=session["GUILD_ID"])
 
-        if request.args.get("tab") == "inventory":
-            return catalog.render(
-                "character_view.Inventory",
-                character=character,
-                inventory=await self._get_character_inventory(character),
-            )
-
-        if request.args.get("tab") == "profile":
-            return catalog.render("character_view.profile", character=character)
-
-        if request.args.get("tab") == "images":
-            return catalog.render(
-                "character_view.Images",
-                character=character,
-                images=await self._get_character_image_urls(character),
-            )
-
-        if request.args.get("tab") == "statistics":
-            stats_engine = Statistics(guild_id=session["GUILD_ID"])
-
-            return catalog.render(
-                "character_view.Statistics",
-                character=character,
-                statistics=await stats_engine.character_statistics(character, as_json=True),
-            )
-
-        return abort(HTTPStatus.NOT_FOUND.value)
+                return catalog.render(
+                    "character_view.Statistics",
+                    character=character,
+                    statistics=await stats_engine.character_statistics(character, as_json=True),
+                )
+            case _:
+                assert_never()
 
     async def get(self, character_id: str = "") -> str:
         """Handle GET requests."""
         character = await self._get_character_object(character_id)
         character_owner = await User.get(character.user_owner, fetch_links=False)
+        campaign = await fetch_active_campaign(campaign_id=character.campaign)
 
         if request.headers.get("HX-Request"):
             return await self._handle_tabs(character, character_owner=character_owner)
@@ -178,11 +197,17 @@ class CharacterView(MethodView):
             "character_view.Main",
             character=character,
             profile_data=profile_data,
+            tabs=CharacterViewTab,
             sheet_data=sheet_data,
             character_owner=character_owner,
-            campaign_experience=await self._get_campaign_experience(character, character_owner),
+            campaign_experience=await self._get_campaign_experience(
+                character, character_owner, campaign
+            ),
+            campaign=campaign,
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
             info_msg=request.args.get("info_msg", ""),
             warning_msg=request.args.get("warning_msg", ""),
+            dice_sizes=[member.value for member in DiceType],
+            form=gameplay_form,
         )

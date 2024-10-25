@@ -1,6 +1,4 @@
 {# def
-    character:Character = None,
-    campaign:Campaign=None,
     roll:Diceroll,
     result_image_url:str = "",
     result_div_class:str = "",
@@ -20,7 +18,9 @@
         </h2>
         {% if roll.desperation_roll and roll.desperation_botches > 0 %}
             {# TODO: Add modal for selecting overreach or entering despair #}
-            <p>You botched one of your desperation rolls.  You must enter despair or overreach and increase danger by 1.</p>
+            <p>
+                You botched one of your desperation rolls.  You must enter despair or overreach and increase danger by 1.
+            </p>
         {% endif %}
         {% if rolled_traits %}
             <div class="h5 pb-2 mt-4 border-bottom border-secondary">Traits Rolled</div>

@@ -82,6 +82,18 @@ async def fetch_active_campaign(
     """
     _guard_against_mangled_session_data()
 
+    if campaign_id:
+        campaign = await Campaign.get(campaign_id, fetch_links=fetch_links)
+        if not campaign:
+            logger.error(f"WEBUI: Campaign {campaign_id} not found")
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Campaign not found.")
+
+        session["ACTIVE_CAMPAIGN_ID"] = str(campaign.id)
+        return campaign
+
+    if session_active_campaign := session.get("ACTIVE_CAMPAIGN_ID", None):
+        return await Campaign.get(session_active_campaign, fetch_links=fetch_links)
+
     if len(session["GUILD_CAMPAIGNS"]) == 0:
         return None
 
@@ -93,21 +105,7 @@ async def fetch_active_campaign(
         session["ACTIVE_CAMPAIGN_ID"] = str(campaign.id)
         return campaign
 
-    # IF the session has an active campaign and no campaign ID is provided or if it matches the provided campaign ID, return that campaign
-    session_active_campaign = session.get("ACTIVE_CAMPAIGN_ID", None)
-
-    if (not campaign_id and session_active_campaign) or (
-        campaign_id and campaign_id == session_active_campaign
-    ):
-        return await Campaign.get(session_active_campaign, fetch_links=fetch_links)
-
-    # If no campaign id is provided, return None b/c we can't determine the active campaign
-    if not campaign_id:
-        return None
-
-    # If the provided campaign ID is different from the active campaign ID, update the session
-    session["ACTIVE_CAMPAIGN_ID"] = str(campaign_id)
-    return await Campaign.get(campaign_id, fetch_links=fetch_links)
+    abort(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Session active campaign not found")  # noqa: RET503
 
 
 async def fetch_active_character(
@@ -137,11 +135,15 @@ async def fetch_active_character(
         return character
 
     if len(session["USER_CHARACTERS"]) == 0:
-        return None
+        abort(
+            HTTPStatus.INTERNAL_SERVER_ERROR.value,
+            "No active character found and no user characters in session",
+        )
 
     if len(session["USER_CHARACTERS"]) == 1:
-        session_character: list[CharacterSessionObject] = next(iter(session["USER_CHARACTERS"]), [])
-        if char_id := getattr(session_character, "id", None):
+        session_character = session["USER_CHARACTERS"][0]
+
+        if char_id := session_character.get("id", None):
             session["ACTIVE_CHARACTER_ID"] = char_id
             return await Character.get(char_id, fetch_links=fetch_links)
         return None
@@ -149,7 +151,11 @@ async def fetch_active_character(
     if existing_character_id := session.get("ACTIVE_CHARACTER_ID", None):
         return await Character.get(existing_character_id, fetch_links=fetch_links)
 
-    return None
+    # When there are multiple characters and no active character set, abort b/c we don't know which one to set as active
+    abort(  # noqa: RET503
+        HTTPStatus.INTERNAL_SERVER_ERROR.value,
+        "Multiple characters found and no active character set",
+    )
 
 
 async def fetch_campaigns(fetch_links: bool = True) -> list[Campaign]:
