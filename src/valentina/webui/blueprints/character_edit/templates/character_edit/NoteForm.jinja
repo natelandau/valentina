@@ -1,0 +1,25 @@
+{# def
+    form:QuartForm,
+    join_label:bool = False,
+    floating_label:bool = False,
+    post_url:str = "",
+    character:Character,
+#}
+
+<div class="d-flex justify-content-center align-items-center my-3">
+    <div class="py-4 px-5 mt-5 rounded-3 border shadow-lg w-50"
+         id="form-container">
+        <form method="post"
+              id="profile-form"
+              hx-post="{{ post_url }}"
+              novalidate
+              hx-indicator="#spinner"
+              hx-target="#notes"
+              hx-swap="innerHTML"
+              encoding="application/x-www-form-urlencoded">
+            <global.WTFormElements form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} />
+            <a href="{{ url_for('character_view.view', character_id=character.id, info_msg="Cancelled") }}"
+               class="btn btn-outline-secondary ms-2">Cancel</a>
+        </form>
+    </div>
+</div>

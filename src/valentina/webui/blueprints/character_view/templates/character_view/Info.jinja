@@ -1,24 +1,113 @@
 {# def
     character: Character
 #}
+<h3 class="border-bottom mb-3">Biography</h3>
 {% if character.bio %}
-    <h3 class="border-bottom mb-3">Biography</h3>
-    {{ character.bio | from_markdown | safe }}
-{% endif %}
-{% if character.notes %}
-    <h3 class="border-bottom mb-3">Notes</h3>
-    <ul>
-        {% for note in character.notes %}<li>{{ note.text | from_markdown | safe }}</li>{% endfor %}
-    </ul>
-{% endif %}
-{% if character.sheet_sections %}
-    <h3 class="border-bottom mb-3">Sheet Sections</h3>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4">
-        {% for section in character.sheet_sections | sort(attribute="title") %}
-            <div class="col">
-                <h4>{{ section.title | escape }}</h4>
-                {{ section.content | from_markdown | safe }}
-            </div>
-        {% endfor %}
+    <div class="mb-5">{{ character.bio | from_markdown | safe }}</div>
+{% else %}
+    <div class="mb-5">
+        <p>
+            No biography
+            {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+                <br>
+                <small>Write one by editing the profile.</small>
+            {% endif %}
+        </p>
     </div>
 {% endif %}
+<div class="border-bottom mb-3">
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for('character_edit.note', character_id=character.id) }}"
+            hx-trigger="click"
+            hx-target="#notes"
+            hx-swap="innerHTML">Create Note</button>
+    <h3>
+        Notes&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Quick notes about the character</small></span>
+    </h3>
+</div>
+<div id="notes">
+    {% if character.notes %}
+        <ul class="list-group list-group-flush mb-5">
+            {% for note in character.notes %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ note.text | from_markdown_no_p | safe }}
+                    {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+                        <div class="btn-group float-end">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    style="--bs-btn-padding-y: .25rem;
+                                           --bs-btn-padding-x: .5rem;
+                                           --bs-btn-font-size: .75rem"
+                                    hx-post="{{ url_for('character_edit.note', character_id=character.id, note_id=note.id) }}"
+                                    hx-trigger="click"
+                                    hx-target="#notes"
+                                    hx-swap="innerHTML">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    style="--bs-btn-padding-y: .25rem;
+                                           --bs-btn-padding-x: .5rem;
+                                           --bs-btn-font-size: .75rem"
+                                    hx-delete="{{ url_for('character_edit.note', character_id=character.id, note_id=note.id) }}"
+                                    hx-trigger="click"
+                                    hx-target="#notes"
+                                    hx-swap="innerHTML">Delete</button>
+                        </div>
+                    {% endif %}
+
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="mb-5">
+            <p>No notes</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="border-bottom mb-3">
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for('character_edit.customsection', character_id=character.id) }}"
+            hx-trigger="click"
+            hx-target="#sheet-sections"
+            hx-swap="innerHTML">Create New Section</button>
+    <h3>
+        Sheet Sections&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Information about the character. Can have multiple paragraphs and use markdown for formatting</small></span>
+    </h3>
+
+</div>
+
+<div id="sheet-sections">
+    {% if character.sheet_sections %}
+        <div class="row g-2 row-cols-sm-2 row-cols-md-3 g-2">
+            {% for section in character.sheet_sections | sort(attribute="title") %}
+                <div class="col">
+                    <div class="card border border-secondary-subtle bg-light-subtle h-100"
+                         style="padding-left:0;
+                                padding-right:0">
+                        <div class="card-header">
+                            <h4>{{ section.title | escape }}</h4>
+                        </div>
+                        <div class="card-body">{{ section.content | from_markdown | safe }}</div>
+                        {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+                            <div class="card-footer">
+                                <button hx-get="{{ url_for('character_edit.customsection', character_id=character.id, uuid=section.uuid) }}"
+                                        hx-trigger="click"
+                                        hx-target="#sheet-sections"
+                                        hx-swap="innerHTML"
+                                        class="btn btn-sm btn-primary">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        hx-delete="{{ url_for('character_edit.customsection', character_id=character.id, uuid=section.uuid, tab="info") }}"
+                                        hx-trigger="click"
+                                        hx-target="#sheet-sections"
+                                        hx-swap="innerHTML">Delete</button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="mb-5">
+            <p>No custom sections</p>
+        </div>
+    {% endif %}
+</div>
