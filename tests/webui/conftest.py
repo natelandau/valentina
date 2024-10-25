@@ -24,6 +24,18 @@ async def test_client() -> AsyncGenerator[TestClientProtocol, None]:
 
 
 @pytest.fixture
+def app_request_context() -> Callable[..., AsyncGenerator[Any, None]]:
+    """Create a request context for the Valentina web interface."""
+
+    async def _make_request_context(*args: Any, **kwargs: Any) -> AsyncGenerator[Any, None]:
+        app = create_app("Testing")
+        async with app.test_request_context(*args, **kwargs) as context:
+            yield context
+
+    return _make_request_context
+
+
+@pytest.fixture
 def mock_session() -> Callable[[], dict[str, Any]]:
     """Create a mock session for testing."""
 

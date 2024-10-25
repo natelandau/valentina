@@ -4,7 +4,6 @@
 import json
 
 import pytest
-from quart import url_for
 
 from tests.factories import *
 from valentina.webui.blueprints.character_view.route import CharacterViewTab
