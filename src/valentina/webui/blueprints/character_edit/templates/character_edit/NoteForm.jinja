@@ -18,8 +18,13 @@
               hx-swap="innerHTML"
               encoding="application/x-www-form-urlencoded">
             <global.WTFormElements form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} />
-            <a href="{{ url_for('character_view.view', character_id=character.id, info_msg="Cancelled") }}"
-               class="btn btn-outline-secondary ms-2">Cancel</a>
+            <button class="btn btn-outline-secondary ms-2"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
+                    hx-trigger="click"
+                    hx-get="{{ url_for('character_view.view', character_id=character.id, tab='info', info_msg='Cancelled') }}">
+                Cancel
+            </button>
         </form>
     </div>
 </div>

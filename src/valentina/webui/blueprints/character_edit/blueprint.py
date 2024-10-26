@@ -2,7 +2,7 @@
 
 from quart import Blueprint
 
-from .route_info import EditCharacterCustomSection, EditCharacterNote
+from .route_info import EditCharacterCustomSection, EditCharacterInventory, EditCharacterNote
 from .route_profile import EditProfile
 from .route_spend_points import SpendPoints, SpendPointsType
 
@@ -42,5 +42,10 @@ blueprint.add_url_rule(
 blueprint.add_url_rule(
     "/character/<string:character_id>/edit/note",
     view_func=EditCharacterNote.as_view("note"),
+    methods=["GET", "POST", "DELETE"],
+)
+blueprint.add_url_rule(
+    "/character/<string:character_id>/edit/inventory",
+    view_func=EditCharacterInventory.as_view("inventory"),
     methods=["GET", "POST", "DELETE"],
 )

@@ -1,22 +1,40 @@
 """Route for editing character info such as notes and custom sheet sections."""
 
+from typing import ClassVar
 from uuid import UUID
 
+from flask_discord import requires_authorization
 from quart import Response, abort, request, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from wtforms import (
     HiddenField,
+    SelectField,
     StringField,
     SubmitField,
     TextAreaField,
 )
 from wtforms.validators import DataRequired, Length
 
-from valentina.models import Character, CharacterSheetSection, Note
+from valentina.constants import InventoryItemType
+from valentina.models import Character, CharacterSheetSection, InventoryItem, Note
 from valentina.webui import catalog
 from valentina.webui.utils import fetch_active_character
 from valentina.webui.utils.discord import post_to_audit_log
+
+
+class InventoryItemForm(QuartForm):
+    """Form for an inventory item."""
+
+    name = StringField("Name", validators=[DataRequired()])
+    description = TextAreaField("Description")
+    type = SelectField(
+        "Type",
+        choices=[("", "-- Select --")] + [(x.name, x.value) for x in InventoryItemType],
+        validators=[DataRequired()],
+    )
+    item_id = HiddenField()
+    submit = SubmitField("Submit")
 
 
 class CustomSectionForm(QuartForm):
@@ -44,6 +62,8 @@ class CharacterNoteForm(QuartForm):
 
 class EditCharacterCustomSection(MethodView):
     """Edit the character's info."""
+
+    decorators: ClassVar = [requires_authorization]
 
     async def _build_form(self, character: Character) -> QuartForm:
         """Build the form and populate with existing data if available."""
@@ -161,6 +181,8 @@ class EditCharacterCustomSection(MethodView):
 class EditCharacterNote(MethodView):
     """Edit the character's note."""
 
+    decorators: ClassVar = [requires_authorization]
+
     async def _build_form(self) -> QuartForm:
         """Build the form and populate with existing data if available."""
         data = {}
@@ -177,7 +199,7 @@ class EditCharacterNote(MethodView):
         """Render the form."""
         character = await fetch_active_character(character_id, fetch_links=False)
         return catalog.render(
-            "character_edit.CustomSectionForm",
+            "character_edit.NoteForm",
             character=character,
             form=await self._build_form(),
             join_label=False,
@@ -219,7 +241,7 @@ class EditCharacterNote(MethodView):
 
         # If POST request does not validate, return errors
         return catalog.render(
-            "character_edit.CustomSectionForm",
+            "character_edit.NoteForm",
             character=character,
             form=form,
             join_label=False,
@@ -252,6 +274,114 @@ class EditCharacterNote(MethodView):
             headers={
                 "HX-Redirect": url_for(
                     "character_view.view", character_id=character_id, success_msg="Note deleted"
+                )
+            }
+        )
+
+
+class EditCharacterInventory(MethodView):
+    """Edit the character's Inventory."""
+
+    decorators: ClassVar = [requires_authorization]
+
+    async def _build_form(self) -> QuartForm:
+        """Build the form and populate with existing data if available."""
+        data = {}
+
+        if request.args.get("item_id"):
+            existing_item = await InventoryItem.get(request.args.get("item_id"))
+            if existing_item:
+                data["name"] = existing_item.name
+                data["description"] = existing_item.description
+                data["type"] = existing_item.type
+
+        return await InventoryItemForm().create_form(data=data)
+
+    async def get(self, character_id: str) -> str:
+        """Render the form."""
+        character = await fetch_active_character(character_id, fetch_links=False)
+        return catalog.render(
+            "character_edit.InventoryItemForm",
+            character=character,
+            form=await self._build_form(),
+            join_label=False,
+            floating_label=True,
+            post_url=url_for("character_edit.inventory", character_id=character_id),
+        )
+
+    async def post(self, character_id: str) -> Response | str:
+        """Process the form."""
+        character = await fetch_active_character(character_id, fetch_links=True)
+        form = await self._build_form()
+
+        if await form.validate_on_submit():
+            if form.data.get("item_id"):
+                existing_item = await InventoryItem.get(form.data["item_id"])
+                existing_item.name = form.data["name"]
+                existing_item.description = form.data["description"]
+                existing_item.type = form.data["type"]
+                await existing_item.save()
+                msg = f"{existing_item.name} updated."
+            else:
+                new_item = InventoryItem(
+                    character=str(character.id),
+                    name=form.data["name"].strip(),
+                    description=form.data["description"].strip(),
+                    type=form.data["type"],
+                )
+                await new_item.save()
+                character.inventory.append(new_item)
+                await character.save()
+                msg = f"{new_item.name} added to inventory"
+
+            return Response(
+                headers={
+                    "HX-Redirect": url_for(
+                        "character_view.view",
+                        character_id=character_id,
+                        success_msg=msg,
+                    ),
+                }
+            )
+
+        # If POST request does not validate, return errors
+        return catalog.render(
+            "character_edit.InventoryItemForm",
+            character=character,
+            form=form,
+            join_label=False,
+            floating_label=True,
+            post_url=url_for("character_edit.inventory", character_id=character_id),
+        )
+
+    async def delete(self, character_id: str) -> Response:
+        """Delete the note."""
+        character = await fetch_active_character(character_id, fetch_links=True)
+
+        item_id = request.args.get("item_id", None)
+        if not item_id:
+            abort(400)
+
+        existing_item = await InventoryItem.get(item_id)
+        for item in character.notes:
+            if item == existing_item:
+                character.inventory.remove(item)
+                break
+        await character.save()
+
+        await post_to_audit_log(
+            msg=f"Character {character.name} item `{existing_item.name}` deleted",
+            view=self.__class__.__name__,
+        )
+
+        await existing_item.delete()
+
+        return Response(
+            headers={
+                "HX-Redirect": url_for(
+                    "character_view.view",
+                    character_id=character_id,
+                    success_msg="Item deleted",
                 )
             }
         )

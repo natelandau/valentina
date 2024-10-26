@@ -3,26 +3,53 @@
     inventory:list[CharacterInventoryItem]=[]
 #}
 {# TODO: Add and edit items #}
+<button class="btn btn-outline-primary btn-sm ms-3 float-end"
+        hx-get="{{ url_for('character_edit.inventory', character_id=character.id) }}"
+        hx-trigger="click"
+        hx-target="#inventory"
+        hx-swap="innerHTML">Add New Item</button>
 <h2 class="mb-4">Inventory</h2>
-<div class="row row-cols-1 row-cols-sm-2">
-    {% if not inventory %}
-        <div class="col">
-            <p>No items in inventory</p>
-        </div>
-    {% else %}
-        {% for key, values in inventory.items() %}
+<div id="inventory">
+    <div class="row row-cols-1 row-cols-sm-2">
+        {% if not inventory %}
             <div class="col">
-                <h4>{{ key | capitalize }}</h4>
-                <hr>
-                <dl class="row">
-                    {% for item in values %}
-                        <dt class="col-sm-3">{{ item.name | from_markdown | safe }}</dt>
-                        <dd class="col-sm-9">
-                            {{ item.description | from_markdown | safe }}
-                        </dd>
-                    {% endfor %}
-                </dl>
+                <p>No items in inventory</p>
             </div>
-        {% endfor %}
-    {% endif %}
+        {% else %}
+            {% for key, values in inventory.items() %}
+                <div class="col">
+                    <h4>{{ key | capitalize }}</h4>
+                    <hr>
+                    <dl class="row">
+                        {% for item in values %}
+
+                            <dt class="col-sm-3">{{ item.name | from_markdown | safe }}</dt>
+                            <dd class="col-sm-9">
+                                <div class="btn-group float-end">
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            style="--bs-btn-padding-y: .25rem;
+                                                   --bs-btn-padding-x: .5rem;
+                                                   --bs-btn-font-size: .75rem"
+                                            hx-get="{{ url_for('character_edit.inventory', character_id=character.id, item_id=item.id) }}"
+                                            hx-trigger="click"
+                                            hx-target="#inventory"
+                                            hx-swap="innerHTML">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            style="--bs-btn-padding-y: .25rem;
+                                                   --bs-btn-padding-x: .5rem;
+                                                   --bs-btn-font-size: .75rem"
+                                            hx-delete="{{ url_for('character_edit.inventory', character_id=character.id, item_id=item.id) }}"
+                                            hx-trigger="click"
+                                            hx-target="#inventory"
+                                            hx-swap="innerHTML">Delete</button>
+                                </div>
+                                {{ item.description | from_markdown | safe }}
+
+                            </dd>
+                        {% endfor %}
+                    </dl>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 </div>
