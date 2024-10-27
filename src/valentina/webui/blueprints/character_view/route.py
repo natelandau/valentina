@@ -1,6 +1,5 @@
 """View character."""
 
-from enum import Enum
 from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
@@ -22,25 +21,11 @@ from valentina.models import (
     User,
 )
 from valentina.webui import catalog
+from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab
 from valentina.webui.utils import fetch_active_campaign, fetch_user, is_storyteller
 from valentina.webui.utils.forms import ValentinaForm
 
 gameplay_form = ValentinaForm()
-
-
-class CharacterViewTab(Enum):
-    """Enum for the tabs of the character view."""
-
-    SHEET = "sheet"
-    INVENTORY = "inventory"
-    INFO = "info"
-    IMAGES = "images"
-    STATISTICS = "statistics"
-
-    @classmethod
-    def get_member_by_value(cls, value: str) -> "CharacterViewTab":
-        """Get a member of the enum by its value."""
-        return cls[value.upper()]
 
 
 class CharacterView(MethodView):
@@ -154,14 +139,19 @@ class CharacterView(MethodView):
                     profile_data=profile_data,
                     character_owner=character_owner,
                 )
-            case CharacterViewTab.INVENTORY:
+            case CharacterViewTab.BIOGRAPHY:
                 return catalog.render(
-                    "character_view.Inventory",
+                    "character_view.Biography",
                     character=character,
-                    inventory=await self._get_character_inventory(character),
                 )
             case CharacterViewTab.INFO:
-                return catalog.render("character_view.Info", character=character)
+                return catalog.render(
+                    "character_view.Info",
+                    character=character,
+                    inventory=await self._get_character_inventory(character),
+                    CharacterEditableInfo=CharacterEditableInfo,
+                )
+
             case CharacterViewTab.IMAGES:
                 return catalog.render(
                     "character_view.Images",

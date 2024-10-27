@@ -6,8 +6,8 @@ import json
 import pytest
 
 from tests.factories import *
-from valentina.webui.blueprints.character_view.route import CharacterViewTab
 from valentina.webui.blueprints.diceroll_modal.route import RollType
+from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab
 
 
 @pytest.mark.parametrize(
@@ -73,6 +73,26 @@ async def test_character_views(
         response = await test_client.get(
             f"/character/{character.id}?tab={tab}",
             headers={"HX-Request": "true"},
+            follow_redirects=True,
+        )
+        # debug("headers", response.headers)
+        assert response.status_code == 200
+
+
+@pytest.mark.drop_db
+async def test_character_edit_routes(
+    debug, mocker, mock_session, test_client, campaign_factory, character_factory, user_factory
+) -> None:
+    """Test the character edit blueprint."""
+    character = character_factory.build()
+    await character.insert()
+
+    async with test_client.session_transaction() as session:
+        session.update(mock_session())
+
+    for route in [x.value for x in CharacterEditableInfo]:
+        response = await test_client.get(
+            f"/character/{character.id}/edit/{route}",
             follow_redirects=True,
         )
         # debug("headers", response.headers)

@@ -2,7 +2,9 @@
 
 from quart import Blueprint
 
-from .route_info import EditCharacterCustomSection, EditCharacterInventory, EditCharacterNote
+from valentina.webui.constants import CharacterEditableInfo
+
+from .route_info import EditCharacterInfo
 from .route_profile import EditProfile
 from .route_spend_points import SpendPoints, SpendPointsType
 
@@ -34,18 +36,26 @@ blueprint.add_url_rule(
     view_func=EditProfile.as_view("profile"),
     methods=["GET", "POST"],
 )
+
+
 blueprint.add_url_rule(
-    "/character/<string:character_id>/edit/customsection",
-    view_func=EditCharacterCustomSection.as_view("customsection"),
+    f"/character/<string:character_id>/edit/{CharacterEditableInfo.CUSTOM_SECTION.value}",
+    view_func=EditCharacterInfo.as_view(
+        CharacterEditableInfo.CUSTOM_SECTION.value, edit_type=CharacterEditableInfo.CUSTOM_SECTION
+    ),
     methods=["GET", "POST", "DELETE"],
 )
 blueprint.add_url_rule(
-    "/character/<string:character_id>/edit/note",
-    view_func=EditCharacterNote.as_view("note"),
+    f"/character/<string:character_id>/edit/{CharacterEditableInfo.NOTE.value}",
+    view_func=EditCharacterInfo.as_view(
+        CharacterEditableInfo.NOTE.value, edit_type=CharacterEditableInfo.NOTE
+    ),
     methods=["GET", "POST", "DELETE"],
 )
 blueprint.add_url_rule(
-    "/character/<string:character_id>/edit/inventory",
-    view_func=EditCharacterInventory.as_view("inventory"),
+    f"/character/<string:character_id>/edit/{CharacterEditableInfo.INVENTORY.value}",
+    view_func=EditCharacterInfo.as_view(
+        CharacterEditableInfo.INVENTORY.value, edit_type=CharacterEditableInfo.INVENTORY
+    ),
     methods=["GET", "POST", "DELETE"],
 )

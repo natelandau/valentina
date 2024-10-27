@@ -1,0 +1,18 @@
+{# def
+    character: Character
+#}
+<h2>Biography</h2>
+<hr class="border border-primary border-2 opacity-75">
+{% if character.bio %}
+    <div class="mb-5">{{ character.bio | from_markdown | safe }}</div>
+{% else %}
+    <div class="mb-5">
+        <p>
+            No biography
+            {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+                <br>
+                <small>Write one by editing the profile.</small>
+            {% endif %}
+        </p>
+    </div>
+{% endif %}

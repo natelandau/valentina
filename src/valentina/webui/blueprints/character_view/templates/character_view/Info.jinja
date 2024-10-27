@@ -1,31 +1,87 @@
 {# def
-    character: Character
+    character: Character,
+    CharacterEditableInfo: CharacterEditableInfo,
+    inventory: list[CharacterInventoryItem] = [],
 #}
-<h3 class="border-bottom mb-3">Biography</h3>
-{% if character.bio %}
-    <div class="mb-5">{{ character.bio | from_markdown | safe }}</div>
-{% else %}
-    <div class="mb-5">
-        <p>
-            No biography
-            {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
-                <br>
-                <small>Write one by editing the profile.</small>
-            {% endif %}
-        </p>
-    </div>
-{% endif %}
-<div class="border-bottom mb-3">
-    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
-            hx-get="{{ url_for('character_edit.note', character_id=character.id) }}"
-            hx-trigger="click"
-            hx-target="#notes"
-            hx-swap="innerHTML">Create Note</button>
-    <h3>
-        Notes&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Quick notes about the character</small></span>
-    </h3>
+
+{% set inventory_view = CharacterEditableInfo.INVENTORY.value %}
+
+<button class="btn btn-outline-primary btn-sm ms-3 float-end"
+        hx-get="{{ url_for('character_edit.'~CharacterEditableInfo.INVENTORY.value, character_id=character.id) }}"
+        hx-trigger="click"
+        hx-target="#{{ CharacterEditableInfo.INVENTORY.value }}"
+        hx-swap="innerHTML">Add New Item</button>
+<h2>
+    Inventory&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Items the character owns</small></span>
+</h2>
+<hr class="border border-primary border-2 opacity-75">
+<div id="{{ CharacterEditableInfo.INVENTORY.value }}" class="mb-5">
+
+    {% if not inventory %}
+        <div class="col">
+            <p>No items in inventory</p>
+        </div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, values in inventory.items() %}
+                        {% for item in values %}
+                            <tr>
+                                <td style="white-space: nowrap;">
+                                    <strong>{{ item.name | from_markdown | safe }}</strong>
+                                </td>
+                                <td>{{ key | capitalize }}</td>
+                                <td>{{ item.description | from_markdown | safe }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                style="--bs-btn-padding-y: .25rem;
+                                                       --bs-btn-padding-x: .5rem;
+                                                       --bs-btn-font-size: .75rem"
+                                                hx-get="{{ url_for('character_edit.'~CharacterEditableInfo.INVENTORY.value, character_id=character.id, item_id=item.id) }}"
+                                                hx-trigger="click"
+                                                hx-target="#{{ CharacterEditableInfo.INVENTORY.value }}"
+                                                hx-swap="innerHTML">Edit</button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                style="--bs-btn-padding-y: .25rem;
+                                                       --bs-btn-padding-x: .5rem;
+                                                       --bs-btn-font-size: .75rem"
+                                                hx-delete="{{ url_for('character_edit.'~CharacterEditableInfo.INVENTORY.value, character_id=character.id, item_id=item.id) }}"
+                                                hx-trigger="click"
+                                                hx-target="#{{ CharacterEditableInfo.INVENTORY.value }}"
+                                                hx-swap="innerHTML">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
 </div>
-<div id="notes">
+
+<button class="btn btn-outline-primary btn-sm ms-3 float-end"
+        hx-get="{{ url_for('character_edit.'~CharacterEditableInfo.NOTE.value, character_id=character.id) }}"
+        hx-trigger="click"
+        hx-target="#{{ CharacterEditableInfo.NOTE.value }}"
+        hx-swap="innerHTML">Create Note</button>
+<h2>
+    Notes&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Quick notes about the character</small></span>
+</h2>
+
+<hr class="border border-primary border-2 opacity-75">
+<div id="{{ CharacterEditableInfo.NOTE.value }}">
     {% if character.notes %}
         <ul class="list-group list-group-flush mb-5">
             {% for note in character.notes %}
@@ -37,17 +93,17 @@
                                     style="--bs-btn-padding-y: .25rem;
                                            --bs-btn-padding-x: .5rem;
                                            --bs-btn-font-size: .75rem"
-                                    hx-post="{{ url_for('character_edit.note', character_id=character.id, note_id=note.id) }}"
+                                    hx-post="{{ url_for('character_edit.'~CharacterEditableInfo.NOTE.value, character_id=character.id, note_id=note.id) }}"
                                     hx-trigger="click"
-                                    hx-target="#notes"
+                                    hx-target="#{{ CharacterEditableInfo.NOTE.value }}"
                                     hx-swap="innerHTML">Edit</button>
                             <button class="btn btn-sm btn-outline-danger"
                                     style="--bs-btn-padding-y: .25rem;
                                            --bs-btn-padding-x: .5rem;
                                            --bs-btn-font-size: .75rem"
-                                    hx-delete="{{ url_for('character_edit.note', character_id=character.id, note_id=note.id) }}"
+                                    hx-delete="{{ url_for('character_edit.'~CharacterEditableInfo.NOTE.value, character_id=character.id, note_id=note.id) }}"
                                     hx-trigger="click"
-                                    hx-target="#notes"
+                                    hx-target="#{{ CharacterEditableInfo.NOTE.value }}"
                                     hx-swap="innerHTML">Delete</button>
                         </div>
                     {% endif %}
@@ -62,19 +118,17 @@
     {% endif %}
 </div>
 
-<div class="border-bottom mb-3">
-    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
-            hx-get="{{ url_for('character_edit.customsection', character_id=character.id) }}"
-            hx-trigger="click"
-            hx-target="#sheet-sections"
-            hx-swap="innerHTML">Create New Section</button>
-    <h3>
-        Sheet Sections&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Information about the character. Can have multiple paragraphs and use markdown for formatting</small></span>
-    </h3>
+<button class="btn btn-outline-primary btn-sm ms-3 float-end"
+        hx-get="{{ url_for('character_edit.'~CharacterEditableInfo.CUSTOM_SECTION.value, character_id=character.id) }}"
+        hx-trigger="click"
+        hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value }}"
+        hx-swap="innerHTML">Create New Section</button>
+<h2>
+    Sheet Sections&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Information about the character. Can have multiple paragraphs and use markdown for formatting</small></span>
+</h2>
+<hr class="border border-primary border-2 opacity-75">
 
-</div>
-
-<div id="sheet-sections">
+<div id="{{ CharacterEditableInfo.CUSTOM_SECTION.value }}">
     {% if character.sheet_sections %}
         <div class="row g-2 row-cols-sm-2 row-cols-md-3 g-2">
             {% for section in character.sheet_sections | sort(attribute="title") %}
@@ -88,15 +142,15 @@
                         <div class="card-body">{{ section.content | from_markdown | safe }}</div>
                         {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
                             <div class="card-footer">
-                                <button hx-get="{{ url_for('character_edit.customsection', character_id=character.id, uuid=section.uuid) }}"
+                                <button hx-get="{{ url_for('character_edit.'~CharacterEditableInfo.CUSTOM_SECTION.value, character_id=character.id, uuid=section.uuid) }}"
                                         hx-trigger="click"
-                                        hx-target="#sheet-sections"
+                                        hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value }}"
                                         hx-swap="innerHTML"
                                         class="btn btn-sm btn-primary">Edit</button>
                                 <button class="btn btn-sm btn-outline-danger"
-                                        hx-delete="{{ url_for('character_edit.customsection', character_id=character.id, uuid=section.uuid, tab="info") }}"
+                                        hx-delete="{{ url_for('character_edit.'~CharacterEditableInfo.CUSTOM_SECTION.value, character_id=character.id, uuid=section.uuid) }}"
                                         hx-trigger="click"
-                                        hx-target="#sheet-sections"
+                                        hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value }}"
                                         hx-swap="innerHTML">Delete</button>
                             </div>
                         {% endif %}
