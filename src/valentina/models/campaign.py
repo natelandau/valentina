@@ -122,6 +122,7 @@ class Campaign(Document):
     chapters: list[CampaignChapter] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)
     books: list[Link[CampaignBook]] = Field(default_factory=list)
+    notes: list[Link[Note]] = Field(default_factory=list)
     channel_campaign_category: int | None = None
     channel_storyteller: int | None = None
     channel_general: int | None = None

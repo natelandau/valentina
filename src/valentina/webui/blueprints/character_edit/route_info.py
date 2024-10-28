@@ -173,7 +173,7 @@ class EditCharacterInfo(MethodView):
                 view=self.__class__.__name__,
             )
 
-            return True, msg, form
+            return True, msg, None
 
         return False, "", form
 
@@ -283,9 +283,9 @@ class EditCharacterInfo(MethodView):
             form=await self._build_form(character),
             join_label=False,
             floating_label=True,
-            post_url=url_for(f"character_edit.{self.edit_type.value}", character_id=character_id),
+            post_url=url_for(self.edit_type.value.route, character_id=character_id),
             tab=CharacterViewTab.INFO,
-            hx_target=f"#{self.edit_type.value}",
+            hx_target=f"#{self.edit_type.value.div_id}",
         )
 
     async def post(self, character_id: str) -> Response | str:
@@ -320,9 +320,9 @@ class EditCharacterInfo(MethodView):
             form=form,
             join_label=False,
             floating_label=True,
-            post_url=url_for(f"character_edit.{self.edit_type.value}", character_id=character_id),
+            post_url=url_for(self.edit_type.value.route, character_id=character_id),
             tab=CharacterViewTab.INFO,
-            hx_target=f"#{self.edit_type.value}",
+            hx_target=f"#{self.edit_type.value.div_id}",
         )
 
     async def delete(self, character_id: str) -> Response:

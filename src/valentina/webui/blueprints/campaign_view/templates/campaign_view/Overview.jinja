@@ -1,7 +1,21 @@
 {# def
-    campaign: Campaign
+    campaign: Campaign,
+    CampaignEditableInfo: CampaignEditableInfo,
+    can_manage_campaign: bool = False,
 #}
-<div class="row justify-content-start">
+
+{% if can_manage_campaign %}
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for(CampaignEditableInfo.DESCRIPTION.value.route, campaign_id=campaign.id) }}"
+            hx-trigger="click"
+            hx-target="#{{ CampaignEditableInfo.DESCRIPTION.value.div_id }}"
+            hx-swap="innerHTML">Edit</button>
+{% endif %}
+<h2>Campaign Overview</h2>
+<hr class="border border-primary border-2 opacity-75">
+
+<div class="row justify-content-start"
+     id="{{ CampaignEditableInfo.DESCRIPTION.value.div_id }}">
     <div class="col-2 sticky-top ps-0">
         <table class="table table-sm table-borderless table-light border border-dark-subtle rounded-5">
             <tr>
@@ -14,12 +28,14 @@
             </tr>
         </table>
     </div>
-    <div class="col" id="campaign-content">
-        {# This content is overwritten by the CampaignOverviewSnippet view when edited #}
-        <h3 style="display:inline;">Campaign Description</h3>
-        <button class="btn btn-sm btn-outline-primary float-end"
-                hx-get="{{ url_for("campaign.campaign_overview", campaign_id=campaign.id, view="edit") }}"
-                hx-target="#campaign-content">Edit description</button>
-        {{ (campaign.description | from_markdown | safe) if campaign.description else "<p>No Description</p>" }}
+    <div class="col">
+        {% if campaign.description %}
+            {{ campaign.description | from_markdown }}
+        {% else %}
+            <p>
+                No description yet.
+                {% if can_manage_campaign %}Click the edit button to add one.{% endif %}
+            </p>
+        {% endif %}
     </div>
 </div>

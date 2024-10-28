@@ -7,7 +7,12 @@ import pytest
 
 from tests.factories import *
 from valentina.webui.blueprints.diceroll_modal.route import RollType
-from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab
+from valentina.webui.constants import (
+    CampaignEditableInfo,
+    CampaignViewTab,
+    CharacterEditableInfo,
+    CharacterViewTab,
+)
 
 
 @pytest.mark.parametrize(
@@ -90,7 +95,7 @@ async def test_character_edit_routes(
     async with test_client.session_transaction() as session:
         session.update(mock_session())
 
-    for route in [x.value for x in CharacterEditableInfo]:
+    for route in [x.value.name for x in CharacterEditableInfo]:
         response = await test_client.get(
             f"/character/{character.id}/edit/{route}",
             follow_redirects=True,
@@ -183,22 +188,54 @@ async def test_diceroll_modal(
 
 
 @pytest.mark.drop_db
-async def test_campaign_view(debug, mock_session, test_client, campaign_factory) -> None:
+async def test_campaign_view(
+    debug, mock_session, guild_factory, test_client, campaign_factory
+) -> None:
     """Test the campaign blueprint."""
+    guild = guild_factory.build()
+    await guild.insert()
+
     campaign = campaign_factory.build()
     await campaign.insert()
 
     async with test_client.session_transaction() as session:
-        session.update(mock_session(campaigns=[campaign]))
+        session.update(mock_session(campaigns=[campaign], guild_id=guild.id))
 
     response = await test_client.get(f"/campaign/{campaign.id}", follow_redirects=True)
 
     assert response.status_code == 200
 
-    for tab in ("overview", "books", "characters", "statistics"):
+    for tab in [x.value for x in CampaignViewTab]:
         response = await test_client.get(
             f"/campaign/{campaign.id}?tab={tab}",
             headers={"HX-Request": "true"},
+            follow_redirects=True,
+        )
+        # debug("headers", response.headers)
+        assert response.status_code == 200
+
+
+@pytest.mark.drop_db
+async def test_campaign_edit_routes(
+    debug,
+    mock_session,
+    guild_factory,
+    test_client,
+    campaign_factory,
+) -> None:
+    """Test the character edit blueprint."""
+    guild = guild_factory.build()
+    await guild.insert()
+
+    campaign = campaign_factory.build()
+    await campaign.insert()
+
+    async with test_client.session_transaction() as session:
+        session.update(mock_session(campaigns=[campaign], guild_id=guild.id))
+
+    for route in [x.value.name for x in CampaignEditableInfo]:
+        response = await test_client.get(
+            f"/campaign/{campaign.id}/edit/{route}",
             follow_redirects=True,
         )
         # debug("headers", response.headers)

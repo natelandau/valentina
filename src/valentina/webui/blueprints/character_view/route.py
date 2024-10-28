@@ -33,9 +33,6 @@ class CharacterView(MethodView):
 
     decorators: ClassVar = [requires_authorization]
 
-    def __init__(self) -> None:
-        self.session = session  # Assuming session is defined globally or passed in some way
-
     async def _get_character_object(self, character_id: str) -> Character:
         """Get a character db object by ID.
 
@@ -194,10 +191,10 @@ class CharacterView(MethodView):
                 character, character_owner, campaign
             ),
             campaign=campaign,
+            dice_sizes=[member.value for member in DiceType],
+            form=gameplay_form,
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
             info_msg=request.args.get("info_msg", ""),
             warning_msg=request.args.get("warning_msg", ""),
-            dice_sizes=[member.value for member in DiceType],
-            form=gameplay_form,
         )

@@ -1,6 +1,22 @@
 """Constants for the web UI."""
 
+from dataclasses import dataclass
 from enum import Enum
+
+
+@dataclass
+class EditItem:
+    """Class for an item that can be edited."""
+
+    name: str
+    route: str
+    div_id: str
+
+    @property
+    def route_suffix(self) -> str:
+        """Get just the suffix of the route. This is used in blueprints because the suffix is the view name and the prefix is the blueprint name."""
+        # return the last part of the route which is two words separated by a dot
+        return self.route.split(".")[1]
 
 
 class CharacterViewTab(Enum):
@@ -18,14 +34,39 @@ class CharacterViewTab(Enum):
         return cls[value.upper()]
 
 
+class CampaignViewTab(Enum):
+    """Enum for the tabs of the campaign view."""
+
+    OVERVIEW = "overview"
+    BOOKS = "books"
+    CHARACTERS = "characters"
+    NOTES = "notes"
+    STATISTICS = "statistics"
+
+    @classmethod
+    def get_member_by_value(cls, value: str) -> "CampaignViewTab":
+        """Get a member of the enum by its value."""
+        return cls[value.upper()]
+
+
+class CampaignEditableInfo(Enum):
+    """Enum for the editable info of a campaign. Used to build blueprint routes and template variables."""
+
+    DESCRIPTION = EditItem(
+        name="description", route="campaign.edit_description", div_id="description"
+    )
+    BOOK = EditItem(name="book", route="campaign.edit_book", div_id="book")
+    CHAPTER = EditItem(name="chapter", route="campaign.edit_chapter", div_id="chapter")
+    NOTE = EditItem(name="note", route="campaign.edit_note", div_id="note")
+
+
 class CharacterEditableInfo(Enum):
     """Enum for the editable info of a character. Used to build blueprint routes and template variables."""
 
-    NOTE = "note"
-    CUSTOM_SECTION = "customsection"
-    INVENTORY = "inventory"
-
-    @classmethod
-    def get_member_by_value(cls, value: str) -> "CharacterEditableInfo":
-        """Get a member of the enum by its value."""
-        return cls[value.upper()]
+    NOTE = EditItem(name="note", route="character_edit.edit_note", div_id="note")
+    CUSTOM_SECTION = EditItem(
+        name="customsection", route="character_edit.edit_customsection", div_id="customsection"
+    )
+    INVENTORY = EditItem(
+        name="inventory", route="character_edit.edit_inventory", div_id="inventory"
+    )

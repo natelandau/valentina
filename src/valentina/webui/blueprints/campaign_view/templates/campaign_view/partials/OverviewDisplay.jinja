@@ -1,8 +1,0 @@
-{# def
-    campaign:Campaign,
-#}
-<h3 style="display:inline;">Campaign Description</h3>
-<button class="btn btn-sm btn-outline-primary float-end"
-        hx-get="{{ url_for("campaign.campaign_overview", campaign_id=campaign.id, view="edit") }}"
-        hx-target="#campaign-content">Edit description</button>
-{{ (campaign.description | from_markdown | safe) if campaign.description else "<p>No Description</p>" }}

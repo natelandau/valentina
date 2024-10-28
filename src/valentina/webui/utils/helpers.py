@@ -6,7 +6,7 @@ from loguru import logger
 from quart import Response, abort, session
 
 from valentina.constants import DBSyncModelType, DBSyncUpdateType, HTTPStatus
-from valentina.models import Campaign, Character, Guild, User, WebDiscordSync
+from valentina.models import Campaign, CampaignBook, Character, Guild, User, WebDiscordSync
 from valentina.utils import ValentinaConfig, console
 
 
@@ -451,3 +451,48 @@ async def sync_char_to_discord(character: Character, update_type: DBSyncUpdateTy
     )
     await sync.save()
     logger.info(f"WEBUI: Syncing character {character.full_name} to Discord")
+
+
+async def sync_campaign_to_discord(campaign: Campaign, update_type: DBSyncUpdateType) -> None:
+    """Sync a character to Discord.
+
+    Args:
+        campaign (Campaign): The campaign to sync.
+        update_type (str): The type of update to perform.
+
+    Returns:
+        None
+    """
+    # Create a sync object
+    sync = WebDiscordSync(
+        guild_id=campaign.guild,
+        object_id=str(campaign.id),
+        object_type=DBSyncModelType("campaign"),
+        update_type=DBSyncUpdateType(update_type),
+        target="discord",
+        user_id=session["USER_ID"],
+    )
+    await sync.save()
+    logger.info(f"WEBUI: Syncing campaign {campaign.name} to Discord")
+
+
+async def sync_book_to_discord(book: CampaignBook, update_type: DBSyncUpdateType) -> None:
+    """Sync a character to Discord.
+
+    Args:
+        book (CampaignBook): The book to sync.
+        update_type (str): The type of update to perform.
+
+    Returns:
+        None
+    """
+    sync = WebDiscordSync(
+        guild_id=session["GUILD_ID"],
+        object_id=str(book.id),
+        object_type=DBSyncModelType("book"),
+        update_type=DBSyncUpdateType(update_type),
+        target="discord",
+        user_id=session["USER_ID"],
+    )
+    await sync.save()
+    logger.info(f"WEBUI: Syncing book {book.name} to Discord")

@@ -1,17 +1,26 @@
 """Campaign view."""
 
-from typing import ClassVar
+from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
-from quart import abort, request, session, url_for
+from quart import Response, abort, request, session, url_for
 from quart.views import MethodView
+from quart_wtf import QuartForm
 
-from valentina.constants import HTTPStatus
-from valentina.models import Campaign, Statistics
+from valentina.constants import DBSyncUpdateType
+from valentina.controllers import PermissionManager
+from valentina.models import Campaign, CampaignBook, CampaignBookChapter, Note, Statistics
 from valentina.webui import catalog
-from valentina.webui.utils.helpers import update_session
+from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab
+from valentina.webui.utils.discord import post_to_audit_log
+from valentina.webui.utils.helpers import (
+    fetch_active_campaign,
+    sync_book_to_discord,
+    sync_campaign_to_discord,
+    update_session,
+)
 
-from .forms import CampaignOverviewForm
+from .forms import CampaignBookForm, CampaignChapterForm, CampaignDescriptionForm, CampaignNoteForm
 
 
 class CampaignView(MethodView):
@@ -21,6 +30,8 @@ class CampaignView(MethodView):
 
     def __init__(self) -> None:
         self.is_htmx = bool(request.headers.get("Hx-Request", False))
+        self.permission_manager = PermissionManager(guild_id=session["GUILD_ID"])
+        self.can_manage_campaign = False
 
     async def handle_tabs(self, campaign: Campaign) -> str:
         """Handle rendering of HTMX tab content for the campaign view.
@@ -42,30 +53,54 @@ class CampaignView(MethodView):
             This method is designed to work with HTMX requests for dynamic
             tab content loading in the campaign view.
         """
-        if request.args.get("tab") == "overview":
-            return catalog.render("campaign_view.Overview", campaign=campaign)
+        tab = CampaignViewTab.get_member_by_value(request.args.get("tab", None))
+        match tab:
+            case CampaignViewTab.OVERVIEW:
+                return catalog.render(
+                    "campaign_view.Overview",
+                    campaign=campaign,
+                    CampaignEditableInfo=CampaignEditableInfo,
+                    can_manage_campaign=self.can_manage_campaign,
+                )
 
-        if request.args.get("tab") == "books":
-            return catalog.render(
-                "campaign_view.Books", campaign=campaign, books=await campaign.fetch_books()
-            )
+            case CampaignViewTab.BOOKS:
+                return catalog.render(
+                    "campaign_view.Books",
+                    campaign=campaign,
+                    books=await campaign.fetch_books(),
+                    CampaignEditableInfo=CampaignEditableInfo,
+                    can_manage_campaign=self.can_manage_campaign,
+                )
 
-        if request.args.get("tab") == "characters":
-            return catalog.render(
-                "campaign_view.Characters",
-                campaign=campaign,
-                characters=await campaign.fetch_player_characters(),
-            )
+            case CampaignViewTab.CHARACTERS:
+                return catalog.render(
+                    "campaign_view.Characters",
+                    campaign=campaign,
+                    characters=await campaign.fetch_player_characters(),
+                    CampaignEditableInfo=CampaignEditableInfo,
+                    can_manage_campaign=self.can_manage_campaign,
+                )
 
-        if request.args.get("tab") == "statistics":
-            stats_engine = Statistics(guild_id=session["GUILD_ID"])
-            return catalog.render(
-                "campaign_view.Statistics",
-                campaign=campaign,
-                statistics=await stats_engine.campaign_statistics(campaign, as_json=True),
-            )
+            case CampaignViewTab.STATISTICS:
+                stats_engine = Statistics(guild_id=session["GUILD_ID"])
+                return catalog.render(
+                    "campaign_view.Statistics",
+                    campaign=campaign,
+                    statistics=await stats_engine.campaign_statistics(campaign, as_json=True),
+                    CampaignEditableInfo=CampaignEditableInfo,
+                    can_manage_campaign=self.can_manage_campaign,
+                )
 
-        return abort(HTTPStatus.NOT_FOUND.value)
+            case CampaignViewTab.NOTES:
+                return catalog.render(
+                    "campaign_view.Notes",
+                    campaign=campaign,
+                    CampaignEditableInfo=CampaignEditableInfo,
+                    can_manage_campaign=self.can_manage_campaign,
+                )
+
+            case _:
+                assert_never(tab)
 
     async def get(self, campaign_id: str = "") -> str:
         """Handle GET requests for a specific campaign view.
@@ -96,108 +131,369 @@ class CampaignView(MethodView):
             This method uses the `request` object to determine if it's an HTMX request
             and to access any query parameters for tab selection.
         """
-        campaign = await Campaign.get(campaign_id, fetch_links=True)
-        if not campaign:
-            abort(HTTPStatus.UNAUTHORIZED.value)
+        campaign = await fetch_active_campaign(campaign_id, fetch_links=True)
+        self.can_manage_campaign = await self.permission_manager.can_manage_campaign(
+            session["USER_ID"]
+        )
 
-        if request.headers.get("HX-Request"):
+        if self.is_htmx:
             return await self.handle_tabs(campaign)
 
-        return catalog.render("campaign_view.Main", campaign=campaign)
+        return catalog.render(
+            "campaign_view.Main",
+            campaign=campaign,
+            tabs=CampaignViewTab,
+            CampaignEditableInfo=CampaignEditableInfo,
+            can_manage_campaign=self.can_manage_campaign,
+            error_msg=request.args.get("error_msg", ""),
+            success_msg=request.args.get("success_msg", ""),
+            info_msg=request.args.get("info_msg", ""),
+            warning_msg=request.args.get("warning_msg", ""),
+        )
 
 
-class CampaignOverviewSnippet(MethodView):
-    """View to handle campaign overview snippets."""
+class CampaignEditItem(MethodView):
+    """View to handle editing of campaign items."""
 
     decorators: ClassVar = [requires_authorization]
 
-    def __init__(self) -> None:
-        self.is_htmx = bool(request.headers.get("Hx-Request", False))
+    def __init__(self, edit_type: CampaignEditableInfo) -> None:
+        self.edit_type = edit_type
 
-    async def get(self, campaign_id: str = "") -> str:
-        """Handle GET requests for viewing or editing a campaign. Fetch the campaign using the provided campaign ID and render the appropriate view.
+        match self.edit_type:
+            case CampaignEditableInfo.DESCRIPTION:
+                self.tab = CampaignViewTab.OVERVIEW
 
-        Determine the view mode based on the "view" query parameter:
-        - If "view" is set to "edit", render the form for editing the campaign's overview.
-        - Otherwise, display the campaign's overview information.
+            case CampaignEditableInfo.BOOK:
+                self.tab = CampaignViewTab.BOOKS
 
-        Args:
-            campaign_id (str): The unique identifier of the campaign to retrieve.
+            case CampaignEditableInfo.CHAPTER:
+                self.tab = CampaignViewTab.BOOKS
 
-        Returns:
-            str: Rendered HTML content for either the campaign overview display or
-                 the edit form, depending on the request parameters.
+            case CampaignEditableInfo.NOTE:
+                self.tab = CampaignViewTab.NOTES
 
-        Raises:
-            401: If no campaign is found with the provided ID.
+            case _:
+                assert_never(self.edit_type)
 
-        Note:
-            This method uses the `request` object to access query parameters for
-            determining the view mode.
-        """
-        campaign = await Campaign.get(campaign_id, fetch_links=True)
-        if not campaign:
-            abort(HTTPStatus.UNAUTHORIZED.value)
+    async def _build_form(self, campaign: Campaign) -> QuartForm:
+        """Build the form for the campaign item."""
+        data = {}
 
-        if request.args.get("view") == "edit":
-            form = await CampaignOverviewForm().create_form(
-                data={"name": campaign.name, "description": campaign.description}
-            )
-            return catalog.render(
-                "campaign_view.partials.OverviewEdit",
-                form=form,
-                campaign=campaign,
-                post_url=url_for("campaign.campaign_overview", campaign_id=campaign_id),
-                join_label=True,
-            )
+        match self.edit_type:
+            case CampaignEditableInfo.DESCRIPTION:
+                data["name"] = campaign.name
+                data["description"] = campaign.description
+                return await CampaignDescriptionForm().create_form(data=data)
 
-        return catalog.render("campaign_view.partials.OverviewDisplay", campaign=campaign)
+            case CampaignEditableInfo.BOOK:
+                if request.args.get("book_id"):
+                    existing_book = await CampaignBook.get(request.args.get("book_id"))
+                    data["book_id"] = request.args.get("book_id")
+                    data["name"] = existing_book.name
+                    data["description_short"] = existing_book.description_short
+                    data["description_long"] = existing_book.description_long
+                return await CampaignBookForm().create_form(data=data)
 
-    async def post(self, campaign_id: str = "") -> str:
-        """Handle POST requests for updating a campaign's overview.
+            case CampaignEditableInfo.CHAPTER:
+                if request.args.get("chapter_id"):
+                    existing_chapter = await CampaignBookChapter.get(request.args.get("chapter_id"))
+                    data["chapter_id"] = request.args.get("chapter_id")
+                    data["name"] = existing_chapter.name
+                    data["description_short"] = existing_chapter.description_short
+                    data["description_long"] = existing_chapter.description_long
+                    data["book_id"] = existing_chapter.book
 
-        Fetch the campaign using the provided campaign ID. Validate the submitted
-        form data. If valid, update the campaign's name and description. Update
-        the session if the campaign's name changes. Render the updated campaign
-        overview on success, or re-render the edit form with errors if validation fails.
+                return await CampaignChapterForm().create_form(data=data)
 
-        Args:
-            campaign_id (str): The unique identifier of the campaign to update.
+            case CampaignEditableInfo.NOTE:
+                data["book_id"] = request.args.get("book_id") or ""
+                data["chapter_id"] = request.args.get("chapter_id") or ""
+                data["campaign_id"] = request.args.get("campaign_id") or ""
 
-        Returns:
-            str: Rendered HTML content for either the updated campaign overview
-                 or the edit form with validation errors.
+                if request.args.get("note_id"):
+                    existing_note = await Note.get(request.args.get("note_id"))
+                    data["note_id"] = request.args.get("note_id")
+                    data["text"] = existing_note.text
+                return await CampaignNoteForm().create_form(data=data)
 
-        Raises:
-            401: If no campaign is found with the provided ID.
+            case _:
+                assert_never(self.edit_type)
 
-        Note:
-            This method uses form validation to ensure data integrity before
-            updating the campaign. It also handles session updates to maintain
-            consistency across the application.
-        """
-        campaign = await Campaign.get(campaign_id, fetch_links=True)
-        if not campaign:
-            abort(HTTPStatus.UNAUTHORIZED.value)
+    async def _delete_campaign_book(self, campaign: Campaign) -> str:
+        """Delete a campaign book."""
+        book_id = request.args.get("book_id")
+        if not book_id:
+            abort(400)
 
-        form = await CampaignOverviewForm().create_form(
-            data={"name": campaign.name, "description": campaign.description}
+        book = await CampaignBook.get(book_id)
+        campaign.books.remove(book)
+        await campaign.save()
+        await book.delete()
+        await sync_book_to_discord(book, DBSyncUpdateType.DELETE)
+
+        await post_to_audit_log(
+            msg=f"Delete {campaign.name} book - `{book.name}`",
+            view=self.__class__.__name__,
         )
-        if await form.validate_on_submit():
-            do_update_session = campaign.name != form.name.data
 
-            campaign.name = form.name.data
-            campaign.description = form.description.data
+        return "Book deleted"
+
+    async def _delete_campaign_chapter(self) -> str:
+        """Delete a campaign chapter."""
+        chapter_id = request.args.get("chapter_id")
+        if not chapter_id:
+            abort(400)
+
+        chapter = await CampaignBookChapter.get(chapter_id)
+        book = await CampaignBook.get(chapter.book, fetch_links=True)
+        book.chapters.remove(chapter)
+        await book.save()
+        await chapter.delete()
+        await post_to_audit_log(
+            msg=f"Delete chapter - `{chapter.name}`",
+            view=self.__class__.__name__,
+        )
+
+        return "Chapter deleted"
+
+    async def _delete_note(self, campaign: Campaign) -> str:
+        """Delete the note."""
+        note_id = request.args.get("note_id", None)
+        if not note_id:
+            abort(400)
+
+        existing_note = await Note.get(note_id)
+        if request.args.get("book_id"):
+            book = await CampaignBook.get(request.args.get("book_id"), fetch_links=True)
+            book.notes.remove(existing_note)
+            await book.save()
+        else:
+            campaign.notes.remove(existing_note)
+
+        await existing_note.delete()
+
+        await post_to_audit_log(
+            msg=f"Delete {campaign.name} note - `{existing_note.text}`",
+            view=self.__class__.__name__,
+        )
+        await campaign.save()
+
+        return "Note deleted"
+
+    async def _post_campaign_book(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
+        """Process the campaign book form."""
+        form = await self._build_form(campaign)
+
+        if await form.validate_on_submit():
+            if form.data.get("book_id"):
+                update_discord = campaign.name.strip() != form.name.data.strip()
+
+                existing_book = await CampaignBook.get(form.data.get("book_id"))
+                existing_book.name = form.name.data.strip()
+                existing_book.description_short = form.description_short.data.strip()
+                existing_book.description_long = form.description_long.data.strip()
+                await existing_book.save()
+                msg = "Book updated"
+                if update_discord:
+                    await sync_book_to_discord(existing_book, DBSyncUpdateType.UPDATE)
+
+            else:
+                books = await campaign.fetch_books()
+                new_book = CampaignBook(
+                    name=form.name.data.strip(),
+                    description_short=form.description_short.data.strip(),
+                    description_long=form.description_long.data.strip(),
+                    number=max([b.number for b in books], default=0) + 1,
+                    campaign=str(campaign.id),
+                )
+                await new_book.save()
+                campaign.books.append(new_book)
+                await campaign.save()
+                await sync_book_to_discord(new_book, DBSyncUpdateType.CREATE)
+                msg = "Book created"
+
+            await post_to_audit_log(
+                msg=f"{campaign.name} Book - {msg}",
+                view=self.__class__.__name__,
+            )
+
+            return True, msg, None
+
+        return False, "", form
+
+    async def _post_campaign_chapter(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
+        """Process the campaign chapter form."""
+        form = await self._build_form(campaign)
+
+        if await form.validate_on_submit():
+            if form.data.get("chapter_id"):
+                existing_chapter = await CampaignBookChapter.get(form.data.get("chapter_id"))
+
+                existing_chapter.name = form.name.data.strip().title()
+                existing_chapter.description_short = form.description_short.data.strip()
+                existing_chapter.description_long = form.description_long.data.strip()
+                await existing_chapter.save()
+                msg = "Chapter updated"
+
+            else:
+                book = await CampaignBook.get(form.data.get("book_id"), fetch_links=True)
+                new_chapter = CampaignBookChapter(
+                    name=form.name.data.strip().title(),
+                    description_short=form.description_short.data.strip(),
+                    description_long=form.description_long.data.strip(),
+                    book=str(book.id),
+                    number=max([c.number for c in await book.fetch_chapters()], default=0) + 1,
+                )
+                await new_chapter.save()
+                book.chapters.append(new_chapter)
+                await book.save()
+                msg = "Chapter created"
+
+            await post_to_audit_log(
+                msg=f"{campaign.name} Chapter - {msg}",
+                view=self.__class__.__name__,
+            )
+
+            return True, msg, None
+
+        return False, "", form
+
+    async def _post_campaign_description(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
+        """Process the campaign description form."""
+        form = await self._build_form(campaign)
+        if await form.validate_on_submit():
+            do_update_session = campaign.name.strip() != form.name.data.strip()
+            campaign.name = form.name.data.strip()
+            campaign.description = form.description.data.strip()
             await campaign.save()
 
             if do_update_session:
+                await sync_campaign_to_discord(campaign, DBSyncUpdateType.UPDATE)
                 await update_session()
 
-            return catalog.render("campaign_view.partials.OverviewDisplay", campaign=campaign)
+            return True, "Campaign updated", None
+
+        return False, "", form
+
+    async def _post_note(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
+        """Process the note form."""
+        form = await self._build_form(campaign)
+
+        if await form.validate_on_submit():
+            if not form.data.get("note_id"):
+                if form.data["book_id"]:
+                    parent = await CampaignBook.get(form.data["book_id"], fetch_links=True)
+                else:
+                    parent = campaign
+
+                new_note = Note(
+                    text=form.data["text"].strip(),
+                    parent_id=str(parent.id),
+                    created_by=session["USER_ID"],
+                )
+                await new_note.save()
+                parent.notes.append(new_note)
+                await parent.save()
+                msg = "Note Added"
+            else:
+                existing_note = await Note.get(form.data["note_id"])
+                existing_note.text = form.data["text"]
+                await existing_note.save()
+                msg = "Note Updated"
+
+            await post_to_audit_log(
+                msg=f"{campaign.name} Note - {msg}",
+                view=self.__class__.__name__,
+            )
+
+            return True, msg, None
+
+        return False, "", form
+
+    async def get(self, campaign_id: str = "") -> str:
+        """Handle GET requests for editing a campaign item."""
+        campaign = await fetch_active_campaign(campaign_id)
 
         return catalog.render(
-            "campaign_view.partials.OverviewEdit",
-            form=form,
+            "campaign_view.FormPartial",
             campaign=campaign,
-            post_url=url_for("campaign.campaign_overview", campaign_id=campaign_id),
+            form=await self._build_form(campaign),
+            join_label=False,
+            floating_label=True,
+            post_url=url_for(self.edit_type.value.route, campaign_id=campaign_id),
+            hx_target=f"#{self.edit_type.value.div_id}",
+            tab=self.tab,
+        )
+
+    async def post(self, campaign_id: str = "") -> Response | str:
+        """Handle POST requests for editing a campaign item."""
+        campaign = await fetch_active_campaign(campaign_id, fetch_links=True)
+
+        match self.edit_type:
+            case CampaignEditableInfo.DESCRIPTION:
+                form_is_processed, msg, form = await self._post_campaign_description(campaign)
+
+            case CampaignEditableInfo.BOOK:
+                form_is_processed, msg, form = await self._post_campaign_book(campaign)
+
+            case CampaignEditableInfo.CHAPTER:
+                form_is_processed, msg, form = await self._post_campaign_chapter(campaign)
+
+            case CampaignEditableInfo.NOTE:
+                form_is_processed, msg, form = await self._post_note(campaign)
+
+            case _:
+                assert_never(self.edit_type)
+
+        if form_is_processed:
+            return Response(
+                headers={
+                    "HX-Redirect": url_for(
+                        "campaign.view",
+                        campaign_id=campaign_id,
+                        success_msg=msg,
+                    ),
+                }
+            )
+
+        # If POST request does not validate, return errors
+        return catalog.render(
+            "campaign_view.FormPartial",
+            campaign=campaign,
+            form=form,
+            join_label=False,
+            floating_label=True,
+            post_url=url_for(self.edit_type.value.route, campaign_id=campaign_id),
+            hx_target=f"#{self.edit_type.value.div_id}",
+            tab=self.tab,
+        )
+
+    async def delete(self, campaign_id: str = "") -> Response:
+        """Handle DELETE requests for deleting a campaign item."""
+        campaign = await fetch_active_campaign(campaign_id, fetch_links=True)
+
+        match self.edit_type:
+            case CampaignEditableInfo.DESCRIPTION:
+                pass
+
+            case CampaignEditableInfo.BOOK:
+                msg = await self._delete_campaign_book(campaign)
+
+            case CampaignEditableInfo.CHAPTER:
+                msg = await self._delete_campaign_chapter()
+
+            case CampaignEditableInfo.NOTE:
+                msg = await self._delete_note(campaign)
+            case _:
+                assert_never(self.edit_type)
+
+        return Response(
+            headers={
+                "HX-Redirect": url_for(
+                    "campaign.view",
+                    campaign_id=campaign.id,
+                    success_msg=msg,
+                ),
+            }
         )

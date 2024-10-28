@@ -107,6 +107,7 @@ class DBSyncUpdateType(str, Enum):
 class DBSyncModelType(str, Enum):
     """Model type to sync between web and discord."""
 
+    BOOK = "book"
     CAMPAIGN = "campaign"
     CHARACTER = "character"
     GUILD = "guild"
