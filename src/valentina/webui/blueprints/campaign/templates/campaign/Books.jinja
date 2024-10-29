@@ -1,0 +1,168 @@
+{# def
+    campaign:Campaign,
+    books:List[CampaignBook],
+    CampaignEditableInfo: CampaignEditableInfo,
+    can_manage_campaign: bool = False,
+#}
+
+{% if can_manage_campaign %}
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for(CampaignEditableInfo.BOOK.value.route, campaign_id=campaign.id) }}"
+            hx-trigger="click"
+            hx-target="#{{ CampaignEditableInfo.BOOK.value.div_id }}"
+            hx-swap="innerHTML">Add Book</button>
+{% endif %}
+<h2>Books & Chapters</h2>
+<hr class="border border-primary border-2 opacity-75">
+{# We need the three divs to target HTMX partials above the entire accordion display #}
+<div id="{{ CampaignEditableInfo.BOOK.value.div_id }}">
+    <div id="{{ CampaignEditableInfo.CHAPTER.value.div_id }}">
+        <div id="{{ CampaignEditableInfo.NOTE.value.div_id }}">
+            <global.AccordionGroup name="bookAccordion">
+            {% for book in books | sort(attribute="number") %}
+                <global.AccordionItem accordion-name="bookAccordion" title={{ book.number ~ '. ' ~ book.name }} index={{ loop.index }}>
+
+                {% if can_manage_campaign %}
+                    <div class="btn-group float-end">
+                        <button class="btn btn-sm btn-outline-primary"
+                                style="--bs-btn-padding-y: .25rem;
+                                       --bs-btn-padding-x: .5rem;
+                                       --bs-btn-font-size: .75rem"
+                                hx-get="{{ url_for(CampaignEditableInfo.BOOK.value.route, campaign_id=campaign.id, book_id=book.id) }}"
+                                hx-trigger="click"
+                                hx-target="#{{ CampaignEditableInfo.BOOK.value.div_id }}"
+                                hx-swap="innerHTML">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                style="--bs-btn-padding-y: .25rem;
+                                       --bs-btn-padding-x: .5rem;
+                                       --bs-btn-font-size: .75rem"
+                                hx-delete="{{ url_for(CampaignEditableInfo.BOOK.value.route, campaign_id=campaign.id, book_id=book.id) }}"
+                                hx-trigger="click"
+                                hx-target="#{{ CampaignEditableInfo.BOOK.value.div_id }}"
+                                hx-swap="innerHTML">Delete</button>
+                    </div>
+                {% endif %}
+                <h2>{{ book.number }}. {{ book.name | escape }}</h2>
+                <hr class="border border-primary border-1 opacity-75">
+                <div class="mb-5">{{ book.description_long | from_markdown | safe }}</div>
+                {# #### NOTES #### #}
+                <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+                        hx-get="{{ url_for(CampaignEditableInfo.NOTE.value.route, campaign_id=campaign.id, book_id=book.id) }}"
+                        hx-trigger="click"
+                        hx-target="#{{ CampaignEditableInfo.NOTE.value.div_id }}"
+                        hx-swap="innerHTML">Create Note</button>
+                <h4>
+                    Notes&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Quick notes about the Book</small></span>
+                </h4>
+                <hr class="border border-primary border-1 opacity-75">
+
+                {% if book.notes %}
+                    <table class="table table-hover mb-5">
+                        <tbody>
+                            {% for note in book.notes %}
+                                <tr>
+                                    <td>{{ note.text | from_markdown_no_p | safe }}</td>
+
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    style="--bs-btn-padding-y: .25rem;
+                                                           --bs-btn-padding-x: .5rem;
+                                                           --bs-btn-font-size: .75rem"
+                                                    hx-get="{{ url_for(CampaignEditableInfo.NOTE.value.route, campaign_id=campaign.id, note_id=note.id, book_id=book.id) }}"
+                                                    hx-trigger="click"
+                                                    hx-target="#{{ CampaignEditableInfo.NOTE.value.div_id }}"
+                                                    hx-swap="innerHTML">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    style="--bs-btn-padding-y: .25rem;
+                                                           --bs-btn-padding-x: .5rem;
+                                                           --bs-btn-font-size: .75rem"
+                                                    hx-delete="{{ url_for(CampaignEditableInfo.NOTE.value.route, campaign_id=campaign.id, note_id=note.id, book_id=book.id) }}"
+                                                    hx-trigger="click"
+                                                    hx-target="#{{ CampaignEditableInfo.NOTE.value.div_id }}"
+                                                    hx-swap="innerHTML">Delete</button>
+                                        </div>
+                                    </td>
+
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="mb-5">
+                        <p>No notes.</p>
+                    </div>
+                {% endif %}
+                {# #### END NOTES #### #}
+                {# #### CHAPTERS #### #}
+                {% if can_manage_campaign %}
+                    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+                            hx-get="{{ url_for(CampaignEditableInfo.CHAPTER.value.route, campaign_id=campaign.id, book_id=book.id) }}"
+                            hx-trigger="click"
+                            hx-target="#{{ CampaignEditableInfo.CHAPTER.value.div_id }}"
+                            hx-swap="innerHTML">Add Chapter</button>
+                {% endif %}
+                <h4>Chapters</h4>
+                <hr class="border border-primary border-1 opacity-75">
+                {% if book.chapters %}
+
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Chapter</th>
+                                <th>Description</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chapter in book.chapters %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ chapter.number }}</strong>
+                                    </td>
+                                    <td>
+                                        <strong>{{ chapter.name | escape }}</strong>
+                                    </td>
+                                    <td>{{ chapter.description_long | from_markdown | safe }}</td>
+                                    {% if can_manage_campaign %}
+                                        <td>
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-outline-primary"
+                                                        style="--bs-btn-padding-y: .25rem;
+                                                               --bs-btn-padding-x: .5rem;
+                                                               --bs-btn-font-size: .75rem"
+                                                        hx-get="{{ url_for(CampaignEditableInfo.CHAPTER.value.route, campaign_id=campaign.id, book_id=book.id, chapter_id=chapter.id) }}"
+                                                        hx-trigger="click"
+                                                        hx-target="#{{ CampaignEditableInfo.CHAPTER.value.div_id }}"
+                                                        hx-swap="innerHTML">Edit</button>
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                        style="--bs-btn-padding-y: .25rem;
+                                                               --bs-btn-padding-x: .5rem;
+                                                               --bs-btn-font-size: .75rem"
+                                                        hx-delete="{{ url_for(CampaignEditableInfo.CHAPTER.value.route, campaign_id=campaign.id, book_id=book.id, chapter_id=chapter.id) }}"
+                                                        hx-trigger="click"
+                                                        hx-target="#{{ CampaignEditableInfo.CHAPTER.value.div_id }}"
+                                                        hx-swap="innerHTML">Delete</button>
+                                            </div>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                {% else %}
+                    <p>
+                        No chapters.
+                        {% if can_manage_campaign %}Add one{% endif %}
+                    </p>
+                {% endif %}
+                {# #### END CHAPTERS #### #}
+                </global.AccordionItem>
+            {% endfor %}
+            </global.AccordionGroup>
+
+        </div>
+    </div>
+</div>

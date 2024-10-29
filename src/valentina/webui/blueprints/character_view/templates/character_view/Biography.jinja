@@ -1,0 +1,22 @@
+{# def
+    character: Character,
+    CharacterEditableInfo: CharacterEditableInfo,
+#}
+{% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for(CharacterEditableInfo.BIOGRAPHY.value.route, character_id=character.id) }}"
+            hx-trigger="click"
+            hx-target="#{{ CharacterEditableInfo.BIOGRAPHY.value.div_id }}"
+            hx-swap="innerHTML">Edit Biography</button>
+{% endif %}
+<h2>Biography</h2>
+<hr class="border border-primary border-2 opacity-75">
+<div id="{{ CharacterEditableInfo.BIOGRAPHY.value.div_id }}">
+    {% if character.bio %}
+        <div class="mb-5">{{ character.bio | from_markdown | safe }}</div>
+    {% else %}
+        <div class="mb-5">
+            <p>No biography</p>
+        </div>
+    {% endif %}
+</div>

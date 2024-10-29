@@ -13,7 +13,6 @@ from wtforms import (
     SelectField,
     StringField,
     SubmitField,
-    TextAreaField,
     ValidationError,
 )
 from wtforms.validators import DataRequired, Length, Optional
@@ -112,14 +111,6 @@ class ProfileForm(QuartForm):
         filters=[str.strip, str.title],
     )
 
-    bio = TextAreaField(
-        "Biography",
-        default="",
-        validators=[Optional()],
-        filters=[str.strip],
-        description="Information about the character. Can have multiple paragraphs and use markdown for formatting.",
-    )
-
     submit = SubmitField("Submit")
     character_id = HiddenField()
 
@@ -166,7 +157,6 @@ class EditProfile(MethodView):
             "auspice": character.auspice if character.auspice else "",
             "breed": character.breed if character.breed else "",
             "clan_name": character.clan_name if character.clan_name else "",
-            "bio": character.bio if character.bio else "",
         }
 
         form = await ProfileForm().create_form(data=data_from_db)
@@ -246,7 +236,7 @@ class EditProfile(MethodView):
                     "HX-Redirect": url_for(
                         "character_view.view",
                         character_id=character_id,
-                        success_msg="<strong>Character updated!</strong><br><small>Changes will be reflected in Discord within ten minutes.</small>"
+                        success_msg="<strong>Character updated!</strong>"
                         if has_updates
                         else "No changes made.",
                     )

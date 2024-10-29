@@ -30,7 +30,7 @@
                         </div>
                     {% else %}
                         <div class="card-body">
-                            Character will be created in campaign: <strong><a href="{{- url_for('campaign.campaign_view',  campaign_id=selected_campaign.id) -}}">{{ selected_campaign.name }}</a></strong>
+                            Character will be created in campaign: <strong><a href="{{- url_for('campaign.view',  campaign_id=selected_campaign.id) -}}">{{ selected_campaign.name }}</a></strong>
                             <button type="button"
                                     class="btn btn-outline-primary ms-2"
                                     style="--bs-btn-padding-y: .15rem;

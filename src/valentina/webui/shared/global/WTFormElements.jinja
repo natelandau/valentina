@@ -30,6 +30,8 @@
         <global.wtform.SelectField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
     {% elif field.type in ["IntegerRangeField", "DecimalRangeField"] %}
         <global.wtform.RangeField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
+    {% elif field.type in "TextAreaField" %}
+        <global.wtform.TextAreaField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
     {% else %}
         {# All other field types use text inputs #}
         <global.wtform.StringField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />

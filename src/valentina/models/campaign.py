@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
+from uuid import UUID, uuid4
 
 import discord
 from beanie import (
@@ -44,9 +45,10 @@ class CampaignNPC(BaseModel):
     description: str
     name: str
     npc_class: str
+    uuid: UUID = Field(default_factory=uuid4)
 
     def campaign_display(self) -> str:
-        """Return the display for campaign overview."""
+        """Return the markdown display for campaign overview."""
         display = f"**{self.name}**"
         display += f" ({self.npc_class})" if self.npc_class else ""
         display += f"\n{self.description}" if self.description else ""
@@ -122,6 +124,7 @@ class Campaign(Document):
     chapters: list[CampaignChapter] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)
     books: list[Link[CampaignBook]] = Field(default_factory=list)
+    notes: list[Link[Note]] = Field(default_factory=list)
     channel_campaign_category: int | None = None
     channel_storyteller: int | None = None
     channel_general: int | None = None

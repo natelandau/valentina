@@ -1,6 +1,5 @@
 """View character."""
 
-from enum import Enum
 from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
@@ -22,34 +21,17 @@ from valentina.models import (
     User,
 )
 from valentina.webui import catalog
+from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab
 from valentina.webui.utils import fetch_active_campaign, fetch_user, is_storyteller
 from valentina.webui.utils.forms import ValentinaForm
 
 gameplay_form = ValentinaForm()
 
 
-class CharacterViewTab(Enum):
-    """Enum for the tabs of the character view."""
-
-    SHEET = "sheet"
-    INVENTORY = "inventory"
-    INFO = "info"
-    IMAGES = "images"
-    STATISTICS = "statistics"
-
-    @classmethod
-    def get_member_by_value(cls, value: str) -> "CharacterViewTab":
-        """Get a member of the enum by its value."""
-        return cls[value.upper()]
-
-
 class CharacterView(MethodView):
     """View to handle character operations."""
 
     decorators: ClassVar = [requires_authorization]
-
-    def __init__(self) -> None:
-        self.session = session  # Assuming session is defined globally or passed in some way
 
     async def _get_character_object(self, character_id: str) -> Character:
         """Get a character db object by ID.
@@ -154,14 +136,20 @@ class CharacterView(MethodView):
                     profile_data=profile_data,
                     character_owner=character_owner,
                 )
-            case CharacterViewTab.INVENTORY:
+            case CharacterViewTab.BIOGRAPHY:
                 return catalog.render(
-                    "character_view.Inventory",
+                    "character_view.Biography",
                     character=character,
-                    inventory=await self._get_character_inventory(character),
+                    CharacterEditableInfo=CharacterEditableInfo,
                 )
             case CharacterViewTab.INFO:
-                return catalog.render("character_view.Info", character=character)
+                return catalog.render(
+                    "character_view.Info",
+                    character=character,
+                    inventory=await self._get_character_inventory(character),
+                    CharacterEditableInfo=CharacterEditableInfo,
+                )
+
             case CharacterViewTab.IMAGES:
                 return catalog.render(
                     "character_view.Images",
@@ -204,10 +192,10 @@ class CharacterView(MethodView):
                 character, character_owner, campaign
             ),
             campaign=campaign,
+            dice_sizes=[member.value for member in DiceType],
+            form=gameplay_form,
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
             info_msg=request.args.get("info_msg", ""),
             warning_msg=request.args.get("warning_msg", ""),
-            dice_sizes=[member.value for member in DiceType],
-            form=gameplay_form,
         )

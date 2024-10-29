@@ -1,0 +1,41 @@
+{# def
+    campaign: Campaign,
+    CampaignEditableInfo: CampaignEditableInfo,
+    can_manage_campaign: bool = False,
+#}
+
+{% if can_manage_campaign %}
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for(CampaignEditableInfo.DESCRIPTION.value.route, campaign_id=campaign.id) }}"
+            hx-trigger="click"
+            hx-target="#{{ CampaignEditableInfo.DESCRIPTION.value.div_id }}"
+            hx-swap="innerHTML">Edit</button>
+{% endif %}
+<h2>Campaign Overview</h2>
+<hr class="border border-primary border-2 opacity-75">
+
+<div class="row justify-content-start"
+     id="{{ CampaignEditableInfo.DESCRIPTION.value.div_id }}">
+    <div class="col-2 sticky-top ps-0">
+        <table class="table table-sm table-borderless table-light border border-dark-subtle rounded-5">
+            <tr>
+                <th>Danger</th>
+                <td>{{ campaign.danger }}</td>
+            </tr>
+            <tr>
+                <th>Desperation</th>
+                <td>{{ campaign.desperation }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="col">
+        {% if campaign.description %}
+            {{ campaign.description | from_markdown }}
+        {% else %}
+            <p>
+                No description yet.
+                {% if can_manage_campaign %}Click the edit button to add one.{% endif %}
+            </p>
+        {% endif %}
+    </div>
+</div>

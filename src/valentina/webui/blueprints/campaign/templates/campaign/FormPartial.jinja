@@ -3,10 +3,12 @@
     join_label:bool = False,
     floating_label:bool = False,
     post_url:str = "",
-    character:Character,
+    tab:CampaignViewTab,
+    campaign:Campaign,
+    hx_target:str,
 #}
 
-<div class="d-flex justify-content-center align-items-center my-3">
+<div class="d-flex justify-content-center align-items-center mb-5">
     <div class="py-4 px-5 mt-5 rounded-3 border shadow-lg w-50"
          id="form-container">
         <form method="post"
@@ -14,15 +16,16 @@
               hx-post="{{ post_url }}"
               novalidate
               hx-indicator="#spinner"
-              hx-target="#notes"
+              hx-target="{{ hx_target }}"
               hx-swap="innerHTML"
               encoding="application/x-www-form-urlencoded">
             <global.WTFormElements form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} />
+
             <button class="btn btn-outline-secondary ms-2"
                     hx-target="#main-content"
                     hx-swap="innerHTML"
                     hx-trigger="click"
-                    hx-get="{{ url_for('character_view.view', character_id=character.id, tab='info', info_msg='Cancelled') }}">
+                    hx-get="{{ url_for('campaign.view', campaign_id=campaign.id, tab=tab.value, info_msg='Cancelled') }}">
                 Cancel
             </button>
         </form>
