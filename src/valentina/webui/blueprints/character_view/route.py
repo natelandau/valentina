@@ -198,4 +198,5 @@ class CharacterView(MethodView):
             success_msg=request.args.get("success_msg", ""),
             info_msg=request.args.get("info_msg", ""),
             warning_msg=request.args.get("warning_msg", ""),
+            CharacterEditableInfo=CharacterEditableInfo,
         )

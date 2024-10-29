@@ -1,7 +1,14 @@
 {# def
     field:Field,
 #}
-{{ field(class="btn btn-success") }}
+
+{% if field.description %}<p>{{ field.description }}</p>{% endif %}
+
+{% if "delete" in (field.label.text | lower) %}
+    {{ field(**{"class": "btn btn-danger"}) }}
+{% else %}
+    {{ field(**{"class": "btn btn-success"}) }}
+{% endif %}
 <img id="spinner"
      src="{{ url_for('static', filename='spinners/bars.svg') }}"
      class="htmx-indicator" />

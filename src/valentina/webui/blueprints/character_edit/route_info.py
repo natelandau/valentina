@@ -16,11 +16,11 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Length
 
-from valentina.constants import InventoryItemType
+from valentina.constants import DBSyncUpdateType, InventoryItemType
 from valentina.models import Character, CharacterSheetSection, InventoryItem, Note
 from valentina.webui import catalog
 from valentina.webui.constants import CharacterEditableInfo
-from valentina.webui.utils import fetch_active_character
+from valentina.webui.utils import fetch_active_character, sync_char_to_discord
 from valentina.webui.utils.discord import post_to_audit_log
 
 
@@ -72,6 +72,12 @@ class CharacterNoteForm(QuartForm):
     submit = SubmitField("Submit")
 
 
+class DeleteCharacterForm(QuartForm):
+    """Form for deleting a character."""
+
+    submit = SubmitField("Delete", description="Confirm character deletion")
+
+
 class EditCharacterInfo(MethodView):
     """Edit the character's info."""
 
@@ -80,7 +86,7 @@ class EditCharacterInfo(MethodView):
     def __init__(self, edit_type: CharacterEditableInfo) -> None:
         self.edit_type = edit_type
 
-    async def _build_form(self, character: Character) -> QuartForm:  # noqa: C901
+    async def _build_form(self, character: Character) -> QuartForm:  # noqa: C901, PLR0912
         """Build the form and populate with existing data if available."""
         data = {}
 
@@ -120,6 +126,9 @@ class EditCharacterInfo(MethodView):
                 data["bio"] = character.bio
                 data["character_id"] = str(character.id)
                 return await BioForm().create_form(data=data)
+
+            case CharacterEditableInfo.DELETE:
+                return await DeleteCharacterForm().create_form()
 
             case _:
                 assert_never(self.edit_type)
@@ -236,6 +245,21 @@ class EditCharacterInfo(MethodView):
 
         return False, "", form
 
+    async def _post_delete_character(self, character: Character) -> tuple[bool, str, QuartForm]:
+        """Process the delete character form."""
+        form = await self._build_form(character)
+
+        if await form.validate_on_submit():
+            await character.delete()
+            await post_to_audit_log(
+                msg=f"Character {character.name} deleted",
+                view=self.__class__.__name__,
+            )
+
+            await sync_char_to_discord(character, DBSyncUpdateType.DELETE)
+            return True, "Character deleted", None
+        return False, "", form
+
     async def _post_note(self, character: Character) -> tuple[bool, str, QuartForm]:
         """Process the note form."""
         form = await self._build_form(character)
@@ -327,6 +351,19 @@ class EditCharacterInfo(MethodView):
                 form_is_processed, msg, form = await self._post_inventory(character)
             case CharacterEditableInfo.BIOGRAPHY:
                 form_is_processed, msg, form = await self._post_biography(character)
+            case CharacterEditableInfo.DELETE:
+                form_is_processed, msg, form = await self._post_delete_character(character)
+                # If the form is processed, redirect to the homepage with a success message b/c the character is deleted.
+                if form_is_processed:
+                    return Response(
+                        headers={
+                            "HX-Redirect": url_for(
+                                "homepage.homepage",
+                                success_msg=msg,
+                            ),
+                        }
+                    )
+
             case _:
                 assert_never(self.edit_type)
 
@@ -364,7 +401,7 @@ class EditCharacterInfo(MethodView):
                 msg = await self._delete_note(character)
             case CharacterEditableInfo.INVENTORY:
                 msg = await self._delete_inventory(character)
-            case CharacterEditableInfo.BIOGRAPHY:
+            case CharacterEditableInfo.BIOGRAPHY | CharacterEditableInfo.DELETE:
                 pass  # Not needed.
             case _:
                 assert_never(self.edit_type)

@@ -31,6 +31,19 @@
         <i class="fa-solid fa-dice"></i>&nbsp;&nbsp;Roll Dice
     </button>
 
+    {% if session["IS_STORYTELLER"] and character.type_storyteller %}
+        <div class="vr mx-1"></div>
+
+        <button class="btn btn-danger"
+                hx-post="{{ url_for(CharacterEditableInfo.DELETE.value.route, character_id=character.id) }}"
+                hx-trigger="click"
+                hx-target="#{{ CharacterEditableInfo.DELETE.value.div_id }}"
+                hx-swap="innerHTML">
+            <i class="fa-regular fa-trash-can"></i>&nbsp;&nbsp;Delete Character
+        </button>
+
+    {% endif %}
+
     {# The gameplay modal is included here so that it can be displayed when the button is clicked #}
 
     {% include "character_view/GameplayModal.jinja" %}

@@ -98,3 +98,9 @@ class CharacterEditableInfo(Enum):
         div_id="biography",
         tab=CharacterViewTab.BIOGRAPHY,
     )
+    DELETE = EditItem(
+        name="delete",
+        route="character_edit.delete_character",
+        div_id="main-content",
+        tab=CharacterViewTab.SHEET,
+    )
