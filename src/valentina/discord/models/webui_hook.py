@@ -9,7 +9,7 @@ import discord
 from loguru import logger
 
 from valentina.constants import DBSyncModelType, DBSyncUpdateType
-from valentina.models import Campaign, Character, WebDiscordSync
+from valentina.models import Campaign, CampaignBook, Character, WebDiscordSync
 
 from .channel_mngr import ChannelManager
 
@@ -64,13 +64,77 @@ class SyncDiscordFromWebManager:
             case _:
                 assert_never(sync.update_type)
 
+    async def _process_campaign_change(self, sync: WebDiscordSync) -> None:
+        """Process a campaign change."""
+        # Grab items from the database
+        guild = await discord.utils.get_or_fetch(self.bot, "guild", sync.guild_id)
+        member = discord.utils.get(guild.members, id=sync.user_id)
+        campaign = await Campaign.get(sync.object_id)
+        if not campaign:
+            logger.error(f"SYNC: Campaign {sync.object_id} not found in database")
+            return
+
+        # Process the change
+        channel_manager = ChannelManager(guild=guild, user=member)
+
+        match sync.update_type:
+            case DBSyncUpdateType.CREATE | DBSyncUpdateType.UPDATE:
+                await channel_manager.confirm_campaign_channels(campaign=campaign)
+                logger.info(f"SYNC: Synced campaign {campaign.name} from webui to discord")
+
+            case DBSyncUpdateType.DELETE:
+                await channel_manager.delete_campaign_channels(campaign=campaign)
+                logger.info(f"SYNC: Synced deleted campaign {sync.object_id} from webui to discord")
+
+            case _:
+                assert_never(sync.update_type)
+
+    async def _process_book_change(self, sync: WebDiscordSync) -> None:
+        """Process a book change."""
+        guild = await discord.utils.get_or_fetch(self.bot, "guild", sync.guild_id)
+        member = discord.utils.get(guild.members, id=sync.user_id)
+        book = await CampaignBook.get(sync.object_id)
+        if not book:
+            logger.error(f"SYNC: Book {sync.object_id} not found in database")
+            return
+
+        campaign = await Campaign.get(book.campaign)
+        if not campaign:
+            logger.error(f"SYNC: Campaign {book.campaign} not found in database")
+            return
+
+        channel_manager = ChannelManager(guild=guild, user=member)
+
+        match sync.update_type:
+            case DBSyncUpdateType.CREATE | DBSyncUpdateType.UPDATE:
+                await channel_manager.confirm_book_channel(book=book, campaign=campaign)
+                logger.info(f"SYNC: Synced book {book.name} from webui to discord")
+
+            case DBSyncUpdateType.DELETE:
+                await channel_manager.delete_book_channel(book=book)
+                logger.info(f"SYNC: Synced deleted book {sync.object_id} from webui to discord")
+
+            case _:
+                assert_never(sync.update_type)
+
     async def run(self) -> None:
         """Run the sync process."""
-        # Process character changes
         async for sync in WebDiscordSync.find(
             WebDiscordSync.target == "discord",
             WebDiscordSync.processed == False,  # noqa: E712
-            WebDiscordSync.object_type == DBSyncModelType("character"),
         ):
-            await self._process_character_change(sync)
+            model = DBSyncModelType(sync.object_type)
+
+            match model:
+                case DBSyncModelType.CAMPAIGN:
+                    await self._process_campaign_change(sync)
+                case DBSyncModelType.BOOK:
+                    await self._process_book_change(sync)
+                case DBSyncModelType.CHARACTER:
+                    await self._process_character_change(sync)
+                case DBSyncModelType.GUILD | DBSyncModelType.ROLE | DBSyncModelType.USER:
+                    pass
+                case _:
+                    assert_never(model)
+
             await sync.mark_processed()

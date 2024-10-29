@@ -444,7 +444,7 @@ async def sync_char_to_discord(character: Character, update_type: DBSyncUpdateTy
     sync = WebDiscordSync(
         guild_id=character.guild,
         object_id=str(character.id),
-        object_type=DBSyncModelType("character"),
+        object_type=DBSyncModelType.CHARACTER,
         update_type=DBSyncUpdateType(update_type),
         target="discord",
         user_id=character.user_owner,
@@ -467,7 +467,7 @@ async def sync_campaign_to_discord(campaign: Campaign, update_type: DBSyncUpdate
     sync = WebDiscordSync(
         guild_id=campaign.guild,
         object_id=str(campaign.id),
-        object_type=DBSyncModelType("campaign"),
+        object_type=DBSyncModelType.CAMPAIGN,
         update_type=DBSyncUpdateType(update_type),
         target="discord",
         user_id=session["USER_ID"],
@@ -489,7 +489,7 @@ async def sync_book_to_discord(book: CampaignBook, update_type: DBSyncUpdateType
     sync = WebDiscordSync(
         guild_id=session["GUILD_ID"],
         object_id=str(book.id),
-        object_type=DBSyncModelType("book"),
+        object_type=DBSyncModelType.BOOK,
         update_type=DBSyncUpdateType(update_type),
         target="discord",
         user_id=session["USER_ID"],

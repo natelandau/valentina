@@ -294,7 +294,7 @@ class CampaignEditItem(MethodView):
                 existing_book.description_short = form.description_short.data.strip()
                 existing_book.description_long = form.description_long.data.strip()
                 await existing_book.save()
-                msg = "Book updated"
+                msg = f"Book {existing_book.name} updated"
                 if update_discord:
                     await sync_book_to_discord(existing_book, DBSyncUpdateType.UPDATE)
 
@@ -311,7 +311,7 @@ class CampaignEditItem(MethodView):
                 campaign.books.append(new_book)
                 await campaign.save()
                 await sync_book_to_discord(new_book, DBSyncUpdateType.CREATE)
-                msg = "Book created"
+                msg = f"Book {new_book.name} created"
 
             await post_to_audit_log(
                 msg=f"{campaign.name} Book - {msg}",

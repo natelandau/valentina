@@ -402,7 +402,7 @@ class CharactersCog(commands.Cog, name="Character"):
 
         # Upload image and add to character
         # We upload the image prior to the confirmation step to allow us to display the image to the user.  If the user cancels the confirmation, we must delete the image from S3 and from the character object.
-        image_key = await character.add_image(extension=extension, data=data)
+        image_key = await character.add_image(extension=extension, data=data)  # type: ignore [arg-type]
         image_url = self.aws_svc.get_url(image_key)
 
         title = f"Add image to `{character.name}`"
