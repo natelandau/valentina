@@ -1,6 +1,7 @@
 """Campaign view."""
 
 from typing import ClassVar, assert_never
+from uuid import UUID
 
 from flask_discord import requires_authorization
 from quart import Response, abort, request, session, url_for
@@ -9,7 +10,14 @@ from quart_wtf import QuartForm
 
 from valentina.constants import DBSyncUpdateType
 from valentina.controllers import PermissionManager
-from valentina.models import Campaign, CampaignBook, CampaignBookChapter, Note, Statistics
+from valentina.models import (
+    Campaign,
+    CampaignBook,
+    CampaignBookChapter,
+    CampaignNPC,
+    Note,
+    Statistics,
+)
 from valentina.webui import catalog
 from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab
 from valentina.webui.utils.discord import post_to_audit_log
@@ -20,7 +28,13 @@ from valentina.webui.utils.helpers import (
     update_session,
 )
 
-from .forms import CampaignBookForm, CampaignChapterForm, CampaignDescriptionForm, CampaignNoteForm
+from .forms import (
+    CampaignBookForm,
+    CampaignChapterForm,
+    CampaignDescriptionForm,
+    CampaignNoteForm,
+    CampaignNPCForm,
+)
 
 
 class CampaignView(MethodView):
@@ -57,7 +71,7 @@ class CampaignView(MethodView):
         match tab:
             case CampaignViewTab.OVERVIEW:
                 return catalog.render(
-                    "campaign_view.Overview",
+                    "campaign.Overview",
                     campaign=campaign,
                     CampaignEditableInfo=CampaignEditableInfo,
                     can_manage_campaign=self.can_manage_campaign,
@@ -65,7 +79,7 @@ class CampaignView(MethodView):
 
             case CampaignViewTab.BOOKS:
                 return catalog.render(
-                    "campaign_view.Books",
+                    "campaign.Books",
                     campaign=campaign,
                     books=await campaign.fetch_books(),
                     CampaignEditableInfo=CampaignEditableInfo,
@@ -74,7 +88,7 @@ class CampaignView(MethodView):
 
             case CampaignViewTab.CHARACTERS:
                 return catalog.render(
-                    "campaign_view.Characters",
+                    "campaign.Characters",
                     campaign=campaign,
                     characters=await campaign.fetch_player_characters(),
                     CampaignEditableInfo=CampaignEditableInfo,
@@ -84,7 +98,7 @@ class CampaignView(MethodView):
             case CampaignViewTab.STATISTICS:
                 stats_engine = Statistics(guild_id=session["GUILD_ID"])
                 return catalog.render(
-                    "campaign_view.Statistics",
+                    "campaign.Statistics",
                     campaign=campaign,
                     statistics=await stats_engine.campaign_statistics(campaign, as_json=True),
                     CampaignEditableInfo=CampaignEditableInfo,
@@ -93,7 +107,7 @@ class CampaignView(MethodView):
 
             case CampaignViewTab.NOTES:
                 return catalog.render(
-                    "campaign_view.Notes",
+                    "campaign.Notes",
                     campaign=campaign,
                     CampaignEditableInfo=CampaignEditableInfo,
                     can_manage_campaign=self.can_manage_campaign,
@@ -140,7 +154,7 @@ class CampaignView(MethodView):
             return await self.handle_tabs(campaign)
 
         return catalog.render(
-            "campaign_view.Main",
+            "campaign.Main",
             campaign=campaign,
             tabs=CampaignViewTab,
             CampaignEditableInfo=CampaignEditableInfo,
@@ -160,7 +174,7 @@ class CampaignEditItem(MethodView):
     def __init__(self, edit_type: CampaignEditableInfo) -> None:
         self.edit_type = edit_type
 
-    async def _build_form(self, campaign: Campaign) -> QuartForm:
+    async def _build_form(self, campaign: Campaign) -> QuartForm:  # noqa: C901
         """Build the form for the campaign item."""
         data = {}
 
@@ -200,6 +214,19 @@ class CampaignEditItem(MethodView):
                     data["note_id"] = request.args.get("note_id")
                     data["text"] = existing_note.text
                 return await CampaignNoteForm().create_form(data=data)
+
+            case CampaignEditableInfo.NPC:
+                data["campaign_id"] = request.args.get("campaign_id") or ""
+                if request.args.get("uuid"):
+                    for npc in campaign.npcs:
+                        if npc.uuid == UUID(request.args.get("uuid")):
+                            data["uuid"] = str(npc.uuid)
+                            data["name"] = npc.name
+                            data["description"] = npc.description
+                            data["npc_class"] = npc.npc_class
+                            break
+
+                return await CampaignNPCForm().create_form(data=data)
 
             case _:
                 assert_never(self.edit_type)
@@ -264,6 +291,25 @@ class CampaignEditItem(MethodView):
         await campaign.save()
 
         return "Note deleted"
+
+    async def _delete_npc(self, campaign: Campaign) -> str:
+        """Delete the NPC."""
+        uuid = request.args.get("uuid")
+        if not uuid:
+            abort(400)
+
+        for npc in campaign.npcs:
+            if npc.uuid == UUID(uuid):
+                campaign.npcs.remove(npc)
+                await campaign.save()
+                break
+
+        await campaign.save()
+        await post_to_audit_log(
+            msg=f"Delete {campaign.name} NPC - `{npc.name}`",
+            view=self.__class__.__name__,
+        )
+        return "NPC deleted"
 
     async def _post_campaign_book(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
         """Process the campaign book form."""
@@ -395,12 +441,45 @@ class CampaignEditItem(MethodView):
 
         return False, "", form
 
+    async def _post_npc(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
+        """Process the NPC form."""
+        form = await self._build_form(campaign)
+
+        if await form.validate_on_submit():
+            if form.data.get("uuid"):
+                for npc in campaign.npcs:
+                    if npc.uuid == UUID(form.data["uuid"]):
+                        npc.name = form.data["name"].strip()
+                        npc.description = form.data["description"].strip()
+                        npc.npc_class = form.data["npc_class"].strip()
+                        break
+                msg = f"NPC {form.data['name']} updated"
+            else:
+                campaign.npcs.append(
+                    CampaignNPC(
+                        name=form.data["name"].strip(),
+                        description=form.data["description"].strip(),
+                        npc_class=form.data["npc_class"].strip(),
+                    )
+                )
+                msg = f"NPC {form.data['name']} created"
+
+            await post_to_audit_log(
+                msg=f"{msg} in {campaign.name}",
+                view=self.__class__.__name__,
+            )
+            await campaign.save()
+
+            return True, msg, None
+
+        return False, "", form
+
     async def get(self, campaign_id: str = "") -> str:
         """Handle GET requests for editing a campaign item."""
         campaign = await fetch_active_campaign(campaign_id)
 
         return catalog.render(
-            "campaign_view.FormPartial",
+            "campaign.FormPartial",
             campaign=campaign,
             form=await self._build_form(campaign),
             join_label=False,
@@ -427,6 +506,9 @@ class CampaignEditItem(MethodView):
             case CampaignEditableInfo.NOTE:
                 form_is_processed, msg, form = await self._post_note(campaign)
 
+            case CampaignEditableInfo.NPC:
+                form_is_processed, msg, form = await self._post_npc(campaign)
+
             case _:
                 assert_never(self.edit_type)
 
@@ -443,7 +525,7 @@ class CampaignEditItem(MethodView):
 
         # If POST request does not validate, return errors
         return catalog.render(
-            "campaign_view.FormPartial",
+            "campaign.FormPartial",
             campaign=campaign,
             form=form,
             join_label=False,
@@ -469,6 +551,10 @@ class CampaignEditItem(MethodView):
 
             case CampaignEditableInfo.NOTE:
                 msg = await self._delete_note(campaign)
+
+            case CampaignEditableInfo.NPC:
+                msg = await self._delete_npc(campaign)
+
             case _:
                 assert_never(self.edit_type)
 

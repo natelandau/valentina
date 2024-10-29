@@ -39,7 +39,7 @@
                                 <td style="white-space: nowrap;">
                                     <strong>{{ item.name | from_markdown | safe }}</strong>
                                 </td>
-                                <td>{{ key | capitalize }}</td>
+                                <td>{{ key | capitalize | escape }}</td>
                                 <td>{{ item.description | from_markdown | safe }}</td>
                                 {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
                                     <td>

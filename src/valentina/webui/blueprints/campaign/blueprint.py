@@ -1,4 +1,4 @@
-"""Blueprints for campaign_view."""
+"""Blueprints for campaign."""
 
 from quart import Blueprint
 

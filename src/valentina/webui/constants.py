@@ -69,6 +69,9 @@ class CampaignEditableInfo(Enum):
     NOTE = EditItem(
         name="note", route="campaign.edit_note", div_id="note", tab=CampaignViewTab.NOTES
     )
+    NPC = EditItem(
+        name="npc", route="campaign.edit_npc", div_id="npc", tab=CampaignViewTab.CHARACTERS
+    )
 
 
 class CharacterEditableInfo(Enum):

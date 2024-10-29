@@ -500,7 +500,7 @@ class NPCModal(Modal):
         self.add_item(
             InputText(
                 label="npc_class",
-                placeholder="Enter a class for the npc (e.g. 'vampire', 'mortal')",
+                placeholder="Enter a class for the NPC (e.g. 'vampire', 'mortal')",
                 value=npc.npc_class if npc else None,
                 required=True,
                 style=discord.InputTextStyle.short,

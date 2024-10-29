@@ -29,9 +29,7 @@ class BioForm(QuartForm):
 
     bio = TextAreaField(
         "Biography",
-        default="",
         description="Write a biography for the character. Markdown is supported.",
-        filters=[str.strip],
     )
     character_id = HiddenField()
     submit = SubmitField("Submit")
@@ -126,6 +124,69 @@ class EditCharacterInfo(MethodView):
             case _:
                 assert_never(self.edit_type)
 
+    async def _delete_custom_section(self, character: Character) -> str:
+        """Delete the custom section."""
+        uuid = request.args.get("uuid", None)
+        if not uuid:
+            abort(400)
+
+        for section in character.sheet_sections:
+            if section.uuid == UUID(uuid):
+                character.sheet_sections.remove(section)
+                break
+
+        await post_to_audit_log(
+            msg=f"Character {character.name} section `{section.title}` deleted",
+            view=self.__class__.__name__,
+        )
+        await character.save()
+
+        return "Custom section deleted"
+
+    async def _delete_note(self, character: Character) -> str:
+        """Delete the note."""
+        note_id = request.args.get("note_id", None)
+        if not note_id:
+            abort(400)
+
+        existing_note = await Note.get(note_id)
+        for note in character.notes:
+            if note == existing_note:
+                character.notes.remove(note)
+                break
+
+        await existing_note.delete()
+
+        await post_to_audit_log(
+            msg=f"Character {character.name} note `{existing_note.text}` deleted",
+            view=self.__class__.__name__,
+        )
+        await character.save()
+
+        return "Note deleted"
+
+    async def _delete_inventory(self, character: Character) -> str:
+        """Delete the inventory item."""
+        item_id = request.args.get("item_id", None)
+        if not item_id:
+            abort(400)
+
+        existing_item = await InventoryItem.get(item_id)
+        for item in character.notes:
+            if item == existing_item:
+                character.inventory.remove(item)
+                break
+        await character.save()
+
+        await post_to_audit_log(
+            msg=f"Character {character.name} item `{existing_item.name}` deleted",
+            view=self.__class__.__name__,
+        )
+
+        await existing_item.delete()
+
+        return "Item deleted"
+
     async def _post_biography(self, character: Character) -> tuple[bool, str, QuartForm]:
         """Process the biography form."""
         form = await self._build_form(character)
@@ -164,8 +225,9 @@ class EditCharacterInfo(MethodView):
                     CharacterSheetSection(title=section_title, content=section_content)
                 )
                 msg = "Custom section added"
+
             await post_to_audit_log(
-                msg=f"Character {character.name} section `{section_title}` added",
+                msg=f"{msg} to {character.name}",
                 view=self.__class__.__name__,
             )
             await character.save()
@@ -236,69 +298,6 @@ class EditCharacterInfo(MethodView):
             return True, msg, form
 
         return False, "", form
-
-    async def _delete_custom_section(self, character: Character) -> str:
-        """Delete the custom section."""
-        uuid = request.args.get("uuid", None)
-        if not uuid:
-            abort(400)
-
-        for section in character.sheet_sections:
-            if section.uuid == UUID(uuid):
-                character.sheet_sections.remove(section)
-                break
-
-        await post_to_audit_log(
-            msg=f"Character {character.name} section `{section.title}` deleted",
-            view=self.__class__.__name__,
-        )
-        await character.save()
-
-        return "Custom section deleted"
-
-    async def _delete_note(self, character: Character) -> str:
-        """Delete the note."""
-        note_id = request.args.get("note_id", None)
-        if not note_id:
-            abort(400)
-
-        existing_note = await Note.get(note_id)
-        for note in character.notes:
-            if note == existing_note:
-                character.notes.remove(note)
-                break
-
-        await existing_note.delete()
-
-        await post_to_audit_log(
-            msg=f"Character {character.name} note `{existing_note.text}` deleted",
-            view=self.__class__.__name__,
-        )
-        await character.save()
-
-        return "Note deleted"
-
-    async def _delete_inventory(self, character: Character) -> str:
-        """Delete the inventory item."""
-        item_id = request.args.get("item_id", None)
-        if not item_id:
-            abort(400)
-
-        existing_item = await InventoryItem.get(item_id)
-        for item in character.notes:
-            if item == existing_item:
-                character.inventory.remove(item)
-                break
-        await character.save()
-
-        await post_to_audit_log(
-            msg=f"Character {character.name} item `{existing_item.name}` deleted",
-            view=self.__class__.__name__,
-        )
-
-        await existing_item.delete()
-
-        return "Item deleted"
 
     async def get(self, character_id: str) -> str:
         """Render the form."""

@@ -87,3 +87,30 @@ class CampaignNoteForm(QuartForm):
     chapter_id = HiddenField()
 
     submit = SubmitField("Submit")
+
+
+class CampaignNPCForm(QuartForm):
+    """Form for a campaign NPC."""
+
+    name = StringField(
+        "NPC Name",
+        default="",
+        validators=[DataRequired(), Length(min=3, message="Must be at least 3 characters")],
+        filters=[str.strip, str.title],
+    )
+    description = TextAreaField(
+        "Description",
+        description="Markdown is supported",
+    )
+
+    npc_class = StringField(
+        "NPC Class",
+        default="",
+        validators=[DataRequired(), Length(min=3, message="Must be at least 3 characters")],
+        filters=[str.strip, str.title],
+        description="e.g. 'Vampire', 'Mortal'",
+    )
+
+    uuid = HiddenField()
+    campaign_id = HiddenField()
+    submit = SubmitField("Submit")

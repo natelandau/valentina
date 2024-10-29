@@ -31,7 +31,12 @@ class StartCharacterCreate(MethodView):
 
         # Get the selected campaign and available experience
         available_experience = None
-        selected_campaign = await fetch_active_campaign()
+
+        if campaign_id := request.args.get("campaign_id"):
+            selected_campaign = await fetch_active_campaign(campaign_id)
+        else:
+            selected_campaign = await fetch_active_campaign()
+
         if selected_campaign:
             user = await fetch_user()
             available_experience = user.fetch_campaign_xp(selected_campaign)[0]
