@@ -4,11 +4,13 @@
     inventory: list[CharacterInventoryItem] = [],
 #}
 
-<button class="btn btn-outline-primary btn-sm ms-3 float-end"
-        hx-get="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id) }}"
-        hx-trigger="click"
-        hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
-        hx-swap="innerHTML">Add New Item</button>
+{% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id) }}"
+            hx-trigger="click"
+            hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
+            hx-swap="innerHTML">Add New Item</button>
+{% endif %}
 <h2>
     Inventory&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Items the character owns</small></span>
 </h2>
@@ -39,26 +41,28 @@
                                 </td>
                                 <td>{{ key | capitalize }}</td>
                                 <td>{{ item.description | from_markdown | safe }}</td>
-                                <td>
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary"
-                                                style="--bs-btn-padding-y: .25rem;
-                                                       --bs-btn-padding-x: .5rem;
-                                                       --bs-btn-font-size: .75rem"
-                                                hx-get="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id, item_id=item.id) }}"
-                                                hx-trigger="click"
-                                                hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
-                                                hx-swap="innerHTML">Edit</button>
-                                        <button class="btn btn-sm btn-outline-danger"
-                                                style="--bs-btn-padding-y: .25rem;
-                                                       --bs-btn-padding-x: .5rem;
-                                                       --bs-btn-font-size: .75rem"
-                                                hx-delete="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id, item_id=item.id) }}"
-                                                hx-trigger="click"
-                                                hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
-                                                hx-swap="innerHTML">Delete</button>
-                                    </div>
-                                </td>
+                                {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    style="--bs-btn-padding-y: .25rem;
+                                                           --bs-btn-padding-x: .5rem;
+                                                           --bs-btn-font-size: .75rem"
+                                                    hx-get="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id, item_id=item.id) }}"
+                                                    hx-trigger="click"
+                                                    hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
+                                                    hx-swap="innerHTML">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    style="--bs-btn-padding-y: .25rem;
+                                                           --bs-btn-padding-x: .5rem;
+                                                           --bs-btn-font-size: .75rem"
+                                                    hx-delete="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id, item_id=item.id) }}"
+                                                    hx-trigger="click"
+                                                    hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
+                                                    hx-swap="innerHTML">Delete</button>
+                                        </div>
+                                    </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                     {% endfor %}
@@ -68,12 +72,13 @@
     {% endif %}
 
 </div>
-
-<button class="btn btn-outline-primary btn-sm ms-3 float-end"
-        hx-get="{{ url_for(CharacterEditableInfo.NOTE.value.route, character_id=character.id) }}"
-        hx-trigger="click"
-        hx-target="#{{ CharacterEditableInfo.NOTE.value.div_id }}"
-        hx-swap="innerHTML">Create Note</button>
+{% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for(CharacterEditableInfo.NOTE.value.route, character_id=character.id) }}"
+            hx-trigger="click"
+            hx-target="#{{ CharacterEditableInfo.NOTE.value.div_id }}"
+            hx-swap="innerHTML">Create Note</button>
+{% endif %}
 <h2>
     Notes&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Quick notes about the character</small></span>
 </h2>
@@ -119,12 +124,13 @@
         </div>
     {% endif %}
 </div>
-
-<button class="btn btn-outline-primary btn-sm ms-3 float-end"
-        hx-get="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id) }}"
-        hx-trigger="click"
-        hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value.div_id }}"
-        hx-swap="innerHTML">Create New Section</button>
+{% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            hx-get="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id) }}"
+            hx-trigger="click"
+            hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value.div_id }}"
+            hx-swap="innerHTML">Create New Section</button>
+{% endif %}
 <h2>
     Sheet Sections&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Information about the character. Can have multiple paragraphs and use markdown for formatting</small></span>
 </h2>

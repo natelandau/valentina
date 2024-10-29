@@ -140,6 +140,7 @@ class CharacterView(MethodView):
                 return catalog.render(
                     "character_view.Biography",
                     character=character,
+                    CharacterEditableInfo=CharacterEditableInfo,
                 )
             case CharacterViewTab.INFO:
                 return catalog.render(

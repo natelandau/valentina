@@ -160,22 +160,6 @@ class CampaignEditItem(MethodView):
     def __init__(self, edit_type: CampaignEditableInfo) -> None:
         self.edit_type = edit_type
 
-        match self.edit_type:
-            case CampaignEditableInfo.DESCRIPTION:
-                self.tab = CampaignViewTab.OVERVIEW
-
-            case CampaignEditableInfo.BOOK:
-                self.tab = CampaignViewTab.BOOKS
-
-            case CampaignEditableInfo.CHAPTER:
-                self.tab = CampaignViewTab.BOOKS
-
-            case CampaignEditableInfo.NOTE:
-                self.tab = CampaignViewTab.NOTES
-
-            case _:
-                assert_never(self.edit_type)
-
     async def _build_form(self, campaign: Campaign) -> QuartForm:
         """Build the form for the campaign item."""
         data = {}
@@ -423,7 +407,7 @@ class CampaignEditItem(MethodView):
             floating_label=True,
             post_url=url_for(self.edit_type.value.route, campaign_id=campaign_id),
             hx_target=f"#{self.edit_type.value.div_id}",
-            tab=self.tab,
+            tab=self.edit_type.value.tab,
         )
 
     async def post(self, campaign_id: str = "") -> Response | str:
@@ -466,7 +450,7 @@ class CampaignEditItem(MethodView):
             floating_label=True,
             post_url=url_for(self.edit_type.value.route, campaign_id=campaign_id),
             hx_target=f"#{self.edit_type.value.div_id}",
-            tab=self.tab,
+            tab=self.edit_type.value.tab,
         )
 
     async def delete(self, campaign_id: str = "") -> Response:

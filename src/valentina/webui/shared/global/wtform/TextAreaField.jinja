@@ -10,7 +10,7 @@
 
 {% if floating_label %}
     <div class="mb-3 form-floating" id="{{ field.id }}-container">
-        {{ field(**{"class":"form-control"~valid_css, "placeholder":"", "style":"height: 134px"}) }}
+        {{ field(**{"class":"form-control"~valid_css, "placeholder":"", "style":"height: 200px"}) }}
         <label for="{{ field.id }}" class="text-body-secondary">{{ label_text }}</label>
         {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
         {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
@@ -20,7 +20,7 @@
         <label for="{{ field.id }}" class="form-label">
             <strong>{{ label_text }}</strong>
         </label>
-        {{ field(**{"class":"form-control"~valid_css, "placeholder":"", "rows":6}) }}
+        {{ field(**{"class":"form-control"~valid_css, "placeholder":"", "rows": "10"}) }}
         {% if field.errors %}<div class="invalid-feedback">{{ field.errors|first }}</div>{% endif %}
         {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
     </div>

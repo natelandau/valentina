@@ -19,9 +19,22 @@ from wtforms.validators import DataRequired, Length
 from valentina.constants import InventoryItemType
 from valentina.models import Character, CharacterSheetSection, InventoryItem, Note
 from valentina.webui import catalog
-from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab
+from valentina.webui.constants import CharacterEditableInfo
 from valentina.webui.utils import fetch_active_character
 from valentina.webui.utils.discord import post_to_audit_log
+
+
+class BioForm(QuartForm):
+    """A form for editing the character biography."""
+
+    bio = TextAreaField(
+        "Biography",
+        default="",
+        description="Write a biography for the character. Markdown is supported.",
+        filters=[str.strip],
+    )
+    character_id = HiddenField()
+    submit = SubmitField("Submit")
 
 
 class InventoryItemForm(QuartForm):
@@ -105,8 +118,22 @@ class EditCharacterInfo(MethodView):
                         data["item_id"] = str(existing_item.id)
                 return await InventoryItemForm().create_form(data=data)
 
+            case CharacterEditableInfo.BIOGRAPHY:
+                data["bio"] = character.bio
+                data["character_id"] = str(character.id)
+                return await BioForm().create_form(data=data)
+
             case _:
                 assert_never(self.edit_type)
+
+    async def _post_biography(self, character: Character) -> tuple[bool, str, QuartForm]:
+        """Process the biography form."""
+        form = await self._build_form(character)
+        if await form.validate_on_submit():
+            character.bio = form.data["bio"]
+            await character.save()
+            return True, "Biography updated", None
+        return False, "", form
 
     async def _post_custom_section(self, character: Character) -> tuple[bool, str, QuartForm]:
         """Process the custom section form."""
@@ -284,7 +311,7 @@ class EditCharacterInfo(MethodView):
             join_label=False,
             floating_label=True,
             post_url=url_for(self.edit_type.value.route, character_id=character_id),
-            tab=CharacterViewTab.INFO,
+            tab=self.edit_type.value.tab,
             hx_target=f"#{self.edit_type.value.div_id}",
         )
 
@@ -299,6 +326,8 @@ class EditCharacterInfo(MethodView):
                 form_is_processed, msg, form = await self._post_note(character)
             case CharacterEditableInfo.INVENTORY:
                 form_is_processed, msg, form = await self._post_inventory(character)
+            case CharacterEditableInfo.BIOGRAPHY:
+                form_is_processed, msg, form = await self._post_biography(character)
             case _:
                 assert_never(self.edit_type)
 
@@ -321,7 +350,7 @@ class EditCharacterInfo(MethodView):
             join_label=False,
             floating_label=True,
             post_url=url_for(self.edit_type.value.route, character_id=character_id),
-            tab=CharacterViewTab.INFO,
+            tab=self.edit_type.value.tab,
             hx_target=f"#{self.edit_type.value.div_id}",
         )
 
@@ -336,6 +365,8 @@ class EditCharacterInfo(MethodView):
                 msg = await self._delete_note(character)
             case CharacterEditableInfo.INVENTORY:
                 msg = await self._delete_inventory(character)
+            case CharacterEditableInfo.BIOGRAPHY:
+                pass  # Not needed.
             case _:
                 assert_never(self.edit_type)
 
