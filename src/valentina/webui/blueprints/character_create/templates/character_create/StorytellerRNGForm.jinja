@@ -1,0 +1,26 @@
+{# def
+    form: QuartForm,
+    post_url: str,
+    join_label: bool = False,
+    floating_label: bool = False,
+#}
+
+{% set encoding = "multipart/form-data" if form.__iter__() | selectattr("type", "in", ["FileField","MultipleFileField"]) | list else "application/x-www-form-urlencoded" %}
+
+<div class="d-flex justify-content-center align-items-center mb-5">
+
+    <div id="form-container"
+         class="py-4 px-5 mt-5 rounded-3 border shadow-lg w-50">
+        <h2>Select character attributes</h2>
+        <p>Anything left blank will be randomly generated.</p>
+        <form method="post"
+              id="{{ form._prefix }}form"
+              hx-post="{{ post_url }}"
+              novalidate
+              hx-indicator="#spinner"
+              hx-target="#create-character-container"
+              encoding="{{ encoding }}">
+            <global.WTFormElements form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} />
+        </form>
+    </div>
+</div>

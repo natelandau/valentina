@@ -257,6 +257,28 @@ class MaxTraitValue(Enum):
     RENOWN = 10
 
 
+class NameNationality(Enum):
+    """Enum for nationalities. Used for generating names, the value is passed to the name generator."""
+
+    ENGLISH = "us,gb"
+    GERMAN = "de"
+    SPANISH = "es,mx"
+    FRENCH = "fr"
+    INDIAN = "in"
+    SCANDINAVIAN = "dk,no"
+    PORTUGUESE = "br"
+    SLAVIC = "rs,ua"
+
+    @classmethod
+    def random_member(cls) -> "NameNationality":
+        """Select a random member from the enum.
+
+        Returns:
+            NameNationality: A random enum member.
+        """
+        return choice(list(cls))
+
+
 class PermissionsManageTraits(Enum):
     """Permissions for updating character trait values."""
 

@@ -6,9 +6,14 @@
 
 {% if "delete" in (field.label.text | lower) %}
     {{ field(**{"class": "btn btn-danger"}) }}
+    <img id="spinner"
+         src="{{ url_for('static', filename='spinners/bars.svg') }}"
+         class="htmx-indicator" />
+{% elif "cancel" in (field.label.text | lower) %}
+    {{ field(**{"class": "btn btn-outline-secondary"}) }}
 {% else %}
     {{ field(**{"class": "btn btn-success"}) }}
+    <img id="spinner"
+         src="{{ url_for('static', filename='spinners/bars.svg') }}"
+         class="htmx-indicator" />
 {% endif %}
-<img id="spinner"
-     src="{{ url_for('static', filename='spinners/bars.svg') }}"
-     class="htmx-indicator" />

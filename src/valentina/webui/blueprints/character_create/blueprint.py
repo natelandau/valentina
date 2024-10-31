@@ -7,7 +7,8 @@ from .route_create_full import (
     CreateCharacterStep2,
     CreateCharacterStep3,
 )
-from .route_rng import CreateRNGCharacter
+from .route_rng_player import CreateRNGCharacter
+from .route_rng_storyteller import CreateStorytellerRNGCharacter
 from .route_start import StartCharacterCreate
 
 blueprint = Blueprint("character_create", __name__)
@@ -33,5 +34,12 @@ blueprint.add_url_rule(
     methods=["GET", "POST"],
 )
 blueprint.add_url_rule(
-    "/create_character/rng", view_func=CreateRNGCharacter.as_view("rng"), methods=["GET", "POST"]
+    "/create_character/rng/player",
+    view_func=CreateRNGCharacter.as_view("rng_player"),
+    methods=["GET", "POST"],
+)
+blueprint.add_url_rule(
+    "/create_character/rng/storyteller",
+    view_func=CreateStorytellerRNGCharacter.as_view("rng_storyteller"),
+    methods=["GET", "POST"],
 )
