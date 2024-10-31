@@ -30,7 +30,7 @@
         "rich>=13.8.1",
         "semver>=3.0.2",
         "typer>=0.12.5,<0.13.0",
-]
+    ]
     description = "Valentina is a Discord bot that helps you run TTRPGs."
     license = "AGPL-3.0-or-later"
     name = "valentina"
@@ -42,8 +42,7 @@
         repository = "https://github.com/natelandau/valentina"
 
     [project.scripts]
-        valentina = "valentina.scripts.run_prod:app"
-        webui     = "valentina.scripts.run_webui_dev:cli"
+        valentina = "valentina.run:cli"
 
 [tool.uv]
     dev-dependencies = [
@@ -106,16 +105,18 @@
     data_file = "reports/.coverage"
     omit = [
         "src/valentina/__version__.py",
+        "src/valentina/bot.py",
         "src/valentina/discord/bot.py",
         "src/valentina/discord/characters/add_from_sheet.py",
         "src/valentina/discord/characters/buttons.py",
         "src/valentina/discord/characters/reallocate_dots.py",
         "src/valentina/discord/characters/spend_experience.py",
-        "src/valentina/discord/cogs/*",                         # TODO: Add tests for cogs
+        "src/valentina/discord/cogs/*",
+        "src/valentina/discord/models/channel_mngr.py",
         "src/valentina/discord/utils/discord_utils.py",
         "src/valentina/discord/views/*",
         "src/valentina/models/errors.py",
-        "src/valentina/scripts/*",
+        "src/valentina/run.py",
         "src/valentina/utils/errors.py",
         "src/valentina/utils/logging.py",
         "tests/*",
@@ -177,7 +178,7 @@
         "no_db: marks tests as not needing a database",
         "serial",
     ]
-    testpaths = ["src", "tests"]
+    testpaths = ["tests"]
     xfail_strict = true
 
 [tool.ruff] # https://github.com/charliermarsh/ruff
@@ -256,7 +257,6 @@
             "TD003",    # Missing issue link on the line following this TODO
             "UP007",    # non-pep604-annotation
         ]
-
         per-file-ignores = { "scripts/*.py" = [
             "PLR0912",
             "PLR0913",

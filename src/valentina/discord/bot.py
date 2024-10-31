@@ -13,11 +13,7 @@ from beanie.operators import Set
 from discord.ext import commands, tasks
 from loguru import logger
 
-from valentina.constants import (
-    COGS_PATH,
-    EmbedColor,
-    LogLevel,
-)
+from valentina.constants import COGS_PATH, EmbedColor, LogLevel, WebUIEnvironment
 from valentina.discord.models import SyncDiscordFromWebManager
 from valentina.models import (
     Campaign,
@@ -28,6 +24,7 @@ from valentina.models import (
 )
 from valentina.utils import ValentinaConfig, errors
 from valentina.utils.database import init_database
+from valentina.webui import create_app
 
 
 # Subclass discord.ApplicationContext to create custom application context
@@ -195,9 +192,19 @@ class Valentina(commands.Bot):
     specific to the Valentina bot. Include custom attributes, methods,
     and event handlers to manage bot state, load cogs, initialize the database,
     and handle server connections.
+
+    Args:
+        version (str): The version of the bot.
+        webui_mode (WebUIEnvironment): The mode of the web interface. Defaults to testing, so that Valentina can be run by tests without starting the web server.
     """
 
-    def __init__(self, version: str, *args: Any, **kwargs: Any):
+    def __init__(
+        self,
+        version: str,
+        webui_mode: WebUIEnvironment = WebUIEnvironment.TESTING,
+        *args: Any,
+        **kwargs: Any,
+    ):
         super().__init__(*args, **kwargs)
         self.connected = False
         self.welcomed = False
@@ -205,6 +212,7 @@ class Valentina(commands.Bot):
         self.owner_channels = [int(x) for x in ValentinaConfig().owner_channels.split(",")]
         self.sync_from_web.start()
         self.sync_roles_to_db.start()
+        self.webui_mode = webui_mode
 
         # Load Cogs
         # #######################
@@ -406,10 +414,11 @@ class Valentina(commands.Bot):
         self.welcomed = True
         logger.info(f"{self.user} is ready")
 
-        if ValentinaConfig().webui_enable:
-            from valentina.webui import run_webserver
-
-            await run_webserver()
+        # Create the web server if not in testing mode
+        if self.webui_mode != WebUIEnvironment.TESTING:
+            logger.debug(f"WEBUI MODE: {self.webui_mode.value}")
+            logger.info("WEBUI: Creating web server")
+            await create_app(self.webui_mode)
 
     # Define a custom application context class
     async def get_application_context(  # type: ignore

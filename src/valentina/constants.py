@@ -50,6 +50,14 @@ STARTING_FREEBIE_POINTS = 21
 ### ENUMS ###
 
 
+class WebUIEnvironment(StrEnum):
+    """Enum for web UI environments."""
+
+    PRODUCTION = "Production"
+    DEVELOPMENT = "Development"
+    TESTING = "Testing"
+
+
 class Emoji(Enum):
     """Enum for emojis."""
 

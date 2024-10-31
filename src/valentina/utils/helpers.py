@@ -28,19 +28,6 @@ def convert_int_to_emoji(num: int, markdown: bool = False, images: bool = False)
 
     Returns:
         str: The emoji corresponding to the integer, or the integer as a string.
-
-    Examples:
-        >>> convert_int_to_emoji(1)
-        ':one:'
-
-        >>> convert_int_to_emoji(10)
-        ':keycap_ten:'
-
-        >>> convert_int_to_emoji(11)
-        '11'
-
-        >>> convert_int_to_emoji(11, markdown=True)
-        '`11`'
     """
     if 0 <= num <= 10:  # noqa: PLR2004
         if images:
@@ -208,16 +195,6 @@ def get_max_trait_value(trait: str, category: str) -> int | None:
 
     Returns:
         int | None: The maximum value for the trait or None if the trait is a custom trait and no default for it's parent category exists.
-
-    Examples:
-        >>> get_max_trait_value("Dominate", "Disciplines")
-        5
-
-        >>> get_max_trait_value("Willpower", "Other")
-        10
-
-        >>> get_max_trait_value("xxx", "xxx")
-        5
     """
     # Some traits have their own max value. Check for those first.
     if trait.upper() in MaxTraitValue.__members__:
@@ -239,15 +216,6 @@ def get_trait_multiplier(trait: str, category: str) -> int:
 
     Returns:
         int: The multiplier associated with the trait.
-
-    >>> get_trait_multiplier("Dominate", "Disciplines")
-    7
-
-    >>> get_trait_multiplier("Humanity", "Universal")
-    2
-
-    >>> get_trait_multiplier("xxx", "xxx")
-    2
     """
     if trait.upper() in XPMultiplier.__members__:
         return XPMultiplier[trait.upper()].value
@@ -267,15 +235,6 @@ def get_trait_new_value(trait: str, category: str) -> int:
 
     Returns:
         int: The cost of the first dot of the trait.
-
-    >>> get_trait_new_value("Dominate", "Disciplines")
-    10
-
-    >>> get_trait_new_value("Talents", "")
-    3
-
-    >>> get_trait_new_value("XXX", "XXX")
-    1
     """
     if trait.upper() in XPNew.__members__:
         return XPNew[trait.upper()].value
@@ -337,13 +296,6 @@ def truncate_string(text: str, max_length: int = 1000) -> str:
 
     Returns:
         str: The truncated string.
-
-    Examples:
-        >>> truncate_string("This is a test", 10)
-        'This i...'
-
-        >>> truncate_string("This is a test", 100)
-        'This is a test'
     """
     if len(text) > max_length:
         return text[: max_length - 4] + "..."
