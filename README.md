@@ -89,8 +89,14 @@ To allow image uploads, an AWS S3 bucket must be configured with appropriate per
     ```
 
 </details>
+## Run the bot (Local)
 
-## Run the bot
+1. Enter the virtual environment with `source .venv/bin/activate`
+2. Confirm the app is configured correctly
+3. Run `valentina --help` to see the available options
+4. Run `valentina [options]` to run the bot
+
+## Run the bot (Discord)
 
 1. Copy the `docker-compose.yml` file to a directory on your machine
 2. Edit the `docker-compose.yml` file
@@ -195,15 +201,6 @@ Many Python packages are used in this project. Here are some of the most importa
 -   [JinjaX](https://jinjax.scaletti.dev/) - Super components powers for your Jinja templates
 -   [quart-wtf](https://quart-wtf.readthedocs.io/en/latest/index.html) - Integration of Quart and WTForms including CSRF and file uploading.
 -   [Quart](https://quart.palletsprojects.com/en/latest/index.html) - Async web framework based on Flask
-
-## Running the webui locally
-
-A convenience script that runs the webui locally without the Discord bot is available to speed development of web features.
-
-1. Set the required environment variables in a `.env` file.
-2. Run `uv sync` to install the required packages.
-3. Activate the virtual environment with `source .venv/bin/activate`.
-4. Run the webui with `webui`.
 
 ## Troubleshooting
 

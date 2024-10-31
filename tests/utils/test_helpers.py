@@ -4,7 +4,55 @@
 import pytest
 
 from valentina.utils import ValentinaConfig, errors
-from valentina.utils.helpers import divide_total_randomly, num_to_circles
+from valentina.utils.helpers import (
+    convert_int_to_emoji,
+    divide_total_randomly,
+    get_max_trait_value,
+    get_trait_multiplier,
+    get_trait_new_value,
+    num_to_circles,
+    truncate_string,
+)
+
+
+@pytest.mark.no_db
+def test_truncate_string() -> None:
+    """Test truncate_string()."""
+    assert truncate_string("This is a test", 10) == "This i..."
+    assert truncate_string("This is a test", 100) == "This is a test"
+
+
+@pytest.mark.no_db
+def test_get_trait_new_value() -> None:
+    """Test get_trait_new_value()."""
+    assert get_trait_new_value("Dominate", "Disciplines") == 10
+    assert get_trait_new_value("Strength", "Physical") == 5
+    assert get_trait_new_value("xxx", "xxx") == 1
+
+
+@pytest.mark.no_db
+def test_get_trait_multiplier() -> None:
+    """Test get_trait_multiplier()."""
+    assert get_trait_multiplier("Dominate", "Disciplines") == 7
+    assert get_trait_multiplier("Humanity", "SPHERES") == 2
+    assert get_trait_multiplier("xxx", "xxx") == 2
+
+
+@pytest.mark.no_db
+def test_get_max_trait_value() -> None:
+    """Test get_max_trait_value()."""
+    assert get_max_trait_value("Dominate", "Disciplines") == 5
+    assert get_max_trait_value("Willpower", "Other") == 10
+    assert get_max_trait_value("xxx", "xxx") == 5
+
+
+@pytest.mark.no_db
+def test_convert_int_to_emoji() -> None:
+    """Test convert_int_to_emoji()."""
+    assert convert_int_to_emoji(1) == ":one:"
+    assert convert_int_to_emoji(10) == ":keycap_ten:"
+    assert convert_int_to_emoji(11) == "11"
+    assert convert_int_to_emoji(11, markdown=True) == "`11`"
 
 
 @pytest.mark.no_db
