@@ -5,11 +5,15 @@ from typing import ClassVar
 from beanie import DeleteRules
 from flask_discord import requires_authorization
 from loguru import logger
-from quart import abort, request, session, url_for
+from quart import Response, abort, request, session, url_for
 from quart.views import MethodView
-from werkzeug.wrappers.response import Response
 
-from valentina.constants import STARTING_FREEBIE_POINTS, DBSyncUpdateType, HTTPStatus, RNGCharLevel
+from valentina.constants import (
+    STARTING_FREEBIE_POINTS,
+    DBSyncUpdateType,
+    HTTPStatus,
+    RNGCharLevel,
+)
 from valentina.controllers import RNGCharGen
 from valentina.models import Character
 from valentina.webui import catalog
@@ -62,7 +66,7 @@ class CreateRNGCharacter(MethodView):
             remaining_xp = await user.spend_campaign_xp(selected_campaign, 10)
 
         return catalog.render(
-            "character_create.RNG",
+            "character_create.RNGChoice",
             selected_campaign=selected_campaign,
             remaining_xp=remaining_xp,
             rng_characters=characters,
@@ -81,7 +85,7 @@ class CreateRNGCharacter(MethodView):
             return Response(
                 headers={
                     "HX-Redirect": url_for(
-                        "character_create.rng",
+                        "character_create.rng_player",
                         character_type=request.args["character_type"],
                         campaign_id=request.args["campaign_id"],
                     )
@@ -122,7 +126,7 @@ class CreateRNGCharacter(MethodView):
                     "HX-Redirect": url_for(
                         "character_view.view",
                         character_id=redirect_char_id,
-                        success_msg="<strong>Character created successfully.</strong><br>You have 24 hours to spend freebie points and edit the character before it is locked.",
+                        success_msg="<strong>Character created successfully.</strong>",
                     )
                 }
             )

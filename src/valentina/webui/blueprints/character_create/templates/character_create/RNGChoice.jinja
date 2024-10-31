@@ -33,7 +33,7 @@
                     <div class="card-footer">
                         <button class="btn btn-primary"
                                 type="button"
-                                hx-post="{{- url_for('character_create.rng', character_type=character_type,campaign_id=selected_campaign.id) -}}"
+                                hx-post="{{- url_for('character_create.rng_player', character_type=character_type,campaign_id=selected_campaign.id) -}}"
                                 hx-trigger="click"
                                 hx-target="body"
                                 hx-indicator="#spinner{{- loop.index -}}"
@@ -59,7 +59,7 @@
             {% if session["IS_STORYTELLER"] or remaining_xp > 10 %}
                 <button class="btn btn-primary"
                         type="button"
-                        hx-post="{{- url_for('character_create.rng', character_type=character_type,campaign_id=selected_campaign.id) -}}"
+                        hx-post="{{- url_for('character_create.rng_player', character_type=character_type,campaign_id=selected_campaign.id) -}}"
                         hx-trigger="click"
                         hx-target="body"
                         hx-indicator="#spinner"
