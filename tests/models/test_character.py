@@ -2,11 +2,10 @@
 """Test the mongodb character model."""
 
 import pytest
-from rich import print
 
 from tests.factories import *
 from valentina.constants import CharacterConcept, CharClass, HunterCreed, TraitCategory, VampireClan
-from valentina.models import Character, CharacterTrait
+from valentina.models import Campaign, Character, CharacterTrait
 from valentina.utils import errors
 
 
@@ -145,3 +144,26 @@ async def test_fetch_trait_by_name(character_factory, trait_factory):
     # WHEN fetching a trait by name that doesn't exist
     # THEN None is returned
     assert await character.fetch_trait_by_name("Not a trait") is None
+
+
+@pytest.mark.drop_db
+async def test_concept_description(character_factory):
+    """Test the concept_description method."""
+    character = character_factory.build(concept_name=None)
+    assert character.concept_description() == ""
+
+    character2 = character_factory.build(char_class_name="MORTAL", concept_name="HEALER")
+    concept_description = character2.concept_description()
+    assert (
+        f"**{character2.name} is a Healer** - Devout servants of gods or higher powers, with the ability to heal and protect."
+        in concept_description
+    )
+    assert "**Special Abilities:**" in concept_description
+    assert (
+        "1. **Heal:** Heal 3 health levels to a target once per turn.  Any First Aid/medicine roles are also automatically granted one success."
+        in concept_description
+    )
+    assert (
+        "2. **True Faith:** Starts with a Faith of `3`, equivalent to a Discipline.  Clerics can repel supernatural beings for every success on a Faith role."
+        in concept_description
+    )

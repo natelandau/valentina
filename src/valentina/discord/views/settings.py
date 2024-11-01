@@ -17,8 +17,8 @@ from valentina.constants import (
     PermissionsKillCharacter,
     PermissionsManageTraits,
 )
+from valentina.controllers import ChannelManager
 from valentina.discord.bot import Valentina, ValentinaContext
-from valentina.discord.models import ChannelManager
 from valentina.discord.views import CancelButton
 from valentina.models import Guild
 

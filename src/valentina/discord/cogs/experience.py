@@ -8,9 +8,9 @@ from discord.ext import commands
 
 from valentina.controllers import PermissionManager, TraitModifier
 from valentina.discord.bot import Valentina, ValentinaContext
+from valentina.discord.utils import fetch_channel_object
 from valentina.discord.utils.autocomplete import select_char_trait
 from valentina.discord.utils.converters import ValidTraitFromID
-from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.views import confirm_action, present_embed
 from valentina.models import User
 

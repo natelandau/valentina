@@ -30,7 +30,7 @@ class GlobalProperty(Document):
     last_update: datetime = Field(default_factory=time_now)
 
     @before_event(Insert, Replace, Save, Update, SaveChanges)
-    async def update_last_update(self) -> None:
+    async def update_last_update(self) -> None:  # pragma: no cover
         """Update the last_update field with the current timestamp.
 
         This method is automatically called before insert, replace, save, update,

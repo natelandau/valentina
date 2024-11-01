@@ -15,10 +15,10 @@ from valentina.constants import (
     Emoji,
     RNGCharLevel,
 )
-from valentina.controllers import PermissionManager
+from valentina.controllers import ChannelManager, PermissionManager
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.characters import AddFromSheetWizard, CharGenWizard
-from valentina.discord.models import ChannelManager
+from valentina.discord.utils import fetch_channel_object
 from valentina.discord.utils.autocomplete import (
     select_any_player_character,
     select_campaign,
@@ -39,7 +39,6 @@ from valentina.discord.utils.converters import (
     ValidTraitFromID,
     ValidYYYYMMDD,
 )
-from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.views import (
     BioModal,
     CustomSectionModal,
@@ -849,7 +848,8 @@ class CharactersCog(commands.Cog, name="Character"):
         if not is_confirmed:
             return
 
-        await character.associate_with_campaign(campaign)
+        character.campaign = str(campaign.id)
+        await character.save()
 
         channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
         await channel_manager.delete_character_channel(character)

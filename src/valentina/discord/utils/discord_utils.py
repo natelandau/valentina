@@ -149,7 +149,9 @@ async def create_player_role(guild: discord.Guild) -> discord.Role:  # pragma: n
     return player
 
 
-def set_channel_perms(requested_permission: ChannelPermission) -> discord.PermissionOverwrite:
+def set_channel_perms(
+    requested_permission: ChannelPermission,
+) -> discord.PermissionOverwrite:  # pragma: no cover
     """Create a Discord PermissionOverwrite object based on the requested permission level.
 
     This function maps a ChannelPermission enum to a set of Discord permissions,
@@ -216,7 +218,7 @@ async def fetch_channel_object(
     need_book: bool = False,
     need_character: bool = False,
     need_campaign: bool = False,
-) -> ChannelObjects:
+) -> ChannelObjects:  # pragma: no cover
     """Determine the channel type and fetch associated objects.
 
     Identify the channel type and fetch related campaign, book, and character objects. Raise errors if specified conditions are not met.
@@ -271,3 +273,18 @@ async def fetch_channel_object(
         character=character,
         is_storyteller_channel=is_storyteller_channel,
     )
+
+
+def get_user_from_id(
+    guild: discord.Guild, user_id: int
+) -> discord.Member | None:  # pragma: no cover
+    """Get a discord user object from a user ID.
+
+    Args:
+        guild (discord.Guild): The guild to get the user from.
+        user_id (int): The ID of the user to get.
+
+    Returns:
+        discord.Member | None: The user with the given ID, or None if it is not found.
+    """
+    return discord.utils.get(guild.members, id=user_id)

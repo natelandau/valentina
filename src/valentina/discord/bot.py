@@ -14,7 +14,6 @@ from discord.ext import commands, tasks
 from loguru import logger
 
 from valentina.constants import COGS_PATH, EmbedColor, LogLevel, WebUIEnvironment
-from valentina.discord.models import SyncDiscordFromWebManager
 from valentina.models import (
     Campaign,
     ChangelogPoster,
@@ -210,7 +209,6 @@ class Valentina(commands.Bot):
         self.welcomed = False
         self.version = version
         self.owner_channels = [int(x) for x in ValentinaConfig().owner_channels.split(",")]
-        self.sync_from_web.start()
         self.sync_roles_to_db.start()
         self.webui_mode = webui_mode
 
@@ -420,6 +418,21 @@ class Valentina(commands.Bot):
             logger.info("WEBUI: Creating web server")
             await create_app(self.webui_mode)
 
+    async def get_guild_from_id(self, guild_id: int) -> discord.Guild | None:
+        """Get a discord guild object from a guild ID.
+
+        Args:
+            guild_id (int): The ID of the guild to get.
+
+        Returns:
+            discord.Guild | None: The guild with the given ID, or None if it is not found.
+        """
+        for guild in self.guilds:
+            if guild.id == guild_id:
+                return guild
+
+        return None
+
     # Define a custom application context class
     async def get_application_context(  # type: ignore
         self, interaction: discord.Interaction, cls=ValentinaContext
@@ -438,18 +451,6 @@ class Valentina(commands.Bot):
             ValentinaContext: A custom application context for Valentina bot interactions.
         """
         return await super().get_application_context(interaction, cls=cls)
-
-    @tasks.loop(minutes=5)
-    async def sync_from_web(self) -> None:
-        """Some changes made via the Webui are not automatically synced to Discord. For example, characters created on the web will not have their channels created on Discord. This task will periodically check for changes from the WebUI and sync them to Discord or vice-a-versa."""
-        logger.debug("SYNC: Running sync_from_web task")
-        sync_discord = SyncDiscordFromWebManager(self)
-        await sync_discord.run()
-
-    @sync_from_web.before_loop
-    async def before_sync_from_web(self) -> None:
-        """Wait for the bot to be ready before starting the sync_from_web task."""
-        await self.wait_until_ready()
 
     @tasks.loop(minutes=10)
     async def sync_roles_to_db(self) -> None:

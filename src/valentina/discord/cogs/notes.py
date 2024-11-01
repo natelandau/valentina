@@ -9,9 +9,9 @@ from discord.ext import commands
 
 from valentina.constants import MAX_FIELD_COUNT
 from valentina.discord.bot import Valentina, ValentinaContext
+from valentina.discord.utils import fetch_channel_object
 from valentina.discord.utils.autocomplete import select_note
 from valentina.discord.utils.converters import ValidNote
-from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.views import NoteModal, auto_paginate, confirm_action, present_embed
 from valentina.models import Note as DbNote
 

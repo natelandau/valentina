@@ -18,7 +18,6 @@ from wtforms import (
 from wtforms.validators import DataRequired, Length, Optional
 
 from valentina.constants import (
-    DBSyncUpdateType,
     HTTPStatus,
     HunterCreed,
     VampireClan,
@@ -28,7 +27,7 @@ from valentina.constants import (
 )
 from valentina.models import Character
 from valentina.webui import catalog
-from valentina.webui.utils import sync_char_to_discord, update_session
+from valentina.webui.utils import sync_channel_to_discord, update_session
 from valentina.webui.utils.discord import post_to_audit_log
 from valentina.webui.utils.forms import validate_unique_character_name
 
@@ -219,7 +218,7 @@ class EditProfile(MethodView):
                     setattr(character, key, form_data[key])
 
             if has_updates:
-                await sync_char_to_discord(character, DBSyncUpdateType.UPDATE)
+                await sync_channel_to_discord(obj=character, update_type="update")
 
                 await character.save()
                 await post_to_audit_log(

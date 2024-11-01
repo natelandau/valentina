@@ -26,7 +26,7 @@ from valentina.constants import (
     PermissionsManageTraits,
     RollResultType,
 )
-from valentina.discord.utils.discord_utils import create_player_role, create_storyteller_role
+from valentina.discord.utils import create_player_role, create_storyteller_role
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 

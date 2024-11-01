@@ -15,7 +15,7 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.discord.utils.discord_utils import fetch_channel_object
+from valentina.discord.utils import fetch_channel_object
 from valentina.models import (
     Campaign,
     CampaignBook,

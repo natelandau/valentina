@@ -8,7 +8,7 @@ from .helpers import (
     fetch_user,
     fetch_user_characters,
     is_storyteller,
-    sync_char_to_discord,
+    sync_channel_to_discord,
     update_session,
 )
 
@@ -20,6 +20,6 @@ __all__ = [
     "fetch_user_characters",
     "fetch_user",
     "is_storyteller",
-    "sync_char_to_discord",
+    "sync_channel_to_discord",
     "update_session",
 ]

@@ -18,7 +18,7 @@ class ValentinaForm:
     join_labels: bool = False
     floating_labels: bool = False
 
-    def hx_command_outer(self, name: str = "") -> str:
+    def hx_command_outer(self, name: str = "") -> str:  # pragma: no cover
         """The parent element HTMX command to be placed within the <div> tag surrounding the form item.
 
         Args:
@@ -32,7 +32,7 @@ class ValentinaForm:
 
         return ""
 
-    def hx_command_input(self, name: str = "") -> str:
+    def hx_command_input(self, name: str = "") -> str:  # pragma: no cover
         """The HTMX command for the input element to be placed within the <input> tag.
 
         Args:
@@ -49,7 +49,7 @@ class ValentinaForm:
 
 async def validate_unique_character_name(
     name_first: str, name_last: str, character_id: str = ""
-) -> bool:
+) -> bool:  # pragma: no cover
     """Check if the first + lastname are unique in the database."""
     if character_id:
         return (

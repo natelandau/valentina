@@ -17,7 +17,6 @@ from wtforms.validators import DataRequired
 from valentina.constants import (
     CharacterConcept,
     CharClass,
-    DBSyncUpdateType,
     HTTPStatus,
     NameNationality,
     RNGCharLevel,
@@ -27,7 +26,7 @@ from valentina.webui import catalog
 from valentina.webui.utils import (
     fetch_active_campaign,
     fetch_user,
-    sync_char_to_discord,
+    sync_channel_to_discord,
     update_session,
 )
 from valentina.webui.utils.discord import post_to_audit_log
@@ -176,7 +175,8 @@ class CreateStorytellerRNGCharacter(MethodView):
         await post_to_audit_log(
             f"{user.name} created storyteller character {generated_character.full_name}"
         )
-        await sync_char_to_discord(generated_character, DBSyncUpdateType.CREATE)
+        await sync_channel_to_discord(obj=generated_character, update_type="create")
+
         await update_session()
 
         return Response(
