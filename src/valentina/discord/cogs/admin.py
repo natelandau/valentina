@@ -11,11 +11,11 @@ from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
 from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
+from valentina.controllers import ChannelManager
 from valentina.discord.bot import Valentina, ValentinaContext
-from valentina.discord.models import ChannelManager
+from valentina.discord.utils import assert_permissions
 from valentina.discord.utils.autocomplete import select_any_character, select_campaign
 from valentina.discord.utils.converters import ValidCampaign, ValidCharacterObject, ValidImageURL
-from valentina.discord.utils.discord_utils import assert_permissions
 from valentina.discord.views import (
     SettingsManager,
     ThumbnailReview,

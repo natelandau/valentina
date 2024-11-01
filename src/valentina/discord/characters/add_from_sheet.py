@@ -10,9 +10,8 @@ from discord.ui import Button
 from loguru import logger
 
 from valentina.constants import MAX_BUTTONS_PER_ROW, EmbedColor
-from valentina.controllers import CharacterSheetBuilder, TraitForCreation
+from valentina.controllers import ChannelManager, CharacterSheetBuilder, TraitForCreation
 from valentina.discord.bot import ValentinaContext
-from valentina.discord.models import ChannelManager
 from valentina.models import Campaign, Character, CharacterTrait, User
 
 

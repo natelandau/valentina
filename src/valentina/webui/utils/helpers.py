@@ -1,12 +1,15 @@
 """Helpers for the webui."""
 
 from dataclasses import dataclass
+from typing import Literal, assert_never
 
 from loguru import logger
 from quart import Response, abort, session
 
-from valentina.constants import DBSyncModelType, DBSyncUpdateType, HTTPStatus
-from valentina.models import Campaign, CampaignBook, Character, Guild, User, WebDiscordSync
+from valentina.constants import HTTPStatus
+from valentina.controllers import ChannelManager
+from valentina.discord.utils import get_user_from_id
+from valentina.models import Campaign, CampaignBook, Character, Guild, User
 from valentina.utils import ValentinaConfig, console
 
 
@@ -430,69 +433,46 @@ async def update_session() -> None:
         console.rule()
 
 
-async def sync_char_to_discord(character: Character, update_type: DBSyncUpdateType) -> None:
-    """Sync a character to Discord.
+async def sync_channel_to_discord(
+    obj: Campaign | CampaignBook | Character, update_type: Literal["create", "update", "delete"]
+) -> None:
+    """Sync a channel to Discord.
 
     Args:
-        character (Character): The character to sync.
-        update_type (str): The type of update to perform.
+        obj (Campaign | CampaignBook | Character): The object to sync.
+        update_type (Literal["create", "update", "delete"]): The type of update to perform.
 
     Returns:
         None
     """
-    # Create a sync object
-    sync = WebDiscordSync(
-        guild_id=character.guild,
-        object_id=str(character.id),
-        object_type=DBSyncModelType.CHARACTER,
-        update_type=DBSyncUpdateType(update_type),
-        target="discord",
-        user_id=character.user_owner,
+    from valentina.bot import bot
+
+    guild = await bot.get_guild_from_id(session["GUILD_ID"])
+    user = get_user_from_id(
+        guild, user_id=obj.user_owner if isinstance(obj, Character) else session["USER_ID"]
     )
-    await sync.save()
-    logger.info(f"WEBUI: Syncing character {character.full_name} to Discord")
+    channel_manager = ChannelManager(guild=guild, user=user)
 
+    match obj:
+        case Campaign():
+            if update_type == "delete":
+                await channel_manager.delete_campaign_channels(campaign=obj)
+            else:
+                await channel_manager.confirm_campaign_channels(campaign=obj)
 
-async def sync_campaign_to_discord(campaign: Campaign, update_type: DBSyncUpdateType) -> None:
-    """Sync a character to Discord.
+        case CampaignBook():
+            if update_type == "delete":
+                await channel_manager.delete_book_channel(book=obj)
+            else:
+                await channel_manager.confirm_book_channel(book=obj, campaign=obj.campaign)
 
-    Args:
-        campaign (Campaign): The campaign to sync.
-        update_type (str): The type of update to perform.
+        case Character():
+            if update_type == "delete":
+                await channel_manager.delete_character_channel(character=obj)
+            else:
+                await channel_manager.confirm_character_channel(
+                    character=obj, campaign=obj.campaign
+                )
 
-    Returns:
-        None
-    """
-    # Create a sync object
-    sync = WebDiscordSync(
-        guild_id=campaign.guild,
-        object_id=str(campaign.id),
-        object_type=DBSyncModelType.CAMPAIGN,
-        update_type=DBSyncUpdateType(update_type),
-        target="discord",
-        user_id=session["USER_ID"],
-    )
-    await sync.save()
-    logger.info(f"WEBUI: Syncing campaign {campaign.name} to Discord")
-
-
-async def sync_book_to_discord(book: CampaignBook, update_type: DBSyncUpdateType) -> None:
-    """Sync a character to Discord.
-
-    Args:
-        book (CampaignBook): The book to sync.
-        update_type (str): The type of update to perform.
-
-    Returns:
-        None
-    """
-    sync = WebDiscordSync(
-        guild_id=session["GUILD_ID"],
-        object_id=str(book.id),
-        object_type=DBSyncModelType.BOOK,
-        update_type=DBSyncUpdateType(update_type),
-        target="discord",
-        user_id=session["USER_ID"],
-    )
-    await sync.save()
-    logger.info(f"WEBUI: Syncing book {book.name} to Discord")
+        case _:
+            assert_never(object)

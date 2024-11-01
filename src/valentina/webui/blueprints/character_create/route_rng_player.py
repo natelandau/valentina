@@ -10,7 +10,6 @@ from quart.views import MethodView
 
 from valentina.constants import (
     STARTING_FREEBIE_POINTS,
-    DBSyncUpdateType,
     HTTPStatus,
     RNGCharLevel,
 )
@@ -20,7 +19,7 @@ from valentina.webui import catalog
 from valentina.webui.utils import (
     fetch_active_campaign,
     fetch_user,
-    sync_char_to_discord,
+    sync_channel_to_discord,
     update_session,
 )
 from valentina.webui.utils.discord import post_to_audit_log
@@ -110,7 +109,8 @@ class CreateRNGCharacter(MethodView):
                 character.campaign = request.args["campaign_id"]
                 await character.save()
 
-                await sync_char_to_discord(character, DBSyncUpdateType.CREATE)
+                await sync_channel_to_discord(obj=character, update_type="create")
+
                 await post_to_audit_log(
                     msg=f"Character {character.full_name} created",
                     view=self.__class__.__name__,

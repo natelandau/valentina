@@ -104,25 +104,6 @@ class Emoji(Enum):
     CHANNEL_PLAYER_DEAD = "💀"
 
 
-class DBSyncUpdateType(str, Enum):
-    """Type of update to sync between web and discord."""
-
-    CREATE = "create"
-    UPDATE = "update"
-    DELETE = "delete"
-
-
-class DBSyncModelType(str, Enum):
-    """Model type to sync between web and discord."""
-
-    BOOK = "book"
-    CAMPAIGN = "campaign"
-    CHARACTER = "character"
-    GUILD = "guild"
-    ROLE = "role"
-    USER = "user"
-
-
 class CampaignChannelName(Enum):
     """Enum for common campaign channel names."""
 

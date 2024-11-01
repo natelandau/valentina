@@ -7,9 +7,9 @@ from discord.ext import commands
 
 from valentina.constants import InventoryItemType
 from valentina.discord.bot import Valentina, ValentinaContext
+from valentina.discord.utils import fetch_channel_object
 from valentina.discord.utils.autocomplete import select_char_inventory_item
 from valentina.discord.utils.converters import ValidInventoryItemFromID
-from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.views import InventoryItemModal, confirm_action, present_embed
 from valentina.models import InventoryItem
 from valentina.utils.helpers import truncate_string

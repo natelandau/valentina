@@ -17,10 +17,10 @@ from valentina.constants import (
     DiceType,
     EmbedColor,
 )
-from valentina.controllers import RNGCharGen
+from valentina.controllers import ChannelManager, RNGCharGen
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.characters import AddFromSheetWizard
-from valentina.discord.models import ChannelManager
+from valentina.discord.utils import fetch_channel_object
 from valentina.discord.utils.autocomplete import (
     select_any_player_character,
     select_char_class,
@@ -44,7 +44,6 @@ from valentina.discord.utils.converters import (
     ValidImageURL,
     ValidTraitCategory,
 )
-from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.utils.perform_roll import perform_roll
 from valentina.discord.views import (
     ConfirmCancelButtons,

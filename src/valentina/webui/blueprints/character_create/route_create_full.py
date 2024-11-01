@@ -11,13 +11,13 @@ from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
 
-from valentina.constants import DBSyncUpdateType, HTTPStatus
+from valentina.constants import HTTPStatus
 from valentina.controllers import CharacterSheetBuilder
 from valentina.models import Character, CharacterTrait
 from valentina.webui import catalog
+from valentina.webui.utils import sync_channel_to_discord, update_session
 from valentina.webui.utils.discord import post_to_audit_log, post_to_error_log
 from valentina.webui.utils.forms import ValentinaForm
-from valentina.webui.utils.helpers import sync_char_to_discord, update_session
 
 from .forms.character_create_full import (
     CharacterCreateStep1,
@@ -328,7 +328,7 @@ class CreateCharacterStep2(MethodView):
             character.creed_name = form.data.get("creed") if form.data.get("creed") else None
             await character.save()
 
-            await sync_char_to_discord(character, DBSyncUpdateType.CREATE)
+            await sync_channel_to_discord(obj=character, update_type="create")
             await post_to_audit_log(
                 msg=f"WEBUI: Character {character.full_name} created",
                 view=self.__class__.__name__,

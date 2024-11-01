@@ -9,6 +9,7 @@ from discord.ext import commands
 
 from valentina.constants import DEFAULT_DIFFICULTY, DiceType, LogLevel
 from valentina.discord.bot import Valentina, ValentinaContext
+from valentina.discord.utils import fetch_channel_object
 from valentina.discord.utils.autocomplete import (
     select_char_trait,
     select_char_trait_two,
@@ -16,7 +17,6 @@ from valentina.discord.utils.autocomplete import (
     select_macro,
 )
 from valentina.discord.utils.converters import ValidTraitFromID
-from valentina.discord.utils.discord_utils import fetch_channel_object
 from valentina.discord.utils.perform_roll import perform_roll
 from valentina.discord.views import present_embed
 from valentina.models import User

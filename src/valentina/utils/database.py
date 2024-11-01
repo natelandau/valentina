@@ -18,7 +18,6 @@ from valentina.models import (
     RollProbability,
     RollStatistic,
     User,
-    WebDiscordSync,
 )
 from valentina.utils import ValentinaConfig
 
@@ -80,7 +79,6 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
             RollProbability,
             RollStatistic,
             User,
-            WebDiscordSync,
         ],
     )
 

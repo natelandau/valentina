@@ -17,7 +17,7 @@ from valentina.constants import (
     VampireClan,
 )
 from valentina.discord.bot import Valentina
-from valentina.discord.utils.discord_utils import fetch_channel_object
+from valentina.discord.utils import fetch_channel_object
 from valentina.models import AWSService, Campaign, ChangelogParser, Character, User
 from valentina.utils import errors
 from valentina.utils.helpers import truncate_string

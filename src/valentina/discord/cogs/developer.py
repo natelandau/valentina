@@ -21,9 +21,8 @@ from valentina.constants import (
     InventoryItemType,
     LogLevel,
 )
-from valentina.controllers import RNGCharGen
+from valentina.controllers import ChannelManager, RNGCharGen
 from valentina.discord.bot import Valentina, ValentinaContext
-from valentina.discord.models import ChannelManager
 from valentina.discord.utils.autocomplete import (
     select_aws_object_from_guild,
     select_campaign,
@@ -47,7 +46,6 @@ from valentina.models import (
     InventoryItem,
     RollProbability,
     User,
-    WebDiscordSync,
 )
 from valentina.utils import ValentinaConfig, instantiate_logger
 
@@ -91,43 +89,6 @@ class Developer(commands.Cog):
         "View bot statistics",
         default_member_permissions=discord.Permissions(administrator=True),
     )
-    maintenance = developer.create_subgroup(
-        "maintenance",
-        "maintenance commands",
-        default_member_permissions=discord.Permissions(administrator=True),
-    )
-
-    ## MAINTENANCE COMMANDS ################################################################
-    @maintenance.command(
-        name="clear_sync_cache", description="Clear processed web/discord sync data from the DB"
-    )
-    @commands.is_owner()
-    async def clear_sync_cache(
-        self,
-        ctx: ValentinaContext,
-        hidden: Option(
-            bool,
-            description="Make the interaction only visible to you (default true).",
-            default=True,
-        ),
-    ) -> None:
-        """Clears processed web/discord sync data from the database."""
-        processed_syncs = await WebDiscordSync.find(WebDiscordSync.processed == True).to_list()  # noqa: E712
-
-        is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx,
-            title=f"Delete {len(processed_syncs)} processed syncs from the database",
-            hidden=hidden,
-            audit=False,
-        )
-
-        if not is_confirmed:
-            return
-
-        for sync in processed_syncs:
-            await sync.delete()
-
-        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### S3 COMMANDS ################################################################
     @s3.command(
@@ -450,28 +411,6 @@ class Developer(commands.Cog):
                 await trait.delete()
 
         confirmation_embed.description = f"Purged `{i}` stray CharacterTrait DB entries"
-
-        await interaction.edit_original_response(embed=confirmation_embed, view=None)
-
-    @guild.command(description="Clean processed sync data from the database")
-    @commands.is_owner()
-    @commands.guild_only()
-    async def purge_processed_syncs(self, ctx: ValentinaContext) -> None:
-        """Cleanup orphan CharacterTrait DB entries."""
-        title = "Purge processed sync data from the database"
-        is_confirmed, interaction, confirmation_embed = await confirm_action(ctx, title)
-        if not is_confirmed:
-            return
-
-        i = 0
-        async for sync in WebDiscordSync.find(
-            WebDiscordSync.processed == True,  # noqa: E712
-            WebDiscordSync.guild_id == ctx.guild.id,
-        ):
-            i += 1
-            await sync.delete()
-
-        confirmation_embed.description = f"Purged `{i}` processed sync data entries"
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

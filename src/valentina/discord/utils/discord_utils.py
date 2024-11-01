@@ -271,3 +271,16 @@ async def fetch_channel_object(
         character=character,
         is_storyteller_channel=is_storyteller_channel,
     )
+
+
+def get_user_from_id(guild: discord.Guild, user_id: int) -> discord.Member | None:
+    """Get a discord user object from a user ID.
+
+    Args:
+        guild (discord.Guild): The guild to get the user from.
+        user_id (int): The ID of the user to get.
+
+    Returns:
+        discord.Member | None: The user with the given ID, or None if it is not found.
+    """
+    return discord.utils.get(guild.members, id=user_id)

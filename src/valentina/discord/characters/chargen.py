@@ -19,9 +19,8 @@ from valentina.constants import (
     RNGCharLevel,
     VampireClan,
 )
-from valentina.controllers import RNGCharGen
+from valentina.controllers import ChannelManager, RNGCharGen
 from valentina.discord.bot import Valentina, ValentinaContext
-from valentina.discord.models import ChannelManager
 from valentina.discord.views import ChangeNameModal, sheet_embed
 from valentina.models import Campaign, Character, User
 

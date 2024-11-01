@@ -9,7 +9,7 @@ from loguru import logger
 from valentina.constants import CHANNEL_PERMISSIONS, CampaignChannelName, ChannelPermission, Emoji
 from valentina.models import Campaign, CampaignBook, Character
 
-from valentina.discord.utils.discord_utils import set_channel_perms  # isort:skip
+from valentina.discord.utils import set_channel_perms  # isort:skip
 
 CAMPAIGN_COMMON_CHANNELS = {  # channel_db_key: channel_name
     "channel_storyteller": CampaignChannelName.STORYTELLER.value,
@@ -435,7 +435,7 @@ class ChannelManager:
         logger.info(f"All channels confirmed for campaign '{campaign.name}' in '{self.guild.name}'")
 
     async def confirm_character_channel(
-        self, character: Character, campaign: Optional[Campaign]
+        self, character: Character, campaign: Optional[Campaign | str]
     ) -> discord.TextChannel | None:
         """Confirm the existence of a character-specific text channel within a campaign category.
 
@@ -443,12 +443,15 @@ class ChannelManager:
 
         Args:
             character (Character): The character for whom the channel is being confirmed.
-            campaign (Optional[Campaign]): The campaign within which to confirm the character's channel.
+            campaign (Optional[Campaign | str]): The campaign within which to confirm the character's channel. Either a Campaign object or a campaign ID.
 
         Returns:
             discord.TextChannel | None: The confirmed text channel for the character, or None if the campaign or category does not exist.
         """
         logger.debug(f"Confirming channel for character {character.name}")
+
+        if isinstance(campaign, str):
+            campaign = await Campaign.get(campaign)
 
         if not campaign:
             return None
