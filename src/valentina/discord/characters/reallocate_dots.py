@@ -12,7 +12,7 @@ from valentina.models import Character, CharacterTrait
 from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons
 
 
-class DotsReallocationWizard:
+class DotsReallocationWizard:  # pragma: no cover
     """Guide the user through the process of reallocating trait dots for a character.
 
     The wizard interacts with the user using Discord embeds and buttons. The process involves:

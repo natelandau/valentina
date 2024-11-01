@@ -1,7 +1,7 @@
 """Character models for Valentina."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, Union, cast
+from typing import Optional, Union, cast
 from uuid import UUID, uuid4
 
 import discord
@@ -33,10 +33,6 @@ from valentina.utils import errors
 from valentina.utils.helpers import num_to_circles, time_now
 
 from .note import Note
-
-if TYPE_CHECKING:
-    from valentina.models import Campaign
-
 
 p = inflect.engine()
 p.defnoun("Ability", "Abilities")
@@ -308,32 +304,6 @@ class Character(Document):
         await self.save()
 
         return trait
-
-    async def associate_with_campaign(self, new_campaign: "Campaign") -> bool:
-        """Associate a character with a campaign.
-
-        Associate the character with the specified campaign, update the database,
-        confirm the character's channel, and sort the campaign channels. If the
-        character is already associated with the given campaign, no action is taken.
-
-        Args:
-            ctx (ValentinaContext): The context object containing guild information
-                and other relevant data for the operation.
-            new_campaign (Campaign): The campaign to associate with the character.
-
-        Returns:
-            bool: True if the character was successfully associated with the new
-                campaign, False if the character was already associated with the
-                campaign.
-        """
-        if self.campaign == str(new_campaign.id):
-            logger.debug(f"Character {self.name} is already associated with {new_campaign.name}")
-            return False
-
-        self.campaign = str(new_campaign.id)
-        await self.save()
-
-        return True
 
     def concept_description(self) -> str:
         """Return a text description of the character's concept and special abilities.

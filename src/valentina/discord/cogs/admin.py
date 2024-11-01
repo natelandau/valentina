@@ -126,7 +126,8 @@ class AdminCog(commands.Cog):
         if not is_confirmed:
             return
 
-        await character.associate_with_campaign(campaign)
+        character.campaign = str(campaign.id)
+        await character.save()
 
         channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
         await channel_manager.delete_character_channel(character)

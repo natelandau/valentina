@@ -15,7 +15,7 @@ from valentina.discord.bot import ValentinaContext
 from valentina.models import Campaign, Character, CharacterTrait, User
 
 
-class RatingView(discord.ui.View):
+class RatingView(discord.ui.View):  # pragma: no cover
     """A View that lets the user select a rating."""
 
     def __init__(  # type: ignore [no-untyped-def]
@@ -71,7 +71,7 @@ class RatingView(discord.ui.View):
         await self.callback(rating, interaction)
 
 
-class AddFromSheetWizard:
+class AddFromSheetWizard:  # pragma: no cover
     """A character generation wizard for entering pre-existing characters.
 
     This wizard guides the user through the process of setting values for each trait

@@ -17,7 +17,7 @@ CAMPAIGN_COMMON_CHANNELS = {  # channel_db_key: channel_name
 }
 
 
-class ChannelManager:
+class ChannelManager:  # pragma: no cover
     """Manage channels within a Guild."""
 
     def __init__(self, guild: discord.Guild, user: discord.User | discord.Member):

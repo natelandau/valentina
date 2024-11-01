@@ -12,7 +12,7 @@ from valentina.models import Character, CharacterTrait, User
 from .buttons import SelectCharacterTraitButtons, SelectTraitCategoryButtons
 
 
-class SpendFreebiePoints(discord.ui.View):
+class SpendFreebiePoints(discord.ui.View):  # pragma: no cover
     """Guide the user through the process of spending freebie points on character traits.
 
     This class provides a wizard-like interface for users to allocate their

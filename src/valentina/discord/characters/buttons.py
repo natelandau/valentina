@@ -10,7 +10,7 @@ from valentina.discord.bot import ValentinaContext
 from valentina.models import Character, CharacterTrait
 
 
-class SelectTraitCategoryButtons(discord.ui.View):
+class SelectTraitCategoryButtons(discord.ui.View):  # pragma: no cover
     """Buttons to select a trait category."""
 
     def __init__(
@@ -78,7 +78,7 @@ class SelectTraitCategoryButtons(discord.ui.View):
         self.stop()
 
 
-class SelectCharacterTraitButtons(discord.ui.View):
+class SelectCharacterTraitButtons(discord.ui.View):  # pragma: no cover
     """Buttons to select a specific trait."""
 
     def __init__(

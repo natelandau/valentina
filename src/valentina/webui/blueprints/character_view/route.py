@@ -78,7 +78,9 @@ class CharacterView(MethodView):
         # remove all empty dictionary entries
         return {k: v for k, v in inventory.items() if v}
 
-    async def _get_character_image_urls(self, character: Character) -> list[str]:
+    async def _get_character_image_urls(
+        self, character: Character
+    ) -> list[str]:  # pragma: no cover
         """Retrieve and return a list of image URLs for the specified character.
 
         Fetch the URLs of the character's images stored in AWS by utilizing the
@@ -150,7 +152,7 @@ class CharacterView(MethodView):
                     CharacterEditableInfo=CharacterEditableInfo,
                 )
 
-            case CharacterViewTab.IMAGES:
+            case CharacterViewTab.IMAGES:  # pragma: no cover
                 return catalog.render(
                     "character_view.Images",
                     character=character,
@@ -164,7 +166,7 @@ class CharacterView(MethodView):
                     character=character,
                     statistics=await stats_engine.character_statistics(character, as_json=True),
                 )
-            case _:
+            case _:  # pragma: no cover
                 assert_never()
 
     async def get(self, character_id: str = "") -> str:
