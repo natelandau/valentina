@@ -172,6 +172,10 @@ class UserFactory(BeanieDocumentFactory[User]):
     __randomize_collection_length__ = True
 
     @classmethod
+    def id(cls) -> int:
+        return cls.__random__.randint(10000000, 99999999)
+
+    @classmethod
     def name(cls) -> str:
         return cls.__faker__.sentence(nb_words=2).rstrip(".")
 
@@ -202,6 +206,10 @@ class GuildFactory(BeanieDocumentFactory[Guild]):
     __min_collection_length__ = 1
     __max_collection_length__ = 3
     __randomize_collection_length__ = True
+
+    @classmethod
+    def id(cls) -> int:
+        return cls.__random__.randint(10000000, 99999999)
 
     @classmethod
     def campaigns(cls) -> list:

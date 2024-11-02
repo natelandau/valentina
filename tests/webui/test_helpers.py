@@ -11,7 +11,6 @@ from tests.factories import *
 from valentina.webui.utils import helpers
 
 
-@pytest.mark.drop_db
 async def test_fetch_active_campaign(debug, app_request_context, mock_session, campaign_factory):
     """Test the fetch_active_campaign function."""
     # Create test campaigns
@@ -42,12 +41,9 @@ async def test_fetch_active_campaign(debug, app_request_context, mock_session, c
         assert specific_campaign.id == campaign2.id
         assert session["ACTIVE_CAMPAIGN_ID"] == str(campaign2.id)
 
-        # Test with no active campaign set
+        # Test with no active campaign set. Should return None b/c we don't know which campaign to set as active
         session["ACTIVE_CAMPAIGN_ID"] = None
-        with pytest.raises(InternalServerError) as excinfo:
-            await helpers.fetch_active_campaign()
-        assert excinfo.value.code == 500
-        assert str(excinfo.value) == "500 Internal Server Error: Session active campaign not found"
+        assert await helpers.fetch_active_campaign() is None
 
         # Test with only one campaign
         session["GUILD_CAMPAIGNS"] = {campaign1.name: str(campaign1.id)}
@@ -57,7 +53,6 @@ async def test_fetch_active_campaign(debug, app_request_context, mock_session, c
         assert session["ACTIVE_CAMPAIGN_ID"] == str(campaign1.id)
 
 
-@pytest.mark.drop_db
 async def test_fetch_active_character(debug, app_request_context, mock_session, character_factory):
     """Test the fetch_active_character function."""
     # Create test characters
@@ -141,7 +136,6 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
         assert excinfo.value.code == 500
 
 
-@pytest.mark.asyncio
 async def test_fetch_campaigns(app_request_context, mock_session, campaign_factory, guild_factory):
     """Test the fetch_campaigns function."""
     # Create database objects
@@ -173,7 +167,6 @@ async def test_fetch_campaigns(app_request_context, mock_session, campaign_facto
         }
 
 
-@pytest.mark.asyncio
 async def test_fetch_guild(app_request_context, mock_session, guild_factory):
     """Test the fetch_campaigns function."""
     # Create database objects
@@ -194,3 +187,254 @@ async def test_fetch_guild(app_request_context, mock_session, guild_factory):
         assert fetched_guild.id == guild.id
         assert fetched_guild.name == guild.name
         assert session["GUILD_NAME"] == guild.name
+
+
+async def test_fetch_user_characters(
+    debug,
+    app_request_context,
+    campaign_factory,
+    mock_session,
+    character_factory,
+    user_factory,
+    guild_factory,
+):
+    """Test the fetch_user_characters function."""
+    # Create database objects
+    guild = guild_factory.build()
+    await guild.insert()
+
+    campaign = campaign_factory.build(guild=guild.id)
+    await campaign.insert()
+
+    user1 = user_factory.build()
+    await user1.insert()
+    user2 = user_factory.build()
+    await user2.insert()
+
+    # Create test characters
+    character1 = character_factory.build(
+        user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+    )
+    await character1.insert()
+    character2 = character_factory.build(
+        user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+    )
+    await character2.insert()
+    character3 = character_factory.build(
+        user_owner=user2.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+    )
+    await character3.insert()
+    character4 = character_factory.build(
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=False,
+        type_storyteller=True,
+        campaign=str(campaign.id),
+    )
+    await character4.insert()
+
+    # Set up mock session data
+    mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user1.id))
+
+    # Convert app_request_context to an async context manager
+    request_context = asynccontextmanager(app_request_context)
+
+    async with request_context("/"):
+        # Populate the session with mock data
+        session.update(mock_session_data)
+
+        characters = await helpers.fetch_user_characters()
+        assert len(characters) == 2
+        for character in characters:
+            assert str(character.id) in [str(character1.id), str(character2.id)]
+
+        session_characters = session["USER_CHARACTERS"]
+        assert len(session_characters) == 2
+        for session_character in session_characters:
+            assert session_character["id"] in [str(character1.id), str(character2.id)]
+
+
+async def test_fetch_all_characters(
+    debug,
+    app_request_context,
+    campaign_factory,
+    mock_session,
+    character_factory,
+    user_factory,
+    guild_factory,
+):
+    """Test the fetch_all_characters function."""
+    # Create database objects
+    guild = guild_factory.build()
+    await guild.insert()
+
+    campaign = campaign_factory.build(guild=guild.id)
+    await campaign.insert()
+
+    user1 = user_factory.build()
+    await user1.insert()
+    user2 = user_factory.build()
+    await user2.insert()
+
+    # Create test characters
+    character1 = character_factory.build(
+        user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+    )
+    await character1.insert()
+    character2 = character_factory.build(
+        user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+    )
+    await character2.insert()
+    character3 = character_factory.build(
+        user_owner=user2.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+    )
+    await character3.insert()
+    character4 = character_factory.build(
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=False,
+        type_storyteller=True,
+        campaign=str(campaign.id),
+    )
+    await character4.insert()
+
+    # Set up mock session data
+    mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user1.id))
+
+    # Convert app_request_context to an async context manager
+    request_context = asynccontextmanager(app_request_context)
+
+    async with request_context("/"):
+        # Populate the session with mock data
+        session.update(mock_session_data)
+
+        characters = await helpers.fetch_all_characters()
+        assert len(characters) == 3
+        for character in characters:
+            assert str(character.id) in [str(character1.id), str(character2.id), str(character3.id)]
+
+        session_characters = session["ALL_CHARACTERS"]
+        assert len(session_characters) == 3
+        for session_character in session_characters:
+            assert session_character["id"] in [
+                str(character1.id),
+                str(character2.id),
+                str(character3.id),
+            ]
+
+
+async def test_fetch_storyteller_characters(
+    debug,
+    app_request_context,
+    campaign_factory,
+    mock_session,
+    character_factory,
+    user_factory,
+    guild_factory,
+):
+    """Test the fetch_storyteller_characters function."""
+    # Create database objects
+    guild = guild_factory.build()
+    await guild.insert()
+
+    campaign = campaign_factory.build(guild=guild.id)
+    await campaign.insert()
+
+    user1 = user_factory.build()
+    await user1.insert()
+    user2 = user_factory.build()
+    await user2.insert()
+
+    # Create test characters
+    character1 = character_factory.build(
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=True,
+        type_storyteller=False,
+        campaign=str(campaign.id),
+    )
+    await character1.insert()
+    character2 = character_factory.build(
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=True,
+        type_storyteller=False,
+        campaign=str(campaign.id),
+    )
+    await character2.insert()
+    character3 = character_factory.build(
+        user_owner=user2.id,
+        guild=guild.id,
+        type_player=True,
+        type_storyteller=False,
+        campaign=str(campaign.id),
+    )
+    await character3.insert()
+    character4 = character_factory.build(
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=False,
+        type_storyteller=True,
+        campaign=str(campaign.id),
+    )
+    await character4.insert()
+
+    # Set up mock session data
+    mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user1.id))
+
+    # Convert app_request_context to an async context manager
+    request_context = asynccontextmanager(app_request_context)
+
+    async with request_context("/"):
+        # Populate the session with mock data
+        session.update(mock_session_data)
+
+        characters = await helpers.fetch_storyteller_characters()
+        assert len(characters) == 1
+        for character in characters:
+            assert str(character.id) in [str(character4.id)]
+
+        session_characters = session["STORYTELLER_CHARACTERS"]
+        assert len(session_characters) == 1
+        for session_character in session_characters:
+            assert session_character["id"] in [str(character4.id)]
+
+
+async def test_is_storyteller(app_request_context, mock_session, user_factory, guild_factory):
+    """Test the is_storyteller function."""
+    # Create database objects
+    guild = guild_factory.build()
+    await guild.insert()
+
+    user1 = user_factory.build()
+    await user1.insert()
+
+    user2 = user_factory.build()
+    await user2.insert()
+
+    guild.storytellers = [user1.id]
+    await guild.save()
+
+    # Set up mock session data
+    mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user1.id))
+
+    # Convert app_request_context to an async context manager
+    request_context = asynccontextmanager(app_request_context)
+
+    async with request_context("/"):
+        # Populate the session with mock data
+        session.update(mock_session_data)
+
+        assert await helpers.is_storyteller() is True
+
+    # Set up mock session data for a user that is not a storyteller
+    mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user2.id))
+
+    # Convert app_request_context to an async context manager
+    request_context = asynccontextmanager(app_request_context)
+
+    async with request_context("/"):
+        # Populate the session with mock data
+        session.update(mock_session_data)
+
+        assert await helpers.is_storyteller() is False

@@ -30,9 +30,7 @@ from valentina.webui.constants import (
     ],
 )
 @pytest.mark.drop_db
-async def test_routes(
-    mocker, debug, test_client, mock_session, path, data, method, status_code
-) -> None:
+async def test_routes(mocker, debug, test_client, path, data, method, status_code) -> None:
     """Test routes return 200."""
     mocker.patch("valentina.webui.utils.helpers.is_storyteller", return_value=False)
 
@@ -41,10 +39,6 @@ async def test_routes(
     elif method == "POST":
         response = await test_client.post(path, data=data, follow_redirects=True)
 
-    # debug("data", response.response.data)
-    # debug("headers", response.headers)
-    # debug("status_code", response.status_code)
-    # debug("session", session)
     assert response.status_code == status_code
 
 
@@ -86,7 +80,7 @@ async def test_character_views(
 
 @pytest.mark.drop_db
 async def test_character_edit_routes(
-    debug, mocker, mock_session, test_client, campaign_factory, character_factory, user_factory
+    debug, mocker, mock_session, test_client, character_factory
 ) -> None:
     """Test the character edit blueprint."""
     character = character_factory.build()

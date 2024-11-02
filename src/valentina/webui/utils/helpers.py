@@ -38,29 +38,33 @@ def _guard_against_mangled_session_data() -> Response | None:
     return None
 
 
-async def _char_owner_name(char: Character) -> str:
+async def _char_owner_name(character: Character) -> str:
     """Get the username of a character owner.
 
     Args:
-        char (Character): The character object to get the owner name of.
+        character (Character): The character object to get the owner name of.
 
     Returns:
         str: The name of the character owner.
     """
-    user = await User.get(char.user_owner, fetch_links=False)
+    user = await User.get(int(character.user_owner), fetch_links=False)
     return user.name
 
 
-async def _char_campaign_name(char: Character) -> str:
+async def _char_campaign_name(character: Character) -> str:
     """Get the name of a character's campaign.
 
     Args:
-        char (Character): The character object to get the campaign name of.
+        character (Character): The character object to get the campaign name of.
 
     Returns:
         str: The name of the character's campaign.
     """
-    campaign = await Campaign.get(char.campaign, fetch_links=False)
+    if not character.campaign:
+        logger.error(f"WEBUI: Character {character.name} has no campaign")
+        return ""
+
+    campaign = await Campaign.get(str(character.campaign), fetch_links=False)
     if not campaign:
         return ""
 
@@ -108,7 +112,8 @@ async def fetch_active_campaign(
         session["ACTIVE_CAMPAIGN_ID"] = str(campaign.id)
         return campaign
 
-    abort(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Session active campaign not found")  # noqa: RET503
+    # When there are multiple campaigns and no active campaign set return None b/c we don't know which one to set as active
+    return None
 
 
 async def fetch_active_character(
@@ -269,8 +274,8 @@ async def fetch_user_characters(fetch_links: bool = False) -> list[Character]:
     _guard_against_mangled_session_data()
 
     characters = await Character.find(
-        Character.user_owner == session["USER_ID"],
-        Character.guild == session["GUILD_ID"],
+        Character.user_owner == int(session["USER_ID"]),
+        Character.guild == int(session["GUILD_ID"]),
         Character.type_player == True,  # noqa: E712
         fetch_links=fetch_links,
     ).to_list()
@@ -281,7 +286,7 @@ async def fetch_user_characters(fetch_links: bool = False) -> list[Character]:
                 id=str(x.id),
                 name=x.name,
                 campaign_name=await _char_campaign_name(x),
-                campaign_id=x.campaign,
+                campaign_id=str(x.campaign),
                 owner_name=await _char_owner_name(x),
                 owner_id=x.user_owner,
             ).__dict__
@@ -315,7 +320,7 @@ async def fetch_all_characters(fetch_links: bool = False) -> list[Character]:
     _guard_against_mangled_session_data()
 
     characters = await Character.find(
-        Character.guild == session["GUILD_ID"],
+        Character.guild == int(session["GUILD_ID"]),
         Character.type_player == True,  # noqa: E712
         fetch_links=fetch_links,
     ).to_list()
@@ -326,7 +331,7 @@ async def fetch_all_characters(fetch_links: bool = False) -> list[Character]:
                 id=str(x.id),
                 name=x.name,
                 campaign_name=await _char_campaign_name(x),
-                campaign_id=x.campaign,
+                campaign_id=str(x.campaign),
                 owner_name=await _char_owner_name(x),
                 owner_id=x.user_owner,
             ).__dict__
@@ -360,7 +365,7 @@ async def fetch_storyteller_characters(fetch_links: bool = False) -> list[Charac
     _guard_against_mangled_session_data()
 
     characters = await Character.find(
-        Character.guild == session["GUILD_ID"],
+        Character.guild == int(session["GUILD_ID"]),
         Character.type_storyteller == True,  # noqa: E712
         fetch_links=fetch_links,
     ).to_list()
@@ -371,7 +376,7 @@ async def fetch_storyteller_characters(fetch_links: bool = False) -> list[Charac
                 id=str(x.id),
                 name=x.name,
                 campaign_name=await _char_campaign_name(x),
-                campaign_id=x.campaign,
+                campaign_id=str(x.campaign),
                 owner_name=await _char_owner_name(x),
                 owner_id=x.user_owner,
             ).__dict__
@@ -435,7 +440,7 @@ async def update_session() -> None:
 
 async def sync_channel_to_discord(
     obj: Campaign | CampaignBook | Character, update_type: Literal["create", "update", "delete"]
-) -> None:
+) -> None:  # pragma: no cover
     """Sync a channel to Discord.
 
     Args:

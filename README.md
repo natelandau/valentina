@@ -89,6 +89,7 @@ To allow image uploads, an AWS S3 bucket must be configured with appropriate per
     ```
 
 </details>
+
 ## Run the bot (Local)
 
 1. Enter the virtual environment with `source .venv/bin/activate`

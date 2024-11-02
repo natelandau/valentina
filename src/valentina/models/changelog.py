@@ -443,7 +443,7 @@ class ChangelogParser:
         # Loop through each version in the changelog
         for version, data in self.changelog_dict.items():
             # Add the version header
-            description += f"### v{version} ({data['date']})\n"
+            description += f"\n### v{version} ({data['date']})\n"
 
             # Add each category
             for category, entries in data.items():
@@ -452,7 +452,7 @@ class ChangelogParser:
                     continue
 
                 # Add the category header
-                description += f"\n**{category.capitalize()}**\n"
+                description += f"\n**{category.capitalize()}**\n\n"
 
                 # Add each entry
                 for entry in entries:

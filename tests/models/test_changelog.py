@@ -246,9 +246,11 @@ def test_changelog_get_embed(changelog, mock_bot):
         embed.description
         == """\
 ## Valentina Noir Changelog
+
 ### v1.1.0 (2023-10-10)
 
 **Feat**
+
 - Lorem ipsum dolor sit amet
 - Lorem ipsum dolor sit amet
 
@@ -271,29 +273,36 @@ def test_changelog_get_embed_exclude_oldest(changelog, mock_bot):
         embed.description
         == """\
 ## Valentina Noir Changelog
+
 ### v2.0.0 (2023-11-04)
 
 **Feat**
+
 - Lorem ipsum dolor sit amet
 - Lorem ipsum dolor sit amet
 
 **Fix**
+
 - Lorem ipsum dolor sit amet
 - Lorem ipsum dolor sit amet
 
 **Test**
+
 - Lorem ipsum dolor sit amet
 - Lorem ipsum dolor sit amet
 
 **Build**
+
 - Lorem ipsum dolor sit amet
 - Lorem ipsum dolor sit amet
 
 **Ci**
+
 - Lorem ipsum dolor sit amet
 - Lorem ipsum dolor sit amet
 
 **Chore**
+
 - Lorem ipsum dolor sit amet
 - Lorem ipsum dolor sit amet
 
