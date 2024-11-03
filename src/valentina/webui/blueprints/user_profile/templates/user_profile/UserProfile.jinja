@@ -15,9 +15,9 @@
 <PageLayout title={{ user.name }} _attrs={{ attrs }}>
     <global.PageTitle>
 
-    {% if user.avatar_url %}
+    {%- if user.avatar_url %}
         <img src={{ user.avatar_url }} alt="User Avatar" class="img-fluid rounded-circle" width="75" height="75">
-    {% endif %}
+    {%- endif %}
     {{ user.name }}</global.PageTitle>
 
     <div class="row mb-5">
@@ -178,14 +178,14 @@
         {% endif %}
     </div>
 
-    {% if session["USER_ID"] == user.id %}
+    {%- if session["USER_ID"] == user.id %}
         <a class="btn btn-outline-primary btn-sm ms-3 float-end"
-           href="{{ url_for('character_create.start') }}">Create Character</a>
-    {% endif %}
+           href="{{ url_for('character_create.start') }}"><i class="fa-solid fa-person-circle-plus"></i> Create Character</a>
+    {%- endif %}
     <h2>{{ user.name }}'s characters</h2>
     <hr class="border border-primary border-2 opacity-75">
     <div id="characters" class="mb-5">
-        {% if user.characters %}
+        {%- if user.characters %}
             <table class="table table-hover">
 
                 <thead>
@@ -193,27 +193,29 @@
                         <th>Name</th>
                         <th>Class</th>
                         <th>Alive</th>
-                        {% if session["IS_STORYTELLER"] %}<th>Type</th>{% endif %}
+                        {%- if session["IS_STORYTELLER"] %}<th>Type</th>{% endif %}
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for character in characters | sort(attribute="name") %}
+                    {%- for character in characters | sort(attribute="name") %}
+                        {%- if character.type_storyteller and not session["IS_STORYTELLER"] %}{% continue %}
+                        {% endif %}
                         <tr>
                             <td>
                                 <strong><a href="{{ url_for('character_view.view', character_id=character.id) }}">{{ character.name }}</a></strong>
                             </td>
                             <td>{{ character.char_class_name | title }}</td>
                             <td>
-                                {% if character.is_alive %}
+                                {%- if character.is_alive %}
                                     {{ emoji.ALIVE.value }}
-                                {% else %}
+                                {%- else %}
                                     {{ emoji.DEAD.value }}
-                                {% endif %}
+                                {%- endif %}
                             </td>
-                            {% if session["IS_STORYTELLER"] %}
+                            {%- if session["IS_STORYTELLER"] %}
                                 <td>{{ 'Player' if character.type_player else 'Storyteller' }}</td>
-                            {% endif %}
+                            {%- endif %}
                             <td>
                                 {# This button is used to trigger the gameplay modal #}
                                 <button type="button"
@@ -226,15 +228,15 @@
                                 <global.GameplayModal character_name={{ character.name }} character_id={{ character.id }} campaign_id={{ character.campaign }} id={{ 'modal-' ~ character.id }} />
                             </td>
                         </tr>
-                    {% endfor %}
+                    {%- endfor %}
                 </tbody>
             </table>
 
-        {% else %}
+        {%- else %}
             <p>
                 No characters.  <a href="{{ url_for('character_create.start') }}">Create one</a>
             </p>
-        {% endif %}
+        {%- endif %}
     </div>
 
 </PageLayout>

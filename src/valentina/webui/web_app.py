@@ -44,6 +44,7 @@ def configure_app(environment: WebUIEnvironment) -> Quart:
     register_error_handlers(app)
     discord_oauth.init_app(app)
     import_all_bps(app)
+    app.jinja_env.add_extension("jinja2.ext.loopcontrols")
     app.jinja_env.globals["catalog"] = catalog
 
     catalog.jinja_env.globals.update(app.jinja_env.globals)

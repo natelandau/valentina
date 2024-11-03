@@ -26,6 +26,7 @@ class CharacterSessionObject:
     campaign_id: str
     owner_name: str
     owner_id: int
+    type_storyteller: bool
 
 
 def _guard_against_mangled_session_data() -> Response | None:
@@ -289,6 +290,7 @@ async def fetch_user_characters(fetch_links: bool = False) -> list[Character]:
                 campaign_id=str(x.campaign),
                 owner_name=await _char_owner_name(x),
                 owner_id=x.user_owner,
+                type_storyteller=x.type_storyteller,
             ).__dict__
             for x in characters
         ],
@@ -334,6 +336,7 @@ async def fetch_all_characters(fetch_links: bool = False) -> list[Character]:
                 campaign_id=str(x.campaign),
                 owner_name=await _char_owner_name(x),
                 owner_id=x.user_owner,
+                type_storyteller=x.type_storyteller,
             ).__dict__
             for x in characters
         ],
@@ -379,6 +382,7 @@ async def fetch_storyteller_characters(fetch_links: bool = False) -> list[Charac
                 campaign_id=str(x.campaign),
                 owner_name=await _char_owner_name(x),
                 owner_id=x.user_owner,
+                type_storyteller=x.type_storyteller,
             ).__dict__
             for x in characters
         ],

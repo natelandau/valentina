@@ -102,6 +102,7 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
                 campaign_id="test_campaign_id",
                 owner_name="Test Owner",
                 owner_id=1234,
+                type_storyteller=False,
             ).__dict__
         ]
 
@@ -118,6 +119,7 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
                 campaign_id="test_campaign_id",
                 owner_name="Test Owner",
                 owner_id=1234,
+                type_storyteller=False,
             ).__dict__,
             helpers.CharacterSessionObject(
                 id=str(character2.id),
@@ -126,6 +128,7 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
                 campaign_id="test_campaign_id",
                 owner_name="Test Owner",
                 owner_id=1234,
+                type_storyteller=False,
             ).__dict__,
         ]
 
