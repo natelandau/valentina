@@ -51,6 +51,12 @@ class CampaignViewTab(Enum):
         return cls[value.upper()]
 
 
+class UserEditableInfo(Enum):
+    """Enum for the editable info of a user. Used to build blueprint routes and template variables."""
+
+    MACRO = EditItem(name="macro", route="user_profile.edit_macro", div_id="macro", tab=None)
+
+
 class CampaignEditableInfo(Enum):
     """Enum for the editable info of a campaign. Used to build blueprint routes and template variables."""
 

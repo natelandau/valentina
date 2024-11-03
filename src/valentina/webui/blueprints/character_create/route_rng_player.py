@@ -109,6 +109,10 @@ class CreateRNGCharacter(MethodView):
                 character.campaign = request.args["campaign_id"]
                 await character.save()
 
+                user = await fetch_user(fetch_links=True)
+                user.characters.append(character)
+                await user.save()
+
                 await sync_channel_to_discord(obj=character, update_type="create")
 
                 await post_to_audit_log(

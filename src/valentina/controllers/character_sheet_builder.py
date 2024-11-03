@@ -141,6 +141,9 @@ class CharacterSheetBuilder:
     async def fetch_sheet_profile(self, storyteller_view: bool = False) -> dict:
         """Fetches the character's profile information for the character sheet.
 
+        Args:
+            storyteller_view (bool): If True, include storyteller specific information. Defaults to False.
+
         Returns:
             dict: A dictionary containing the character's profile information.
         """
@@ -186,9 +189,10 @@ class CharacterSheetBuilder:
             case _:
                 assert_never(self.character.char_class)
 
+        if character_owner := await User.get(int(self.character.user_owner), fetch_links=False):
+            profile["owner"] = character_owner.name
+
         if storyteller_view:
-            character_owner = await User.get(self.character.user_owner, fetch_links=False)
-            profile["player"] = character_owner.name
             profile["character type"] = (
                 "Player Character"
                 if self.character.type_player

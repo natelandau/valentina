@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import cast
+from uuid import UUID, uuid4
 
 import discord
 from beanie import (
@@ -39,6 +40,7 @@ class UserMacro(BaseModel):
     name: str
     trait_one: str | None = None
     trait_two: str | None = None
+    uuid: UUID = Field(default_factory=uuid4)
 
 
 class User(Document):

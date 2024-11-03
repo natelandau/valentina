@@ -513,15 +513,7 @@ class CampaignEditItem(MethodView):
                 assert_never(self.edit_type)
 
         if form_is_processed:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "campaign.view",
-                        campaign_id=campaign_id,
-                        success_msg=msg,
-                    ),
-                }
-            )
+            return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id, success_msg=msg)}"</script>'
 
         # If POST request does not validate, return errors
         return catalog.render(
@@ -535,7 +527,7 @@ class CampaignEditItem(MethodView):
             tab=self.edit_type.value.tab,
         )
 
-    async def delete(self, campaign_id: str = "") -> Response:
+    async def delete(self, campaign_id: str = "") -> str:
         """Handle DELETE requests for deleting a campaign item."""
         campaign = await fetch_active_campaign(campaign_id, fetch_links=True)
 
@@ -558,12 +550,4 @@ class CampaignEditItem(MethodView):
             case _:
                 assert_never(self.edit_type)
 
-        return Response(
-            headers={
-                "HX-Redirect": url_for(
-                    "campaign.view",
-                    campaign_id=campaign.id,
-                    success_msg=msg,
-                ),
-            }
-        )
+        return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id, success_msg=msg)}"</script>'

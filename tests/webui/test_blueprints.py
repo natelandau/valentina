@@ -47,17 +47,18 @@ async def test_character_views(
     debug, mocker, mock_session, test_client, campaign_factory, character_factory, user_factory
 ) -> None:
     """Test the character blueprint."""
+    mocker.patch(
+        "valentina.webui.blueprints.character_view.route.is_storyteller", return_value=False
+    )
+
     user = user_factory.build()
     await user.insert()
 
     campaign = campaign_factory.build()
     await campaign.insert()
 
-    character = character_factory.build(campaign=str(campaign.id))
+    character = character_factory.build(campaign=str(campaign.id), user_owner=user.id)
     await character.insert()
-    mocker.patch(
-        "valentina.webui.blueprints.character_view.route.is_storyteller", return_value=False
-    )
 
     async with test_client.session_transaction() as session:
         session.update(mock_session(characters=[character], user_name=user.name, user_id=user.id))

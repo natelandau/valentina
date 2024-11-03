@@ -3,7 +3,7 @@
 from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
-from quart import abort, request, session
+from quart import abort, request, session, url_for
 from quart.views import MethodView
 
 from valentina.constants import (
@@ -182,6 +182,12 @@ class CharacterView(MethodView):
         sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
         user_is_storyteller = await is_storyteller()
         profile_data = await sheet_builder.fetch_sheet_profile(storyteller_view=user_is_storyteller)
+
+        # We want to link to the user profile from the character view so we add the link here
+        if owner_name := profile_data.get("Owner"):
+            profile_data["Owner"] = (
+                f" <a href='{url_for('user_profile.view', user_id=character_owner.id)}'>{owner_name}</a>"
+            )
 
         return catalog.render(
             "character_view.Main",
