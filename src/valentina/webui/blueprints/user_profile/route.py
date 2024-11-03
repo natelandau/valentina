@@ -12,7 +12,7 @@ from quart_wtf import QuartForm
 from wtforms import HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length
 
-from valentina.constants import TraitCategory
+from valentina.constants import Emoji, TraitCategory
 from valentina.discord.utils import get_user_from_id
 from valentina.models import Character, Statistics, User, UserMacro
 from valentina.webui import catalog
@@ -112,6 +112,7 @@ class UserProfile(MethodView):
             "user_profile.UserProfile",
             user=user,
             discord_member=discord_member,
+            discord_guild=discord_guild,
             characters=characters,
             statistics=statistics,
             roles=roles,
@@ -119,6 +120,7 @@ class UserProfile(MethodView):
             joined_at=joined_at,
             campaign_experience=campaign_experience,
             UserEditableInfo=UserEditableInfo,
+            emoji=Emoji,
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
             info_msg=request.args.get("info_msg", ""),

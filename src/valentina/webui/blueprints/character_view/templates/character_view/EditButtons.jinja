@@ -23,11 +23,13 @@
            class="btn btn-info">Storyteller Update Character</a>
     {% endif %}
 
+    {% set gameplay_modal_id = character.id ~ "-modal" %}
+
     {# This button is used to trigger the gameplay modal #}
     <button type="button"
             class="btn btn-primary"
             data-bs-toggle="modal"
-            data-bs-target="#gameplayModal">
+            data-bs-target="#{{ gameplay_modal_id }}">
         <i class="fa-solid fa-dice"></i>&nbsp;&nbsp;Roll Dice
     </button>
 
@@ -44,8 +46,8 @@
 
     {% endif %}
 
-    {# The gameplay modal is included here so that it can be displayed when the button is clicked #}
+    {# Load the gameplay modal is included here so that it can be displayed when the button is clicked #}
 
-    {% include "character_view/GameplayModal.jinja" %}
+    <global.GameplayModal character_name={{ character.name }} character_id={{ character.id }} campaign_id={{ campaign.id }} id={{ gameplay_modal_id }} />
 
 </div>

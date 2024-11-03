@@ -2,5 +2,6 @@
     changelog: str,
 #}
 <PageLayout title="Changelog" _attrs={{ attrs }}>
+    <global.PageTitle>Changelog</global.PageTitle>
     {{ changelog | safe | from_markdown }}
 </PageLayout>
