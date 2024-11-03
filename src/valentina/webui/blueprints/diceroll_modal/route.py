@@ -192,12 +192,15 @@ class RollResults(MethodView):
         trait2 = await character.fetch_trait_by_name(macro.get("trait2"))
 
         rolled_traits: dict[str, int] = {}
+        num_dice = 0
         if trait1:
             rolled_traits[trait1.name] = trait1.value
+            num_dice += trait1.value
         if trait2:
             rolled_traits[trait2.name] = trait2.value
+            num_dice += trait2.value
 
-        return trait1.value + trait2.value, rolled_traits
+        return num_dice, rolled_traits
 
     async def post(self, character_id: str, campaign_id: str) -> str:
         """Process the diceroll form and return the correct partial."""

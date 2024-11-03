@@ -52,6 +52,8 @@
         <button class="btn btn-primary" value="submit">Roll Dice</button>
     </form>
 {% else %}
-    {# TODO: Add a link to the macros page #}
-    <p>No macros found</p>
+
+    <p>
+        No macros found. You can create macros in your <a href="{{ url_for('user_profile.view', user_id=session['USER_ID']) }}">profile</a>.
+    </p>
 {% endif %}

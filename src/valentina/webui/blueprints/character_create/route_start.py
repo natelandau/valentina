@@ -50,7 +50,7 @@ class StartCharacterCreate(MethodView):
         )
 
     async def post(self) -> str | Response:
-        """Handle POST requests to the character creation start page."""
+        """Handle POST requests to the character creation start page made by the select campaign form."""
         form = await request.form
 
         if "reset_campaign" in form:

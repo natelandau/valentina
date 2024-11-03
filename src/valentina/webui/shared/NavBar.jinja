@@ -99,6 +99,10 @@
                     <a class="nav-link btn btn-dark me-2"
                        href="{{ url_for('static_files.user_guide') }}"><i class="fa-solid fa-circle-question"></i>&nbsp;User Guide</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link btn btn-dark me-2"
+                       href="{{ url_for('static_files.changelog') }}"><i class="fa-solid fa-timeline"></i>&nbsp;Changelog</a>
+                </li>
             </ul>
             <!-- NAVBAR RIGHT -->
             <div class="btn-group dropdown">
@@ -120,8 +124,8 @@
                         <h6 class="dropdown-header">{{ session["USER_NAME"] }}</h6>
                     </li>
                     <li>
-                        {# TODO: Build this page #}
-                        <a href="" class="dropdown-item">Profile</a>
+                        <a href="{{ url_for('user_profile.view', user_id=session['USER_ID']) }}"
+                           class="dropdown-item">Profile</a>
                     </li>
                     <li>
                         <hr class="dropdown-divider">

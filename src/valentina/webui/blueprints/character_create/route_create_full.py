@@ -15,7 +15,7 @@ from valentina.constants import HTTPStatus
 from valentina.controllers import CharacterSheetBuilder
 from valentina.models import Character, CharacterTrait
 from valentina.webui import catalog
-from valentina.webui.utils import sync_channel_to_discord, update_session
+from valentina.webui.utils import fetch_user, sync_channel_to_discord, update_session
 from valentina.webui.utils.discord import post_to_audit_log, post_to_error_log
 from valentina.webui.utils.forms import ValentinaForm
 
@@ -450,6 +450,10 @@ class CreateCharacterStep3(MethodView):
 
         character.traits = traits_to_add
         await character.save(link_rule=WriteRules.WRITE)
+        user = await fetch_user(fetch_links=True)
+        user.characters.append(character)
+        await user.save()
+
         self.session_data.clear_data()
 
         # Rebuild the session with the new character data

@@ -899,6 +899,17 @@ class TraitCategory(Enum):
         return self.value.COMMON + getattr(self.value, char_class.name, [])
 
     @classmethod
+    def get_all_trait_names(cls) -> list[str]:
+        """Return a list of every trait name across all categories for all classes."""
+        trait_names = []
+
+        for char_class in CharClass.playable_classes():
+            for category in cls:
+                trait_names.extend(category.get_all_class_trait_names(char_class=char_class))
+
+        return sorted(set(trait_names))
+
+    @classmethod
     def get_members_in_order(
         cls, section: CharSheetSection = None, char_class: CharClass | None = None
     ) -> list["TraitCategory"]:

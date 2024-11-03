@@ -71,8 +71,8 @@ async def test_fetch_sheet_profile(debug, character_factory, user_factory, char_
     )
     await character.insert()
 
-    common_profile_keys = ["class", "alive", "concept", "demeanor", "nature"]
-    storyteller_keys = ["player", "character type"]
+    common_profile_keys = ["class", "alive", "concept", "demeanor", "nature", "owner"]
+    storyteller_keys = ["character type"]
 
     # When checking for the player view
     sheet_builder = CharacterSheetBuilder(character=character)
@@ -92,7 +92,7 @@ async def test_fetch_sheet_profile(debug, character_factory, user_factory, char_
     for key in keys + common_profile_keys + storyteller_keys:
         assert key.title() in storyteller_sheet_profile
 
-    assert storyteller_sheet_profile["Player"] == "Test User"
+    assert storyteller_sheet_profile["Owner"] == "Test User"
 
 
 def test_fetch_all_class_traits(debug, character_factory) -> None:
