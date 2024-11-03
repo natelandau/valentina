@@ -3,11 +3,13 @@
     statistics: dict[str, str],
     roles: list[str],
     discord_member: discord.Member,
+    discord_guild: discord.Guild,
     created_at: str,
     joined_at: str,
     campaign_experience: list[UserCampaignExperience],
     characters: list[Character],
     UserEditableInfo: UserEditableInfo,
+    emoji: Emoji,
 #}
 
 <PageLayout title={{ user.name }} _attrs={{ attrs }}>
@@ -18,45 +20,52 @@
     {% endif %}
     {{ user.name }}</global.PageTitle>
 
-    {# ########################################################## #}
     <div class="row mb-5">
         <div class="col-xl-4 col-md-5 mb-6">
-            <div class="card h-100">
+            <div class="card h-100 shadow">
                 <div class="card-body">
-                    <h4>Discord Info</h4>
+                    <h4>User Info</h4>
                     <hr class="border border-primary border-2 opacity-75">
                     <table class="table table-borderless table-sm">
                         <tr>
-                            <td>
-                                <strong>Roles</strong>
+                            <td class="text-nowrap">
+                                <strong>Joined Discord</strong>
                             </td>
-                            <td class="font-monospace">{{ roles | join(", ") }}</td>
+                            <td class="font-monospace">{{ created_at | capitalize }}</td>
                         </tr>
                         <tr>
-                            <td>
-                                <strong>Created at</strong>
+                            <td class="text-nowrap">
+                                <strong>Joined {{ discord_guild.name }}</strong>
                             </td>
-                            <td class="font-monospace">{{ created_at }}</td>
+                            <td class="font-monospace">{{ joined_at | capitalize }}</td>
                         </tr>
                         <tr>
-                            <td>
-                                <strong>Joined at</strong>
+                            <td class="text-nowrap">
+                                <strong>Guild Roles</strong>
                             </td>
-                            <td class="font-monospace">{{ joined_at }}</td>
+                            <td class="font-monospace">
+                                <small>{{ roles | join(", ") }}</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-nowrap">
+                                <strong>Num Characters</strong>
+                            </td>
+                            <td class="font-monospace">{{ characters | length }}</td>
                         </tr>
                     </table>
                 </div>
             </div>
         </div>
         <div class="col-xl-4 col-md-6 mb-6">
-            <div class="card h-100">
+            <div class="card h-100 shadow">
                 <div class="card-body">
                     <global.Statistics statistics={{ statistics }} header_size="h4" title="Roll Statistics" />
                 </div>
             </div>
         </div>
         <div class="col-xl-4 col-md-6 mb-6">
-            <div class="card h-100">
+            <div class="card h-100 shadow">
                 <div class="card-body">
                     <h4>Experience</h4>
                     <hr class="border border-primary border-2 opacity-75">
@@ -76,12 +85,12 @@
                         {% for campaign in campaign_experience %}
                             <tr>
                                 <td colspan="2" class="text-center border-bottom lead">
-                                    <small>{{ campaign.name }}</small>
+                                    <small>{{ campaign.name | title }}</small>
                                 </td>
                             </tr>
                             <tr>
                                 <td>
-                                    <strong>Remaining XP</strong>
+                                    <strong>Available XP</strong>
                                 </td>
                                 <td class="font-monospace">{{ campaign.xp }}</td>
                             </tr>
@@ -112,7 +121,7 @@
                 hx-swap="innerHTML">New Macro</button>
     {% endif %}
     <h2>
-        Macros&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Speed dice rolls by preselecting traits</small></span>
+        {{ user.name }}'s macros&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Speed dice rolls by preselecting traits</small></span>
     </h2>
     <hr class="border border-primary border-2 opacity-75">
     <div id="{{ UserEditableInfo.MACRO.value.div_id }}" class="mb-5">
@@ -173,7 +182,7 @@
         <a class="btn btn-outline-primary btn-sm ms-3 float-end"
            href="{{ url_for('character_create.start') }}">Create Character</a>
     {% endif %}
-    <h2>Characters</h2>
+    <h2>{{ user.name }}'s characters</h2>
     <hr class="border border-primary border-2 opacity-75">
     <div id="characters" class="mb-5">
         {% if user.characters %}
@@ -191,15 +200,30 @@
                 <tbody>
                     {% for character in characters | sort(attribute="name") %}
                         <tr>
-                            <td>{{ character.name }}</td>
+                            <td>
+                                <strong><a href="{{ url_for('character_view.view', character_id=character.id) }}">{{ character.name }}</a></strong>
+                            </td>
                             <td>{{ character.char_class_name | title }}</td>
-                            <td>{{ character.is_alive }}</td>
+                            <td>
+                                {% if character.is_alive %}
+                                    {{ emoji.ALIVE.value }}
+                                {% else %}
+                                    {{ emoji.DEAD.value }}
+                                {% endif %}
+                            </td>
                             {% if session["IS_STORYTELLER"] %}
                                 <td>{{ 'Player' if character.type_player else 'Storyteller' }}</td>
                             {% endif %}
                             <td>
-                                <a class="btn btn-primary btn-sm"
-                                   href="{{ url_for('character_view.view', character_id=character.id) }}">View</a>
+                                {# This button is used to trigger the gameplay modal #}
+                                <button type="button"
+                                        class="btn btn-primary btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modal-{{ character.id }}">
+                                    <i class="fa-solid fa-dice"></i>&nbsp;&nbsp;Roll Dice
+                                </button>
+                                {# TODO: The modal for every character is loaded here when the page loads. This creates a number of GET requests. Refactor this to only load the modal when the button is clicked to increase performance #}
+                                <global.GameplayModal character_name={{ character.name }} character_id={{ character.id }} campaign_id={{ character.campaign }} id={{ 'modal-' ~ character.id }} />
                             </td>
                         </tr>
                     {% endfor %}

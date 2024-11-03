@@ -1,0 +1,52 @@
+{# def
+  character_name: str,
+  character_id: str,
+  campaign_id: str,
+  id: str = "gameplayModal",
+#}
+
+{# USAGE
+    1. Include this template somewhere in the page where you want to use the gameplay modal.  Pass the character_name, character_id, and campaign_id as variables to the template.
+        Example:
+            <global.GameplayModal
+                character_name="Character Name"
+                character_id="123"
+                campaign_id="456"
+                id="gameplayModal" />
+
+    2. Call the modal with the data-bs-target="#{{ id }}" attribute. Example:
+        <button type="button"
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#{{ id }}">
+            <i class="fa-solid fa-dice"></i>&nbsp;&nbsp;Roll Dice
+        </button>
+#}
+
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">
+                    <i class="fa-solid fa-dice"></i>&nbsp;&nbsp;Roll Dice for {{ character_name }}
+                </h1>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {# calling hx-trigger="load" to load's the content when this div is parsed in the DOM #}
+
+                <div id="content"
+                     hx-trigger="load"
+                     hx-get="{{ url_for('diceroll_modal.roll_selector', character_id=character_id, campaign_id=campaign_id) }}">
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

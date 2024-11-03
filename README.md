@@ -97,7 +97,7 @@ To allow image uploads, an AWS S3 bucket must be configured with appropriate per
 3. Run `valentina --help` to see the available options
 4. Run `valentina [options]` to run the bot
 
-## Run the bot (Discord)
+## Run the bot (Docker)
 
 1. Copy the `docker-compose.yml` file to a directory on your machine
 2. Edit the `docker-compose.yml` file

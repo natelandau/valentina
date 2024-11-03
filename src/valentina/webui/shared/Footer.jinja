@@ -1,0 +1,25 @@
+<div class="pt-5 mt-auto" data-bs-theme="dark">
+    <footer class="d-flex flex-wrap justify-content-between align-items-center px-5 py-3 mt-5 bg-dark border-top border-4 border-secondary">
+        <div class="col-md-4 d-flex align-items-center">
+            <a class="text-body-secondary text-decoration-none"
+               href="{{ url_for('homepage.homepage') }}"><i class="fa-solid fa-house"></i></a>
+            <div class="vr text-body-secondary mx-2"></div>
+            <a class="text-body-secondary text-decoration-none"
+               href="{{ url_for('static_files.user_guide') }}"><i class="fa-solid fa-circle-question"></i></a>
+            <div class="vr text-body-secondary mx-2"></div>
+            <a class="text-body-secondary text-decoration-none"
+               href="{{ url_for('static_files.changelog') }}"><i class="fa-solid fa-timeline"></i></a>
+        </div>
+
+        <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+
+            <li class="ms-3">
+                <a class="text-body-secondary"
+                   href="https://github.com/natelandau/valentina">
+                    <i class="fa-brands fa-github"></i>
+                </a>
+            </li>
+
+        </ul>
+    </footer>
+</div>

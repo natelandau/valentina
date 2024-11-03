@@ -8,8 +8,10 @@
 
 {% set roll_type = roll_types.THROW.value %}
 
+{% set roll_results_id = "results" ~ character.id %}
+
 <form hx-post="{{ url_for('diceroll_modal.roll_results', character_id=character.id, campaign_id=campaign.id) }}"
-      hx-target="#roll-results"
+      hx-target="#{{ roll_results_id }}"
       hx-trigger="submit"
       class="py-3">
     <input type="hidden" id="roll_type" name="roll_type" value="{{ roll_type }}" />

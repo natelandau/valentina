@@ -10,8 +10,10 @@
 
     {% set roll_type = roll_types.MACROS.value %}
 
+    {% set roll_results_id = "results" ~ character.id %}
+
     <form hx-post="{{ url_for('diceroll_modal.roll_results', character_id=character.id, campaign_id=campaign.id) }}"
-          hx-target="#roll-results"
+          hx-target="#{{ roll_results_id }}"
           hx-trigger="submit"
           class="pb-3">
         <input type="hidden" id="dice_size" name="dice_size" value="10" />

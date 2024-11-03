@@ -5,6 +5,11 @@
     form:ValentinaForm,
     roll_types:RollType,
 #}
+
+{% set gameplay_form_id = "form" ~ character.id %}
+
+{% set roll_results_id = "results" ~ character.id %}
+
 <div class="row row-cols-1 row-cols-sm-2">
     <div class="col col-sm-4 bg-light border">
         <div id="form-column">
@@ -14,17 +19,17 @@
 
                 {% set tab_text = "Throw Dice" if roll_type.name == "THROW" else "Roll " ~ roll_type.value %}
 
-                <global.TabItem url={{ url_for('diceroll_modal.roll_selector', character_id=character.id, campaign_id=campaign.id, tab=roll_type.value) }} text={{ tab_text | title }} number={{ loop.index }} target="#gameplay-form" />
+                <global.TabItem url={{ url_for('diceroll_modal.roll_selector', character_id=character.id, campaign_id=campaign.id, tab=roll_type.value) }} text={{ tab_text | title }} number={{ loop.index }} target={{ '#' ~ gameplay_form_id }} />
             {% endfor %}
 
             </global.TabGroup>
 
-            <div id="gameplay-form">
+            <div id="{{ gameplay_form_id }}">
                 {# We load the throw tab on first load. HTMX reloads this div when tabs are selected. #}
                 <diceroll_modal.TabThrow character={{ character }} campaign={{ campaign }} dice_sizes={{ dice_sizes }} form={{ form }} roll_types={{ roll_types }} />
             </div>
         </div>
     </div>
     {# This div is loaded by HTMX with the roll results when the form is submitted. #}
-    <div class="col col-sm-8" id="roll-results"></div>
+    <div class="col col-sm-8" id="{{ roll_results_id }}"></div>
 </div>
