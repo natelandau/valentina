@@ -91,6 +91,7 @@ def mock_session() -> Callable[[], dict[str, Any]]:
                 campaign_id=x.campaign,
                 owner_name="mock owner name",
                 owner_id=x.user_owner,
+                type_storyteller=False,
             ).__dict__
             for x in characters
         ]
@@ -103,6 +104,7 @@ def mock_session() -> Callable[[], dict[str, Any]]:
                 campaign_id=x.campaign,
                 owner_name="mock owner name",
                 owner_id=x.user_owner,
+                type_storyteller=False,
             ).__dict__
             for x in characters
         ]
@@ -115,6 +117,7 @@ def mock_session() -> Callable[[], dict[str, Any]]:
                 campaign_id=x.campaign,
                 owner_name="mock owner name",
                 owner_id=x.user_owner,
+                type_storyteller=False,
             ).__dict__
             for x in characters
         ]
