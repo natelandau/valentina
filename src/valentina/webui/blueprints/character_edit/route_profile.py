@@ -229,18 +229,14 @@ class EditProfile(MethodView):
                 # Rebuild the session with the new character data
                 await update_session()
 
-            # Redirect to the character view via htmx-redirect
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_view.view",
-                        character_id=character_id,
-                        success_msg="<strong>Character updated!</strong>"
-                        if has_updates
-                        else "No changes made.",
-                    )
-                }
+            url = url_for(
+                "character_view.view",
+                character_id=character_id,
+                success_msg="<strong>Character updated!</strong>"
+                if has_updates
+                else "No changes made.",
             )
+            return f'<script>window.location.href="{url}"</script>'
 
         # If POST request does not validate, return errors
         return catalog.render(

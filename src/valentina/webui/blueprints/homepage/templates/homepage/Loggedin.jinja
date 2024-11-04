@@ -70,28 +70,29 @@
 
             <h4>Your Characters</h4>
             <hr class="border border-primary border-2 opacity-75">
-            <table class="table table-borderless table-sm">
-                <thead>
-                    <tr>
-                        <th class="text-nowrap small">Character</th>
-                        <th class="text-nowrap small">Campaign</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for char in all_characters if char.owner_id == session["USER_ID"] %}
+            <div class="table-responsive">
+                <table class="table table-borderless table-sm">
+                    <thead>
                         <tr>
-                            <td class="text-nowrap small">
-                                <strong><a href="{{ url_for('character_view.view', character_id=char.id) }}">{{ char.name }}</a></strong>
-                            </td>
-                            <td class="text-nowrap small">{{ char.campaign_name }}</td>
+                            <th class="text-nowrap small">Character</th>
+                            <th class="text-nowrap small">Campaign</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
+                    </thead>
+                    <tbody>
+                        {% for char in all_characters if char.owner_id == session["USER_ID"] %}
+                            <tr>
+                                <td class="text-nowrap small">
+                                    <strong><a href="{{ url_for('character_view.view', character_id=char.id) }}">{{ char.name }}</a></strong>
+                                </td>
+                                <td class="text-nowrap small">{{ char.campaign_name }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
         <div class="col-xl-4 col-md-5 mb-6">
-            <h4>Other Characters</h4>
+            <h4>Other Players' Characters</h4>
             <hr class="border border-primary border-2 opacity-75">
             <table class="table table-borderless table-sm">
                 <thead>

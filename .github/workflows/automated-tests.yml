@@ -74,6 +74,10 @@ jobs:
               shell: bash
               run: uv run ruff check --no-fix src/
 
+            - name: mypy
+              shell: bash
+              run: uv run mypy --config-file pyproject.toml src/
+
             - name: Run tests
               shell: bash
               run: uv run pytest tests/

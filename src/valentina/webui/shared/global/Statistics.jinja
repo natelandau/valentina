@@ -11,52 +11,53 @@
     <{{ header_size }}>{{ title }}</{{ header_size }}>
     <hr class="border border-primary border-2 opacity-75">
 {% endif %}
-
-<table class="table table-borderless table-sm">
-    <tr>
-        <td class="text-end pe-2 text-nowrap">
-            <strong>Total Rolls</strong>
-        </td>
-        <td class="font-monospace text-nowrap">{{ statistics.total_rolls }}</td>
-        <td class="text-end pe-2 text-nowrap">
-            <strong>Avg. Criticals</strong>
-        </td>
-        <td class="font-monospace text-nowrap">
-            {{ statistics.criticals }} <small>({{ statistics.criticals_percentage }}%)</small>
-        </td>
-    </tr>
-    <tr>
-        <td class="text-end pe-2 text-nowrap">
-            <strong>Avg. Difficulty</strong>
-        </td>
-        <td class="font-monospace text-nowrap">{{ statistics.average_difficulty }}</td>
-        <td class="text-end pe-2 text-nowrap">
-            <strong>Avg. Successes</strong>
-        </td>
-        <td class="font-monospace text-nowrap">
-            {{ statistics.successes }} <small>({{ statistics.successes_percentage }}%)</small>
-        </td>
-    </tr>
-    <tr>
-        <td class="text-end pe-2 text-nowrap">
-            <strong>Avg. Pool Size</strong>
-        </td>
-        <td class="font-monospace text-nowrap">{{ statistics.average_pool }}</td>
-        <td class="text-end pe-2 text-nowrap">
-            <strong>Avg. Failures</strong>
-        </td>
-        <td class="font-monospace text-nowrap">
-            {{ statistics.failures }} <small>({{ statistics.failures_percentage }}%)</small>
-        </td>
-    </tr>
-    <tr>
-        <td></td>
-        <td></td>
-        <td class="text-end pe-2 text-nowrap">
-            <strong>Avg. Botches</strong>
-        </td>
-        <td class="font-monospace text-nowrap">
-            {{ statistics.botches }} <small>({{ statistics.botches_percentage }}%)</small>
-        </td>
-    </tr>
-</table>
+<div class="table-responsive">
+    <table class="table table-borderless table-sm">
+        <tr>
+            <td class="text-end pe-2 text-nowrap">
+                <strong>Total Rolls</strong>
+            </td>
+            <td class="font-monospace text-nowrap">{{ statistics.total_rolls }}</td>
+            <td class="text-end pe-2 text-nowrap">
+                <strong>Criticals</strong>
+            </td>
+            <td class="font-monospace text-nowrap">
+                {{ statistics.criticals }} <small>({{ statistics.criticals_percentage }}%)</small>
+            </td>
+        </tr>
+        <tr>
+            <td class="text-end pe-2 text-nowrap">
+                <strong>Avg. Difficulty</strong>
+            </td>
+            <td class="font-monospace text-nowrap">{{ statistics.average_difficulty }}</td>
+            <td class="text-end pe-2 text-nowrap">
+                <strong>Successes</strong>
+            </td>
+            <td class="font-monospace">
+                {{ statistics.successes }} <small>({{ statistics.successes_percentage }}%)</small>
+            </td>
+        </tr>
+        <tr>
+            <td class="text-end pe-2 text-nowrap">
+                <strong>Avg. Pool Size</strong>
+            </td>
+            <td class="font-monospace text-nowrap">{{ statistics.average_pool }}</td>
+            <td class="text-end pe-2 text-nowrap">
+                <strong>Failures</strong>
+            </td>
+            <td class="font-monospace">
+                {{ statistics.failures }} <small>({{ statistics.failures_percentage }}%)</small>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td class="text-end pe-2 text-nowrap">
+                <strong>Botches</strong>
+            </td>
+            <td class="font-monospace">
+                {{ statistics.botches }} <small>({{ statistics.botches_percentage }}%)</small>
+            </td>
+        </tr>
+    </table>
+</div>

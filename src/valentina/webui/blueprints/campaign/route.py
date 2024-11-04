@@ -20,6 +20,7 @@ from valentina.models import (
 from valentina.webui import catalog
 from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab
 from valentina.webui.utils import (
+    create_toast,
     fetch_active_campaign,
     sync_channel_to_discord,
     update_session,
@@ -393,7 +394,7 @@ class CampaignEditItem(MethodView):
         """Process the campaign description form."""
         form = await self._build_form(campaign)
         if await form.validate_on_submit():
-            do_update_session = campaign.name.strip() != form.name.data.strip()
+            do_update_session = campaign.name.strip().lower() != form.name.data.strip().lower()
             campaign.name = form.name.data.strip()
             campaign.description = form.description.data.strip()
             await campaign.save()
@@ -533,10 +534,11 @@ class CampaignEditItem(MethodView):
 
         match self.edit_type:
             case CampaignEditableInfo.DESCRIPTION:
-                pass
+                pass  # Not implemented
 
             case CampaignEditableInfo.BOOK:
                 msg = await self._delete_campaign_book(campaign)
+                return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id, success_msg=msg)}"</script>'
 
             case CampaignEditableInfo.CHAPTER:
                 msg = await self._delete_campaign_chapter()
@@ -550,4 +552,4 @@ class CampaignEditItem(MethodView):
             case _:
                 assert_never(self.edit_type)
 
-        return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id, success_msg=msg)}"</script>'
+        return create_toast(msg, level="SUCCESS")

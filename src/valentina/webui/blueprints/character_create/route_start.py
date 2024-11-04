@@ -56,7 +56,9 @@ class StartCharacterCreate(MethodView):
         if "reset_campaign" in form:
             del session["ACTIVE_CAMPAIGN_ID"]
             # Send redirect header to HTMX to repaint the entire page, thus allowing tooltips to function
-            return Response(headers={"HX-Redirect": url_for("character_create.start")})
+
+            url = url_for("character_create.start")
+            return f'<script>window.location.href="{url}"</script>'
 
         if new_campaign := form.get("campaign", None):
             session["ACTIVE_CAMPAIGN_ID"] = new_campaign

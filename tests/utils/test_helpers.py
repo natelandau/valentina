@@ -11,8 +11,18 @@ from valentina.utils.helpers import (
     get_trait_multiplier,
     get_trait_new_value,
     num_to_circles,
+    random_string,
     truncate_string,
 )
+
+
+@pytest.mark.no_db
+def test_random_string(debug) -> None:
+    """Test random_string()."""
+    returned = random_string(10)
+    assert isinstance(returned, str)
+    assert len(returned) == 10
+    debug("string", returned)
 
 
 @pytest.mark.no_db

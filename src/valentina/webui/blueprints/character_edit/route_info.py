@@ -4,7 +4,7 @@ from typing import ClassVar, assert_never
 from uuid import UUID
 
 from flask_discord import requires_authorization
-from quart import Response, abort, request, session, url_for
+from quart import abort, request, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from wtforms import (
@@ -20,7 +20,7 @@ from valentina.constants import InventoryItemType
 from valentina.models import Character, CharacterSheetSection, InventoryItem, Note
 from valentina.webui import catalog
 from valentina.webui.constants import CharacterEditableInfo
-from valentina.webui.utils import fetch_active_character, sync_channel_to_discord
+from valentina.webui.utils import create_toast, fetch_active_character, sync_channel_to_discord
 from valentina.webui.utils.discord import post_to_audit_log
 
 
@@ -338,7 +338,7 @@ class EditCharacterInfo(MethodView):
             hx_target=f"#{self.edit_type.value.div_id}",
         )
 
-    async def post(self, character_id: str) -> Response | str:
+    async def post(self, character_id: str) -> str:
         """Process the form."""
         character = await fetch_active_character(character_id, fetch_links=False)
 
@@ -354,29 +354,15 @@ class EditCharacterInfo(MethodView):
             case CharacterEditableInfo.DELETE:
                 form_is_processed, msg, form = await self._post_delete_character(character)
                 # If the form is processed, redirect to the homepage with a success message b/c the character is deleted.
-                if form_is_processed:
-                    return Response(
-                        headers={
-                            "HX-Redirect": url_for(
-                                "homepage.homepage",
-                                success_msg=msg,
-                            ),
-                        }
-                    )
+                url = url_for("homepage.homepage", success_msg=msg)
+                return f'<script>window.location.href="{url}"</script>'
 
             case _:
                 assert_never(self.edit_type)
 
         if form_is_processed:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_view.view",
-                        character_id=character_id,
-                        success_msg=msg,
-                    ),
-                }
-            )
+            url = url_for("character_view.view", character_id=character_id, success_msg=msg)
+            return f'<script>window.location.href="{url}"</script>'
 
         # If POST request does not validate, return errors
         return catalog.render(
@@ -390,7 +376,7 @@ class EditCharacterInfo(MethodView):
             hx_target=f"#{self.edit_type.value.div_id}",
         )
 
-    async def delete(self, character_id: str) -> Response:
+    async def delete(self, character_id: str) -> str:
         """Delete the item."""
         character = await fetch_active_character(character_id, fetch_links=False)
 
@@ -402,16 +388,8 @@ class EditCharacterInfo(MethodView):
             case CharacterEditableInfo.INVENTORY:
                 msg = await self._delete_inventory(character)
             case CharacterEditableInfo.BIOGRAPHY | CharacterEditableInfo.DELETE:
-                pass  # Not needed.
+                pass  # Not implemented
             case _:
                 assert_never(self.edit_type)
 
-        return Response(
-            headers={
-                "HX-Redirect": url_for(
-                    "character_view.view",
-                    character_id=character_id,
-                    success_msg=msg,
-                ),
-            }
-        )
+        return create_toast(msg, level="SUCCESS")

@@ -35,7 +35,7 @@
                 <tbody>
                     {% for key, values in inventory.items() %}
                         {% for item in values %}
-                            <tr>
+                            <tr class="fade-me-out">
                                 <td style="white-space: nowrap;">
                                     <strong>{{ item.name | from_markdown | safe }}</strong>
                                 </td>
@@ -57,9 +57,10 @@
                                                            --bs-btn-padding-x: .5rem;
                                                            --bs-btn-font-size: .75rem"
                                                     hx-delete="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id, item_id=item.id) }}"
-                                                    hx-trigger="click"
-                                                    hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
-                                                    hx-swap="innerHTML">Delete</button>
+                                                    hx-confirm="Are you sure?"
+                                                    hx-target="closest tr"
+                                                    hx-swap="outerHTML swap:1s"
+                                                    hx-trigger="click">Delete</button>
                                         </div>
                                     </td>
                                 {% endif %}
@@ -89,7 +90,7 @@
         <table class="table table-hover">
             <tbody>
                 {% for note in character.notes %}
-                    <tr>
+                    <tr class="fade-me-out">
                         <td>{{ note.text | from_markdown_no_p | safe }}</td>
 
                         {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
@@ -108,9 +109,10 @@
                                                    --bs-btn-padding-x: .5rem;
                                                    --bs-btn-font-size: .75rem"
                                             hx-delete="{{ url_for(CharacterEditableInfo.NOTE.value.route, character_id=character.id, note_id=note.id) }}"
-                                            hx-trigger="click"
-                                            hx-target="#{{ CharacterEditableInfo.NOTE.value.div_id }}"
-                                            hx-swap="innerHTML">Delete</button>
+                                            hx-confirm="Are you sure?"
+                                            hx-target="closest tr"
+                                            hx-swap="outerHTML swap:1s"
+                                            hx-trigger="click">Delete</button>
                                 </div>
                             </td>
                         {% endif %}
@@ -140,7 +142,7 @@
     {% if character.sheet_sections %}
         <div class="row g-2 row-cols-sm-2 row-cols-md-3 g-2">
             {% for section in character.sheet_sections | sort(attribute="title") %}
-                <div class="col">
+                <div class="col fade-me-out" id="custom-section-item">
                     <div class="card border border-secondary-subtle bg-light-subtle h-100"
                          style="padding-left:0;
                                 padding-right:0">
@@ -156,10 +158,13 @@
                                         hx-swap="innerHTML"
                                         class="btn btn-sm btn-primary">Edit</button>
                                 <button class="btn btn-sm btn-outline-danger"
-                                        hx-delete="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id, uuid=section.uuid) }}"
-                                        hx-trigger="click"
-                                        hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value.div_id }}"
-                                        hx-swap="innerHTML">Delete</button>
+                                    hx-delete="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id, uuid=section.uuid) }}"
+                                    {# hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value.div_id }}" #}
+                                    hx-confirm="Are you sure?"
+                                    hx-target="closest #custom-section-item"
+                                    hx-swap="outerHTML swap:1s"
+                                    hx-trigger="click">Delete
+                                </button>
                             </div>
                         {% endif %}
                     </div>

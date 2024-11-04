@@ -19,7 +19,7 @@
         <table class="table table-hover">
             <tbody>
                 {% for note in campaign.notes %}
-                    <tr>
+                    <tr class="fade-me-out">
                         <td>{{ note.text | from_markdown_no_p | safe }}</td>
 
                         <td>
@@ -37,9 +37,10 @@
                                                --bs-btn-padding-x: .5rem;
                                                --bs-btn-font-size: .75rem"
                                         hx-delete="{{ url_for(CampaignEditableInfo.NOTE.value.route, campaign_id=campaign.id, note_id=note.id) }}"
-                                        hx-trigger="click"
-                                        hx-target="#{{ CampaignEditableInfo.NOTE.value.div_id }}"
-                                        hx-swap="innerHTML">Delete</button>
+                                        hx-confirm="Are you sure?"
+                                        hx-target="closest tr"
+                                        hx-swap="outerHTML swap:1s"
+                                        hx-trigger="click">Delete</button>
                             </div>
                         </td>
 

@@ -47,9 +47,9 @@
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="fade-me-out">
                 {% for npc in campaign.npcs | sort(attribute="name") %}
-                    <tr>
+                    <tr class="fade-me-out">
                         <td>{{ npc.name | escape }}</td>
                         <td>{{ npc.npc_class | escape }}</td>
                         <td>{{ npc.description | from_markdown | safe }}</td>
@@ -69,9 +69,10 @@
                                                    --bs-btn-padding-x: .5rem;
                                                    --bs-btn-font-size: .75rem"
                                             hx-delete="{{ url_for(CampaignEditableInfo.NPC.value.route, campaign_id=campaign.id, uuid=npc.uuid) }}"
-                                            hx-trigger="click"
-                                            hx-target="#{{ CampaignEditableInfo.NPC.value.div_id }}"
-                                            hx-swap="innerHTML">Delete</button>
+                                            hx-confirm="Are you sure?"
+                                            hx-target="closest tr"
+                                            hx-swap="outerHTML swap:1s"
+                                            hx-trigger="click">Delete</button>
                                 {% endif %}
                             </div>
                         </td>
