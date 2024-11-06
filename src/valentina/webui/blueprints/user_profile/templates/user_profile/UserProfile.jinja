@@ -8,9 +8,11 @@
     joined_at: str,
     campaign_experience: list[UserCampaignExperience],
     characters: list[Character],
-    UserEditableInfo: UserEditableInfo,
     emoji: Emoji,
+    table_type_macro: TableType,
 #}
+
+{% set can_edit = session["USER_ID"] == user.id %}
 
 <PageLayout title={{ user.name }} _attrs={{ attrs }}>
     <global.PageTitle>
@@ -113,70 +115,7 @@
         </div>
     </div>
 
-    {% if session["USER_ID"] == user.id %}
-        <button class="btn btn-outline-primary btn-sm ms-3 float-end"
-                hx-get="{{ url_for(UserEditableInfo.MACRO.value.route, user_id=user.id) }}"
-                hx-trigger="click"
-                hx-target="#{{ UserEditableInfo.MACRO.value.div_id }}"
-                hx-swap="innerHTML">New Macro</button>
-    {% endif %}
-    <h2>
-        {{ user.name }}'s macros&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Speed dice rolls by preselecting traits</small></span>
-    </h2>
-    <hr class="border border-primary border-2 opacity-75">
-    <div id="{{ UserEditableInfo.MACRO.value.div_id }}" class="mb-5">
-        {% if user.macros %}
-
-            <table class="table table-striped table-hover mb-5">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Abbreviation</th>
-                        <th>Description</th>
-                        <th>Trait1</th>
-                        <th>Trait2</th>
-                        {% if session["USER_ID"] == user.id %}<th></th>{% endif %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for macro in user.macros | sort(attribute="name") %}
-                        <tr>
-                            <td>{{ macro.name }}</td>
-                            <td>{{ macro.abbreviation }}</td>
-                            <td>{{ macro.description }}</td>
-                            <td>{{ macro.trait_one }}</td>
-                            <td>{{ macro.trait_two }}</td>
-                            {% if session["USER_ID"] == user.id %}
-                                <td>
-                                    <div class="btn-group float-end">
-                                        <button class="btn btn-sm btn-outline-primary"
-                                                style="--bs-btn-padding-y: .25rem;
-                                                       --bs-btn-padding-x: .5rem;
-                                                       --bs-btn-font-size: .75rem"
-                                                hx-get="{{ url_for(UserEditableInfo.MACRO.value.route, user_id=user.id, macro_id=macro.uuid) }}"
-                                                hx-trigger="click"
-                                                hx-target="#{{ UserEditableInfo.MACRO.value.div_id }}"
-                                                hx-swap="innerHTML">Edit</button>
-
-                                        <button class="btn btn-sm btn-outline-danger"
-                                                style="--bs-btn-padding-y: .25rem;
-                                                       --bs-btn-padding-x: .5rem;
-                                                       --bs-btn-font-size: .75rem"
-                                                hx-delete="{{ url_for(UserEditableInfo.MACRO.value.route, user_id=user.id, macro_id=macro.uuid) }}"
-                                                hx-trigger="click"
-                                                hx-target="#{{ UserEditableInfo.MACRO.value.div_id }}"
-                                                hx-swap="innerHTML">Delete</button>
-                                    </div>
-                                </td>
-                            {% endif %}
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>No macros.</p>
-        {% endif %}
-    </div>
+    <HTMXPartials.EditTable.TablePartial TableType={{ table_type_macro }} items={{ user.macros }} can_edit={{ can_edit }} parent_id={{ user.id }} header_size="h2" />
 
     {%- if session["USER_ID"] == user.id %}
         <a class="btn btn-outline-primary btn-sm ms-3 float-end"

@@ -1,8 +1,8 @@
 {# def
     campaign: Campaign,
     characters: List[Character],
-    CampaignEditableInfo: CampaignEditableInfo,
     can_manage_campaign: bool = False,
+    table_type_npc: TableType,
 #}
 <h2 class="mb-4">Characters & NPCs</h2>
 
@@ -27,61 +27,4 @@
     <p>No player characters associated with this campaign.</p>
 {% endif %}
 
-<button class="btn btn-outline-primary btn-sm ms-3 float-end"
-        hx-get="{{ url_for(CampaignEditableInfo.NPC.value.route, campaign_id=campaign.id) }}"
-        hx-trigger="click"
-        hx-target="#{{ CampaignEditableInfo.NPC.value.div_id }}"
-        hx-swap="innerHTML">Add NPC</button>
-<h3>
-    NPCs&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Names and quick descriptions of non-player characters</small></span>
-</h3>
-<hr class="border border-primary border-2 opacity-75">
-<div id="{{ CampaignEditableInfo.NPC.value.div_id }}">
-    {% if campaign.npcs %}
-        <table class="table table-striped table-hover mb-5">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Class</th>
-                    <th>Description</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody class="fade-me-out">
-                {% for npc in campaign.npcs | sort(attribute="name") %}
-                    <tr class="fade-me-out">
-                        <td>{{ npc.name | escape }}</td>
-                        <td>{{ npc.npc_class | escape }}</td>
-                        <td>{{ npc.description | from_markdown | safe }}</td>
-                        <td>
-                            <div class="btn-group float-end">
-                                <button class="btn btn-sm btn-outline-primary"
-                                        style="--bs-btn-padding-y: .25rem;
-                                               --bs-btn-padding-x: .5rem;
-                                               --bs-btn-font-size: .75rem"
-                                        hx-get="{{ url_for(CampaignEditableInfo.NPC.value.route, campaign_id=campaign.id, uuid=npc.uuid) }}"
-                                        hx-trigger="click"
-                                        hx-target="#{{ CampaignEditableInfo.NPC.value.div_id }}"
-                                        hx-swap="innerHTML">Edit</button>
-                                {% if can_manage_campaign %}
-                                    <button class="btn btn-sm btn-outline-danger"
-                                            style="--bs-btn-padding-y: .25rem;
-                                                   --bs-btn-padding-x: .5rem;
-                                                   --bs-btn-font-size: .75rem"
-                                            hx-delete="{{ url_for(CampaignEditableInfo.NPC.value.route, campaign_id=campaign.id, uuid=npc.uuid) }}"
-                                            hx-confirm="Are you sure?"
-                                            hx-target="closest tr"
-                                            hx-swap="outerHTML swap:1s"
-                                            hx-trigger="click">Delete</button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-    {% else %}
-        <p>No NPCs associated with this campaign.</p>
-    {% endif %}
-</div>
+<HTMXPartials.EditTable.TablePartial TableType={{ table_type_npc }} items={{ campaign.npcs }} can_edit={{ can_manage_campaign }} parent_id={{ campaign.id }} header_size="h3" />

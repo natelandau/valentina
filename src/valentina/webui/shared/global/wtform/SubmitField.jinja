@@ -1,18 +1,30 @@
 {# def
     field:Field,
+    small: bool = False,
+    xsmall: bool = True,
 #}
 
 {% if field.description %}<p>{{ field.description }}</p>{% endif %}
 
+{% if xsmall %}
+
+    {% set xs_style = "--bs-btn-padding-y: .25rem;--bs-btn-padding-x: .5rem;--bs-btn-font-size: .75rem" %}
+
+{% else %}
+
+    {% set xs_style = "" %}
+
+{% endif %}
+
 {% if "delete" in (field.label.text | lower) %}
-    {{ field(**{"class": "btn btn-danger"}) }}
+    {{ field(**{"class": "btn btn-danger mb-1"~(" btn-sm" if small else "") , "style": xs_style}) }}
     <img id="spinner"
          src="{{ url_for('static', filename='spinners/bars.svg') }}"
          class="htmx-indicator" />
 {% elif "cancel" in (field.label.text | lower) %}
-    {{ field(**{"class": "btn btn-outline-secondary"}) }}
+    {{ field(**{"class": "btn btn-outline-secondary mb-1"~(" btn-sm" if small else "") , "style": xs_style}) }}
 {% else %}
-    {{ field(**{"class": "btn btn-success"}) }}
+    {{ field(**{"class": "btn btn-success mb-1"~(" btn-sm" if small else "") , "style": xs_style}) }}
     <img id="spinner"
          src="{{ url_for('static', filename='spinners/bars.svg') }}"
          class="htmx-indicator" />

@@ -1,132 +1,17 @@
 {# def
     character: Character,
     CharacterEditableInfo: CharacterEditableInfo,
-    inventory: list[CharacterInventoryItem] = [],
+    table_type_note: TableType.NOTE,
+    table_type_inventory: TableType.INVENTORYITEM,
 #}
 
-{% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
-    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
-            hx-get="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id) }}"
-            hx-trigger="click"
-            hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
-            hx-swap="innerHTML">Add New Item</button>
-{% endif %}
-<h2>
-    Inventory&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Items the character owns</small></span>
-</h2>
-<hr class="border border-primary border-2 opacity-75">
-<div id="{{ CharacterEditableInfo.INVENTORY.value.div_id }}" class="mb-5">
+{% set can_edit = session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
 
-    {% if not inventory %}
-        <div class="col">
-            <p>No items in inventory</p>
-        </div>
-    {% else %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Category</th>
-                        <th>Description</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for key, values in inventory.items() %}
-                        {% for item in values %}
-                            <tr class="fade-me-out">
-                                <td style="white-space: nowrap;">
-                                    <strong>{{ item.name | from_markdown | safe }}</strong>
-                                </td>
-                                <td>{{ key | capitalize | escape }}</td>
-                                <td>{{ item.description | from_markdown | safe }}</td>
-                                {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
-                                    <td>
-                                        <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-primary"
-                                                    style="--bs-btn-padding-y: .25rem;
-                                                           --bs-btn-padding-x: .5rem;
-                                                           --bs-btn-font-size: .75rem"
-                                                    hx-get="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id, item_id=item.id) }}"
-                                                    hx-trigger="click"
-                                                    hx-target="#{{ CharacterEditableInfo.INVENTORY.value.div_id }}"
-                                                    hx-swap="innerHTML">Edit</button>
-                                            <button class="btn btn-sm btn-outline-danger"
-                                                    style="--bs-btn-padding-y: .25rem;
-                                                           --bs-btn-padding-x: .5rem;
-                                                           --bs-btn-font-size: .75rem"
-                                                    hx-delete="{{ url_for(CharacterEditableInfo.INVENTORY.value.route, character_id=character.id, item_id=item.id) }}"
-                                                    hx-confirm="Are you sure?"
-                                                    hx-target="closest tr"
-                                                    hx-swap="outerHTML swap:1s"
-                                                    hx-trigger="click">Delete</button>
-                                        </div>
-                                    </td>
-                                {% endif %}
-                            </tr>
-                        {% endfor %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
+<HTMXPartials.EditTable.TablePartial TableType={{ table_type_inventory }} items={{ character.inventory }} can_edit={{ can_edit }} parent_id={{ character.id }} />
 
-</div>
-{% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
-    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
-            hx-get="{{ url_for(CharacterEditableInfo.NOTE.value.route, character_id=character.id) }}"
-            hx-trigger="click"
-            hx-target="#{{ CharacterEditableInfo.NOTE.value.div_id }}"
-            hx-swap="innerHTML">Create Note</button>
-{% endif %}
-<h2>
-    Notes&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Quick notes about the character</small></span>
-</h2>
+<HTMXPartials.EditTable.TablePartial TableType={{ table_type_note }} items={{ character.notes }} can_edit={{ can_edit }} parent_id={{ character.id }} />
 
-<hr class="border border-primary border-2 opacity-75">
-<div id="{{ CharacterEditableInfo.NOTE.value.div_id }}" class="mb-5">
-    {% if character.notes %}
-        <table class="table table-hover">
-            <tbody>
-                {% for note in character.notes %}
-                    <tr class="fade-me-out">
-                        <td>{{ note.text | from_markdown_no_p | safe }}</td>
-
-                        {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
-                            <td>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-primary"
-                                            style="--bs-btn-padding-y: .25rem;
-                                                   --bs-btn-padding-x: .5rem;
-                                                   --bs-btn-font-size: .75rem"
-                                            hx-post="{{ url_for(CharacterEditableInfo.NOTE.value.route, character_id=character.id, note_id=note.id) }}"
-                                            hx-trigger="click"
-                                            hx-target="#{{ CharacterEditableInfo.NOTE.value.div_id }}"
-                                            hx-swap="innerHTML">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger"
-                                            style="--bs-btn-padding-y: .25rem;
-                                                   --bs-btn-padding-x: .5rem;
-                                                   --bs-btn-font-size: .75rem"
-                                            hx-delete="{{ url_for(CharacterEditableInfo.NOTE.value.route, character_id=character.id, note_id=note.id) }}"
-                                            hx-confirm="Are you sure?"
-                                            hx-target="closest tr"
-                                            hx-swap="outerHTML swap:1s"
-                                            hx-trigger="click">Delete</button>
-                                </div>
-                            </td>
-                        {% endif %}
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <div class="mb-5">
-            <p>No notes</p>
-        </div>
-    {% endif %}
-</div>
-{% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+{% if can_edit %}
     <button class="btn btn-outline-primary btn-sm ms-3 float-end"
             hx-get="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id) }}"
             hx-trigger="click"
@@ -150,7 +35,7 @@
                             <h4>{{ section.title | escape }}</h4>
                         </div>
                         <div class="card-body">{{ section.content | from_markdown | safe }}</div>
-                        {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
+                        {% if can_edit %}
                             <div class="card-footer">
                                 <button hx-get="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id, uuid=section.uuid) }}"
                                         hx-trigger="click"

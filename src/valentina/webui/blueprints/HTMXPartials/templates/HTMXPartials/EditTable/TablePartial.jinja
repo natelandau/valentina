@@ -1,0 +1,61 @@
+{# def
+    items: list[Note|NPC|InventoryItem],
+    TableType: TableType,
+    can_edit: bool = True,
+    parent_id: str = "",
+    header_size: Literal["h1", "h2", "h3", "h4", "h5", "h6"] = "h2",
+#}
+
+{%- set hr_size = "2" if header_size in ["h1", "h2", "h3"] else "1" %}
+
+<div class="mb-5">
+    {%- if can_edit %}
+        <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+                {% if parent_id %} hx-put="{{ url_for(TableType.value.route, parent_id=parent_id) }}" {% else %} hx-put="{{ url_for(TableType.value.route) }}" {% endif %}
+                hx-trigger="click"
+                hx-target="next #{{ TableType.value.name | upper | replace(' ', '-') }}-TABLEBODY"
+                {% if items | length > 0 %} hx-swap="afterbegin" {% else %} hx-swap="innerHTML" {% endif %}>
+            Create {{ TableType.value.name | lower }}
+        </button>
+    {%- endif %}
+    <{{ header_size }}>
+    {{ TableType.value.name | title | escape }}
+    {%- if TableType.value.description %}
+        &nbsp;&nbsp;<span class="text-muted fs-6 fw-light">
+        <small>{{ TableType.value.description | escape }}</small>
+    </span>
+{%- endif %}
+</{{ header_size }}>
+
+<hr class="border border-primary border-{{ hr_size }} opacity-75">
+
+{%- if items | length > 0 %}
+    <table class="table">
+
+        {%- if TableType.value.table_headers %}
+            <thead>
+                <tr>
+                    {%- for header in TableType.value.table_headers %}<th>{{ header }}</th>{% endfor %}
+                    {%- if can_edit %}<th></th>{%- endif %}
+                </tr>
+            </thead>
+        {%- endif %}
+
+        <tbody id="{{ TableType.value.name | upper | replace(' ', '-') }}-TABLEBODY">
+
+            {%- for item in items | sort(attribute=TableType.value.sort_attribute) %}
+                <HTMXPartials.EditTable.ItemDisplayPartial item={{ item }} TableType={{ TableType }} can_edit={{ can_edit }} parent_id={{ parent_id }} />
+            {%- endfor %}
+
+        </tbody>
+    </table>
+{%- else %}
+    <table class="table">
+        <tbody id="{{ TableType.value.name | upper | replace(' ', '-') }}-TABLEBODY">
+            <tr>
+                <td>No {{ TableType.value.name | lower | escape }}</td>
+            </tr>
+        </tbody>
+    </table>
+{%- endif %}
+</div>

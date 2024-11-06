@@ -1,5 +1,6 @@
 """Creates responses for the web UI."""
 
+import re
 from typing import Literal
 
 from valentina.utils import random_string
@@ -38,6 +39,10 @@ def create_toast(
             raise ValueError(msg)
 
     random_id = random_string(4)
+
+    # replace any parts of string surrounded by backticks with <span> tags
+    msg = re.sub(r"`(.*?)`", r"<span class='font-monospace'>\1</span>", msg)
+
     return f"""\
 <div class="toast-container top-0 start-50 translate-middle-x mt-5 pt-5">
     <div class="toast {random_id} align-items-center text-bg-{color} border-0 "

@@ -1,7 +1,6 @@
 """Campaign view."""
 
 from typing import ClassVar, assert_never
-from uuid import UUID
 
 from flask_discord import requires_authorization
 from quart import Response, abort, request, session, url_for
@@ -9,16 +8,9 @@ from quart.views import MethodView
 from quart_wtf import QuartForm
 
 from valentina.controllers import PermissionManager
-from valentina.models import (
-    Campaign,
-    CampaignBook,
-    CampaignBookChapter,
-    CampaignNPC,
-    Note,
-    Statistics,
-)
+from valentina.models import Campaign, CampaignBook, Statistics
 from valentina.webui import catalog
-from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab
+from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab, TableType
 from valentina.webui.utils import (
     create_toast,
     fetch_active_campaign,
@@ -29,10 +21,7 @@ from valentina.webui.utils.discord import post_to_audit_log
 
 from .forms import (
     CampaignBookForm,
-    CampaignChapterForm,
     CampaignDescriptionForm,
-    CampaignNoteForm,
-    CampaignNPCForm,
 )
 
 
@@ -83,6 +72,8 @@ class CampaignView(MethodView):
                     books=await campaign.fetch_books(),
                     CampaignEditableInfo=CampaignEditableInfo,
                     can_manage_campaign=self.can_manage_campaign,
+                    table_type_note=TableType.NOTE,
+                    table_type_chapter=TableType.CHAPTER,
                 )
 
             case CampaignViewTab.CHARACTERS:
@@ -90,8 +81,8 @@ class CampaignView(MethodView):
                     "campaign.Characters",
                     campaign=campaign,
                     characters=await campaign.fetch_player_characters(),
-                    CampaignEditableInfo=CampaignEditableInfo,
                     can_manage_campaign=self.can_manage_campaign,
+                    table_type_npc=TableType.NPC,
                 )
 
             case CampaignViewTab.STATISTICS:
@@ -107,9 +98,10 @@ class CampaignView(MethodView):
             case CampaignViewTab.NOTES:
                 return catalog.render(
                     "campaign.Notes",
-                    campaign=campaign,
-                    CampaignEditableInfo=CampaignEditableInfo,
+                    items=campaign.notes,
                     can_manage_campaign=self.can_manage_campaign,
+                    TableType=TableType.NOTE,
+                    parent_id=campaign.id,
                 )
 
             case _:
@@ -149,7 +141,7 @@ class CampaignView(MethodView):
             session["USER_ID"]
         )
 
-        if self.is_htmx:
+        if self.is_htmx and request.args.get("tab"):
             return await self.handle_tabs(campaign)
 
         return catalog.render(
@@ -173,7 +165,7 @@ class CampaignEditItem(MethodView):
     def __init__(self, edit_type: CampaignEditableInfo) -> None:
         self.edit_type = edit_type
 
-    async def _build_form(self, campaign: Campaign) -> QuartForm:  # noqa: C901
+    async def _build_form(self, campaign: Campaign) -> QuartForm:
         """Build the form for the campaign item."""
         data = {}
 
@@ -191,41 +183,6 @@ class CampaignEditItem(MethodView):
                     data["description_short"] = existing_book.description_short
                     data["description_long"] = existing_book.description_long
                 return await CampaignBookForm().create_form(data=data)
-
-            case CampaignEditableInfo.CHAPTER:
-                if request.args.get("chapter_id"):
-                    existing_chapter = await CampaignBookChapter.get(request.args.get("chapter_id"))
-                    data["chapter_id"] = request.args.get("chapter_id")
-                    data["name"] = existing_chapter.name
-                    data["description_short"] = existing_chapter.description_short
-                    data["description_long"] = existing_chapter.description_long
-                    data["book_id"] = existing_chapter.book
-
-                return await CampaignChapterForm().create_form(data=data)
-
-            case CampaignEditableInfo.NOTE:
-                data["book_id"] = request.args.get("book_id") or ""
-                data["chapter_id"] = request.args.get("chapter_id") or ""
-                data["campaign_id"] = request.args.get("campaign_id") or ""
-
-                if request.args.get("note_id"):
-                    existing_note = await Note.get(request.args.get("note_id"))
-                    data["note_id"] = request.args.get("note_id")
-                    data["text"] = existing_note.text
-                return await CampaignNoteForm().create_form(data=data)
-
-            case CampaignEditableInfo.NPC:
-                data["campaign_id"] = request.args.get("campaign_id") or ""
-                if request.args.get("uuid"):
-                    for npc in campaign.npcs:
-                        if npc.uuid == UUID(request.args.get("uuid")):
-                            data["uuid"] = str(npc.uuid)
-                            data["name"] = npc.name
-                            data["description"] = npc.description
-                            data["npc_class"] = npc.npc_class
-                            break
-
-                return await CampaignNPCForm().create_form(data=data)
 
             case _:
                 assert_never(self.edit_type)
@@ -250,67 +207,6 @@ class CampaignEditItem(MethodView):
         )
 
         return "Book deleted"
-
-    async def _delete_campaign_chapter(self) -> str:
-        """Delete a campaign chapter."""
-        chapter_id = request.args.get("chapter_id")
-        if not chapter_id:
-            abort(400)
-
-        chapter = await CampaignBookChapter.get(chapter_id)
-        book = await CampaignBook.get(chapter.book, fetch_links=True)
-        book.chapters.remove(chapter)
-        await book.save()
-        await chapter.delete()
-        await post_to_audit_log(
-            msg=f"Delete chapter - `{chapter.name}`",
-            view=self.__class__.__name__,
-        )
-
-        return "Chapter deleted"
-
-    async def _delete_note(self, campaign: Campaign) -> str:
-        """Delete the note."""
-        note_id = request.args.get("note_id", None)
-        if not note_id:
-            abort(400)
-
-        existing_note = await Note.get(note_id)
-        if request.args.get("book_id"):
-            book = await CampaignBook.get(request.args.get("book_id"), fetch_links=True)
-            book.notes.remove(existing_note)
-            await book.save()
-        else:
-            campaign.notes.remove(existing_note)
-
-        await existing_note.delete()
-
-        await post_to_audit_log(
-            msg=f"Delete {campaign.name} note - `{existing_note.text}`",
-            view=self.__class__.__name__,
-        )
-        await campaign.save()
-
-        return "Note deleted"
-
-    async def _delete_npc(self, campaign: Campaign) -> str:
-        """Delete the NPC."""
-        uuid = request.args.get("uuid")
-        if not uuid:
-            abort(400)
-
-        for npc in campaign.npcs:
-            if npc.uuid == UUID(uuid):
-                campaign.npcs.remove(npc)
-                await campaign.save()
-                break
-
-        await campaign.save()
-        await post_to_audit_log(
-            msg=f"Delete {campaign.name} NPC - `{npc.name}`",
-            view=self.__class__.__name__,
-        )
-        return "NPC deleted"
 
     async def _post_campaign_book(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
         """Process the campaign book form."""
@@ -353,43 +249,6 @@ class CampaignEditItem(MethodView):
 
         return False, "", form
 
-    async def _post_campaign_chapter(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
-        """Process the campaign chapter form."""
-        form = await self._build_form(campaign)
-
-        if await form.validate_on_submit():
-            if form.data.get("chapter_id"):
-                existing_chapter = await CampaignBookChapter.get(form.data.get("chapter_id"))
-
-                existing_chapter.name = form.name.data.strip().title()
-                existing_chapter.description_short = form.description_short.data.strip()
-                existing_chapter.description_long = form.description_long.data.strip()
-                await existing_chapter.save()
-                msg = "Chapter updated"
-
-            else:
-                book = await CampaignBook.get(form.data.get("book_id"), fetch_links=True)
-                new_chapter = CampaignBookChapter(
-                    name=form.name.data.strip().title(),
-                    description_short=form.description_short.data.strip(),
-                    description_long=form.description_long.data.strip(),
-                    book=str(book.id),
-                    number=max([c.number for c in await book.fetch_chapters()], default=0) + 1,
-                )
-                await new_chapter.save()
-                book.chapters.append(new_chapter)
-                await book.save()
-                msg = "Chapter created"
-
-            await post_to_audit_log(
-                msg=f"{campaign.name} Chapter - {msg}",
-                view=self.__class__.__name__,
-            )
-
-            return True, msg, None
-
-        return False, "", form
-
     async def _post_campaign_description(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
         """Process the campaign description form."""
         form = await self._build_form(campaign)
@@ -404,74 +263,6 @@ class CampaignEditItem(MethodView):
                 await update_session()
 
             return True, "Campaign updated", None
-
-        return False, "", form
-
-    async def _post_note(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
-        """Process the note form."""
-        form = await self._build_form(campaign)
-
-        if await form.validate_on_submit():
-            if not form.data.get("note_id"):
-                if form.data["book_id"]:
-                    parent = await CampaignBook.get(form.data["book_id"], fetch_links=True)
-                else:
-                    parent = campaign
-
-                new_note = Note(
-                    text=form.data["text"].strip(),
-                    parent_id=str(parent.id),
-                    created_by=session["USER_ID"],
-                )
-                await new_note.save()
-                parent.notes.append(new_note)
-                await parent.save()
-                msg = "Note Added"
-            else:
-                existing_note = await Note.get(form.data["note_id"])
-                existing_note.text = form.data["text"]
-                await existing_note.save()
-                msg = "Note Updated"
-
-            await post_to_audit_log(
-                msg=f"{campaign.name} Note - {msg}",
-                view=self.__class__.__name__,
-            )
-
-            return True, msg, None
-
-        return False, "", form
-
-    async def _post_npc(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
-        """Process the NPC form."""
-        form = await self._build_form(campaign)
-
-        if await form.validate_on_submit():
-            if form.data.get("uuid"):
-                for npc in campaign.npcs:
-                    if npc.uuid == UUID(form.data["uuid"]):
-                        npc.name = form.data["name"].strip()
-                        npc.description = form.data["description"].strip()
-                        npc.npc_class = form.data["npc_class"].strip()
-                        break
-                msg = f"NPC {form.data['name']} updated"
-            else:
-                campaign.npcs.append(
-                    CampaignNPC(
-                        name=form.data["name"].strip(),
-                        description=form.data["description"].strip(),
-                        npc_class=form.data["npc_class"].strip(),
-                    )
-                )
-                msg = f"NPC {form.data['name']} created"
-
-            await post_to_audit_log(
-                msg=f"{msg} in {campaign.name}",
-                view=self.__class__.__name__,
-            )
-            await campaign.save()
-
-            return True, msg, None
 
         return False, "", form
 
@@ -500,15 +291,6 @@ class CampaignEditItem(MethodView):
 
             case CampaignEditableInfo.BOOK:
                 form_is_processed, msg, form = await self._post_campaign_book(campaign)
-
-            case CampaignEditableInfo.CHAPTER:
-                form_is_processed, msg, form = await self._post_campaign_chapter(campaign)
-
-            case CampaignEditableInfo.NOTE:
-                form_is_processed, msg, form = await self._post_note(campaign)
-
-            case CampaignEditableInfo.NPC:
-                form_is_processed, msg, form = await self._post_npc(campaign)
 
             case _:
                 assert_never(self.edit_type)
@@ -539,15 +321,6 @@ class CampaignEditItem(MethodView):
             case CampaignEditableInfo.BOOK:
                 msg = await self._delete_campaign_book(campaign)
                 return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id, success_msg=msg)}"</script>'
-
-            case CampaignEditableInfo.CHAPTER:
-                msg = await self._delete_campaign_chapter()
-
-            case CampaignEditableInfo.NOTE:
-                msg = await self._delete_note(campaign)
-
-            case CampaignEditableInfo.NPC:
-                msg = await self._delete_npc(campaign)
 
             case _:
                 assert_never(self.edit_type)

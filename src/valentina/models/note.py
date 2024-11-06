@@ -29,6 +29,7 @@ class Note(Document):
     date_modified: datetime = Field(default_factory=time_now)
     text: str
     parent_id: str  # campaign_id, book_id, or character_id
+    guild_id: int | None = Field(default=None)
 
     @before_event(Insert, Replace, Save, Update, SaveChanges)  # pragma: no cover
     async def update_modified_date(self) -> None:
