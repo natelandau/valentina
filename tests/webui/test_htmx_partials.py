@@ -30,10 +30,10 @@ async def test_setup(
 ) -> tuple[Character, Campaign, User, CampaignBook, "TestClientProtocol"]:  # noqa: F405
     """Create base test environment."""
     guild = await guild_factory.build().insert()
-    user = await user_factory.build().insert()
-    character = await character_factory.build(guild=guild.id).insert()
-    campaign = await campaign_factory.build(guild=guild.id).insert()
-    book = await book_factory.build(campaign=str(campaign.id)).insert()
+    user = await user_factory.build(macros=[]).insert()
+    character = await character_factory.build(guild=guild.id, inventory=[], notes=[]).insert()
+    campaign = await campaign_factory.build(guild=guild.id, books=[], npcs=[], notes=[]).insert()
+    book = await book_factory.build(campaign=str(campaign.id), chapters=[], notes=[]).insert()
     campaign.books.append(book)
     await campaign.save()
 
@@ -141,12 +141,12 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
             "npcs",
             {
                 "name": "test name",
-                "class": "test class",
+                "npc_class": "test class",
                 "description": "test description",
             },
             {
                 "name": "test name updated",
-                "class": "test class updated",
+                "npc_class": "test class updated",
                 "description": "test description updated",
             },
         ),
@@ -204,12 +204,14 @@ async def test_crud_operations(
 
     # Create
     create_data = {**test_data, parent_id_field: str(parent.id)} if parent_id_field else test_data
+
     response = await test_client.put(f"{base_url}?parent_id={parent.id}", json=create_data)
 
     assert response.status_code == 200
 
     # Verify creation
     parent = await parent_object.get(parent.id, fetch_links=True)
+
     items = getattr(parent, parent_link_field)
 
     assert len(items) == 1
