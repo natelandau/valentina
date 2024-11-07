@@ -18,7 +18,7 @@ from valentina.models import (
     User,
     UserMacro,
 )
-from valentina.utils import truncate_string
+from valentina.utils import console, truncate_string
 from valentina.webui import catalog
 from valentina.webui.constants import TableType
 from valentina.webui.utils import create_toast, fetch_active_campaign
@@ -397,10 +397,14 @@ class EditTableView(MethodView):
             On success: Rendered HTML fragment showing the newly created item
             On validation failure: Re-rendered form with error messages
         """
+        console.rule("PUT")
+        console.log("request.args", request.args)
+
         item: Note | InventoryItem | CampaignNPC | UserMacro
 
         parent_id = ""
         form = await self._build_form()
+        console.log("form.data", form.data)
 
         if await form.validate_on_submit():
             match self.table_type:
@@ -430,6 +434,8 @@ class EditTableView(MethodView):
                     msg = f"Create Note: `{truncate_string(item.text, 10)}`"
 
                 case TableType.CHAPTER:
+                    console.rule("CHAPTER")
+                    console.log("form.data", form.data)
                     book = await CampaignBook.get(form.data["book_id"], fetch_links=True)
 
                     if not book:

@@ -208,6 +208,8 @@ async def test_crud_operations(
     response = await test_client.put(
         f"{base_url}?parent_id={parent.id}", json=create_data, follow_redirects=True
     )
+    response_text = await response.get_data(as_text=True)
+    debug("response_text", response_text)
 
     assert response.status_code == 200
 
