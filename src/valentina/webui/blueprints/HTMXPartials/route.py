@@ -201,7 +201,6 @@ class EditTableView(MethodView):
                     data["description"] = item.description
                     data["type"] = item.type
                     data["character_id"] = item.character
-
                 return await InventoryItemForm().create_form(data=data)
 
             case TableType.NPC:
@@ -432,7 +431,7 @@ class EditTableView(MethodView):
 
                 case TableType.CHAPTER:
                     book = await CampaignBook.get(form.data["book_id"], fetch_links=True)
-                    logger.warning(f"book: {book}")
+
                     if not book:
                         abort(400, "Invalid book ID")
 

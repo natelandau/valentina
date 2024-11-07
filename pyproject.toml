@@ -165,6 +165,7 @@
         "VALENTINA_AWS_SECRET_ACCESS_KEY=secred_access_key",
         "VALENTINA_S3_BUCKET_NAME=bucket",
         "VALENTINA_TEST_CONFIG_KEY=testing",
+        "WTF_CSRF_ENABLED=false",
     ]
     filterwarnings = ["error", "ignore::DeprecationWarning"]
     markers = [

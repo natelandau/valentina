@@ -16,31 +16,31 @@
 {% endif %}
 
 <tr class="fade-me-out">
-    {% if TableType.name == "NOTE" %}
+    {%- if TableType.name == "NOTE" -%}
         <td>{{ item.text | from_markdown_no_p | safe }}</td>
-    {% elif TableType.name == "INVENTORYITEM" %}
+    {%- elif TableType.name == "INVENTORYITEM" -%}
         <td style="white-space: nowrap;">
-            <strong>{{ item.name | from_markdown | safe }}</strong>
+            <strong>{{- item.name | escape -}}</strong>
         </td>
-        <td>{{ item.type | capitalize | escape }}</td>
-        <td>{{ item.description | from_markdown | safe }}</td>
-    {% elif TableType.name == "NPC" %}
+        <td>{{- item.type | capitalize | escape -}}</td>
+        <td>{{- item.description | from_markdown | safe -}}</td>
+    {%- elif TableType.name == "NPC" -%}
         <td>{{ item.name | capitalize | escape }}</td>
         <td>{{ item.npc_class | escape }}</td>
         <td>{{ item.description | from_markdown | safe }}</td>
-    {% elif TableType.name == "MACRO" %}
+    {%- elif TableType.name == "MACRO" -%}
         <td>{{ item.name | capitalize | escape }}</td>
         <td>{{ item.abbreviation | escape }}</td>
         <td>{{ item.description | from_markdown | safe }}</td>
         <td>{{ item.trait_one | escape }}</td>
         <td>{{ item.trait_two | escape }}</td>
-    {% elif TableType.name == "CHAPTER" %}
+    {%- elif TableType.name == "CHAPTER" -%}
         <td>{{ item.number | escape }}</td>
         <td>{{ item.name | capitalize | escape }}</td>
         <td>{{ item.description_long | from_markdown | safe }}</td>
-    {% endif %}
+    {%- endif -%}
 
-    {% if can_edit %}
+    {%- if can_edit %}
         <td>
             <div class="btn-group">
                 <button class="btn btn-sm btn-outline-primary"
