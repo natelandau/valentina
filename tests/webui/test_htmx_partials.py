@@ -205,7 +205,9 @@ async def test_crud_operations(
     # Create
     create_data = {**test_data, parent_id_field: str(parent.id)} if parent_id_field else test_data
 
-    response = await test_client.put(f"{base_url}?parent_id={parent.id}", json=create_data)
+    response = await test_client.put(
+        f"{base_url}?parent_id={parent.id}", json=create_data, follow_redirects=True
+    )
 
     assert response.status_code == 200
 
@@ -219,7 +221,9 @@ async def test_crud_operations(
     item_id = getattr(item, id_field)
 
     # Get the created item's table row partial
-    response = await test_client.get(f"{base_url}?item_id={item_id}&parent_id={parent.id}")
+    response = await test_client.get(
+        f"{base_url}?item_id={item_id}&parent_id={parent.id}", follow_redirects=True
+    )
     assert response.status_code == 200
 
     # Update
@@ -227,11 +231,14 @@ async def test_crud_operations(
     response = await test_client.post(
         f"{base_url}?item_id={item_id}&parent_id={parent.id}",
         json=update_data,
+        follow_redirects=True,
     )
     assert response.status_code == 200
 
     # Delete
-    response = await test_client.delete(f"{base_url}?item_id={item_id}&parent_id={parent.id}")
+    response = await test_client.delete(
+        f"{base_url}?item_id={item_id}&parent_id={parent.id}", follow_redirects=True
+    )
     assert response.status_code == 200
 
     if model:
