@@ -186,10 +186,15 @@ async def test_crud_operations(
     parent_link_field,
     test_data,
     update_data,
+    mocker,
 ):
     """Test create, update, and delete operations."""
     character, campaign, user, book, test_client = test_setup
     base_url = f"/partials/table/{table_type.value.route_suffix}"
+
+    mocker.patch(
+        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
+    )
 
     # Get appropriate parent based on table type
     parent = (
