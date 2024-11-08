@@ -1,3 +1,9 @@
+## v3.1.1 (2024-11-08)
+
+### Fix
+
+- **webui**: fix users with multiple guilds running valentina
+
 ## v3.1.0 (2024-11-08)
 
 ### Feat
