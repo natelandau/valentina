@@ -16,14 +16,13 @@
             hx-get="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id) }}"
             hx-trigger="click"
             hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value.div_id }}"
-            hx-swap="innerHTML">Create New Section</button>
+            hx-swap="innerHTML swap:1s">Create New Section</button>
 {% endif %}
-<h2>
-    Sheet Sections&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Information about the character. Can have multiple paragraphs and use markdown for formatting</small></span>
-</h2>
-<hr class="border border-primary border-2 opacity-75">
 
-<div id="{{ CharacterEditableInfo.CUSTOM_SECTION.value.div_id }}">
+<global.Subtitle title="Sheet Sections" header_size="h2" subtitle="Optional sections to add additional information to the character sheet" />
+
+<div id="{{ CharacterEditableInfo.CUSTOM_SECTION.value.div_id }}"
+     class="fade-me-out">
     {% if character.sheet_sections %}
         <div class="row g-2 row-cols-sm-2 row-cols-md-3 g-2">
             {% for section in character.sheet_sections | sort(attribute="title") %}
@@ -43,13 +42,11 @@
                                         hx-swap="innerHTML"
                                         class="btn btn-sm btn-primary">Edit</button>
                                 <button class="btn btn-sm btn-outline-danger"
-                                    hx-delete="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id, uuid=section.uuid) }}"
-                                    {# hx-target="#{{ CharacterEditableInfo.CUSTOM_SECTION.value.div_id }}" #}
-                                    hx-confirm="Are you sure?"
-                                    hx-target="closest #custom-section-item"
-                                    hx-swap="outerHTML swap:1s"
-                                    hx-trigger="click">Delete
-                                </button>
+                                        hx-delete="{{ url_for(CharacterEditableInfo.CUSTOM_SECTION.value.route, character_id=character.id, uuid=section.uuid) }}"
+                                        hx-confirm="Are you sure?"
+                                        hx-target="closest #custom-section-item"
+                                        hx-swap="outerHTML swap:1s"
+                                        hx-trigger="click">Delete</button>
                             </div>
                         {% endif %}
                     </div>

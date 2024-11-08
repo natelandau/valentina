@@ -1,41 +1,69 @@
 {# def
     campaign: Campaign,
-    CampaignEditableInfo: CampaignEditableInfo,
     can_manage_campaign: bool = False,
+    text_type_campaign_desc: TextType,
+    campaign_data: dict,
 #}
 
-{% if can_manage_campaign %}
-    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
-            hx-get="{{ url_for(CampaignEditableInfo.DESCRIPTION.value.route, campaign_id=campaign.id) }}"
-            hx-trigger="click"
-            hx-target="#{{ CampaignEditableInfo.DESCRIPTION.value.div_id }}"
-            hx-swap="innerHTML">Edit</button>
-{% endif %}
-<h2>Campaign Overview</h2>
-<hr class="border border-primary border-2 opacity-75">
+{% set danger_bg_color = "bg-danger" if campaign.danger > 3 else "bg-danger-subtle" if campaign.danger > 0 else "bg-success-subtle" %}
 
-<div class="row justify-content-start"
-     id="{{ CampaignEditableInfo.DESCRIPTION.value.div_id }}">
-    <div class="col-2 sticky-top ps-0">
-        <table class="table table-sm table-borderless table-light border border-dark-subtle rounded-5">
-            <tr>
-                <th>Danger</th>
-                <td>{{ campaign.danger }}</td>
-            </tr>
-            <tr>
-                <th>Desperation</th>
-                <td>{{ campaign.desperation }}</td>
-            </tr>
-        </table>
+{% set desperation_bg_color = "bg-danger" if campaign.desperation > 3 else "bg-danger-subtle" if campaign.desperation > 0 else "bg-success-subtle" %}
+
+<div class="row">
+    <div class="col-sm-12 col-md-6 col-lg-4 col-xl-3 mb-4 mb-md-0">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <global.Subtitle title={{ campaign.name ~ " Info" }} header_size="h4" />
+
+                <table class="table table-borderless table-sm">
+                    <tr>
+                        <td class="text-nowrap {{ desperation_bg_color }}">
+                            <strong>Desperation Level:</strong>
+                        </td>
+                        <td class="font-monospace {{ desperation_bg_color }}">{{ campaign.desperation }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-nowrap {{ danger_bg_color }}">
+                            <strong>Danger Level:</strong>
+                        </td>
+                        <td class="font-monospace {{ danger_bg_color }}">{{ campaign.danger }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-nowrap">
+                            <strong>Num Books:</strong>
+                        </td>
+                        <td class="font-monospace">{{ campaign_data.num_books }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-nowrap">
+                            <strong>Num Player Characters:</strong>
+                        </td>
+                        <td class="font-monospace">{{ campaign_data.num_player_characters }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-nowrap">
+                            <strong>Total Available XP:</strong>
+                        </td>
+                        <td class="font-monospace">{{ campaign_data.available_xp }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-nowrap">
+                            <strong>Total XP Earned:</strong>
+                        </td>
+                        <td class="font-monospace">{{ campaign_data.total_xp }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-nowrap">
+                            <strong>Total Cool Points Earned:</strong>
+                        </td>
+                        <td class="font-monospace">{{ campaign_data.cool_points }}</td>
+                    </tr>
+                </table>
+
+            </div>
+        </div>
     </div>
-    <div class="col">
-        {% if campaign.description %}
-            {{ campaign.description | from_markdown }}
-        {% else %}
-            <p>
-                No description yet.
-                {% if can_manage_campaign %}Click the edit button to add one.{% endif %}
-            </p>
-        {% endif %}
+    <div class="col-sm-12 col-md-6 col-lg-8 col-xl-9">
+        <HTMXPartials.EditText.TextParentPartial TextType={{ text_type_campaign_desc }} text={{ campaign.description }} can_edit={{ can_manage_campaign }} parent_id={{ campaign.id }} />
     </div>
 </div>

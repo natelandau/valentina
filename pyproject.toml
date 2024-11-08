@@ -21,7 +21,7 @@
         "numpy>=2.1.1,<2.2.0",
         "py-cord>=2.6.1,<2.7.0",
         "pydantic>=2.9.2,<3.0.0",
-        "pygithub>=2.4.0,<3.0.0",
+        "pygithub>=2.4.0",
         "quart-flask-patch>=0.3.0",
         "quart-session>=3.0.0",
         "quart-wtforms>=1.0.2",
@@ -29,7 +29,7 @@
         "redis>=5.1.0,<6.0.0",
         "rich>=13.8.1",
         "semver>=3.0.2",
-        "typer>=0.12.5,<0.13.0",
+        "typer>=0.13.0,<0.14.0",
     ]
     description = "Valentina is a Discord bot that helps you run TTRPGs."
     license = "AGPL-3.0-or-later"
@@ -50,7 +50,7 @@
         "coverage>=7.6.1",
         "dirty-equals>=0.8.0",
         "djlint>=1.35.2",
-        "mypy>=1.11.2,<2.0.0",
+        "mypy>=1.11.2",
         "poethepoet>=0.29.0",
         "polyfactory>=2.17.0",
         "pre-commit>=3.8.0",
@@ -214,6 +214,7 @@
             "ANN101",   # missing-type-self
             "ANN204",   # Missing return type annotation for special method `__init__`
             "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed,
+            "ARG005",   # Unused lambda argument
             "ASYNC110", # Use `anyio.Event` instead of awaiting `anyio.sleep` in a `while` loop
             "B006",     # mutable-argument-default
             "B008",     # function-call-in-default-argument
@@ -258,7 +259,7 @@
         ], "migrations/*.py" = [
             "ARG002",
             "PLR6301",
-        ], "tests/*.py" = [
+        ], "tests/**/*.py" = [
             "A002",
             "A003",
             "ANN201",  # Missing return type annotation
@@ -266,6 +267,7 @@
             "D102",
             "ERA001",  # Commented out code
             "F403",
+            "F405",    # May be undefined from type imports
             "PLR0913",
             "PLR2004",
             "S101",

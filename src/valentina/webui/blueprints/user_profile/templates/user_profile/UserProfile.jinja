@@ -26,8 +26,7 @@
         <div class="col-xl-4 col-md-5 mb-6">
             <div class="card h-100 shadow">
                 <div class="card-body">
-                    <h4>User Info</h4>
-                    <hr class="border border-primary border-2 opacity-75">
+                    <global.Subtitle title="User Info" header_size="h4" />
                     <table class="table table-borderless table-sm">
                         <tr>
                             <td class="text-nowrap">
@@ -69,8 +68,8 @@
         <div class="col-xl-4 col-md-6 mb-6">
             <div class="card h-100 shadow">
                 <div class="card-body">
-                    <h4>Experience</h4>
-                    <hr class="border border-primary border-2 opacity-75">
+                    <global.Subtitle title="Experience" header_size="h4" />
+
                     <table class="table table-borderless table-sm">
                         <tr>
                             <td>
@@ -121,8 +120,7 @@
         <a class="btn btn-outline-primary btn-sm ms-3 float-end"
            href="{{ url_for('character_create.start') }}"><i class="fa-solid fa-person-circle-plus"></i> Create Character</a>
     {%- endif %}
-    <h2>{{ user.name }}'s characters</h2>
-    <hr class="border border-primary border-2 opacity-75">
+    <global.Subtitle title={{ user.name ~ "'s characters" | capitalize }} header_size="h2" />
     <div id="characters" class="mb-5">
         {%- if user.characters %}
             <table class="table table-hover">

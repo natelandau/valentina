@@ -1,11 +1,12 @@
 """Routes for handling HTMX partials."""
 
-from typing import TYPE_CHECKING, assert_never
+from typing import assert_never
 from uuid import UUID
 
 from loguru import logger
 from quart import abort, request, session
 from quart.views import MethodView
+from quart_wtf import QuartForm
 
 from valentina.models import (
     Campaign,
@@ -20,20 +21,25 @@ from valentina.models import (
 )
 from valentina.utils import truncate_string
 from valentina.webui import catalog
-from valentina.webui.constants import TableType
-from valentina.webui.utils import create_toast, fetch_active_campaign
+from valentina.webui.constants import TableType, TextType
+from valentina.webui.utils import (
+    create_toast,
+    fetch_active_campaign,
+    fetch_active_character,
+    sync_channel_to_discord,
+    update_session,
+)
 from valentina.webui.utils.discord import post_to_audit_log
 
 from .forms import (
     CampaignChapterForm,
+    CampaignDescriptionForm,
     CampaignNPCForm,
+    CharacterBioForm,
     InventoryItemForm,
     NoteForm,
     UserMacroForm,
 )
-
-if TYPE_CHECKING:
-    from quart_wtf import QuartForm
 
 
 class EditTableView(MethodView):
@@ -602,3 +608,159 @@ class EditTableView(MethodView):
         )
 
         return create_toast(msg, level="SUCCESS")
+
+
+class EditTextView(MethodView):
+    """Handle CRUD operations for text items."""
+
+    def __init__(self, text_type: TextType):
+        """Initialize view with specified text type."""
+        self.text_type: TextType = text_type
+
+    async def _build_form(self) -> "QuartForm":
+        """Build the appropriate form based on text type."""
+        data = {}
+
+        match self.text_type:
+            case TextType.BIOGRAPHY:
+                character = await fetch_active_character(request.args.get("parent_id"))
+                data["bio"] = character.bio
+                data["character_id"] = str(character.id)
+
+                return await CharacterBioForm().create_form(data=data)
+
+            case TextType.CAMPAIGN_DESCRIPTION:
+                campaign = await fetch_active_campaign(request.args.get("parent_id"))
+                data["name"] = campaign.name
+                data["description"] = campaign.description
+                data["campaign_id"] = str(campaign.id)
+
+                return await CampaignDescriptionForm().create_form(data=data)
+
+            case _:  # pragma: no cover
+                assert_never(self.text_type)
+
+    async def _update_character_bio(self, form: QuartForm) -> tuple[str, str]:
+        """Update the character bio.
+
+        Args:
+            form: The form data
+
+        Returns:
+            A tuple containing the updated text and message
+        """
+        character = await fetch_active_character(request.args.get("parent_id"))
+        character.bio = form.data["bio"]
+        await character.save()
+        text = character.bio
+        msg = f"{character.name} bio updated"
+        return text, msg
+
+    async def _update_campaign_description(self, form: QuartForm) -> tuple[str, str]:
+        """Update the campaign description and name.
+
+        Args:
+            form: The form data
+
+        Returns:
+            A tuple containing the updated text and message
+        """
+        campaign = await fetch_active_campaign(request.args.get("parent_id"))
+
+        is_renamed = campaign.name.strip().lower() != form.data["name"].strip().lower()
+
+        campaign.name = form.data["name"].strip().title()
+        campaign.description = form.data["campaign_description"].strip()
+        await campaign.save()
+        text = form.data["campaign_description"].strip()
+        msg = f"{campaign.name} description updated"
+
+        if is_renamed:
+            await sync_channel_to_discord(obj=campaign, update_type="update")
+            await update_session()
+
+        return text, msg
+
+    async def get(self) -> str:
+        """Return just the text for a text item.
+
+        Returns:
+            Rendered HTML fragment containing the text suitable for HTMX integration
+        """
+        match self.text_type:
+            case TextType.BIOGRAPHY:
+                character = await fetch_active_character(request.args.get("parent_id"))
+                text = character.bio
+
+            case TextType.CAMPAIGN_DESCRIPTION:
+                campaign = await fetch_active_campaign(request.args.get("parent_id"))
+                text = campaign.description
+
+            case _:  # pragma: no cover
+                assert_never(self.text_type)
+
+        return catalog.render(
+            "HTMXPartials.EditText.TextDisplayPartial",
+            TextType=self.text_type,
+            text=text,
+        )
+
+    async def put(self) -> str:
+        """Put the text item."""
+        form = await self._build_form()
+
+        if await form.validate_on_submit():
+            match self.text_type:
+                case TextType.BIOGRAPHY:
+                    text, msg = await self._update_character_bio(form)
+
+                case TextType.CAMPAIGN_DESCRIPTION:
+                    text, msg = await self._update_campaign_description(form)
+
+            await post_to_audit_log(
+                msg=msg,
+                view=self.__class__.__name__,
+            )
+
+            return catalog.render(
+                "HTMXPartials.EditText.TextDisplayPartial",
+                TextType=self.text_type,
+                text=text,
+            )
+
+        return catalog.render(
+            "HTMXPartials.EditText.TextFormPartial",
+            TextType=self.text_type,
+            form=form,
+            method="PUT",
+        )
+
+    async def post(self) -> str:
+        """Post the text item."""
+        form = await self._build_form()
+
+        if await form.validate_on_submit():
+            match self.text_type:
+                case TextType.BIOGRAPHY:
+                    text, msg = await self._update_character_bio(form)
+
+                case TextType.CAMPAIGN_DESCRIPTION:
+                    text, msg = await self._update_campaign_description(form)
+
+            await post_to_audit_log(
+                msg=msg,
+                view=self.__class__.__name__,
+            )
+
+            return catalog.render(
+                "HTMXPartials.EditText.TextDisplayPartial",
+                TextType=self.text_type,
+                text=text,
+            )
+
+        return catalog.render(
+            "HTMXPartials.EditText.TextFormPartial",
+            TextType=self.text_type,
+            form=form,
+            method="POST",
+        )

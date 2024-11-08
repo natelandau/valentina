@@ -172,10 +172,6 @@ class CampaignFactory(BeanieDocumentFactory[Campaign]):
     def notes(cls) -> list:
         return []
 
-    # @classmethod
-    # def characters(cls) -> list:
-    #     return []
-
 
 @register_fixture
 class UserFactory(BeanieDocumentFactory[User]):
@@ -299,6 +295,10 @@ class CharacterFactory(BeanieDocumentFactory[Character]):
     __max_collection_length__ = 3
     __randomize_collection_length__ = True
     __set_as_default_factory_for_type__ = True
+
+    @classmethod
+    def bio(cls) -> str | None:
+        return cls.__faker__.paragraph(nb_sentences=3)
 
     @classmethod
     def channel(cls) -> GuildChannels:

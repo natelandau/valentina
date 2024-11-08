@@ -1,0 +1,18 @@
+{# def
+    header_size: Literal["h1", "h2", "h3", "h4", "h5", "h6"] = "h2",
+    title: str,
+    subtitle: str = "",
+#}
+
+{% set border_size = "border-2" if header_size in ["h1", "h2", "h3"] else "border-1" %}
+
+<{{ header_size }}>
+{{ title }}
+{%- if subtitle %}
+    &nbsp;&nbsp;<span class="text-muted fs-6 fw-light">
+    <small>{{ subtitle }}</small>
+</span>
+{%- endif %}
+</{{ header_size }}>
+
+<hr class="border border-primary {{ border_size }} opacity-75">

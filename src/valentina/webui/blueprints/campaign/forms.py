@@ -5,28 +5,6 @@ from wtforms import HiddenField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length
 
 
-class CampaignDescriptionForm(QuartForm):
-    """Form for editing a campaign description."""
-
-    title = "Campaign Overview"
-
-    name = StringField(
-        "Campaign Name",
-        default="",
-        validators=[DataRequired(), Length(min=3, message="Must be at least 3 characters")],
-        filters=[str.strip, str.title],
-    )
-
-    description = TextAreaField(
-        "Description",
-        validators=[DataRequired(), Length(min=3, message="Must be at least 3 characters")],
-        description="Markdown is supported",
-    )
-
-    item_id = HiddenField()
-    submit = SubmitField("Submit")
-
-
 class CampaignBookForm(QuartForm):
     """Form for editing a campaign book."""
 

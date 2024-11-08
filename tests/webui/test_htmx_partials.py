@@ -1,8 +1,6 @@
 # type: ignore
 """Test the HTMX partials blueprint."""
 
-from typing import Any
-
 import pytest
 
 from tests.factories import *
@@ -15,11 +13,13 @@ from valentina.models import (
     Note,
     User,
 )
-from valentina.webui.constants import TableType
+from valentina.webui.constants import TableType, TextType
+from valentina.webui.utils import from_markdown
 
 
 @pytest.fixture
 async def test_setup(
+    debug,
     character_factory,
     mock_session,
     test_client,
@@ -27,12 +27,19 @@ async def test_setup(
     guild_factory,
     campaign_factory,
     book_factory,
-) -> tuple[Character, Campaign, User, CampaignBook, "TestClientProtocol"]:  # noqa: F405
+) -> tuple[Character, Campaign, User, CampaignBook, "TestClientProtocol"]:
     """Create base test environment."""
     guild = await guild_factory.build().insert()
     user = await user_factory.build(macros=[]).insert()
-    character = await character_factory.build(guild=guild.id, inventory=[], notes=[]).insert()
-    campaign = await campaign_factory.build(guild=guild.id, books=[], npcs=[], notes=[]).insert()
+    character = await character_factory.build(
+        guild=guild.id,
+        inventory=[],
+        notes=[],
+        bio=None,
+    ).insert()
+    campaign = await campaign_factory.build(
+        guild=guild.id, books=[], npcs=[], notes=[], description=None
+    ).insert()
     book = await book_factory.build(campaign=str(campaign.id), chapters=[], notes=[]).insert()
     campaign.books.append(book)
     await campaign.save()
@@ -56,14 +63,13 @@ async def test_setup(
     ],
 )
 @pytest.mark.drop_db
-async def test_form_load(test_setup, table_type, id_field, parent_id_source):
+async def test_edit_table_form_load(test_setup, table_type, id_field, parent_id_source):
     """Test form load returns empty form."""
     character, campaign, user, book, test_client = test_setup
 
-    # Dynamically get parent_id from either book or character based on table type
-    # This allows us to test both chapter forms (which need book.id) and other forms (which need character.id)
-    parent_id = locals()[parent_id_source].id
-    # parent_id = campaign.id if table_type == TableType.NPC else parent_id
+    # Map source names to their corresponding objects
+    parent_id_map = {"character": character, "campaign": campaign, "book": book, "user": user}
+    parent_id = parent_id_map[parent_id_source].id
 
     url = f"/partials/table/{table_type.value.route_suffix}?parent_id={parent_id}"
 
@@ -78,15 +84,15 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
 
 @pytest.mark.parametrize(
     (
-        "table_type",
-        "model",
-        "id_field",  # The field on the object that is its unique identifier. typically "id"
-        "parent_object",
-        "parent_id_field",  # Field on the target object that references it's parent id.
-        "parent_link_field",  # Field on the parent object that is a list of target objects.
-        "test_data",
-        "update_data",
-        "parent_selector",  # New parameter to determine parent
+        "table_type",  # TableType enum value
+        "model_class",  # Database model for the item being edited
+        "primary_key_field",  # Name of the primary key field in the model, typically "id" or "uuid"
+        "parent_model",  # Database model that owns/contains this item
+        "parent_key_field",  # Field on the parent object that contains the parent's primary key
+        "parent_collection",  # Name of collection field in parent that stores these items
+        "creation_data",  # Test data for creating new items
+        "update_data",  # Test data for updating existing items
+        "get_parent_instance",  # Function to get the parent object for testing
     ),
     [
         (
@@ -98,7 +104,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
             "notes",
             {"text": "test note"},
             {"text": "updated note"},
-            lambda character, campaign, user, book: character,  # noqa: ARG005
+            lambda character, campaign, user, book: character,
         ),
         (
             TableType.NOTE,
@@ -109,7 +115,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
             "notes",
             {"text": "test note"},
             {"text": "updated note"},
-            lambda character, campaign, user, book: book,  # noqa: ARG005
+            lambda character, campaign, user, book: book,
         ),
         (
             TableType.NOTE,
@@ -120,7 +126,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
             "notes",
             {"text": "test note"},
             {"text": "updated note"},
-            lambda character, campaign, user, book: campaign,  # noqa: ARG005
+            lambda character, campaign, user, book: campaign,
         ),
         (
             TableType.INVENTORYITEM,
@@ -139,7 +145,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
                 "description": "updated description",
                 "type": "CONSUMABLE",
             },
-            lambda character, campaign, user, book: character,  # noqa: ARG005
+            lambda character, campaign, user, book: character,
         ),
         (
             TableType.CHAPTER,
@@ -158,7 +164,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
                 "description_short": "test short description updated",
                 "description_long": "test long description updated",
             },
-            lambda character, campaign, user, book: book,  # noqa: ARG005
+            lambda character, campaign, user, book: book,
         ),
         (
             TableType.NPC,
@@ -177,7 +183,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
                 "npc_class": "test class updated",
                 "description": "test description updated",
             },
-            lambda character, campaign, user, book: campaign,  # noqa: ARG005
+            lambda character, campaign, user, book: campaign,
         ),
         (
             TableType.MACRO,
@@ -200,23 +206,23 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
                 "trait_one": "Strength",
                 "trait_two": "Dexterity",
             },
-            lambda character, campaign, user, book: user,  # noqa: ARG005
+            lambda character, campaign, user, book: user,
         ),
     ],
 )
 @pytest.mark.drop_db
-async def test_crud_operations(
+async def test_edit_table_crud_operations(
     debug,
     test_setup,
     table_type,
-    model,
-    id_field,
-    parent_object,
-    parent_id_field,
-    parent_link_field,
-    test_data,
+    model_class,
+    primary_key_field,
+    parent_model,
+    parent_key_field,
+    parent_collection,
+    creation_data,
     update_data,
-    parent_selector,
+    get_parent_instance,
     mocker,
 ):
     """Test create, update, and delete operations."""
@@ -226,12 +232,17 @@ async def test_crud_operations(
     mocker.patch(
         "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
     )
-
+    mocker.patch(
+        "valentina.webui.blueprints.HTMXPartials.route.sync_channel_to_discord", return_value=None
+    )
+    mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
     # Get appropriate parent based on table type
-    parent = parent_selector(character, campaign, user, book)
+    parent = get_parent_instance(character, campaign, user, book)
 
     # Create
-    create_data = {**test_data, parent_id_field: str(parent.id)} if parent_id_field else test_data
+    create_data = (
+        {**creation_data, parent_key_field: str(parent.id)} if parent_key_field else creation_data
+    )
 
     response = await test_client.put(
         f"{base_url}?parent_id={parent.id}", json=create_data, follow_redirects=True
@@ -239,13 +250,13 @@ async def test_crud_operations(
     assert response.status_code == 200
 
     # Verify creation
-    parent = await parent_object.get(parent.id, fetch_links=True)
+    parent = await parent_model.get(parent.id, fetch_links=True)
 
-    items = getattr(parent, parent_link_field)
+    items = getattr(parent, parent_collection)
 
     assert len(items) == 1
     item = items[0]
-    item_id = getattr(item, id_field)
+    item_id = getattr(item, primary_key_field)
 
     # Get the created item's table row partial
     response = await test_client.get(
@@ -268,10 +279,118 @@ async def test_crud_operations(
     )
     assert response.status_code == 200
 
-    if model:
-        assert await model.get(item_id) is None
+    if model_class:
+        assert await model_class.get(item_id) is None
 
     # Verify deletion
-    parent = await parent_object.get(parent.id, fetch_links=True)
-    items = getattr(parent, parent_link_field)
+    parent = await parent_model.get(parent.id, fetch_links=True)
+    items = getattr(parent, parent_collection)
     assert len(items) == 0
+
+
+@pytest.mark.parametrize(
+    ("text_type", "get_parent_instance"),
+    [
+        (TextType.BIOGRAPHY, lambda character, campaign, user, book: character),
+        (TextType.CAMPAIGN_DESCRIPTION, lambda character, campaign, user, book: campaign),
+    ],
+)
+@pytest.mark.drop_db
+async def test_edit_text_form_load(debug, test_setup, text_type, get_parent_instance):
+    """Test form load returns empty form."""
+    character, campaign, user, book, test_client = test_setup
+
+    # Get appropriate parent based on table type
+    parent = get_parent_instance(character, campaign, user, book)
+
+    url = f"/partials/text/{text_type.value.route_suffix}?parent_id={parent.id}"
+
+    response = await test_client.put(url)
+    returned_text = await response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert f'value="{parent.id}">' in returned_text
+    if text_type.value.description:
+        assert f"{text_type.value.description}" in returned_text
+
+
+@pytest.mark.parametrize(
+    (
+        "text_type",
+        "parent_model",
+        "parent_field",
+        "get_parent_instance",
+        "creation_data",
+        "update_data",
+    ),
+    [
+        (
+            TextType.BIOGRAPHY,
+            Character,
+            "bio",
+            lambda character, campaign, user, book: character,
+            {"bio": "A communi observantia non est recedendum."},
+            {"bio": "Nec dubitamus multa iter quae et nos invenerat."},
+        ),
+        (
+            TextType.CAMPAIGN_DESCRIPTION,
+            Campaign,
+            "description",
+            lambda character, campaign, user, book: campaign,
+            {"campaign_description": "A communi observantia non est recedendum."},
+            {"campaign_description": "Nec dubitamus multa iter quae et nos invenerat."},
+        ),
+    ],
+)
+@pytest.mark.drop_db
+async def test_edit_text_form_crud_operations(
+    debug,
+    mocker,
+    test_setup,
+    text_type,
+    parent_model,
+    parent_field,
+    get_parent_instance,
+    creation_data,
+    update_data,
+):
+    """Test create, update, and delete operations."""
+    mocker.patch(
+        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
+    )
+    mocker.patch(
+        "valentina.webui.blueprints.HTMXPartials.route.sync_channel_to_discord", return_value=None
+    )
+    mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
+
+    character, campaign, user, book, test_client = test_setup
+    parent = get_parent_instance(character, campaign, user, book)
+
+    # Create
+    response = await test_client.put(
+        f"/partials/text/{text_type.value.route_suffix}?parent_id={parent.id}",
+        json=creation_data,
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    parent = await parent_model.get(parent.id)
+    assert getattr(parent, parent_field) == creation_data[next(iter(creation_data.keys()))]
+
+    # Get the created item's table text partial
+    response = await test_client.get(
+        f"/partials/text/{text_type.value.route_suffix}?parent_id={parent.id}",
+        follow_redirects=True,
+    )
+    response_text = await response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert response_text == from_markdown(creation_data[next(iter(creation_data.keys()))])
+
+    # Update
+    response = await test_client.post(
+        f"/partials/text/{text_type.value.route_suffix}?parent_id={parent.id}",
+        json=update_data,
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    parent = await parent_model.get(parent.id)
+    assert getattr(parent, parent_field) == update_data[next(iter(update_data.keys()))]

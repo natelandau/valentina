@@ -4,7 +4,7 @@ from typing import ClassVar, assert_never
 from uuid import UUID
 
 from flask_discord import requires_authorization
-from quart import abort, request, session, url_for
+from quart import abort, request, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from wtforms import (
@@ -15,22 +15,11 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Length
 
-from valentina.models import Character, CharacterSheetSection, Note
+from valentina.models import Character, CharacterSheetSection
 from valentina.webui import catalog
 from valentina.webui.constants import CharacterEditableInfo
 from valentina.webui.utils import create_toast, fetch_active_character, sync_channel_to_discord
 from valentina.webui.utils.discord import post_to_audit_log
-
-
-class BioForm(QuartForm):
-    """A form for editing the character biography."""
-
-    bio = TextAreaField(
-        "Biography",
-        description="Write a biography for the character. Markdown is supported.",
-    )
-    character_id = HiddenField()
-    submit = SubmitField("Submit")
 
 
 class CustomSectionForm(QuartForm):
@@ -79,11 +68,6 @@ class EditCharacterInfo(MethodView):
 
                 return await CustomSectionForm().create_form(data=data)
 
-            case CharacterEditableInfo.BIOGRAPHY:
-                data["bio"] = character.bio
-                data["character_id"] = str(character.id)
-                return await BioForm().create_form(data=data)
-
             case CharacterEditableInfo.DELETE:
                 return await DeleteCharacterForm().create_form()
 
@@ -108,37 +92,6 @@ class EditCharacterInfo(MethodView):
         await character.save()
 
         return "Custom section deleted"
-
-    async def _delete_note(self, character: Character) -> str:
-        """Delete the note."""
-        note_id = request.args.get("note_id", None)
-        if not note_id:
-            abort(400)
-
-        existing_note = await Note.get(note_id)
-        for note in character.notes:
-            if note == existing_note:
-                character.notes.remove(note)
-                break
-
-        await existing_note.delete()
-
-        await post_to_audit_log(
-            msg=f"Character {character.name} note `{existing_note.text}` deleted",
-            view=self.__class__.__name__,
-        )
-        await character.save()
-
-        return "Note deleted"
-
-    async def _post_biography(self, character: Character) -> tuple[bool, str, QuartForm]:
-        """Process the biography form."""
-        form = await self._build_form(character)
-        if await form.validate_on_submit():
-            character.bio = form.data["bio"]
-            await character.save()
-            return True, "Biography updated", None
-        return False, "", form
 
     async def _post_custom_section(self, character: Character) -> tuple[bool, str, QuartForm]:
         """Process the custom section form."""
@@ -195,38 +148,6 @@ class EditCharacterInfo(MethodView):
             return True, "Character deleted", None
         return False, "", form
 
-    async def _post_note(self, character: Character) -> tuple[bool, str, QuartForm]:
-        """Process the note form."""
-        form = await self._build_form(character)
-
-        if await form.validate_on_submit():
-            if not form.data.get("note_id"):
-                new_note = Note(
-                    text=form.data["text"].strip(),
-                    parent_id=str(character.id),
-                    created_by=session["USER_ID"],
-                    guild_id=int(session["GUILD_ID"]),
-                )
-                await new_note.save()
-                character.notes.append(new_note)
-                await character.save()
-                msg = "Note Added"
-            else:
-                existing_note = await Note.get(form.data["note_id"])
-                existing_note.text = form.data["text"]
-                existing_note.guild_id = int(session["GUILD_ID"])
-                await existing_note.save()
-                msg = "Note Updated"
-
-            await post_to_audit_log(
-                msg=f"Character {character.name} - {msg}",
-                view=self.__class__.__name__,
-            )
-
-            return True, msg, None
-
-        return False, "", form
-
     async def get(self, character_id: str) -> str:
         """Render the form."""
         character = await fetch_active_character(character_id, fetch_links=False)
@@ -249,8 +170,7 @@ class EditCharacterInfo(MethodView):
         match self.edit_type:
             case CharacterEditableInfo.CUSTOM_SECTION:
                 form_is_processed, msg, form = await self._post_custom_section(character)
-            case CharacterEditableInfo.BIOGRAPHY:
-                form_is_processed, msg, form = await self._post_biography(character)
+
             case CharacterEditableInfo.DELETE:
                 form_is_processed, msg, form = await self._post_delete_character(character)
                 # If the form is processed, redirect to the homepage with a success message b/c the character is deleted.
@@ -283,7 +203,7 @@ class EditCharacterInfo(MethodView):
         match self.edit_type:
             case CharacterEditableInfo.CUSTOM_SECTION:
                 msg = await self._delete_custom_section(character)
-            case CharacterEditableInfo.BIOGRAPHY | CharacterEditableInfo.DELETE:
+            case CharacterEditableInfo.DELETE:
                 pass  # Not implemented
             case _:
                 assert_never(self.edit_type)

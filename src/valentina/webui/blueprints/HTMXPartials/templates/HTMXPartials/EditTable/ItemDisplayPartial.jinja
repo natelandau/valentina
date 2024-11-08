@@ -35,8 +35,12 @@
         <td>{{ item.trait_one | escape }}</td>
         <td>{{ item.trait_two | escape }}</td>
     {%- elif TableType.name == "CHAPTER" -%}
-        <td>{{ item.number | escape }}</td>
-        <td>{{ item.name | capitalize | escape }}</td>
+        <td>
+            <strong>{{ item.number | escape }}</strong>
+        </td>
+        <td class="text-nowrap">
+            <strong>{{ item.name | title | escape }}</strong>
+        </td>
         <td>{{ item.description_long | from_markdown | safe }}</td>
     {%- endif -%}
 

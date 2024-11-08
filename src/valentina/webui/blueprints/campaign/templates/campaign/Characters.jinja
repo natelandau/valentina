@@ -8,8 +8,9 @@
 
 <a class="btn btn-outline-primary btn-sm ms-3 float-end"
    href="{{ url_for('character_create.start', campaign_id=campaign.id) }}"><i class="fa-solid fa-person-circle-plus"></i> Add a Character</a>
-<h3>Player Characters</h3>
-<hr class="border border-primary border-2 opacity-75">
+
+<global.Subtitle title="Player Characters" header_size="h3" />
+
 {% if characters %}
     <div class="d-flex flex-row flex-wrap flex-lg-nowrap mb-5">
         {%- for column in (characters | sort(attribute="full_name") | slice(2)) %}

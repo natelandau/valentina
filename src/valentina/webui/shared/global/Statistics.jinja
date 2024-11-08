@@ -1,16 +1,10 @@
 {# def
     statistics:dict[str,str],
-    with_title:bool=True,
-    title:str="Statistics",
-    header_size:str = "h2",
+    with_title:bool = True,
+    title:str = "Statistics",
+    header_size:Literal["h1", "h2", "h3", "h4", "h5", "h6"] = "h2",
 #}
-{% if with_title %}
-
-    {% set header_size = header_size if header_size in ["h2", "h3", "h4", "h5", "h6"] else "h2" %}
-
-    <{{ header_size }}>{{ title }}</{{ header_size }}>
-    <hr class="border border-primary border-2 opacity-75">
-{% endif %}
+{% if with_title %}<global.Subtitle title={{ title }} header_size={{ header_size }} />{% endif %}
 <div class="table-responsive">
     <table class="table table-borderless table-sm">
         <tr>

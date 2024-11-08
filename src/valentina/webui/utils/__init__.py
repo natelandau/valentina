@@ -12,6 +12,7 @@ from .helpers import (
     sync_channel_to_discord,
     update_session,
 )
+from .jinjax import from_markdown, from_markdown_no_p
 from .responses import create_toast
 
 __all__ = [
@@ -23,6 +24,8 @@ __all__ = [
     "fetch_guild",
     "fetch_user_characters",
     "fetch_user",
+    "from_markdown_no_p",
+    "from_markdown",
     "is_storyteller",
     "sync_channel_to_discord",
     "update_session",

@@ -7,6 +7,27 @@ from wtforms.validators import DataRequired, Length
 from valentina.constants import InventoryItemType, TraitCategory
 
 
+class CampaignDescriptionForm(QuartForm):
+    """Form for editing a campaign description and name."""
+
+    title = "Campaign Overview"
+
+    name = StringField(
+        "Campaign Name",
+        default="",
+        validators=[DataRequired(), Length(min=3, message="Must be at least 3 characters")],
+        filters=[str.strip, str.title],
+    )
+
+    campaign_description = TextAreaField(
+        "Description",
+        validators=[DataRequired(), Length(min=3, message="Must be at least 3 characters")],
+        description="Markdown is supported",
+    )
+
+    campaign_id = HiddenField()
+
+
 class UserMacroForm(QuartForm):
     """Form for a user macro."""
 
@@ -111,3 +132,16 @@ class CampaignNPCForm(QuartForm):
 
     uuid = HiddenField()
     campaign_id = HiddenField()
+
+
+class CharacterBioForm(QuartForm):
+    """A form for editing the character biography."""
+
+    title = "The Character's Biography"
+
+    bio = TextAreaField(
+        "Biography",
+        description="Markdown is supported.",
+        validators=[DataRequired(), Length(min=5, message="Must be at least 5 characters")],
+    )
+    character_id = HiddenField()

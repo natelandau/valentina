@@ -6,12 +6,12 @@ from typing import Union
 
 
 @dataclass
-class TableItem:
-    """Class for an item in the table."""
+class EditableItem:
+    """Class for an item that can be edited."""
 
     name: str
     route: str
-    sort_attribute: str
+    sort_attribute: str = ""
     description: str = ""
     table_headers: list[str] = field(default_factory=list)
 
@@ -22,42 +22,51 @@ class TableItem:
         return self.route.split(".")[1]
 
 
+class TextType(Enum):
+    """Enum for the type of text."""
+
+    BIOGRAPHY = EditableItem(name="Biography", route="partials.text_biography")
+    CAMPAIGN_DESCRIPTION = EditableItem(
+        name="Description", route="partials.text_campaign_description"
+    )
+
+
 class TableType(Enum):
     """Enum for the type of table."""
 
-    NOTE = TableItem(
+    NOTE = EditableItem(
         name="Notes",
         route="partials.table_note",
         description="Jot down quick and dirty notes",
         sort_attribute="text",
     )
-    INVENTORYITEM = TableItem(
+    INVENTORYITEM = EditableItem(
         name="Inventory Items",
         route="partials.table_inventory",
         description="Items the character owns",
         sort_attribute="type,name",
         table_headers=["Item", "Category", "Description"],
     )
-    NPC = TableItem(
+    NPC = EditableItem(
         name="NPCs",
         route="partials.table_npc",
         description="Quick reference to campaign NPCs",
         sort_attribute="name",
         table_headers=["Name", "Class", "Description"],
     )
-    MACRO = TableItem(
+    MACRO = EditableItem(
         name="Macros",
         route="partials.table_macro",
         description="Speed dice rolling by preselecting traits",
         table_headers=["Name", "Abbreviation", "Description", "Trait1", "Trait2"],
         sort_attribute="name",
     )
-    CHAPTER = TableItem(
+    CHAPTER = EditableItem(
         name="Chapters",
         route="partials.table_chapter",
         description="Chapters of the campaign book",
         table_headers=["#", "Chapter", "Description"],
-        sort_attribute="name",
+        sort_attribute="number",
     )
 
 
@@ -110,12 +119,6 @@ class CampaignViewTab(Enum):
 class CampaignEditableInfo(Enum):
     """Enum for the editable info of a campaign. Used to build blueprint routes and template variables."""
 
-    DESCRIPTION = EditItem(
-        name="description",
-        route="campaign.edit_description",
-        div_id="description",
-        tab=CampaignViewTab.OVERVIEW,
-    )
     BOOK = EditItem(
         name="book", route="campaign.edit_book", div_id="book", tab=CampaignViewTab.BOOKS
     )
@@ -130,12 +133,7 @@ class CharacterEditableInfo(Enum):
         div_id="customsection",
         tab=CharacterViewTab.INFO,
     )
-    BIOGRAPHY = EditItem(
-        name="biography",
-        route="character_edit.edit_biography",
-        div_id="biography",
-        tab=CharacterViewTab.BIOGRAPHY,
-    )
+
     DELETE = EditItem(
         name="delete",
         route="character_edit.delete_character",

@@ -16,7 +16,7 @@ from valentina.models import (
     User,
 )
 from valentina.webui import catalog
-from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab, TableType
+from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab, TableType, TextType
 from valentina.webui.utils import fetch_active_campaign, fetch_user, is_storyteller
 from valentina.webui.utils.forms import ValentinaForm
 
@@ -111,7 +111,9 @@ class CharacterView(MethodView):
                 return catalog.render(
                     "character_view.Biography",
                     character=character,
-                    CharacterEditableInfo=CharacterEditableInfo,
+                    text_type_bio=TextType.BIOGRAPHY,
+                    can_edit=session["IS_STORYTELLER"]
+                    or session["USER_ID"] == character.user_owner,
                 )
             case CharacterViewTab.INFO:
                 return catalog.render(

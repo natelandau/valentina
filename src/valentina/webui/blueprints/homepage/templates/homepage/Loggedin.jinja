@@ -11,8 +11,8 @@
         <div class="col-xl-4 col-md-5 mb-6">
             <div class="card h-100 shadow">
                 <div class="card-body">
-                    <h4>{{ session["GUILD_NAME"] | title }} Info</h4>
-                    <hr class="border border-primary border-2 opacity-75">
+                    <global.Subtitle title={{ session["GUILD_NAME"] | title }} header_size="h4" />
+
                     <table class="table table-borderless table-sm">
                         <tr>
                             <td class="text-nowrap">
@@ -47,8 +47,8 @@
         <div class="col-xl-4 col-md-6 mb-6">
             <div class="card h-100 shadow">
                 <div class="card-body">
-                    <h4>Quick Links</h4>
-                    <hr class="border border-primary border-2 opacity-75">
+                    <global.Subtitle title="Quick Links" header_size="h4" />
+
                     <div class="list-group list-group-flush">
                         <a href="{{ url_for('character_create.start') }}"
                            class="list-group-item list-group-item-action text-primary"><i class="fa-solid fa-person-circle-plus pe-2"></i> Create A Character</a>
@@ -67,9 +67,7 @@
 
     <div class="row mb-5">
         <div class="col-xl-4 col-md-5 mb-6">
-
-            <h4>Your Characters</h4>
-            <hr class="border border-primary border-2 opacity-75">
+            <global.Subtitle title="Your Characters" header_size="h4" />
             <div class="table-responsive">
                 <table class="table table-borderless table-sm">
                     <thead>
@@ -92,8 +90,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-md-5 mb-6">
-            <h4>Other Players' Characters</h4>
-            <hr class="border border-primary border-2 opacity-75">
+            <global.Subtitle title="Other Players' Characters" header_size="h4" />
             <table class="table table-borderless table-sm">
                 <thead>
                     <tr>
@@ -119,8 +116,7 @@
             </table>
         </div>
         <div class="col-xl-4 col-md-5 mb-6">
-            <h4>Campaigns</h4>
-            <hr class="border border-primary border-2 opacity-75">
+            <global.Subtitle title="Campaigns" header_size="h4" />
             <div class="list-group list-group-flush">
                 {% for campaign_name, campaign_id in session["GUILD_CAMPAIGNS"].items() %}
                     <a href="{{ url_for('campaign.view', campaign_id=campaign_id) }}"

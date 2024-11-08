@@ -7,22 +7,14 @@ from quart import Response, abort, request, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 
-from valentina.controllers import PermissionManager
+from valentina.controllers import PermissionManager, total_campaign_experience
 from valentina.models import Campaign, CampaignBook, Statistics
 from valentina.webui import catalog
-from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab, TableType
-from valentina.webui.utils import (
-    create_toast,
-    fetch_active_campaign,
-    sync_channel_to_discord,
-    update_session,
-)
+from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab, TableType, TextType
+from valentina.webui.utils import fetch_active_campaign, sync_channel_to_discord
 from valentina.webui.utils.discord import post_to_audit_log
 
-from .forms import (
-    CampaignBookForm,
-    CampaignDescriptionForm,
-)
+from .forms import CampaignBookForm
 
 
 class CampaignView(MethodView):
@@ -34,6 +26,28 @@ class CampaignView(MethodView):
         self.is_htmx = bool(request.headers.get("Hx-Request", False))
         self.permission_manager = PermissionManager(guild_id=session["GUILD_ID"])
         self.can_manage_campaign = False
+
+    async def _compute_campaign_data(self, campaign: Campaign) -> dict:
+        """Compute the campaign data for display in the overview tab.
+
+        Args:
+            campaign (Campaign): The campaign object to compute the data for.
+
+        Returns:
+            dict: The computed campaign data.
+        """
+        books = await campaign.fetch_books()
+        player_characters = await campaign.fetch_player_characters()
+        available_xp, total_xp, cool_points = await total_campaign_experience(campaign)
+        return {
+            "available_xp": available_xp,
+            "total_xp": total_xp,
+            "cool_points": cool_points,
+            "num_books": len(books),
+            "num_player_characters": len(player_characters),
+            "danger": campaign.danger,
+            "desperation": campaign.desperation,
+        }
 
     async def handle_tabs(self, campaign: Campaign) -> str:
         """Handle rendering of HTMX tab content for the campaign view.
@@ -61,7 +75,8 @@ class CampaignView(MethodView):
                 return catalog.render(
                     "campaign.Overview",
                     campaign=campaign,
-                    CampaignEditableInfo=CampaignEditableInfo,
+                    campaign_data=await self._compute_campaign_data(campaign),
+                    text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
                     can_manage_campaign=self.can_manage_campaign,
                 )
 
@@ -147,8 +162,9 @@ class CampaignView(MethodView):
         return catalog.render(
             "campaign.Main",
             campaign=campaign,
+            campaign_data=await self._compute_campaign_data(campaign),
             tabs=CampaignViewTab,
-            CampaignEditableInfo=CampaignEditableInfo,
+            text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
             can_manage_campaign=self.can_manage_campaign,
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
@@ -165,16 +181,11 @@ class CampaignEditItem(MethodView):
     def __init__(self, edit_type: CampaignEditableInfo) -> None:
         self.edit_type = edit_type
 
-    async def _build_form(self, campaign: Campaign) -> QuartForm:
+    async def _build_form(self) -> QuartForm:
         """Build the form for the campaign item."""
         data = {}
 
         match self.edit_type:
-            case CampaignEditableInfo.DESCRIPTION:
-                data["name"] = campaign.name
-                data["description"] = campaign.description
-                return await CampaignDescriptionForm().create_form(data=data)
-
             case CampaignEditableInfo.BOOK:
                 if request.args.get("book_id"):
                     existing_book = await CampaignBook.get(request.args.get("book_id"))
@@ -210,7 +221,7 @@ class CampaignEditItem(MethodView):
 
     async def _post_campaign_book(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
         """Process the campaign book form."""
-        form = await self._build_form(campaign)
+        form = await self._build_form()
 
         if await form.validate_on_submit():
             if form.data.get("book_id"):
@@ -249,23 +260,6 @@ class CampaignEditItem(MethodView):
 
         return False, "", form
 
-    async def _post_campaign_description(self, campaign: Campaign) -> tuple[bool, str, QuartForm]:
-        """Process the campaign description form."""
-        form = await self._build_form(campaign)
-        if await form.validate_on_submit():
-            do_update_session = campaign.name.strip().lower() != form.name.data.strip().lower()
-            campaign.name = form.name.data.strip()
-            campaign.description = form.description.data.strip()
-            await campaign.save()
-
-            if do_update_session:
-                await sync_channel_to_discord(obj=campaign, update_type="update")
-                await update_session()
-
-            return True, "Campaign updated", None
-
-        return False, "", form
-
     async def get(self, campaign_id: str = "") -> str:
         """Handle GET requests for editing a campaign item."""
         campaign = await fetch_active_campaign(campaign_id)
@@ -273,7 +267,7 @@ class CampaignEditItem(MethodView):
         return catalog.render(
             "campaign.FormPartial",
             campaign=campaign,
-            form=await self._build_form(campaign),
+            form=await self._build_form(),
             join_label=False,
             floating_label=True,
             post_url=url_for(self.edit_type.value.route, campaign_id=campaign_id),
@@ -286,9 +280,6 @@ class CampaignEditItem(MethodView):
         campaign = await fetch_active_campaign(campaign_id, fetch_links=True)
 
         match self.edit_type:
-            case CampaignEditableInfo.DESCRIPTION:
-                form_is_processed, msg, form = await self._post_campaign_description(campaign)
-
             case CampaignEditableInfo.BOOK:
                 form_is_processed, msg, form = await self._post_campaign_book(campaign)
 
@@ -315,14 +306,9 @@ class CampaignEditItem(MethodView):
         campaign = await fetch_active_campaign(campaign_id, fetch_links=True)
 
         match self.edit_type:
-            case CampaignEditableInfo.DESCRIPTION:
-                pass  # Not implemented
-
             case CampaignEditableInfo.BOOK:
                 msg = await self._delete_campaign_book(campaign)
                 return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id, success_msg=msg)}"</script>'
 
             case _:
                 assert_never(self.edit_type)
-
-        return create_toast(msg, level="SUCCESS")
