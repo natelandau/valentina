@@ -1,3 +1,43 @@
+## v3.1.0 (2024-11-08)
+
+### Feat
+
+- **webui**: fancy in-page transitions for forms (#201)
+- **webui**: redesign homepage (#200)
+- **webui**: add footer (#199)
+- **webui**: add user profile and macro editing (#198)
+- **webui**: storyteller quick character generation (#195)
+- **webui**: edit campaigns (#194)
+- **webui**: edit character inventory (#193)
+- **webui**: edit character notes, biography, and custom sections (#192)
+- **webui**: roll dice from character pages (#191)
+- **webui**: edit character profile information (#189)
+- **webui**: storytellers can update traits for any character (#188)
+- **webui**: spend experience to upgrade characters (#187)
+- **chargen**: correctly create werewolves and changelings (#186)
+- **webui**: can spend freebie points after RNG chargen (#184)
+- **webui**: quick roll new characters (#182)
+- **webui**: allow creation of storyteller characters
+- **webui**: storytellers can access every character (#181)
+
+### Fix
+
+- **webui**: players can view all player characters (#190)
+- **webui**: rename discord channels when changes made in web (#179)
+- **webui**: add favicons
+- **webui**: pass x-forwarded-for header to hypercorn for logging behind reverse proxy
+
+### Refactor
+
+- **webui**: sync channel changes to discord (#197)
+- improve run scripts (#196)
+- constants (#183)
+- webui can access guild and user permissions (#180)
+- reorganize cli scripts
+- reorganize discord models and views (#178)
+- **webui**: reorganize file structure (#176)
+- remove all naive datetimes
+
 ## v3.0.4 (2024-09-06)
 
 ### Fix
