@@ -6,22 +6,17 @@ from flask_discord import requires_authorization
 from quart import abort, request, session, url_for
 from quart.views import MethodView
 
-from valentina.constants import (
-    DiceType,
-    HTTPStatus,
-    InventoryItemType,
-)
+from valentina.constants import DiceType, HTTPStatus
 from valentina.controllers import CharacterSheetBuilder
 from valentina.models import (
     AWSService,
     Campaign,
     Character,
-    InventoryItem,
     Statistics,
     User,
 )
 from valentina.webui import catalog
-from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab
+from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab, TableType, TextType
 from valentina.webui.utils import fetch_active_campaign, fetch_user, is_storyteller
 from valentina.webui.utils.forms import ValentinaForm
 
@@ -51,32 +46,6 @@ class CharacterView(MethodView):
             abort(HTTPStatus.BAD_REQUEST.value)
 
         return character
-
-    async def _get_character_inventory(self, character: Character) -> dict:
-        """Retrieve and return the character's inventory organized by item type.
-
-        Fetch the inventory items associated with the specified character from the
-        database, grouping them by their item type. Empty item type groups are
-        removed from the final inventory dictionary.
-
-        Args:
-            character (Character): The character whose inventory is to be retrieved.
-
-        Returns:
-            dict: A dictionary where the keys are item types and the values are lists
-                of `InventoryItem` objects. Empty item type groups are excluded.
-        """
-        inventory: dict[str, list[InventoryItem]] = {}
-        for x in InventoryItemType:
-            inventory[x.name] = []
-
-        for item in await InventoryItem.find(
-            InventoryItem.character == str(character.id)
-        ).to_list():
-            inventory[item.type].append(item)
-
-        # remove all empty dictionary entries
-        return {k: v for k, v in inventory.items() if v}
 
     async def _get_character_image_urls(
         self, character: Character
@@ -142,14 +111,17 @@ class CharacterView(MethodView):
                 return catalog.render(
                     "character_view.Biography",
                     character=character,
-                    CharacterEditableInfo=CharacterEditableInfo,
+                    text_type_bio=TextType.BIOGRAPHY,
+                    can_edit=session["IS_STORYTELLER"]
+                    or session["USER_ID"] == character.user_owner,
                 )
             case CharacterViewTab.INFO:
                 return catalog.render(
                     "character_view.Info",
                     character=character,
-                    inventory=await self._get_character_inventory(character),
                     CharacterEditableInfo=CharacterEditableInfo,
+                    table_type_note=TableType.NOTE,
+                    table_type_inventory=TableType.INVENTORYITEM,
                 )
 
             case CharacterViewTab.IMAGES:  # pragma: no cover
@@ -175,7 +147,7 @@ class CharacterView(MethodView):
         character_owner = await User.get(character.user_owner, fetch_links=False)
         campaign = await fetch_active_campaign(campaign_id=character.campaign)
 
-        if request.headers.get("HX-Request"):
+        if request.headers.get("HX-Request") and request.args.get("tab"):
             return await self._handle_tabs(character, character_owner=character_owner)
 
         sheet_builder = CharacterSheetBuilder(character=character)

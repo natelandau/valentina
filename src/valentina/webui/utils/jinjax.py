@@ -23,13 +23,13 @@ def from_markdown(value: str) -> str:
         str: The HTML representation of the provided Markdown string.
     """
     value = escape(value)
-    return markdown(value)
+    return markdown(value).strip()
 
 
 def from_markdown_no_p(value: str) -> str:
     """Strip enclosing paragraph marks, <p> ... </p>, which markdown() forces, and which interfere with some jinja2 layout."""
     value = escape(value)
-    return re.sub("(^<P>|</P>$)", "", markdown(value), flags=re.IGNORECASE)
+    return re.sub("(^<P>|</P>$)", "", markdown(value), flags=re.IGNORECASE).strip()
 
 
 def register_jinjax_catalog() -> jinjax.Catalog:

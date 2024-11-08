@@ -4,49 +4,22 @@ from typing import ClassVar, assert_never
 from uuid import UUID
 
 from flask_discord import requires_authorization
-from quart import Response, abort, request, session, url_for
+from quart import abort, request, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from wtforms import (
     HiddenField,
-    SelectField,
     StringField,
     SubmitField,
     TextAreaField,
 )
 from wtforms.validators import DataRequired, Length
 
-from valentina.constants import InventoryItemType
-from valentina.models import Character, CharacterSheetSection, InventoryItem, Note
+from valentina.models import Character, CharacterSheetSection
 from valentina.webui import catalog
 from valentina.webui.constants import CharacterEditableInfo
-from valentina.webui.utils import fetch_active_character, sync_channel_to_discord
+from valentina.webui.utils import create_toast, fetch_active_character, sync_channel_to_discord
 from valentina.webui.utils.discord import post_to_audit_log
-
-
-class BioForm(QuartForm):
-    """A form for editing the character biography."""
-
-    bio = TextAreaField(
-        "Biography",
-        description="Write a biography for the character. Markdown is supported.",
-    )
-    character_id = HiddenField()
-    submit = SubmitField("Submit")
-
-
-class InventoryItemForm(QuartForm):
-    """Form for an inventory item."""
-
-    name = StringField("Name", validators=[DataRequired()])
-    description = TextAreaField("Description")
-    type = SelectField(
-        "Type",
-        choices=[("", "-- Select --")] + [(x.name, x.value) for x in InventoryItemType],
-        validators=[DataRequired()],
-    )
-    item_id = HiddenField()
-    submit = SubmitField("Submit")
 
 
 class CustomSectionForm(QuartForm):
@@ -64,14 +37,6 @@ class CustomSectionForm(QuartForm):
     submit = SubmitField("Submit")
 
 
-class CharacterNoteForm(QuartForm):
-    """Form for a character note."""
-
-    text = TextAreaField("Text", validators=[DataRequired()])
-    note_id = HiddenField()
-    submit = SubmitField("Submit")
-
-
 class DeleteCharacterForm(QuartForm):
     """Form for deleting a character."""
 
@@ -86,7 +51,7 @@ class EditCharacterInfo(MethodView):
     def __init__(self, edit_type: CharacterEditableInfo) -> None:
         self.edit_type = edit_type
 
-    async def _build_form(self, character: Character) -> QuartForm:  # noqa: C901, PLR0912
+    async def _build_form(self, character: Character) -> QuartForm:
         """Build the form and populate with existing data if available."""
         data = {}
 
@@ -102,30 +67,6 @@ class EditCharacterInfo(MethodView):
                             break
 
                 return await CustomSectionForm().create_form(data=data)
-
-            case CharacterEditableInfo.NOTE:
-                if request.args.get("note_id"):
-                    existing_note = await Note.get(request.args.get("note_id"))
-                    if existing_note:
-                        data["text"] = existing_note.text
-                        data["note_id"] = str(existing_note.id)
-
-                return await CharacterNoteForm().create_form(data=data)
-
-            case CharacterEditableInfo.INVENTORY:
-                if request.args.get("item_id"):
-                    existing_item = await InventoryItem.get(request.args.get("item_id"))
-                    if existing_item:
-                        data["name"] = existing_item.name
-                        data["description"] = existing_item.description
-                        data["type"] = existing_item.type
-                        data["item_id"] = str(existing_item.id)
-                return await InventoryItemForm().create_form(data=data)
-
-            case CharacterEditableInfo.BIOGRAPHY:
-                data["bio"] = character.bio
-                data["character_id"] = str(character.id)
-                return await BioForm().create_form(data=data)
 
             case CharacterEditableInfo.DELETE:
                 return await DeleteCharacterForm().create_form()
@@ -151,59 +92,6 @@ class EditCharacterInfo(MethodView):
         await character.save()
 
         return "Custom section deleted"
-
-    async def _delete_note(self, character: Character) -> str:
-        """Delete the note."""
-        note_id = request.args.get("note_id", None)
-        if not note_id:
-            abort(400)
-
-        existing_note = await Note.get(note_id)
-        for note in character.notes:
-            if note == existing_note:
-                character.notes.remove(note)
-                break
-
-        await existing_note.delete()
-
-        await post_to_audit_log(
-            msg=f"Character {character.name} note `{existing_note.text}` deleted",
-            view=self.__class__.__name__,
-        )
-        await character.save()
-
-        return "Note deleted"
-
-    async def _delete_inventory(self, character: Character) -> str:
-        """Delete the inventory item."""
-        item_id = request.args.get("item_id", None)
-        if not item_id:
-            abort(400)
-
-        existing_item = await InventoryItem.get(item_id)
-        for item in character.notes:
-            if item == existing_item:
-                character.inventory.remove(item)
-                break
-        await character.save()
-
-        await post_to_audit_log(
-            msg=f"Character {character.name} item `{existing_item.name}` deleted",
-            view=self.__class__.__name__,
-        )
-
-        await existing_item.delete()
-
-        return "Item deleted"
-
-    async def _post_biography(self, character: Character) -> tuple[bool, str, QuartForm]:
-        """Process the biography form."""
-        form = await self._build_form(character)
-        if await form.validate_on_submit():
-            character.bio = form.data["bio"]
-            await character.save()
-            return True, "Biography updated", None
-        return False, "", form
 
     async def _post_custom_section(self, character: Character) -> tuple[bool, str, QuartForm]:
         """Process the custom section form."""
@@ -260,69 +148,6 @@ class EditCharacterInfo(MethodView):
             return True, "Character deleted", None
         return False, "", form
 
-    async def _post_note(self, character: Character) -> tuple[bool, str, QuartForm]:
-        """Process the note form."""
-        form = await self._build_form(character)
-
-        if await form.validate_on_submit():
-            if not form.data.get("note_id"):
-                new_note = Note(
-                    text=form.data["text"].strip(),
-                    parent_id=str(character.id),
-                    created_by=session["USER_ID"],
-                )
-                await new_note.save()
-                character.notes.append(new_note)
-                await character.save()
-                msg = "Note Added"
-            else:
-                existing_note = await Note.get(form.data["note_id"])
-                existing_note.text = form.data["text"]
-                await existing_note.save()
-                msg = "Note Updated"
-
-            await post_to_audit_log(
-                msg=f"Character {character.name} - {msg}",
-                view=self.__class__.__name__,
-            )
-
-            return True, msg, None
-
-        return False, "", form
-
-    async def _post_inventory(self, character: Character) -> tuple[bool, str, QuartForm]:
-        """Process the inventory form."""
-        form = await self._build_form(character)
-
-        if await form.validate_on_submit():
-            if form.data.get("item_id"):
-                existing_item = await InventoryItem.get(form.data["item_id"])
-                existing_item.name = form.data["name"]
-                existing_item.description = form.data["description"]
-                existing_item.type = form.data["type"]
-                await existing_item.save()
-                msg = f"{existing_item.name} updated."
-            else:
-                new_item = InventoryItem(
-                    character=str(character.id),
-                    name=form.data["name"].strip(),
-                    description=form.data["description"].strip(),
-                    type=form.data["type"],
-                )
-                await new_item.save()
-                character.inventory.append(new_item)
-                await character.save()
-                msg = f"{new_item.name} added to inventory"
-
-            await post_to_audit_log(
-                msg=f"Character {character.name} - {msg}",
-                view=self.__class__.__name__,
-            )
-
-            return True, msg, form
-
-        return False, "", form
-
     async def get(self, character_id: str) -> str:
         """Render the form."""
         character = await fetch_active_character(character_id, fetch_links=False)
@@ -338,45 +163,26 @@ class EditCharacterInfo(MethodView):
             hx_target=f"#{self.edit_type.value.div_id}",
         )
 
-    async def post(self, character_id: str) -> Response | str:
+    async def post(self, character_id: str) -> str:
         """Process the form."""
         character = await fetch_active_character(character_id, fetch_links=False)
 
         match self.edit_type:
             case CharacterEditableInfo.CUSTOM_SECTION:
                 form_is_processed, msg, form = await self._post_custom_section(character)
-            case CharacterEditableInfo.NOTE:
-                form_is_processed, msg, form = await self._post_note(character)
-            case CharacterEditableInfo.INVENTORY:
-                form_is_processed, msg, form = await self._post_inventory(character)
-            case CharacterEditableInfo.BIOGRAPHY:
-                form_is_processed, msg, form = await self._post_biography(character)
+
             case CharacterEditableInfo.DELETE:
                 form_is_processed, msg, form = await self._post_delete_character(character)
                 # If the form is processed, redirect to the homepage with a success message b/c the character is deleted.
-                if form_is_processed:
-                    return Response(
-                        headers={
-                            "HX-Redirect": url_for(
-                                "homepage.homepage",
-                                success_msg=msg,
-                            ),
-                        }
-                    )
+                url = url_for("homepage.homepage", success_msg=msg)
+                return f'<script>window.location.href="{url}"</script>'
 
             case _:
                 assert_never(self.edit_type)
 
         if form_is_processed:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_view.view",
-                        character_id=character_id,
-                        success_msg=msg,
-                    ),
-                }
-            )
+            url = url_for("character_view.view", character_id=character_id, success_msg=msg)
+            return f'<script>window.location.href="{url}"</script>'
 
         # If POST request does not validate, return errors
         return catalog.render(
@@ -390,28 +196,16 @@ class EditCharacterInfo(MethodView):
             hx_target=f"#{self.edit_type.value.div_id}",
         )
 
-    async def delete(self, character_id: str) -> Response:
+    async def delete(self, character_id: str) -> str:
         """Delete the item."""
         character = await fetch_active_character(character_id, fetch_links=False)
 
         match self.edit_type:
             case CharacterEditableInfo.CUSTOM_SECTION:
                 msg = await self._delete_custom_section(character)
-            case CharacterEditableInfo.NOTE:
-                msg = await self._delete_note(character)
-            case CharacterEditableInfo.INVENTORY:
-                msg = await self._delete_inventory(character)
-            case CharacterEditableInfo.BIOGRAPHY | CharacterEditableInfo.DELETE:
-                pass  # Not needed.
+            case CharacterEditableInfo.DELETE:
+                pass  # Not implemented
             case _:
                 assert_never(self.edit_type)
 
-        return Response(
-            headers={
-                "HX-Redirect": url_for(
-                    "character_view.view",
-                    character_id=character_id,
-                    success_msg=msg,
-                ),
-            }
-        )
+        return create_toast(msg, level="SUCCESS")

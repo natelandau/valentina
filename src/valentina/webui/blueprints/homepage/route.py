@@ -7,7 +7,6 @@ from quart.views import MethodView
 
 from valentina.constants import BOT_DESCRIPTIONS
 from valentina.models import Statistics
-from valentina.utils import console
 from valentina.webui import catalog, discord_oauth
 from valentina.webui.utils import update_session
 
@@ -32,8 +31,6 @@ class HomepageView(MethodView):
         stats_engine = Statistics(guild_id=session["GUILD_ID"])
 
         all_characters = session["ALL_CHARACTERS"] + session["STORYTELLER_CHARACTERS"]
-        console.rule("ALL CHARACTERS")
-        console.log(all_characters)
 
         return catalog.render(
             "homepage.Loggedin",

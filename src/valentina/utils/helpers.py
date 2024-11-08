@@ -2,6 +2,7 @@
 
 import io
 import random
+import string
 from datetime import UTC, datetime
 from urllib.parse import urlencode
 
@@ -82,6 +83,18 @@ def random_num(ceiling: int = 100) -> int:
         ValueError: If ceiling is less than 1.
     """
     return _rng.integers(1, ceiling + 1)
+
+
+def random_string(length: int) -> str:
+    """Generate a random string.
+
+    Args:
+        length (int): The length of the string to generate.
+
+    Returns:
+        str: A random string of the given length.
+    """
+    return "".join(random.choice(string.ascii_letters) for _ in range(length))
 
 
 async def fetch_random_name(

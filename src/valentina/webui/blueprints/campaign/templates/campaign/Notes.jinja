@@ -1,55 +1,8 @@
 {# def
-    campaign: Campaign,
-    CampaignEditableInfo: CampaignEditableInfo,
+    items: list[Note],
+    TableType: TableType,
     can_manage_campaign: bool,
+    parent_id: str,
 #}
 
-<button class="btn btn-outline-primary btn-sm ms-3 float-end"
-        hx-get="{{ url_for(CampaignEditableInfo.NOTE.value.route, campaign_id=campaign.id) }}"
-        hx-trigger="click"
-        hx-target="#{{ CampaignEditableInfo.NOTE.value.div_id }}"
-        hx-swap="innerHTML">Create Note</button>
-<h2>
-    Notes&nbsp;&nbsp;<span class="text-muted fs-6 fw-light"><small>Quick notes about the campaign</small></span>
-</h2>
-
-<hr class="border border-primary border-2 opacity-75">
-<div id="{{ CampaignEditableInfo.NOTE.value.div_id }}" class="mb-5">
-    {% if campaign.notes %}
-        <table class="table table-hover">
-            <tbody>
-                {% for note in campaign.notes %}
-                    <tr>
-                        <td>{{ note.text | from_markdown_no_p | safe }}</td>
-
-                        <td>
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-primary"
-                                        style="--bs-btn-padding-y: .25rem;
-                                               --bs-btn-padding-x: .5rem;
-                                               --bs-btn-font-size: .75rem"
-                                        hx-get="{{ url_for(CampaignEditableInfo.NOTE.value.route, campaign_id=campaign.id, note_id=note.id) }}"
-                                        hx-trigger="click"
-                                        hx-target="#{{ CampaignEditableInfo.NOTE.value.div_id }}"
-                                        hx-swap="innerHTML">Edit</button>
-                                <button class="btn btn-sm btn-outline-danger"
-                                        style="--bs-btn-padding-y: .25rem;
-                                               --bs-btn-padding-x: .5rem;
-                                               --bs-btn-font-size: .75rem"
-                                        hx-delete="{{ url_for(CampaignEditableInfo.NOTE.value.route, campaign_id=campaign.id, note_id=note.id) }}"
-                                        hx-trigger="click"
-                                        hx-target="#{{ CampaignEditableInfo.NOTE.value.div_id }}"
-                                        hx-swap="innerHTML">Delete</button>
-                            </div>
-                        </td>
-
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <div class="mb-5">
-            <p>No notes</p>
-        </div>
-    {% endif %}
-</div>
+<HTMXPartials.EditTable.TablePartial TableType={{ TableType }} items={{ items }} can_edit={{ can_manage_campaign }} parent_id={{ parent_id }} />

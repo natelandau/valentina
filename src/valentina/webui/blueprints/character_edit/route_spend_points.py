@@ -255,7 +255,7 @@ class SpendPoints(MethodView):
             warning_msg=request.args.get("warning_msg", ""),
         )
 
-    async def post(self, character_id: str = "") -> Response:
+    async def post(self, character_id: str = "") -> str:
         """Process POST requests for trait modification.
 
         Args:
@@ -276,15 +276,12 @@ class SpendPoints(MethodView):
         try:
             trait, target_value = await self._parse_form_data(character, form)
         except ValueError as e:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        f"character_edit.{self.spend_type.value}",
-                        character_id=str(character.id),
-                        error_msg=str(e),
-                    )
-                }
+            url = url_for(
+                f"character_edit.{self.spend_type.value}",
+                character_id=str(character.id),
+                error_msg=str(e),
             )
+            return f'<script>window.location.href="{url}"</script>'
 
         success_msg = ""
         try:
@@ -299,22 +296,16 @@ class SpendPoints(MethodView):
             errors.NotEnoughExperienceError,
             errors.TraitAtMinValueError,
         ) as e:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        f"character_edit.{self.spend_type.value}",
-                        character_id=str(character.id),
-                        error_msg=str(e),
-                    )
-                }
+            url = url_for(
+                f"character_edit.{self.spend_type.value}",
+                character_id=str(character.id),
+                error_msg=str(e),
             )
+            return f'<script>window.location.href="{url}"</script>'
 
-        return Response(
-            headers={
-                "HX-Redirect": url_for(
-                    f"character_edit.{self.spend_type.value}",
-                    character_id=character_id,
-                    success_msg=success_msg,
-                )
-            }
+        url = url_for(
+            f"character_edit.{self.spend_type.value}",
+            character_id=str(character.id),
+            success_msg=success_msg,
         )
+        return f'<script>window.location.href="{url}"</script>'

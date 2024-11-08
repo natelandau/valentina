@@ -1,0 +1,25 @@
+{# def
+    TextType: TextType,
+    parent_id: str,
+    text: str,
+    can_edit: bool = True,
+    header_size: Literal["h1", "h2", "h3", "h4", "h5", "h6"] = "h2",
+
+#}
+{% if can_edit %}
+    <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+            {% if text %} hx-post="{{ url_for(TextType.value.route, parent_id=parent_id) }}" {% else %} hx-put="{{ url_for(TextType.value.route, parent_id=parent_id) }}" {% endif %}
+            hx-trigger="click"
+            hx-target="next #{{ TextType.value.name | upper | replace(' ', '-') }}-TEXTBODY"
+            hx-swap="innerHTML swap:1s">Edit {{ TextType.value.name | title | escape }}</button>
+{% endif %}
+<global.Subtitle title={{ TextType.value.name | title }} header_size={{ header_size }} subtitle={{ TextType.value.description }} />
+
+<div id="{{ TextType.value.name | upper | replace(' ', '-') }}-TEXTBODY"
+     class="mb-5 fade-me-out">
+    {% if text %}
+        {{ text | from_markdown | safe }}
+    {% else %}
+        <p>No {{ TextType.value.name | lower | escape }}</p>
+    {% endif %}
+</div>

@@ -7,6 +7,7 @@ from valentina.webui.constants import CampaignEditableInfo
 from .route import CampaignEditItem, CampaignView
 
 blueprint = Blueprint("campaign", __name__)
+
 blueprint.add_url_rule(
     "/campaign/<string:campaign_id>",
     view_func=CampaignView.as_view("view"),

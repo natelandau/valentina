@@ -59,19 +59,19 @@ repos:
         entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-    rev: "v0.7.1"
+    rev: "v0.7.3"
     hooks:
       - id: ruff
         exclude: tests/
       - id: ruff-format
 
   - repo: "https://github.com/crate-ci/typos"
-    rev: v1.26.8
+    rev: typos-dict-v0.11.34
     hooks:
       - id: typos
 
   - repo: "https://github.com/djlint/djLint"
-    rev: v1.35.3
+    rev: v1.36.1
     hooks:
       - id: djlint
         args: ["--configuration", "pyproject.toml"]

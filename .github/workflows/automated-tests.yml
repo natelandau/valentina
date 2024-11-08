@@ -36,7 +36,7 @@ env:
     VALENTINA_OWNER_CHANNELS: ""
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
     cancel-in-progress: true
 
 jobs:
@@ -73,6 +73,10 @@ jobs:
             - name: lint with ruff
               shell: bash
               run: uv run ruff check --no-fix src/
+
+            - name: mypy
+              shell: bash
+              run: uv run mypy --config-file pyproject.toml src/
 
             - name: Run tests
               shell: bash

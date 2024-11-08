@@ -8,7 +8,7 @@ from enum import Enum
 from typing import ClassVar
 
 from flask_discord import requires_authorization
-from quart import Response, abort, request, session, url_for
+from quart import abort, request, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from wtforms import HiddenField, SelectField, SubmitField
@@ -120,7 +120,7 @@ class CreateStorytellerRNGCharacter(MethodView):
             post_url=url_for("character_create.rng_storyteller"),
         )
 
-    async def post(self) -> str | Response:
+    async def post(self) -> str:
         """Process the form."""
         form = await self._build_form()
 
@@ -139,13 +139,8 @@ class CreateStorytellerRNGCharacter(MethodView):
         console.log(f"{form.data=}")
 
         if form.cancel.data:
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_create.start", campaign_id=form.campaign_id.data
-                    )
-                }
-            )
+            url = url_for("character_create.start", campaign_id=form.campaign_id.data)
+            return f'<script>window.location.href="{url}"</script>'
 
         # Create the character
         user = await fetch_user()
@@ -179,12 +174,9 @@ class CreateStorytellerRNGCharacter(MethodView):
 
         await update_session()
 
-        return Response(
-            headers={
-                "HX-Redirect": url_for(
-                    "character_view.view",
-                    character_id=str(generated_character.id),
-                    success_msg="<strong>Character created successfully.</strong>",
-                )
-            }
+        url = url_for(
+            "character_view.view",
+            character_id=str(generated_character.id),
+            success_msg="<strong>Character created successfully.</strong>",
         )
+        return f'<script>window.location.href="{url}"</script>'

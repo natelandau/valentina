@@ -30,12 +30,29 @@ from valentina.models import (
     GuildChannels,
     GuildPermissions,
     InventoryItem,
+    Note,
     RollStatistic,
     User,
     UserMacro,
 )
 
 from .conftest import CHANNEL_BOOK_ID, CHANNEL_CATEGORY_CAMPAIGN_ID, CHANNEL_CHARACTER_ID
+
+
+@register_fixture
+class NoteFactory(BeanieDocumentFactory[Note]):
+    """Factory to create a note object in the database."""
+
+    __model__ = Note
+    __faker__ = Faker(locale="en_US")
+    __set_as_default_factory_for_type__ = True
+    __min_collection_length__ = 1
+    __max_collection_length__ = 5
+    __randomize_collection_length__ = True
+
+    @classmethod
+    def text(cls) -> str:
+        return cls.__faker__.paragraph(nb_sentences=2)
 
 
 @register_fixture
@@ -154,10 +171,6 @@ class CampaignFactory(BeanieDocumentFactory[Campaign]):
     @classmethod
     def notes(cls) -> list:
         return []
-
-    # @classmethod
-    # def characters(cls) -> list:
-    #     return []
 
 
 @register_fixture
@@ -282,6 +295,10 @@ class CharacterFactory(BeanieDocumentFactory[Character]):
     __max_collection_length__ = 3
     __randomize_collection_length__ = True
     __set_as_default_factory_for_type__ = True
+
+    @classmethod
+    def bio(cls) -> str | None:
+        return cls.__faker__.paragraph(nb_sentences=3)
 
     @classmethod
     def channel(cls) -> GuildChannels:

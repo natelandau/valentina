@@ -137,6 +137,7 @@ class Note(commands.Cog):
             return
 
         note.text = modal.note_text.strip().capitalize()
+        note.guild_id = ctx.guild.id
         await note.save()
 
         await ctx.post_to_audit_log(f"Update note: `{note.id}`")

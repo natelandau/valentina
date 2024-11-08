@@ -1,0 +1,71 @@
+{# def
+    item: Note|NPC|InventoryItem,
+    TableType: TableType,
+    can_edit: bool = True,
+    parent_id: str = "",
+#}
+
+{% if TableType.name in ["NPC", "MACRO"] %}
+
+    {% set id_value = item.uuid %}
+
+{% else %}
+
+    {% set id_value = item.id %}
+
+{% endif %}
+
+<tr class="fade-me-out">
+    {%- if TableType.name == "NOTE" -%}
+        <td>{{ item.text | from_markdown_no_p | safe }}</td>
+    {%- elif TableType.name == "INVENTORYITEM" -%}
+        <td style="white-space: nowrap;">
+            <strong>{{- item.name | escape -}}</strong>
+        </td>
+        <td>{{- item.type | capitalize | escape -}}</td>
+        <td>{{- item.description | from_markdown | safe -}}</td>
+    {%- elif TableType.name == "NPC" -%}
+        <td>{{ item.name | capitalize | escape }}</td>
+        <td>{{ item.npc_class | escape }}</td>
+        <td>{{ item.description | from_markdown | safe }}</td>
+    {%- elif TableType.name == "MACRO" -%}
+        <td>{{ item.name | capitalize | escape }}</td>
+        <td>{{ item.abbreviation | escape }}</td>
+        <td>{{ item.description | from_markdown | safe }}</td>
+        <td>{{ item.trait_one | escape }}</td>
+        <td>{{ item.trait_two | escape }}</td>
+    {%- elif TableType.name == "CHAPTER" -%}
+        <td>
+            <strong>{{ item.number | escape }}</strong>
+        </td>
+        <td class="text-nowrap">
+            <strong>{{ item.name | title | escape }}</strong>
+        </td>
+        <td>{{ item.description_long | from_markdown | safe }}</td>
+    {%- endif -%}
+
+    {%- if can_edit %}
+        <td>
+            <div class="btn-group">
+                <button class="btn btn-sm btn-outline-primary"
+                        style="--bs-btn-padding-y: .25rem;
+                               --bs-btn-padding-x: .5rem;
+                               --bs-btn-font-size: .75rem"
+                        hx-post="{{ url_for(TableType.value.route, item_id=id_value, parent_id=parent_id) }}"
+                        hx-target="closest tr"
+                        hx-swap="outerHTML swap:1s"
+                        hx-trigger="click">Edit</button>
+
+                <button class="btn btn-sm btn-outline-danger"
+                        style="--bs-btn-padding-y: .25rem;
+                               --bs-btn-padding-x: .5rem;
+                               --bs-btn-font-size: .75rem"
+                        hx-delete="{{ url_for(TableType.value.route, item_id=id_value, parent_id=parent_id) }}"
+                        hx-confirm="Are you sure?"
+                        hx-target="closest tr"
+                        hx-swap="outerHTML swap:1s"
+                        hx-trigger="click">Delete</button>
+            </div>
+        </td>
+    {% endif %}
+</tr>

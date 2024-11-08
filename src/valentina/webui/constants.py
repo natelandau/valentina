@@ -1,8 +1,73 @@
 """Constants for the web UI."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Union
+
+
+@dataclass
+class EditableItem:
+    """Class for an item that can be edited."""
+
+    name: str
+    route: str
+    sort_attribute: str = ""
+    description: str = ""
+    table_headers: list[str] = field(default_factory=list)
+
+    @property
+    def route_suffix(self) -> str:
+        """Get just the suffix of the route. This is used in blueprints because the suffix is the view name and the prefix is the blueprint name."""
+        # return the last part of the route which is two words separated by a dot (e.g. test.view -> view)
+        return self.route.split(".")[1]
+
+
+class TextType(Enum):
+    """Enum for the type of text."""
+
+    BIOGRAPHY = EditableItem(name="Biography", route="partials.text_biography")
+    CAMPAIGN_DESCRIPTION = EditableItem(
+        name="Description", route="partials.text_campaign_description"
+    )
+
+
+class TableType(Enum):
+    """Enum for the type of table."""
+
+    NOTE = EditableItem(
+        name="Notes",
+        route="partials.table_note",
+        description="Jot down quick and dirty notes",
+        sort_attribute="text",
+    )
+    INVENTORYITEM = EditableItem(
+        name="Inventory Items",
+        route="partials.table_inventory",
+        description="Items the character owns",
+        sort_attribute="type,name",
+        table_headers=["Item", "Category", "Description"],
+    )
+    NPC = EditableItem(
+        name="NPCs",
+        route="partials.table_npc",
+        description="Quick reference to campaign NPCs",
+        sort_attribute="name",
+        table_headers=["Name", "Class", "Description"],
+    )
+    MACRO = EditableItem(
+        name="Macros",
+        route="partials.table_macro",
+        description="Speed dice rolling by preselecting traits",
+        table_headers=["Name", "Abbreviation", "Description", "Trait1", "Trait2"],
+        sort_attribute="name",
+    )
+    CHAPTER = EditableItem(
+        name="Chapters",
+        route="partials.table_chapter",
+        description="Chapters of the campaign book",
+        table_headers=["#", "Chapter", "Description"],
+        sort_attribute="number",
+    )
 
 
 @dataclass
@@ -51,59 +116,24 @@ class CampaignViewTab(Enum):
         return cls[value.upper()]
 
 
-class UserEditableInfo(Enum):
-    """Enum for the editable info of a user. Used to build blueprint routes and template variables."""
-
-    MACRO = EditItem(name="macro", route="user_profile.edit_macro", div_id="macro", tab=None)
-
-
 class CampaignEditableInfo(Enum):
     """Enum for the editable info of a campaign. Used to build blueprint routes and template variables."""
 
-    DESCRIPTION = EditItem(
-        name="description",
-        route="campaign.edit_description",
-        div_id="description",
-        tab=CampaignViewTab.OVERVIEW,
-    )
     BOOK = EditItem(
         name="book", route="campaign.edit_book", div_id="book", tab=CampaignViewTab.BOOKS
-    )
-    CHAPTER = EditItem(
-        name="chapter", route="campaign.edit_chapter", div_id="chapter", tab=CampaignViewTab.BOOKS
-    )
-    NOTE = EditItem(
-        name="note", route="campaign.edit_note", div_id="note", tab=CampaignViewTab.NOTES
-    )
-    NPC = EditItem(
-        name="npc", route="campaign.edit_npc", div_id="npc", tab=CampaignViewTab.CHARACTERS
     )
 
 
 class CharacterEditableInfo(Enum):
     """Enum for the editable info of a character. Used to build blueprint routes and template variables."""
 
-    NOTE = EditItem(
-        name="note", route="character_edit.edit_note", div_id="note", tab=CharacterViewTab.INFO
-    )
     CUSTOM_SECTION = EditItem(
         name="customsection",
         route="character_edit.edit_customsection",
         div_id="customsection",
         tab=CharacterViewTab.INFO,
     )
-    INVENTORY = EditItem(
-        name="inventory",
-        route="character_edit.edit_inventory",
-        div_id="inventory",
-        tab=CharacterViewTab.INFO,
-    )
-    BIOGRAPHY = EditItem(
-        name="biography",
-        route="character_edit.edit_biography",
-        div_id="biography",
-        tab=CharacterViewTab.BIOGRAPHY,
-    )
+
     DELETE = EditItem(
         name="delete",
         route="character_edit.delete_character",

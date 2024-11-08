@@ -81,15 +81,12 @@ class CreateRNGCharacter(MethodView):
         form = await request.form
 
         if form.get("reroll", None) == "true":
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_create.rng_player",
-                        character_type=request.args["character_type"],
-                        campaign_id=request.args["campaign_id"],
-                    )
-                }
+            url = url_for(
+                "character_create.rng_player",
+                character_type=request.args["character_type"],
+                campaign_id=request.args["campaign_id"],
             )
+            return f'<script>window.location.href="{url}"</script>'
 
         if selected_character_num := form.get("char_select", None):
             for num, character_id in session["RNG_DRAFT_CHARACTERS"].items():
@@ -125,14 +122,11 @@ class CreateRNGCharacter(MethodView):
             del session["RNG_DRAFT_CHARACTERS"]
             await update_session()
 
-            return Response(
-                headers={
-                    "HX-Redirect": url_for(
-                        "character_view.view",
-                        character_id=redirect_char_id,
-                        success_msg="<strong>Character created successfully.</strong>",
-                    )
-                }
+            url = url_for(
+                "character_view.view",
+                character_id=redirect_char_id,
+                success_msg="<strong>Character created successfully.</strong>",
             )
+            return f'<script>window.location.href="{url}"</script>'
 
         return abort(HTTPStatus.INTERNAL_SERVER_ERROR.value)
