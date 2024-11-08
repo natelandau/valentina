@@ -233,7 +233,7 @@ class EditTableView(MethodView):
 
                 return await UserMacroForm().create_form(data=data)
 
-            case _:
+            case _:  # pragma: no cover
                 assert_never()
 
     async def get(self) -> str:
@@ -278,7 +278,7 @@ class EditTableView(MethodView):
 
                 item = macro
 
-            case _:
+            case _:  # pragma: no cover
                 assert_never()
 
         return catalog.render(
@@ -363,7 +363,7 @@ class EditTableView(MethodView):
                     await user.save()
                     msg = f"Update Macro: `{item.name}`"
 
-                case _:
+                case _:  # pragma: no cover
                     assert_never()
 
             await post_to_audit_log(
@@ -499,7 +499,7 @@ class EditTableView(MethodView):
                     parent_id = str(user.id)
                     msg = f"Create Macro: `{form.data['name']}`"
 
-                case _:
+                case _:  # pragma: no cover
                     assert_never()
 
             await post_to_audit_log(
@@ -593,7 +593,7 @@ class EditTableView(MethodView):
                 await user.save()
                 msg = f"Delete Macro: `{macro.name}`"
 
-            case _:
+            case _:  # pragma: no cover
                 assert_never()
 
         await post_to_audit_log(

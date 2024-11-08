@@ -47,6 +47,8 @@ async def test_setup(
     ("table_type", "id_field", "parent_id_source"),
     [
         (TableType.NOTE, "note_id", "character"),
+        (TableType.NOTE, "note_id", "book"),
+        (TableType.NOTE, "note_id", "campaign"),
         (TableType.INVENTORYITEM, "item_id", "character"),
         (TableType.CHAPTER, "chapter_id", "book"),
         (TableType.NPC, "uuid", "campaign"),
@@ -84,6 +86,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
         "parent_link_field",  # Field on the parent object that is a list of target objects.
         "test_data",
         "update_data",
+        "parent_selector",  # New parameter to determine parent
     ),
     [
         (
@@ -95,6 +98,29 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
             "notes",
             {"text": "test note"},
             {"text": "updated note"},
+            lambda character, campaign, user, book: character,  # noqa: ARG005
+        ),
+        (
+            TableType.NOTE,
+            Note,
+            "id",
+            CampaignBook,
+            "book_id",
+            "notes",
+            {"text": "test note"},
+            {"text": "updated note"},
+            lambda character, campaign, user, book: book,  # noqa: ARG005
+        ),
+        (
+            TableType.NOTE,
+            Note,
+            "id",
+            Campaign,
+            "campaign_id",
+            "notes",
+            {"text": "test note"},
+            {"text": "updated note"},
+            lambda character, campaign, user, book: campaign,  # noqa: ARG005
         ),
         (
             TableType.INVENTORYITEM,
@@ -113,6 +139,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
                 "description": "updated description",
                 "type": "CONSUMABLE",
             },
+            lambda character, campaign, user, book: character,  # noqa: ARG005
         ),
         (
             TableType.CHAPTER,
@@ -131,6 +158,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
                 "description_short": "test short description updated",
                 "description_long": "test long description updated",
             },
+            lambda character, campaign, user, book: book,  # noqa: ARG005
         ),
         (
             TableType.NPC,
@@ -149,6 +177,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
                 "npc_class": "test class updated",
                 "description": "test description updated",
             },
+            lambda character, campaign, user, book: campaign,  # noqa: ARG005
         ),
         (
             TableType.MACRO,
@@ -171,6 +200,7 @@ async def test_form_load(test_setup, table_type, id_field, parent_id_source):
                 "trait_one": "Strength",
                 "trait_two": "Dexterity",
             },
+            lambda character, campaign, user, book: user,  # noqa: ARG005
         ),
     ],
 )
@@ -186,6 +216,7 @@ async def test_crud_operations(
     parent_link_field,
     test_data,
     update_data,
+    parent_selector,
     mocker,
 ):
     """Test create, update, and delete operations."""
@@ -197,15 +228,7 @@ async def test_crud_operations(
     )
 
     # Get appropriate parent based on table type
-    parent = (
-        book
-        if table_type == TableType.CHAPTER
-        else campaign
-        if table_type == TableType.NPC
-        else user
-        if table_type == TableType.MACRO
-        else character
-    )
+    parent = parent_selector(character, campaign, user, book)
 
     # Create
     create_data = {**test_data, parent_id_field: str(parent.id)} if parent_id_field else test_data
@@ -213,9 +236,6 @@ async def test_crud_operations(
     response = await test_client.put(
         f"{base_url}?parent_id={parent.id}", json=create_data, follow_redirects=True
     )
-    response_text = await response.get_data(as_text=True)
-    debug("response_text", response_text)
-
     assert response.status_code == 200
 
     # Verify creation
