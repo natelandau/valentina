@@ -18,7 +18,7 @@ from valentina.models import (
     User,
     UserMacro,
 )
-from valentina.utils import console, truncate_string
+from valentina.utils import truncate_string
 from valentina.webui import catalog
 from valentina.webui.constants import TableType
 from valentina.webui.utils import create_toast, fetch_active_campaign
@@ -397,21 +397,14 @@ class EditTableView(MethodView):
             On success: Rendered HTML fragment showing the newly created item
             On validation failure: Re-rendered form with error messages
         """
-        console.rule("PUT")
-        console.log("request.args", request.args)
-
         item: Note | InventoryItem | CampaignNPC | UserMacro
 
         parent_id = ""
         form = await self._build_form()
-        console.log("form.data", form.data)
 
         if await form.validate_on_submit():
             match self.table_type:
                 case TableType.NOTE:
-                    console.rule("NOTE")
-                    console.log("form.data", form.data)
-
                     parent_id = (
                         form.data["book_id"]
                         or form.data["character_id"]
@@ -437,8 +430,6 @@ class EditTableView(MethodView):
                     msg = f"Create Note: `{truncate_string(item.text, 10)}`"
 
                 case TableType.CHAPTER:
-                    console.rule("CHAPTER")
-                    console.log("form.data", form.data)
                     book = await CampaignBook.get(form.data["book_id"], fetch_links=True)
 
                     if not book:
@@ -458,9 +449,6 @@ class EditTableView(MethodView):
                     msg = f"Create Chapter: `{form.data['name']}`"
 
                 case TableType.INVENTORYITEM:
-                    console.rule("INVENTORYITEM")
-                    console.log("form.data", form.data)
-
                     character = await Character.get(form.data["character_id"])
                     if not character:
                         abort(400, "Invalid character ID")
@@ -514,11 +502,6 @@ class EditTableView(MethodView):
                 case _:
                     assert_never()
 
-            console.log("msg", msg)
-            console.log("parent_id", parent_id)
-            console.log("item", item)
-            console.log("self.table_type", self.table_type)
-            console.log("post to audit log")
             await post_to_audit_log(
                 msg=msg,
                 view=self.__class__.__name__,
@@ -531,7 +514,6 @@ class EditTableView(MethodView):
                 parent_id=parent_id,
             )
 
-        console.log("render form display partial")
         return catalog.render(
             "HTMXPartials.EditTable.FormDisplayPartial",
             form=form,
