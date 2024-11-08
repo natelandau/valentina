@@ -409,6 +409,9 @@ class EditTableView(MethodView):
         if await form.validate_on_submit():
             match self.table_type:
                 case TableType.NOTE:
+                    console.rule("NOTE")
+                    console.log("form.data", form.data)
+
                     parent_id = (
                         form.data["book_id"]
                         or form.data["character_id"]
@@ -455,6 +458,9 @@ class EditTableView(MethodView):
                     msg = f"Create Chapter: `{form.data['name']}`"
 
                 case TableType.INVENTORYITEM:
+                    console.rule("INVENTORYITEM")
+                    console.log("form.data", form.data)
+
                     character = await Character.get(form.data["character_id"])
                     if not character:
                         abort(400, "Invalid character ID")
@@ -508,6 +514,11 @@ class EditTableView(MethodView):
                 case _:
                     assert_never()
 
+            console.log("msg", msg)
+            console.log("parent_id", parent_id)
+            console.log("item", item)
+            console.log("self.table_type", self.table_type)
+            console.log("post to audit log")
             await post_to_audit_log(
                 msg=msg,
                 view=self.__class__.__name__,
@@ -520,6 +531,7 @@ class EditTableView(MethodView):
                 parent_id=parent_id,
             )
 
+        console.log("render form display partial")
         return catalog.render(
             "HTMXPartials.EditTable.FormDisplayPartial",
             form=form,
