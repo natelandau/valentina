@@ -416,6 +416,26 @@ wheels = [
 ]
 
 [[package]]
+name = "deptry"
+version = "0.21.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "packaging" },
+    { name = "requirements-parser" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7a/d5/fd7ad930e3ca09653a3cee5a79c423e13bfa7db988f375e3d52c4069970d/deptry-0.21.0.tar.gz", hash = "sha256:45ad8726ea46e16b6ec2af0078d2cdf1296131a0ed05374d7b29a2c70d192910", size = 156561 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/8b/4385fd8056e8722728923cc290bc852f99331f3aae597108600cbf60e49b/deptry-0.21.0-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:d3bfe6161846749e51985c1068e62bcc8f1fe06cc3070a12fe640388b4152e85", size = 1739152 },
+    { url = "https://files.pythonhosted.org/packages/93/2f/fc3315da954a71d5f69637878b788e1dde27ddcbed52f61aa66ecc7ce09b/deptry-0.21.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:168aa4ecfcc95f55723079df9f9c43ba90195c6927e050dec40ec985039d2e6e", size = 1642284 },
+    { url = "https://files.pythonhosted.org/packages/38/1f/ea372023f0f5a39e27a8894363107c35f81e01e74f74643f20736f42bc2c/deptry-0.21.0-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d5fea3669fc6e6f0f33d257d2ed002a312a0ab15ef58a35a7e94041bb1aeec4c", size = 1744235 },
+    { url = "https://files.pythonhosted.org/packages/68/a3/fce12e3e6bba5b4b683c3137d18a0dfe1e82be0d4fb4609d68901d9cf762/deptry-0.21.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a187bafca2adb1ed6e37fc885d4a25ab60264e47265c5114f1bbb77b8f745259", size = 1819989 },
+    { url = "https://files.pythonhosted.org/packages/f2/ae/84553d5a7556c319449bcc8e77adc8ddba0efcd32fd104353cd49ec07bb6/deptry-0.21.0-cp39-abi3-win_amd64.whl", hash = "sha256:e57cac29f0dfaedd89472a0bc146c4930788a436dbee13ddf5ee23fad7c0246d", size = 1594887 },
+    { url = "https://files.pythonhosted.org/packages/66/9a/3a3a44694fcea9c06e214cd74c6bc1e548035285c871c65890b3cf2a3073/deptry-0.21.0-cp39-abi3-win_arm64.whl", hash = "sha256:7e6077b4db23fb7b3f4e384af4f86a0aa28e7a8d136ed133923cd798eb4af76c", size = 1517883 },
+]
+
+[[package]]
 name = "dirty-equals"
 version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1242,6 +1262,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/52/5c/cafa97944de55738a6a2c5a7cee00d073cb80495032d2b112c4546525eca/pytest-clarity-1.0.1.tar.gz", hash = "sha256:505fe345fad4fe11c6a4187fe683f2c7c52c077caa1e135f3e483fe112db7772", size = 4891 }
 
 [[package]]
+name = "pytest-cov"
+version = "6.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "coverage" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/be/45/9b538de8cef30e17c7b45ef42f538a94889ed6a16f2387a6c89e73220651/pytest-cov-6.0.0.tar.gz", hash = "sha256:fde0b595ca248bb8e2d76f020b465f3b107c9632e6a1d1705f17834c89dcadc0", size = 66945 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/36/3b/48e79f2cd6a61dbbd4807b4ed46cb564b4fd50a76166b1c4ea5c1d9e2371/pytest_cov-6.0.0-py3-none-any.whl", hash = "sha256:eee6f1b9e61008bd34975a4d5bab25801eb31898b032dd55addc93e96fcaaa35", size = 22949 },
+]
+
+[[package]]
 name = "pytest-env"
 version = "1.1.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1472,6 +1505,19 @@ wheels = [
 ]
 
 [[package]]
+name = "requirements-parser"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "types-setuptools" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/05/70/80ed53ebd21853855aad552d4ed6c4934df62cd32fe9a3669fcdef59429c/requirements_parser-0.11.0.tar.gz", hash = "sha256:35f36dc969d14830bf459803da84f314dc3d17c802592e9e970f63d0359e5920", size = 23663 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/33/190393a7d36872e237cbc99e6c44d9a078a1ba7b406462fe6eafd5a28e04/requirements_parser-0.11.0-py3-none-any.whl", hash = "sha256:50379eb50311834386c2568263ae5225d7b9d0867fb55cf4ecc93959de2c2684", size = 14800 },
+]
+
+[[package]]
 name = "rich"
 version = "13.9.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1645,6 +1691,15 @@ wheels = [
 ]
 
 [[package]]
+name = "types-setuptools"
+version = "75.3.0.20241107"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/8b/626019697000a97e7eddf7d4f5a6951ac72aa167b6d29f06954a901229d4/types-setuptools-75.3.0.20241107.tar.gz", hash = "sha256:f66710e1cd4a936e5fcc12d4e49be1a67c34372cf753e87ebe704426451b4012", size = 43666 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/29/71f63f64bbdca142995ac816d1fa72fae298886c73f21086eed05596fc95/types_setuptools-75.3.0.20241107-py3-none-any.whl", hash = "sha256:bc6de6e2bcb6d610556304d0a69fe4ca208ac4896162647314ecfd9fd73d8550", size = 67584 },
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.12.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1681,26 +1736,33 @@ wheels = [
 
 [[package]]
 name = "valentina"
-version = "3.0.4"
+version = "3.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
+    { name = "aiohttp" },
     { name = "arrow" },
     { name = "audioop-lts" },
     { name = "beanie" },
     { name = "boto3" },
+    { name = "botocore" },
+    { name = "certifi" },
     { name = "confz" },
     { name = "faker" },
+    { name = "flask" },
     { name = "flask-discord" },
+    { name = "hypercorn" },
     { name = "inflect" },
     { name = "jinjax", extra = ["whitenoise"] },
     { name = "loguru" },
     { name = "markdown2" },
     { name = "markupsafe" },
+    { name = "motor" },
     { name = "numpy" },
     { name = "py-cord" },
     { name = "pydantic" },
     { name = "pygithub" },
+    { name = "pymongo" },
     { name = "quart" },
     { name = "quart-flask-patch" },
     { name = "quart-session" },
@@ -1709,12 +1771,15 @@ dependencies = [
     { name = "rich" },
     { name = "semver" },
     { name = "typer" },
+    { name = "werkzeug" },
+    { name = "wtforms" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "commitizen" },
     { name = "coverage" },
+    { name = "deptry" },
     { name = "dirty-equals" },
     { name = "djlint" },
     { name = "mypy" },
@@ -1724,6 +1789,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-clarity" },
+    { name = "pytest-cov" },
     { name = "pytest-env" },
     { name = "pytest-mock" },
     { name = "pytest-sugar" },
@@ -1738,22 +1804,29 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiofiles", specifier = ">=24.1.0" },
+    { name = "aiohttp", specifier = ">=3.10.10" },
     { name = "arrow", specifier = ">=1.3.0" },
     { name = "audioop-lts", specifier = ">=0.2.1" },
     { name = "beanie", specifier = ">=1.26.0,<2.0.0" },
     { name = "boto3", specifier = ">=1.35.24,<2.0.0" },
+    { name = "botocore", specifier = ">=1.35.56" },
+    { name = "certifi", specifier = ">=2024.8.30" },
     { name = "confz", specifier = ">=2.0.1,<3.0.0" },
     { name = "faker", specifier = ">=30.0.0" },
+    { name = "flask", specifier = ">=3.0.3" },
     { name = "flask-discord", specifier = ">=0.1.69" },
+    { name = "hypercorn", specifier = ">=0.17.3" },
     { name = "inflect", specifier = ">=7.4.0" },
     { name = "jinjax", extras = ["whitenoise"], specifier = ">=0.46" },
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "markdown2", specifier = ">=2.5.0" },
     { name = "markupsafe", specifier = ">=2.1.5" },
+    { name = "motor", specifier = ">=3.6.0" },
     { name = "numpy", specifier = ">=2.1.1,<2.2.0" },
     { name = "py-cord", specifier = ">=2.6.1,<2.7.0" },
     { name = "pydantic", specifier = ">=2.9.2,<3.0.0" },
     { name = "pygithub", specifier = ">=2.4.0" },
+    { name = "pymongo", specifier = ">=4.9.2" },
     { name = "quart", specifier = ">=0.19.6" },
     { name = "quart-flask-patch", specifier = ">=0.3.0" },
     { name = "quart-session", specifier = ">=3.0.0" },
@@ -1762,12 +1835,15 @@ requires-dist = [
     { name = "rich", specifier = ">=13.8.1" },
     { name = "semver", specifier = ">=3.0.2" },
     { name = "typer", specifier = ">=0.13.0,<0.14.0" },
+    { name = "werkzeug", specifier = ">=3.1.2" },
+    { name = "wtforms", specifier = ">=3.2.1" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "commitizen", specifier = ">=3.29.1" },
     { name = "coverage", specifier = ">=7.6.1" },
+    { name = "deptry", specifier = ">=0.21.0" },
     { name = "dirty-equals", specifier = ">=0.8.0" },
     { name = "djlint", specifier = ">=1.35.2" },
     { name = "mypy", specifier = ">=1.11.2" },
@@ -1777,6 +1853,7 @@ dev = [
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },
     { name = "pytest-clarity", specifier = ">=1.0.1" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-env", specifier = ">=1.1.5" },
     { name = "pytest-mock", specifier = ">=3.14.0" },
     { name = "pytest-sugar", specifier = ">=1.0.0" },
