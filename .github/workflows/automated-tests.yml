@@ -50,18 +50,10 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v4
 
-            # ----------------------------------------------
-            #    Install and run MongoDB
-            # ----------------------------------------------
-
             - name: Start MongoDB
               uses: supercharge/mongodb-github-action@1.11.0
               with:
                   mongodb-version: "8.0"
-
-            # ----------------------------------------------
-            # Setup Python, uv, and install project dependencies
-            # ----------------------------------------------
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/uv-python-package
@@ -80,45 +72,10 @@ jobs:
 
             - name: Run tests
               shell: bash
-              run: uv run pytest tests/
+              run: uv run poe test
 
-    upload-coverage:
-        runs-on: ubuntu-latest
-        needs:
-            - test-python-code
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-
-              # ----------------------------------------------
-              #    Install and run MongoDB
-              # ----------------------------------------------
-
-            - name: Start MongoDB
-              uses: supercharge/mongodb-github-action@1.11.0
-              with:
-                  mongodb-version: "8.0"
-
-              # ----------------------------------------------
-              # Setup Python, uv, and install project dependencies
-              # ----------------------------------------------
-
-            - name: Setup Python, uv, and the package
-              uses: ./.github/actions/uv-python-package
-
-              # ----------------------------------------------
-              # Run tests
-              # ----------------------------------------------
-
-            - name: Run tests with pytest
-              run: |
-                  uv run coverage run
-                  uv run coverage report
-                  uv run coverage xml
-              # ----------------------------------------------
-              #             upload coverage stats
-              # ----------------------------------------------
             - name: Upload coverage
+              if: ${{ matrix.python-version == '3.13' }}
               uses: codecov/codecov-action@v4
               with:
                   files: reports/coverage.xml
