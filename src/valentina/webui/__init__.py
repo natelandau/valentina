@@ -7,4 +7,4 @@ and JinjaX templates. It serves as the main entry point for the Valentina web UI
 
 from .web_app import catalog, configure_app, create_app, discord_oauth
 
-__all__ = ["catalog", "create_app", "discord_oauth", "configure_app"]
+__all__ = ["catalog", "configure_app", "create_app", "discord_oauth"]

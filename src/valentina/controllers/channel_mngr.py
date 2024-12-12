@@ -74,11 +74,10 @@ class ChannelManager:  # pragma: no cover
                 await self.delete_channel(channel)
                 await asyncio.sleep(1)
 
-            if (
+            if channel.name.startswith(
+                f"{Emoji.CHANNEL_PRIVATE.value}{Emoji.CHANNEL_PLAYER.value}"
+            ) or (
                 channel.name.startswith(
-                    f"{Emoji.CHANNEL_PRIVATE.value}{Emoji.CHANNEL_PLAYER.value}"
-                )
-                or channel.name.startswith(
                     f"{Emoji.CHANNEL_PRIVATE.value}{Emoji.CHANNEL_PLAYER_DEAD.value}"
                 )
                 and not any(
@@ -89,9 +88,8 @@ class ChannelManager:  # pragma: no cover
                 await self.delete_channel(channel)
                 await asyncio.sleep(1)
 
-            if (
-                channel.name.startswith(f"{Emoji.CHANNEL_PRIVATE.value}-")
-                or channel.name.startswith(f"{Emoji.CHANNEL_GENERAL.value}-")
+            if channel.name.startswith(f"{Emoji.CHANNEL_PRIVATE.value}-") or (
+                channel.name.startswith(f"{Emoji.CHANNEL_GENERAL.value}-")
                 and not (
                     campaign.channel_storyteller != channel.id
                     or campaign.channel_general != channel.id

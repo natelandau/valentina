@@ -30,9 +30,10 @@ from valentina.discord.utils import create_player_role, create_storyteller_role
 from valentina.utils import errors
 from valentina.utils.helpers import time_now
 
+from .campaign import Campaign
+
 if TYPE_CHECKING:
     from valentina.discord.bot import ValentinaContext
-    from valentina.models import Campaign
 
 
 class GuildRollResultThumbnail(BaseModel):
@@ -71,7 +72,7 @@ class Guild(Document):
 
     id: int  # type: ignore [assignment]
 
-    campaigns: list[Link["Campaign"]] = Field(default_factory=list)
+    campaigns: list[Link[Campaign]] = Field(default_factory=list)
     changelog_posted_version: str | None = None
     channels: GuildChannels = GuildChannels()
     date_created: datetime = Field(default_factory=time_now)

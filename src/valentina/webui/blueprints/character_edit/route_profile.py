@@ -202,7 +202,7 @@ class EditProfile(MethodView):
 
             # Iterate over all form fields and update character attributes if they exist and are not "None"
             has_updates = False
-            for key in form_data:
+            for key in form_data:  # noqa: PLC0206
                 if (not form_data[key] and getattr(character, key)) or (
                     form_data[key] and form_data[key] != getattr(character, key)
                 ):
