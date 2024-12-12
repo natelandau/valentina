@@ -8,9 +8,9 @@ repos:
     rev: v4.1.0
     hooks:
       - id: commitizen
-      #   - id: commitizen-branch
-      #     stages:
-      #         - push
+      - id: commitizen-branch
+        stages:
+          - pre-push
 
   - repo: "https://github.com/pre-commit/pygrep-hooks"
     rev: v1.10.0
@@ -135,5 +135,5 @@ ci:
   autofix_prs: true
   autoupdate_commit_msg: "build: pre-commit autoupdate"
   autoupdate_schedule: quarterly
-  skip: [stopwords]
+  skip: [stopwords, pytest]
   submodules: false
