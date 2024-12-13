@@ -81,14 +81,6 @@ repos:
     hooks:
       - id: deptry
 
-  # - repo: "https://github.com/pre-commit/mirrors-mypy"
-  #   rev: v1.11.2
-  #   hooks:
-  #     - id: mypy
-  #       name: "check type hints"
-  #       args: [--ignore-missing-imports]
-  #       additional_dependencies: [types-aiofiles]
-
   - repo: local
     hooks:
       # This calls a custom pre-commit script.
@@ -135,5 +127,5 @@ ci:
   autofix_prs: true
   autoupdate_commit_msg: "build: pre-commit autoupdate"
   autoupdate_schedule: quarterly
-  skip: [stopwords, pytest, deptry]
+  skip: [stopwords, pytest, deptry, mypy, shellcheck]
   submodules: false
