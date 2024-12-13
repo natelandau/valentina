@@ -7,6 +7,7 @@ from quart import Blueprint, abort, redirect, session, url_for
 
 from valentina.constants import HTTPStatus
 from valentina.models import User
+from valentina.utils import console
 from valentina.webui import discord_oauth
 from valentina.webui.utils import update_session
 
@@ -40,25 +41,34 @@ async def callback() -> Any:  # pragma: no cover
     """
     discord_oauth.callback()
 
-    user = discord_oauth.fetch_user()
-    session["USER_ID"] = user.id
-
-    db_user = await User.get(user.id)
+    oauth_user = discord_oauth.fetch_user()
+    session["USER_ID"] = oauth_user.id
+    db_user = await User.get(oauth_user.id)
 
     # Deny access to users who aren't playing in a guild
     # TODO: Add a custom page for this
     if not db_user:
-        logger.error(f"User {user.id} is not in the database.")
-        abort(HTTPStatus.BAD_REQUEST.value)
+        logger.error(f"User {oauth_user.name} with ID {oauth_user.id} is not in the database.")
+        abort(HTTPStatus.BAD_REQUEST.value, f"User {oauth_user.name} is not in the database.")
 
     matched_guilds = [
-        {"id": x.id, "name": x.name} for x in user.fetch_guilds() if int(x.id) in db_user.guilds
+        {"id": x.id, "name": x.name}
+        for x in oauth_user.fetch_guilds()
+        if int(x.id) in db_user.guilds
     ]
 
     if not matched_guilds:
-        abort(HTTPStatus.BAD_REQUEST.value)
+        logger.error(f"User {oauth_user.name} is not in any known guilds.")
+        console.print(
+            f"In the DB, user {oauth_user.name} is associated with the following guilds: {db_user.guilds}"
+        )
+        console.print(
+            f"In Discord, user {oauth_user.id} is associated with the following guilds: {[x.id for x in oauth_user.fetch_guilds()]}"
+        )
+        abort(HTTPStatus.BAD_REQUEST.value, f"User {oauth_user.name} is not in any known guilds.")
 
     if len(matched_guilds) == 1:
+        logger.info(f"User {oauth_user.name} is in one known guild: {matched_guilds[0]["id"]}.")
         session["GUILD_ID"] = matched_guilds[0]["id"]
         await update_session()
         return redirect(url_for("homepage.homepage"))
