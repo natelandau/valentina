@@ -43,6 +43,19 @@
         <link href="{{ url_for('static', filename='valentina.css') }}"
               rel="stylesheet">
     </head>
+    {% if config.GOOGLE_ANALYTICS_ID %}
+        <!-- Google tag (gtag.js) -->
+        <script async
+                src="https://www.googletagmanager.com/gtag/js?id={{ config.GOOGLE_ANALYTICS_ID }}"></script>
+        <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+            gtag('config', '{{ config.GOOGLE_ANALYTICS_ID }}');
+        </script>
+        <!-- End Google tag (gtag.js) -->
+    {% endif %}
     <body class="d-flex flex-column min-vh-100">
         {# include nav bar only when user is logged in #}
         {% if session["USER_ID"] is defined and session["GUILD_ID"] is defined %}<NavBar />{% endif %}
@@ -139,5 +152,12 @@
             var toastE = new bootstrap.Toast(toast);
             toastE.show();
         </script>
+        {% if config.CLOUDFLARE_WEB_ANALYTICS_TOKEN %}
+            <!-- Cloudflare Web Analytics -->
+            <script defer
+                    src='https://static.cloudflareinsights.com/beacon.min.js'
+                    data-cf-beacon='{"token": "{{ config.CLOUDFLARE_WEB_ANALYTICS_TOKEN }}"}'></script>
+            <!-- End Cloudflare Web Analytics -->
+        {% endif %}
     </body>
 </html>

@@ -11,6 +11,8 @@ class Config:
     DISCORD_CLIENT_SECRET = ValentinaConfig().discord_oauth_secret
     DISCORD_REDIRECT_URI = f"{ValentinaConfig().webui_base_url}/callback"
     DISCORD_BOT_TOKEN = ValentinaConfig().discord_token
+    CLOUDFLARE_WEB_ANALYTICS_TOKEN = ValentinaConfig().cloudflare_web_analytics_token
+    GOOGLE_ANALYTICS_ID = ValentinaConfig().google_analytics_id
 
 
 class Production(Config):
