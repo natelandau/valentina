@@ -1,3 +1,13 @@
+## v3.2.0 (2024-12-13)
+
+### Feat
+
+- **webui**: support Google or Cloudflare analytics (#207)
+
+### Fix
+
+- **webui**: improve logging of login errors (#206)
+
 ## v3.1.1 (2024-11-08)
 
 ### Fix
