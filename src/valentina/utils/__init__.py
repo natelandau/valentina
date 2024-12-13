@@ -6,11 +6,11 @@ from .helpers import random_num, random_string, truncate_string
 from .logging import instantiate_logger
 
 __all__ = [
+    "ValentinaConfig",
     "console",
     "debug_environment_variables",
     "instantiate_logger",
     "random_num",
     "random_string",
     "truncate_string",
-    "ValentinaConfig",
 ]

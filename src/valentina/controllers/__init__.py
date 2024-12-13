@@ -12,7 +12,7 @@ __all__ = [
     "CharacterSheetBuilder",
     "PermissionManager",
     "RNGCharGen",
-    "total_campaign_experience",
     "TraitForCreation",
     "TraitModifier",
+    "total_campaign_experience",
 ]

@@ -5,12 +5,12 @@ default_stages: [pre-commit, manual]
 fail_fast: true
 repos:
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: v3.30.0
+    rev: v4.1.0
     hooks:
       - id: commitizen
-      #   - id: commitizen-branch
-      #     stages:
-      #         - push
+      # - id: commitizen-branch
+      #   stages:
+      #     - pre-push
 
   - repo: "https://github.com/pre-commit/pygrep-hooks"
     rev: v1.10.0
@@ -59,35 +59,27 @@ repos:
         entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-    rev: "v0.7.3"
+    rev: "v0.8.3"
     hooks:
       - id: ruff
         exclude: tests/
       - id: ruff-format
 
   - repo: "https://github.com/crate-ci/typos"
-    rev: typos-dict-v0.11.35
+    rev: typos-dict-v0.11.37
     hooks:
       - id: typos
 
   - repo: "https://github.com/djlint/djLint"
-    rev: v1.36.1
+    rev: v1.36.3
     hooks:
       - id: djlint
         args: ["--configuration", "pyproject.toml"]
 
   - repo: "https://github.com/fpgmaas/deptry.git"
-    rev: "0.21.0"
+    rev: "0.21.1"
     hooks:
       - id: deptry
-
-  # - repo: "https://github.com/pre-commit/mirrors-mypy"
-  #   rev: v1.11.2
-  #   hooks:
-  #     - id: mypy
-  #       name: "check type hints"
-  #       args: [--ignore-missing-imports]
-  #       additional_dependencies: [types-aiofiles]
 
   - repo: local
     hooks:
@@ -126,3 +118,14 @@ repos:
           poetry\.lock|
           pyproject\.toml
           )
+
+ci:
+  autofix_commit_msg: |
+    fix: auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_commit_msg: "build: pre-commit autoupdate"
+  autoupdate_schedule: quarterly
+  skip: [stopwords, pytest, deptry, mypy, shellcheck]
+  submodules: false

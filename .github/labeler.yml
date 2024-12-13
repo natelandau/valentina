@@ -1,22 +1,19 @@
 ---
 ci:
-    - changed-files:
-          - any-glob-to-any-file: ".github/**"
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
 dev_container:
-    - changed-files:
-          - any-glob-to-any-file: ".devcontainer/**"
+  - changed-files:
+      - any-glob-to-any-file: ".devcontainer/**"
 configuration:
-    - changed-files:
-          - any-glob-to-any-file: [".*", "*.js", "*.json", "*.toml", "*.yaml", "*.yml"]
-documentation:
-    - changed-files:
-          - any-glob-to-any-file: ["**.md", "docs/**", "LICENSE"]
+  - changed-files:
+      - any-glob-to-any-file: [".*", "*.js", "*.json", "*.toml", "*.yaml", "*.yml"]
 valentina:
-    - changed-files:
-          - any-glob-to-any-file: ["src/**"]
+  - changed-files:
+      - any-glob-to-any-file: ["src/**"]
 tests:
-    - changed-files:
-          - any-glob-to-any-file: ["tests/**"]
-dependencies:
-    - changed-files:
-          - any-glob-to-any-file: "*.lock"
+  - changed-files:
+      - any-glob-to-any-file: ["tests/**"]
+build:
+  - changed-files:
+      - any-glob-to-any-file: ["*.lock", "pyproject.toml", "pre-commit-config.yaml"]
