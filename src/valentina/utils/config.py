@@ -66,6 +66,8 @@ class ValentinaConfig(BaseConfig):  # type: ignore [misc]
     redis_addr: str = "127.0.0.1:6379"
     webui_secret_key: str = ""
     webui_behind_reverse_proxy: ENV_BOOLEAN = False
+    cloudflare_web_analytics_token: str = ""
+    google_analytics_id: str = ""
 
     CONFIG_SOURCES: ClassVar[ConfigSources | None] = [
         EnvSource(prefix="VALENTINA_", file=PROJECT_ROOT_PATH / ".env", allow_all=True),
