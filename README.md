@@ -140,7 +140,7 @@ Settings for Valentina are controlled by environment variables. The following is
 | VALENTINA_DISCORD_OAUTH_CLIENT_ID |  | Sets the ID for the Discord OAuth. This is required to run the web UI. |
 | VALENTINA_WEBUI_BEHIND_REVERSE_PROXY | `false` | Set to `true` if the web UI is behind a reverse proxy. |
 | VALENTINA_WEBUI_ACCESS_LOG | `/valentina/access.log` | Sets the file to write access logs to.<br />Note, this is the directory used within the Docker container |
-| VALENTINA_CLOUDFLARE_WEB_ANALYTICS_TOKEN |  | Optional: Enable Cloudflare Web Analytics by setting this to your Cloudflare Web Analytics token |
+| VALENTINA_CLOUDFLARE_ANALYTICS_TOKEN |  | Optional: Enable Cloudflare Web Analytics by setting this to your Cloudflare Web Analytics token |
 | VALENTINA_GOOGLE_ANALYTICS_ID |  | Optional: Enable Google Analytics by setting this to your Google Analytics ID |
 
 ---

@@ -152,11 +152,11 @@
             var toastE = new bootstrap.Toast(toast);
             toastE.show();
         </script>
-        {% if config.CLOUDFLARE_WEB_ANALYTICS_TOKEN %}
+        {% if config.CLOUDFLARE_ANALYTICS_TOKEN %}
             <!-- Cloudflare Web Analytics -->
             <script defer
                     src='https://static.cloudflareinsights.com/beacon.min.js'
-                    data-cf-beacon='{"token": "{{ config.CLOUDFLARE_WEB_ANALYTICS_TOKEN }}"}'></script>
+                    data-cf-beacon='{"token": "{{ config.CLOUDFLARE_ANALYTICS_TOKEN }}"}'></script>
             <!-- End Cloudflare Web Analytics -->
         {% endif %}
     </body>

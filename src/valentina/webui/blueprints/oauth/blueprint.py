@@ -68,10 +68,15 @@ async def callback() -> Any:  # pragma: no cover
         abort(HTTPStatus.BAD_REQUEST.value, f"User {oauth_user.name} is not in any known guilds.")
 
     if len(matched_guilds) == 1:
-        logger.info(f"User {oauth_user.name} is in one known guild: {matched_guilds[0]["id"]}.")
+        logger.info(
+            f"User {oauth_user.name} is known to one guild: {matched_guilds[0]["id"]}. Logging in."
+        )
         session["GUILD_ID"] = matched_guilds[0]["id"]
         await update_session()
         return redirect(url_for("homepage.homepage"))
 
     session["matched_guilds"] = matched_guilds
+    logger.info(
+        f"User {oauth_user.name} is known to multiple guilds. Redirecting to guild selection before log in."
+    )
     return redirect(url_for("homepage.select_guild"))
