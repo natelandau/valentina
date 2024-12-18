@@ -41,3 +41,20 @@ The session object is used to store information about each user's session. Speci
 -   `USER_CHARACTERS` - A list of all the user's characters. This dictionary contains the following keys: `id`, `name`, `campaign_name`, `campaign_id`, `owner_name`, and `owner_id`.
 -   `USER_ID` - The user's database and Discord id
 -   `USER_NAME` - The user's Discord name
+
+## Global primitives
+
+The following primitives are available within all jinja templates. These are created using [JinjaX](https://jinjax.scaletti.dev/) partials and included in templates with a similar format to HTML tags.
+
+### Create a toast
+
+To create a toast, use the `global.Toast` primitive.
+
+Args:
+
+-   `msg` - The message to display in the toast.
+-   `level` - The level of the toast. Must be one of the following: `success`, `error`, `warning`, `info`.
+
+```jinja
+<global.Toast msg={{ msg }} level="success" />
+```

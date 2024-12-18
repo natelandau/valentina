@@ -1,10 +1,31 @@
 """Forms for HTMX Partials."""
 
 from quart_wtf import QuartForm
-from wtforms import HiddenField, SelectField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Length
+from wtforms import HiddenField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, Length, Optional, Regexp
 
 from valentina.constants import InventoryItemType, TraitCategory
+
+
+class AddExperienceForm(QuartForm):
+    """Form for adding experience."""
+
+    title = "Add Experience"
+
+    campaign = SelectField("Campaign", validators=[Optional()])
+    experience = StringField(
+        "Experience",
+        default="0",
+        validators=[Regexp(regex=r"^\d+$", message="Must be a positive integer")],
+    )
+    cool_points = StringField(
+        "Cool Points",
+        default="0",
+        validators=[Regexp(regex=r"^\d+$", message="Must be a positive integer")],
+    )
+    target_id = HiddenField()
+    submit = SubmitField("Submit")
+    cancel = SubmitField("Cancel")
 
 
 class CampaignDescriptionForm(QuartForm):

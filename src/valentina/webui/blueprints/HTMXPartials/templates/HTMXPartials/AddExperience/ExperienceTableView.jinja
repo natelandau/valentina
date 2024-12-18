@@ -1,0 +1,62 @@
+{# def
+    user: User,
+    campaign_experience: list[CampaignExperience],
+    can_grant_xp: bool = False,
+    parent_id: str = "",
+    success_msg: str = "",
+    random_id: str = "",
+#}
+
+<div class="fade-me-out">
+    {%- if can_grant_xp %}
+        <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+                hx-post="{{ url_for('partials.addexperience', target_id=user.id) }}"
+                hx-trigger="click"
+                hx-target="#experience-table"
+                hx-swap="innerHTML swap:1s">Add Experience</button>
+    {%- endif %}
+
+    <global.Subtitle title="Experience" header_size="h4" />
+
+    <table class="table table-borderless table-sm">
+        <tr>
+            <td>
+                <strong>Lifetime xp</strong>
+            </td>
+            <td class="font-monospace">{{ user.lifetime_experience }}</td>
+        </tr>
+        <tr>
+            <td>
+                <strong>Lifetime cp</strong>
+            </td>
+            <td class="font-monospace">{{ user.lifetime_cool_points }}</td>
+        </tr>
+        {% for campaign in campaign_experience %}
+            <tr>
+                <td colspan="2" class="text-center border-bottom lead">
+                    <small>{{ campaign.name | title }}</small>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <strong>Available XP</strong>
+                </td>
+                <td class="font-monospace">{{ campaign.xp }}</td>
+            </tr>
+            <tr>
+                <td>
+                    <strong>Total XP</strong>
+                </td>
+                <td class="font-monospace">{{ campaign.total_xp }}</td>
+            </tr>
+            <tr>
+                <td>
+                    <strong>Cool Points</strong>
+                </td>
+                <td class="font-monospace">{{ campaign.cp }}</td>
+            </tr>
+        {% endfor %}
+
+    </table>
+</div>
+{% if success_msg %}<global.Toast msg={{ success_msg }} level="success" />{% endif %}
