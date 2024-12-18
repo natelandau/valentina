@@ -1,0 +1,62 @@
+{# def
+    level: Literal["success", "error", "warning", "info"] = "success",
+    msg: str,
+#}
+
+{% set charlist = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789" %}
+
+{% set randomstring = namespace(value='') %}
+
+{% for i in range(8) %}
+
+    {% set randomstring.value = randomstring.value ~ charlist | random %}
+
+{% endfor %}
+
+{% if level == "success" %}
+
+    {% set color = "text-bg-success" %}
+
+    {% set icon = "fa-solid fa-circle-check" %}
+
+{% elif level == "error" %}
+
+    {% set color = "text-bg-danger" %}
+
+    {% set icon = "fa-solid fa-circle-exclamation" %}
+
+{% elif level == "warning" %}
+
+    {% set color = "text-bg-warning" %}
+
+    {% set icon = "fa-solid fa-triangle-exclamation" %}
+
+{% elif level == "info" %}
+
+    {% set color = "text-bg-info" %}
+
+    {% set icon = "fa-solid fa-circle-info" %}
+
+{% endif %}
+
+<div class="toast-container top-0 start-50 translate-middle-x mt-5 pt-5">
+    <div class="toast {{ randomstring.value }} align-items-center {{ color }} border-0 "
+         role="alert"
+         aria-live="assertive"
+         aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="{{ icon }}"></i>&nbsp;&nbsp;{{ msg }}
+            </div>
+            <button type="button"
+                    class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+<script>
+        var toastR = document.querySelector(".{{ randomstring.value }}");
+        var toastE = new bootstrap.Toast(toastR);
+        toastE.show();
+</script>

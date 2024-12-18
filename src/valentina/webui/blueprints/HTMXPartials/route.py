@@ -1,5 +1,6 @@
 """Routes for handling HTMX partials."""
 
+from dataclasses import dataclass
 from typing import assert_never
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from quart import abort, request, session
 from quart.views import MethodView
 from quart_wtf import QuartForm
 
+from valentina.controllers import PermissionManager
 from valentina.models import (
     Campaign,
     CampaignBook,
@@ -19,19 +21,21 @@ from valentina.models import (
     User,
     UserMacro,
 )
-from valentina.utils import truncate_string
+from valentina.utils import random_string, truncate_string
 from valentina.webui import catalog
 from valentina.webui.constants import TableType, TextType
 from valentina.webui.utils import (
     create_toast,
     fetch_active_campaign,
     fetch_active_character,
+    fetch_guild,
     sync_channel_to_discord,
     update_session,
 )
 from valentina.webui.utils.discord import post_to_audit_log
 
 from .forms import (
+    AddExperienceForm,
     CampaignChapterForm,
     CampaignDescriptionForm,
     CampaignNPCForm,
@@ -40,6 +44,143 @@ from .forms import (
     NoteForm,
     UserMacroForm,
 )
+
+
+class AddExperienceView(MethodView):
+    """Handle adding experience to a user."""
+
+    def __init__(self) -> None:
+        self.permission_manager = PermissionManager(guild_id=session["GUILD_ID"])
+
+    def _build_success_message(self, experience: int, cool_points: int, target_name: str) -> str:
+        """Build success message for experience/cool points addition.
+
+        Args:
+            experience: Amount of XP added
+            cool_points: Amount of CP added
+            target_name: Name of target user
+
+        Returns:
+            Formatted message string
+        """
+        xp_msg = f"{experience} XP" if experience > 0 else ""
+        cp_msg = f"{cool_points} CP" if cool_points > 0 else ""
+
+        if xp_msg and cp_msg:
+            return f"Add {xp_msg} and {cp_msg} to {target_name}"
+
+        if xp_msg:
+            return f"Add {xp_msg} to {target_name}"
+
+        return f"Add {cp_msg} to {target_name}"
+
+    async def render_table(self, target_id: int, success_msg: str = "") -> str:
+        """Render the experience table HTML for a target user. This is used to display the experience table in the webui and is called by the get and post methods.
+
+        Args:
+            target_id (str): ID of the target user
+            success_msg (str): Optional success message to display
+
+        Returns:
+            str: HTML snippet containing the experience table with campaign-specific XP,
+                total XP, and cool points. Includes success message if provided.
+        """
+        target = await User.get(target_id)
+        if not target:
+            abort(404)
+
+        guild = await fetch_guild(fetch_links=True)
+
+        can_grant_xp = await self.permission_manager.can_grant_xp(
+            author_id=session["USER_ID"], target_id=target_id
+        )
+
+        @dataclass
+        class UserCampaignExperience:
+            """Experience for a user in a campaign."""
+
+            name: str
+            xp: int
+            total_xp: int
+            cp: int
+
+        campaign_experience = []
+        for campaign in guild.campaigns:
+            campaign_xp, campaign_total_xp, campaign_cp = target.fetch_campaign_xp(campaign)
+            campaign_experience.append(
+                UserCampaignExperience(campaign.name, campaign_xp, campaign_total_xp, campaign_cp)  # type: ignore [attr-defined]
+            )
+
+        random_id = random_string(4)  # used with success_msg
+        return catalog.render(
+            "HTMXPartials.AddExperience.ExperienceTableView",
+            user=target,
+            campaign_experience=campaign_experience,
+            can_grant_xp=can_grant_xp,
+            success_msg=success_msg,
+            random_id=random_id,
+        )
+
+    async def get(self, target_id: int) -> str:
+        """Render the HTML snippet for the Target's experience table.
+
+        Args:
+            target_id (int): ID of the target user
+
+        Returns:
+            str: HTML snippet containing the experience table with campaign-specific XP,
+                total XP, and cool points.
+        """
+        return await self.render_table(target_id)
+
+    async def post(self, target_id: int) -> str:
+        """Process a form submission to add experience points and cool points to a user.
+
+        Validates permissions, processes the form data, and updates the user's experience
+        and cool points for the specified campaign. Returns an updated experience table
+        view on success, or the form with errors on failure.
+
+        Args:
+            target_id (int): ID of the target user
+
+        Returns:
+            str: HTML snippet containing either the updated experience table or form with errors
+        """
+        target = await User.get(target_id)
+        if not target:
+            abort(404, "Target user ID not found")
+
+        can_grant_xp = await self.permission_manager.can_grant_xp(
+            author_id=session["USER_ID"], target_id=target_id
+        )
+
+        if not can_grant_xp:
+            abort(403, "You do not have permission to add experience to this user")
+
+        guild = await fetch_guild(fetch_links=True)
+        form = await AddExperienceForm().create_form(data={"target_id": target_id})
+        form.campaign.choices = [(campaign.id, campaign.name) for campaign in guild.campaigns]  # type: ignore [attr-defined]
+
+        if await form.validate_on_submit() and form.data["submit"]:
+            experience = int(form.data["experience"])
+            cool_points = int(form.data["cool_points"])
+            campaign = await fetch_active_campaign(form.data["campaign"])
+
+            if not campaign:
+                abort(400, "Invalid campaign ID")
+
+            if experience > 0:
+                await target.add_campaign_xp(campaign=campaign, amount=experience)
+            if cool_points > 0:
+                await target.add_campaign_cool_points(campaign=campaign, amount=cool_points)
+
+            msg = self._build_success_message(experience, cool_points, target.name)
+            await post_to_audit_log(msg=msg, view=self.__class__.__name__)
+            return await self.render_table(target_id, success_msg=msg)
+
+        return catalog.render(
+            "HTMXPartials.AddExperience.FormPartial", form=form, target_id=target_id
+        )
 
 
 class EditTableView(MethodView):
@@ -53,8 +194,8 @@ class EditTableView(MethodView):
         """Initialize view with specified table type.
 
         Args:
-            table_type: Enum determining which type of table (Notes, Items, NPCs)
-                       this view instance will handle
+            table_type (TableType): Enum determining which type of table (Notes, Items, NPCs)
+                                    this view instance will handle
         """
         self.table_type: TableType = table_type
 

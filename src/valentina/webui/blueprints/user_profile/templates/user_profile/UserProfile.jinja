@@ -10,6 +10,7 @@
     characters: list[Character],
     emoji: Emoji,
     table_type_macro: TableType,
+    can_grant_xp: bool,
 #}
 
 {% set can_edit = session["USER_ID"] == user.id %}
@@ -67,48 +68,9 @@
         </div>
         <div class="col-xl-4 col-md-6 mb-6">
             <div class="card h-100 shadow">
-                <div class="card-body">
-                    <global.Subtitle title="Experience" header_size="h4" />
+                <div class="card-body" id="experience-table">
+                    <HTMXPartials.AddExperience.ExperienceTableView user={{ user }} campaign_experience={{ campaign_experience }} can_grant_xp={{ can_grant_xp }} parent_id="experience-table" />
 
-                    <table class="table table-borderless table-sm">
-                        <tr>
-                            <td>
-                                <strong>Lifetime xp</strong>
-                            </td>
-                            <td class="font-monospace">{{ user.lifetime_experience }}</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <strong>Lifetime cp</strong>
-                            </td>
-                            <td class="font-monospace">{{ user.lifetime_cool_points }}</td>
-                        </tr>
-                        {% for campaign in campaign_experience %}
-                            <tr>
-                                <td colspan="2" class="text-center border-bottom lead">
-                                    <small>{{ campaign.name | title }}</small>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <strong>Available XP</strong>
-                                </td>
-                                <td class="font-monospace">{{ campaign.xp }}</td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <strong>Total XP</strong>
-                                </td>
-                                <td class="font-monospace">{{ campaign.total_xp }}</td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <strong>Cool Points</strong>
-                                </td>
-                                <td class="font-monospace">{{ campaign.cp }}</td>
-                            </tr>
-                        {% endfor %}
-                    </table>
                 </div>
             </div>
         </div>

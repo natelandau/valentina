@@ -9,6 +9,7 @@ from quart import abort, request, session
 from quart.views import MethodView
 
 from valentina.constants import Emoji
+from valentina.controllers import PermissionManager
 from valentina.discord.utils import get_user_from_id
 from valentina.models import Character, Statistics, User
 from valentina.webui import catalog
@@ -20,6 +21,9 @@ class UserProfile(MethodView):
     """Route for the user profile."""
 
     decorators: ClassVar = [requires_authorization]
+
+    def __init__(self) -> None:
+        self.permission_manager = PermissionManager(guild_id=session["GUILD_ID"])
 
     async def get(self, user_id: int) -> str:
         """Get the user profile.
@@ -55,6 +59,10 @@ class UserProfile(MethodView):
 
         guild = await fetch_guild(fetch_links=True)
 
+        can_grant_xp = await self.permission_manager.can_grant_xp(
+            author_id=session["USER_ID"], target_id=user_id
+        )
+
         @dataclass
         class UserCampaignExperience:
             """Experience for a user in a campaign."""
@@ -84,6 +92,7 @@ class UserProfile(MethodView):
             campaign_experience=campaign_experience,
             emoji=Emoji,
             table_type_macro=TableType.MACRO,
+            can_grant_xp=can_grant_xp,
             error_msg=request.args.get("error_msg", ""),
             success_msg=request.args.get("success_msg", ""),
             info_msg=request.args.get("info_msg", ""),

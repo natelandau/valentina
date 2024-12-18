@@ -66,7 +66,7 @@ repos:
       - id: ruff-format
 
   - repo: "https://github.com/crate-ci/typos"
-    rev: typos-dict-v0.11.37
+    rev: v1.28.4
     hooks:
       - id: typos
 

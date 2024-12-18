@@ -43,6 +43,11 @@ async def test_setup(
     book = await book_factory.build(campaign=str(campaign.id), chapters=[], notes=[]).insert()
     campaign.books.append(book)
     await campaign.save()
+    guild.campaigns.append(campaign)
+    guild.storytellers.append(user.id)
+    await guild.save()
+    user.guilds.append(guild.id)
+    await user.save()
 
     async with test_client.session_transaction() as session:
         session.update(mock_session(user_id=user.id, guild_id=guild.id))
@@ -394,3 +399,39 @@ async def test_edit_text_form_crud_operations(
     assert response.status_code == 200
     parent = await parent_model.get(parent.id)
     assert getattr(parent, parent_field) == update_data[next(iter(update_data.keys()))]
+
+
+@pytest.mark.drop_db
+async def test_experience_table_load(debug, test_setup):
+    """Test experience table load."""
+    _, _, user, _, test_client = test_setup
+
+    response = await test_client.get(f"/partials/addexperience/{user.id}")
+    assert response.status_code == 200
+
+
+@pytest.mark.drop_db
+async def test_experience_table_crud_operations(debug, test_setup):
+    """Test experience table crud operations."""
+    # Given a user and campaign with no existing experience
+    _, campaign, user, _, test_client = test_setup
+    campaign_id = str(campaign.id)
+
+    # When submitting a form to add experience and cool points
+    form_data = {
+        "campaign": campaign_id,
+        "experience": "100",
+        "cool_points": "100",
+        "submit": "true",
+    }
+    response = await test_client.post(
+        f"/partials/addexperience/{user.id}", json=form_data, follow_redirects=True
+    )
+
+    # Then the request succeeds and experience is updated correctly
+    assert response.status_code == 200
+
+    # Cool points give 10xp each, so 100 cool points = 1000xp
+    updated_user = await User.get(user.id, fetch_links=True)
+    campaign_xp = updated_user.fetch_campaign_xp(campaign)
+    assert campaign_xp == (1100, 1100, 100)  # (current_xp, total_xp, cool_points)
