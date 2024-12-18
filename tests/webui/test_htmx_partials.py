@@ -44,6 +44,7 @@ async def test_setup(
     campaign.books.append(book)
     await campaign.save()
     guild.campaigns.append(campaign)
+    guild.storytellers.append(user.id)
     await guild.save()
     user.guilds.append(guild.id)
     await user.save()
