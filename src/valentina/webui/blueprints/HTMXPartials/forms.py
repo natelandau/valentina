@@ -1,10 +1,25 @@
 """Forms for HTMX Partials."""
 
 from quart_wtf import QuartForm
-from wtforms import HiddenField, SelectField, StringField, SubmitField, TextAreaField
+from quart_wtf.file import FileAllowed, FileField
+from wtforms import (
+    HiddenField,
+    SelectField,
+    StringField,
+    SubmitField,
+    TextAreaField,
+)
 from wtforms.validators import DataRequired, Length, Optional, Regexp
 
-from valentina.constants import InventoryItemType, TraitCategory
+from valentina.constants import VALID_IMAGE_EXTENSIONS, InventoryItemType, TraitCategory
+
+
+class CharacterImageUploadForm(QuartForm):
+    """Form for uploading an image to a character."""
+
+    image = FileField("Image", validators=[FileAllowed(VALID_IMAGE_EXTENSIONS, "Images only!")])  # type: ignore [arg-type]
+    submit = SubmitField("Submit")
+    cancel = SubmitField("Cancel")
 
 
 class AddExperienceForm(QuartForm):

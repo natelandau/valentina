@@ -1,5 +1,6 @@
 """Character models for Valentina."""
 
+import re
 from datetime import datetime
 from typing import Optional, Union, cast
 from uuid import UUID, uuid4
@@ -247,9 +248,12 @@ class Character(Document):
         """
         aws_svc = AWSService()
 
-        # Generate the key for the image
+        existing_images = [
+            int(re.search(r"(\d+)\.", x.split("/")[-1]).group(1)) for x in self.images
+        ]
+
         key_prefix = f"{self.guild}/characters/{self.id}"
-        image_number = len(self.images) + 1
+        image_number = max(existing_images) + 1 if existing_images else 1
         image_name = f"{image_number}.{extension}"
         key = f"{key_prefix}/{image_name}"
 

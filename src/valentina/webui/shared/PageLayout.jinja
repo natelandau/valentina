@@ -42,6 +42,8 @@
         {{ catalog.render_assets() }}
         <link href="{{ url_for('static', filename='valentina.css') }}"
               rel="stylesheet">
+        {% block head %}
+        {% endblock head %}
     </head>
     {% if config.GOOGLE_ANALYTICS_ID %}
         <!-- Google tag (gtag.js) -->

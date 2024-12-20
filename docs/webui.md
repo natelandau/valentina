@@ -58,3 +58,30 @@ Args:
 ```jinja
 <global.Toast msg={{ msg }} level="success" />
 ```
+
+## HTMX
+
+[HTMX](https://htmx.org/) is a library that allows you to add interactivity to your HTML without needing to write JavaScript. It is used to handle the interaction between the client and the server. Common patterns used in Valentina are:
+
+### Confirmation Dialogs before issuing requests
+
+The javascript package [SweetAlert2](https://sweetalert2.github.io/) is used to create confirmation dialogs. To confirm an HTMX request before it is issued to the server, follow this pattern. Note the `hx-trigger='confirmed'` and the `onClick` event which pauses the HTMX request until the user confirms the dialog.
+
+**NOTE:** SweetAlert2 is not loaded by default. It must be added to the individual pages that require it. Use the `{% block head %}` tag to add it to the page.
+
+```jinja
+{% block head %}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock head %}
+```
+
+To see an example of the confirmation dialog integration with HTMX, see the `Delete Image` button in the character view.
+
+```jinja
+<button class="btn btn-danger btn-sm ms-3"
+    hx-delete="{{ url_for('partials.characterimages', character_id=character.id, url=img_url) }}"
+    hx-trigger='confirmed'
+    onClick="Swal.fire({title: 'Confirm Delete', text:'Are you sure you want to delete this image?', confirmButtonText: 'Confirm',confirmButtonColor: 'red', showCancelButton: true}).then((result)=>{ if(result.isConfirmed){ htmx.trigger(this, 'confirmed'); } })"
+    hx-target="#character-images-body"
+    hx-swap="innerHTML swap:0.5s">Delete Image</button>
+```
