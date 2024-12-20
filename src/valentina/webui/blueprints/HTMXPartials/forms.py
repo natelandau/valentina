@@ -17,7 +17,10 @@ from valentina.constants import VALID_IMAGE_EXTENSIONS, InventoryItemType, Trait
 class CharacterImageUploadForm(QuartForm):
     """Form for uploading an image to a character."""
 
-    image = FileField("Image", validators=[FileAllowed(VALID_IMAGE_EXTENSIONS, "Images only!")])  # type: ignore [arg-type]
+    image = FileField(
+        "Upload Character Image",
+        validators=[FileAllowed(VALID_IMAGE_EXTENSIONS, "Images only!")],  # type: ignore [arg-type]
+    )
     submit = SubmitField("Submit")
     cancel = SubmitField("Cancel")
 
