@@ -5,9 +5,6 @@ ci:
 dev_container:
   - changed-files:
       - any-glob-to-any-file: ".devcontainer/**"
-configuration:
-  - changed-files:
-      - any-glob-to-any-file: [".*", "*.js", "*.json", "*.toml", "*.yaml", "*.yml"]
 valentina:
   - changed-files:
       - any-glob-to-any-file: ["src/**"]
