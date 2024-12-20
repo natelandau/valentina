@@ -2,7 +2,6 @@
 
 from typing import ClassVar
 
-from beanie import DeleteRules
 from flask_discord import requires_authorization
 from loguru import logger
 from quart import Response, abort, request, session, url_for
@@ -13,7 +12,7 @@ from valentina.constants import (
     HTTPStatus,
     RNGCharLevel,
 )
-from valentina.controllers import RNGCharGen
+from valentina.controllers import RNGCharGen, delete_character
 from valentina.models import Character
 from valentina.webui import catalog
 from valentina.webui.utils import (
@@ -38,7 +37,7 @@ class CreateRNGCharacter(MethodView):
             Character.user_owner == session["USER_ID"],
         ):
             logger.debug(f"Draft RNG characters out of state, deleting invalid character {char.id}")
-            await char.delete(link_rule=DeleteRules.DELETE_LINKS)
+            await delete_character(char)
 
         # Create three new RNG characters for the user to choose from
         user = await fetch_user()
@@ -95,7 +94,7 @@ class CreateRNGCharacter(MethodView):
                 # Delete characters that were not selected
                 if num != selected_character_num:
                     logger.debug(f"CHARGEN: Deleting unselected character {character_id}")
-                    await character.delete(link_rule=DeleteRules.DELETE_LINKS)
+                    await delete_character(character)
                     continue
 
                 # Add the selected character to the campaign and the player or storyteller

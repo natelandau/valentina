@@ -190,7 +190,7 @@ class AddFromSheetWizard:  # pragma: no cover
 
         # Create channel
         if self.campaign:
-            channel_manager = ChannelManager(guild=self.ctx.guild, user=self.ctx.author)
+            channel_manager = ChannelManager(guild=self.ctx.guild)
             await channel_manager.confirm_character_channel(
                 character=self.character, campaign=self.campaign
             )

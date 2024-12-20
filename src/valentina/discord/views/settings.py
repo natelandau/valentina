@@ -166,7 +166,7 @@ class SettingsChannelSelect(discord.ui.View):
             channel (discord.TextChannel): The selected Discord text channel.
         """
         if enable and channel is not None:
-            channel_manager = ChannelManager(guild=self.ctx.guild, user=self.ctx.author)
+            channel_manager = ChannelManager(guild=self.ctx.guild)
             await channel_manager.channel_update_or_add(
                 channel=channel, topic=self.channel_topic, permissions=self.permissions
             )

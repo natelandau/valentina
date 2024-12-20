@@ -5,7 +5,6 @@ from pathlib import Path
 
 import discord
 import inflect
-from beanie import DeleteRules
 from discord.commands import Option
 from discord.ext import commands
 from loguru import logger
@@ -17,7 +16,7 @@ from valentina.constants import (
     DiceType,
     EmbedColor,
 )
-from valentina.controllers import ChannelManager, RNGCharGen
+from valentina.controllers import ChannelManager, RNGCharGen, delete_character
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.characters import AddFromSheetWizard
 from valentina.discord.utils import fetch_channel_object
@@ -268,7 +267,7 @@ class StoryTeller(commands.Cog):
 
         await view.wait()
         if not view.confirmed:
-            await character.delete(link_rule=DeleteRules.DELETE_LINKS)
+            await delete_character(character)
 
             await msg.edit_original_response(  # type: ignore [union-attr]
                 embed=discord.Embed(
@@ -412,8 +411,7 @@ class StoryTeller(commands.Cog):
         if not is_confirmed:
             return
 
-        await character.delete(link_rule=DeleteRules.DELETE_LINKS)
-
+        await delete_character(character)
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(name="add_trait", description="Add a trait to a storyteller character")
@@ -634,7 +632,7 @@ class StoryTeller(commands.Cog):
         character.user_owner = new_owner.id
         await character.save()
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.confirm_character_channel(character=character, campaign=campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)

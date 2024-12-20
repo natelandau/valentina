@@ -5,13 +5,12 @@ from pathlib import Path
 
 import discord
 import inflect
-from beanie import DeleteRules
 from discord.commands import Option
 from discord.ext import commands
 from discord.ext.commands import MemberConverter
 
 from valentina.constants import VALID_IMAGE_EXTENSIONS, RollResultType
-from valentina.controllers import ChannelManager
+from valentina.controllers import ChannelManager, delete_character
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.utils import assert_permissions
 from valentina.discord.utils.autocomplete import select_any_character, select_campaign
@@ -22,7 +21,7 @@ from valentina.discord.views import (
     confirm_action,
     present_embed,
 )
-from valentina.models import Guild, User
+from valentina.models import Guild
 from valentina.utils import errors
 from valentina.utils.helpers import fetch_data_from_url
 
@@ -77,7 +76,7 @@ class AdminCog(commands.Cog):
 
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         for campaign in guild.campaigns:
             await channel_manager.delete_campaign_channels(campaign)
             await channel_manager.confirm_campaign_channels(campaign)
@@ -129,7 +128,7 @@ class AdminCog(commands.Cog):
         character.campaign = str(campaign.id)
         await character.save()
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.delete_character_channel(character)
         await channel_manager.confirm_character_channel(character=character, campaign=campaign)
         await channel_manager.sort_campaign_channels(campaign)
@@ -160,7 +159,7 @@ class AdminCog(commands.Cog):
         if not is_confirmed:
             return
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         for campaign in guild.campaigns:
             await channel_manager.delete_campaign_channels(campaign)
 
@@ -193,14 +192,7 @@ class AdminCog(commands.Cog):
         if not is_confirmed:
             return
 
-        user = await User.get(str(character.user_owner), fetch_links=True)
-        await user.remove_character(character)
-        await user.save()
-
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
-        await channel_manager.delete_character_channel(character)
-
-        await character.delete(link_rule=DeleteRules.DELETE_LINKS)
+        await delete_character(character)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

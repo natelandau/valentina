@@ -360,6 +360,28 @@ class Character(Document):
         aws_svc.delete_object(key)
         logger.info(f"S3: Delete {key} from {self.name}")
 
+    async def delete_all_images(self) -> None:
+        """Delete all images associated with a character from both S3 storage and database.
+
+        Iterates through all image keys stored in the character's images list, deleting each
+        image from S3 storage and removing the reference from the database.
+
+        Returns:
+            None
+        """
+        if not self.images:
+            return
+
+        aws_svc = AWSService()
+        for key in self.images:
+            aws_svc.delete_object(key)
+            logger.debug(f"S3: Delete {key}")
+
+        self.images = []
+        await self.save()
+
+        logger.info(f"S3: Deleted all images for {self.name}")
+
     async def fetch_trait_by_name(self, name: str) -> Union["CharacterTrait", None]:
         """Fetch a CharacterTrait by name."""
         for trait in cast(list[CharacterTrait], self.traits):

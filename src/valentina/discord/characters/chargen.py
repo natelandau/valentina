@@ -19,7 +19,7 @@ from valentina.constants import (
     RNGCharLevel,
     VampireClan,
 )
-from valentina.controllers import ChannelManager, RNGCharGen
+from valentina.controllers import ChannelManager, RNGCharGen, delete_character
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.views import ChangeNameModal, sheet_embed
 from valentina.models import Campaign, Character, User
@@ -457,7 +457,7 @@ class CharGenWizard:  # pragma: no cover
             msg = "No character was created."
 
         for character in characters:
-            await character.delete(link_rule=DeleteRules.DELETE_LINKS)
+            await delete_character(character)
 
         embed = discord.Embed(
             title=f"{Emoji.CANCEL.value} Cancelled",
@@ -615,7 +615,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
             # Delete the previously created characters
             logger.debug("Rerolling characters and deleting old ones.")
             for character in characters:
-                await character.delete(link_rule=DeleteRules.DELETE_LINKS)
+                await delete_character(character)
 
             # Check if the user has enough XP to reroll
             if campaign_xp < 10:  # noqa: PLR2004
@@ -689,7 +689,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
             character.campaign = str(self.campaign.id)
             await character.save()
 
-            channel_manager = ChannelManager(guild=self.ctx.guild, user=self.ctx.author)
+            channel_manager = ChannelManager(guild=self.ctx.guild)
             await channel_manager.confirm_character_channel(
                 character=character, campaign=self.campaign
             )

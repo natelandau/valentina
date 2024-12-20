@@ -8,7 +8,6 @@ from quart import Response, abort, session
 
 from valentina.constants import HTTPStatus
 from valentina.controllers import ChannelManager
-from valentina.discord.utils import get_user_from_id
 from valentina.models import Campaign, CampaignBook, Character, Guild, User
 from valentina.utils import ValentinaConfig, console
 
@@ -457,10 +456,7 @@ async def sync_channel_to_discord(
     from valentina.bot import bot
 
     guild = await bot.get_guild_from_id(session["GUILD_ID"])
-    user = get_user_from_id(
-        guild, user_id=obj.user_owner if isinstance(obj, Character) else session["USER_ID"]
-    )
-    channel_manager = ChannelManager(guild=guild, user=user)
+    channel_manager = ChannelManager(guild=guild)
 
     match obj:
         case Campaign():
