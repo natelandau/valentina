@@ -186,7 +186,7 @@ class DiceRoll:
             only when first accessed and storing it for future use.
         """
         if not self._result_type:
-            self._result_type = self._calculate_result()
+            self._result_type = self._calculate_result()  # type: ignore [unreachable]
 
         return self._result_type
 

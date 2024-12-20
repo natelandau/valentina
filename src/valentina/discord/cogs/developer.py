@@ -235,7 +235,7 @@ class Developer(commands.Cog):
         # Create discord channels and add campaigns to the guild
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         for campaign in created_campaigns:
             await channel_manager.confirm_campaign_channels(campaign)
             guild.campaigns.append(campaign)
@@ -310,7 +310,7 @@ class Developer(commands.Cog):
             character.campaign = str(campaign.id)
             await character.save()
 
-            channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+            channel_manager = ChannelManager(guild=ctx.guild)
             await channel_manager.confirm_character_channel(character=character, campaign=campaign)
 
             await present_embed(

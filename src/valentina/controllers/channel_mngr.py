@@ -20,9 +20,8 @@ CAMPAIGN_COMMON_CHANNELS = {  # channel_db_key: channel_name
 class ChannelManager:  # pragma: no cover
     """Manage channels within a Guild."""
 
-    def __init__(self, guild: discord.Guild, user: discord.User | discord.Member):
+    def __init__(self, guild: discord.Guild):
         self.guild = guild
-        self.user = user
 
     @staticmethod
     def _channel_sort_order(channel: discord.TextChannel) -> tuple[int, str]:  # pragma: no cover

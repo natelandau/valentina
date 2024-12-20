@@ -15,10 +15,11 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Length
 
+from valentina.controllers import delete_character
 from valentina.models import Character, CharacterSheetSection
 from valentina.webui import catalog
 from valentina.webui.constants import CharacterEditableInfo
-from valentina.webui.utils import create_toast, fetch_active_character, sync_channel_to_discord
+from valentina.webui.utils import create_toast, fetch_active_character
 from valentina.webui.utils.discord import post_to_audit_log
 
 
@@ -142,8 +143,7 @@ class EditCharacterInfo(MethodView):
                 msg=f"Character {character.name} deleted",
                 view=self.__class__.__name__,
             )
-            await sync_channel_to_discord(obj=character, update_type="delete")
-            await character.delete()
+            await delete_character(character)
 
             return True, "Character deleted", None
         return False, "", form

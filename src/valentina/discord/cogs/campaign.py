@@ -174,7 +174,7 @@ class CampaignCog(commands.Cog):
 
         await guild.save()
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.confirm_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
@@ -235,7 +235,7 @@ class CampaignCog(commands.Cog):
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
         await guild.delete_campaign(campaign)
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.delete_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
@@ -529,7 +529,7 @@ class CampaignCog(commands.Cog):
         campaign.books.append(book)
         await campaign.save()
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.confirm_campaign_channels(campaign)
 
         await ctx.post_to_audit_log(
@@ -623,7 +623,7 @@ class CampaignCog(commands.Cog):
         await book.save()
 
         if original_name != name:
-            channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+            channel_manager = ChannelManager(guild=ctx.guild)
             await channel_manager.confirm_book_channel(book=book, campaign=campaign)
             await channel_manager.sort_campaign_channels(campaign)
 
@@ -671,7 +671,7 @@ class CampaignCog(commands.Cog):
 
         original_number = book.number
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.delete_book_channel(book)
 
         await book.delete()
@@ -744,7 +744,7 @@ class CampaignCog(commands.Cog):
         # Update the number of the selected book
         book.number = new_number
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
 
         # Adjust the numbers of the other books
         if new_number > original_number:

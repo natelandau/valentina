@@ -299,7 +299,7 @@ class CharactersCog(commands.Cog, name="Character"):
         await character.save()
 
         if campaign:
-            channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+            channel_manager = ChannelManager(guild=ctx.guild)
             await channel_manager.confirm_character_channel(character=character, campaign=campaign)
             await channel_manager.sort_campaign_channels(campaign)
 
@@ -338,7 +338,7 @@ class CharactersCog(commands.Cog, name="Character"):
         await character.save()
 
         if campaign:
-            channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+            channel_manager = ChannelManager(guild=ctx.guild)
             await channel_manager.confirm_character_channel(character=character, campaign=campaign)
             await channel_manager.sort_campaign_channels(campaign)
 
@@ -851,7 +851,7 @@ class CharactersCog(commands.Cog, name="Character"):
         character.campaign = str(campaign.id)
         await character.save()
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.delete_character_channel(character)
         await channel_manager.confirm_character_channel(character=character, campaign=campaign)
         await channel_manager.sort_campaign_channels(campaign)
@@ -901,7 +901,7 @@ class CharactersCog(commands.Cog, name="Character"):
         character.user_owner = new_owner.id
         await character.save()
 
-        channel_manager = ChannelManager(guild=ctx.guild, user=ctx.author)
+        channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.confirm_character_channel(character=character, campaign=campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
