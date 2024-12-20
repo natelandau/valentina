@@ -3,18 +3,13 @@
 from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
-from quart import abort, request, session, url_for
+from quart import abort, redirect, request, session, url_for
 from quart.views import MethodView
+from werkzeug.wrappers.response import Response
 
 from valentina.constants import DiceType, HTTPStatus
 from valentina.controllers import CharacterSheetBuilder
-from valentina.models import (
-    AWSService,
-    Campaign,
-    Character,
-    Statistics,
-    User,
-)
+from valentina.models import Campaign, Character, Statistics, User
 from valentina.webui import catalog
 from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab, TableType, TextType
 from valentina.webui.utils import fetch_active_campaign, fetch_user, is_storyteller
@@ -24,18 +19,39 @@ gameplay_form = ValentinaForm()
 
 
 class CharacterView(MethodView):
-    """View to handle character operations."""
+    """Handle character viewing and modification operations.
+
+    Provides endpoints for viewing and modifying character details including:
+        - Basic character information
+        - Experience points and leveling
+        - Character sheet data
+        - Character images
+        - Character notes and inventory
+
+    Returns:
+        MethodView: Flask view class handling character-related HTTP endpoints
+
+    Raises:
+        HTTPException: If character not found or user lacks permissions
+    """
 
     decorators: ClassVar = [requires_authorization]
 
     async def _get_character_object(self, character_id: str) -> Character:
-        """Get a character db object by ID.
+        """Fetch and return a character object from the database by its ID.
+
+        Retrieve a character from the database using the provided ID and fetch all linked
+        relationships. Validate the ID format and character existence.
 
         Args:
-            character_id (str): The character ID to fetch.
+            character_id (str): Unique identifier of the character to fetch
 
         Returns:
-            Character: The character object.
+            Character: Character object with all relationships loaded
+
+        Raises:
+            HTTPException: If character_id is invalid (400)
+            HTTPException: If character not found (400)
         """
         try:
             character = await Character.get(character_id, fetch_links=True)
@@ -47,28 +63,25 @@ class CharacterView(MethodView):
 
         return character
 
-    async def _get_character_image_urls(
-        self, character: Character
-    ) -> list[str]:  # pragma: no cover
-        """Retrieve and return a list of image URLs for the specified character.
-
-        Fetch the URLs of the character's images stored in AWS by utilizing the
-        AWS service.
-
-        Args:
-            character (Character): The character whose image URLs are to be retrieved.
-
-        Returns:
-            list[str]: A list of URLs corresponding to the character's images.
-        """
-        aws_svc = AWSService()
-
-        return [aws_svc.get_url(x) for x in character.images]
-
     async def _get_campaign_experience(
         self, character: Character, user: User, campaign: Campaign
     ) -> int:
-        """Retrieve and return the character's campaign experience."""
+        """Get campaign experience points for a character.
+
+        Calculate and return the experience points available to a character in a specific campaign.
+        Only return points if the session user owns the character and the character is not a
+        storyteller character.
+
+        Args:
+            character (Character): Character to get experience for
+            user (User): User who owns the character
+            campaign (Campaign): Campaign to get experience from
+
+        Returns:
+            int: Experience points available to the character in the campaign. Returns 0 if:
+                - Session user does not own the character
+                - Character is a storyteller character
+        """
         # Only users who own a character should be able to upgrade the character with their experience points.  In addition, storyteller characters do not require experience points to upgrade.
         session_user = await fetch_user()
         if int(session_user.id) != int(character.user_owner) or character.type_storyteller:
@@ -77,7 +90,7 @@ class CharacterView(MethodView):
         campaign_experience, _, _ = user.fetch_campaign_xp(campaign)
         return campaign_experience
 
-    async def _handle_tabs(self, character: Character, character_owner: User) -> str:
+    async def _handle_tabs(self, character: Character, character_owner: User) -> str | Response:
         """Handle HTMX tab requests and render the appropriate content.
 
         Based on the "tab" query parameter, render and return the corresponding section of the character view, such as the character sheet, inventory, profile, images, or statistics. If the requested tab is not recognized, return a 404 error.
@@ -125,11 +138,8 @@ class CharacterView(MethodView):
                 )
 
             case CharacterViewTab.IMAGES:  # pragma: no cover
-                return catalog.render(
-                    "character_view.Images",
-                    character=character,
-                    images=await self._get_character_image_urls(character),
-                )
+                return redirect(url_for("partials.characterimages", character_id=character.id))
+
             case CharacterViewTab.STATISTICS:
                 stats_engine = Statistics(guild_id=session["GUILD_ID"])
 
@@ -141,8 +151,22 @@ class CharacterView(MethodView):
             case _:  # pragma: no cover
                 assert_never()
 
-    async def get(self, character_id: str = "") -> str:
-        """Handle GET requests."""
+    async def get(self, character_id: str = "") -> str | Response:
+        """Process GET requests for character view.
+
+        Handle GET requests for character view, either returning the full character page or
+        a specific tab's content if requested via HTMX.
+
+        Args:
+            character_id (str): ID of the character to display
+
+        Returns:
+            Union[str, Response]: Either rendered HTML string or redirect Response
+
+        Raises:
+            HTTPException: If character not found (404)
+            HTTPException: If user lacks permission to view character (403)
+        """
         character = await self._get_character_object(character_id)
         character_owner = await User.get(character.user_owner, fetch_links=False)
         campaign = await fetch_active_campaign(campaign_id=character.campaign)

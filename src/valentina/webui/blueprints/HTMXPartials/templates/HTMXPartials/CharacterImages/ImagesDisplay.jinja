@@ -1,0 +1,76 @@
+{# def
+    character:Character,
+    images:list[images]=[],
+    can_edit:bool=False,
+    success_msg:str="",
+#}
+<div id="character-images-body" class="fade-me-out">
+    {% if can_edit %}
+        <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+                hx-post="{{ url_for('partials.characterimages', character_id=character.id) }}"
+                hx-trigger="click"
+                hx-target="#character-images-body"
+                hx-swap="innerHTML swap:0.5s">Add Image</button>
+    {% endif %}
+    <global.Subtitle title="Images" />
+
+    {% if not images %}
+        <p>No images</p>
+    {% else %}
+
+        <div id="imageCarousel"
+             class="carousel slide w-75 mx-auto"
+             data-bs-ride="carousel">
+
+            {% if images|length > 1 %}
+                <div class="carousel-indicators">
+                    {% for img_url in images %}
+                        <button type="button"
+                                data-bs-target="#imageCarousel"
+                                data-bs-slide-to="{{ loop.index0 }}"
+                                {% if loop.first %}class="active" aria-current="true"{% endif %}
+                                aria-label="Slide {{ loop.index }}"></button>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="carousel-inner">
+
+                {% for img_url in images %}
+                    <div class="carousel-item{% if loop.first %} active{% endif %}">
+                        <img src="{{ img_url }}" class="d-block w-100">
+                        {% if can_edit %}
+                            <div class="carousel-caption d-none d-md-block">
+                                <button class="btn btn-danger btn-sm ms-3"
+                                        hx-delete="{{ url_for('partials.characterimages', character_id=character.id, url=img_url) }}"
+                                        hx-trigger='confirmed'
+                                        onClick="Swal.fire({title: 'Confirm Delete', text:'Are you sure you want to delete this image?', confirmButtonText: 'Confirm',confirmButtonColor: 'red', showCancelButton: true}).then((result)=>{ if(result.isConfirmed){ htmx.trigger(this, 'confirmed'); } })"
+                                        hx-target="#character-images-body"
+                                        hx-swap="innerHTML swap:0.5s">Delete Image</button>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% if images|length > 1 %}
+                <button class="carousel-control-prev"
+                        type="button"
+                        data-bs-target="#imageCarousel"
+                        data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon bg-secondary" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next"
+                        type="button"
+                        data-bs-target="#imageCarousel"
+                        data-bs-slide="next">
+                    <span class="carousel-control-next-icon bg-secondary" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            {% endif %}
+        </div>
+        <script>const carousel = new bootstrap.Carousel("#imageCarousel");</script>
+
+    {% endif %}
+</div>
+{% if success_msg %}<global.Toast msg={{ success_msg }} level="success" />{% endif %}

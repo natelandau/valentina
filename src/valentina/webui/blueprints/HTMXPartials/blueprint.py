@@ -4,7 +4,7 @@ from quart import Blueprint
 
 from valentina.webui.constants import TableType, TextType
 
-from .route import AddExperienceView, EditTableView, EditTextView
+from .route import AddExperienceView, CharacterImageView, EditTableView, EditTextView
 
 blueprint = Blueprint("partials", __name__, url_prefix="/partials")
 
@@ -28,4 +28,11 @@ blueprint.add_url_rule(
     "/addexperience/<int:target_id>",
     view_func=AddExperienceView.as_view("addexperience"),
     methods=["GET", "POST"],
+)
+
+# Routes for specific partials
+blueprint.add_url_rule(
+    "/characterimages/<string:character_id>",
+    view_func=CharacterImageView.as_view("characterimages"),
+    methods=["GET", "POST", "DELETE"],
 )
