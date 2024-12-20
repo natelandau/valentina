@@ -60,7 +60,7 @@ class RNGCharGen:
     ) -> None:
         self.guild_id = guild_id
         self.user = user
-        self.experience_level = experience_level or RNGCharLevel.random_member()
+        self.experience_level = experience_level or RNGCharLevel.random_member()  # type: ignore [unreachable]
         self.campaign = campaign
 
     @staticmethod
@@ -188,10 +188,10 @@ class RNGCharGen:
 
         # Grab class specific information
         if char_class == CharClass.VAMPIRE and not clan:
-            clan = VampireClan.random_member()
+            clan = VampireClan.random_member()  # type: ignore [unreachable]
 
         if char_class == CharClass.HUNTER and not creed:
-            percentile = random_num(100)
+            percentile = random_num(100)  # type: ignore [unreachable]
             creed = HunterCreed.get_member_by_value(percentile)
 
         character = Character(
