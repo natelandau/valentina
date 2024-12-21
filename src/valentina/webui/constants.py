@@ -133,10 +133,3 @@ class CharacterEditableInfo(Enum):
         div_id="customsection",
         tab=CharacterViewTab.INFO,
     )
-
-    DELETE = EditItem(
-        name="delete",
-        route="character_edit.delete_character",
-        div_id="main-content",
-        tab=CharacterViewTab.SHEET,
-    )

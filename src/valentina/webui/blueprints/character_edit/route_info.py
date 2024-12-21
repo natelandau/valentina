@@ -4,9 +4,10 @@ from typing import ClassVar, assert_never
 from uuid import UUID
 
 from flask_discord import requires_authorization
-from quart import abort, request, url_for
+from quart import abort, request, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
+from werkzeug.wrappers.response import Response
 from wtforms import (
     HiddenField,
     StringField,
@@ -38,10 +39,36 @@ class CustomSectionForm(QuartForm):
     submit = SubmitField("Submit")
 
 
-class DeleteCharacterForm(QuartForm):
-    """Form for deleting a character."""
+class DeleteCharacter(MethodView):
+    """Delete a character."""
 
-    submit = SubmitField("Delete", description="Confirm character deletion")
+    decorators: ClassVar = [requires_authorization]
+
+    async def delete(self, character_id: str) -> str | Response:
+        """Delete a character.
+
+        Args:
+            character_id (str): The ID of the character to delete.
+
+        Returns:
+            Response: Redirect to the homepage with a success message.
+        """
+        character = await fetch_active_character(character_id, fetch_links=True)
+        if not character:
+            abort(403, f"Character not found with id {character_id}")
+
+        character_name = character.name
+        if character.user_owner != session["USER_ID"] and not session["IS_STORYTELLER"]:
+            return create_toast(f"You are not authorized to delete {character_name}", level="ERROR")
+
+        await delete_character(character)
+
+        await post_to_audit_log(
+            msg=f"Character {character_name} deleted",
+            view=self.__class__.__name__,
+        )
+
+        return f'<script>window.location.href="{url_for("homepage.homepage", success_msg=f"Deleted {character_name}")}"</script>'
 
 
 class EditCharacterInfo(MethodView):
@@ -68,9 +95,6 @@ class EditCharacterInfo(MethodView):
                             break
 
                 return await CustomSectionForm().create_form(data=data)
-
-            case CharacterEditableInfo.DELETE:
-                return await DeleteCharacterForm().create_form()
 
             case _:
                 assert_never(self.edit_type)
@@ -134,20 +158,6 @@ class EditCharacterInfo(MethodView):
 
         return False, "", form
 
-    async def _post_delete_character(self, character: Character) -> tuple[bool, str, QuartForm]:
-        """Process the delete character form."""
-        form = await self._build_form(character)
-
-        if await form.validate_on_submit():
-            await post_to_audit_log(
-                msg=f"Character {character.name} deleted",
-                view=self.__class__.__name__,
-            )
-            await delete_character(character)
-
-            return True, "Character deleted", None
-        return False, "", form
-
     async def get(self, character_id: str) -> str:
         """Render the form."""
         character = await fetch_active_character(character_id, fetch_links=False)
@@ -170,12 +180,6 @@ class EditCharacterInfo(MethodView):
         match self.edit_type:
             case CharacterEditableInfo.CUSTOM_SECTION:
                 form_is_processed, msg, form = await self._post_custom_section(character)
-
-            case CharacterEditableInfo.DELETE:
-                form_is_processed, msg, form = await self._post_delete_character(character)
-                # If the form is processed, redirect to the homepage with a success message b/c the character is deleted.
-                url = url_for("homepage.homepage", success_msg=msg)
-                return f'<script>window.location.href="{url}"</script>'
 
             case _:
                 assert_never(self.edit_type)
@@ -203,8 +207,6 @@ class EditCharacterInfo(MethodView):
         match self.edit_type:
             case CharacterEditableInfo.CUSTOM_SECTION:
                 msg = await self._delete_custom_section(character)
-            case CharacterEditableInfo.DELETE:
-                pass  # Not implemented
             case _:
                 assert_never(self.edit_type)
 

@@ -85,3 +85,11 @@ To see an example of the confirmation dialog integration with HTMX, see the `Del
     hx-target="#character-images-body"
     hx-swap="innerHTML swap:0.5s">Delete Image</button>
 ```
+
+### Redirecting to a page after a request
+
+To redirect to a new page, a route can return a string containing a `<script>` tag that will redirect the user to the new page.
+
+```python
+return f'<script>window.location.href="{url_for("homepage.homepage", success_msg="MESSAGE"</script>'
+```

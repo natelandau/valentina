@@ -8,6 +8,7 @@ from valentina.controllers import delete_character
 from valentina.models import Character
 
 
+@pytest.mark.skip(reason="Skipping until we have a way to mock the import of bot")
 @pytest.mark.drop_db
 async def test_delete_character(debug, user_factory, character_factory, guild_factory):
     """Test the delete character function."""

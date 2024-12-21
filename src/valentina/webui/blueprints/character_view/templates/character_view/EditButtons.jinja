@@ -33,16 +33,18 @@
         <i class="fa-solid fa-dice"></i>&nbsp;&nbsp;Roll Dice
     </button>
 
-    {% if session["IS_STORYTELLER"] and character.type_storyteller %}
+    {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
         <div class="vr mx-1"></div>
 
         <button class="btn btn-danger"
-                hx-post="{{ url_for(CharacterEditableInfo.DELETE.value.route, character_id=character.id) }}"
-                hx-trigger="click"
-                hx-target="#{{ CharacterEditableInfo.DELETE.value.div_id }}"
-                hx-swap="innerHTML">
+                hx-delete="{{ url_for('character_edit.delete', character_id=character.id) }}"
+                hx-trigger='confirmed'
+                onClick="Swal.fire({title: 'Confirm Delete', text:'Are you sure you want to delete {{ character.name }}?', confirmButtonText: 'Confirm',confirmButtonColor: 'red', showCancelButton: true}).then((result)=>{ if(result.isConfirmed){ htmx.trigger(this, 'confirmed'); } })"
+                hx-target="#delete-character">
             <i class="fa-regular fa-trash-can"></i>&nbsp;&nbsp;Delete Character
         </button>
+        {# This div is used to display the toast notification #}
+        <div id="delete-character"></div>
 
     {% endif %}
 
