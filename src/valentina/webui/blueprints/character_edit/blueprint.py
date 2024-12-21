@@ -4,7 +4,7 @@ from quart import Blueprint
 
 from valentina.webui.constants import CharacterEditableInfo
 
-from .route_info import EditCharacterInfo
+from .route_info import DeleteCharacter, EditCharacterInfo
 from .route_profile import EditProfile
 from .route_spend_points import SpendPoints, SpendPointsType
 
@@ -14,6 +14,12 @@ blueprint.add_url_rule(
     "/character/<string:character_id>/edit/profile",
     view_func=EditProfile.as_view("profile"),
     methods=["GET", "POST"],
+)
+
+blueprint.add_url_rule(
+    "/character/<string:character_id>/edit/delete",
+    view_func=DeleteCharacter.as_view("delete"),
+    methods=["DELETE"],
 )
 
 for spend_type in SpendPointsType:
