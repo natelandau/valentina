@@ -1,5 +1,5 @@
 {# def
-    items: list[Note|NPC|InventoryItem],
+    items: list[Note|NPC|InventoryItem|DictionaryTerm],
     can_edit: bool = True,
     parent_id: str = "",
     TableType: TableType,
@@ -11,11 +11,11 @@
 <div class="mb-5">
     {%- if can_edit %}
         <button class="btn btn-outline-primary btn-sm ms-3 float-end"
-                hx-put="{{ url_for(TableType.value.route, parent_id=parent_id) }}"
+                hx-get="{{ url_for(TableType.value.route, parent_id=parent_id, use_method='put') }}"
                 hx-trigger="click"
                 hx-target="next #{{ TableType.value.name | upper | replace(' ', '-') }}-TABLEBODY"
                 {% if items | length > 0 %} hx-swap="afterbegin" {% else %} hx-swap="innerHTML" {% endif %}>
-            Create {{ TableType.value.name | lower }}
+            Create {{ TableType.value.item_name | lower if TableType.value.item_name else TableType.value.name | lower }}
         </button>
     {%- endif %}
 

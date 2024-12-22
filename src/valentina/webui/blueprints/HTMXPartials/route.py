@@ -6,6 +6,7 @@ from uuid import UUID
 
 from loguru import logger
 from quart import abort, request, session
+from quart.utils import run_sync
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.utils import secure_filename
@@ -19,6 +20,7 @@ from valentina.models import (
     CampaignBookChapter,
     CampaignNPC,
     Character,
+    DictionaryTerm,
     InventoryItem,
     Note,
     User,
@@ -32,6 +34,7 @@ from valentina.webui.utils import (
     fetch_active_campaign,
     fetch_active_character,
     fetch_guild,
+    link_terms,
     sync_channel_to_discord,
     update_session,
 )
@@ -44,6 +47,7 @@ from .forms import (
     CampaignNPCForm,
     CharacterBioForm,
     CharacterImageUploadForm,
+    DictionaryTermForm,
     InventoryItemForm,
     NoteForm,
     UserMacroForm,
@@ -158,11 +162,6 @@ class CharacterImageView(MethodView):
             NotFound: If character_id is invalid
             Forbidden: If user lacks permission to modify character
         """
-        from valentina.utils import console
-
-        console.rule("DELETE")
-        console.print(f"{request.args=}")
-
         character = await self._get_character_object(character_id)
         key_prefix = f"{session['GUILD_ID']}/characters/{character.id}"
         image_name = request.args.get("url").split("/")[-1]
@@ -226,7 +225,7 @@ class AddExperienceView(MethodView):
         """
         target = await User.get(target_id)
         if not target:
-            abort(404)
+            abort(HTTPStatus.NOT_FOUND.value)
 
         guild = await fetch_guild(fetch_links=True)
 
@@ -279,14 +278,17 @@ class AddExperienceView(MethodView):
         """
         target = await User.get(target_id)
         if not target:
-            abort(404, "Target user ID not found")
+            abort(HTTPStatus.NOT_FOUND.value, "Target user ID not found")
 
         can_grant_xp = await self.permission_manager.can_grant_xp(
             author_id=session["USER_ID"], target_id=target_id
         )
 
         if not can_grant_xp:
-            abort(403, "You do not have permission to add experience to this user")
+            abort(
+                HTTPStatus.FORBIDDEN.value,
+                "You do not have permission to add experience to this user",
+            )
 
         guild = await fetch_guild(fetch_links=True)
         form = await AddExperienceForm().create_form(data={"target_id": target_id})
@@ -301,7 +303,7 @@ class AddExperienceView(MethodView):
             campaign = await fetch_active_campaign(form.data["campaign"])
 
             if not campaign:
-                abort(400, "Invalid campaign ID")
+                abort(HTTPStatus.BAD_REQUEST.value, "Invalid campaign ID")
 
             if experience > 0:
                 await target.add_campaign_xp(campaign=campaign, amount=experience)
@@ -458,6 +460,17 @@ class EditTableView(MethodView):
 
                 return await NoteForm().create_form(data=data)
 
+            case TableType.DICTIONARY:
+                data["guild_id"] = session["GUILD_ID"]
+                if item_id := request.args.get("item_id"):
+                    term = await DictionaryTerm.get(item_id)
+                    data["term_id"] = item_id
+                    data["term"] = term.term
+                    data["definition"] = term.definition
+                    data["link"] = term.link
+                    data["synonyms"] = ", ".join(term.synonyms)
+                return await DictionaryTermForm().create_form(data=data)
+
             case TableType.CHAPTER:
                 if parent_id := request.args.get("parent_id"):
                     data["book_id"] = parent_id
@@ -518,21 +531,40 @@ class EditTableView(MethodView):
                 assert_never()
 
     async def get(self) -> str:
-        """Display an editable form row for an existing table item.
+        """Get the HTML for either displaying an item row or the editing form.
 
-        Fetches the requested item based on table type and item_id from request args.
-        Renders appropriate template for displaying the item in editable form.
+        The response depends on the presence of the 'use_method' query parameter:
+        - If present: Returns a form for creating/editing
+        - If absent: Returns a display row for the specified item
 
         Returns:
-            Rendered HTML fragment containing the item display template
-            suitable for HTMX integration
+            str: HTML for either:
+                - A table row displaying the specified item
+                - A form for creating a new item
+                - A form for editing an existing item
         """
-        item: Note | InventoryItem | CampaignNPC | UserMacro
+        if use_method := request.args.get("use_method"):
+            form = await self._build_form()
+
+            return catalog.render(
+                "HTMXPartials.EditTable.FormDisplayPartial",
+                form=form,
+                TableType=self.table_type,
+                method=use_method.upper(),
+                item_id=request.args.get("item_id", ""),
+                parent_id=request.args.get("parent_id", ""),
+            )
+
         parent_id = ""
+        item: Note | InventoryItem | CampaignNPC | UserMacro | CampaignBookChapter | DictionaryTerm
         match self.table_type:
             case TableType.NOTE:
                 note = await Note.get(request.args.get("item_id"))
                 item = note
+
+            case TableType.DICTIONARY:
+                term = await DictionaryTerm.get(request.args.get("item_id"))
+                item = term
 
             case TableType.CHAPTER:
                 chapter = await CampaignBookChapter.get(request.args.get("item_id"))
@@ -546,7 +578,7 @@ class EditTableView(MethodView):
 
                 _, npc = await self._find_npc(parent_id, request.args.get("item_id"))
                 if not npc:
-                    abort(400, "NPC not found in get")
+                    abort(HTTPStatus.BAD_REQUEST.value, "NPC not found in get")
 
                 item = npc
 
@@ -555,19 +587,23 @@ class EditTableView(MethodView):
 
                 _, macro = await self._find_macro(parent_id, request.args.get("item_id"))
                 if not macro:
-                    abort(400, "Macro not found in get")
+                    abort(HTTPStatus.BAD_REQUEST.value, "Macro not found in get")
 
                 item = macro
 
             case _:  # pragma: no cover
                 assert_never()
 
-        return catalog.render(
-            "HTMXPartials.EditTable.ItemDisplayPartial",
-            item=item,
-            TableType=self.table_type,
-            parent_id=parent_id,
-        )
+        result = await run_sync(
+            lambda: catalog.render(
+                "HTMXPartials.EditTable.ItemDisplayPartial",
+                item=item,
+                TableType=self.table_type,
+                parent_id=parent_id,
+            )
+        )()
+
+        return await link_terms(result, link_type="html")
 
     async def post(self) -> str:  # noqa: PLR0915
         """Process form submission for editing existing table items.
@@ -580,8 +616,7 @@ class EditTableView(MethodView):
             On validation failure: Re-rendered form with error messages
         """
         parent_id = ""
-        item: Note | InventoryItem | CampaignNPC | UserMacro | CampaignBookChapter
-
+        item: Note | InventoryItem | CampaignNPC | UserMacro | CampaignBookChapter | DictionaryTerm
         form = await self._build_form()
 
         if await form.validate_on_submit():
@@ -593,6 +628,19 @@ class EditTableView(MethodView):
                     await item.save()
 
                     msg = f"Edit Note: `{truncate_string(item.text, 10)}`"
+
+                case TableType.DICTIONARY:
+                    item = await DictionaryTerm.get(form.data["term_id"])
+                    item.term = form.data["term"]
+                    item.link = form.data["link"]
+                    item.definition = form.data["definition"]
+                    item.guild_id = int(session["GUILD_ID"])
+                    item.synonyms = (
+                        form.data["synonyms"].split(",") if form.data["synonyms"] else []
+                    )
+                    await item.save()
+
+                    msg = f"Edit Dictionary Term: `{item.term}`"
 
                 case TableType.CHAPTER:
                     item = await CampaignBookChapter.get(form.data["chapter_id"])
@@ -617,7 +665,7 @@ class EditTableView(MethodView):
                         form.data["campaign_id"], form.data["uuid"]
                     )
                     if not npc:
-                        abort(400, "NPC not found in post")
+                        abort(HTTPStatus.BAD_REQUEST.value, "NPC not found in post")
 
                     npc.name = form.data["name"].strip()
                     npc.description = form.data["description"].strip()
@@ -631,7 +679,7 @@ class EditTableView(MethodView):
                 case TableType.MACRO:
                     user, macro = await self._find_macro(form.data["user_id"], form.data["uuid"])
                     if not macro:
-                        abort(400, "Macro not found in post")
+                        abort(HTTPStatus.BAD_REQUEST.value, "Macro not found in post")
 
                     macro.name = form.data["name"].strip()
                     macro.abbreviation = form.data["abbreviation"].strip()
@@ -652,12 +700,16 @@ class EditTableView(MethodView):
                 view=self.__class__.__name__,
             )
 
-            return catalog.render(
-                "HTMXPartials.EditTable.ItemDisplayPartial",
-                item=item,
-                TableType=self.table_type,
-                parent_id=parent_id,
-            )
+            result = await run_sync(
+                lambda: catalog.render(
+                    "HTMXPartials.EditTable.ItemDisplayPartial",
+                    item=item,
+                    TableType=self.table_type,
+                    parent_id=parent_id,
+                )
+            )()
+
+            return await link_terms(result, link_type="html")
 
         return catalog.render(
             "HTMXPartials.EditTable.FormDisplayPartial",
@@ -667,7 +719,7 @@ class EditTableView(MethodView):
             item_id=request.args.get("item_id"),
         )
 
-    async def put(self) -> str:  # noqa: C901, PLR0915
+    async def put(self) -> str:  # noqa: C901, PLR0915, PLR0912
         """Process form submission for creating new table items.
 
         Validates submitted form data, creates new database object,
@@ -678,10 +730,10 @@ class EditTableView(MethodView):
             On success: Rendered HTML fragment showing the newly created item
             On validation failure: Re-rendered form with error messages
         """
-        item: Note | InventoryItem | CampaignNPC | UserMacro
-
         parent_id = ""
         form = await self._build_form()
+
+        item: Note | InventoryItem | CampaignNPC | UserMacro | CampaignBookChapter | DictionaryTerm
 
         if await form.validate_on_submit():
             match self.table_type:
@@ -695,7 +747,7 @@ class EditTableView(MethodView):
                     parent = campaign_book or campaign or character
 
                     if not parent:
-                        abort(400, "Invalid parent ID")
+                        abort(HTTPStatus.BAD_REQUEST.value, "Invalid parent ID")
 
                     item = Note(
                         text=form.data["text"].strip(),
@@ -710,11 +762,25 @@ class EditTableView(MethodView):
 
                     msg = f"Create Note: `{truncate_string(item.text, 10)}`"
 
+                case TableType.DICTIONARY:
+                    item = DictionaryTerm(
+                        term=form.data["term"].lower().strip(),
+                        link=form.data["link"].strip() if form.data["link"] else "",
+                        definition=form.data["definition"].strip()
+                        if form.data["definition"]
+                        else "",
+                        guild_id=int(session["GUILD_ID"]),
+                        synonyms=form.data["synonyms"].split(",") if form.data["synonyms"] else [],
+                    )
+                    await item.save()
+
+                    msg = f"Create Dictionary Term: `{item.term}`"
+
                 case TableType.CHAPTER:
                     book = await CampaignBook.get(form.data["book_id"], fetch_links=True)
 
                     if not book:
-                        abort(400, "Invalid book ID")
+                        abort(HTTPStatus.BAD_REQUEST.value, "Invalid book ID")
 
                     item = CampaignBookChapter(
                         name=form.name.data.strip().title(),
@@ -732,7 +798,7 @@ class EditTableView(MethodView):
                 case TableType.INVENTORYITEM:
                     character = await Character.get(form.data["character_id"])
                     if not character:
-                        abort(400, "Invalid character ID")
+                        abort(HTTPStatus.BAD_REQUEST.value, "Invalid character ID")
 
                     item = InventoryItem(
                         character=str(character.id),
@@ -749,7 +815,7 @@ class EditTableView(MethodView):
                 case TableType.NPC:
                     campaign = await fetch_active_campaign(form.data["campaign_id"])
                     if not campaign:
-                        abort(400, "Invalid campaign ID in put")
+                        abort(HTTPStatus.BAD_REQUEST.value, "Invalid campaign ID in put")
 
                     item = CampaignNPC(
                         name=form.data["name"].strip(),
@@ -765,7 +831,7 @@ class EditTableView(MethodView):
                 case TableType.MACRO:
                     user = await User.get(form.data["user_id"])
                     if not user:
-                        abort(400, "Invalid user ID in put")
+                        abort(HTTPStatus.BAD_REQUEST.value, "Invalid user ID in put")
 
                     item = UserMacro(
                         name=form.data["name"].strip(),
@@ -788,12 +854,16 @@ class EditTableView(MethodView):
                 view=self.__class__.__name__,
             )
 
-            return catalog.render(
-                "HTMXPartials.EditTable.ItemDisplayPartial",
-                item=item,
-                TableType=self.table_type,
-                parent_id=parent_id,
-            )
+            result = await run_sync(
+                lambda: catalog.render(
+                    "HTMXPartials.EditTable.ItemDisplayPartial",
+                    item=item,
+                    TableType=self.table_type,
+                    parent_id=parent_id,
+                )
+            )()
+
+            return await link_terms(result, link_type="html")
 
         return catalog.render(
             "HTMXPartials.EditTable.FormDisplayPartial",
@@ -815,7 +885,7 @@ class EditTableView(MethodView):
         """
         item_id = request.args.get("item_id", None)
         if not item_id:
-            abort(400)
+            abort(HTTPStatus.BAD_REQUEST.value, "Item ID is required")
 
         match self.table_type:
             case TableType.NOTE:
@@ -834,6 +904,11 @@ class EditTableView(MethodView):
 
                 truncated_note = truncate_string(note.text, 10)
                 msg = f"Delete note: `{truncated_note}`"
+
+            case TableType.DICTIONARY:
+                term = await DictionaryTerm.get(item_id)
+                await term.delete()
+                msg = f"Delete dictionary term: `{term.term}`"
 
             case TableType.CHAPTER:
                 chapter = await CampaignBookChapter.get(item_id)
@@ -859,7 +934,7 @@ class EditTableView(MethodView):
             case TableType.NPC:
                 campaign, npc = await self._find_npc(request.args.get("parent_id"), item_id)
                 if not npc:
-                    abort(400, "NPC not found in delete")
+                    abort(HTTPStatus.BAD_REQUEST.value, "NPC not found in delete")
 
                 campaign.npcs.remove(npc)
                 await campaign.save()
@@ -868,7 +943,7 @@ class EditTableView(MethodView):
             case TableType.MACRO:
                 user, macro = await self._find_macro(request.args.get("parent_id"), item_id)
                 if not macro:
-                    abort(400, "Macro not found in post")
+                    abort(HTTPStatus.BAD_REQUEST.value, "Macro not found in post")
 
                 user.macros.remove(macro)
                 await user.save()
@@ -974,11 +1049,15 @@ class EditTextView(MethodView):
             case _:  # pragma: no cover
                 assert_never(self.text_type)
 
-        return catalog.render(
-            "HTMXPartials.EditText.TextDisplayPartial",
-            TextType=self.text_type,
-            text=text,
-        )
+        result = await run_sync(
+            lambda: catalog.render(
+                "HTMXPartials.EditText.TextDisplayPartial",
+                TextType=self.text_type,
+                text=text,
+            )
+        )()
+
+        return await link_terms(result, link_type="html")
 
     async def put(self) -> str:
         """Put the text item."""
@@ -997,11 +1076,14 @@ class EditTextView(MethodView):
                 view=self.__class__.__name__,
             )
 
-            return catalog.render(
-                "HTMXPartials.EditText.TextDisplayPartial",
-                TextType=self.text_type,
-                text=text,
-            )
+            result = await run_sync(
+                lambda: catalog.render(
+                    "HTMXPartials.EditText.TextDisplayPartial",
+                    TextType=self.text_type,
+                    text=text,
+                )
+            )()
+            return await link_terms(result, link_type="html")
 
         return catalog.render(
             "HTMXPartials.EditText.TextFormPartial",
@@ -1027,11 +1109,14 @@ class EditTextView(MethodView):
                 view=self.__class__.__name__,
             )
 
-            return catalog.render(
-                "HTMXPartials.EditText.TextDisplayPartial",
-                TextType=self.text_type,
-                text=text,
-            )
+            result = await run_sync(
+                lambda: catalog.render(
+                    "HTMXPartials.EditText.TextDisplayPartial",
+                    TextType=self.text_type,
+                    text=text,
+                )
+            )()
+            return await link_terms(result, link_type="html")
 
         return catalog.render(
             "HTMXPartials.EditText.TextFormPartial",

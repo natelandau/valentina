@@ -9,6 +9,7 @@ from .helpers import (
     fetch_user,
     fetch_user_characters,
     is_storyteller,
+    link_terms,
     sync_channel_to_discord,
     update_session,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "from_markdown",
     "from_markdown_no_p",
     "is_storyteller",
+    "link_terms",
     "sync_channel_to_discord",
     "update_session",
 ]

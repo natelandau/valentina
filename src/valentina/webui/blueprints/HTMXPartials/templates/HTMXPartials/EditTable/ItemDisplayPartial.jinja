@@ -1,5 +1,5 @@
 {# def
-    item: Note|NPC|InventoryItem,
+    item: Note|NPC|InventoryItem|DictionaryTerm,
     TableType: TableType,
     can_edit: bool = True,
     parent_id: str = "",
@@ -18,6 +18,15 @@
 <tr class="fade-me-out">
     {%- if TableType.name == "NOTE" -%}
         <td>{{ item.text | from_markdown_no_p | safe }}</td>
+    {%- elif TableType.name == "DICTIONARY" -%}
+        <th scope="row">{{ item.term | title | escape }}</th>
+        {% if item.link %}
+            <td>
+                <a href="{{ item.link }}">{{ item.link }}</a>
+            </td>
+        {% elif item.definition %}
+            <td>{{ item.definition | from_markdown | safe }}</td>
+        {% endif %}
     {%- elif TableType.name == "INVENTORYITEM" -%}
         <td style="white-space: nowrap;">
             <strong>{{- item.name | escape -}}</strong>
@@ -51,7 +60,7 @@
                         style="--bs-btn-padding-y: .25rem;
                                --bs-btn-padding-x: .5rem;
                                --bs-btn-font-size: .75rem"
-                        hx-post="{{ url_for(TableType.value.route, item_id=id_value, parent_id=parent_id) }}"
+                        hx-get="{{ url_for(TableType.value.route, item_id=id_value, parent_id=parent_id, use_method='post') }}"
                         hx-target="closest tr"
                         hx-swap="outerHTML swap:1s"
                         hx-trigger="click">Edit</button>
