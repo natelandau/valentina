@@ -8,6 +8,7 @@ from quart import session
 from werkzeug.exceptions import InternalServerError
 
 from tests.factories import *
+from valentina.models import DictionaryTerm
 from valentina.webui.utils import helpers
 
 
@@ -441,3 +442,49 @@ async def test_is_storyteller(app_request_context, mock_session, user_factory, g
         session.update(mock_session_data)
 
         assert await helpers.is_storyteller() is False
+
+
+@pytest.mark.drop_db
+async def test_term_linker(app_request_context, mock_session):
+    """Test the term linker function."""
+    dict_term1 = DictionaryTerm(
+        term="aaaaa",
+        synonyms=["bbbbb"],
+        definition="abcdefg",
+        guild_id=1,
+    )
+    dict_term2 = DictionaryTerm(
+        term="ccccc",
+        synonyms=[],
+        link="http://google.com",
+        guild_id=1,
+    )
+    await dict_term1.insert()
+    await dict_term2.insert()
+
+    test_string = "Curaaaaabitur blandit aaaaa tempus ardua bbbbb ridiculous sed ccccc magna."
+
+    # Set up mock session data
+    mock_session_data = mock_session()
+
+    # Convert app_request_context to an async context manager
+    request_context = asynccontextmanager(app_request_context)
+
+    async with request_context("/"):
+        # Populate the session with mock data
+        session.update(mock_session_data)
+
+        assert (
+            await helpers.link_terms(test_string, link_type="html")
+            == "Curaaaaabitur blandit <a href='/dictionary/term/aaaaa'>aaaaa</a> tempus ardua <a href='/dictionary/term/aaaaa'>bbbbb</a> ridiculous sed <a href='http://google.com'>ccccc</a> magna."
+        )
+
+        assert (
+            await helpers.link_terms(test_string, link_type="markdown")
+            == "Curaaaaabitur blandit [aaaaa](/dictionary/term/aaaaa) tempus ardua [bbbbb](/dictionary/term/aaaaa) ridiculous sed [ccccc](http://google.com) magna."
+        )
+
+        assert (
+            await helpers.link_terms(test_string, link_type="markdown", excludes=["aaaaa", "ccccc"])
+            == test_string
+        )
