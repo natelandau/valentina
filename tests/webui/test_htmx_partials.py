@@ -9,6 +9,7 @@ from valentina.models import (
     CampaignBook,
     CampaignBookChapter,
     Character,
+    DictionaryTerm,
     InventoryItem,
     Note,
     User,
@@ -49,36 +50,52 @@ async def test_setup(
     user.guilds.append(guild.id)
     await user.save()
 
+    dictionary_term = await DictionaryTerm(
+        term="dictionary_term",
+        definition="test definition",
+        synonyms=["synonym1", "synonym2"],
+        guild_id=guild.id,
+    ).insert()
+
     async with test_client.session_transaction() as session:
         session.update(mock_session(user_id=user.id, guild_id=guild.id))
 
-    return character, campaign, user, book, test_client
+    return character, campaign, user, book, dictionary_term, test_client
 
 
 @pytest.mark.parametrize(
-    ("table_type", "id_field", "parent_id_source"),
+    ("table_type", "id_field", "parent_id_source", "use_parent_id"),
     [
-        (TableType.NOTE, "note_id", "character"),
-        (TableType.NOTE, "note_id", "book"),
-        (TableType.NOTE, "note_id", "campaign"),
-        (TableType.INVENTORYITEM, "item_id", "character"),
-        (TableType.CHAPTER, "chapter_id", "book"),
-        (TableType.NPC, "uuid", "campaign"),
-        (TableType.MACRO, "uuid", "user"),
+        (TableType.NOTE, "note_id", "character", True),
+        (TableType.NOTE, "note_id", "book", True),
+        (TableType.NOTE, "note_id", "campaign", True),
+        (TableType.INVENTORYITEM, "item_id", "character", True),
+        (TableType.CHAPTER, "chapter_id", "book", True),
+        (TableType.NPC, "uuid", "campaign", True),
+        (TableType.MACRO, "uuid", "user", True),
+        (TableType.DICTIONARY, "term_id", "dictionary_term", False),
     ],
 )
 @pytest.mark.drop_db
-async def test_edit_table_form_load(test_setup, table_type, id_field, parent_id_source):
+async def test_edit_table_form_load(
+    test_setup, table_type, id_field, parent_id_source, use_parent_id
+):
     """Test form load returns empty form."""
-    character, campaign, user, book, test_client = test_setup
+    character, campaign, user, book, dictionary_term, test_client = test_setup
 
     # Map source names to their corresponding objects
-    parent_id_map = {"character": character, "campaign": campaign, "book": book, "user": user}
-    parent_id = parent_id_map[parent_id_source].id
+    parent_id_map = {
+        "character": character,
+        "campaign": campaign,
+        "book": book,
+        "user": user,
+        "dictionary_term": dictionary_term,
+    }
+    parent_id = parent_id_map[parent_id_source].id if use_parent_id else ""
 
-    url = f"/partials/table/{table_type.value.route_suffix}?parent_id={parent_id}"
+    url = f"/partials/table/{table_type.value.route_suffix}?parent_id={parent_id}&use_method=post"
 
-    response = await test_client.put(url)
+    response = await test_client.get(url)
     returned_text = await response.get_data(as_text=True)
 
     assert response.status_code == 200
@@ -216,7 +233,7 @@ async def test_edit_table_form_load(test_setup, table_type, id_field, parent_id_
     ],
 )
 @pytest.mark.drop_db
-async def test_edit_table_crud_operations(
+async def test_edit_table_crud_operations_with_parent(
     debug,
     test_setup,
     table_type,
@@ -231,7 +248,7 @@ async def test_edit_table_crud_operations(
     mocker,
 ):
     """Test create, update, and delete operations."""
-    character, campaign, user, book, test_client = test_setup
+    character, campaign, user, book, dictionary_term, test_client = test_setup
     base_url = f"/partials/table/{table_type.value.route_suffix}"
 
     mocker.patch(
@@ -303,7 +320,7 @@ async def test_edit_table_crud_operations(
 @pytest.mark.drop_db
 async def test_edit_text_form_load(debug, test_setup, text_type, get_parent_instance):
     """Test form load returns empty form."""
-    character, campaign, user, book, test_client = test_setup
+    character, campaign, user, book, dictionary_term, test_client = test_setup
 
     # Get appropriate parent based on table type
     parent = get_parent_instance(character, campaign, user, book)
@@ -368,7 +385,7 @@ async def test_edit_text_form_crud_operations(
     )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
-    character, campaign, user, book, test_client = test_setup
+    character, campaign, user, book, dictionary_term, test_client = test_setup
     parent = get_parent_instance(character, campaign, user, book)
 
     # Create
@@ -404,7 +421,7 @@ async def test_edit_text_form_crud_operations(
 @pytest.mark.drop_db
 async def test_experience_table_load(debug, test_setup):
     """Test experience table load."""
-    _, _, user, _, test_client = test_setup
+    _, _, user, _, _, test_client = test_setup
 
     response = await test_client.get(f"/partials/addexperience/{user.id}")
     assert response.status_code == 200
@@ -414,7 +431,7 @@ async def test_experience_table_load(debug, test_setup):
 async def test_experience_table_crud_operations(debug, test_setup):
     """Test experience table crud operations."""
     # Given a user and campaign with no existing experience
-    _, campaign, user, _, test_client = test_setup
+    _, campaign, user, _, _, test_client = test_setup
     campaign_id = str(campaign.id)
 
     # When submitting a form to add experience and cool points
@@ -436,3 +453,52 @@ async def test_experience_table_crud_operations(debug, test_setup):
     updated_user = await User.get(user.id, fetch_links=True)
     campaign_xp = updated_user.fetch_campaign_xp(campaign)
     assert campaign_xp == (1100, 1100, 100)  # (current_xp, total_xp, cool_points)
+
+
+@pytest.mark.drop_db
+async def test_dictionary_term_crud_operations(mocker, debug, test_setup):
+    """Test create, update, and delete operations for a dictionary term."""
+    # Given: A test environment with mocked dependencies
+    mocker.patch(
+        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
+    )
+    mocker.patch(
+        "valentina.webui.blueprints.HTMXPartials.route.sync_channel_to_discord", return_value=None
+    )
+    mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
+
+    character, campaign, user, book, dictionary_term, test_client = test_setup
+
+    base_url = f"/partials/table/{TableType.DICTIONARY.value.route_suffix}"
+    test_term_name = "test_term_from_test"
+    updated_definition = "test definition2 updated"
+    creation_data = {"term": test_term_name, "definition": "test definition"}
+    update_data = {"term": f"{test_term_name}_updated", "definition": updated_definition}
+
+    # When: Creating a new dictionary term
+    response = await test_client.put(f"{base_url}", json=creation_data, follow_redirects=True)
+
+    # Then: Term is created successfully
+    assert response.status_code == 200
+    created_items = await DictionaryTerm.find(DictionaryTerm.term == test_term_name).to_list()
+    created_item = created_items[0]
+    assert created_item is not None
+
+    # When: Updating the dictionary term
+    response = await test_client.post(
+        f"{base_url}?item_id={created_item.id}", json=update_data, follow_redirects=True
+    )
+
+    # Then: Term is updated successfully
+    assert response.status_code == 200
+    await created_item.sync()
+    assert created_item.definition == updated_definition
+
+    # When: Deleting the dictionary term
+    response = await test_client.delete(
+        f"{base_url}?item_id={created_item.id}", follow_redirects=True
+    )
+
+    # Then: Term is deleted successfully
+    assert response.status_code == 200
+    assert await DictionaryTerm.get(created_item.id) is None

@@ -133,13 +133,14 @@ class DictionaryTermForm(QuartForm):
     async def async_validators_term(self, term: StringField) -> None:
         """Check if the term is unique."""
         existing_db_id = ObjectId(self.term_id.data) if self.term_id.data else None
+        term_data = term.data.strip().lower() if term.data else ""
 
         # Check against other term names
         if (
             await DictionaryTerm.find(
                 DictionaryTerm.guild_id == int(self.guild_id.data),
                 DictionaryTerm.id != existing_db_id,
-                DictionaryTerm.term == term.data.strip().lower(),
+                DictionaryTerm.term == term_data,
             ).count()
             > 0
         ):
@@ -150,11 +151,11 @@ class DictionaryTermForm(QuartForm):
         all_db_terms = await DictionaryTerm.find(
             DictionaryTerm.guild_id == int(self.guild_id.data),
             DictionaryTerm.id != existing_db_id,
-            DictionaryTerm.term != term.data.strip().lower(),
+            DictionaryTerm.term != term_data,
         ).to_list()
 
         for db_term in all_db_terms:
-            if self.term.data.strip().lower() in db_term.synonyms:
+            if term_data in db_term.synonyms:
                 msg = f"Already a synonym of <em>{db_term.term}</em>."
                 raise ValidationError(msg)
 
@@ -162,7 +163,15 @@ class DictionaryTermForm(QuartForm):
         """Check if the synonyms are unique."""
         existing_db_id = ObjectId(self.term_id.data) if self.term_id.data else None
 
-        synonyms_list = [s.strip().lower() for s in synonyms.data.split(",") if re.search(r"\w", s)]
+        synonyms_list = (
+            [
+                s.strip().lower()
+                for s in synonyms.data.split(",")
+                if s is not None and re.search(r"\w", s)
+            ]
+            if synonyms.data
+            else []
+        )
         for synonym in synonyms_list:
             if synonym == self.term.data.strip().lower():
                 msg = "Synonym cannot be the same as the term."
