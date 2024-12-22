@@ -93,3 +93,32 @@ To redirect to a new page, a route can return a string containing a `<script>` t
 ```python
 return f'<script>window.location.href="{url_for("homepage.homepage", success_msg="MESSAGE"</script>'
 ```
+
+### Editable Tables of Database Items
+
+Editable tables of database items share a common pattern. The Route, templates, and HTMXPartials are all designed to work together to allow for creation, editing, and deletion of items in the database.
+
+The steps to create an editable table are:
+
+1.  Add the type to the `constants.TableType` enum.
+2.  Add the form to the `blueprints/HTMXPartials/forms.py` file.
+3.  Configure the `EditTableView` route to use the form.
+4.  Add the new table type to the templates in the `ItemDisplayPartial.jinja` file which has the HTML table rows.
+5.  Add the necessary items to the template of the page that will display the table.
+
+The route for the page that displays the table should have a parameter for the table type.
+
+```python
+from valentina.webui.constants import TableType
+
+def get(self, table_type: TableType) -> str:
+    ...
+    items = await DatabaseModel.find(DatabaseModel.guild_id == session["GUILD_ID"]).to_list()
+    catalog.render("route.route_name", table_type=TableType.SOMETHING, can_edit=True)
+```
+
+In the page template, use the `TablePartial` to display the table.
+
+```jinja
+<HTMXPartials.EditTable.TablePartial TableType={{ table_type }} items={{ items }} can_edit={{ can_edit }} />
+```

@@ -4,6 +4,7 @@ from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
 from quart import abort, redirect, request, session, url_for
+from quart.utils import run_sync
 from quart.views import MethodView
 from werkzeug.wrappers.response import Response
 
@@ -12,7 +13,7 @@ from valentina.controllers import CharacterSheetBuilder
 from valentina.models import Campaign, Character, Statistics, User
 from valentina.webui import catalog
 from valentina.webui.constants import CharacterEditableInfo, CharacterViewTab, TableType, TextType
-from valentina.webui.utils import fetch_active_campaign, fetch_user, is_storyteller
+from valentina.webui.utils import fetch_active_campaign, fetch_user, is_storyteller, link_terms
 from valentina.webui.utils.forms import ValentinaForm
 
 gameplay_form = ValentinaForm()
@@ -113,29 +114,44 @@ class CharacterView(MethodView):
                 profile_data = await sheet_builder.fetch_sheet_profile(
                     storyteller_view=storyteller_data
                 )
-                return catalog.render(
-                    "character_view.Sheet",
-                    character=character,
-                    sheet_data=sheet_data,
-                    profile_data=profile_data,
-                    character_owner=character_owner,
-                )
+
+                result = await run_sync(
+                    lambda: catalog.render(
+                        "character_view.Sheet",
+                        character=character,
+                        sheet_data=sheet_data,
+                        profile_data=profile_data,
+                        character_owner=character_owner,
+                    )
+                )()
+
+                return await link_terms(result, link_type="html")
+
             case CharacterViewTab.BIOGRAPHY:
-                return catalog.render(
-                    "character_view.Biography",
-                    character=character,
-                    text_type_bio=TextType.BIOGRAPHY,
-                    can_edit=session["IS_STORYTELLER"]
-                    or session["USER_ID"] == character.user_owner,
-                )
+                result = await run_sync(
+                    lambda: catalog.render(
+                        "character_view.Biography",
+                        character=character,
+                        text_type_bio=TextType.BIOGRAPHY,
+                        can_edit=session["IS_STORYTELLER"]
+                        or session["USER_ID"] == character.user_owner,
+                    )
+                )()
+
+                return await link_terms(result, link_type="html")
+
             case CharacterViewTab.INFO:
-                return catalog.render(
-                    "character_view.Info",
-                    character=character,
-                    CharacterEditableInfo=CharacterEditableInfo,
-                    table_type_note=TableType.NOTE,
-                    table_type_inventory=TableType.INVENTORYITEM,
-                )
+                result = await run_sync(
+                    lambda: catalog.render(
+                        "character_view.Info",
+                        character=character,
+                        CharacterEditableInfo=CharacterEditableInfo,
+                        table_type_note=TableType.NOTE,
+                        table_type_inventory=TableType.INVENTORYITEM,
+                    )
+                )()
+
+                return await link_terms(result, link_type="html")
 
             case CharacterViewTab.IMAGES:  # pragma: no cover
                 return redirect(url_for("partials.characterimages", character_id=character.id))
@@ -185,22 +201,28 @@ class CharacterView(MethodView):
                 f" <a href='{url_for('user_profile.view', user_id=character_owner.id)}'>{owner_name}</a>"
             )
 
-        return catalog.render(
-            "character_view.Main",
-            character=character,
-            profile_data=profile_data,
-            tabs=CharacterViewTab,
-            sheet_data=sheet_data,
-            character_owner=character_owner,
-            campaign_experience=await self._get_campaign_experience(
-                character, character_owner, campaign
-            ),
-            campaign=campaign,
-            dice_sizes=[member.value for member in DiceType],
-            form=gameplay_form,
-            error_msg=request.args.get("error_msg", ""),
-            success_msg=request.args.get("success_msg", ""),
-            info_msg=request.args.get("info_msg", ""),
-            warning_msg=request.args.get("warning_msg", ""),
-            CharacterEditableInfo=CharacterEditableInfo,
+        campaign_experience = await self._get_campaign_experience(
+            character, character_owner, campaign
         )
+
+        result = await run_sync(
+            lambda: catalog.render(
+                "character_view.Main",
+                character=character,
+                profile_data=profile_data,
+                tabs=CharacterViewTab,
+                sheet_data=sheet_data,
+                character_owner=character_owner,
+                campaign_experience=campaign_experience,
+                campaign=campaign,
+                dice_sizes=[member.value for member in DiceType],
+                form=gameplay_form,
+                error_msg=request.args.get("error_msg", ""),
+                success_msg=request.args.get("success_msg", ""),
+                info_msg=request.args.get("info_msg", ""),
+                warning_msg=request.args.get("warning_msg", ""),
+                CharacterEditableInfo=CharacterEditableInfo,
+            )
+        )()
+
+        return await link_terms(result, link_type="html")

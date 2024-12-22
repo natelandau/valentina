@@ -8,46 +8,51 @@ from quart import session
 from werkzeug.exceptions import InternalServerError
 
 from tests.factories import *
+from valentina.models import DictionaryTerm
 from valentina.webui.utils import helpers
 
 
 async def test_fetch_active_campaign(debug, app_request_context, mock_session, campaign_factory):
     """Test the fetch_active_campaign function."""
-    # Create test campaigns
+    # Given: Two test campaigns exist in the database
     campaign1 = campaign_factory.build()
     await campaign1.insert()
 
     campaign2 = campaign_factory.build()
     await campaign2.insert()
 
-    # Set up mock session data
+    # And: The session data includes both campaigns with campaign1 as active
     mock_session_data = mock_session(campaigns=[campaign1, campaign2], active_campaign=campaign1)
 
-    # Convert app_request_context to an async context manager
+    # When: Setting up the request context
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
+        # And: The session is populated with mock data
         session.update(mock_session_data)
 
-        # Test fetching the active campaign
+        # Then: The active campaign can be fetched
         active_campaign = await helpers.fetch_active_campaign()
         assert active_campaign is not None
         assert active_campaign.id == campaign1.id
 
-        # Test fetching a specific campaign
+        # When: Fetching a specific campaign
         specific_campaign = await helpers.fetch_active_campaign(campaign_id=str(campaign2.id))
+        # Then: That campaign is returned and set as active
         assert specific_campaign is not None
         assert specific_campaign.id == campaign2.id
         assert session["ACTIVE_CAMPAIGN_ID"] == str(campaign2.id)
 
-        # Test with no active campaign set. Should return None b/c we don't know which campaign to set as active
+        # Given: No active campaign is set
         session["ACTIVE_CAMPAIGN_ID"] = None
+        # Then: None is returned since we don't know which campaign to set as active
         assert await helpers.fetch_active_campaign() is None
 
-        # Test with only one campaign
+        # Given: Only one campaign exists in the session
         session["GUILD_CAMPAIGNS"] = {campaign1.name: str(campaign1.id)}
+        # When: Fetching the active campaign
         single_campaign = await helpers.fetch_active_campaign()
+        # Then: That campaign is returned and set as active
         assert single_campaign is not None
         assert single_campaign.id == campaign1.id
         assert session["ACTIVE_CAMPAIGN_ID"] == str(campaign1.id)
@@ -55,45 +60,47 @@ async def test_fetch_active_campaign(debug, app_request_context, mock_session, c
 
 async def test_fetch_active_character(debug, app_request_context, mock_session, character_factory):
     """Test the fetch_active_character function."""
-    # Create test characters
+    # Given: Two test characters exist in the database
     character1 = character_factory.build()
     await character1.insert()
 
     character2 = character_factory.build()
     await character2.insert()
 
-    # Set up mock session data
+    # And: The session data includes both characters with character1 as active
     mock_session_data = mock_session(
         characters=[character1, character2], active_character=character1
     )
 
-    # Convert app_request_context to an async context manager
+    # When: Setting up the request context
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
+        # And: The session is populated with mock data
         session.update(mock_session_data)
 
-        # Test fetching the active character
+        # Then: The active character can be fetched
         active_character = await helpers.fetch_active_character()
         assert active_character is not None
         assert active_character.id == character1.id
 
-        # Test fetching a specific character
+        # When: Fetching a specific character
         specific_character = await helpers.fetch_active_character(character_id=str(character2.id))
+        # Then: That character is returned and set as active
         assert specific_character is not None
         assert specific_character.id == character2.id
         assert session["ACTIVE_CHARACTER_ID"] == str(character2.id)
 
-        # Test with no active character set
+        # Given: No active character is set and no characters exist in session
         session["ACTIVE_CHARACTER_ID"] = None
         session["USER_CHARACTERS"] = []
 
+        # Then: An error is raised when trying to fetch active character
         with pytest.raises(InternalServerError, match="No active character found") as excinfo:
             await helpers.fetch_active_character()
         assert excinfo.value.code == 500
 
-        # Test with only one character
+        # Given: Only one character exists in the session
         session["USER_CHARACTERS"] = [
             helpers.CharacterSessionObject(
                 id=str(character1.id),
@@ -106,10 +113,11 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
             ).__dict__
         ]
 
+        # Then: That character is returned as active
         single_character = await helpers.fetch_active_character()
         assert single_character.id == character1.id
 
-        # Test with multiple characters and no active character set
+        # Given: Multiple characters exist but no active character is set
         session["ACTIVE_CHARACTER_ID"] = None
         session["USER_CHARACTERS"] = [
             helpers.CharacterSessionObject(
@@ -132,6 +140,7 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
             ).__dict__,
         ]
 
+        # Then: An error is raised since we don't know which character to make active
         with pytest.raises(
             InternalServerError, match="Multiple characters found and no active character set"
         ) as excinfo:
@@ -141,7 +150,7 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
 
 async def test_fetch_campaigns(app_request_context, mock_session, campaign_factory, guild_factory):
     """Test the fetch_campaigns function."""
-    # Create database objects
+    # Given: A guild exists with three campaigns, two active and one deleted
     guild = guild_factory.build()
     await guild.insert()
     campaign1 = campaign_factory.build(guild=guild.id, is_deleted=False)
@@ -151,19 +160,22 @@ async def test_fetch_campaigns(app_request_context, mock_session, campaign_facto
     await campaign2.insert()
     await campaign3.insert()
 
-    # Set up mock session data
+    # And: The session contains the guild ID
     mock_session_data = mock_session(guild_id=guild.id)
 
-    # Convert app_request_context to an async context manager
+    # When: Setting up the request context
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
+        # And: The session is populated with mock data
         session.update(mock_session_data)
 
+        # Then: Only the two active campaigns are returned
         campaigns = await helpers.fetch_campaigns()
         assert len(campaigns) == 2
         assert all(campaign.id in [campaign1.id, campaign2.id] for campaign in campaigns)
+
+        # And: The session is updated with the campaign mapping
         assert session["GUILD_CAMPAIGNS"] == {
             campaign1.name: str(campaign1.id),
             campaign2.name: str(campaign2.id),
@@ -172,20 +184,21 @@ async def test_fetch_campaigns(app_request_context, mock_session, campaign_facto
 
 async def test_fetch_guild(app_request_context, mock_session, guild_factory):
     """Test the fetch_campaigns function."""
-    # Create database objects
+    # Given: A guild exists in the database
     guild = guild_factory.build()
     await guild.insert()
 
-    # Set up mock session data
+    # And: The session contains the guild ID
     mock_session_data = mock_session(guild_id=guild.id)
 
-    # Convert app_request_context to an async context manager
+    # When: Setting up the request context
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
+        # And: The session is populated with mock data
         session.update(mock_session_data)
 
+        # Then: The guild is fetched successfully
         fetched_guild = await helpers.fetch_guild()
         assert fetched_guild.id == guild.id
         assert fetched_guild.name == guild.name
@@ -202,19 +215,20 @@ async def test_fetch_user_characters(
     guild_factory,
 ):
     """Test the fetch_user_characters function."""
-    # Create database objects
+    # Given: A guild exists with a campaign
     guild = guild_factory.build()
     await guild.insert()
 
     campaign = campaign_factory.build(guild=guild.id)
     await campaign.insert()
 
+    # And: Two users exist in the guild
     user1 = user_factory.build()
     await user1.insert()
     user2 = user_factory.build()
     await user2.insert()
 
-    # Create test characters
+    # And: User1 has two player characters
     character1 = character_factory.build(
         user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
     )
@@ -223,10 +237,14 @@ async def test_fetch_user_characters(
         user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
     )
     await character2.insert()
+
+    # And: User2 has one player character
     character3 = character_factory.build(
         user_owner=user2.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
     )
     await character3.insert()
+
+    # And: User1 has one storyteller character
     character4 = character_factory.build(
         user_owner=user1.id,
         guild=guild.id,
@@ -236,21 +254,23 @@ async def test_fetch_user_characters(
     )
     await character4.insert()
 
-    # Set up mock session data
+    # And: The session is set up for user1
     mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user1.id))
-
-    # Convert app_request_context to an async context manager
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
+        # When: The session is populated with mock data
         session.update(mock_session_data)
 
+        # And: We fetch the user's characters
         characters = await helpers.fetch_user_characters()
+
+        # Then: Only user1's player characters are returned
         assert len(characters) == 2
         for character in characters:
             assert str(character.id) in [str(character1.id), str(character2.id)]
 
+        # And: The session is updated with the correct character data
         session_characters = session["USER_CHARACTERS"]
         assert len(session_characters) == 2
         for session_character in session_characters:
@@ -267,7 +287,7 @@ async def test_fetch_all_characters(
     guild_factory,
 ):
     """Test the fetch_all_characters function."""
-    # Create database objects
+    # Given: A guild exists with a campaign and two users
     guild = guild_factory.build()
     await guild.insert()
 
@@ -279,7 +299,7 @@ async def test_fetch_all_characters(
     user2 = user_factory.build()
     await user2.insert()
 
-    # Create test characters
+    # And: There are 3 player characters and 1 storyteller character
     character1 = character_factory.build(
         user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
     )
@@ -301,21 +321,21 @@ async def test_fetch_all_characters(
     )
     await character4.insert()
 
-    # Set up mock session data
+    # And: The session is set up for user1
     mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user1.id))
-
-    # Convert app_request_context to an async context manager
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
+        # When: The session is populated and fetch_all_characters is called
         session.update(mock_session_data)
-
         characters = await helpers.fetch_all_characters()
+
+        # Then: Only the 3 player characters are returned
         assert len(characters) == 3
         for character in characters:
             assert str(character.id) in [str(character1.id), str(character2.id), str(character3.id)]
 
+        # And: The session is updated with the player characters
         session_characters = session["ALL_CHARACTERS"]
         assert len(session_characters) == 3
         for session_character in session_characters:
@@ -336,7 +356,7 @@ async def test_fetch_storyteller_characters(
     guild_factory,
 ):
     """Test the fetch_storyteller_characters function."""
-    # Create database objects
+    # Given: A guild exists with a campaign and two users
     guild = guild_factory.build()
     await guild.insert()
 
@@ -348,7 +368,7 @@ async def test_fetch_storyteller_characters(
     user2 = user_factory.build()
     await user2.insert()
 
-    # Create test characters
+    # And: There are 3 player characters and 1 storyteller character
     character1 = character_factory.build(
         user_owner=user1.id,
         guild=guild.id,
@@ -382,21 +402,22 @@ async def test_fetch_storyteller_characters(
     )
     await character4.insert()
 
-    # Set up mock session data
+    # And: The session is set up for user1
     mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user1.id))
-
-    # Convert app_request_context to an async context manager
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
         session.update(mock_session_data)
 
+        # When: Fetching storyteller characters
         characters = await helpers.fetch_storyteller_characters()
+
+        # Then: Only the storyteller character is returned
         assert len(characters) == 1
         for character in characters:
             assert str(character.id) in [str(character4.id)]
 
+        # And: The session is updated with the storyteller characters
         session_characters = session["STORYTELLER_CHARACTERS"]
         assert len(session_characters) == 1
         for session_character in session_characters:
@@ -405,7 +426,7 @@ async def test_fetch_storyteller_characters(
 
 async def test_is_storyteller(app_request_context, mock_session, user_factory, guild_factory):
     """Test the is_storyteller function."""
-    # Create database objects
+    # Given: A guild exists with one storyteller
     guild = guild_factory.build()
     await guild.insert()
 
@@ -418,26 +439,73 @@ async def test_is_storyteller(app_request_context, mock_session, user_factory, g
     guild.storytellers = [user1.id]
     await guild.save()
 
-    # Set up mock session data
+    # When: The session contains the storyteller user
     mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user1.id))
-
-    # Convert app_request_context to an async context manager
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
         session.update(mock_session_data)
 
+        # Then: The user is identified as a storyteller
         assert await helpers.is_storyteller() is True
 
-    # Set up mock session data for a user that is not a storyteller
+    # When: The session contains a non-storyteller user
     mock_session_data = mock_session(guild_id=str(guild.id), user_id=str(user2.id))
-
-    # Convert app_request_context to an async context manager
     request_context = asynccontextmanager(app_request_context)
 
     async with request_context("/"):
-        # Populate the session with mock data
         session.update(mock_session_data)
 
+        # Then: The user is not identified as a storyteller
         assert await helpers.is_storyteller() is False
+
+
+@pytest.mark.drop_db
+async def test_term_linker(app_request_context, mock_session):
+    """Test the term linker function."""
+    # Given: Two dictionary terms exist in the database
+    dict_term1 = DictionaryTerm(
+        term="aaaaa",
+        synonyms=["bbbbb"],
+        definition="abcdefg",
+        guild_id=1,
+    )
+    dict_term2 = DictionaryTerm(
+        term="ccccc",
+        synonyms=[],
+        link="http://google.com",
+        guild_id=1,
+    )
+    await dict_term1.insert()
+    await dict_term2.insert()
+
+    # And: A test string containing terms that should be linked
+    test_string = "Curaaaaabitur blandit aaaaa tempus ardua bbbbb ridiculous sed ccccc magna."
+
+    # And: A mock session is set up
+    mock_session_data = mock_session()
+
+    # And: The app request context is converted to async
+    request_context = asynccontextmanager(app_request_context)
+
+    async with request_context("/"):
+        # And: The session is populated with mock data
+        session.update(mock_session_data)
+
+        # When/Then: Terms are converted to HTML links
+        assert (
+            await helpers.link_terms(test_string, link_type="html")
+            == "Curaaaaabitur blandit <a href='/dictionary/term/aaaaa'>aaaaa</a> tempus ardua <a href='/dictionary/term/aaaaa'>bbbbb</a> ridiculous sed <a href='http://google.com'>ccccc</a> magna."
+        )
+
+        # When/Then: Terms are converted to markdown links
+        assert (
+            await helpers.link_terms(test_string, link_type="markdown")
+            == "Curaaaaabitur blandit [aaaaa](/dictionary/term/aaaaa) tempus ardua [bbbbb](/dictionary/term/aaaaa) ridiculous sed [ccccc](http://google.com) magna."
+        )
+
+        # When/Then: Excluded terms are not converted to links
+        assert (
+            await helpers.link_terms(test_string, link_type="markdown", excludes=["aaaaa", "ccccc"])
+            == test_string
+        )

@@ -2,11 +2,13 @@
 
 from flask_discord import requires_authorization
 from quart import Blueprint, request, send_from_directory
+from quart.utils import run_sync
 from quart.wrappers.response import Response as QuartResponse
 
 from valentina.constants import USER_GUIDE_PATH, WEBUI_STATIC_DIR_PATH
 from valentina.models import ChangelogParser
 from valentina.webui import catalog
+from valentina.webui.utils import link_terms
 
 blueprint = Blueprint("static_files", __name__)
 
@@ -23,7 +25,8 @@ async def user_guide() -> str:
     """Serve the user guide."""
     guide_content = USER_GUIDE_PATH.read_text()
 
-    return catalog.render("static_files.UserGuide", guide=guide_content)
+    result = await run_sync(lambda: catalog.render("static_files.UserGuide", guide=guide_content))()
+    return await link_terms(result, link_type="html")
 
 
 @blueprint.route("/changelog")
@@ -34,4 +37,7 @@ async def changelog() -> str:
     possible_versions = ChangelogParser(bot).list_of_versions()
     changelog = ChangelogParser(bot, possible_versions[-1], possible_versions[0])
 
-    return catalog.render("static_files.Changelog", changelog=changelog.get_text())
+    result = await run_sync(
+        lambda: catalog.render("static_files.Changelog", changelog=changelog.get_text())
+    )()
+    return await link_terms(result, link_type="html")

@@ -1,0 +1,25 @@
+{# def
+    term: DictionaryTerm,
+#}
+
+<PageLayout title="{{ term.term | title }} - Dictionary" _attrs={{ attrs }}>
+    <global.PageTitle>{{ term.term | title }}</global.PageTitle>
+
+    {% if term.synonyms %}
+        <ul class="list-group list-group-horizontal mb-3">
+            <li class="list-group-item bg-primary text-white">Synonyms:</li>
+            {% for synonym in term.synonyms %}
+                <li class="list-group-item">{{ synonym | safe }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if term.link %}
+
+        <a href="{{ term.link }}">{{ term.link }}</a>
+
+    {% elif term.definition %}
+        {{ term.definition | from_markdown_no_p | safe }}
+    {% endif %}
+
+</PageLayout>

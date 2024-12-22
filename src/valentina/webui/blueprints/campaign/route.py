@@ -4,6 +4,7 @@ from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
 from quart import Response, abort, request, session, url_for
+from quart.utils import run_sync
 from quart.views import MethodView
 from quart_wtf import QuartForm
 
@@ -11,7 +12,7 @@ from valentina.controllers import PermissionManager, total_campaign_experience
 from valentina.models import Campaign, CampaignBook, Statistics
 from valentina.webui import catalog
 from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab, TableType, TextType
-from valentina.webui.utils import fetch_active_campaign, sync_channel_to_discord
+from valentina.webui.utils import fetch_active_campaign, link_terms, sync_channel_to_discord
 from valentina.webui.utils.discord import post_to_audit_log
 
 from .forms import CampaignBookForm
@@ -72,52 +73,71 @@ class CampaignView(MethodView):
         tab = CampaignViewTab.get_member_by_value(request.args.get("tab", None))
         match tab:
             case CampaignViewTab.OVERVIEW:
-                return catalog.render(
-                    "campaign.Overview",
-                    campaign=campaign,
-                    campaign_data=await self._compute_campaign_data(campaign),
-                    text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
-                    can_manage_campaign=self.can_manage_campaign,
-                )
+                campaign_data = await self._compute_campaign_data(campaign)
+                result = await run_sync(
+                    lambda: catalog.render(
+                        "campaign.Overview",
+                        campaign=campaign,
+                        campaign_data=campaign_data,
+                        text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
+                        can_manage_campaign=self.can_manage_campaign,
+                    )
+                )()
+                return await link_terms(result, link_type="html")
 
             case CampaignViewTab.BOOKS:
-                return catalog.render(
-                    "campaign.Books",
-                    campaign=campaign,
-                    books=await campaign.fetch_books(),
-                    CampaignEditableInfo=CampaignEditableInfo,
-                    can_manage_campaign=self.can_manage_campaign,
-                    table_type_note=TableType.NOTE,
-                    table_type_chapter=TableType.CHAPTER,
-                )
+                books = await campaign.fetch_books()
+                result = await run_sync(
+                    lambda: catalog.render(
+                        "campaign.Books",
+                        campaign=campaign,
+                        books=books,
+                        CampaignEditableInfo=CampaignEditableInfo,
+                        can_manage_campaign=self.can_manage_campaign,
+                        table_type_note=TableType.NOTE,
+                        table_type_chapter=TableType.CHAPTER,
+                    )
+                )()
+                return await link_terms(result, link_type="html")
 
             case CampaignViewTab.CHARACTERS:
-                return catalog.render(
-                    "campaign.Characters",
-                    campaign=campaign,
-                    characters=await campaign.fetch_player_characters(),
-                    can_manage_campaign=self.can_manage_campaign,
-                    table_type_npc=TableType.NPC,
-                )
+                characters = await campaign.fetch_player_characters()
+                result = await run_sync(
+                    lambda: catalog.render(
+                        "campaign.Characters",
+                        campaign=campaign,
+                        characters=characters,
+                        can_manage_campaign=self.can_manage_campaign,
+                        table_type_npc=TableType.NPC,
+                    )
+                )()
+                return await link_terms(result, link_type="html")
 
             case CampaignViewTab.STATISTICS:
                 stats_engine = Statistics(guild_id=session["GUILD_ID"])
-                return catalog.render(
-                    "campaign.Statistics",
-                    campaign=campaign,
-                    statistics=await stats_engine.campaign_statistics(campaign, as_json=True),
-                    CampaignEditableInfo=CampaignEditableInfo,
-                    can_manage_campaign=self.can_manage_campaign,
-                )
+                statistics = await stats_engine.campaign_statistics(campaign, as_json=True)
+                result = await run_sync(
+                    lambda: catalog.render(
+                        "campaign.Statistics",
+                        campaign=campaign,
+                        statistics=statistics,
+                        CampaignEditableInfo=CampaignEditableInfo,
+                        can_manage_campaign=self.can_manage_campaign,
+                    )
+                )()
+                return await link_terms(result, link_type="html")
 
             case CampaignViewTab.NOTES:
-                return catalog.render(
-                    "campaign.Notes",
-                    items=campaign.notes,
-                    can_manage_campaign=self.can_manage_campaign,
-                    TableType=TableType.NOTE,
-                    parent_id=campaign.id,
-                )
+                result = await run_sync(
+                    lambda: catalog.render(
+                        "campaign.Notes",
+                        items=campaign.notes,
+                        can_manage_campaign=self.can_manage_campaign,
+                        TableType=TableType.NOTE,
+                        parent_id=campaign.id,
+                    )
+                )()
+                return await link_terms(result, link_type="html")
 
             case _:
                 assert_never(tab)
@@ -159,18 +179,22 @@ class CampaignView(MethodView):
         if self.is_htmx and request.args.get("tab"):
             return await self.handle_tabs(campaign)
 
-        return catalog.render(
-            "campaign.Main",
-            campaign=campaign,
-            campaign_data=await self._compute_campaign_data(campaign),
-            tabs=CampaignViewTab,
-            text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
-            can_manage_campaign=self.can_manage_campaign,
-            error_msg=request.args.get("error_msg", ""),
-            success_msg=request.args.get("success_msg", ""),
-            info_msg=request.args.get("info_msg", ""),
-            warning_msg=request.args.get("warning_msg", ""),
-        )
+        campaign_data = await self._compute_campaign_data(campaign)
+        result = await run_sync(
+            lambda: catalog.render(
+                "campaign.Main",
+                campaign=campaign,
+                campaign_data=campaign_data,
+                tabs=CampaignViewTab,
+                text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
+                can_manage_campaign=self.can_manage_campaign,
+                error_msg=request.args.get("error_msg", ""),
+                success_msg=request.args.get("success_msg", ""),
+                info_msg=request.args.get("info_msg", ""),
+                warning_msg=request.args.get("warning_msg", ""),
+            )
+        )()
+        return await link_terms(result, link_type="html")
 
 
 class CampaignEditItem(MethodView):

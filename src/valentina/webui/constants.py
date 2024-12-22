@@ -7,13 +7,22 @@ from typing import Union
 
 @dataclass
 class EditableItem:
-    """Class for an item that can be edited."""
+    """Class for an item that can be edited.
+
+    name: The name of the item.
+    route: The route to the page that displays the item.
+    sort_attribute: The attribute to sort the item by.
+    description: The description of the item.
+    table_headers: The headers of the table that displays the item.
+    item_name: Used to describe the type of item in the table if different from the name.
+    """
 
     name: str
     route: str
     sort_attribute: str = ""
     description: str = ""
     table_headers: list[str] = field(default_factory=list)
+    item_name: str = ""
 
     @property
     def route_suffix(self) -> str:
@@ -67,6 +76,14 @@ class TableType(Enum):
         description="Chapters of the campaign book",
         table_headers=["#", "Chapter", "Description"],
         sort_attribute="number",
+    )
+    DICTIONARY = EditableItem(
+        name="Dictionary",
+        route="partials.table_dictionary",
+        description="Terms in the dictionary",
+        sort_attribute="term",
+        table_headers=["Term", "Definition"],
+        item_name="Dictionary Term",
     )
 
 

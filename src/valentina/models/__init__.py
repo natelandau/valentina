@@ -16,6 +16,7 @@ from .campaign import (
 )
 from .character import Character, CharacterSheetSection, CharacterTrait, InventoryItem
 from .database import GlobalProperty
+from .dictionary import DictionaryTerm
 from .guild import Guild, GuildChannels, GuildPermissions, GuildRollResultThumbnail
 from .note import Note
 from .user import CampaignExperience, User, UserMacro
@@ -40,6 +41,7 @@ __all__ = [
     "CharacterSheetSection",
     "CharacterTrait",
     "DiceRoll",
+    "DictionaryTerm",
     "GlobalProperty",
     "Guild",
     "GuildChannels",

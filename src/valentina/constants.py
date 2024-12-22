@@ -47,8 +47,6 @@ SPACER = "\u200b"  # Zero-width space
 VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 STARTING_FREEBIE_POINTS = 21
 
-### ENUMS ###
-
 
 class WebUIEnvironment(StrEnum):
     """Enum for web UI environments."""

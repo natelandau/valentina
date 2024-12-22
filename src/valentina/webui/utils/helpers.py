@@ -1,14 +1,15 @@
 """Helpers for the webui."""
 
+import re
 from dataclasses import dataclass
 from typing import Literal, assert_never
 
 from loguru import logger
-from quart import Response, abort, session
+from quart import Response, abort, session, url_for
 
 from valentina.constants import HTTPStatus
 from valentina.controllers import ChannelManager
-from valentina.models import Campaign, CampaignBook, Character, Guild, User
+from valentina.models import Campaign, CampaignBook, Character, DictionaryTerm, Guild, User
 from valentina.utils import ValentinaConfig, console
 
 
@@ -481,3 +482,53 @@ async def sync_channel_to_discord(
 
         case _:
             assert_never(object)
+
+
+async def link_terms(
+    value: str, link_type: Literal["markdown", "html"], excludes: list[str] = []
+) -> str:
+    """Convert dictionary terms in text to markdown links.
+
+    Search through text for terms and synonyms that exist in the DictionaryTerm collection and convert them to links pointing to their dictionary entries in the web UI. The search is case-insensitive and only matches whole words.
+
+    Args:
+        value (str): The text to process
+        link_type (Literal["markdown", "html"]): Whether to return HTML links instead of markdown links.
+        excludes (list[str]): A list of terms to exclude from the search.
+
+    Returns:
+        str: The text with dictionary terms converted to markdown links
+    """
+    for term in await DictionaryTerm.find().to_list():
+        if term.term in excludes:
+            continue
+
+        patterns_to_check = []
+
+        pattern = re.compile(rf"\b(?<![\w/]){re.escape(term.term)}\b(?![\w/]|://)", re.IGNORECASE)
+        patterns_to_check.append(pattern)
+
+        for synonym in term.synonyms:
+            pattern = re.compile(rf"\b(?<![\w/]){re.escape(synonym)}\b(?![\w/]|://)", re.IGNORECASE)
+            patterns_to_check.append(pattern)
+
+        for pattern in patterns_to_check:
+            if term.definition:
+                if link_type == "html":
+                    value = pattern.sub(
+                        lambda m: f"<a href='{url_for('dictionary.term', term=term.term)}'>{m.group(0)}</a>",  # noqa: B023
+                        value,
+                    )
+                else:
+                    value = pattern.sub(
+                        lambda m: f"[{m.group(0)}]({url_for('dictionary.term', term=term.term)})",  # noqa: B023
+                        value,
+                    )
+
+            if term.link:
+                if link_type == "html":
+                    value = pattern.sub(lambda m: f"<a href='{term.link}'>{m.group(0)}</a>", value)  # noqa: B023
+                else:
+                    value = pattern.sub(lambda m: f"[{m.group(0)}]({term.link})", value)  # noqa: B023
+
+    return value

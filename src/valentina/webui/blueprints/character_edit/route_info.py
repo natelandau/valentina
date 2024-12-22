@@ -5,6 +5,7 @@ from uuid import UUID
 
 from flask_discord import requires_authorization
 from quart import abort, request, session, url_for
+from quart.utils import run_sync
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
@@ -161,17 +162,20 @@ class EditCharacterInfo(MethodView):
     async def get(self, character_id: str) -> str:
         """Render the form."""
         character = await fetch_active_character(character_id, fetch_links=False)
+        form = await self._build_form(character)
 
-        return catalog.render(
-            "character_edit.FormPartial",
-            character=character,
-            form=await self._build_form(character),
-            join_label=False,
-            floating_label=True,
-            post_url=url_for(self.edit_type.value.route, character_id=character_id),
-            tab=self.edit_type.value.tab,
-            hx_target=f"#{self.edit_type.value.div_id}",
-        )
+        return await run_sync(
+            lambda: catalog.render(
+                "character_edit.FormPartial",
+                character=character,
+                form=form,
+                join_label=False,
+                floating_label=True,
+                post_url=url_for(self.edit_type.value.route, character_id=character_id),
+                tab=self.edit_type.value.tab,
+                hx_target=f"#{self.edit_type.value.div_id}",
+            )
+        )()
 
     async def post(self, character_id: str) -> str:
         """Process the form."""
