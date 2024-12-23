@@ -26,6 +26,7 @@ from valentina.constants import (
     WerewolfBreed,
     WerewolfTribe,
 )
+from valentina.controllers import PermissionManager
 from valentina.models import BrokerTask, Character
 from valentina.webui import catalog
 from valentina.webui.utils import update_session
@@ -55,6 +56,11 @@ class ProfileForm(QuartForm):
         default="",
         validators=[Optional()],
         filters=[str.strip, str.title],
+    )
+    is_alive = SelectField(
+        "Alive",
+        choices=[("True", "Yes"), ("False", "No")],
+        validators=[],
     )
     clan_name = SelectField(
         "Vampire Clan",
@@ -134,6 +140,18 @@ class ProfileForm(QuartForm):
             msg = "Character name must not already exist."
             raise ValidationError(msg)
 
+    async def async_validators_is_alive(self, is_alive: SelectField) -> None:
+        """Check if the character is alive."""
+        character = await Character.get(self.character_id.data)
+
+        if is_alive.data != str(character.is_alive):
+            permission_manager = PermissionManager(guild_id=session["GUILD_ID"])
+            if not await permission_manager.can_kill_character(
+                author_id=session["USER_ID"], character_id=self.character_id.data
+            ):
+                msg = "You do not have permissions to kill or revive this character."
+                raise ValidationError(msg)
+
 
 class EditProfile(MethodView):
     """Edit the character's profile, aka, the top of a character sheet."""
@@ -144,6 +162,7 @@ class EditProfile(MethodView):
         """Build the character edit form."""
         data_from_db = {
             "character_id": character.id,
+            "is_alive": character.is_alive,
             "name_first": character.name_first if character.name_first else "",
             "name_last": character.name_last if character.name_last else "",
             "name_nick": character.name_nick if character.name_nick else "",
@@ -196,9 +215,12 @@ class EditProfile(MethodView):
 
         form = await self._build_form(character)
         if await form.validate_on_submit():
+            form_is_alive = form.data["is_alive"] == "True"
+
             if (
                 form.data["name_first"] != character.name_first
                 or form.data["name_last"] != character.name_last
+                or form_is_alive != character.is_alive
             ):
                 do_update_channel = True
 
@@ -221,6 +243,9 @@ class EditProfile(MethodView):
                         and form_data[key] == getattr(character, key).date()
                     ):
                         continue
+
+                    if key == "is_alive":
+                        form_data[key] = form_is_alive
 
                     has_updates = True
                     setattr(character, key, form_data[key])
