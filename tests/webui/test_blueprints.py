@@ -47,6 +47,39 @@ async def test_static_routes(mocker, debug, test_client, path, data, method, sta
 
 
 @pytest.mark.drop_db
+async def test_admin_blueprint(debug, mocker, mock_session, test_client, guild_factory):
+    """Test the admin blueprint."""
+    # Given: A test environment with mocked dependencies
+    mocker.patch("valentina.webui.blueprints.admin.route.is_storyteller", return_value=True)
+    mocker.patch("valentina.webui.blueprints.admin.route.post_to_audit_log", return_value=None)
+
+    # And: A guild exists in the database
+    guild = guild_factory.build()
+    await guild.insert()
+
+    # And: The user has an active session with the guild
+    async with test_client.session_transaction() as session:
+        session.update(mock_session(guild_id=guild.id))
+
+    # When: The user visits the admin page
+    response = await test_client.get("/admin/", follow_redirects=True)
+
+    # Then: The page loads successfully
+    assert response.status_code == 200
+
+    # When: The user updates each permission setting with valid values
+    for arg in ["grant_xp", "manage_traits", "manage_campaigns", "kill_character"]:
+        response = await test_client.post(f"/admin?{arg}=1", follow_redirects=True)
+        # Then: The update succeeds
+        assert response.status_code == 200
+
+        # When: The user attempts to update with invalid values
+        response = await test_client.post(f"/admin?{arg}=100", follow_redirects=True)
+        # Then: The update fails with bad request
+        assert response.status_code == 400
+
+
+@pytest.mark.drop_db
 async def test_character_views(
     debug, mocker, mock_session, test_client, campaign_factory, character_factory, user_factory
 ) -> None:

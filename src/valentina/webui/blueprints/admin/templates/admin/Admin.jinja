@@ -1,0 +1,168 @@
+{# def
+    guild: Guild,
+    PermissionsGrantXP: PermissionsGrantXP,
+    PermissionsManageTraits: PermissionsManageTraits,
+    PermissionManageCampaign: PermissionManageCampaign,
+    PermissionsKillCharacter: PermissionsKillCharacter,
+    success_msg: str = "",
+#}
+
+<PageLayout title="Admin" _attrs={{ attrs }}>
+    <global.PageTitle>Admin</global.PageTitle>
+
+    <p class="mb-5 fs-4">Use this page to manage Valentina's settings.</p>
+
+    <table class="table table-striped table-bordered" id="settings">
+        <thead>
+            <tr>
+                <th class="align-baseline fs-5">Task</th>
+                <th class="align-baseline fs-5">Description</th>
+                <th class="align-baseline fs-5">
+                    <span class="text-nowrap">Current Setting</span>
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th scope="row"  class="align-middle fs-5">
+                    <span class="text-nowrap">Grant XP</span>
+                </th>
+                <td class="align-middle">
+                    <p>Control who can grant experience and cool points to a player.</p>
+                    <ol>
+                        <li>
+                            <strong>Unrestricted:</strong> Any player can grant experience to any player
+                        </li>
+                        <li>
+                            <strong>Player Only:</strong> A player may only grant experience to themselves
+                        </li>
+                        <li>
+                            <strong>Storyteller Only:</strong> Only a Storyteller can grant experience to players
+                        </li>
+                    </ol>
+                </td>
+                <td class="align-middle">{{ guild.permissions.grant_xp.name.title().replace('_', ' ') }}</td>
+                <td class="align-middle">
+                    <div class="btn-group" role="group">
+                        <button type="button"
+                                class="btn btn-sm btn-primary dropdown-toggle"
+                                data-bs-toggle="dropdown">Grant XP</button>
+                        <ul class="dropdown-menu">
+                            {% for permission in PermissionsGrantXP %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       hx-post="{{ url_for('admin.home', grant_xp=permission.value, _method='POST') }}"
+                                       hx-trigger="click"
+                                       hx-target="#settings">{{ permission.name.title().replace('_', ' ') }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row" class="align-middle fs-5">
+                    <span class="text-nowrap">Update Traits</span>
+                </th>
+                <td class="align-middle">
+                    <p>Control who can update the value of a character's traits without spending experience.</p>
+                    <ol>
+                        <li>
+                            <strong>Unrestricted:</strong> Any user can update the value of any character's traits
+                        </li>
+                        <li>
+                            <strong>Owner Only:</strong> The owner of a character can update the value of that character's traits
+                        </li>
+                        <li>
+                            <strong>Within 24 hours:</strong> The owner of a character can update a character's traits within 24 hours of creation
+                        </li>
+                        <li>
+                            <strong>Storyteller only:</strong> Only a Storyteller can manually update the value of a character's traits
+                        </li>
+                    </ol>
+                </td>
+                <td class="align-middle">{{ guild.permissions.manage_traits.name.title().replace('_', ' ') }}</td>
+                <td class="align-middle">
+                    <div class="btn-group" role="group">
+                        <button type="button"
+                                class="btn btn-sm btn-primary dropdown-toggle"
+                                data-bs-toggle="dropdown">Manage Traits</button>
+                        <ul class="dropdown-menu">
+                            {% for permission in PermissionsManageTraits %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       hx-post="{{ url_for('admin.home', manage_traits=permission.value, _method='POST') }}"
+                                       hx-trigger="click"
+                                       hx-target="#settings">{{ permission.name.title().replace('_', ' ') }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row" class="align-middle fs-5">
+                    <span class="text-nowrap">Manage Campaigns</span>
+                </th>
+                <td class="align-middle">
+                    <p>Control who can create, delete, and manage campaigns. This includes:</p>
+                    <ul>
+                        <li>Creating a new campaign</li>
+                        <li>Deleting a campaign</li>
+                        <li>Editing books and chapters from a campaign</li>
+                        <li>Setting danger and desperation levels</li>
+                    </ul>
+                </td>
+                <td class="align-middle">
+                    {{ guild.permissions.manage_campaigns.name.title().replace('_', ' ') }}
+                </td>
+                <td class="align-middle">
+                    <div class="btn-group" role="group">
+                        <button type="button"
+                                class="btn btn-sm btn-primary dropdown-toggle"
+                                data-bs-toggle="dropdown">Manage Campaigns</button>
+                        <ul class="dropdown-menu">
+                            {% for permission in PermissionManageCampaign %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       hx-post="{{ url_for('admin.home', manage_campaigns=permission.value, _method='POST') }}"
+                                       hx-trigger="click"
+                                       hx-target="#settings">{{ permission.name.title().replace('_', ' ') }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row" class="align-middle fs-5">
+                    <span class="text-nowrap">Kill Characters</span>
+                </th>
+                <td class="align-middle">
+                    <p>Control who can mark a character as dead.</p>
+                </td>
+                <td class="align-middle">{{ guild.permissions.kill_character.name.title().replace('_', ' ') }}</td>
+                <td class="align-middle">
+                    <div class="btn-group" role="group">
+                        <button type="button"
+                                class="btn btn-sm btn-primary dropdown-toggle"
+                                data-bs-toggle="dropdown">Kill Characters</button>
+                        <ul class="dropdown-menu">
+                            {% for permission in PermissionsKillCharacter %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       hx-post="{{ url_for('admin.home', kill_character=permission.value, _method='POST') }}"
+                                       hx-trigger="click"
+                                       hx-target="#settings">{{ permission.name.title().replace('_', ' ') }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if success_msg %}<global.Toast msg={{ success_msg }} level="success" />{% endif %}
+</PageLayout>

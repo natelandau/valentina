@@ -538,7 +538,8 @@ class SettingsManager:
             "- Create a new campaign",
             "- Delete a campaign",
             "- Set a campaign as active/inactive",
-            "- Delete NPCs, notes, and chapters from a campaign",
+            "- Edit books and chapters from a campaign",
+            "- Set danger and desperation levels",
             "### Options:",
             "1. **Unrestricted** - Any user can manage campaigns",
             "2. **Storyteller only** - Only a Storyteller can manage campaigns",
@@ -630,7 +631,7 @@ class SettingsManager:
             "### Options:",
             "1. **Unrestricted** - Any player can grant experience to any player",
             "2. **Player Only** - A player may only grant experience to themselves",
-            "3. **Storyteller only** - Only a Storyteller can grant experience to players",
+            "3. **Storyteller Only** - Only a Storyteller can grant experience to players",
         ]
 
         embed = discord.Embed(
