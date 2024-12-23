@@ -20,38 +20,11 @@ from valentina.models import (
     Campaign,
     CampaignBook,
     CampaignBookChapter,
-    CampaignChapter,
     Character,
     CharacterTrait,
     InventoryItem,
     Note,
 )
-
-
-class CampaignChapterConverter(Converter):
-    """Convert a chapter number to a CampaignChapter object.
-
-    TODO: Remove this converter after chapter migration is complete.
-    """
-
-    async def convert(self, ctx: commands.Context, argument: str) -> CampaignChapter:
-        """Validate and normalize traits."""
-        channel_objects = await fetch_channel_object(ctx, raise_error=False)
-        campaign = channel_objects.campaign
-
-        try:
-            chapter_number = int(argument)
-        except ValueError as e:
-            msg = f"`{argument}` is not a valid chapter number"
-            raise BadArgument(msg) from e
-
-        chapter = next((x for x in campaign.chapters if x.number == chapter_number), None)
-
-        if not chapter:
-            msg = f"Requested chapter number `{chapter_number}` is not part of the active campaign."
-            raise BadArgument(msg)
-
-        return chapter
 
 
 class ValidCampaign(Converter):

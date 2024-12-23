@@ -398,39 +398,6 @@ async def select_chapter(ctx: discord.AutocompleteContext) -> list[OptionChoice]
     return choices or [OptionChoice("No chapters", "")]
 
 
-async def select_chapter_old(
-    ctx: discord.AutocompleteContext,
-) -> list[OptionChoice]:  # pragma: no cover
-    """Populate the autocomplete for the chapter option.
-
-    Fetch the active campaign, retrieve its chapters, sort them by number,
-    and filter based on user input. If no active campaign is found, return a single option indicating this.
-
-    Args:
-        ctx (discord.AutocompleteContext): The autocomplete context containing interaction details.
-
-    Returns:
-        list[OptionChoice]: A list of OptionChoice objects representing available chapters.
-            Each option contains the chapter number and name as the label, and the chapter number as the value.
-
-    TODO: Remove this after migration to the new chapter system.
-    """
-    # Fetch the active campaign
-    channel_objects = await fetch_channel_object(ctx, raise_error=False)
-    campaign = channel_objects.campaign
-
-    if not campaign:
-        return [OptionChoice("No active campaign", "")]
-
-    choices = [
-        OptionChoice(f"{chapter.number}. {chapter.name}", str(chapter.number))
-        for chapter in sorted(campaign.chapters, key=lambda x: x.number)
-        if chapter.name.lower().startswith(ctx.options["chapter"].lower())
-    ][:MAX_OPTION_LIST_SIZE]
-
-    return choices or [OptionChoice("No chapers", "")]
-
-
 async def select_char_class(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of available character classes.
 

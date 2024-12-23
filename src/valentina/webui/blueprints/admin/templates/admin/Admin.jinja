@@ -4,28 +4,24 @@
     PermissionsManageTraits: PermissionsManageTraits,
     PermissionManageCampaign: PermissionManageCampaign,
     PermissionsKillCharacter: PermissionsKillCharacter,
+    LogLevel: LogLevel,
     success_msg: str = "",
 #}
 
-<PageLayout title="Admin" _attrs={{ attrs }}>
+<PageLayout title="Admin" _attrs={{ attrs }} sweetalert={{ True }}>
     <global.PageTitle>Admin</global.PageTitle>
 
     <p class="mb-5 fs-4">Use this page to manage Valentina's settings.</p>
 
-    <table class="table table-striped table-bordered" id="settings">
+    <table class="table table-striped" id="settings">
         <thead>
             <tr>
-                <th class="align-baseline fs-5">Task</th>
-                <th class="align-baseline fs-5">Description</th>
-                <th class="align-baseline fs-5">
-                    <span class="text-nowrap">Current Setting</span>
-                </th>
-                <th></th>
+                <th class="align-baseline fs-3" colspan="4">Settings</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <th scope="row"  class="align-middle fs-5">
+                <th scope="row"  class="align-middle">
                     <span class="text-nowrap">Grant XP</span>
                 </th>
                 <td class="align-middle">
@@ -62,7 +58,7 @@
                 </td>
             </tr>
             <tr>
-                <th scope="row" class="align-middle fs-5">
+                <th scope="row" class="align-middle">
                     <span class="text-nowrap">Update Traits</span>
                 </th>
                 <td class="align-middle">
@@ -102,7 +98,7 @@
                 </td>
             </tr>
             <tr>
-                <th scope="row" class="align-middle fs-5">
+                <th scope="row" class="align-middle">
                     <span class="text-nowrap">Manage Campaigns</span>
                 </th>
                 <td class="align-middle">
@@ -136,7 +132,7 @@
                 </td>
             </tr>
             <tr>
-                <th scope="row" class="align-middle fs-5">
+                <th scope="row" class="align-middle">
                     <span class="text-nowrap">Kill Characters</span>
                 </th>
                 <td class="align-middle">
@@ -161,6 +157,81 @@
                     </div>
                 </td>
             </tr>
+
+        </tbody>
+        <thead>
+            <tr>
+                <th class="align-baseline fs-3" colspan="4">Maintenance Tasks</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th scope="row" class="align-middle">
+                    <span class="text-nowrap">Rebuild Campaign Channels</span>
+                </th>
+                <td class="align-middle">
+                    <p>Delete all campaign channels and recreate them in Discord.</p>
+                    <p>
+                        <strong>Use with caution:</strong> This is a destructive operation that will delete and recreate all campaign-related channels, including their message history.
+                    </p>
+                </td>
+                <td></td>
+                <td class="align-middle">
+                    <a class="btn btn-sm btn-warning"
+                        hx-post="{{ url_for('admin.home', rebuild_channels=1, _method='POST') }}"
+                        {# hx-trigger="click" #}
+                        hx-trigger='confirmed'
+                        onClick="Swal.fire({title: 'Confirm Rebuild', text:'Are you sure you want to delete all campaign channels and recreate them in Discord?', confirmButtonText: 'Confirm',confirmButtonColor: 'green', showCancelButton: true}).then((result)=>{ if(result.isConfirmed){ htmx.trigger(this, 'confirmed'); } })"
+                        hx-target="#settings">
+                        <i class="fa-solid fa-arrow-down-short-wide"></i> Rebuild Channels
+                    </a>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row" class="align-middle">
+                    <span class="text-nowrap">Change Log Level</span>
+                </th>
+                <td class="align-middle">
+                    <p>
+                        Change the log level for the bot. Unless you are experiencing issues, this should be set to <span class="font-monospace">WARNING</span>.
+                    </p>
+                </td>
+                <td class="align-middle"></td>
+
+                <td class="align-middle">
+                    <div class="btn-group" role="group">
+                        <button type="button"
+                                class="btn btn-sm btn-warning dropdown-toggle"
+                                data-bs-toggle="dropdown">
+                            <i class="fa-solid fa-pen"></i> Change Log Level
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% for log_level in LogLevel %}
+                                <li>
+                                    <a class="dropdown-item"
+                                       hx-post="{{ url_for('admin.home', log_level=log_level.value, _method='POST') }}"
+                                       hx-trigger="click"
+                                       hx-target="#settings">{{ log_level.name.title().replace('_', ' ') }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row" class="align-middle">
+                    <span class="text-nowrap">Download Log File</span>
+                </th>
+                <td class="align-middle">
+                    <p>Download the log file for the bot.</p>
+                </td>
+                <td class="align-middle"></td>
+                <td class="align-middle">
+                    <a class="btn btn-sm btn-primary"
+                       href="{{ url_for('static_files.logfile') }}"><i class="fa-solid fa-download"></i> Download Log</a>
+                </td>
+            </tr>
+
         </tbody>
     </table>
 

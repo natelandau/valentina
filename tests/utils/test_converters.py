@@ -15,7 +15,6 @@ from valentina.constants import (
     VampireClan,
 )
 from valentina.discord.utils.converters import (
-    CampaignChapterConverter,
     ValidBookNumber,
     ValidCampaign,
     ValidChapterNumber,
@@ -30,7 +29,6 @@ from valentina.discord.utils.converters import (
     ValidTraitCategory,
     ValidYYYYMMDD,
 )
-from valentina.models import CampaignChapter
 
 
 @pytest.mark.no_db
@@ -225,38 +223,6 @@ async def test_valid_chapter_number(
     # THEN assert a BadArgument is raised
     with pytest.raises(BadArgument):
         await ValidChapterNumber().convert(mock_ctx1, 2)
-
-
-@pytest.mark.drop_db
-async def test_campaign_chapter_converter(mock_ctx1, campaign_factory):
-    """Test the CampaignChapterConverter converter.
-
-    TODO: Remove this after chapter migration
-    """
-    # GIVEN a guild with a campaign and a mock context
-    chapter = CampaignChapter(
-        name="mock_chapter",
-        number=1,
-        description_short="mock_description",
-        description_long="mock_description",
-    )
-
-    campaign = campaign_factory.build(guild=mock_ctx1.guild.id, chapters=[chapter])
-    await campaign.insert()
-
-    # WHEN the converter is called with a valid chapter number
-    # THEN assert the result is the correct number
-    assert await CampaignChapterConverter().convert(mock_ctx1, 1) == chapter
-
-    # WHEN the converter is called with an invalid chapter number
-    # THEN assert a BadArgument is raised
-    with pytest.raises(BadArgument):
-        await CampaignChapterConverter().convert(mock_ctx1, 2)
-
-    # WHEN the converter is called with a number less than zero
-    # THEN assert a BadArgument is raised
-    with pytest.raises(BadArgument):
-        await CampaignChapterConverter().convert(mock_ctx1, 0)
 
 
 @pytest.mark.drop_db

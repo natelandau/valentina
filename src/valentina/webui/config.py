@@ -2,6 +2,12 @@
 
 from valentina.utils import ValentinaConfig
 
+redis_address = (
+    f"redis://:{ValentinaConfig().redis_password}@{ValentinaConfig().redis_addr}"
+    if {ValentinaConfig().redis_password}
+    else f"redis://{ValentinaConfig().redis_addr}"
+)
+
 
 class Config:
     """Base configuration for the web UI."""
@@ -21,11 +27,7 @@ class Production(Config):
     SESSION_TYPE = "redis"
     SESSION_REVERSE_PROXY = bool(ValentinaConfig().webui_behind_reverse_proxy)
     SESSION_PROTECTION = False
-    SESSION_URI = (
-        (f"redis://:{ValentinaConfig().redis_password}@{ValentinaConfig().redis_addr}")
-        if {ValentinaConfig().redis_addr}
-        else f"redis://{ValentinaConfig().redis_addr}"
-    )
+    SESSION_URI = redis_address
 
 
 class Development(Config):

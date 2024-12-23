@@ -321,7 +321,7 @@ class ChannelManager:  # pragma: no cover
         return channel
 
     async def confirm_book_channel(
-        self, book: CampaignBook, campaign: Optional[Campaign]
+        self, book: CampaignBook, campaign: Campaign | None = None
     ) -> discord.TextChannel | None:
         """Confirm and retrieve the Discord text channel associated with a given campaign book.
 

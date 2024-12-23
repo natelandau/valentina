@@ -8,11 +8,12 @@ from quart.utils import run_sync
 from quart.views import MethodView
 from quart_wtf import QuartForm
 
-from valentina.controllers import PermissionManager, total_campaign_experience
-from valentina.models import Campaign, CampaignBook, Statistics
+from valentina.constants import BrokerTaskType
+from valentina.controllers import ChannelManager, PermissionManager, total_campaign_experience
+from valentina.models import BrokerTask, Campaign, CampaignBook, Statistics
 from valentina.webui import catalog
 from valentina.webui.constants import CampaignEditableInfo, CampaignViewTab, TableType, TextType
-from valentina.webui.utils import fetch_active_campaign, link_terms, sync_channel_to_discord
+from valentina.webui.utils import fetch_active_campaign, fetch_discord_guild, link_terms
 from valentina.webui.utils.discord import post_to_audit_log
 
 from .forms import CampaignBookForm
@@ -230,10 +231,13 @@ class CampaignEditItem(MethodView):
 
         book = await CampaignBook.get(book_id)
 
-        campaign.books.remove(book)
+        await campaign.delete_book(book)
         await campaign.save()
 
-        await sync_channel_to_discord(obj=book, update_type="delete")
+        discord_guild = await fetch_discord_guild(session["GUILD_ID"])
+        channel_manager = ChannelManager(guild=discord_guild)
+        await channel_manager.delete_book_channel(book=book)
+
         await book.delete()
 
         await post_to_audit_log(
@@ -258,7 +262,13 @@ class CampaignEditItem(MethodView):
                 await existing_book.save()
                 msg = f"Book {existing_book.name} updated"
                 if update_discord:
-                    await sync_channel_to_discord(obj=existing_book, update_type="update")
+                    task = BrokerTask(
+                        guild_id=session["GUILD_ID"],
+                        author_name=session["USER_NAME"],
+                        task=BrokerTaskType.CONFIRM_BOOK_CHANNEL,
+                        data={"book_id": existing_book.id},
+                    )
+                    await task.insert()
 
             else:
                 books = await campaign.fetch_books()
@@ -272,7 +282,13 @@ class CampaignEditItem(MethodView):
                 await new_book.save()
                 campaign.books.append(new_book)
                 await campaign.save()
-                await sync_channel_to_discord(obj=new_book, update_type="create")
+                task = BrokerTask(
+                    guild_id=session["GUILD_ID"],
+                    author_name=session["USER_NAME"],
+                    task=BrokerTaskType.CONFIRM_BOOK_CHANNEL,
+                    data={"book_id": new_book.id},
+                )
+                await task.insert()
                 msg = f"Book {new_book.name} created"
 
             await post_to_audit_log(

@@ -1,5 +1,6 @@
 {# def
     title:str ="",
+    sweetalert:bool = False,
 #}
 {#
     USAGE
@@ -39,6 +40,7 @@
                 crossorigin="anonymous"></script>
         <script defer
                 src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        {% if sweetalert %}<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>{% endif %}
         {{ catalog.render_assets() }}
         <link href="{{ url_for('static', filename='valentina.css') }}"
               rel="stylesheet">

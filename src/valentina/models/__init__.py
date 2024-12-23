@@ -7,11 +7,11 @@ business logic, and interaction with the database.
 Import this module to access all Valentina models in other parts of the application.
 """
 
+from .broker_task import BrokerTask
 from .campaign import (
     Campaign,
     CampaignBook,
     CampaignBookChapter,
-    CampaignChapter,
     CampaignNPC,
 )
 from .character import Character, CharacterSheetSection, CharacterTrait, InventoryItem
@@ -29,10 +29,10 @@ from .changelog import ChangelogParser, ChangelogPoster  # isort: skip
 
 __all__ = [
     "AWSService",
+    "BrokerTask",
     "Campaign",
     "CampaignBook",
     "CampaignBookChapter",
-    "CampaignChapter",
     "CampaignExperience",
     "CampaignNPC",
     "ChangelogParser",

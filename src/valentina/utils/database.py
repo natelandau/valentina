@@ -6,6 +6,7 @@ from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from valentina.models import (
+    BrokerTask,
     Campaign,
     CampaignBook,
     CampaignBookChapter,
@@ -68,6 +69,7 @@ async def init_database(client=None, database=None) -> None:  # type: ignore [no
     await init_beanie(
         database=database if database is not None else client[db_name],
         document_models=[
+            BrokerTask,
             Campaign,
             CampaignBook,
             CampaignBookChapter,

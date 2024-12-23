@@ -2,15 +2,17 @@
 
 import re
 from dataclasses import dataclass
-from typing import Literal, assert_never
+from typing import TYPE_CHECKING, Literal
 
 from loguru import logger
 from quart import Response, abort, session, url_for
 
 from valentina.constants import HTTPStatus
-from valentina.controllers import ChannelManager
-from valentina.models import Campaign, CampaignBook, Character, DictionaryTerm, Guild, User
+from valentina.models import Campaign, Character, DictionaryTerm, Guild, User
 from valentina.utils import ValentinaConfig, console
+
+if TYPE_CHECKING:
+    import discord
 
 
 @dataclass
@@ -223,6 +225,27 @@ async def fetch_guild(fetch_links: bool = False) -> Guild:
         session["GUILD_NAME"] = guild.name
 
     return guild
+
+
+async def fetch_discord_guild(guild_id: int) -> "discord.Guild":
+    """Fetch a Discord guild object using its ID.
+
+    Retrieve a Discord guild object directly from Discord's API using the bot's connection.
+    This is different from fetch_guild() which retrieves from the database.
+
+    Args:
+        guild_id (int): The Discord ID of the guild to fetch.
+
+    Returns:
+        discord.Guild: The Discord guild object.
+
+    Raises:
+        discord.NotFound: If the guild does not exist or the bot cannot access it.
+        discord.HTTPException: If there was an error communicating with Discord.
+    """
+    from valentina.bot import bot
+
+    return await bot.get_guild_from_id(guild_id)
 
 
 async def fetch_user(fetch_links: bool = False) -> User:
@@ -440,48 +463,6 @@ async def update_session() -> None:
         for key, value in session.items():
             console.log(f"{key}={value}")
         console.rule()
-
-
-async def sync_channel_to_discord(
-    obj: Campaign | CampaignBook | Character, update_type: Literal["create", "update", "delete"]
-) -> None:  # pragma: no cover
-    """Sync a channel to Discord.
-
-    Args:
-        obj (Campaign | CampaignBook | Character): The object to sync.
-        update_type (Literal["create", "update", "delete"]): The type of update to perform.
-
-    Returns:
-        None
-    """
-    from valentina.bot import bot
-
-    guild = await bot.get_guild_from_id(session["GUILD_ID"])
-    channel_manager = ChannelManager(guild=guild)
-
-    match obj:
-        case Campaign():
-            if update_type == "delete":
-                await channel_manager.delete_campaign_channels(campaign=obj)
-            else:
-                await channel_manager.confirm_campaign_channels(campaign=obj)
-
-        case CampaignBook():
-            if update_type == "delete":
-                await channel_manager.delete_book_channel(book=obj)
-            else:
-                await channel_manager.confirm_book_channel(book=obj, campaign=obj.campaign)
-
-        case Character():
-            if update_type == "delete":
-                await channel_manager.delete_character_channel(character=obj)
-            else:
-                await channel_manager.confirm_character_channel(
-                    character=obj, campaign=obj.campaign
-                )
-
-        case _:
-            assert_never(object)
 
 
 async def link_terms(

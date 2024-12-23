@@ -25,20 +25,6 @@ from .character import Character
 from .note import Note
 
 
-class CampaignChapter(BaseModel):
-    """Represents a chapter as a subdocument within Campaign.
-
-    # TODO: Remove after migration
-    """
-
-    description_long: str = None
-    description_short: str = None
-    name: str
-    number: int
-    date_created: datetime = Field(default_factory=time_now)
-    channel: int | None = None
-
-
 class CampaignNPC(BaseModel):
     """Represents a campaign NPC as a subdocument within Campaign."""
 
@@ -121,7 +107,6 @@ class Campaign(Document):
     guild: int
     name: str
     is_deleted: bool = False  # Campaigns are never deleted from the DB, only marked as deleted
-    chapters: list[CampaignChapter] = Field(default_factory=list)
     npcs: list[CampaignNPC] = Field(default_factory=list)
     books: list[Link[CampaignBook]] = Field(default_factory=list)
     notes: list[Link[Note]] = Field(default_factory=list)
@@ -174,3 +159,8 @@ class Campaign(Document):
             self.books,  # type: ignore [arg-type]
             key=lambda x: x.number,
         )
+
+    async def delete_book(self, book: CampaignBook) -> None:
+        """Delete a book from the campaign."""
+        self.books = [x for x in self.books if x.id != book.id]  # type: ignore [attr-defined]
+        await self.save()

@@ -59,6 +59,21 @@ Args:
 <global.Toast msg={{ msg }} level="success" />
 ```
 
+## Long running tasks
+
+To keep long-running tasks from blocking routes, create a `BrokerTask` which will be executed by the `TaskBroker` at 1 minute intervals.
+
+```python
+from valentina.constants import BrokerTaskType
+from valentina.models import BrokerTask
+
+@app.route("/rebuild-channels")
+async def rebuild_channels():
+    task = BrokerTask(task=BrokerTaskType.REBUILD_CHANNELS, guild_id=session["GUILD_ID"])
+    await task.insert()
+    return "Task created"
+```
+
 ## HTMX
 
 [HTMX](https://htmx.org/) is a library that allows you to add interactivity to your HTML without needing to write JavaScript. It is used to handle the interaction between the client and the server. Common patterns used in Valentina are:
@@ -67,12 +82,10 @@ Args:
 
 The javascript package [SweetAlert2](https://sweetalert2.github.io/) is used to create confirmation dialogs. To confirm an HTMX request before it is issued to the server, follow this pattern. Note the `hx-trigger='confirmed'` and the `onClick` event which pauses the HTMX request until the user confirms the dialog.
 
-**NOTE:** SweetAlert2 is not loaded by default. It must be added to the individual pages that require it. Use the `{% block head %}` tag to add it to the page.
+**NOTE:** SweetAlert2 is not loaded by default. It must be added to the individual pages that require it. When using the `PageLayout` template, set the `sweetalert` parameter to `True`.
 
 ```jinja
-{% block head %}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-{% endblock head %}
+<PageLayout title={{ character.name }} _attrs={{ attrs }} sweetalert={{ True }}>
 ```
 
 To see an example of the confirmation dialog integration with HTMX, see the `Delete Image` button in the character view.
