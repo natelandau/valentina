@@ -97,8 +97,13 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link btn btn-dark me-2"
-                       href="{{ url_for('dictionary.home') }}"><i class="fa-solid fa-book"></i>&nbsp;Dictionary</a>
+                       href="{{ url_for('dictionary.home') }}"><i class="fa-solid fa-pen"></i>&nbsp;Dictionary</a>
                 </li>
+                {% if session["IS_STORYTELLER"] %}
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-dark me-2" href="{{ url_for('admin.home') }}"><i class="fa-solid fa-gear"></i>&nbsp;Admin</a>
+                    </li>
+                {% endif %}
             </ul>
             <!-- NAVBAR RIGHT -->
             <div class="btn-group dropdown">
