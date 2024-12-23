@@ -9,18 +9,14 @@ from quart.views import MethodView
 
 from valentina.constants import (
     STARTING_FREEBIE_POINTS,
+    BrokerTaskType,
     HTTPStatus,
     RNGCharLevel,
 )
 from valentina.controllers import RNGCharGen, delete_character
-from valentina.models import Character
+from valentina.models import BrokerTask, Character
 from valentina.webui import catalog
-from valentina.webui.utils import (
-    fetch_active_campaign,
-    fetch_user,
-    sync_channel_to_discord,
-    update_session,
-)
+from valentina.webui.utils import fetch_active_campaign, fetch_user, update_session
 from valentina.webui.utils.discord import post_to_audit_log
 
 
@@ -109,7 +105,13 @@ class CreateRNGCharacter(MethodView):
                 user.characters.append(character)
                 await user.save()
 
-                await sync_channel_to_discord(obj=character, update_type="create")
+                task = BrokerTask(
+                    guild_id=session["GUILD_ID"],
+                    author_name=session["USER_NAME"],
+                    task=BrokerTaskType.CONFIRM_CHARACTER_CHANNEL,
+                    data={"character_id": character.id},
+                )
+                await task.insert()
 
                 await post_to_audit_log(
                     msg=f"Character {character.full_name} created",

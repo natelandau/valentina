@@ -15,6 +15,7 @@ from wtforms import HiddenField, SelectField, SubmitField
 from wtforms.validators import DataRequired
 
 from valentina.constants import (
+    BrokerTaskType,
     CharacterConcept,
     CharClass,
     HTTPStatus,
@@ -22,11 +23,11 @@ from valentina.constants import (
     RNGCharLevel,
 )
 from valentina.controllers import RNGCharGen
+from valentina.models import BrokerTask
 from valentina.webui import catalog
 from valentina.webui.utils import (
     fetch_active_campaign,
     fetch_user,
-    sync_channel_to_discord,
     update_session,
 )
 from valentina.webui.utils.discord import post_to_audit_log
@@ -133,11 +134,6 @@ class CreateStorytellerRNGCharacter(MethodView):
                 post_url=url_for("character_create.rng_storyteller"),
             )
 
-        from valentina.utils import console
-
-        console.rule("PROCESS FORM")
-        console.log(f"{form.data=}")
-
         if form.cancel.data:
             url = url_for("character_create.start", campaign_id=form.campaign_id.data)
             return f'<script>window.location.href="{url}"</script>'
@@ -167,10 +163,17 @@ class CreateStorytellerRNGCharacter(MethodView):
             concept=CharacterConcept[form.concept.data] if form.concept.data else None,
         )
 
+        task = BrokerTask(
+            guild_id=session["GUILD_ID"],
+            author_name=session["USER_NAME"],
+            task=BrokerTaskType.CONFIRM_CHARACTER_CHANNEL,
+            data={"character_id": generated_character.id},
+        )
+        await task.insert()
+
         await post_to_audit_log(
             f"{user.name} created storyteller character {generated_character.full_name}"
         )
-        await sync_channel_to_discord(obj=generated_character, update_type="create")
 
         await update_session()
 

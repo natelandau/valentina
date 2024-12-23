@@ -17,11 +17,9 @@ from valentina.discord.utils.autocomplete import (
     select_book,
     select_campaign,
     select_chapter,
-    select_chapter_old,
     select_npc,
 )
 from valentina.discord.utils.converters import (
-    CampaignChapterConverter,
     ValidBookNumber,
     ValidCampaign,
     ValidCampaignBook,
@@ -79,63 +77,6 @@ class CampaignCog(commands.Cog):
             return False
 
         return True
-
-    ### ADMIN COMMANDS ####################################################################
-    @admin.command(
-        name="chapter_to_book", description="Move old standalone chapters to a chapter in a book."
-    )
-    async def chapter_to_book_chapter(
-        self,
-        ctx: ValentinaContext,
-        selected_chapter: Option(
-            CampaignChapterConverter,
-            name="chapter",
-            description="Chapter to move within a book",
-            required=True,
-            autocomplete=select_chapter_old,
-        ),
-        book: Option(
-            ValidCampaignBook,
-            name="book",
-            description="Book to add chapter to",
-            required=True,
-            autocomplete=select_book,
-        ),
-    ) -> None:
-        """Move a chapter to a book.
-
-        TODO: Remove after migration
-        """
-        if not await self.check_permissions(ctx):
-            return
-
-        channel_objects = await fetch_channel_object(ctx, need_campaign=True)
-        campaign = channel_objects.campaign
-
-        title = f"Move Chapter `{selected_chapter.name}` to book `{book.name}`"
-        is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=False, audit=True
-        )
-
-        if not is_confirmed:
-            return
-
-        new_chapter = CampaignBookChapter(
-            name=selected_chapter.name,
-            description_short=selected_chapter.description_short,
-            description_long=selected_chapter.description_long,
-            number=max([c.number for c in await book.fetch_chapters()], default=0) + 1,
-            book=str(book.id),
-        )
-        await new_chapter.insert()
-        book.chapters.append(new_chapter)
-        await book.save()
-
-        index = campaign.chapters.index(selected_chapter)
-        del campaign.chapters[index]
-        await campaign.save()
-
-        await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     ### CAMPAIGN COMMANDS ####################################################################
 

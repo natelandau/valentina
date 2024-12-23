@@ -4,7 +4,7 @@ import uuid
 from typing import ClassVar
 
 from flask_discord import requires_authorization
-from quart import Response, abort, url_for
+from quart import Response, abort, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from wtforms import (
@@ -18,6 +18,7 @@ from wtforms import (
 from wtforms.validators import DataRequired, Length, Optional
 
 from valentina.constants import (
+    BrokerTaskType,
     HTTPStatus,
     HunterCreed,
     VampireClan,
@@ -25,9 +26,9 @@ from valentina.constants import (
     WerewolfBreed,
     WerewolfTribe,
 )
-from valentina.models import Character
+from valentina.models import BrokerTask, Character
 from valentina.webui import catalog
-from valentina.webui.utils import sync_channel_to_discord, update_session
+from valentina.webui.utils import update_session
 from valentina.webui.utils.discord import post_to_audit_log
 from valentina.webui.utils.forms import validate_unique_character_name
 
@@ -188,12 +189,19 @@ class EditProfile(MethodView):
 
     async def post(self, character_id: str) -> str | Response:
         """Handle POST requests."""
+        do_update_channel = False
         character = await Character.get(character_id)
         if not character:
             abort(HTTPStatus.BAD_REQUEST.value)
 
         form = await self._build_form(character)
         if await form.validate_on_submit():
+            if (
+                form.data["name_first"] != character.name_first
+                or form.data["name_last"] != character.name_last
+            ):
+                do_update_channel = True
+
             form_data = {
                 k: v if v else None
                 for k, v in form.data.items()
@@ -218,9 +226,17 @@ class EditProfile(MethodView):
                     setattr(character, key, form_data[key])
 
             if has_updates:
-                await sync_channel_to_discord(obj=character, update_type="update")
-
                 await character.save()
+
+            if has_updates and do_update_channel:
+                task = BrokerTask(
+                    guild_id=character.guild,
+                    author_name=session["USER_NAME"],
+                    task=BrokerTaskType.CONFIRM_CHARACTER_CHANNEL,
+                    data={"character_id": character.id},
+                )
+                await task.insert()
+
                 await post_to_audit_log(
                     msg=f"Character {character.name} edited",
                     view=self.__class__.__name__,
@@ -232,9 +248,7 @@ class EditProfile(MethodView):
             url = url_for(
                 "character_view.view",
                 character_id=character_id,
-                success_msg="<strong>Character updated!</strong>"
-                if has_updates
-                else "No changes made.",
+                success_msg="Character updated!" if has_updates else "No changes made.",
             )
             return f'<script>window.location.href="{url}"</script>'
 

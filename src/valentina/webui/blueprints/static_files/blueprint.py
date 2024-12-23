@@ -1,12 +1,13 @@
 """Routes for serving static files."""
 
 from flask_discord import requires_authorization
-from quart import Blueprint, request, send_from_directory
+from quart import Blueprint, Response, request, send_file, send_from_directory
 from quart.utils import run_sync
 from quart.wrappers.response import Response as QuartResponse
 
 from valentina.constants import USER_GUIDE_PATH, WEBUI_STATIC_DIR_PATH
 from valentina.models import ChangelogParser
+from valentina.utils import ValentinaConfig
 from valentina.webui import catalog
 from valentina.webui.utils import link_terms
 
@@ -41,3 +42,11 @@ async def changelog() -> str:
         lambda: catalog.render("static_files.Changelog", changelog=changelog.get_text())
     )()
     return await link_terms(result, link_type="html")
+
+
+@blueprint.route("/logfile")
+async def logfile() -> Response:
+    """Serve the logfile."""
+    log_file = ValentinaConfig().log_file
+
+    return await send_file(log_file, as_attachment=True)

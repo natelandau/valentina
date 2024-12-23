@@ -14,8 +14,8 @@ from discord.ext import commands, tasks
 from loguru import logger
 
 from valentina.constants import COGS_PATH, EmbedColor, LogLevel, WebUIEnvironment
+from valentina.controllers import TaskBroker
 from valentina.models import (
-    Campaign,
     ChangelogPoster,
     GlobalProperty,
     Guild,
@@ -210,6 +210,7 @@ class Valentina(commands.Bot):
         self.version = version
         self.owner_channels = [int(x) for x in ValentinaConfig().owner_channels.split(",")]
         self.sync_roles_to_db.start()
+        self.run_task_broker.start()
         self.webui_mode = webui_mode
 
         # Load Cogs
@@ -347,17 +348,6 @@ class Valentina(commands.Bot):
                 if guild.id not in user.guilds:
                     user.guilds.append(guild.id)
                     await user.save()
-
-        # Add `is_deleted` to campaigns
-        # TODO: Remove this after migration
-        for campaign in await Campaign.find(Campaign.guild == guild.id).to_list():
-            if not campaign.is_deleted:
-                campaign.is_deleted = False
-                await campaign.save()
-                logger.info(
-                    f"DATABASE: Add `is_deleted` to campaign {campaign.name} ({campaign.id})"
-                )
-
         # Setup the necessary roles in the guild
         await guild_object.setup_roles(guild)
 
@@ -454,7 +444,20 @@ class Valentina(commands.Bot):
 
     @tasks.loop(minutes=10)
     async def sync_roles_to_db(self) -> None:
-        """This task keeps guild-user role lists in sync with changes made to user roles using the Discord interface."""
+        """Synchronize guild-user role lists with Discord role changes.
+
+        Monitor and update the database to reflect role changes made through the Discord interface.
+        Check for administrator permissions and storyteller roles, adding or removing users
+        from the corresponding database lists as needed.
+
+        The task runs every 10 minutes to:
+        - Add/remove administrators based on Discord permissions
+        - Add/remove storytellers based on role assignments
+        - Keep database role lists in sync with Discord state
+
+        Returns:
+            None
+        """
         logger.info("SYNC: Running sync_roles_to_db task")
         for guild in self.guilds:
             guild_db_obj = await Guild.get(guild.id)
@@ -490,6 +493,24 @@ class Valentina(commands.Bot):
                     guild_db_obj.storytellers.remove(member.id)
                     await guild_db_obj.save()
                     logger.info(f"PERMS: Remove {member.name} as @Storyteller in database")
+
+    @tasks.loop(minutes=1)
+    async def run_task_broker(self) -> None:
+        """Process pending tasks from the task broker database.
+
+        Scan the task broker database for each connected guild and execute any pending tasks.
+        Tasks are processed sequentially through the TaskBroker class which handles task
+        execution and cleanup.
+        """
+        logger.debug("SYNC: Checking for tasks")
+        for guild in self.guilds:
+            task_broker = TaskBroker(guild)
+            await task_broker.run()
+
+    @run_task_broker.before_loop
+    async def before_run_task_broker(self) -> None:
+        """Wait for the bot to be ready before starting the run_task_broker task."""
+        await self.wait_until_ready()
 
     @sync_roles_to_db.before_loop
     async def before_sync_roles_to_db(self) -> None:

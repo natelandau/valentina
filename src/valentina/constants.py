@@ -48,6 +48,15 @@ VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 STARTING_FREEBIE_POINTS = 21
 
 
+class BrokerTaskType(Enum):
+    """Enum for tasks that can be run by the task broker."""
+
+    REBUILD_CHANNELS = 0
+    CONFIRM_CHARACTER_CHANNEL = 1
+    CONFIRM_BOOK_CHANNEL = 2
+    CONFIRM_CAMPAIGN_CHANNEL = 3
+
+
 class WebUIEnvironment(StrEnum):
     """Enum for web UI environments."""
 

@@ -11,11 +11,7 @@
     CharacterEditableInfo: CharacterEditableInfo,
 #}
 
-{% block head %}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-{% endblock head %}
-
-<PageLayout title={{ character.name }} _attrs={{ attrs }}>
+<PageLayout title={{ character.name }} _attrs={{ attrs }} sweetalert={{ True }}>
     <global.PageTitle>{{ character.full_name }}</global.PageTitle>
 
     {% include "character_view/EditButtons.jinja" %}

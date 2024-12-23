@@ -36,10 +36,12 @@
     {% if session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner %}
         <div class="vr mx-1"></div>
 
+        {% set escaped_name = character.name | replace("'", "") %}
+
         <button class="btn btn-danger"
                 hx-delete="{{ url_for('character_edit.delete', character_id=character.id) }}"
                 hx-trigger='confirmed'
-                onClick="Swal.fire({title: 'Confirm Delete', text:'Are you sure you want to delete {{ character.name }}?', confirmButtonText: 'Confirm',confirmButtonColor: 'red', showCancelButton: true}).then((result)=>{ if(result.isConfirmed){ htmx.trigger(this, 'confirmed'); } })"
+                onClick="Swal.fire({title: 'Confirm Delete', text:'Are you sure you want to delete {{ escaped_name }}?', confirmButtonText: 'Confirm',confirmButtonColor: 'red', showCancelButton: true}).then((result)=>{ if(result.isConfirmed){ htmx.trigger(this, 'confirmed'); } })"
                 hx-target="#delete-character">
             <i class="fa-regular fa-trash-can"></i>&nbsp;&nbsp;Delete Character
         </button>

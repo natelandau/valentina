@@ -11,10 +11,11 @@ from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.utils import secure_filename
 
-from valentina.constants import HTTPStatus
+from valentina.constants import BrokerTaskType, HTTPStatus
 from valentina.controllers import PermissionManager
 from valentina.models import (
     AWSService,
+    BrokerTask,
     Campaign,
     CampaignBook,
     CampaignBookChapter,
@@ -35,7 +36,6 @@ from valentina.webui.utils import (
     fetch_active_character,
     fetch_guild,
     link_terms,
-    sync_channel_to_discord,
     update_session,
 )
 from valentina.webui.utils.discord import post_to_audit_log
@@ -1026,8 +1026,14 @@ class EditTextView(MethodView):
         msg = f"{campaign.name} description updated"
 
         if is_renamed:
-            await sync_channel_to_discord(obj=campaign, update_type="update")
             await update_session()
+            task = BrokerTask(
+                guild_id=session["GUILD_ID"],
+                author_name=session["USER_NAME"],
+                task=BrokerTaskType.CONFIRM_CAMPAIGN_CHANNEL,
+                data={"campaign_id": campaign.id},
+            )
+            await task.insert()
 
         return text, msg
 

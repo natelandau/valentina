@@ -8,11 +8,14 @@ from .permission_mngr import PermissionManager
 from .rng_chargen import RNGCharGen
 from .trait_modifier import TraitModifier
 
+from .task_broker import TaskBroker  # isort: skip
+
 __all__ = [
     "ChannelManager",
     "CharacterSheetBuilder",
     "PermissionManager",
     "RNGCharGen",
+    "TaskBroker",
     "TraitForCreation",
     "TraitModifier",
     "delete_character",

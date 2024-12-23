@@ -254,10 +254,8 @@ async def test_edit_table_crud_operations_with_parent(
     mocker.patch(
         "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
     )
-    mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.route.sync_channel_to_discord", return_value=None
-    )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
+
     # Get appropriate parent based on table type
     parent = get_parent_instance(character, campaign, user, book)
 
@@ -380,9 +378,6 @@ async def test_edit_text_form_crud_operations(
     mocker.patch(
         "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
     )
-    mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.route.sync_channel_to_discord", return_value=None
-    )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
     character, campaign, user, book, dictionary_term, test_client = test_setup
@@ -461,9 +456,6 @@ async def test_dictionary_term_crud_operations(mocker, debug, test_setup):
     # Given: A test environment with mocked dependencies
     mocker.patch(
         "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
-    )
-    mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.route.sync_channel_to_discord", return_value=None
     )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
