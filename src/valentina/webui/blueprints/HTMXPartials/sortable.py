@@ -72,21 +72,11 @@ class SortBooksView(MethodView):
                 item.number = int(new_order[str(item.id)])
                 await item.save()
 
-                # Clean up any existing channel update tasks for this book to avoid duplicates
-                # and potential race conditions
-                for task in await BrokerTask.find_many(
-                    BrokerTask.guild_id == session["GUILD_ID"],
-                    BrokerTask.task == BrokerTaskType.CONFIRM_BOOK_CHAPTER_CHANNELS,
-                    BrokerTask.data["book_id"] == item.id,
-                    BrokerTask.has_error == False,  # noqa: E712
-                ).to_list():
-                    await task.delete()
-
                 # Create new task to update Discord channels since book order affects channel sorting
                 task = BrokerTask(
                     guild_id=session["GUILD_ID"],
                     author_name=session["USER_NAME"],
-                    task=BrokerTaskType.CONFIRM_BOOK_CHAPTER_CHANNELS,
+                    task=BrokerTaskType.CONFIRM_BOOK_CHANNEL,
                     data={"book_id": item.id, "campaign_id": item.campaign},
                 )
                 await task.save()

@@ -913,9 +913,7 @@ class EditTableView(MethodView):
             case TableType.CHAPTER:
                 chapter = await CampaignBookChapter.get(item_id)
                 book = await CampaignBook.get(chapter.book, fetch_links=True)
-                book.chapters.remove(chapter)
-                await book.save()
-                await chapter.delete()
+                await book.delete_chapter(chapter)
                 msg = f"Delete chapter: `{chapter.name}`"
 
             case TableType.INVENTORYITEM:
