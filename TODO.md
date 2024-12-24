@@ -17,5 +17,4 @@
 -   [ ] Webui: Reorder campaign channels and books
 -   [ ] Webui: Add diceroll thumbs
 -   [ ] Webui: Review and delete diceroll thumbs
--   [ ] Webui: Mark characters as deceased
 -   [ ] Webui: Use Celery for background task management

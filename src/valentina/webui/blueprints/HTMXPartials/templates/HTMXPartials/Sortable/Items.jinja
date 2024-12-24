@@ -1,0 +1,10 @@
+{# def
+    items: list,
+#}
+
+{% for item in items | sort(attribute="number") %}
+    <li class="list-group-item fs-5">
+        <input type='hidden' name='{{ item.id }}' value='{{ loop.index }}' />
+        <strong>{{ loop.index }}. {{ item.name }}</strong>
+    </li>
+{% endfor %}

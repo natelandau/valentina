@@ -55,6 +55,7 @@ class BrokerTaskType(Enum):
     CONFIRM_CHARACTER_CHANNEL = 1
     CONFIRM_BOOK_CHANNEL = 2
     CONFIRM_CAMPAIGN_CHANNEL = 3
+    CONFIRM_BOOK_CHAPTER_CHANNELS = 4
 
 
 class WebUIEnvironment(StrEnum):
