@@ -1,6 +1,7 @@
 """Manage channels within a Guild."""
 
 import asyncio
+from threading import Lock
 from typing import Optional
 
 import discord
@@ -15,6 +16,9 @@ CAMPAIGN_COMMON_CHANNELS = {  # channel_db_key: channel_name
     "channel_storyteller": CampaignChannelName.STORYTELLER.value,
     "channel_general": CampaignChannelName.GENERAL.value,
 }
+
+# create lock
+LOCK = Lock()
 
 
 class ChannelManager:  # pragma: no cover
@@ -370,16 +374,41 @@ class ChannelManager:  # pragma: no cover
         Args:
             campaign (Campaign): The campaign object containing details about the campaign.
         """
-        # Confirm the campaign category channel exists and is recorded in the database
-        campaign_category_channel_name = (
-            f"{Emoji.BOOKS.value}-{campaign.name.lower().replace(' ', '-')}"
-        )
-        if campaign.channel_campaign_category:
-            existing_campaign_channel_object = self.guild.get_channel(
-                campaign.channel_campaign_category
-            )
+        global LOCK  # noqa: PLW0602
 
-            if not existing_campaign_channel_object:
+        # Use a lock to prevent race conditions when multiple instances try to modify channels simultaneously
+        with LOCK:
+            # Format category name with emoji prefix for visual organization in Discord sidebar
+            campaign_category_channel_name = (
+                f"{Emoji.BOOKS.value}-{campaign.name.lower().replace(' ', '-')}"
+            )
+            if campaign.channel_campaign_category:
+                existing_campaign_channel_object = self.guild.get_channel(
+                    campaign.channel_campaign_category
+                )
+
+                # Handle case where channel ID exists in DB but channel was deleted from Discord
+                if not existing_campaign_channel_object:
+                    category = await self.guild.create_category(campaign_category_channel_name)
+                    campaign.channel_campaign_category = category.id
+                    await campaign.save()
+                    logger.debug(
+                        f"Campaign category '{campaign_category_channel_name}' created in '{self.guild.name}'"
+                    )
+
+                # Update channel name if it was manually changed in Discord
+                elif existing_campaign_channel_object.name != campaign_category_channel_name:
+                    await existing_campaign_channel_object.edit(name=campaign_category_channel_name)
+                    logger.debug(
+                        f"Campaign category '{campaign_category_channel_name}' renamed in '{self.guild.name}'"
+                    )
+
+                else:
+                    logger.debug(
+                        f"Category {campaign_category_channel_name} already exists in {self.guild.name}"
+                    )
+            else:
+                # Create initial category if this is a new campaign
                 category = await self.guild.create_category(campaign_category_channel_name)
                 campaign.channel_campaign_category = category.id
                 await campaign.save()
@@ -387,49 +416,35 @@ class ChannelManager:  # pragma: no cover
                     f"Campaign category '{campaign_category_channel_name}' created in '{self.guild.name}'"
                 )
 
-            elif existing_campaign_channel_object.name != campaign_category_channel_name:
-                await existing_campaign_channel_object.edit(name=campaign_category_channel_name)
-                logger.debug(
-                    f"Campaign category '{campaign_category_channel_name}' renamed in '{self.guild.name}'"
-                )
+            category, channels = await self.fetch_campaign_category_channels(campaign=campaign)
 
-            else:
-                logger.debug(
-                    f"Category {campaign_category_channel_name} already exists in {self.guild.name}"
-                )
-        else:
-            category = await self.guild.create_category(campaign_category_channel_name)
-            campaign.channel_campaign_category = category.id
-            await campaign.save()
-            logger.debug(
-                f"Campaign category '{campaign_category_channel_name}' created in '{self.guild.name}'"
+            # Set up standard channels needed for every campaign
+            await self._confirm_campaign_common_channels(
+                campaign=campaign, category=category, channels=channels
             )
 
-        category, channels = await self.fetch_campaign_category_channels(campaign=campaign)
+            # Add 1 second delay between channel operations to avoid Discord rate limits
+            for book in await campaign.fetch_books():
+                await self.confirm_book_channel(book=book, campaign=campaign)
+                await asyncio.sleep(1)
 
-        # Confirm common channels exist
-        await self._confirm_campaign_common_channels(
-            campaign=campaign, category=category, channels=channels
-        )
+            for character in await campaign.fetch_player_characters():
+                await self.confirm_character_channel(character=character, campaign=campaign)
+                await asyncio.sleep(1)
 
-        for book in await campaign.fetch_books():
-            await self.confirm_book_channel(book=book, campaign=campaign)
-            await asyncio.sleep(1)
+            for character in await campaign.fetch_storyteller_characters():
+                await self.confirm_character_channel(character=character, campaign=campaign)
+                await asyncio.sleep(1)
 
-        for character in await campaign.fetch_player_characters():
-            await self.confirm_character_channel(character=character, campaign=campaign)
-            await asyncio.sleep(1)
+            # Clean up any orphaned channels that are no longer associated with books/characters
+            await self._remove_unused_campaign_channels(campaign, channels)
 
-        for character in await campaign.fetch_storyteller_characters():
-            await self.confirm_character_channel(character=character, campaign=campaign)
-            await asyncio.sleep(1)
+            # Maintain consistent channel ordering for better navigation
+            await self.sort_campaign_channels(campaign)
 
-        # Remove any channels that should not exist
-        await self._remove_unused_campaign_channels(campaign, channels)
-
-        await self.sort_campaign_channels(campaign)
-
-        logger.info(f"All channels confirmed for campaign '{campaign.name}' in '{self.guild.name}'")
+            logger.info(
+                f"All channels confirmed for campaign '{campaign.name}' in '{self.guild.name}'"
+            )
 
     async def confirm_character_channel(
         self, character: Character, campaign: Optional[Campaign | str]

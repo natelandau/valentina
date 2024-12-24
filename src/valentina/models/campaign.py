@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 import discord
 from beanie import (
+    DeleteRules,
     Document,
     Indexed,
     Insert,
@@ -19,7 +20,7 @@ from beanie import (
 from pydantic import BaseModel, Field
 
 from valentina.constants import Emoji
-from valentina.utils.helpers import time_now
+from valentina.utils.helpers import renumber_items, time_now
 
 from .character import Character
 from .note import Note
@@ -94,6 +95,27 @@ class CampaignBook(Document):
             self.channel = channel.id
             await self.save()
 
+    async def delete_chapter(self, chapter: CampaignBookChapter) -> None:
+        """Delete a chapter from the book and renumber remaining chapters.
+
+        Remove the specified chapter from the book's chapters list, delete it from the database,
+        and renumber the remaining chapters sequentially.
+
+        Args:
+            chapter (CampaignBookChapter): The chapter to delete from the book.
+
+        Returns:
+            None
+        """
+        self.chapters = [x for x in self.chapters if x.id != chapter.id]  # type: ignore [attr-defined]
+        await self.save()
+
+        if chapter := await CampaignBookChapter.get(chapter.id):
+            await chapter.delete(link_rule=DeleteRules.DELETE_LINKS)
+
+        for chapter in renumber_items(self.chapters, "number"):
+            await chapter.save()
+
 
 class Campaign(Document):
     """Represents a campaign in the database."""
@@ -161,6 +183,22 @@ class Campaign(Document):
         )
 
     async def delete_book(self, book: CampaignBook) -> None:
-        """Delete a book from the campaign."""
+        """Delete a book from the campaign and update book numbering.
+
+        Remove the specified book from the campaign's book list, delete it from the database,
+        and renumber remaining books to maintain sequential ordering.
+
+        Args:
+            book (CampaignBook): The book to delete from the campaign.
+
+        Returns:
+            None
+        """
         self.books = [x for x in self.books if x.id != book.id]  # type: ignore [attr-defined]
         await self.save()
+
+        if book := await CampaignBook.get(book.id, fetch_links=True):
+            await book.delete(link_rule=DeleteRules.DELETE_LINKS)
+
+        for book in renumber_items(self.books, "number"):
+            await book.save()

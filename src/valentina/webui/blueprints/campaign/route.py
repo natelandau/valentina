@@ -224,21 +224,45 @@ class CampaignEditItem(MethodView):
                 assert_never(self.edit_type)
 
     async def _delete_campaign_book(self, campaign: Campaign) -> str:
-        """Delete a campaign book."""
+        """Delete a campaign book and update related resources.
+
+        Delete the specified campaign book, its associated Discord channel, and create tasks to
+        reorder remaining book channels. Clean up any existing channel update tasks to prevent
+        race conditions.
+
+        Args:
+            campaign (Campaign): The campaign containing the book to delete
+
+        Returns:
+            str: Success message confirming book deletion
+
+        Raises:
+            HTTPException: If book_id is not provided in request args
+        """
         book_id = request.args.get("book_id")
         if not book_id:
             abort(400)
 
         book = await CampaignBook.get(book_id)
 
-        await campaign.delete_book(book)
-        await campaign.save()
-
+        # Delete Discord channel first to avoid orphaned channels if later steps fail
         discord_guild = await fetch_discord_guild(session["GUILD_ID"])
         channel_manager = ChannelManager(guild=discord_guild)
         await channel_manager.delete_book_channel(book=book)
 
-        await book.delete()
+        await campaign.delete_book(book)
+
+        # When a book is deleted, the order of remaining books may change
+        # Create tasks to update all book channels to reflect new ordering
+        for linked_book in campaign.books:
+            # Create new task to update each book's channel position
+            task = BrokerTask(
+                guild_id=session["GUILD_ID"],
+                author_name=session["USER_NAME"],
+                task=BrokerTaskType.CONFIRM_BOOK_CHANNEL,
+                data={"book_id": linked_book.id, "campaign_id": campaign.id},  # type: ignore [attr-defined]
+            )
+            await task.insert()
 
         await post_to_audit_log(
             msg=f"Delete {campaign.name} book - `{book.name}`",
@@ -266,7 +290,7 @@ class CampaignEditItem(MethodView):
                         guild_id=session["GUILD_ID"],
                         author_name=session["USER_NAME"],
                         task=BrokerTaskType.CONFIRM_BOOK_CHANNEL,
-                        data={"book_id": existing_book.id},
+                        data={"book_id": existing_book.id, "campaign_id": campaign.id},
                     )
                     await task.insert()
 
@@ -286,7 +310,7 @@ class CampaignEditItem(MethodView):
                     guild_id=session["GUILD_ID"],
                     author_name=session["USER_NAME"],
                     task=BrokerTaskType.CONFIRM_BOOK_CHANNEL,
-                    data={"book_id": new_book.id},
+                    data={"book_id": new_book.id, "campaign_id": campaign.id},
                 )
                 await task.insert()
                 msg = f"Book {new_book.name} created"

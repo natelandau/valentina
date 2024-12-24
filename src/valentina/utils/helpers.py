@@ -322,3 +322,32 @@ def time_now() -> datetime:
         datetime: The current UTC time with microseconds set to 0.
     """
     return datetime.now(UTC).replace(microsecond=0)
+
+
+def renumber_items(items: list, number_attribute_name: str) -> list:
+    """Renumber a list of objects sequentially starting from 1.
+
+    Take a list of objects that have a numeric attribute and ensure they are numbered sequentially without gaps, starting from 1. Objects are sorted by their current number before renumbering.
+
+    Args:
+        items (list): List of objects to renumber
+        number_attribute_name (str): Name of the numeric attribute to renumber
+
+    Returns:
+        list: The renumbered list of objects, sorted by their new numbers
+    """
+    # Sort items by their current number to ensure proper renumbering
+    sorted_items = sorted(items, key=lambda x: getattr(x, number_attribute_name))
+
+    # Track the expected next number as we iterate
+    expected_number = 1
+
+    # Iterate through sorted items and fix any gaps
+    for item in sorted_items:
+        current_number = getattr(item, number_attribute_name)
+        if current_number != expected_number:
+            # Gap detected - update this item's number
+            setattr(item, number_attribute_name, expected_number)
+        expected_number += 1
+
+    return sorted_items
