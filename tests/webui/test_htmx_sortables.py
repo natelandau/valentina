@@ -4,16 +4,7 @@
 import pytest
 
 from tests.factories import *
-from valentina.models import (
-    Campaign,
-    CampaignBook,
-    CampaignBookChapter,
-    Character,
-    DictionaryTerm,
-    InventoryItem,
-    Note,
-    User,
-)
+from valentina.models import BrokerTask
 
 
 @pytest.mark.drop_db
@@ -52,7 +43,7 @@ async def test_sortable_book_reorder(
         f"{book5.id}": "5",
     }
 
-    response2 = await test_client.post(url, form=form_data)
+    response2 = await test_client.post(url, form=form_data, follow_redirects=True)
     returned_text = await response2.get_data(as_text=True)
 
     assert response2.status_code == 200
@@ -62,6 +53,8 @@ async def test_sortable_book_reorder(
     assert f"name='{book3.id}'" in returned_text
     assert f"name='{book4.id}'" in returned_text
     assert f"name='{book5.id}'" in returned_text
+
+    assert await BrokerTask.find().count() == 2
 
     await book1.sync()
     await book2.sync()
