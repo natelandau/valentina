@@ -52,6 +52,8 @@
 
         <HTMXPartials.EditTable.TablePartial TableType={{ table_type_note }} items={{ book.notes }} can_edit={{ can_manage_campaign }} parent_id={{ book.id }} header_size="h4" />
 
+        <a href="{{ url_for('partials.sort_chapters', parent_id=book.id) }}"
+           class="btn btn-outline-primary btn-sm ms-3 float-end">Reorder Chapters</a>
         <HTMXPartials.EditTable.TablePartial TableType={{ table_type_chapter }} items={{ book.chapters }} can_edit={{ can_manage_campaign }} parent_id={{ book.id }} header_size="h4" />
 
         </global.AccordionItem>

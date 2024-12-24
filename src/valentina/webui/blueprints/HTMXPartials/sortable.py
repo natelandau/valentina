@@ -5,7 +5,7 @@ from quart.utils import run_sync
 from quart.views import MethodView
 
 from valentina.constants import BrokerTaskType
-from valentina.models import BrokerTask, CampaignBook
+from valentina.models import BrokerTask, Campaign, CampaignBook, CampaignBookChapter
 from valentina.webui import catalog
 from valentina.webui.utils.discord import post_to_audit_log
 
@@ -59,6 +59,7 @@ class SortBooksView(MethodView):
         """
         # Get all books for this campaign to ensure we have the complete set for reordering
         books = await CampaignBook.find(CampaignBook.campaign == parent_id).to_list()
+        parent_campaign = await Campaign.get(parent_id)
 
         form_data = await request.form
 
@@ -91,7 +92,65 @@ class SortBooksView(MethodView):
                 await task.save()
 
         await post_to_audit_log(
-            msg=f"Sort books for campaign {parent_id}", view=self.__class__.__name__
+            msg=f"Sort books for campaign {parent_campaign.name}", view=self.__class__.__name__
         )
 
         return await run_sync(lambda: catalog.render("HTMXPartials.Sortable.Items", items=books))()
+
+
+class SortChaptersView(MethodView):
+    """View to handle sorting of chapters."""
+
+    async def get(self, parent_id: str) -> str:
+        """Get a sortable list of chapters for a campaign."""
+        chapters = await CampaignBookChapter.find(CampaignBookChapter.book == parent_id).to_list()
+        page_title = "Sort Chapters"
+
+        post_url = url_for("partials.sort_chapters", parent_id=parent_id)
+
+        return await run_sync(
+            lambda: catalog.render(
+                "HTMXPartials.Sortable.Sortable",
+                items=chapters,
+                page_title=page_title,
+                post_url=post_url,
+            )
+        )()
+
+    async def post(self, parent_id: str) -> str:
+        """Process chapter reordering requests and update positions in database.
+
+        Handle POST requests containing new chapter sort orders. Update chapter positions in the database
+        and create broker tasks to update Discord channels accordingly.
+
+        Args:
+            parent_id (str): ID of the book containing the chapters to sort
+
+        Returns:
+            str: Rendered HTML template containing the updated chapter list
+
+        Raises:
+            HTTPException: If campaign is not found or user lacks permissions
+        """
+        # Get all books for this campaign to ensure we have the complete set for reordering
+        chapters = await CampaignBookChapter.find(CampaignBookChapter.book == parent_id).to_list()
+        parent_book = await CampaignBook.get(parent_id)
+
+        form_data = await request.form
+
+        # Form data preserves order of elements as they were dragged, so we can use enumeration
+        # to generate new sequential positions starting from 1
+        new_order = {item_id: idx + 1 for idx, (item_id, _) in enumerate(form_data.items())}
+
+        for item in chapters:
+            if item.number != int(new_order[str(item.id)]):
+                item.number = int(new_order[str(item.id)])
+                await item.save()
+
+        await post_to_audit_log(
+            msg=f"Sort chapters for book {parent_book.name}", view=self.__class__.__name__
+        )
+
+        return await run_sync(
+            lambda: catalog.render("HTMXPartials.Sortable.Items", items=chapters)
+        )()
