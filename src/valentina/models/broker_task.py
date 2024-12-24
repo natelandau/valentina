@@ -25,7 +25,7 @@ class BrokerTask(Document):
     guild_id: int
     author_name: Optional[str] = ""
     data: dict = Field(default_factory=dict)
-    completed: bool = False
+    has_error: bool = False
     date_created: datetime = Field(default_factory=time_now)
     date_modified: datetime = Field(default_factory=time_now)
 

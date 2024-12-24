@@ -13,6 +13,8 @@
             hx-trigger="click"
             hx-target="#{{ CampaignEditableInfo.BOOK.value.div_id }}"
             hx-swap="innerHTML swap:1s">Add Book</button>
+    <a href="{{ url_for('partials.sort_books', parent_id=campaign.id) }}"
+       class="btn btn-outline-primary btn-sm ms-3 float-end">Reorder Books</a>
 {% endif %}
 <global.Subtitle title="Books & Chapters" header_size="h2" />
 
