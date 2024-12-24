@@ -380,7 +380,7 @@ async def test_edit_text_form_crud_operations(
     )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
-    character, campaign, user, book, dictionary_term, test_client = test_setup
+    character, campaign, user, book, _, test_client = test_setup
     parent = get_parent_instance(character, campaign, user, book)
 
     # Create

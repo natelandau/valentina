@@ -38,7 +38,7 @@ blueprint.add_url_rule(
 )
 
 blueprint.add_url_rule(
-    "/sortable/<string:parent_id>",
+    "/sortbooks/<string:parent_id>",
     view_func=SortBooksView.as_view("sort_books"),
     methods=["GET", "POST"],
 )
