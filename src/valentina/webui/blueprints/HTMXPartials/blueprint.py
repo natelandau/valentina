@@ -4,9 +4,9 @@ from quart import Blueprint
 
 from valentina.webui.constants import TableType, TextType
 
-from .others import SetDesperationOrDanger
-from .route import AddExperienceView, CharacterImageView, EditTableView, EditTextView
-from .sortable import SortBooksView, SortChaptersView
+from .others import AddExperienceView, CharacterImageView, SetDesperationOrDanger
+from .route import EditTableView, EditTextView
+from .sortables import SortBooksView, SortChaptersView
 
 blueprint = Blueprint("partials", __name__, url_prefix="/partials")
 

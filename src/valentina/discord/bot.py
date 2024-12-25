@@ -494,7 +494,7 @@ class Valentina(commands.Bot):
                     await guild_db_obj.save()
                     logger.info(f"PERMS: Remove {member.name} as @Storyteller in database")
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=2)
     async def run_task_broker(self) -> None:
         """Process pending tasks from the task broker database.
 
