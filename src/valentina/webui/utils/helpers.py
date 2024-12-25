@@ -29,6 +29,7 @@ class CharacterSessionObject:
     owner_name: str
     owner_id: int
     type_storyteller: bool
+    is_alive: bool = True
 
 
 def _guard_against_mangled_session_data() -> Response | None:
@@ -360,6 +361,7 @@ async def fetch_all_characters(fetch_links: bool = False) -> list[Character]:
                 owner_name=await _char_owner_name(x),
                 owner_id=x.user_owner,
                 type_storyteller=x.type_storyteller,
+                is_alive=x.is_alive,
             ).__dict__
             for x in characters
         ],
@@ -406,6 +408,7 @@ async def fetch_storyteller_characters(fetch_links: bool = False) -> list[Charac
                 owner_name=await _char_owner_name(x),
                 owner_id=x.user_owner,
                 type_storyteller=x.type_storyteller,
+                is_alive=x.is_alive,
             ).__dict__
             for x in characters
         ],

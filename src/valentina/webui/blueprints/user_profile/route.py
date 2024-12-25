@@ -8,7 +8,6 @@ from flask_discord import requires_authorization
 from quart import abort, request, session
 from quart.views import MethodView
 
-from valentina.constants import Emoji
 from valentina.controllers import PermissionManager
 from valentina.discord.utils import get_user_from_id
 from valentina.models import Character, Statistics, User
@@ -90,7 +89,6 @@ class UserProfile(MethodView):
             created_at=created_at,
             joined_at=joined_at,
             campaign_experience=campaign_experience,
-            emoji=Emoji,
             table_type_macro=TableType.MACRO,
             can_grant_xp=can_grant_xp,
             error_msg=request.args.get("error_msg", ""),

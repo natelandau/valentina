@@ -9,8 +9,8 @@
 <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 ">
     {% for key,value in profile_data.items() %}
         <div class="col" id="field-edit-wrapper">
-            <h4>{{ key }}</h4>
-            <p>{{ value }}</p>
+            <h4>{{ key | safe }}</h4>
+            <p>{{ value | safe }}</p>
         </div>
     {% endfor %}
 </div>
