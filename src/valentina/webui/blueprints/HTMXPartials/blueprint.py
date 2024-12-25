@@ -5,7 +5,7 @@ from quart import Blueprint
 from valentina.webui.constants import TableType, TextType
 
 from .route import AddExperienceView, CharacterImageView, EditTableView, EditTextView
-from .sortable import SortBooksView
+from .sortable import SortBooksView, SortChaptersView
 
 blueprint = Blueprint("partials", __name__, url_prefix="/partials")
 
@@ -40,5 +40,11 @@ blueprint.add_url_rule(
 blueprint.add_url_rule(
     "/sortbooks/<string:parent_id>",
     view_func=SortBooksView.as_view("sort_books"),
+    methods=["GET", "POST"],
+)
+
+blueprint.add_url_rule(
+    "/sortchapters/<string:parent_id>",
+    view_func=SortChaptersView.as_view("sort_chapters"),
     methods=["GET", "POST"],
 )

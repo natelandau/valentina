@@ -610,20 +610,15 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
-        original_number = book.number
-
         channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.delete_book_channel(book)
 
-        await book.delete()
-        campaign.books = [x for x in campaign.books if x.id != book.id]  # type: ignore [attr-defined]
-        await campaign.save()
+        await campaign.delete_book(book)
 
-        # Reorder the books
-        for b in [x for x in await campaign.fetch_books() if x.number > original_number]:
-            b.number -= 1
-            await b.save()
-            await channel_manager.confirm_book_channel(book=b, campaign=campaign)
+        for campaign_book in await CampaignBook.find(
+            CampaignBook.campaign == campaign.id
+        ).to_list():
+            await channel_manager.confirm_book_channel(book=campaign_book, campaign=campaign)
             await asyncio.sleep(1)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
@@ -922,9 +917,7 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
-        await chapter.delete()
-        book.chapters.remove(chapter)
-        await book.save()
+        await book.delete_chapter(chapter)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

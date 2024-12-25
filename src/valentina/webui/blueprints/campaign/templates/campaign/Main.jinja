@@ -5,7 +5,7 @@
     can_manage_campaign: bool = False,
     campaign_data: dict,
 #}
-<PageLayout title={{ campaign.name }} _attrs={{ attrs }}>
+<PageLayout title={{ campaign.name }} _attrs={{ attrs }} sweetalert={{ True }}>
     <global.PageTitle>{{ campaign.name }}</global.PageTitle>
 
     {% include "campaign/tabs.html" %}

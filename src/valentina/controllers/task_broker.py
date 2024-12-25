@@ -37,12 +37,38 @@ class TaskBroker:
             discord.Forbidden: If bot lacks permissions to manage channels
             discord.HTTPException: If Discord API request fails
         """
-        channel_manager = ChannelManager(guild=self.discord_guild)
-        for campaign in await Campaign.find_many(
-            Campaign.guild == self.discord_guild.id, fetch_links=True
-        ).to_list():
-            await channel_manager.delete_campaign_channels(campaign)
-            await channel_manager.confirm_campaign_channels(campaign)
+        # Batch all rebuild tasks together since rebuilding channels is expensive.
+        # This prevents multiple redundant rebuilds from running in parallel.
+        rebuild_channel_tasks = await BrokerTask.find_many(
+            BrokerTask.guild_id == self.discord_guild.id,
+            BrokerTask.task == BrokerTaskType.REBUILD_CHANNELS,
+            BrokerTask.has_error == False,  # noqa: E712
+        ).to_list()
+        if len(rebuild_channel_tasks) > 0:
+            logger.info(
+                f"BROKER: Found {len(rebuild_channel_tasks)} rebuild channel tasks for guild {self.discord_guild.id}"
+            )
+
+            channel_manager = ChannelManager(guild=self.discord_guild)
+            for campaign in await Campaign.find_many(
+                Campaign.guild == self.discord_guild.id, fetch_links=True
+            ).to_list():
+                await channel_manager.delete_campaign_channels(campaign)
+                # Add delay between operations to avoid hitting Discord rate limits
+                await asyncio.sleep(1)
+                await channel_manager.confirm_campaign_channels(campaign)
+                await asyncio.sleep(1)
+
+            # Clean up all rebuild tasks at once since they've been handled as a batch
+            for task in rebuild_channel_tasks:
+                await task.delete()
+
+            if task.author_name:
+                msg = f"BROKER: {task.author_name}'s task {task.task} completed"
+            else:
+                msg = f"BROKER: Task {task.task} completed"
+
+            logger.info(msg)
 
     async def _rename_character_channel(self, task: BrokerTask) -> None:
         """Rename a character's Discord channel to match their current name.
@@ -74,35 +100,6 @@ class TaskBroker:
         await channel_manager.confirm_character_channel(
             character=character, campaign=character.campaign
         )
-
-    async def _rename_book_channel(self, task: BrokerTask) -> None:
-        """Rename a book channel and update associated Discord channels.
-
-        Process a book channel rename task by fetching the book from the database and using
-        the channel manager to update the Discord channel. This ensures channel names stay
-        synchronized with book data.
-
-        Args:
-            task (BrokerTask): The broker task containing book_id in its data field.
-
-        Returns:
-            None
-
-        Raises:
-            None: Sets task.has_error=True if book_id is invalid or book not found.
-        """
-        if not task.data.get("book_id"):
-            task.has_error = True
-            await task.save()
-            return
-
-        book = await CampaignBook.get(task.data["book_id"], fetch_links=True)
-        if not book:
-            logger.error(f"BROKER: Book {task.data['book_id']} not found")
-            return
-
-        channel_manager = ChannelManager(guild=self.discord_guild)
-        await channel_manager.confirm_book_channel(book=book)
 
     async def _rename_campaign_channel(self, task: BrokerTask) -> None:
         """Rename a campaign channel and update associated Discord channels.
@@ -143,9 +140,10 @@ class TaskBroker:
             This is an expensive operation that should be used sparingly, as it involves multiple
             Discord API calls with rate limiting considerations.
         """
+        # Find all pending book chapter channel tasks for this guild
         tasks = await BrokerTask.find_many(
             BrokerTask.guild_id == self.discord_guild.id,
-            BrokerTask.task == BrokerTaskType.CONFIRM_BOOK_CHAPTER_CHANNELS,
+            BrokerTask.task == BrokerTaskType.CONFIRM_BOOK_CHANNEL,
             BrokerTask.has_error == False,  # noqa: E712
         ).to_list()
 
@@ -154,25 +152,38 @@ class TaskBroker:
 
         channel_manager = ChannelManager(guild=self.discord_guild)
 
-        campaigns = set()
+        # Track campaigns and books to avoid duplicate processing
+        # We need to track campaigns separately since multiple books can be in the same campaign
+        campaigns_to_sort = set()
+        books_processed = set()
+
         for task in tasks:
+            # Skip invalid tasks that are missing required data
             if not task.data.get("campaign_id") or not task.data.get("book_id"):
                 task.has_error = True
                 await task.save()
                 continue
 
-            campaigns.add(task.data["campaign_id"])
+            campaigns_to_sort.add(task.data["campaign_id"])
+            books_processed.add(task.data["book_id"])
 
-            book = await CampaignBook.get(task.data["book_id"])
-            await channel_manager.confirm_book_channel(book=book)
-            await asyncio.sleep(1)
+            # Only process each book once to avoid unnecessary Discord API calls
+            if not task.data["book_id"] not in books_processed:
+                book = await CampaignBook.get(task.data["book_id"])
+                await channel_manager.confirm_book_channel(book=book)
+                # Sleep to avoid hitting Discord rate limits
+                await asyncio.sleep(1)
 
             await task.delete()
 
-        for campaign in campaigns:
+        # After processing all books, sort channels in each affected campaign
+        # This ensures proper ordering of channelsafter any book changes
+        for campaign in campaigns_to_sort:
             await channel_manager.sort_campaign_channels(
                 await Campaign.get(campaign, fetch_links=True)
             )
+
+        logger.info(f"BROKER: {len(tasks)} book channel tasks completed")
 
     async def run(self) -> None:
         """Poll database for pending tasks and execute them.
@@ -182,45 +193,17 @@ class TaskBroker:
         Returns:
             None
         """
-        # Rebuilding channels is an expensive operation, so we only want to do it once per guild.
-        rebuild_channel_tasks = await BrokerTask.find_many(
-            BrokerTask.guild_id == self.discord_guild.id,
-            BrokerTask.task == BrokerTaskType.REBUILD_CHANNELS,
-            BrokerTask.has_error == False,  # noqa: E712
-        ).to_list()
-        if len(rebuild_channel_tasks) > 0:
-            logger.info(
-                f"BROKER: Found {len(rebuild_channel_tasks)} rebuild channel tasks for guild {self.discord_guild.id}"
-            )
-            await self._rebuild_channels()
-            await asyncio.sleep(1)
-
-            for task in rebuild_channel_tasks:
-                await task.delete()
-
-            if task.author_name:
-                msg = f"BROKER: {task.author_name}'s task {task.task} completed"
-            else:
-                msg = f"BROKER: Task {task.task} completed"
-
-            logger.info(msg)
-
-        # Rebuilding book channels is an expensive operation, so we only want to do it once per guild.
+        await self._rebuild_channels()
         await self._rebuild_book_channels()
 
-        # Now we run other individual tasks
         tasks = await BrokerTask.find_many(
             BrokerTask.guild_id == self.discord_guild.id,
-            BrokerTask.task != BrokerTaskType.REBUILD_CHANNELS,
             BrokerTask.has_error == False,  # noqa: E712
         ).to_list()
         for task in tasks:
             match task.task:
                 case BrokerTaskType.CONFIRM_CHARACTER_CHANNEL:
                     await self._rename_character_channel(task)
-                    await asyncio.sleep(1)
-                case BrokerTaskType.CONFIRM_BOOK_CHANNEL:
-                    await self._rename_book_channel(task)
                     await asyncio.sleep(1)
                 case BrokerTaskType.CONFIRM_CAMPAIGN_CHANNEL:
                     await self._rename_campaign_channel(task)

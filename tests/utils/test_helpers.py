@@ -3,7 +3,7 @@
 
 import pytest
 
-from valentina.utils import ValentinaConfig, errors
+from tests.factories import *
 from valentina.utils.helpers import (
     convert_int_to_emoji,
     divide_total_randomly,
@@ -12,8 +12,36 @@ from valentina.utils.helpers import (
     get_trait_new_value,
     num_to_circles,
     random_string,
+    renumber_items,
     truncate_string,
 )
+
+
+@pytest.mark.drop_db
+def test_renumber_items(book_factory) -> None:
+    """Test renumber_items()."""
+    # GIVEN a list of books with gaps in their numbering
+    items = [
+        book_factory.build(name="a", number=1),
+        book_factory.build(name="b", number=3),
+        book_factory.build(name="c", number=4),
+        book_factory.build(name="d", number=5),
+    ]
+
+    # WHEN renumbering the items
+    returned = renumber_items(items, "number")
+
+    # THEN the list length is preserved and numbers are sequential
+    assert len(returned) == len(items)
+    for book in returned:
+        if book.name == "a":
+            assert book.number == 1
+        elif book.name == "b":
+            assert book.number == 2
+        elif book.name == "c":
+            assert book.number == 3
+        elif book.name == "d":
+            assert book.number == 4
 
 
 @pytest.mark.no_db
