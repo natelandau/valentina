@@ -4,6 +4,7 @@ from quart import Blueprint
 
 from valentina.webui.constants import TableType, TextType
 
+from .others import SetDesperationOrDanger
 from .route import AddExperienceView, CharacterImageView, EditTableView, EditTextView
 from .sortable import SortBooksView, SortChaptersView
 
@@ -46,5 +47,12 @@ blueprint.add_url_rule(
 blueprint.add_url_rule(
     "/sortchapters/<string:parent_id>",
     view_func=SortChaptersView.as_view("sort_chapters"),
+    methods=["GET", "POST"],
+)
+
+## Assorted partials
+blueprint.add_url_rule(
+    "/setdesperation/<string:campaign_id>",
+    view_func=SetDesperationOrDanger.as_view("set_desperation"),
     methods=["GET", "POST"],
 )

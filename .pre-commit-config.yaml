@@ -71,7 +71,7 @@ repos:
       - id: typos
 
   - repo: "https://github.com/djlint/djLint"
-    rev: v1.36.3
+    rev: v1.36.4
     hooks:
       - id: djlint
         args: ["--configuration", "pyproject.toml"]

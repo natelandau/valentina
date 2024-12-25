@@ -39,6 +39,7 @@ class SortBooksView(MethodView):
                 items=books,
                 page_title=page_title,
                 post_url=post_url,
+                return_url=url_for("campaign.view", campaign_id=parent_id),
             )
         )()
 
@@ -94,6 +95,7 @@ class SortChaptersView(MethodView):
     async def get(self, parent_id: str) -> str:
         """Get a sortable list of chapters for a campaign."""
         chapters = await CampaignBookChapter.find(CampaignBookChapter.book == parent_id).to_list()
+        parent_book = await CampaignBook.get(parent_id)
         page_title = "Sort Chapters"
 
         post_url = url_for("partials.sort_chapters", parent_id=parent_id)
@@ -104,6 +106,7 @@ class SortChaptersView(MethodView):
                 items=chapters,
                 page_title=page_title,
                 post_url=post_url,
+                return_url=url_for("campaign.view", campaign_id=parent_book.campaign),
             )
         )()
 

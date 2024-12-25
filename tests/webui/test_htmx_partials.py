@@ -251,15 +251,16 @@ async def test_edit_table_crud_operations_with_parent(
     character, campaign, user, book, dictionary_term, test_client = test_setup
     base_url = f"/partials/table/{table_type.value.route_suffix}"
 
+    # Given: A test environment with mocked audit log and session updates
     mocker.patch(
         "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
     )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
-    # Get appropriate parent based on table type
+    # And: A parent object for the table item
     parent = get_parent_instance(character, campaign, user, book)
 
-    # Create
+    # When: Creating a new table item
     create_data = (
         {**creation_data, parent_key_field: str(parent.id)} if parent_key_field else creation_data
     )
@@ -267,42 +268,45 @@ async def test_edit_table_crud_operations_with_parent(
     response = await test_client.put(
         f"{base_url}?parent_id={parent.id}", json=create_data, follow_redirects=True
     )
+    # Then: The creation is successful
     assert response.status_code == 200
 
-    # Verify creation
+    # And: The item is added to the parent's collection
     parent = await parent_model.get(parent.id, fetch_links=True)
-
     items = getattr(parent, parent_collection)
-
     assert len(items) == 1
     item = items[0]
     item_id = getattr(item, primary_key_field)
 
-    # Get the created item's table row partial
+    # When: Getting the created item's table row
     response = await test_client.get(
         f"{base_url}?item_id={item_id}&parent_id={parent.id}", follow_redirects=True
     )
+    # Then: The row is retrieved successfully
     assert response.status_code == 200
 
-    # Update
+    # When: Updating the item
     update_data = {**update_data, "parent_id": str(parent.id)}
     response = await test_client.post(
         f"{base_url}?item_id={item_id}&parent_id={parent.id}",
         json=update_data,
         follow_redirects=True,
     )
+    # Then: The update is successful
     assert response.status_code == 200
 
-    # Delete
+    # When: Deleting the item
     response = await test_client.delete(
         f"{base_url}?item_id={item_id}&parent_id={parent.id}", follow_redirects=True
     )
+    # Then: The deletion is successful
     assert response.status_code == 200
 
+    # And: The item is removed from the database if it has a model class
     if model_class:
         assert await model_class.get(item_id) is None
 
-    # Verify deletion
+    # And: The item is removed from the parent's collection
     parent = await parent_model.get(parent.id, fetch_links=True)
     items = getattr(parent, parent_collection)
     assert len(items) == 0
