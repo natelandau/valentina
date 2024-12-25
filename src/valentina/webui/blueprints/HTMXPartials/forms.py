@@ -225,6 +225,23 @@ class DictionaryTermForm(QuartForm):
             raise ValidationError(msg)
 
 
+class DesperationForm(QuartForm):
+    """Form for setting desperation or danger."""
+
+    desperation = SelectField(
+        "Desperation",
+        choices=[(x, x) for x in range(6)],
+        validators=[DataRequired()],
+    )
+    danger = SelectField(
+        "Danger",
+        choices=[(x, x) for x in range(6)],
+        validators=[DataRequired()],
+    )
+    submit = SubmitField("Submit")
+    cancel = SubmitField("Cancel")
+
+
 class NoteForm(QuartForm):
     """Form for a campaign note."""
 

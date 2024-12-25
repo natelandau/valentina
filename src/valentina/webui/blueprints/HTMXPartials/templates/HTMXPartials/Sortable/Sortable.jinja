@@ -2,6 +2,7 @@
     items: list,
     page_title: str,
     post_url: str,
+    return_url: str,
 #}
 <PageLayout title={{ page_title }} _attrs={{ attrs }} sortable={{ True }}>
     <global.PageTitle>{{ page_title }}</global.PageTitle>
@@ -20,6 +21,8 @@
             </form>
         </ul>
     {% endif %}
+
+    <a href="{{ return_url }}" class="btn btn-primary mt-5">Back</a>
 
     {# instantiate sortable.js #}
     <script>

@@ -1,0 +1,18 @@
+{# def
+    form: QuartForm,
+    campaign_id: str,
+#}
+
+<div class="fade-me-out">
+    <form method="post"
+          id="profile-form"
+          hx-post="{{ url_for('partials.set_desperation', campaign_id=campaign_id) }}"
+          novalidate
+          hx-indicator="#spinner"
+          hx-target="#DESCRIPTION-TEXTBODY"
+          hx-swap="innerHTML swap:1s"
+          encoding="application/x-www-form-urlencoded"
+          class="w-50">
+        <global.WTFormElements form={{ form }} join_label=False floating_label=False />
+    </form>
+</div>

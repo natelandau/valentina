@@ -64,6 +64,13 @@
         </div>
     </div>
     <div class="col-sm-12 col-md-6 col-lg-8 col-xl-9">
+        {% if can_manage_campaign %}
+            <button class="btn btn-outline-primary btn-sm ms-3 float-end"
+                    hx-get="{{ url_for('partials.set_desperation', campaign_id=campaign.id) }}"
+                    hx-trigger="click"
+                    hx-target="next #DESCRIPTION-TEXTBODY"
+                    hx-swap="innerHTML swap:1s">Set Desperation or Danger</button>
+        {% endif %}
         <HTMXPartials.EditText.TextParentPartial TextType={{ text_type_campaign_desc }} text={{ campaign.description }} can_edit={{ can_manage_campaign }} parent_id={{ campaign.id }} />
     </div>
 </div>
