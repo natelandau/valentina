@@ -418,43 +418,6 @@ async def test_edit_text_form_crud_operations(
 
 
 @pytest.mark.drop_db
-async def test_experience_table_load(debug, test_setup):
-    """Test experience table load."""
-    _, _, user, _, _, test_client = test_setup
-
-    response = await test_client.get(f"/partials/addexperience/{user.id}")
-    assert response.status_code == 200
-
-
-@pytest.mark.drop_db
-async def test_experience_table_crud_operations(debug, test_setup):
-    """Test experience table crud operations."""
-    # Given a user and campaign with no existing experience
-    _, campaign, user, _, _, test_client = test_setup
-    campaign_id = str(campaign.id)
-
-    # When submitting a form to add experience and cool points
-    form_data = {
-        "campaign": campaign_id,
-        "experience": "100",
-        "cool_points": "100",
-        "submit": "true",
-    }
-    response = await test_client.post(
-        f"/partials/addexperience/{user.id}", json=form_data, follow_redirects=True
-    )
-
-    # Then the request succeeds and experience is updated correctly
-    # TODO: This assertion passes locally but fails on CI, debug it
-    # assert response.status_code == 200
-
-    # Cool points give 10xp each, so 100 cool points = 1000xp
-    updated_user = await User.get(user.id, fetch_links=True)
-    campaign_xp = updated_user.fetch_campaign_xp(campaign)
-    assert campaign_xp == (1100, 1100, 100)  # (current_xp, total_xp, cool_points)
-
-
-@pytest.mark.drop_db
 async def test_dictionary_term_crud_operations(mocker, debug, test_setup):
     """Test create, update, and delete operations for a dictionary term."""
     # Given: A test environment with mocked dependencies

@@ -1,6 +1,5 @@
 """Routes for handling HTMX partials."""
 
-from dataclasses import dataclass
 from typing import assert_never
 from uuid import UUID
 
@@ -9,12 +8,9 @@ from quart import abort, request, session
 from quart.utils import run_sync
 from quart.views import MethodView
 from quart_wtf import QuartForm
-from werkzeug.utils import secure_filename
 
 from valentina.constants import BrokerTaskType, HTTPStatus
-from valentina.controllers import PermissionManager
 from valentina.models import (
-    AWSService,
     BrokerTask,
     Campaign,
     CampaignBook,
@@ -27,296 +23,28 @@ from valentina.models import (
     User,
     UserMacro,
 )
-from valentina.utils import random_string, truncate_string
+from valentina.utils import truncate_string
 from valentina.webui import catalog
 from valentina.webui.constants import TableType, TextType
 from valentina.webui.utils import (
     create_toast,
     fetch_active_campaign,
     fetch_active_character,
-    fetch_guild,
     link_terms,
     update_session,
 )
 from valentina.webui.utils.discord import post_to_audit_log
 
 from .forms import (
-    AddExperienceForm,
     CampaignChapterForm,
     CampaignDescriptionForm,
     CampaignNPCForm,
     CharacterBioForm,
-    CharacterImageUploadForm,
     DictionaryTermForm,
     InventoryItemForm,
     NoteForm,
     UserMacroForm,
 )
-
-
-class CharacterImageView(MethodView):
-    """Handle adding experience to a user."""
-
-    def __init__(self) -> None:
-        self.aws_svc = AWSService()
-
-    async def _get_character_object(self, character_id: str) -> Character:
-        """Get character database object by ID.
-
-        Args:
-            character_id (str): Unique identifier for the character to fetch
-
-        Returns:
-            Character: Database object representing the character
-
-        Raises:
-            ValueError: If character_id is invalid
-            HTTPException: If character not found, returns 400 Bad Request
-        """
-        try:
-            character = await Character.get(character_id, fetch_links=True)
-        except ValueError:
-            abort(HTTPStatus.BAD_REQUEST.value)
-
-        if not character:
-            abort(HTTPStatus.BAD_REQUEST.value)
-
-        return character
-
-    async def get(self, character_id: str, success_msg: str = "") -> str:
-        """Render HTML snippet showing character's images.
-
-        Args:
-            character_id (str): Unique identifier for the character
-            success_msg (str, optional): Message to display in success toast. Defaults to "".
-
-        Returns:
-            str: Rendered HTML partial containing character's image gallery
-
-        Raises:
-            HTTPException: If character_id is invalid or character not found
-        """
-        character = await self._get_character_object(character_id)
-        images = [self.aws_svc.get_url(x) for x in character.images]
-        can_edit = session["IS_STORYTELLER"] or session["USER_ID"] == character.user_owner
-
-        return catalog.render(
-            "HTMXPartials.CharacterImages.ImagesDisplay",
-            character=character,
-            images=images,
-            can_edit=can_edit,
-            success_msg=success_msg,
-        )
-
-    async def post(self, character_id: str) -> str:
-        """Add an image to a character.
-
-        Process uploaded image file and attach it to the specified character. Validate form data
-        and handle cancellation. Return updated character images view.
-
-        Args:
-            character_id (str): ID of the character to add image to
-
-        Returns:
-            str: HTML partial containing either the upload form (on validation failure)
-                 or updated character images (on success)
-        """
-        form = await CharacterImageUploadForm().create_form()
-
-        if await form.validate_on_submit():
-            if form.data["cancel"] or not form.image.data:
-                return await self.get(character_id)
-
-            image = form.image.data
-            filename = secure_filename(image.filename)
-            extension = filename.split(".")[-1].lower()
-            character = await self._get_character_object(character_id)
-            await character.add_image(extension=extension, data=image.stream.read())
-
-            await post_to_audit_log(
-                msg=f"Add image to `{character.name}`", view=self.__class__.__name__
-            )
-
-            return await self.get(character_id, success_msg="Image added")
-
-        return catalog.render(
-            "HTMXPartials.CharacterImages.ImageUploadForm",
-            form=form,
-            character_id=character_id,
-        )
-
-    async def delete(self, character_id: str) -> str:
-        """Delete an image from a character and return updated image list.
-
-        Delete the specified image from a character's image collection and return an HTML partial
-        showing the remaining images.
-
-        Args:
-            character_id (str): ID of the character to modify
-            url (str): URL of the image to remove, passed as query parameter
-
-        Returns:
-            str: HTML partial containing the character's remaining images after deletion
-
-        Raises:
-            NotFound: If character_id is invalid
-            Forbidden: If user lacks permission to modify character
-        """
-        character = await self._get_character_object(character_id)
-        key_prefix = f"{session['GUILD_ID']}/characters/{character.id}"
-        image_name = request.args.get("url").split("/")[-1]
-
-        image_key = f"{key_prefix}/{image_name}"
-        await character.delete_image(image_key)
-
-        await post_to_audit_log(
-            msg=f"Delete image from `{character.name}`", view=self.__class__.__name__
-        )
-
-        return await self.get(character_id, success_msg="Image deleted")
-
-
-class AddExperienceView(MethodView):
-    """Handle adding experience to a user."""
-
-    def __init__(self) -> None:
-        self.permission_manager = PermissionManager(guild_id=session["GUILD_ID"])
-
-    def _build_success_message(self, experience: int, cool_points: int, target_name: str) -> str:
-        """Build success message for experience/cool points addition.
-
-        Build a formatted message string indicating the experience and/or cool points
-        added to a target user.
-
-        Args:
-            experience (int): Amount of experience points (XP) added
-            cool_points (int): Amount of cool points (CP) added
-            target_name (str): Name of the target user receiving the points
-
-        Returns:
-            str: Formatted message string describing points added to target user
-        """
-        xp_msg = f"{experience} XP" if experience > 0 else ""
-        cp_msg = f"{cool_points} CP" if cool_points > 0 else ""
-
-        if xp_msg and cp_msg:
-            return f"Add {xp_msg} and {cp_msg} to {target_name}"
-
-        if xp_msg:
-            return f"Add {xp_msg} to {target_name}"
-
-        return f"Add {cp_msg} to {target_name}"
-
-    async def get(self, target_id: int, success_msg: str = "") -> str:
-        """Render HTML snippet showing target user's experience table.
-
-        Args:
-            target_id (int): Database ID of target user to display experience for
-            success_msg (str, optional): Message to display on successful operation. Defaults to empty string.
-
-        Returns:
-            str: Rendered HTML containing experience table with:
-                - Campaign-specific experience points
-                - Total experience points across all campaigns
-                - Cool points earned per campaign
-
-        Raises:
-            HTTPException: If target user not found (404)
-        """
-        target = await User.get(target_id)
-        if not target:
-            abort(HTTPStatus.NOT_FOUND.value)
-
-        guild = await fetch_guild(fetch_links=True)
-
-        can_grant_xp = await self.permission_manager.can_grant_xp(
-            author_id=session["USER_ID"], target_id=target_id
-        )
-
-        @dataclass
-        class UserCampaignExperience:
-            """Experience for a user in a campaign."""
-
-            name: str
-            xp: int
-            total_xp: int
-            cp: int
-
-        campaign_experience = []
-        for campaign in guild.campaigns:
-            campaign_xp, campaign_total_xp, campaign_cp = target.fetch_campaign_xp(campaign)
-            campaign_experience.append(
-                UserCampaignExperience(campaign.name, campaign_xp, campaign_total_xp, campaign_cp)  # type: ignore [attr-defined]
-            )
-
-        random_id = random_string(4)  # used with success_msg
-        return catalog.render(
-            "HTMXPartials.AddExperience.ExperienceTableView",
-            user=target,
-            campaign_experience=campaign_experience,
-            can_grant_xp=can_grant_xp,
-            success_msg=success_msg,
-            random_id=random_id,
-        )
-
-    async def post(self, target_id: int) -> str:
-        """Process form submission to add experience and cool points.
-
-        Validate permissions, process form data, and update user's experience and cool points
-        for the specified campaign.
-
-        Args:
-            target_id (int): Database ID of target user to receive points
-
-        Returns:
-            str: HTML snippet containing updated experience table or form with errors
-
-        Raises:
-            HTTPException: If target user not found (404)
-            HTTPException: If user lacks permission to grant points (403)
-            HTTPException: If invalid campaign ID provided (400)
-        """
-        target = await User.get(target_id)
-        if not target:
-            abort(HTTPStatus.NOT_FOUND.value, "Target user ID not found")
-
-        can_grant_xp = await self.permission_manager.can_grant_xp(
-            author_id=session["USER_ID"], target_id=target_id
-        )
-
-        if not can_grant_xp:
-            abort(
-                HTTPStatus.FORBIDDEN.value,
-                "You do not have permission to add experience to this user",
-            )
-
-        guild = await fetch_guild(fetch_links=True)
-        form = await AddExperienceForm().create_form(data={"target_id": target_id})
-        form.campaign.choices = [(campaign.id, campaign.name) for campaign in guild.campaigns]  # type: ignore [attr-defined]
-
-        if await form.validate_on_submit():
-            if form.data["cancel"]:
-                return await self.get(target_id)
-
-            experience = int(form.data["experience"])
-            cool_points = int(form.data["cool_points"])
-            campaign = await fetch_active_campaign(form.data["campaign"])
-
-            if not campaign:
-                abort(HTTPStatus.BAD_REQUEST.value, "Invalid campaign ID")
-
-            if experience > 0:
-                await target.add_campaign_xp(campaign=campaign, amount=experience)
-            if cool_points > 0:
-                await target.add_campaign_cool_points(campaign=campaign, amount=cool_points)
-
-            msg = self._build_success_message(experience, cool_points, target.name)
-            await post_to_audit_log(msg=msg, view=self.__class__.__name__)
-            return await self.get(target_id, success_msg=msg)
-
-        return catalog.render(
-            "HTMXPartials.AddExperience.FormPartial", form=form, target_id=target_id
-        )
 
 
 class EditTableView(MethodView):
