@@ -8,7 +8,6 @@
     joined_at: str,
     campaign_experience: list[UserCampaignExperience],
     characters: list[Character],
-    emoji: Emoji,
     table_type_macro: TableType,
     can_grant_xp: bool,
 #}
@@ -19,7 +18,11 @@
     <global.PageTitle>
 
     {%- if user.avatar_url %}
-        <img src={{ user.avatar_url }} alt="User Avatar" class="img-fluid rounded-circle" width="75" height="75">
+        <img src="{{ user.avatar_url }}"
+             alt="User Avatar"
+             class="img-fluid rounded-circle"
+             width="75"
+             height="75">
     {%- endif %}
     {{ user.name }}</global.PageTitle>
 
@@ -91,7 +94,6 @@
                     <tr>
                         <th>Name</th>
                         <th>Class</th>
-                        <th>Alive</th>
                         {%- if session["IS_STORYTELLER"] %}<th>Type</th>{% endif %}
                         <th></th>
                     </tr>
@@ -102,16 +104,10 @@
                         {% endif %}
                         <tr>
                             <td>
+                                {% if not character.is_alive %}<i class="fa-solid fa-skull-crossbones"></i>&nbsp;{% endif %}
                                 <strong><a href="{{ url_for('character_view.view', character_id=character.id) }}">{{ character.name }}</a></strong>
                             </td>
                             <td>{{ character.char_class_name | title }}</td>
-                            <td>
-                                {%- if character.is_alive %}
-                                    {{ emoji.ALIVE.value }}
-                                {%- else %}
-                                    {{ emoji.DEAD.value }}
-                                {%- endif %}
-                            </td>
                             {%- if session["IS_STORYTELLER"] %}
                                 <td>{{ 'Player' if character.type_player else 'Storyteller' }}</td>
                             {%- endif %}

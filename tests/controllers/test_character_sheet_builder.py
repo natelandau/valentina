@@ -62,12 +62,18 @@ async def test_fetch_sheet_character_traits(debug, trait_factory, character_fact
     ],
 )
 @pytest.mark.drop_db
-async def test_fetch_sheet_profile(debug, character_factory, user_factory, char_class, keys):
+async def test_fetch_sheet_profile(
+    debug, character_factory, campaign_factory, user_factory, char_class, keys
+):
     """Test the fetch_sheet_profile method."""
+    campaign = await campaign_factory.build().insert()
     user = user_factory.build(name="test_user")
     await user.insert()
     character = character_factory.build(
-        user_owner=user.id, char_class_name=char_class.name, type_player=True
+        user_owner=user.id,
+        char_class_name=char_class.name,
+        type_player=True,
+        campaign=str(campaign.id),
     )
     await character.insert()
 

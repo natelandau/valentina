@@ -29,6 +29,7 @@ class SortBooksView(MethodView):
             HTTPException: If campaign is not found or user lacks permissions.
         """
         books = await CampaignBook.find(CampaignBook.campaign == parent_id).to_list()
+
         page_title = "Sort Books"
 
         post_url = url_for("partials.sort_books", parent_id=parent_id)
@@ -60,6 +61,7 @@ class SortBooksView(MethodView):
         """
         # Get all books for this campaign to ensure we have the complete set for reordering
         books = await CampaignBook.find(CampaignBook.campaign == parent_id).to_list()
+
         parent_campaign = await Campaign.get(parent_id)
 
         form_data = await request.form

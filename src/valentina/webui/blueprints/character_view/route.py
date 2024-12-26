@@ -193,7 +193,9 @@ class CharacterView(MethodView):
         sheet_builder = CharacterSheetBuilder(character=character)
         sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
         user_is_storyteller = await is_storyteller()
-        profile_data = await sheet_builder.fetch_sheet_profile(storyteller_view=user_is_storyteller)
+        profile_data = await sheet_builder.fetch_sheet_profile(
+            storyteller_view=user_is_storyteller, is_web_ui=True
+        )
 
         # We want to link to the user profile from the character view so we add the link here
         if owner_name := profile_data.get("Owner"):

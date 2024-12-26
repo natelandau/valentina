@@ -50,6 +50,8 @@
                     <global.Subtitle title="Quick Links" header_size="h4" />
 
                     <div class="list-group list-group-flush">
+                        <a href="{{ url_for('user_profile.view', user_id=session['USER_ID']) }}"
+                           class="list-group-item list-group-item-action text-primary"><i class="fa-solid fa-user pe-2"></i> Your Profile</a>
                         <a href="{{ url_for('character_create.start') }}"
                            class="list-group-item list-group-item-action text-primary"><i class="fa-solid fa-person-circle-plus pe-2"></i> Create A Character</a>
                         <a class="list-group-item list-group-item-action text-primary"
@@ -80,6 +82,7 @@
                         {% for char in all_characters if char.owner_id == session["USER_ID"] %}
                             <tr>
                                 <td class="text-nowrap small">
+                                    {% if not char.is_alive %}<i class="fa-solid fa-skull-crossbones"></i>&nbsp;{% endif %}
                                     <strong><a href="{{ url_for('character_view.view', character_id=char.id) }}">{{ char.name }}</a></strong>
                                 </td>
                                 <td class="text-nowrap small">{{ char.campaign_name }}</td>
@@ -106,6 +109,7 @@
                         {% endif %}
                         <tr>
                             <td class="text-nowrap small">
+                                {% if not char.is_alive %}<i class="fa-solid fa-skull-crossbones"></i>&nbsp;{% endif %}
                                 <strong><a href="{{ url_for('character_view.view', character_id=char.id) }}">{{ char.name }}</a></strong>
                             </td>
                             <td class="text-nowrap small">{{ char.owner_name }}</td>
