@@ -219,10 +219,6 @@ class CharacterView(MethodView):
                 campaign=campaign,
                 dice_sizes=[member.value for member in DiceType],
                 form=gameplay_form,
-                error_msg=request.args.get("error_msg", ""),
-                success_msg=request.args.get("success_msg", ""),
-                info_msg=request.args.get("info_msg", ""),
-                warning_msg=request.args.get("warning_msg", ""),
                 CharacterEditableInfo=CharacterEditableInfo,
             )
         )()

@@ -5,7 +5,7 @@ from typing import ClassVar
 
 import arrow
 from flask_discord import requires_authorization
-from quart import abort, request, session
+from quart import abort, session
 from quart.views import MethodView
 
 from valentina.controllers import PermissionManager
@@ -91,8 +91,4 @@ class UserProfile(MethodView):
             campaign_experience=campaign_experience,
             table_type_macro=TableType.MACRO,
             can_grant_xp=can_grant_xp,
-            error_msg=request.args.get("error_msg", ""),
-            success_msg=request.args.get("success_msg", ""),
-            info_msg=request.args.get("info_msg", ""),
-            warning_msg=request.args.get("warning_msg", ""),
         )

@@ -8,7 +8,7 @@ from enum import Enum
 from typing import ClassVar
 
 from flask_discord import requires_authorization
-from quart import abort, request, session, url_for
+from quart import abort, flash, request, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from wtforms import HiddenField, SelectField, SubmitField
@@ -177,9 +177,6 @@ class CreateStorytellerRNGCharacter(MethodView):
 
         await update_session()
 
-        url = url_for(
-            "character_view.view",
-            character_id=str(generated_character.id),
-            success_msg="<strong>Character created successfully.</strong>",
-        )
+        await flash("Character created", "success")
+        url = url_for("character_view.view", character_id=str(generated_character.id))
         return f'<script>window.location.href="{url}"</script>'

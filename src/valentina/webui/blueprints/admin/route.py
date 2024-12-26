@@ -3,7 +3,7 @@
 from typing import ClassVar
 
 from flask_discord import requires_authorization
-from quart import abort, request, session, url_for
+from quart import abort, flash, request, session, url_for
 from quart.utils import run_sync
 from quart.views import MethodView
 
@@ -119,7 +119,6 @@ class AdminView(MethodView):
                 PermissionManageCampaign=PermissionManageCampaign,
                 PermissionsKillCharacter=PermissionsKillCharacter,
                 LogLevel=LogLevel,
-                success_msg=request.args.get("success_msg", ""),
             )
         )()
 
@@ -164,4 +163,5 @@ class AdminView(MethodView):
 
         await post_to_audit_log(msg=msg, view=self.__class__.__name__)
 
-        return f'<script>window.location.href="{url_for("admin.home", success_msg=msg)}"</script>'
+        await flash(msg, "success")
+        return f'<script>window.location.href="{url_for("admin.home")}"</script>'

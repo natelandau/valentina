@@ -4,7 +4,7 @@ import uuid
 from typing import ClassVar
 
 from flask_discord import requires_authorization
-from quart import Response, abort, session, url_for
+from quart import Response, abort, flash, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from wtforms import (
@@ -252,6 +252,7 @@ class EditProfile(MethodView):
 
             if has_updates:
                 await character.save()
+                await flash("Character updated!", "success")
 
             if has_updates and do_update_channel:
                 task = BrokerTask(
@@ -270,11 +271,7 @@ class EditProfile(MethodView):
                 # Rebuild the session with the new character data
                 await update_session()
 
-            url = url_for(
-                "character_view.view",
-                character_id=character_id,
-                success_msg="Character updated!" if has_updates else "No changes made.",
-            )
+            url = url_for("character_view.view", character_id=character_id)
             return f'<script>window.location.href="{url}"</script>'
 
         # If POST request does not validate, return errors

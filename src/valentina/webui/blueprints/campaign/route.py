@@ -3,7 +3,7 @@
 from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
-from quart import Response, abort, request, session, url_for
+from quart import Response, abort, flash, request, session, url_for
 from quart.utils import run_sync
 from quart.views import MethodView
 from quart_wtf import QuartForm
@@ -189,10 +189,6 @@ class CampaignView(MethodView):
                 tabs=CampaignViewTab,
                 text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
                 can_manage_campaign=self.can_manage_campaign,
-                error_msg=request.args.get("error_msg", ""),
-                success_msg=request.args.get("success_msg", ""),
-                info_msg=request.args.get("info_msg", ""),
-                warning_msg=request.args.get("warning_msg", ""),
             )
         )()
         return await link_terms(result, link_type="html")
@@ -351,7 +347,8 @@ class CampaignEditItem(MethodView):
                 assert_never(self.edit_type)
 
         if form_is_processed:
-            return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id, success_msg=msg)}"</script>'
+            await flash(msg, "success")
+            return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id)}"</script>'
 
         # If POST request does not validate, return errors
         return catalog.render(
@@ -372,7 +369,8 @@ class CampaignEditItem(MethodView):
         match self.edit_type:
             case CampaignEditableInfo.BOOK:
                 msg = await self._delete_campaign_book(campaign)
-                return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id, success_msg=msg)}"</script>'
+                await flash(msg, "success")
+                return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign.id)}"</script>'
 
             case _:
                 assert_never(self.edit_type)

@@ -25,7 +25,7 @@
                     hx-target="#main-content"
                     hx-swap="innerHTML"
                     hx-trigger="click"
-                    hx-get="{{ url_for('campaign.view', campaign_id=campaign.id, tab=tab.value, info_msg='Cancelled') }}">
+                    hx-get="{{ url_for('campaign.view', campaign_id=campaign.id, tab=tab.value) }}">
                 Cancel
             </button>
         </form>

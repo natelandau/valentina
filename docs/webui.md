@@ -48,15 +48,32 @@ The following primitives are available within all jinja templates. These are cre
 
 ### Create a toast
 
-To create a toast, use the `global.Toast` primitive.
+Possible levels are: `success`, `error`, `warning`, `info`. There are two ways to create a toast message:
 
-Args:
+1.  Use the `flash` function in the route. This is the most common and easiest way to create a toast message.
 
--   `msg` - The message to display in the toast.
--   `level` - The level of the toast. Must be one of the following: `success`, `error`, `warning`, `info`.
+```python
+await flash(msg, "success")
+
+return f'<script>window.location.href="{url_for("homepage.homepage")}"</script>'
+
+# or
+
+return await catalog.render("homepage.homepage",)
+```
+
+2.  Include the `global.Toast` primitive in the template. This will create a toast message in the next response. This is commonly used when HTMX partials are returned from a route which does not reload an entire template.
 
 ```jinja
+{% if something %}
 <global.Toast msg={{ msg }} level="success" />
+{% endif %}
+```
+
+Or from within a route itself. Use this when HTMX is deleting an item and the only thing that needs to be returnedis the toast message:
+
+```python
+await catalog.render("global.Toast", msg=msg, level="success")
 ```
 
 ## Long running tasks

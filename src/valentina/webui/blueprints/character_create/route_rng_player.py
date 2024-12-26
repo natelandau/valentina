@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from flask_discord import requires_authorization
 from loguru import logger
-from quart import Response, abort, request, session, url_for
+from quart import Response, abort, flash, request, session, url_for
 from quart.views import MethodView
 
 from valentina.constants import (
@@ -65,10 +65,6 @@ class CreateRNGCharacter(MethodView):
             remaining_xp=remaining_xp,
             rng_characters=characters,
             character_type=request.args.get("character_type", "player"),
-            error_msg=request.args.get("error_msg", ""),
-            success_msg=request.args.get("success_msg", ""),
-            info_msg=request.args.get("info_msg", ""),
-            warning_msg=request.args.get("warning_msg", ""),
         )
 
     async def post(self) -> str | Response:
@@ -123,10 +119,10 @@ class CreateRNGCharacter(MethodView):
             del session["RNG_DRAFT_CHARACTERS"]
             await update_session()
 
+            await flash("Character created", "success")
             url = url_for(
                 "character_view.view",
                 character_id=redirect_char_id,
-                success_msg="<strong>Character created successfully.</strong>",
             )
             return f'<script>window.location.href="{url}"</script>'
 

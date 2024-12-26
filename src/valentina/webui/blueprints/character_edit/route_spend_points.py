@@ -4,7 +4,7 @@ from enum import Enum
 from typing import ClassVar, assert_never
 
 from flask_discord import requires_authorization
-from quart import Response, abort, redirect, request, session, url_for
+from quart import Response, abort, flash, redirect, request, session, url_for
 from quart.views import MethodView
 
 from valentina.constants import HTTPStatus
@@ -216,20 +216,14 @@ class SpendPoints(MethodView):
 
         character_owner = await User.get(character.user_owner, fetch_links=False)
         if not session["IS_STORYTELLER"] and character_owner.id != session.get("USER_ID"):
+            await flash("You do not have permission to edit this character", "error")
             return redirect(  # type: ignore [return-value]
-                url_for(
-                    "character_view.view",
-                    character_id=character_id,
-                    error_msg="You do not have permission to edit this character",
-                )
+                url_for("character_view.view", character_id=character_id)
             )
         if not session["IS_STORYTELLER"] and self.spend_type == SpendPointsType.STORYTELLER:
+            await flash("Only storytellers can update characters without spending points", "error")
             return redirect(  # type: ignore [return-value]
-                url_for(
-                    "character_view.view",
-                    character_id=character_id,
-                    error_msg="Only storytellers can update characters without spending points",
-                )
+                url_for("character_view.view", character_id=character_id)
             )
 
         campaign_experience = (
@@ -249,10 +243,6 @@ class SpendPoints(MethodView):
             form=self.form,
             traits=all_traits,
             post_url=url_for(f"character_edit.{self.spend_type.value}", character_id=character_id),
-            error_msg=request.args.get("error_msg", ""),
-            success_msg=request.args.get("success_msg", ""),
-            info_msg=request.args.get("info_msg", ""),
-            warning_msg=request.args.get("warning_msg", ""),
         )
 
     async def post(self, character_id: str = "") -> str:
@@ -276,11 +266,8 @@ class SpendPoints(MethodView):
         try:
             trait, target_value = await self._parse_form_data(character, form)
         except ValueError as e:
-            url = url_for(
-                f"character_edit.{self.spend_type.value}",
-                character_id=str(character.id),
-                error_msg=str(e),
-            )
+            await flash(str(e), "error")
+            url = url_for(f"character_edit.{self.spend_type.value}", character_id=str(character.id))
             return f'<script>window.location.href="{url}"</script>'
 
         success_msg = ""
@@ -296,16 +283,10 @@ class SpendPoints(MethodView):
             errors.NotEnoughExperienceError,
             errors.TraitAtMinValueError,
         ) as e:
-            url = url_for(
-                f"character_edit.{self.spend_type.value}",
-                character_id=str(character.id),
-                error_msg=str(e),
-            )
+            await flash(str(e), "error")
+            url = url_for(f"character_edit.{self.spend_type.value}", character_id=str(character.id))
             return f'<script>window.location.href="{url}"</script>'
 
-        url = url_for(
-            f"character_edit.{self.spend_type.value}",
-            character_id=str(character.id),
-            success_msg=success_msg,
-        )
+        await flash(success_msg, "success")
+        url = url_for(f"character_edit.{self.spend_type.value}", character_id=str(character.id))
         return f'<script>window.location.href="{url}"</script>'

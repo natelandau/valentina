@@ -27,7 +27,6 @@ from valentina.utils import truncate_string
 from valentina.webui import catalog
 from valentina.webui.constants import TableType, TextType
 from valentina.webui.utils import (
-    create_toast,
     fetch_active_campaign,
     fetch_active_character,
     link_terms,
@@ -683,7 +682,7 @@ class EditTableView(MethodView):
             view=self.__class__.__name__,
         )
 
-        return create_toast(msg, level="SUCCESS")
+        return catalog.render("global.Toast", msg=msg, level="success")
 
 
 class EditTextView(MethodView):
