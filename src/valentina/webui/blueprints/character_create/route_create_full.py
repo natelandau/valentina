@@ -6,7 +6,7 @@ from typing import ClassVar
 from beanie import WriteRules
 from flask_discord import requires_authorization
 from loguru import logger
-from quart import abort, redirect, request, session, url_for
+from quart import abort, flash, redirect, request, session, url_for
 from quart.views import MethodView
 from quart_wtf import QuartForm
 from werkzeug.wrappers.response import Response
@@ -133,10 +133,6 @@ class CreateCharacterStep1(MethodView):
                 character_type=request.args.get("character_type", "player"),
                 campaign_id=request.args.get("campaign_id", session.get("ACTIVE_CAMPAIGN_ID", "")),
             ),
-            error_msg=request.args.get("error_msg", ""),
-            success_msg=request.args.get("success_msg", ""),
-            info_msg=request.args.get("info_msg", ""),
-            warning_msg=request.args.get("warning_msg", ""),
         )
 
     async def post(self) -> str | Response:
@@ -465,13 +461,10 @@ class CreateCharacterStep3(MethodView):
 
         # Rebuild the session with the new character data
         await update_session()
+        await flash("Character created", "success")
         return redirect(
             url_for(
                 "character_view.view",
                 character_id=character_id,
-                error_msg=request.args.get("error_msg", ""),
-                success_msg=request.args.get("success_msg", ""),
-                info_msg=request.args.get("info_msg", ""),
-                warning_msg=request.args.get("warning_msg", ""),
             )
         )

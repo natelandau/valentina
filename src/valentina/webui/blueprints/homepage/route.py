@@ -2,7 +2,7 @@
 
 import random
 
-from quart import request, session
+from quart import session
 from quart.views import MethodView
 
 from valentina.constants import BOT_DESCRIPTIONS
@@ -36,8 +36,4 @@ class HomepageView(MethodView):
             "homepage.Loggedin",
             statistics=await stats_engine.guild_statistics(as_json=True),
             all_characters=sorted(all_characters, key=lambda x: x["name"]),
-            error_msg=request.args.get("error_msg", ""),
-            success_msg=request.args.get("success_msg", ""),
-            info_msg=request.args.get("info_msg", ""),
-            warning_msg=request.args.get("warning_msg", ""),
         )

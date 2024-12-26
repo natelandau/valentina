@@ -4,7 +4,7 @@ from typing import ClassVar, assert_never
 from uuid import UUID
 
 from flask_discord import requires_authorization
-from quart import abort, request, session, url_for
+from quart import abort, flash, request, session, url_for
 from quart.utils import run_sync
 from quart.views import MethodView
 from quart_wtf import QuartForm
@@ -21,7 +21,7 @@ from valentina.controllers import delete_character
 from valentina.models import Character, CharacterSheetSection
 from valentina.webui import catalog
 from valentina.webui.constants import CharacterEditableInfo
-from valentina.webui.utils import create_toast, fetch_active_character
+from valentina.webui.utils import fetch_active_character
 from valentina.webui.utils.discord import post_to_audit_log
 
 
@@ -60,7 +60,8 @@ class DeleteCharacter(MethodView):
 
         character_name = character.name
         if character.user_owner != session["USER_ID"] and not session["IS_STORYTELLER"]:
-            return create_toast(f"You are not authorized to delete {character_name}", level="ERROR")
+            await flash(f"You are not authorized to delete {character_name}", "error")
+            return f'<script>window.location.href="{url_for("character_view.view", character_id=character_id)}"</script>'
 
         await delete_character(character)
 
@@ -69,7 +70,8 @@ class DeleteCharacter(MethodView):
             view=self.__class__.__name__,
         )
 
-        return f'<script>window.location.href="{url_for("homepage.homepage", success_msg=f"Deleted {character_name}")}"</script>'
+        await flash(f"Deleted {character_name}", "success")
+        return f'<script>window.location.href="{url_for("homepage.homepage")}"</script>'
 
 
 class EditCharacterInfo(MethodView):
@@ -189,8 +191,8 @@ class EditCharacterInfo(MethodView):
                 assert_never(self.edit_type)
 
         if form_is_processed:
-            url = url_for("character_view.view", character_id=character_id, success_msg=msg)
-            return f'<script>window.location.href="{url}"</script>'
+            await flash(msg, "success")
+            return f'<script>window.location.href="{url_for("character_view.view", character_id=character_id)}"</script>'
 
         # If POST request does not validate, return errors
         return catalog.render(
@@ -214,4 +216,4 @@ class EditCharacterInfo(MethodView):
             case _:
                 assert_never(self.edit_type)
 
-        return create_toast(msg, level="SUCCESS")
+        return catalog.render("global.Toast", msg=msg, level="success")

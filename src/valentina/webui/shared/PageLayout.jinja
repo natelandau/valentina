@@ -6,12 +6,6 @@
 {#
     USAGE
     Overall layout for the page. This includes the nav bar, alerts, and the content of the page. The nav bar is only included if the user is logged in.
-
-    To place an alert at the top of the page, call this template with one of the following variables:
-    - success_msg: str
-    - error_msg: str
-    - warning_msg: str
-    - info_msg: str
 #}
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -45,6 +39,9 @@
         {% if sortable %}
             <script src="{{ url_for('static', filename='js/sortable.min.js') }}"></script>
         {% endif %}
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+                integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+                crossorigin="anonymous"></script>
         {{ catalog.render_assets() }}
         <link href="{{ url_for('static', filename='valentina.css') }}"
               rel="stylesheet">
@@ -66,76 +63,7 @@
         {# include nav bar only when user is logged in #}
         {% if session["USER_ID"] is defined and session["GUILD_ID"] is defined %}<NavBar />{% endif %}
 
-        <div class="container mt-3 mb-5 overflow-auto">
-            <div class="toast-container top-0 start-50 translate-middle-x mt-5 pt-5">
-                {%- if attrs.get("success-msg", "") %}
-
-                    <div class="toast align-items-center text-bg-success border-0"
-                         role="alert"
-                         aria-live="assertive"
-                         aria-atomic="true">
-                        <div class="d-flex">
-                            <div class="toast-body">
-                                <i class="fa-solid fa-circle-check"></i>&nbsp;&nbsp;{{ attrs.get("success-msg") }}
-                            </div>
-                            <button type="button"
-                                    class="btn-close btn-close-white me-2 m-auto"
-                                    data-bs-dismiss="toast"
-                                    aria-label="Close"></button>
-                        </div>
-                    </div>
-                {% endif -%}
-                {%- if attrs.get("error-msg", "") %}
-                    <div class="toast align-items-center text-bg-danger border-0"
-                         role="alert"
-                         aria-live="assertive"
-                         aria-atomic="true">
-                        <div class="d-flex">
-                            <div class="toast-body">
-                                <i class="fa-solid fa-circle-exclamation"></i>&nbsp;&nbsp;{{ attrs.get("error-msg") }}
-                            </div>
-                            <button type="button"
-                                    class="btn-close btn-close-white me-2 m-auto"
-                                    data-bs-dismiss="toast"
-                                    aria-label="Close"></button>
-                        </div>
-                    </div>
-                {% endif -%}
-                {%- if attrs.get("warning-msg", "") %}
-                    <div class="toast align-items-center text-bg-warning border-0"
-                         role="alert"
-                         aria-live="assertive"
-                         aria-atomic="true">
-                        <div class="d-flex">
-                            <div class="toast-body">
-                                <i class="fa-solid fa-triangle-exclamation"></i>&nbsp;&nbsp;{{ attrs.get("warning-msg") }}
-                            </div>
-                            <button type="button"
-                                    class="btn-close btn-close-white me-2 m-auto"
-                                    data-bs-dismiss="toast"
-                                    aria-label="Close"></button>
-                        </div>
-                    </div>
-                {% endif -%}
-                {%- if attrs.get("info-msg", "") %}
-                    <div class="toast align-items-center text-bg-info border-0"
-                         role="alert"
-                         aria-live="assertive"
-                         aria-atomic="true">
-                        <div class="d-flex">
-                            <div class="toast-body">
-                                <i class="fa-solid fa-circle-info"></i>&nbsp;&nbsp;{{ attrs.get("info-msg") }}
-                            </div>
-                            <button type="button"
-                                    class="btn-close btn-close-white me-2 m-auto"
-                                    data-bs-dismiss="toast"
-                                    aria-label="Close"></button>
-                        </div>
-                    </div>
-                {% endif -%}
-            </div>
-            {{ content }}
-        </div>
+        <div class="container mt-3 mb-5 overflow-auto" id="main-content">{{ content }}</div>
 
         {% if session["USER_ID"] is defined and session["GUILD_ID"] is defined %}
 
@@ -143,21 +71,21 @@
 
         {% endif %}
 
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-                integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-                crossorigin="anonymous"></script>
+        {% include "global/FlashMessages.jinja" %}
+
+        {# <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script> #}
         <script>
             // Enable tooltips
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
             const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
         </script>
 
-        <script>
+        {# <script>
             // Show the first toast with class .toast
             var toast = document.querySelector('.toast');
             var toastE = new bootstrap.Toast(toast);
             toastE.show();
-        </script>
+        </script> #}
         {% if config.CLOUDFLARE_ANALYTICS_TOKEN %}
             <!-- Cloudflare Web Analytics -->
             <script defer

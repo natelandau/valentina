@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from quart import abort, request, session, url_for
+from quart import abort, flash, request, session, url_for
 from quart.utils import run_sync
 from quart.views import MethodView
 from werkzeug.utils import secure_filename
@@ -81,8 +81,8 @@ class SetDesperationOrDanger(MethodView):
                     f"Campaign {campaign_id} desperation or danger set to {form.desperation.data} and {form.danger.data}"
                 )
 
-            # Use client-side redirect to ensure proper page reload with success message
-            return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign_id, success_msg=f"{msg}")}"</script>'
+            await flash(msg, "success")
+            return f'<script>window.location.href="{url_for("campaign.view", campaign_id=campaign_id)}"</script>'
 
         # Run template rendering in sync context since Jinja is not async-safe
         return await run_sync(
@@ -133,19 +133,14 @@ class CharacterImageView(MethodView):
     async def get(self, character_id: str, success_msg: str = "") -> str:
         """Render an HTML partial containing a character's image gallery.
 
-        Fetch a character's images from the database and generate signed URLs for each one.
-        Use this endpoint to display all images associated with a character in a responsive
-        gallery format. The gallery includes edit controls if the current user has appropriate
-        permissions.
+        Fetch a character's images from the database and generate signed URLs for each one. Use this endpoint to display all images associated with a character in a responsive gallery format. The gallery includes edit controls if the current user has appropriate permissions.
 
         Args:
             character_id (str): Unique identifier for the character to display images for
-            success_msg (str, optional): Message to show in success toast notification.
-                Defaults to empty string.
+            success_msg (str): Message to display on successful operation. Defaults to empty string.
 
         Returns:
-            str: Rendered HTML partial containing the character's image gallery with
-                signed AWS URLs and edit controls if permitted
+            str: Rendered HTML partial containing the character's image gallery with signed AWS URLs and edit controls if permitted
 
         Raises:
             HTTPException: If character_id format is invalid or character not found (400)
@@ -378,7 +373,10 @@ class AddExperienceView(MethodView):
 
             msg = self._build_success_message(experience, cool_points, target.name)
             await post_to_audit_log(msg=msg, view=self.__class__.__name__)
-            return await self.get(target_id, success_msg=msg)
+
+            await flash(msg, "success")
+            url = url_for("user_profile.view", user_id=target_id)
+            return f'<script>window.location.href="{url}"</script>'
 
         return catalog.render(
             "HTMXPartials.AddExperience.FormPartial", form=form, target_id=target_id

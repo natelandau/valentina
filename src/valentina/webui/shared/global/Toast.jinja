@@ -3,7 +3,7 @@
     msg: str,
 #}
 
-{% set charlist = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789" %}
+{% set charlist = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" %}
 
 {% set randomstring = namespace(value='') %}
 
@@ -46,7 +46,7 @@
          aria-atomic="true">
         <div class="d-flex">
             <div class="toast-body">
-                <i class="{{ icon }}"></i>&nbsp;&nbsp;{{ msg }}
+                <i class="{{ icon }} me-2"></i>{{ msg }}
             </div>
             <button type="button"
                     class="btn-close btn-close-white me-2 m-auto"
@@ -54,9 +54,10 @@
                     aria-label="Close"></button>
         </div>
     </div>
-</div>
-<script>
+    <script>
         var toastR = document.querySelector(".{{ randomstring.value }}");
         var toastE = new bootstrap.Toast(toastR);
         toastE.show();
-</script>
+    </script>
+
+</div>

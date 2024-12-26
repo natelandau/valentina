@@ -5,7 +5,6 @@
     PermissionManageCampaign: PermissionManageCampaign,
     PermissionsKillCharacter: PermissionsKillCharacter,
     LogLevel: LogLevel,
-    success_msg: str = "",
 #}
 
 <PageLayout title="Admin" _attrs={{ attrs }} sweetalert={{ True }}>
@@ -235,5 +234,4 @@
         </tbody>
     </table>
 
-    {% if success_msg %}<global.Toast msg={{ success_msg }} level="success" />{% endif %}
 </PageLayout>

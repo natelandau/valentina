@@ -1,0 +1,123 @@
+{#
+    Turns flash messages from Quart into bootstrap toast messages.
+
+    Possible categories are:
+        - success
+        - error
+        - warning
+        - info
+
+    Include this in the global page layout.
+
+    {% include "global/FlashMessages.jinja" %}
+#}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="toast-container top-0 start-50 translate-middle-x mt-5 pt-5">
+            {% for category, message in messages %}
+
+                {% set charlist = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" %}
+
+                {% set randomstring = namespace(value='') %}
+
+                {% for i in range(8) %}
+
+                    {% set randomstring.value = randomstring.value ~ charlist | random %}
+
+                {% endfor %}
+
+                {% if category == "success" %}
+
+                    {% set icon = "fa-solid fa-circle-check" %}
+
+                    {% set color = "text-bg-success" %}
+
+                {% elif category == "error" %}
+
+                    {% set icon = "fa-solid fa-circle-exclamation" %}
+
+                    {% set color = "text-bg-danger" %}
+
+                {% elif category == "warning" %}
+
+                    {% set icon = "fa-solid fa-triangle-exclamation" %}
+
+                    {% set color = "text-bg-warning" %}
+
+                {% elif category == "info" %}
+
+                    {% set icon = "fa-solid fa-circle-info" %}
+
+                    {% set color = "text-bg-info" %}
+
+                {% endif %}
+
+                <div class="toast {{ randomstring.value }} align-items-center {{ color }} border-0"
+                     role="alert"
+                     aria-live="assertive"
+                     aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="{{ icon }} me-2"></i>{{ message }}
+                        </div>
+                        <button type="button"
+                                class="btn-close btn-close-white me-2 m-auto"
+                                data-bs-dismiss="toast"
+                                aria-label="Close"></button>
+                    </div>
+                </div>
+                <script>
+var toastR = document.querySelector(".{{ randomstring.value }}");
+var toastE = new bootstrap.Toast(toastR);
+toastE.show();
+                </script>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+{# ################################################################### #}
+{# <div class="toast-container top-0 start-50 translate-middle-x mt-5 pt-5"> #}
+{# {%- if attrs.get("success-msg", "") %}
+
+    <div class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fa-solid fa-circle-check"></i>&nbsp;&nbsp;{{ attrs.get("success-msg") }}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+{% endif -%}
+{%- if attrs.get("error-msg", "") %}
+    <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fa-solid fa-circle-exclamation"></i>&nbsp;&nbsp;{{ attrs.get("error-msg") }}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+{% endif -%}
+{%- if attrs.get("warning-msg", "") %}
+    <div class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fa-solid fa-triangle-exclamation"></i>&nbsp;&nbsp;{{ attrs.get("warning-msg") }}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+{% endif -%}
+{%- if attrs.get("info-msg", "") %}
+    <div class="toast align-items-center text-bg-info border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fa-solid fa-circle-info"></i>&nbsp;&nbsp;{{ attrs.get("info-msg") }}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+{% endif -%} #}
+{# </div> #}
