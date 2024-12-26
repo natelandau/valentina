@@ -6,6 +6,7 @@ from quart.views import MethodView
 
 from valentina.constants import BrokerTaskType
 from valentina.models import BrokerTask, Campaign, CampaignBook, CampaignBookChapter
+from valentina.utils import console
 from valentina.webui import catalog
 from valentina.webui.utils.discord import post_to_audit_log
 
@@ -28,11 +29,14 @@ class SortBooksView(MethodView):
         Raises:
             HTTPException: If campaign is not found or user lacks permissions.
         """
+        console.rule("get")
         books = await CampaignBook.find(CampaignBook.campaign == parent_id).to_list()
+        console.log([x.name for x in books])
         page_title = "Sort Books"
 
         post_url = url_for("partials.sort_books", parent_id=parent_id)
 
+        console.log("rendering")
         return await run_sync(
             lambda: catalog.render(
                 "HTMXPartials.Sortable.Sortable",
@@ -58,12 +62,14 @@ class SortBooksView(MethodView):
         Raises:
             HTTPException: If campaign is not found or user lacks permissions
         """
+        console.rule("post")
         # Get all books for this campaign to ensure we have the complete set for reordering
         books = await CampaignBook.find(CampaignBook.campaign == parent_id).to_list()
+        console.log([x.name for x in books])
         parent_campaign = await Campaign.get(parent_id)
-
+        console.log(f"{parent_campaign.name=}")
         form_data = await request.form
-
+        console.log(f"{form_data=}")
         # Form data preserves order of elements as they were dragged, so we can use enumeration
         # to generate new sequential positions starting from 1
         new_order = {item_id: idx + 1 for idx, (item_id, _) in enumerate(form_data.items())}
@@ -86,6 +92,7 @@ class SortBooksView(MethodView):
             msg=f"Sort books for campaign {parent_campaign.name}", view=self.__class__.__name__
         )
 
+        console.log("rendering items list")
         return await run_sync(lambda: catalog.render("HTMXPartials.Sortable.Items", items=books))()
 
 

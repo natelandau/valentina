@@ -61,7 +61,7 @@ async def test_sortable_book_reorder(
 
     # Then the request succeeds and experience is updated correctly
     # TODO: This assertion passes locally but fails on CI, debug it
-    # assert response.status_code == 200
+    assert response.status_code == 200
 
     # Then: All books are displayed in the sortable list
     assert f"name='{item1.id}'" in returned_text
@@ -84,7 +84,7 @@ async def test_sortable_book_reorder(
 
     # Then the request succeeds and experience is updated correctly
     # TODO: This assertion passes locally but fails on CI, debug it
-    # assert response2.status_code == 200
+    assert response2.status_code == 200
 
     # Then: The reordered list is displayed successfully
     assert f"name='{item1.id}'" in returned_text
