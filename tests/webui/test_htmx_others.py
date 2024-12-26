@@ -56,9 +56,13 @@ async def test_experience_table_load(debug, mock_session, test_client, guild_fac
 
 @pytest.mark.drop_db
 async def test_experience_table_crud_operations(
-    debug, guild_factory, mock_session, test_client, campaign_factory, user_factory
+    debug, mocker, guild_factory, mock_session, test_client, campaign_factory, user_factory
 ):
     """Test experience table crud operations."""
+    mocker.patch(
+        "valentina.webui.blueprints.HTMXPartials.others.post_to_audit_log", return_value=None
+    )
+
     # Given: Create a guild, campaign and user with storyteller permissions
     # Guild and campaign are needed since XP is tracked per campaign
     guild = await guild_factory.build().insert()
@@ -88,8 +92,7 @@ async def test_experience_table_crud_operations(
     )
 
     # Then the request succeeds and experience is updated correctly
-    # TODO: This assertion passes locally but fails on CI, debug it
-    # assert response.status_code == 200
+    assert response.status_code == 200
 
     # And: Experience is correctly calculated and stored
     # Cool points are worth 10 XP each, so total XP should be:
