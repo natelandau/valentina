@@ -1,3 +1,9 @@
+## v3.3.1 (2024-12-27)
+
+### Fix
+
+- **webui**: fix broken tabs on characters and campaign pages (#225)
+
 ## v3.3.0 (2024-12-27)
 
 ### Feat
