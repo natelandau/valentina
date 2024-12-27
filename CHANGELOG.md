@@ -1,3 +1,31 @@
+## v3.3.0 (2024-12-27)
+
+### Feat
+
+- **webui**: set desperation and danger levels (#220)
+- **webui**: reorder campaign book chapters (#219)
+- **webui**: reorder campaign books (#218)
+- **webui**: allow killing/reviving characters (#217)
+- **webui**: add maintenance tasks to administration page (#216)
+- **webui**: admin interface for storytellers (#215)
+- add dictionary and auto-link terms (#214)
+- **webui**: storytellers and owners can delete characters (#213)
+- **webui**: upload and delete character images (#211)
+- **webui**: add xp on user profile pages (#209)
+
+### Fix
+
+- **webui**: fix broken character creation (#224)
+- **webui**: ui improvements (#222)
+- **webui**: error showing full create character form (#210)
+- **webui**: increase roll difficulties (#208)
+
+### Refactor
+
+- **webui**: simplify creating toasts (#223)
+- **webui**: refactor htmx partials (#221)
+- reuse code for character deletion (#212)
+
 ## v3.2.0 (2024-12-13)
 
 ### Feat
