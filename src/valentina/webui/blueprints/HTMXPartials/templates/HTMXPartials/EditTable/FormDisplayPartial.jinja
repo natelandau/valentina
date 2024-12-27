@@ -12,59 +12,59 @@
 <tr class="fade-me-out">
 
     <td colspan="{{ TableType.value.table_headers | length + 1 }}">
-        <div class="p-3 rounded-3 border bg-light w-75 mx-auto">
-            {% for field in form if field.type not in ["CSRFTokenField", "HiddenField", "SubmitField"] %}
+        <global.FormContainer width="50">
+        {% for field in form if field.type not in ["CSRFTokenField", "HiddenField", "SubmitField"] %}
 
-                {% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data else "" %}
+            {% set valid_css = " is-invalid" if field.errors else " is-valid" if field.raw_data else "" %}
 
-                {% if field.type == "BooleanField" %}
-                    <global.wtform.BooleanField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
-                {% elif field.type == "RadioField" %}
-                    <global.wtform.RadioField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
-                {% elif field.type == "ColorField" %}
-                    <global.wtform.ColorField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
-                {% elif field.type == "IntegerField" %}
-                    <global.wtform.IntegerField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
-                {% elif field.type in ["SelectField", "SelectMultipleField"] %}
-                    <global.wtform.SelectField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
-                {% elif field.type in ["IntegerRangeField", "DecimalRangeField"] %}
-                    <global.wtform.RangeField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
-                {% elif field.type in "TextAreaField" %}
-                    <global.wtform.TextAreaField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
-                {% else %}
-                    {# All other field types use text inputs #}
-                    <global.wtform.StringField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
-                {% endif %}
-            {% endfor %}
-
-            {# CSRF and Hidden fields #}
-            {% for field in form if field.type in ["CSRFTokenField","HiddenField"] %}{{ field() }}{% endfor %}
-            {% if method == "POST" %}
-                <button class="btn btn-success mb-1"
-                        hx-post="{{ url_for(TableType.value.route, item_id=item_id) }}"
-                        hx-include="closest tr"
-                        hx-target="closest tr"
-                        hx-swap="outerHTML swap:1s">Save</button>
-
-                <button class="btn btn-outline-secondary mb-1"
-                        hx-get="{{ url_for(TableType.value.route, item_id=item_id) }}"
-                        hx-include="closest tr"
-                        hx-target="closest tr"
-                        hx-swap="outerHTML swap:1s">Cancel</button>
-            {% elif method == "PUT" %}
-                <button class="btn btn-success mb-1"
-                        hx-put="{{ url_for(TableType.value.route) }}"
-                        hx-include="closest tr"
-                        hx-target="closest tr"
-                        hx-swap="outerHTML swap:1s">Save</button>
-
-                <button class="btn btn-outline-secondary mb-1"
-                        hx-get=""
-                        hx-include="closest tr"
-                        hx-target="closest tr"
-                        hx-swap="delete swap:1s">Cancel</button>
+            {% if field.type == "BooleanField" %}
+                <global.wtform.BooleanField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
+            {% elif field.type == "RadioField" %}
+                <global.wtform.RadioField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
+            {% elif field.type == "ColorField" %}
+                <global.wtform.ColorField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
+            {% elif field.type == "IntegerField" %}
+                <global.wtform.IntegerField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
+            {% elif field.type in ["SelectField", "SelectMultipleField"] %}
+                <global.wtform.SelectField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
+            {% elif field.type in ["IntegerRangeField", "DecimalRangeField"] %}
+                <global.wtform.RangeField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
+            {% elif field.type in "TextAreaField" %}
+                <global.wtform.TextAreaField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
+            {% else %}
+                {# All other field types use text inputs #}
+                <global.wtform.StringField field={{ field }} join_label={{ join_label }} floating_label={{ floating_label }} />
             {% endif %}
-        </div>
+        {% endfor %}
+
+        {# CSRF and Hidden fields #}
+        {% for field in form if field.type in ["CSRFTokenField","HiddenField"] %}{{ field() }}{% endfor %}
+        {% if method == "POST" %}
+            <button class="btn btn-success mb-1"
+                    hx-post="{{ url_for(TableType.value.route, item_id=item_id) }}"
+                    hx-include="closest tr"
+                    hx-target="closest tr"
+                    hx-swap="outerHTML swap:1s">Save</button>
+
+            <button class="btn btn-outline-secondary mb-1"
+                    hx-get="{{ url_for(TableType.value.route, item_id=item_id) }}"
+                    hx-include="closest tr"
+                    hx-target="closest tr"
+                    hx-swap="outerHTML swap:1s">Cancel</button>
+        {% elif method == "PUT" %}
+            <button class="btn btn-success mb-1"
+                    hx-put="{{ url_for(TableType.value.route) }}"
+                    hx-include="closest tr"
+                    hx-target="closest tr"
+                    hx-swap="outerHTML swap:1s">Save</button>
+
+            <button class="btn btn-outline-secondary mb-1"
+                    hx-get=""
+                    hx-include="closest tr"
+                    hx-target="closest tr"
+                    hx-swap="delete swap:1s">Cancel</button>
+        {% endif %}
+        </global.FormContainer>
 
     </td>
 </tr>

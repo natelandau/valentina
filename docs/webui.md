@@ -46,6 +46,18 @@ The session object is used to store information about each user's session. Speci
 
 The following primitives are available within all jinja templates. These are created using [JinjaX](https://jinjax.scaletti.dev/) partials and included in templates with a similar format to HTML tags.
 
+### FormContainer
+
+To keep forms styled consistently, use the `FormContainer` primitive. This will wrap the form in a div with a consistent width and margin and add an `id` attribute of `form-container` to the surrounding div.
+
+```jinja
+<global.FormContainer width="50">
+    <form>
+        ...
+    </form>
+</global.FormContainer>
+```
+
 ### Create a toast
 
 Possible levels are: `success`, `error`, `warning`, `info`. There are two ways to create a toast message:

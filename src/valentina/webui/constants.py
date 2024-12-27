@@ -5,6 +5,13 @@ from enum import Enum
 from typing import Union
 
 
+class CharCreateType(Enum):
+    """Enum for the type of character creation."""
+
+    STORYTELLER = "storyteller"
+    PLAYER = "player"
+
+
 @dataclass
 class EditableItem:
     """Class for an item that can be edited.

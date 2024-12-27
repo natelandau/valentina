@@ -1,0 +1,16 @@
+{# def
+    form:QuartForm,
+    post_url:str = "",
+#}
+
+<PageLayout title="Create Full Character - Class Specifics" _attrs={{ attrs }}>
+    <global.PageTitle>Create Full Character - Class Specifics</global.PageTitle>
+
+    <global.FormContainer width="50">
+
+    <form method="post" novalidate encoding="application/x-www-form-urlencoded">
+        <global.WTFormElements form={{ form }}  floating_label={{ True }} />
+    </form>
+
+    </global.FormContainer>
+</PageLayout>

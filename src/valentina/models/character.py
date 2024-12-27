@@ -309,6 +309,25 @@ class Character(Document):
 
         return trait
 
+    async def delete_trait(self, trait_id: str) -> None:
+        """Delete a trait from the character and update the database.
+
+        Remove a trait from both the character's trait list and the database. This is useful
+        when a trait needs to be completely removed rather than just having its value changed.
+
+        Args:
+            trait_id (str): The unique identifier of the trait to delete.
+
+        Returns:
+            None
+        """
+        trait = await CharacterTrait.get(trait_id)
+        if trait:
+            await trait.delete()
+
+        self.traits = [trait for trait in self.traits if str(trait.id) != str(trait_id)]  # type: ignore [attr-defined]
+        await self.save()
+
     def concept_description(self) -> str:
         """Return a text description of the character's concept and special abilities.
 

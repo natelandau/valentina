@@ -4,7 +4,7 @@
 #}
 <div id="character-images-body" class="fade-me-out">
     <global.Subtitle title="Add Image" />
-
+    <global.FormContainer width="50">
     <form method="post"
           id="profile-form"
           hx-post="{{ url_for('partials.characterimages', character_id=character_id) }}"
@@ -15,4 +15,5 @@
           enctype="multipart/form-data">
         <global.WTFormElements form={{ form }} join_label={{ False }} floating_label={{ False }} />
     </form>
+    </global.FormContainer>
 </div>

@@ -24,6 +24,7 @@ class SpendPointsType(Enum):
     FREEBIE = "freebie"
     EXPERIENCE = "experience"
     STORYTELLER = "storyteller"
+    INITIAL_BUILD = "initial_build"
 
 
 class SpendPoints(MethodView):
@@ -85,7 +86,7 @@ class SpendPoints(MethodView):
                 downgraded_trait = await trait_modifier.downgrade_with_xp(
                     trait, campaign, difference
                 )
-            case SpendPointsType.STORYTELLER:
+            case SpendPointsType.STORYTELLER | SpendPointsType.INITIAL_BUILD:
                 if trait_modifier.can_trait_be_downgraded(trait, difference):
                     trait.value = new_value
                     downgraded_trait = await character.add_trait(trait)
@@ -181,7 +182,7 @@ class SpendPoints(MethodView):
             case SpendPointsType.EXPERIENCE:
                 campaign = await Campaign.get(character.campaign)
                 upgraded_trait = await trait_modifier.upgrade_with_xp(trait, campaign, difference)
-            case SpendPointsType.STORYTELLER:
+            case SpendPointsType.STORYTELLER | SpendPointsType.INITIAL_BUILD:
                 if trait_modifier.can_trait_be_upgraded(trait, difference):
                     trait.value = new_value
                     upgraded_trait = await character.add_trait(trait)
@@ -190,7 +191,7 @@ class SpendPoints(MethodView):
 
         player_message = (
             f" for {cost} {self.spend_type.value} points"
-            if self.spend_type != SpendPointsType.STORYTELLER
+            if self.spend_type not in (SpendPointsType.STORYTELLER, SpendPointsType.INITIAL_BUILD)
             else ""
         )
         await post_to_audit_log(
@@ -233,7 +234,12 @@ class SpendPoints(MethodView):
         )
 
         trait_builder = CharacterSheetBuilder(character)
-        all_traits = trait_builder.fetch_character_plus_all_class_traits()
+        if self.spend_type == SpendPointsType.INITIAL_BUILD:
+            all_traits = trait_builder.fetch_sheet_character_traits(show_zeros=True)
+            show_delete = False
+        else:
+            all_traits = trait_builder.fetch_character_plus_all_class_traits()
+            show_delete = False
 
         return catalog.render(
             "character_edit.SpendPoints",
@@ -243,6 +249,7 @@ class SpendPoints(MethodView):
             form=self.form,
             traits=all_traits,
             post_url=url_for(f"character_edit.{self.spend_type.value}", character_id=character_id),
+            show_delete=show_delete,
         )
 
     async def post(self, character_id: str = "") -> str:
@@ -261,13 +268,20 @@ class SpendPoints(MethodView):
         if not character:
             abort(HTTPStatus.BAD_REQUEST.value)
 
+        url = url_for(f"character_edit.{self.spend_type.value}", character_id=str(character.id))
+
         form = await request.form
+
+        for trait_id, value in form.items():
+            if value == "DELETE":
+                await character.delete_trait(trait_id)
+                await flash("Trait deleted", "success")
+                return f'<script>window.location.href="{url}"</script>'
 
         try:
             trait, target_value = await self._parse_form_data(character, form)
         except ValueError as e:
             await flash(str(e), "error")
-            url = url_for(f"character_edit.{self.spend_type.value}", character_id=str(character.id))
             return f'<script>window.location.href="{url}"</script>'
 
         success_msg = ""
@@ -284,9 +298,7 @@ class SpendPoints(MethodView):
             errors.TraitAtMinValueError,
         ) as e:
             await flash(str(e), "error")
-            url = url_for(f"character_edit.{self.spend_type.value}", character_id=str(character.id))
             return f'<script>window.location.href="{url}"</script>'
 
         await flash(success_msg, "success")
-        url = url_for(f"character_edit.{self.spend_type.value}", character_id=str(character.id))
         return f'<script>window.location.href="{url}"</script>'

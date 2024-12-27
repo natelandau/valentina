@@ -60,7 +60,8 @@ class CharacterCreateStep1(QuartForm):
     dob = DateField(
         "Date of Birth", description="Used to calculate age", validators=[Optional()], default=""
     )
-    submit = SubmitField("Next")
+    submit = SubmitField("Continue to Step 2")
+    cancel = SubmitField("Cancel")
 
     async def async_validators_lastname(self, lastname: StringField) -> None:
         """Check if the first + lastname are unique in the database."""
@@ -114,7 +115,8 @@ class VampireClassSpecifics(QuartForm):
         validators=[Optional()],
         filters=[str.strip, str.title],
     )
-    submit = SubmitField("Next")
+    submit = SubmitField("Continue to Step 3")
+    cancel = SubmitField("Cancel")
 
 
 class WerewolfClassSpecifics(QuartForm):
@@ -138,7 +140,8 @@ class WerewolfClassSpecifics(QuartForm):
         choices=[("", "-- Select --")] + [(x.name, x.value.name) for x in WerewolfTribe],
         validators=[DataRequired()],
     )
-    submit = SubmitField("Next")
+    submit = SubmitField("Continue to Step 3")
+    cancel = SubmitField("Cancel")
 
 
 class HunterClassSpecifics(QuartForm):
@@ -152,4 +155,5 @@ class HunterClassSpecifics(QuartForm):
         choices=[("", "-- Select --")] + [(x.name, x.value.name) for x in HunterCreed],
         validators=[DataRequired()],
     )
-    submit = SubmitField("Next")
+    submit = SubmitField("Continue to Step 3")
+    cancel = SubmitField("Cancel")
