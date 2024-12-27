@@ -106,15 +106,18 @@ class CharacterView(MethodView):
         Raises:
             404: If the requested tab is not recognized.
         """
+        # Use pattern matching to handle different tab views since each tab requires unique data and rendering
         match CharacterViewTab.get_member_by_value(request.args.get("tab", None)):
             case CharacterViewTab.SHEET:
                 sheet_builder = CharacterSheetBuilder(character=character)
+                # Hide zero values to reduce visual clutter in the character sheet
                 sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
                 storyteller_data = await is_storyteller()
                 profile_data = await sheet_builder.fetch_sheet_profile(
                     storyteller_view=storyteller_data
                 )
 
+                # Wrap catalog.render in run_sync since it's a blocking operation
                 result = await run_sync(
                     lambda: catalog.render(
                         "character_view.Sheet",
@@ -125,9 +128,11 @@ class CharacterView(MethodView):
                     )
                 )()
 
+                # Link game terms in the rendered HTML to their dictionary entries
                 return await link_terms(result, link_type="html")
 
             case CharacterViewTab.BIOGRAPHY:
+                # Allow editing only for storytellers and character owners
                 result = await run_sync(
                     lambda: catalog.render(
                         "character_view.Biography",
@@ -154,9 +159,11 @@ class CharacterView(MethodView):
                 return await link_terms(result, link_type="html")
 
             case CharacterViewTab.IMAGES:  # pragma: no cover
+                # Images are handled by a separate route to keep the code modular
                 return redirect(url_for("partials.characterimages", character_id=character.id))
 
             case CharacterViewTab.STATISTICS:
+                # Statistics require guild context since they're tracked per-guild
                 stats_engine = Statistics(guild_id=session["GUILD_ID"])
 
                 return catalog.render(
@@ -187,17 +194,19 @@ class CharacterView(MethodView):
         character_owner = await User.get(character.user_owner, fetch_links=False)
         campaign = await fetch_active_campaign(campaign_id=character.campaign)
 
+        # Handle HTMX tab switching requests separately from full page loads
         if request.headers.get("HX-Request") and request.args.get("tab"):
             return await self._handle_tabs(character, character_owner=character_owner)
 
         sheet_builder = CharacterSheetBuilder(character=character)
+        # Hide zero-value traits to reduce visual noise
         sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
         user_is_storyteller = await is_storyteller()
         profile_data = await sheet_builder.fetch_sheet_profile(
             storyteller_view=user_is_storyteller, is_web_ui=True
         )
 
-        # We want to link to the user profile from the character view so we add the link here
+        # Enhance owner name with profile link for better navigation and UX
         if owner_name := profile_data.get("Owner"):
             profile_data["Owner"] = (
                 f" <a href='{url_for('user_profile.view', user_id=character_owner.id)}'>{owner_name}</a>"
@@ -207,6 +216,7 @@ class CharacterView(MethodView):
             character, character_owner, campaign
         )
 
+        # Synchronously render template to avoid async issues with Jinja
         result = await run_sync(
             lambda: catalog.render(
                 "character_view.Main",
@@ -223,4 +233,5 @@ class CharacterView(MethodView):
             )
         )()
 
+        # Process dictionary term links in the rendered HTML
         return await link_terms(result, link_type="html")

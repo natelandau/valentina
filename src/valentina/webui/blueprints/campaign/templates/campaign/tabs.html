@@ -1,6 +1,6 @@
 <global.TabGroup>
 {% for tab in tabs %}
 
-    <global.TabItem url={{ url_for('campaign.view', campaign_id=campaign.id, tab=tab.value) }} text={{ tab.value | title }} number={{ loop.index }} target="#main-content" />
+    <global.TabItem url={{ url_for('campaign.view', campaign_id=campaign.id, tab=tab.value) }} text={{ tab.value | title }} number={{ loop.index }} target="#campaign-content" />
 {% endfor %}
 </global.TabGroup>
