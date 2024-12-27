@@ -3,6 +3,6 @@
 
     {% set tab_title = "Character Sheet" if tab.name == "SHEET" else tab.value %}
 
-    <global.TabItem url={{ url_for('character_view.view', character_id=character.id, tab=tab.value) }} text={{ tab_title | title }} number={{ loop.index }} target="#main-content" />
+    <global.TabItem url={{ url_for('character_view.view', character_id=character.id, tab=tab.value) }} text={{ tab_title | title }} number={{ loop.index }} target="#character-content" />
 {% endfor %}
 </global.TabGroup>
