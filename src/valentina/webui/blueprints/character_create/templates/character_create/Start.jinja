@@ -2,6 +2,7 @@
     selected_campaign: Campaign | None,
     available_experience: int | None,
     rng_class_snippet: str,
+    CharCreateType: CharCreateType,
 #}
 <PageLayout title="Create Character" _attrs={{ attrs }}>
     <global.PageTitle>Create New Character</global.PageTitle>
@@ -68,28 +69,20 @@
                     <div class="card-footer">
                         {% if selected_campaign %}
                             {% if session["IS_STORYTELLER"] %}
-                                <button class="btn btn-primary my-2"
-                                        hx-get="{{- url_for('character_create.create_1', character_type='storyteller', campaign_id=selected_campaign.id) -}}"
-                                        hx-target="#create-character-container"
-                                        hx-indicator="#spinner-storyteller">
+                                <a class="btn btn-primary my-2"
+                                   href="{{- url_for('character_create.create_1', character_type=CharCreateType.STORYTELLER.value, campaign_id=selected_campaign.id) -}}">
                                     Create Storyteller Character
-                                </button>
+                                </a>
                                 <img id="spinner-storyteller"
                                      src="{{ url_for('static', filename='spinners/bars.svg') }}"
                                      class="htmx-indicator" />
                             {% endif %}
-                            <button class="btn btn-primary my-2"
-                                    hx-get="{{- url_for('character_create.create_1', character_type='player', campaign_id=selected_campaign.id) -}}"
-                                    hx-target="#create-character-container"
-                                    hx-indicator="#spinner-player">
+                            <a class="btn btn-primary my-2"
+                               href="{{- url_for('character_create.create_1', character_type=CharCreateType.PLAYER.value, campaign_id=selected_campaign.id) -}}">
                                 Create
                                 {% if session["IS_STORYTELLER"] %}Player{% endif %}
                                 Character
-                            </button>
-                            <img id="spinner-storyteller"
-                                 src="{{ url_for('static', filename='spinners/bars.svg') }}"
-                                 class="htmx-indicator" />
-
+                            </a>
                         {% else %}
                             <span class="d-inline-block"
                                   tabindex="0"
@@ -153,12 +146,12 @@
                                     <button class="btn btn-primary my-2"
                                             hx-target="#create-character-container"
                                             hx-action="click"
-                                            hx-get="{{ url_for('character_create.rng_storyteller', character_type='storyteller',campaign_id=selected_campaign.id) }}">
+                                            hx-get="{{ url_for('character_create.rng_storyteller', character_type=CharCreateType.STORYTELLER.value,campaign_id=selected_campaign.id) }}">
                                         Roll a Storyteller Character
                                     </button>
                                 {% endif %}
                                 <a class="btn btn-primary my-2"
-                                   href="{{ url_for('character_create.rng_player', character_type='player',campaign_id=selected_campaign.id) }}">
+                                   href="{{ url_for('character_create.rng_player', character_type=CharCreateType.PLAYER.value,campaign_id=selected_campaign.id) }}">
                                     Roll a
                                     {% if session["IS_STORYTELLER"] %}Player{% endif %}
                                     Character

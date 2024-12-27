@@ -11,10 +11,8 @@
         <global.PageTitle>Edit {{ character.full_name }}</global.PageTitle>
     </div>
 
-    <div class="d-flex justify-content-center align-items-center ">
-        <div class="py-4 px-5 mt-5 rounded-3 border shadow-lg w-50"
-             id="form-container">
-            <character_edit.ProfileForm form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} post_url={{ post_url }} character={{ character }} />
-        </div>
-    </div>
+    <global.FormContainer width="50">
+    <character_edit.ProfileForm form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} post_url={{ post_url }} character={{ character }} />
+    </global.FormContainer>
+
 </PageLayout>

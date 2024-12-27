@@ -8,40 +8,38 @@
 
 {% set target_div = "#" ~ TextType.value.name | upper | replace(' ', '-') ~ '-TEXTBODY' %}
 
-<div class="d-flex justify-content-center align-items-center mb-5">
-    <div class="py-4 px-5 mt-5 rounded-3 border shadow-lg w-50">
+<global.FormContainer width="50">
 
-        {% if form.title is defined and form.title %}<h2>{{ form.title }}</h2>{% endif %}
+{% if form.title is defined and form.title %}<h2>{{ form.title }}</h2>{% endif %}
 
-        {% if form.description is defined and form.description %}<p>{{ form.description }}</p>{% endif %}
+{% if form.description is defined and form.description %}<p>{{ form.description }}</p>{% endif %}
 
-        <global.WTFormElements form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} />
+<global.WTFormElements form={{ form }} join_label={{ join_label }} floating_label={{ floating_label }} />
 
-        {% if method == "POST" %}
-            <button class="btn btn-success mb-1 me-2"
-                    hx-post="{{ url_for(TextType.value.route) }}"
-                    hx-include="closest {{ target_div }}"
-                    hx-target="closest {{ target_div }}"
-                    hx-swap="innerHTML swap:1s">Save</button>
+{% if method == "POST" %}
+    <button class="btn btn-success mb-1 me-2"
+            hx-post="{{ url_for(TextType.value.route) }}"
+            hx-include="closest {{ target_div }}"
+            hx-target="closest {{ target_div }}"
+            hx-swap="innerHTML swap:1s">Save</button>
 
-            <button class="btn btn-outline-secondary mb-1"
-                    hx-get="{{ url_for(TextType.value.route) }}"
-                    hx-include="closest {{ target_div }}"
-                    hx-target="closest {{ target_div }}"
-                    hx-swap="innerHTML swap:1s">Cancel</button>
-        {% elif method == "PUT" %}
-            <button class="btn btn-success mb-1 me-2"
-                    hx-put="{{ url_for(TextType.value.route) }}"
-                    hx-include="closest {{ target_div }}"
-                    hx-target="closest {{ target_div }}"
-                    hx-swap="innerHTML swap:1s">Save</button>
+    <button class="btn btn-outline-secondary mb-1"
+            hx-get="{{ url_for(TextType.value.route) }}"
+            hx-include="closest {{ target_div }}"
+            hx-target="closest {{ target_div }}"
+            hx-swap="innerHTML swap:1s">Cancel</button>
+{% elif method == "PUT" %}
+    <button class="btn btn-success mb-1 me-2"
+            hx-put="{{ url_for(TextType.value.route) }}"
+            hx-include="closest {{ target_div }}"
+            hx-target="closest {{ target_div }}"
+            hx-swap="innerHTML swap:1s">Save</button>
 
-            <button class="btn btn-outline-secondary mb-1"
-                    hx-get=""
-                    hx-include="closest {{ target_div }}"
-                    hx-target="closest {{ target_div }}"
-                    hx-swap="delete swap:1s">Cancel</button>
-        {% endif %}
+    <button class="btn btn-outline-secondary mb-1"
+            hx-get=""
+            hx-include="closest {{ target_div }}"
+            hx-target="closest {{ target_div }}"
+            hx-swap="delete swap:1s">Cancel</button>
+{% endif %}
 
-    </div>
-</div>
+</global.FormContainer>

@@ -5,14 +5,31 @@
     traits: list[SheetSection],
     spend_type: SpendPointsType,
     campaign_experience: int = 0,
+    show_delete: bool = False,
 #}
 
-<PageLayout title="Spend {{ spend_type.value }} points" _attrs={{ attrs }}>
-    <global.PageTitle right_button={{ True }} right_button_text="Go Back" right_button_url={{ url_for('character_view.view', character_id=character.id) }}>Update {{ character.name }}</global.PageTitle>
+{% if spend_type.name == "INITIAL_BUILD" %}
+
+    {% set title = "Initial Build" %}
+
+    {% set button_text = "Complete Character Creation" %}
+
+{% else %}
+
+    {% set title = "Spend " ~ spend_type.value ~ " points" %}
+
+    {% set button_text = "Go Back" %}
+
+{% endif %}
+
+<PageLayout title={{ title }} _attrs={{ attrs }}>
+    <global.PageTitle right_button={{ True }} right_button_text={{ button_text }} right_button_url={{ url_for('character_view.view', character_id=character.id) }}>Update {{ character.name }}</global.PageTitle>
 
     <div class="alert alert-info">
         {% if spend_type.name == "STORYTELLER" %}
             Storytellers can update any character without needing to spend experience.
+        {% elif spend_type.name == "INITIAL_BUILD" %}
+            Enter the traits for your character.  Once this form is submitted, any further changes will require experience points.
         {% else %}
             Spend your {{ spend_type.value }} points to finalize your character.  Any trait values changed downward will have their value added to your {{ spend_type.value }} points.
             <br>
@@ -41,7 +58,7 @@
                         {% set current_value = trait.value if trait.value is defined else 0 %}
 
                         <form>
-                            <global.valentinaform.TraitRadioToggle form={{ form }} name={{ computed_id | string }} label={{ trait.name }} max_value={{ trait.max_value }} current-value={{ current_value }} hx-post={{ post_url }} hx_trigger="click" />
+                            <global.valentinaform.TraitRadioToggle form={{ form }} name={{ computed_id | string }} label={{ trait.name }} max_value={{ trait.max_value }} current-value={{ current_value }} hx-post={{ post_url }} hx_trigger="click" show_delete={{ show_delete }} />
                         </form>
                     {% endfor %}
                     <form hx-post="{{ post_url }}" method="post">

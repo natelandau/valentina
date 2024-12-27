@@ -7,6 +7,7 @@
     hx_trigger:str = "",
     hx_post:str = "",
     hx_target:str = "",
+    show_delete:bool = False,
 #}
 
 {% set max_val_int = max_value | int %}
@@ -15,7 +16,26 @@
 
 <div class="btn-toolbar mb-2" role="toolbar">
     <div class="btn-group btn-group-sm" role="group">
+
         <button type="button" class="btn btn-secondary" style="width: 7rem;">{{ label }}</button>
+        {% if show_delete -%}
+
+            <button type="button"
+                    class="btn btn-outline-danger"
+                    id="{{ name }}_DELETE"
+                    name="{{ name }}"
+                    value="DELETE"
+                    {% if hx_trigger -%}hx-trigger="{{ hx_trigger }}"{%- endif %}
+                    {% if hx_post -%}hx-post="{{ hx_post }}"{%- endif %}
+                    {% if hx_target -%}hx-target="{{ hx_target }}"{%- endif %}>
+                <span class="d-inline-block"
+                      tabindex="0"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Delete this trait from your character">
+                    <i class="fa-solid fa-trash-can"></i>
+                </span>
+            </button>
+        {% endif %}
         {% for i in range(max_val_int + 1) %}
             {% if i == current_value_int -%}
                 <button type="button" class="btn btn-primary" disabled>{{ i }}</button>
@@ -31,5 +51,6 @@
             {% endif %}
 
         {% endfor %}
+
     </div>
 </div>
