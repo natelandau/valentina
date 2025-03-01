@@ -71,10 +71,10 @@ class Misc(commands.Cog):
             name="",
             value=f"""\
 ```scala
-Created: {created_on.humanize()} ({created_on.format('YYYY-MM-DD')})
+Created: {created_on.humanize()} ({created_on.format("YYYY-MM-DD")})
 Owner  : {ctx.guild.owner.display_name}
 Members: {ctx.guild.member_count}
-Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for x in ctx.guild.roles if not x.is_bot_managed() and not x.is_integration() and not x.is_default()][::-1])}
+Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for x in ctx.guild.roles if not x.is_bot_managed() and not x.is_integration() and not x.is_default()][::-1])}
 ```
 """,
             inline=False,
@@ -217,8 +217,8 @@ Roles  : {', '.join([f'@{x.name}' if not x.name.startswith('@') else x.name for 
 
 ### User Information
 `ID             :` {target.id}
-`Account Created:` {arrow.get(target.created_at).humanize()} `({arrow.get(target.created_at).format('YYYY-MM-DD')})`
-`Joined Server  :` {arrow.get(target.joined_at).humanize() if isinstance(target, discord.Member) else ''} `({arrow.get(target.joined_at).format('YYYY-MM-DD') if isinstance(target, discord.Member) else ''})`
+`Account Created:` {arrow.get(target.created_at).humanize()} `({arrow.get(target.created_at).format("YYYY-MM-DD")})`
+`Joined Server  :` {arrow.get(target.joined_at).humanize() if isinstance(target, discord.Member) else ""} `({arrow.get(target.joined_at).format("YYYY-MM-DD") if isinstance(target, discord.Member) else ""})`
 `Roles          :` {roles}
 
 ### Gameplay

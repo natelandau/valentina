@@ -171,9 +171,10 @@ This project uses [uv](https://docs.astral.sh/uv/) to manage Python requirements
 
 -   This project follows the [Conventional Commits](https://www.conventionalcommits.org/) standard to automate [Semantic Versioning](https://semver.org/) and [Keep A Changelog](https://keepachangelog.com/) with [Commitizen](https://github.com/commitizen-tools/commitizen).
     -   When you're ready to commit changes run `cz c`
--   Run `poe` from within the development environment to print a list of [Poe the Poet](https://github.com/nat-n/poethepoet) tasks available to run on this project. Common commands:
-    -   `poe lint` runs all linters
-    -   `poe test` runs all tests with Pytest
+-   Run `duty --help` from within the development environment to print a list of [Duty](https://pawamoy.github.io/duty/) tasks available to run on this project. Common commands:
+    -   `duty lint` runs all linters
+    -   `duty test` runs all tests with Pytest
+    -   `duty clean` cleans the project of temporary files
 -   Run `uv add {package}` from within the development environment to install a run time dependency and add it to `pyproject.toml` and `uv.lock`.
 -   Run `uv remove {package}` from within the development environment to uninstall a run time dependency and remove it from `pyproject.toml` and `uv.lock`.
 

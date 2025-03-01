@@ -6,8 +6,8 @@ When pycord updated to v2.5.0 these tests broke. To fix them, the ctx needs to b
 
 import pytest
 from rich.console import Console
-from tests.factories import *
 
+from tests.factories import *
 from valentina.constants import TraitCategory
 from valentina.discord.cogs.experience import Experience
 from valentina.models import CampaignExperience, CharacterTrait, User

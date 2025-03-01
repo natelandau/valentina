@@ -1,0 +1,68 @@
+---
+description: writing comments in code
+globs: **/*.py
+---
+# Writing comments
+
+Standards for writing comments within the codebase to enhance understanding and avoid clutter.
+
+<rule>
+name: write_explanatory_comments
+description: Rules for writing useful inline comments
+
+actions:
+  - type: write
+    message: |
+        When writing inline comments, follow these rules:
+
+        1. Use comments sparingly, and when you do write comments, make them meaningful.
+        2. Don't comment on obvious things. Excessive or unclear comments can clutter the codebase and become outdated.
+        3. Use comments to convey the "why" behind specific actions or explain unusual behavior and potential pitfalls.
+        4. Provide meaningful information about the function's behavior and explain unusual behavior and potential pitfalls.
+        5. Use # for single-line comments and ''' for multi-line comments.
+        6. If a specific behavior is described in the docstring do not write a comment explaining it.
+
+  - type: reject
+    message: |
+        Reject comments which:
+
+        1. Document self-evident code
+        2. Do not explain why a decision was made
+
+examples:
+  - input: |
+
+        # Bad: Documents self-evident code which adds no value
+        ```python
+        # Split the string into lines
+        lines = multiline_string.splitlines()
+
+        # Remove the last line and rejoin the remaining lines
+        return "\n".join(lines[:-2])
+
+        # Set the price to 20
+        price = 20
+        ```
+
+        # Good: Documents why code is used
+        ```python
+        # Process items in reverse. This ensures that the most recent data is prioritized over older data which matches user expectations
+        for items in reversed(items):
+            ...
+
+        # Set the price to 20 to match the competitor's pricing strategy
+        price = 20
+        ```
+
+        # Good: Clarifies complex logic
+        ```python
+        # This loop uses the Fisher-Yates algorithm to shuffle the array
+        for i in range(len(arr) - 1, 0, -1):
+            j = random.randint(0, i)
+            arr[i], arr[j] = arr[j], arr[i]
+        ```
+metadata:
+  priority: high
+  version: 1.0
+</rule>
+

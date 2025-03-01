@@ -1,0 +1,26 @@
+---
+description: use pathlib
+globs: **/*.py
+---
+
+# Use pathlib
+Use the pathlib module instead of the os module whenever possible.
+
+### Examples
+
+#### bad
+```python
+import os
+from pathlib import Path
+
+symlink_path = "/some/file"
+path_to_original_file = Path(os.readlink(symlink_path))
+```
+
+#### Good
+```python
+from pathlib import Path
+
+symlink_path = "/some/file"
+path_to_original_file = symlink_path.readlink()
+```

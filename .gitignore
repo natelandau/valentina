@@ -52,7 +52,7 @@ notebooks/
 # Node.js
 node_modules/
 
-# Poetry
+# packaging
 .venv/
 dist/
 

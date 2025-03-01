@@ -1,0 +1,105 @@
+---
+description: Writing pytest tests, editing pytest tests
+globs: tests/**/*.py
+---
+# Standards for writing pytest tests
+
+Rules for writing pytest tests following best practices.
+
+<rule>
+name: pytest_test_rules
+description: Standards for writing pytest tests
+globs: tests/**/*.py
+
+actions:
+  - type: write
+    message: |
+        When writing pytest tests, follow these rules:
+
+        1. Write single sentence docstrings in imperative voice
+           ```python
+           def test_backup_file_creates_backup(test_file: Path) -> None:
+               """Test backup file with .bak extension."""
+           ```
+
+        2. Structure test body with given/when/then comments
+           ```python
+           def test_backup_file_increments_backup_number(test_file: Path) -> None:
+               """Create incremental backups when backup already exists."""
+               # Given: A backup file already exists
+               first_backup = test_file.parent / (test_file.name + ".bak")
+               first_backup.write_text("existing backup")
+
+               # When: Creating another backup
+               backup_file(test_file)
+
+               # Then: A new backup is created with incremented number
+               expected_backup = test_file.parent / (test_file.name + ".bak1")
+               assert expected_backup.exists()
+               assert first_backup.exists()
+               assert not test_file.exists()
+           ```
+
+        3. Use pytest-mock plugin. Do not use unittest
+           ```python
+           # Bad: Using unittest.mock
+           from unittest.mock import Mock, patch
+
+           @patch('module.function')
+           def test_something(mock_function):
+               mock_function.return_value = 'mocked'
+
+           # Good: Using pytest-mock
+           def test_something(mocker):
+               mock_function = mocker.patch('module.function')
+               mock_function.return_value = 'mocked'
+           ```
+        4. Include unit and integration tests.
+
+  - type: reject
+    message: |
+        When writing pytest tests, reject:
+
+        1. Multi-sentence docstrings
+        2. Tests without given/when/then comments
+
+examples:
+  - input: |
+      # Bad: Does not follow rules
+      ```python
+      from unittest.mock import patch
+
+      @patch('module.function')
+      def test_backup_file(tmp_path):
+          """Test that backup file works correctly. This test ensures proper backup creation."""
+          file = tmp_path / "test.txt"
+          file.write_text("test")
+          backup_file(file)
+          assert (tmp_path / "test.txt.bak").exists()
+      ```
+
+      # Good: Follows the rules
+      ```python
+      def test_backup_file_creates_backup(tmp_path: Path, mocker) -> None:
+          """Create a backup file with .bak extension."""
+          # Given a constant return from module.function
+          mock_function = mocker.patch('module.function')
+          mock_function.return_value = 'mocked'
+
+          # Given: A test file exists
+          file = tmp_path / "test.txt"
+          file.write_text("test")
+
+          # When: Creating a backup
+          backup_file(file)
+
+          # Then: Backup file exists and original is moved
+          expected_backup = file.parent / (file.name + ".bak")
+          assert expected_backup.exists()
+          assert not file.exists()
+      ```
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

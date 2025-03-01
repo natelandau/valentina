@@ -15,5 +15,5 @@ blueprint.add_url_rule(
 blueprint.add_url_rule(
     "/dictionary/term/<string:term>",
     view_func=DictionaryTermView.as_view("term"),
-    methods=["GET", "POST", "PUT" "DELETE"],
+    methods=["GET", "POST", "PUT", "DELETE"],
 )
