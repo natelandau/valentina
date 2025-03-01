@@ -11,7 +11,6 @@ from quart.typing import TestClientProtocol
 from tests.factories import *
 from valentina.constants import WebUIEnvironment
 from valentina.models import Campaign, Character
-from valentina.utils import console
 from valentina.webui import create_app
 from valentina.webui.utils.helpers import CharacterSessionObject
 

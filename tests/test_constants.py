@@ -6,7 +6,6 @@ import pytest
 from valentina.constants import (
     CharacterConcept,
     CharClass,
-    CharClassValue,
     HunterCreed,
     TraitCategory,
     VampireClan,

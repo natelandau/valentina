@@ -1,0 +1,94 @@
+---
+description: Writing python docstrings, Editing python docstrings
+globs: *.py
+---
+# Writing python docstrings
+
+Rules for writing Python docstrings
+
+<rule>
+name: write_descriptive_docstrings
+description: Rules for writing python docstrings
+
+actions:
+  - type: write
+    message: | 
+        When writing docstrings, follow these rules.
+
+            1. Read and understand the entire function or class
+            2. Always use Google format docstrings
+            3. Always include Types with arguments
+               ```
+               Arguments:
+                    num (int): a number
+                ```  
+            5. Do not document return when nothing is returned
+            6. Only write in imperative voice. No Exceptions! 
+            7. Never say "This function does..." Only use imperative voice.
+            8. Docstrings should be descriptive and explain why a developer would use the function, not just what it does
+            8, Do not use line wraps and newlines within paragraphs.
+            9. Do not included raised exceptions unless they are explicitly raised in the code
+
+  - type: reject
+    message: |
+        When writing docstrings, reject text matching these rules
+
+            1. Text that is not written in imperative voice
+            2. Describing returns when nothing is returned
+               ```
+               Returns:
+                    None 
+                ```
+            3. Arguments without types
+               ```
+               Arguments:
+                    num: a number
+                ``` 
+
+examples:
+  - input: |
+        # Bad: Does not follow rules
+        ```
+        def read_config(path: Path = "config.toml") -> None:
+            """This function finds files in a specified directory that match a list of glob patterns
+
+            Use this function to search the given path for files matching any of the glob patterns provided 
+            in globs. If no globs are provided, returns all files in the directory.
+
+            Arguments:
+                path: The root directory where the search will be conducted.
+                globs: A list of glob patterns to match files (e.g., "*.txt", "*.py"). 
+                ignore_dotfiles: Whether to ignore files that start with a dot. 
+
+            Returns:
+                A list of Path objects representing the files that match the glob patterns.
+            """
+        ```
+
+        # Good: Follows the rules
+        ```
+        def read_config(path: Path = "config.toml") -> None:
+            """Read and validate the TOML configuration file that maps repository names to paths.
+
+            Search the given `path` for files matching any of the glob patterns provided in `globs`. If no globs are provided, returns all files in the directory. 
+            
+            Args:
+                path (Path): The root directory where the search will be conducted.
+                globs (list[str] | None, optional): A list of glob patterns to match files (e.g., "*.txt", "*.py"). If None, returns all files. Defaults to None.
+                ignore_dotfiles (bool, optional): Whether to ignore files that start with a dot. Defaults to False.
+
+            Returns:
+                list[Path]: A list of Path objects representing the files that match the glob patterns.
+
+            Raises:
+                cappa.Exit: If the config file doesn't exist, contains invalid TOML, or has invalid repository paths
+            """
+        ```
+
+metadata:
+  priority: high
+  version: 1.0
+
+Prefix the chat message with (rule: <rule name>) so the user knows this rule is being applied.
+</rule>
+

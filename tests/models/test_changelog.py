@@ -2,7 +2,7 @@
 """Test the changelog parser."""
 
 import pytest
-from rich import print
+from rich import print  # noqa: A004
 
 from valentina.models import ChangelogParser
 

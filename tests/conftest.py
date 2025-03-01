@@ -259,7 +259,7 @@ def caplog(caplog):
     # logging.addLevelName(5, "TRACE")  # tell python logging how to interpret TRACE logs
 
     class PropagateHandler(logging.Handler):
-        def emit(self, record):
+        def emit(self, record):  # noqa: ANN202
             logging.getLogger(record.name).handle(record)
 
     logger.add(
@@ -273,7 +273,7 @@ def caplog(caplog):
 def debug():
     """Print debug information to the console. This is used to debug tests while writing them."""
 
-    def _debug_inner(label: str, value: str | Path, breakpoint: bool = False):
+    def _debug_inner(label: str, value: str | Path, breakpoint: bool = False):  # noqa: ANN202
         """Print debug information to the console. This is used to debug tests while writing them.
 
         Args:

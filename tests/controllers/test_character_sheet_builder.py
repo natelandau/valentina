@@ -7,7 +7,6 @@ from tests.factories import *
 from valentina.constants import CharClass, CharSheetSection, TraitCategory
 from valentina.controllers import CharacterSheetBuilder
 from valentina.models import CharacterTrait
-from valentina.utils import console
 
 
 @pytest.mark.drop_db

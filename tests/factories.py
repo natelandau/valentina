@@ -22,18 +22,14 @@ from valentina.models import (
     Campaign,
     CampaignBook,
     CampaignBookChapter,
-    CampaignExperience,
-    CampaignNPC,
     Character,
     CharacterTrait,
     Guild,
     GuildChannels,
-    GuildPermissions,
     InventoryItem,
     Note,
     RollStatistic,
     User,
-    UserMacro,
 )
 
 from .conftest import CHANNEL_BOOK_ID, CHANNEL_CATEGORY_CAMPAIGN_ID, CHANNEL_CHARACTER_ID

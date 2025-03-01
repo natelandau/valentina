@@ -345,7 +345,7 @@ class Character(Document):
                 f"{i}. **{ability['name']}:** {ability['description']}\n"
                 for i, ability in enumerate(concept_info.abilities, start=1)
             ]
-            special_abilities = f'\n\n**Special {p.plural_noun("Ability", len(concept_info.abilities))}:**\n\n{"".join(special_abilities_list)}'
+            special_abilities = f"\n\n**Special {p.plural_noun('Ability', len(concept_info.abilities))}:**\n\n{''.join(special_abilities_list)}"
         else:
             special_abilities = ""
 

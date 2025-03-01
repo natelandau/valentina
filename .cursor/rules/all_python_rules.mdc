@@ -1,0 +1,11 @@
+---
+description: Include all python rules
+globs: **/*.py
+---
+[architecture-principles.mdc](mdc:.cursor/rules/architecture-principles.mdc)
+[comment-usage.mdc](mdc:.cursor/rules/comment-usage.mdc)
+[project-technology-stack.mdc](mdc:.cursor/rules/project-technology-stack.mdc)
+[pytest-test-rules.mdc](mdc:.cursor/rules/pytest-test-rules.mdc)
+[python-docstring-rules.mdc](mdc:.cursor/rules/python-docstring-rules.mdc)
+[python-naming-conventions.mdc](mdc:.cursor/rules/python-naming-conventions.mdc)
+[use-pathlib.mdc](mdc:.cursor/rules/use-pathlib.mdc)

@@ -146,13 +146,13 @@ class Statistics:
             return msg
 
         msg += f"""\
-`Total Rolls {'.':.<{25 - 12}} {self.total_rolls}`
-`Critical Success Rolls {'.':.<{25 - 23}} {self.criticals:<3} ({self.criticals_percentage}%)`
-`Successful Rolls {'.':.<{25 - 17}} {self.successes:<3} ({self.success_percentage}%)`
-`Failed Rolls {'.':.<{25 - 13}} {self.failures:<3} ({self.failure_percentage}%)`
-`Botched Rolls {'.':.<{25 - 14}} {self.botches:<3} ({self.botch_percentage}%)`
-`Average Difficulty {'.':.<{25 - 19}} {self.average_difficulty}`
-`Average Pool Size {'.':.<{25 - 18}} {self.average_pool}`
+`Total Rolls {".":.<{25 - 12}} {self.total_rolls}`
+`Critical Success Rolls {".":.<{25 - 23}} {self.criticals:<3} ({self.criticals_percentage}%)`
+`Successful Rolls {".":.<{25 - 17}} {self.successes:<3} ({self.success_percentage}%)`
+`Failed Rolls {".":.<{25 - 13}} {self.failures:<3} ({self.failure_percentage}%)`
+`Botched Rolls {".":.<{25 - 14}} {self.botches:<3} ({self.botch_percentage}%)`
+`Average Difficulty {".":.<{25 - 19}} {self.average_difficulty}`
+`Average Pool Size {".":.<{25 - 18}} {self.average_pool}`
 """
 
         if with_help:

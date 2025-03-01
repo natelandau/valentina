@@ -31,13 +31,13 @@ class ChangelogPoster:  # pragma: no cover
         bot: commands.Bot | None = None,
         ctx: Optional["ValentinaContext"] = None,
         channel: discord.TextChannel | None = None,
-        exclud_cagegories: list[str] = CHANGELOG_EXCLUDE_CATEGORIES,
+        exclude_cagegories: list[str] = CHANGELOG_EXCLUDE_CATEGORIES,
         oldest_version: str | None = None,
         newest_version: str | None = None,
         with_personality: bool = False,
         exclude_oldest_version: bool = False,
     ):
-        self.exclude_categories = exclud_cagegories
+        self.exclude_categories = exclude_cagegories
         self.bot = bot
         self.ctx = ctx
         self.channel = channel
@@ -507,7 +507,7 @@ class ChangelogParser:
                            changelog information, ready to be sent as a message.
         """
         # Create and populate the embed description
-        description = f"Valentina, your {random.choice(['honored', 'admired', 'distinguished', 'celebrated', 'hallowed', 'prestigious', 'acclaimed', 'favorite', 'friendly neighborhood', 'prized', 'treasured', 'number one', 'esteemed', 'venerated', 'revered', 'feared'])} {random.choice(BOT_DESCRIPTIONS)}, has {random.choice(['been granted new powers', 'leveled up', 'spent experience points', 'gained new abilities', 'been bitten by a radioactive spider', 'spent willpower points', 'been updated', 'squashed bugs and gained new features',])}!\n"
+        description = f"Valentina, your {random.choice(['honored', 'admired', 'distinguished', 'celebrated', 'hallowed', 'prestigious', 'acclaimed', 'favorite', 'friendly neighborhood', 'prized', 'treasured', 'number one', 'esteemed', 'venerated', 'revered', 'feared'])} {random.choice(BOT_DESCRIPTIONS)}, has {random.choice(['been granted new powers', 'leveled up', 'spent experience points', 'gained new abilities', 'been bitten by a radioactive spider', 'spent willpower points', 'been updated', 'squashed bugs and gained new features'])}!\n"
 
         description += self.get_text()
         description += "- Run `/changelog` to view specific versions\n"

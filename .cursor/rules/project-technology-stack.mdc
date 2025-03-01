@@ -1,0 +1,14 @@
+---
+description: overview of the technologies used in the project
+globs: **/*
+---
+---
+description: Provides a comprehensive overview of the technologies used in the project to help with understanding the environment.
+globs: **/*
+---
+This project utilizes the following technologies:
+    - cappa - Declarative CLI argument parser
+    - rich - library for rich text and beautiful formatting in the terminal.
+    - sh - full-fledged subprocess replacement
+    - pytest - testing framework
+    - pytest-mock - plugin for pytest used for mocking

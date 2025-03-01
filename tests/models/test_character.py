@@ -5,7 +5,7 @@ import pytest
 
 from tests.factories import *
 from valentina.constants import CharacterConcept, CharClass, HunterCreed, TraitCategory, VampireClan
-from valentina.models import Campaign, Character, CharacterTrait
+from valentina.models import Character, CharacterTrait
 from valentina.utils import errors
 
 
