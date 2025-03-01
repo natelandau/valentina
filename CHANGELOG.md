@@ -1,3 +1,9 @@
+## v3.3.2 (2025-03-01)
+
+### Fix
+
+- **diceroll**: correctly compute rolled 1s as `-1` success (#230)
+
 ## v3.3.1 (2024-12-27)
 
 ### Fix
