@@ -27,7 +27,8 @@ Major differences from the games published by White Wolf are:
 
 2. Rolled ones count as `-1` success
 3. Rolled tens count as `2` successes
-4. `Cool points` are additional rewards worth `10xp` each
+4. Rolled ones and tens cancel each other out
+5. `Cool points` are additional rewards worth `10xp` each
 
 To play with traditional rules I strongly recommend you use [Inconnu Bot](https://docs.inconnu.app/) instead.
 

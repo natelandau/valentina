@@ -369,12 +369,10 @@ class DiceRoll:
             if self.dice_type != DiceType.D10:
                 self._result = self.successes + self.criticals - self.failures - self.botches
             else:
-                botches = self.botches - self.criticals
-                botches = max(0, botches)
-                criticals = self.criticals - self.botches
-                criticals = max(0, criticals)
+                botches = max(0, self.botches - self.criticals)
+                criticals = max(0, self.criticals - self.botches)
 
-                self._result = self.successes + (criticals * 2) - (botches * 2)
+                self._result = self.successes + (criticals * 2) - botches
 
         return self._result
 
