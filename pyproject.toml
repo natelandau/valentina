@@ -53,8 +53,8 @@
     [project.scripts]
         valentina = "valentina.run:cli"
 
-[tool.uv]
-    dev-dependencies = [
+[dependency-groups]
+    dev = [
         "commitizen>=4.3.0",
         "coverage>=7.6.12",
         "deptry>=0.23.0",

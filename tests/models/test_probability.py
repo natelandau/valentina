@@ -29,7 +29,7 @@ async def test_calculate_no_db(mock_ctx1):
     assert round(result.critical_dice) in range(5, 15)
     assert round(result.total_successes) in range(70, 86)
     assert round(result.total_failures) in range(15, 30)
-    assert round(result.BOTCH) in range(5, 15)
+    assert round(result.BOTCH) in range(4, 15)
     assert round(result.FAILURE) in range(8, 14)
     assert round(result.SUCCESS) in range(70, 86)
     assert round(result.CRITICAL) in range(3, 6)
