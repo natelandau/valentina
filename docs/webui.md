@@ -2,6 +2,21 @@
 
 Code snippets and notes to help you develop the Web UI.
 
+## Access logs from the webui
+
+Set the location of the access logs with the `VALENTINA_WEBUI_ACCESS_LOG` environment variable.
+
+These logs can be parsed with any web log parser. For example, with goaccess:
+
+```bash
+goaccess access.log \
+    --log-format='[%d %t %z] [%^] [%^] %h %^ %^ [%^ %^] "%m %U %^" %s %b "%R" "%u"' \
+    --date-format=%Y-%m-%d \
+    --time-format='%T' \
+    --tz=America/New_York \
+    --no-ip-validation # Optional: Disables IP validation for local testing
+```
+
 ## Automatic Registration of Blueprints and Routes
 
 Pages and functionality for the web UI are managed within the `valentina/webui` directory. Each page is a separate blueprint that is imported into the Quart app.
