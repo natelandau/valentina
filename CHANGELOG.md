@@ -1,3 +1,13 @@
+## v3.4.0 (2025-03-03)
+
+### Feat
+
+- **character**: add `book` category to inventory items
+
+### Fix
+
+- **webui**: fix bug preventing throwing more than 5 dice
+
 ## v3.3.2 (2025-03-01)
 
 ### Fix
