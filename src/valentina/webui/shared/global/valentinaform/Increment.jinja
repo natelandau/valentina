@@ -7,7 +7,9 @@
     min_val:int=0,
 #}
 <div x-data="{ currentVal: {{ start_val }}, minVal: {{ min_val }}, maxVal: {{ max_val }}, decimalPoints: 0, incrementAmount: 1 }">
-    {% if not form.join_labels %}<label for="{{ name }}" class="form-label">{{ label }}</label>{% endif %}
+    {% if not form.join_labels %}
+        <label for="{{ name }}" class="form-label">{{ label }}</label>
+    {% endif %}
     <div @dblclick.prevent class="input-group mb-3">
         {% if form.join_labels %}<label class="input-group-text">{{ label }}</label>{% endif %}
         <button class="btn btn-outline-secondary"

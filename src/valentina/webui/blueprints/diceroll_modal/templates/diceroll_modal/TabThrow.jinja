@@ -37,8 +37,10 @@
                 </select>
             </div>
         </div>
+    </div>
+    <div class="row">
         <div class="col">
-            <global.valentinaform.Increment label="Dice Pool" name="pool" start-val="1" form={{ form }} />
+            <global.valentinaform.Increment label="Dice Pool" name="pool" start-val="1" min-val="1" max-val="40" form={{ form }} />
         </div>
         <div class="col">
             <global.valentinaform.Increment label="Difficulty" name="difficulty" start-val="6" min-val="0" max-val="10" form={{ form }} />
