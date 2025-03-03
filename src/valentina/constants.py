@@ -550,6 +550,7 @@ class InventoryItemType(Enum):
     CONSUMABLE = "Consumable"
     ENCHANTED = "Enchanted"
     EQUIPMENT = "Equipment"
+    BOOK = "Book"
     OTHER = "Other"
     WEAPON = "Weapon"
 
