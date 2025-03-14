@@ -17,10 +17,9 @@ actions:
 
         1. Use comments sparingly, and when you do write comments, make them meaningful.
         2. Don't comment on obvious things. Excessive or unclear comments can clutter the codebase and become outdated.
-        3. Use comments to convey the "why" behind specific actions or explain unusual behavior and potential pitfalls.
-        4. Provide meaningful information about the function's behavior and explain unusual behavior and potential pitfalls.
-        5. Use # for single-line comments and ''' for multi-line comments.
-        6. If a specific behavior is described in the docstring do not write a comment explaining it.
+        3. Only use comments to convey the "why" behind specific actions or to explain unusual behavior and potential pitfalls.
+        4. Use # for single-line comments and """ for multi-line comments.
+        5. Never change or remove 'noqa' or 'type: ignore' comments
 
   - type: reject
     message: |

@@ -21,7 +21,7 @@ Valentina Noir assists in managing role-playing sessions, providing easy access 
     -   `0` successes: Failure
     -   `> 0` successes: Success
     -   `> dice pool` successes: Critical success
--   **Special Rolls:** Rolled ones count as -1 success, and rolled tens count as 2 successes.
+-   **Special Rolls:** Rolled ones count as -1 success, and rolled tens count as 2 successes. Tens and ones cancel each other out.
 -   **Cool Points**: Additional rewards worth 10xp each.
 -   **Experience**: Experience is granted to players for use on any of their characters within a specific campaign.
 

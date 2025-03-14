@@ -138,35 +138,24 @@ async def fetch_random_name(
 def divide_total_randomly(
     total: int, num: int, max_value: int | None = None, min_value: int = 0
 ) -> list[int]:
-    """Divide a total into random segments with specified constraints.
+    """Distribute a total value into random segments that sum to the total.
 
-    Generate a list of random integers that sum up to a given total. The function ensures
-    that each segment falls within the specified minimum and maximum values (if provided).
-    This can be useful for various applications such as resource allocation, random
-    character attribute generation in games, or any scenario requiring a random
-    distribution of a total value.
-
-    The algorithm uses an iterative approach to adjust the randomly generated segments
-    until they meet all specified constraints. It first generates random values within
-    the allowed range, then iteratively adjusts these values to meet the total sum
-    requirement while respecting the min and max constraints.
+    Generate random integers that sum to a specified total while respecting minimum and maximum constraints. Use for resource allocation, character attribute generation, or any scenario requiring random distribution of a fixed total.
 
     Args:
-        total (int): The total sum to be divided. Must be a positive integer.
-        num (int): The number of segments to divide the total into. Must be a positive integer.
-        max_value (int | None): The maximum value for any single segment. If None, no upper
-            limit is applied beyond the total itself.
-        min_value (int): The minimum value for any single segment. Defaults to 0. Must be
-            non-negative and less than or equal to max_value (if specified).
+        total (int): Sum to divide into segments. Must be positive.
+        num (int): Number of segments to create. Must be positive.
+        max_value (int | None, optional): Maximum allowed value per segment. If None, use total as maximum. Defaults to None.
+        min_value (int, optional): Minimum allowed value per segment. Must be non-negative and less than max_value if specified. Defaults to 0.
 
     Returns:
-        list[int]: A list of integers representing the divided segments. The length of the
-            list will be equal to 'num', and the sum of all elements will equal 'total'.
+        list[int]: Random segments that sum to total. Length equals num.
 
     Raises:
-        ValueError: If the total cannot be divided according to the given constraints. This
-            can occur if the total is less than num * min_value, if max_value is less than
-            min_value, or if num * max_value is less than total.
+        ValueError: If constraints make division impossible:
+            - total < num * min_value
+            - max_value < min_value
+            - num * max_value < total
     """
     if total < num * min_value or (max_value is not None and max_value < min_value):
         msg = "Impossible to divide under given constraints."

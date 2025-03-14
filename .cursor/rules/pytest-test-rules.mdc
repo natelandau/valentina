@@ -17,15 +17,16 @@ actions:
         When writing pytest tests, follow these rules:
 
         1. Write single sentence docstrings in imperative voice
+        2. Docstrings should always start with the word "Verify"
            ```python
            def test_backup_file_creates_backup(test_file: Path) -> None:
-               """Test backup file with .bak extension."""
+               """Verify creating backup files with .bak extension"""
            ```
 
-        2. Structure test body with given/when/then comments
+        3. Structure test body with given/when/then comments
            ```python
            def test_backup_file_increments_backup_number(test_file: Path) -> None:
-               """Create incremental backups when backup already exists."""
+               """Verify incrementalal backups when backup already exists."""
                # Given: A backup file already exists
                first_backup = test_file.parent / (test_file.name + ".bak")
                first_backup.write_text("existing backup")
@@ -40,7 +41,7 @@ actions:
                assert not test_file.exists()
            ```
 
-        3. Use pytest-mock plugin. Do not use unittest
+        4. Use pytest-mock plugin. Do not use unittest
            ```python
            # Bad: Using unittest.mock
            from unittest.mock import Mock, patch
@@ -54,7 +55,7 @@ actions:
                mock_function = mocker.patch('module.function')
                mock_function.return_value = 'mocked'
            ```
-        4. Include unit and integration tests.
+        5. Include unit and integration tests.
 
   - type: reject
     message: |
@@ -71,7 +72,7 @@ examples:
 
       @patch('module.function')
       def test_backup_file(tmp_path):
-          """Test that backup file works correctly. This test ensures proper backup creation."""
+          """Tests that backup file works correctly. This test ensures proper backup creation."""
           file = tmp_path / "test.txt"
           file.write_text("test")
           backup_file(file)
@@ -81,7 +82,7 @@ examples:
       # Good: Follows the rules
       ```python
       def test_backup_file_creates_backup(tmp_path: Path, mocker) -> None:
-          """Create a backup file with .bak extension."""
+          """Verify creating backups file with .bak extension."""
           # Given a constant return from module.function
           mock_function = mocker.patch('module.function')
           mock_function.return_value = 'mocked'
