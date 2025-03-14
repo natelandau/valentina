@@ -1,6 +1,6 @@
 """Reusable autocomplete options for cogs and commands."""
 
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import discord
 import inflect
@@ -16,13 +16,15 @@ from valentina.constants import (
     TraitCategory,
     VampireClan,
 )
-from valentina.discord.bot import Valentina
 from valentina.discord.utils import fetch_channel_object
 from valentina.models import AWSService, Campaign, ChangelogParser, Character, User
 from valentina.utils import errors
 from valentina.utils.helpers import truncate_string
 
 MAX_OPTION_LENGTH = 99
+
+if TYPE_CHECKING:
+    from valentina.discord.bot import Valentina
 
 
 ################## Character Autocomplete Functions ##################
@@ -270,7 +272,7 @@ async def select_changelog_version_1(
     Returns:
         A list of version strings matching the user's input, limited to MAX_OPTION_LIST_SIZE.
     """
-    bot = cast(Valentina, ctx.bot)
+    bot = cast("Valentina", ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
 
     return [version for version in possible_versions if version.startswith(ctx.value)][
@@ -291,7 +293,7 @@ async def select_changelog_version_2(
     Returns:
         A list of version strings matching the user's input, limited to MAX_OPTION_LIST_SIZE.
     """
-    bot = cast(Valentina, ctx.bot)
+    bot = cast("Valentina", ctx.bot)
     possible_versions = ChangelogParser(bot).list_of_versions()
 
     return [version for version in possible_versions if version.startswith(ctx.value)][

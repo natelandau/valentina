@@ -286,7 +286,7 @@ class Character(Document):
         """
         await self.fetch_all_links()
 
-        for existing_trait in cast(list[CharacterTrait], self.traits):
+        for existing_trait in cast("list[CharacterTrait]", self.traits):
             # If the trait already exists in the character's trait list, return it
             if trait.id == existing_trait.id:
                 await trait.save()
@@ -403,7 +403,7 @@ class Character(Document):
 
     async def fetch_trait_by_name(self, name: str) -> Union["CharacterTrait", None]:
         """Fetch a CharacterTrait by name."""
-        for trait in cast(list[CharacterTrait], self.traits):
+        for trait in cast("list[CharacterTrait]", self.traits):
             if trait.name == name:
                 return trait
 
@@ -437,7 +437,7 @@ class Character(Document):
             return sorted(
                 [
                     x
-                    for x in cast(list[CharacterTrait], self.traits)
+                    for x in cast("list[CharacterTrait]", self.traits)
                     if x.category_name == category.name
                 ],
                 key=lambda x: x.name,
@@ -446,7 +446,7 @@ class Character(Document):
         return sorted(
             [
                 x
-                for x in cast(list[CharacterTrait], self.traits)
+                for x in cast("list[CharacterTrait]", self.traits)
                 if x.category_name == category.name
                 and not (x.value == 0 and not category.value.show_zero)
             ],

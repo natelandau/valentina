@@ -268,7 +268,7 @@ class User(Document):
             list[Character]: A list of Character objects associated with the user
             and the specified guild.
         """
-        return [x for x in cast(list[Character], self.characters) if x.guild == guild.id]
+        return [x for x in cast("list[Character]", self.characters) if x.guild == guild.id]
 
     async def remove_character(self, character: Character) -> None:
         """Remove a character from the user's list of characters.

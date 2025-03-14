@@ -28,7 +28,7 @@ class SelectTraitCategoryButtons(discord.ui.View):  # pragma: no cover
         self.all_categories = sorted(
             {
                 t.trait_category
-                for t in cast(list[CharacterTrait], self.character.traits)
+                for t in cast("list[CharacterTrait]", self.character.traits)
                 if t.trait_category
             },
             key=lambda x: x.value.order,

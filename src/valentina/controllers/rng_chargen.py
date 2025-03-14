@@ -595,13 +595,15 @@ class RNGCharGen:
             )
         else:
             courage = next(
-                x for x in cast(list[CharacterTrait], character.traits) if x.name == "Courage"
+                x for x in cast("list[CharacterTrait]", character.traits) if x.name == "Courage"
             )
             self_control = next(
-                x for x in cast(list[CharacterTrait], character.traits) if x.name == "Self-Control"
+                x
+                for x in cast("list[CharacterTrait]", character.traits)
+                if x.name == "Self-Control"
             )
             conscience = next(
-                x for x in cast(list[CharacterTrait], character.traits) if x.name == "Conscience"
+                x for x in cast("list[CharacterTrait]", character.traits) if x.name == "Conscience"
             )
 
             willpower = CharacterTrait(

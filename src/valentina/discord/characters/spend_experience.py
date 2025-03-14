@@ -127,7 +127,7 @@ class SpendFreebiePoints(discord.ui.View):  # pragma: no cover
         # Determine the traits that can be used as a target
         available_traits = [
             trait
-            for trait in cast(list[CharacterTrait], self.character.traits)
+            for trait in cast("list[CharacterTrait]", self.character.traits)
             if trait.trait_category == self.trait_category and trait.value < trait.max_value
         ]
 

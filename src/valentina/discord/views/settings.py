@@ -48,7 +48,7 @@ class SettingsFlags(discord.ui.View):
         super().__init__(timeout=300)
         self.ctx = ctx
         self.guild = guild
-        self.bot = cast(Valentina, ctx.bot)
+        self.bot = cast("Valentina", ctx.bot)
         self.options = options
         self.key = key
         self.current_value = current_value
@@ -150,7 +150,7 @@ class SettingsChannelSelect(discord.ui.View):
         self.ctx = ctx
         self.guild = guild
         self.key = key
-        self.bot = cast(Valentina, ctx.bot)
+        self.bot = cast("Valentina", ctx.bot)
         self.permissions = permissions
         self.channel_topic = channel_topic
 
@@ -201,7 +201,7 @@ class SettingsChannelSelect(discord.ui.View):
                 child.disabled = True
 
         # Get the selected channel
-        selected_channel = cast(discord.TextChannel, select.values[0])
+        selected_channel = cast("discord.TextChannel", select.values[0])
 
         # Update the database
         await self._update_guild_and_channel(enable=True, channel=selected_channel)

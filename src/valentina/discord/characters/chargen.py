@@ -361,7 +361,7 @@ class CharGenWizard:  # pragma: no cover
     ) -> None:
         self.ctx = ctx
         self.interaction = ctx.interaction
-        self.bot = cast(Valentina, ctx.bot)
+        self.bot = cast("Valentina", ctx.bot)
 
         self.user = user
         self.campaign = campaign
