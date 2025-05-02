@@ -50,13 +50,10 @@ def pyprefix(title: str) -> str:
 def clean(ctx: Context) -> None:
     """Clean the project."""
     ctx.run("rm -rf .coverage*")
-    ctx.run("rm -rf .mypy_cache")
-    ctx.run("rm -rf .pytest_cache")
-    ctx.run("rm -rf .reports")
+    ctx.run("rm -rf .cache")
     ctx.run("rm -rf build")
     ctx.run("rm -rf dist")
     ctx.run("rm -rf pip-wheel-metadata")
-    ctx.run("rm -rf .ruff_cache")
     ctx.run("rm *.log")
     ctx.run("rm *.rdb")
     ctx.run("find . -type d -name __pycache__ | xargs rm -rf")

@@ -82,7 +82,7 @@ def random_num(ceiling: int = 100) -> int:
     Raises:
         ValueError: If ceiling is less than 1.
     """
-    return _rng.integers(1, ceiling + 1)
+    return int(_rng.integers(1, ceiling + 1))
 
 
 def random_string(length: int) -> str:
@@ -250,8 +250,7 @@ def get_trait_new_value(trait: str, category: str) -> int:
 async def fetch_data_from_url(url: str) -> io.BytesIO:  # pragma: no cover
     """Fetch data from a URL and return it as a BytesIO object.
 
-    This function retrieves data from a specified URL and returns it as a BytesIO object,
-    which can be used for further processing or uploading to services like Amazon S3.
+    Retrieve data from a specified URL and return it as a BytesIO object, which can be used for further processing or uploading to services like Amazon S3.
 
     Args:
         url (str): The URL from which to fetch the data.
