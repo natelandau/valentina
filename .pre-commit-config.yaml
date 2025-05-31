@@ -5,7 +5,7 @@ default_stages: [pre-commit, manual]
 fail_fast: true
 repos:
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: v4.6.0
+    rev: v4.8.2
     hooks:
       - id: commitizen
       # - id: commitizen-branch
@@ -52,14 +52,14 @@ repos:
         types: [python]
 
   - repo: "https://github.com/adrienverge/yamllint.git"
-    rev: v1.37.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         files: ^.*\.(yaml|yml)$
         entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-    rev: "v0.11.8"
+    rev: "v0.11.12"
     hooks:
       - id: ruff
         exclude: tests/
@@ -67,8 +67,8 @@ repos:
       - id: ruff-format
         args: [--check]
 
-  - repo: "https://github.com/crate-ci/typos"
-    rev: v1.31.2
+  - repo: "https://github.com/adhtruong/mirrors-typos"
+    rev: v1.32.0
     hooks:
       - id: typos
         args: ["--force-exclude"]
@@ -86,7 +86,7 @@ repos:
       - id: deptry
 
   - repo: "https://github.com/gitleaks/gitleaks"
-    rev: v8.25.1
+    rev: v8.26.0
     hooks:
       - id: gitleaks
 

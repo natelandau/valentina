@@ -79,7 +79,7 @@ class Help(commands.Cog):
     async def command_help(
         self,
         ctx: ValentinaContext,
-        command: Option(str, required=False),  # type: ignore
+        command: Option(str, required=False),
     ) -> None:
         """Provide help information."""
         commands = self.__build_command_list(ctx)
