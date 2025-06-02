@@ -39,7 +39,7 @@ async def changelog() -> str:
     changelog = ChangelogParser(bot, possible_versions[-1], possible_versions[0])
 
     result = await run_sync(
-        lambda: catalog.render("static_files.Changelog", changelog=changelog.get_text())
+        lambda: catalog.render("static_files.Changelog", changelog=changelog.get_text()),
     )()
     return await link_terms(result, link_type="html")
 

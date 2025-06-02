@@ -38,7 +38,9 @@ class CreateRNGCharacter(MethodView):
         # Create three new RNG characters for the user to choose from
         user = await fetch_user()
         chargen = RNGCharGen(
-            guild_id=session["GUILD_ID"], user=user, experience_level=RNGCharLevel.NEW
+            guild_id=session["GUILD_ID"],
+            user=user,
+            experience_level=RNGCharLevel.NEW,
         )
 
         # Create three characters for the user to choose from

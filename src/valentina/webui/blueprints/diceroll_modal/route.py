@@ -171,7 +171,9 @@ class RollResults(MethodView):
         return pool, rolled_traits
 
     async def _process_macros_form(
-        self, form: dict, character: "Character"
+        self,
+        form: dict,
+        character: "Character",
     ) -> tuple[int, dict[str, int]]:
         """Process the macro rolling form.
 
@@ -214,7 +216,8 @@ class RollResults(MethodView):
                 pool, rolled_traits = await self._process_traits_form(form=form)
             case RollType.MACROS:
                 pool, rolled_traits = await self._process_macros_form(
-                    form=form, character=character
+                    form=form,
+                    character=character,
                 )
             case RollType.THROW:
                 pool = int(form.get("pool", 1))

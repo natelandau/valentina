@@ -120,7 +120,10 @@ class AdminCog(commands.Cog):
 
         title = f"Associate `{character.name}` with `{campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -138,7 +141,8 @@ class AdminCog(commands.Cog):
     @discord.guild_only()
     @commands.has_permissions(administrator=True)
     @admin.command(
-        name="delete_champaign_channels", description="Associate character with a campaign"
+        name="delete_champaign_channels",
+        description="Associate character with a campaign",
     )
     async def delete_champaign_channels(
         self,
@@ -154,7 +158,9 @@ class AdminCog(commands.Cog):
 
         title = f"Delete all campaign channels from `{ctx.guild.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx,
+            title,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -187,7 +193,11 @@ class AdminCog(commands.Cog):
         title = f"Delete `{character.name}` from the database"
         description = "This action is irreversible."
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, description=description, hidden=hidden, audit=True
+            ctx,
+            title,
+            description=description,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -216,7 +226,10 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = f"Add {member.display_name} to {role.name}"
         is_confirmed, msg, confirmation_embed = await confirm_action(
-            ctx, title, description=reason, hidden=hidden
+            ctx,
+            title,
+            description=reason,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -244,7 +257,10 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = f"Remove {role.name} from {member.display_name}"
         is_confirmed, msg, confirmation_embed = await confirm_action(
-            ctx, title, description=reason, hidden=hidden
+            ctx,
+            title,
+            description=reason,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -280,7 +296,10 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = f"Kick {member.display_name} from this guild"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, description=reason, hidden=hidden
+            ctx,
+            title,
+            description=reason,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -318,13 +337,17 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = f"Ban {user.display_name} from this guild"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, description=reason, hidden=hidden
+            ctx,
+            title,
+            description=reason,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
 
         await ctx.guild.ban(
-            discord.Object(id=user.id), reason=f"{ctx.author} ({ctx.author.id}): {reason}"
+            discord.Object(id=user.id),
+            reason=f"{ctx.author} ({ctx.author.id}): {reason}",
         )
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
@@ -369,7 +392,8 @@ class AdminCog(commands.Cog):
         self,
         ctx: ValentinaContext,
         members: Option(
-            str, "The mentions, usernames, or IDs of the members to ban. Separated by spaces"
+            str,
+            "The mentions, usernames, or IDs of the members to ban. Separated by spaces",
         ),
         *,
         reason: Option(
@@ -387,7 +411,7 @@ class AdminCog(commands.Cog):
         await assert_permissions(ctx, ban_members=True)
         converter = MemberConverter()
         converted_members = [
-            await converter.convert(ctx, member)  # type: ignore # mismatching context type
+            await converter.convert(ctx, member)  # type: ignore [arg-type]
             for member in members.split()
         ]
         if (count := len(converted_members)) > 10:  # noqa: PLR2004
@@ -403,7 +427,10 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = f"Mass ban {count} {p.plural_noun('member', count)} from this guild"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, description=reason, hidden=hidden
+            ctx,
+            title,
+            description=reason,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -447,7 +474,9 @@ class AdminCog(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def review_result_thumbnails(
-        self, ctx: ValentinaContext, roll_type: Option(RollResultType, required=True)
+        self,
+        ctx: ValentinaContext,
+        roll_type: Option(RollResultType, required=True),
     ) -> None:
         """Review all result thumbnails for this guild."""
         guild = await Guild.get(ctx.guild.id, fetch_links=True)
@@ -495,7 +524,10 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = f"Add custom emoji :{name}:"
         is_confirmed, msg, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -582,7 +614,9 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = f"Set slowmode to {seconds} seconds"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx,
+            title,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -623,7 +657,10 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = "Lock this channel"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, description=reason, hidden=hidden
+            ctx,
+            title,
+            description=reason,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -666,7 +703,10 @@ class AdminCog(commands.Cog):
         # Confirm the action
         title = "Unlock this channel"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, description=reason, hidden=hidden
+            ctx,
+            title,
+            description=reason,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -741,7 +781,7 @@ class AdminCog(commands.Cog):
 
         if purge := getattr(ctx.channel, "purge", None):
             count = len(
-                await purge(limit=limit, reason=reason, check=lambda m: m.author.id == member.id)
+                await purge(limit=limit, reason=reason, check=lambda m: m.author.id == member.id),
             )
             await present_embed(
                 ctx,
@@ -818,7 +858,7 @@ class AdminCog(commands.Cog):
 
         if purge := getattr(ctx.channel, "purge", None):
             count = len(
-                await purge(limit=limit, reason=reason, check=lambda m: phrase in m.content)
+                await purge(limit=limit, reason=reason, check=lambda m: phrase in m.content),
             )
             await present_embed(
                 ctx,

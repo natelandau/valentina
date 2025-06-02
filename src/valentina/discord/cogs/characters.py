@@ -12,7 +12,7 @@ from valentina.constants import (
     VALID_IMAGE_EXTENSIONS,
     CharClass,
     EmbedColor,
-    Emoji,
+    EmojiDict,
     RNGCharLevel,
 )
 from valentina.controllers import ChannelManager, PermissionManager
@@ -87,7 +87,8 @@ class CharactersCog(commands.Cog, name="Character"):
         permission_mngr = PermissionManager(ctx.guild.id)
 
         if not await permission_mngr.can_manage_traits(
-            author_id=ctx.author.id, character_id=character_id
+            author_id=ctx.author.id,
+            character_id=character_id,
         ):
             await present_embed(
                 ctx,
@@ -191,7 +192,11 @@ class CharactersCog(commands.Cog, name="Character"):
 
         # TODO: This paginator must not be hidden - Regression in pycord 2.5.0
         wizard = CharGenWizard(
-            ctx, campaign=campaign, user=user, experience_level=RNGCharLevel.NEW, hidden=False
+            ctx,
+            campaign=campaign,
+            user=user,
+            experience_level=RNGCharLevel.NEW,
+            hidden=False,
         )
         await wizard.start()
 
@@ -253,12 +258,17 @@ class CharactersCog(commands.Cog, name="Character"):
         text = f"## {title_prefix} {p.plural_noun('character', len(all_characters))} on `{ctx.guild.name}`\n"
         for character in sorted(all_characters, key=lambda x: x.name):
             user = await User.get(character.user_owner, fetch_links=True)
-            dead_emoji = Emoji.DEAD.value if not character.is_alive else ""
+            dead_emoji = EmojiDict.DEAD if not character.is_alive else ""
 
             text += f"- {dead_emoji} **{character.name}** _({character.char_class.value.name})_ `@{user.name}`\n"
 
         await auto_paginate(
-            ctx=ctx, title="", text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
+            ctx=ctx,
+            title="",
+            text=text,
+            color=EmbedColor.INFO,
+            hidden=hidden,
+            max_chars=900,
         )
 
     @chars.command(name="kill", description="Kill a character")
@@ -290,7 +300,10 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Kill `{character.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -327,7 +340,10 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Rename `{character.name}` to `{first_name} {nick}{last_name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -356,7 +372,10 @@ class CharactersCog(commands.Cog, name="Character"):
             default=None,
         ),
         url: Option(
-            ValidImageURL, description="URL of the thumbnail", required=False, default=None
+            ValidImageURL,
+            description="URL of the thumbnail",
+            required=False,
+            default=None,
         ),
         hidden: Option(
             bool,
@@ -406,7 +425,11 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Add image to `{character.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, image=image_url, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            image=image_url,
+            audit=True,
         )
         if not is_confirmed:
             await character.delete_image(image_key)
@@ -483,7 +506,10 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Add trait: `{name.title()}` at `{value}` dots for {character.name}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -510,7 +536,11 @@ class CharactersCog(commands.Cog, name="Character"):
             autocomplete=select_char_trait,
         ),
         new_value: Option(
-            int, description="New value for the trait", required=True, min_value=0, max_value=20
+            int,
+            description="New value for the trait",
+            required=True,
+            min_value=0,
+            max_value=20,
         ),
         hidden: Option(
             bool,
@@ -539,7 +569,10 @@ class CharactersCog(commands.Cog, name="Character"):
             f"Update `{trait.name}` from `{trait.value}` to `{new_value}` for `{character.name}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -610,7 +643,7 @@ class CharactersCog(commands.Cog, name="Character"):
         character = channel_objects.character
 
         modal = CustomSectionModal(
-            title=truncate_string(f"Custom section for {character.name}", 45)
+            title=truncate_string(f"Custom section for {character.name}", 45),
         )
         await ctx.send_modal(modal)
         await modal.wait()
@@ -625,7 +658,7 @@ class CharactersCog(commands.Cog, name="Character"):
             raise errors.ValidationError(msg)
 
         character.sheet_sections.append(
-            CharacterSheetSection(title=section_title, content=section_content)
+            CharacterSheetSection(title=section_title, content=section_content),
         )
         await character.save()
 
@@ -710,7 +743,10 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Delete section `{section.title}` from `{character.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -800,7 +836,8 @@ class CharactersCog(commands.Cog, name="Character"):
         character = channel_objects.character
 
         modal = ProfileModal(
-            title=truncate_string(f"Profile for {character.name}", 45), character=character
+            title=truncate_string(f"Profile for {character.name}", 45),
+            character=character,
         )
         await ctx.send_modal(modal)
         await modal.wait()
@@ -843,7 +880,10 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Associate `{character.name}` with `{campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -886,7 +926,10 @@ class CharactersCog(commands.Cog, name="Character"):
 
         title = f"Transfer `{character.name}` from `{ctx.author.display_name}` to `{new_owner.display_name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return

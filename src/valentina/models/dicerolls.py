@@ -41,7 +41,7 @@ class DiceRoll:
         dice_type (DiceType): The type of dice used for the roll
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         pool: int,
         ctx: Optional["ValentinaContext"] = None,
@@ -167,7 +167,7 @@ class DiceRoll:
             await stat.insert()
 
             logger.debug(
-                f"DICEROLL: {self.author_name or self.ctx.author.display_name} rolled {self.roll} for {self.result_type.name}"
+                f"DICEROLL: {self.author_name or self.ctx.author.display_name} rolled {self.roll} for {self.result_type.name}",
             )
 
     @property
@@ -296,8 +296,7 @@ class DiceRoll:
     def failures(self) -> int:
         """Calculate and return the number of failed dice rolls, excluding botches.
 
-        Count the dice rolls that are above 1 (not botches) but below the difficulty threshold.
-        This property represents unsuccessful attempts that are not critical failures.
+        Count the dice rolls that are above 1 (not botches) but below the difficulty threshold. This property represents unsuccessful attempts that are not critical failures.
 
         Returns:
             int: The number of failed dice rolls, not including botches.
@@ -356,10 +355,7 @@ class DiceRoll:
     def result(self) -> int:
         """Calculate and return the final result of the dice roll.
 
-        Determine the total number of successes to count, considering criticals,
-        failures, and botches. For d10 rolls, apply special rules for criticals
-        and botches. Use lazy evaluation to calculate the result only when first
-        accessed and cache it for subsequent accesses.
+        Determine the total number of successes to count, considering criticals, failures, and botches. For d10 rolls, apply special rules for criticals and botches. Use lazy evaluation to calculate the result only when first accessed and cache it for subsequent accesses.
 
         Returns:
             int: The final result of the dice roll, representing the total
@@ -379,9 +375,7 @@ class DiceRoll:
     async def thumbnail_url(self) -> str:  # pragma: no cover
         """Determine and return the thumbnail URL for the Discord embed.
 
-        Fetch the appropriate thumbnail URL based on the roll result type from the
-        Guild's custom roll result thumbnails. If no custom thumbnail is set, use
-        the default thumbnail for the given result type.
+        Fetch the appropriate thumbnail URL based on the roll result type from the Guild's custom roll result thumbnails. If no custom thumbnail is set, use the default thumbnail for the given result type.
 
         Returns:
             str: The URL of the thumbnail image to be used in the Discord embed.
@@ -417,9 +411,7 @@ class DiceRoll:
     def roll_result_humanized(self) -> str:
         """Return a human-readable description of the dice roll result.
 
-        Generate a concise, user-friendly string that describes the outcome of the dice roll.
-        The description varies based on the roll's result type, providing context-appropriate
-        feedback such as "Botch!", "Critical Success!", or a specific number of successes.
+        Generate a concise, user-friendly string that describes the outcome of the dice roll. The description varies based on the roll's result type, providing context-appropriate feedback such as "Botch!", "Critical Success!", or a specific number of successes.
 
         Returns:
             str: A human-readable string describing the roll result, e.g., "Botch!", "2 successes", etc.
@@ -458,17 +450,13 @@ class DiceRoll:
     def dice_as_emoji_images(self) -> str:
         """Convert the rolled dice values to emoji images and return as a string.
 
-        Generate a string representation of the dice roll results using emoji images.
-        Sort the dice values in ascending order before conversion. Use the
-        convert_int_to_emoji function to transform each die value into its
-        corresponding emoji image.
+        Generate a string representation of the dice roll results using emoji images. Sort the dice values in ascending order before conversion. Use the convert_int_to_emoji function to transform each die value into its corresponding emoji image.
 
         Returns:
             str: A space-separated string of emoji images representing the rolled dice.
 
         Note:
-            This property uses lazy evaluation, generating the emoji string only
-            when first accessed and caching it for future use.
+            This property uses lazy evaluation, generating the emoji string only when first accessed and caching it for future use.
         """
         if not self._dice_as_emoji_images:
             self._dice_as_emoji_images = " ".join(
@@ -480,10 +468,7 @@ class DiceRoll:
     def desperation_dice_as_emoji_images(self) -> str:
         """Convert the rolled desperation dice values to emoji images and return as a string.
 
-        Generate a string representation of the desperation dice roll results using emoji images.
-        Sort the dice values in ascending order before conversion. Use the
-        convert_int_to_emoji function to transform each die value into its
-        corresponding emoji image.
+        Generate a string representation of the desperation dice roll results using emoji images. Sort the dice values in ascending order before conversion. Use the convert_int_to_emoji function to transform each die value into its corresponding emoji image.
 
         Returns:
             str: A space-separated string of emoji images representing the rolled desperation dice.

@@ -51,7 +51,8 @@ def log_to_logfile(msg: str, level: str = "INFO", user: User = None) -> None:  #
         new_name = f"{name1}.{name2}.{name3}"
 
     logger.patch(lambda r: r.update(name=new_name)).log(  # type: ignore [call-arg]
-        level.upper(), f"{msg} [{username}]"
+        level.upper(),
+        f"{msg} [{username}]",
     )
 
 
@@ -106,14 +107,16 @@ async def log_message(
                     "description": "",
                     "footer": {"text": f"{footer}"},
                     "timestamp": str(datetime.now(UTC)),
-                }
+                },
             ],
         },
     )
 
 
 async def post_to_audit_log(
-    msg: str, level: str = "INFO", view: str = ""
+    msg: str,
+    level: str = "INFO",
+    view: str = "",
 ) -> None:  # pragma: no cover
     """Send a message to the audit log channel for a guild.
 
@@ -133,7 +136,9 @@ async def post_to_audit_log(
 
 
 async def post_to_error_log(
-    msg: str, level: str = "ERROR", view: str = ""
+    msg: str,
+    level: str = "ERROR",
+    view: str = "",
 ) -> None:  # pragma: no cover
     """Send a message to the error log channel for a guild.
 
@@ -167,7 +172,9 @@ async def send_user_dm(user: FlaskDiscordUser, message: str) -> dict | str:  # p
         or a string indicating the result of the message send operation.
     """
     dm_channel = discord_oauth.bot_request(
-        "/users/@me/channels", "POST", json={"recipient_id": user.id}
+        "/users/@me/channels",
+        "POST",
+        json={"recipient_id": user.id},
     )
     return discord_oauth.bot_request(
         f"/channels/{dm_channel['id']}/messages",

@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from typing import assert_never
 
-from valentina.constants import CharClass, CharSheetSection, Emoji, TraitCategory
+from valentina.constants import CharClass, CharSheetSection, EmojiDict, TraitCategory
 from valentina.models import Campaign, Character, CharacterTrait, User
 from valentina.utils.helpers import get_max_trait_value
 
@@ -82,7 +82,8 @@ class CharacterSheetBuilder:
                 for cat in TraitCategory.get_members_in_order(section=section)
                 if (
                     traits := self.character.fetch_traits_by_section(
-                        category=cat, show_zeros=show_zeros
+                        category=cat,
+                        show_zeros=show_zeros,
                     )
                 )
             ]
@@ -105,11 +106,12 @@ class CharacterSheetBuilder:
 
             categories = []
             for trait_cat in TraitCategory.get_members_in_order(
-                section=section, char_class=self.character.char_class
+                section=section,
+                char_class=self.character.char_class,
             ):
                 traits_to_create = []
                 for trait_name in trait_cat.get_all_class_trait_names(
-                    char_class=self.character.char_class
+                    char_class=self.character.char_class,
                 ):
                     trait_to_create = TraitForCreation(
                         name=trait_name,
@@ -119,7 +121,7 @@ class CharacterSheetBuilder:
                     traits_to_create.append(trait_to_create)
 
                 categories.append(
-                    SectionCategory(category=trait_cat, traits_for_creation=traits_to_create)
+                    SectionCategory(category=trait_cat, traits_for_creation=traits_to_create),
                 )
 
             sheet.append(SheetSection(section=section, categories=categories))
@@ -139,7 +141,9 @@ class CharacterSheetBuilder:
         return unorganised_traits
 
     async def fetch_sheet_profile(  # noqa: C901, PLR0912
-        self, storyteller_view: bool = False, is_web_ui: bool = False
+        self,
+        storyteller_view: bool = False,
+        is_web_ui: bool = False,
     ) -> dict:
         """Fetches the character's profile information for the character sheet.
 
@@ -157,7 +161,7 @@ class CharacterSheetBuilder:
                 else '<i class="fa-solid fa-skull-crossbones"></i>'
             )
         else:
-            alive_value = Emoji.ALIVE.value if self.character.is_alive else Emoji.DEAD.value
+            alive_value = EmojiDict.ALIVE if self.character.is_alive else EmojiDict.DEAD
 
         profile = {
             "class": self.character.char_class_name.title(),

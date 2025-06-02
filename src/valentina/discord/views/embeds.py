@@ -1,6 +1,6 @@
 """Prebuilt embeds for Valentina."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import discord
@@ -10,7 +10,7 @@ from valentina.constants import ABS_MAX_EMBED_CHARACTERS, PREF_MAX_EMBED_CHARACT
 from valentina.discord.bot import ValentinaContext
 
 
-async def auto_paginate(
+async def auto_paginate(  # noqa: PLR0913
     ctx: discord.ApplicationContext,
     title: str,
     text: str,
@@ -80,7 +80,7 @@ def user_error_embed(ctx: ValentinaContext, msg: str, error: str) -> discord.Emb
     description = "" if error == msg else error
 
     embed = discord.Embed(title=msg, description=description, color=EmbedColor.ERROR.value)
-    embed.timestamp = datetime.now()
+    embed.timestamp = datetime.now(UTC)
 
     if hasattr(ctx, "command"):
         embed.set_footer(text=f"Command: /{ctx.command}")
@@ -88,7 +88,7 @@ def user_error_embed(ctx: ValentinaContext, msg: str, error: str) -> discord.Emb
     return embed
 
 
-async def present_embed(
+async def present_embed(  # noqa: PLR0913
     ctx: ValentinaContext,
     title: str = "",
     description: str = "",
@@ -152,7 +152,7 @@ async def present_embed(
         embed.set_footer(text=footer)
 
     if timestamp:
-        embed.timestamp = datetime.now()
+        embed.timestamp = datetime.now(UTC)
 
     respond_kwargs = {
         "embed": embed,

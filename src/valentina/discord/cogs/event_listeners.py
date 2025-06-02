@@ -47,7 +47,9 @@ class Events(commands.Cog, name="Events"):
             ]
 
             embed = discord.Embed(
-                title="", description="\n".join(description), color=EmbedColor.INFO.value
+                title="",
+                description="\n".join(description),
+                color=EmbedColor.INFO.value,
             )
             embed.set_thumbnail(url=self.bot.user.display_avatar)
             await message.channel.send(embed=embed)
@@ -101,14 +103,18 @@ class Events(commands.Cog, name="Events"):
 
     @commands.Cog.listener()
     async def on_application_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.DiscordException
+        self,
+        ctx: discord.ApplicationContext,
+        error: discord.DiscordException,
     ) -> None:
         """Use centralized reporter to handle errors in slash commands."""
         await reporter.report_error(ctx, error)
 
     @commands.Cog.listener()
     async def on_command_error(
-        self, ctx: discord.ApplicationContext, error: discord.DiscordException
+        self,
+        ctx: discord.ApplicationContext,
+        error: discord.DiscordException,
     ) -> None:
         """Use centralized reporter to handle errors in prefix commands."""
         await reporter.report_error(ctx, error)
@@ -134,7 +140,7 @@ class Events(commands.Cog, name="Events"):
                 {
                     "date_modified": time_now(),
                     "name": member.display_name,
-                }
+                },
             ),
             on_insert=User(id=member.id, name=member.display_name),
         )

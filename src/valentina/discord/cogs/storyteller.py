@@ -183,7 +183,7 @@ class StoryTeller(commands.Cog):
         logger.info(f"CHARACTER: Create storyteller character {character.name}")
 
     @character.command(name="create_rng", description="Create a random new npc character")
-    async def create_rng_char(
+    async def create_rng_char(  # noqa: PLR0913
         self,
         ctx: ValentinaContext,
         gender: Option(
@@ -246,7 +246,10 @@ class StoryTeller(commands.Cog):
 
         user = await User.get(ctx.author.id, fetch_links=True)
         chargen = RNGCharGen(
-            guild_id=ctx.guild.id, user=user, experience_level=level, campaign=campaign
+            guild_id=ctx.guild.id,
+            user=user,
+            experience_level=level,
+            campaign=campaign,
         )
         character = await chargen.generate_full_character(
             char_class=character_class,
@@ -261,7 +264,9 @@ class StoryTeller(commands.Cog):
         # Confirm character creation
         view = ConfirmCancelButtons(ctx.author)
         embed = await sheet_embed(
-            ctx, character, title=f"Confirm creation of {character.full_name}"
+            ctx,
+            character,
+            title=f"Confirm creation of {character.full_name}",
         )
         msg = await ctx.respond(embed=embed, view=view, ephemeral=True)
 
@@ -332,7 +337,11 @@ class StoryTeller(commands.Cog):
             autocomplete=select_trait_from_char_option,
         ),
         new_value: Option(
-            int, description="New value for the trait", required=True, min_value=0, max_value=20
+            int,
+            description="New value for the trait",
+            required=True,
+            min_value=0,
+            max_value=20,
         ),
         hidden: Option(
             bool,
@@ -355,7 +364,10 @@ class StoryTeller(commands.Cog):
             f"Update `{trait.name}` for `{character.name}` from `{trait.value}` to `{new_value}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -405,7 +417,10 @@ class StoryTeller(commands.Cog):
         """Delete a storyteller character."""
         title = f"Delete storyteller character `{character.full_name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -415,7 +430,7 @@ class StoryTeller(commands.Cog):
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(name="add_trait", description="Add a trait to a storyteller character")
-    async def add_trait(
+    async def add_trait(  # noqa: PLR0913
         self,
         ctx: ValentinaContext,
         character: Option(
@@ -450,7 +465,10 @@ class StoryTeller(commands.Cog):
         """Add a custom trait to a character."""
         title = f"Create custom trait: `{name.title()}` at `{value}` dots for {character.full_name}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -484,7 +502,10 @@ class StoryTeller(commands.Cog):
             default=None,
         ),
         url: Option(
-            ValidImageURL, description="URL of the thumbnail", required=False, default=None
+            ValidImageURL,
+            description="URL of the thumbnail",
+            required=False,
+            default=None,
         ),
         hidden: Option(
             bool,
@@ -532,7 +553,11 @@ class StoryTeller(commands.Cog):
 
         title = f"Add image to `{character.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, image=image_url, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            image=image_url,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -543,7 +568,8 @@ class StoryTeller(commands.Cog):
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 
     @character.command(
-        name="image_delete", description="Delete an image to a storyteller character"
+        name="image_delete",
+        description="Delete an image to a storyteller character",
     )
     async def delete_image(
         self,
@@ -582,7 +608,8 @@ class StoryTeller(commands.Cog):
     ### PLAYER COMMANDS ####################################################################
 
     @player.command(
-        name="transfer_character", description="Transfer a character from one owner to another."
+        name="transfer_character",
+        description="Transfer a character from one owner to another.",
     )
     async def transfer_character(
         self,
@@ -620,7 +647,10 @@ class StoryTeller(commands.Cog):
 
         title = f"Transfer `{character.name}` from `{old_owner.name}` to `{new_owner.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -654,7 +684,11 @@ class StoryTeller(commands.Cog):
             autocomplete=select_trait_from_char_option,
         ),
         new_value: Option(
-            int, description="New value for the trait", required=True, min_value=0, max_value=20
+            int,
+            description="New value for the trait",
+            required=True,
+            min_value=0,
+            max_value=20,
         ),
         hidden: Option(
             bool,
@@ -677,7 +711,10 @@ class StoryTeller(commands.Cog):
             f"Update `{trait.name}` from `{trait.value}` to `{new_value}` for `{character.name}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -691,7 +728,7 @@ class StoryTeller(commands.Cog):
     ### ROLL COMMANDS ####################################################################
 
     @roll.command(name="roll_traits", description="Roll traits for a storyteller character")
-    async def roll_traits(
+    async def roll_traits(  # noqa: PLR0913
         self,
         ctx: ValentinaContext,
         character: Option(

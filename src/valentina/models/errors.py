@@ -21,7 +21,8 @@ class ErrorReporter:
 
     @staticmethod
     def _handle_known_exceptions(  # noqa: C901
-        ctx: discord.ApplicationContext, error: Exception
+        ctx: discord.ApplicationContext,
+        error: Exception,
     ) -> tuple[str | None, str | None, bool]:
         """Handle known exceptions and return user message, log message, and traceback flag.
 
@@ -168,7 +169,9 @@ class ErrorReporter:
 
     @staticmethod
     async def error_log_embed(
-        ctx: discord.ApplicationContext | discord.Interaction, msg: str, error: Exception
+        ctx: discord.ApplicationContext | discord.Interaction,
+        msg: str,
+        error: Exception,
     ) -> discord.Embed:
         """Create an embed for errors."""
         description = f"{msg}\n"

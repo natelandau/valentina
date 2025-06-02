@@ -89,7 +89,8 @@ class Guild(Document):
         self.date_modified = time_now()
 
     def fetch_changelog_channel(
-        self, guild: discord.Guild
+        self,
+        guild: discord.Guild,
     ) -> discord.TextChannel | None:  # pragma: no cover
         """Retrieve the changelog channel for the guild from the settings.
 
@@ -107,7 +108,8 @@ class Guild(Document):
         return None
 
     def fetch_storyteller_channel(
-        self, guild: discord.Guild
+        self,
+        guild: discord.Guild,
     ) -> discord.TextChannel | None:  # pragma: no cover
         """Retrieve the storyteller channel for the guild from the settings.
 
@@ -125,7 +127,8 @@ class Guild(Document):
         return None
 
     def fetch_audit_log_channel(
-        self, guild: discord.Guild
+        self,
+        guild: discord.Guild,
     ) -> discord.TextChannel | None:  # pragma: no cover
         """Retrieve the audit log channel for the guild from the settings.
 
@@ -143,7 +146,8 @@ class Guild(Document):
         return None
 
     def fetch_error_log_channel(
-        self, guild: discord.Guild
+        self,
+        guild: discord.Guild,
     ) -> discord.TextChannel | None:  # pragma: no cover
         """Retrieve the error log channel for the guild from the settings.
 
@@ -193,7 +197,10 @@ class Guild(Document):
         await campaign.save()
 
     async def add_roll_result_thumbnail(
-        self, ctx: "ValentinaContext", roll_type: RollResultType, url: str
+        self,
+        ctx: "ValentinaContext",
+        roll_type: RollResultType,
+        url: str,
     ) -> None:
         """Add a roll result thumbnail to the database."""
         for thumb in self.roll_result_thumbnails:
@@ -202,12 +209,12 @@ class Guild(Document):
                 raise errors.ValidationError(msg)
 
         self.roll_result_thumbnails.append(
-            GuildRollResultThumbnail(url=url, roll_type=roll_type, user=ctx.author.id)
+            GuildRollResultThumbnail(url=url, roll_type=roll_type, user=ctx.author.id),
         )
         await self.save()
 
         logger.info(
-            f"DATABASE: Add '{roll_type.name}' roll result thumbnail for '{ctx.guild.name}'"
+            f"DATABASE: Add '{roll_type.name}' roll result thumbnail for '{ctx.guild.name}'",
         )
 
     async def fetch_diceroll_thumbnail(self, result: RollResultType) -> str:

@@ -43,7 +43,7 @@ async def test_fetch_diceroll_thumbnail(guild_factory):
 
     # WHEN a custom thumbnail is added
     guild.roll_result_thumbnails = [
-        GuildRollResultThumbnail(url="test", roll_type=RollResultType.BOTCH, user=1111)
+        GuildRollResultThumbnail(url="test", roll_type=RollResultType.BOTCH, user=1111),
     ]
 
     found_new_thumbnail = False

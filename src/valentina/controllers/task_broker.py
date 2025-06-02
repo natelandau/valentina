@@ -46,12 +46,13 @@ class TaskBroker:
         ).to_list()
         if len(rebuild_channel_tasks) > 0:
             logger.info(
-                f"BROKER: Found {len(rebuild_channel_tasks)} rebuild channel tasks for guild {self.discord_guild.id}"
+                f"BROKER: Found {len(rebuild_channel_tasks)} rebuild channel tasks for guild {self.discord_guild.id}",
             )
 
             channel_manager = ChannelManager(guild=self.discord_guild)
             for campaign in await Campaign.find_many(
-                Campaign.guild == self.discord_guild.id, fetch_links=True
+                Campaign.guild == self.discord_guild.id,
+                fetch_links=True,
             ).to_list():
                 await channel_manager.delete_campaign_channels(campaign)
                 # Add delay between operations to avoid hitting Discord rate limits
@@ -98,7 +99,8 @@ class TaskBroker:
 
         channel_manager = ChannelManager(guild=self.discord_guild)
         await channel_manager.confirm_character_channel(
-            character=character, campaign=character.campaign
+            character=character,
+            campaign=character.campaign,
         )
 
     async def _rename_campaign_channel(self, task: BrokerTask) -> None:
@@ -180,7 +182,7 @@ class TaskBroker:
         # This ensures proper ordering of channelsafter any book changes
         for campaign in campaigns_to_sort:
             await channel_manager.sort_campaign_channels(
-                await Campaign.get(campaign, fetch_links=True)
+                await Campaign.get(campaign, fetch_links=True),
             )
 
         logger.info(f"BROKER: {len(tasks)} book channel tasks completed")

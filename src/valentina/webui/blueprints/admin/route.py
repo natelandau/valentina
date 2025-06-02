@@ -105,7 +105,8 @@ class AdminView(MethodView):
         """
         if not await is_storyteller():
             return abort(
-                HTTPStatus.FORBIDDEN.value, "You are not a storyteller and cannot access this page."
+                HTTPStatus.FORBIDDEN.value,
+                "You are not a storyteller and cannot access this page.",
             )
 
         guild = await fetch_guild()
@@ -119,7 +120,7 @@ class AdminView(MethodView):
                 PermissionManageCampaign=PermissionManageCampaign,
                 PermissionsKillCharacter=PermissionsKillCharacter,
                 LogLevel=LogLevel,
-            )
+            ),
         )()
 
     async def post(self) -> str:
@@ -141,7 +142,8 @@ class AdminView(MethodView):
         """
         if not await is_storyteller():
             return abort(
-                HTTPStatus.FORBIDDEN.value, "You are not a storyteller and cannot access this page."
+                HTTPStatus.FORBIDDEN.value,
+                "You are not a storyteller and cannot access this page.",
             )
 
         # Map request parameters to handler functions to avoid a long if/elif chain

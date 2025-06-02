@@ -11,7 +11,7 @@ from valentina.constants import (
     MAX_OPTION_LIST_SIZE,
     CharacterConcept,
     CharClass,
-    Emoji,
+    EmojiDict,
     RNGCharLevel,
     TraitCategory,
     VampireClan,
@@ -31,8 +31,7 @@ if TYPE_CHECKING:
 async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[OptionChoice]:
     """Generate a list of all player characters in the guild for autocomplete.
 
-    Fetch all player characters for the guild, filter them based on the user's input,
-    and return a list of OptionChoice objects to populate the autocomplete list.
+    Fetch all player characters for the guild, filter them based on the user's input, and return a list of OptionChoice objects to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
@@ -59,7 +58,7 @@ async def select_any_player_character(ctx: discord.AutocompleteContext) -> list[
         OptionChoice(
             f"{character.name} [@{owner.name}]"
             if character.is_alive
-            else f"{Emoji.DEAD.value} {character.name} [@{owner.name}]",
+            else f"{EmojiDict.DEAD} {character.name} [@{owner.name}]",
             str(character.id),
         )
         for character, owner in all_chars_owners
@@ -79,8 +78,7 @@ async def select_campaign_any_player_character(
 ) -> list[OptionChoice]:  # pragma: no cover
     """Generate a list of all player characters associated with a specific campaign.
 
-    Fetch all player characters for the campaign, filter them based on the user's input,
-    and return a list of OptionChoice objects to populate the autocomplete list.
+    Fetch all player characters for the campaign, filter them based on the user's input, and return a list of OptionChoice objects to populate the autocomplete list.
 
     Args:
         ctx (discord.AutocompleteContext): The context object containing interaction and user details.
@@ -113,7 +111,7 @@ async def select_campaign_any_player_character(
         OptionChoice(
             f"{character.name} [@{owner.name}]"
             if character.is_alive
-            else f"{Emoji.DEAD.value} {character.name} [@{owner.name}]",
+            else f"{EmojiDict.DEAD} {character.name} [@{owner.name}]",
             str(character.id),
         )
         for character, owner in all_chars_owners
@@ -153,7 +151,7 @@ async def select_campaign_character_from_user(
     # Prepare character data
     all_chars = [
         (
-            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
+            f"{character.name}" if character.is_alive else f"{EmojiDict.DEAD} {character.name}",
             character.id,
         )
         for character in user_object.all_characters(ctx.interaction.guild)
@@ -184,7 +182,7 @@ async def select_storyteller_character(ctx: discord.AutocompleteContext) -> list
     # Prepare character data
     all_chars = [
         (
-            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
+            f"{character.name}" if character.is_alive else f"{EmojiDict.DEAD} {character.name}",
             character.id,
         )
         async for character in Character.find_many(
@@ -217,7 +215,7 @@ async def select_any_character(ctx: discord.AutocompleteContext) -> list[OptionC
     # Prepare character data
     all_chars = [
         (
-            f"{character.name}" if character.is_alive else f"{Emoji.DEAD.value} {character.name}",
+            f"{character.name}" if character.is_alive else f"{EmojiDict.DEAD} {character.name}",
             character.id,
         )
         async for character in Character.find_many(

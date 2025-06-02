@@ -5,7 +5,7 @@ import textwrap
 import discord
 from discord.ext import pages
 
-from valentina.constants import ABS_MAX_EMBED_CHARACTERS, EmbedColor, Emoji
+from valentina.constants import ABS_MAX_EMBED_CHARACTERS, EmbedColor, EmojiDict
 from valentina.discord.bot import ValentinaContext
 from valentina.models import Campaign, Statistics
 from valentina.utils.helpers import num_to_circles
@@ -23,7 +23,10 @@ class CampaignViewer:
     """
 
     def __init__(
-        self, ctx: ValentinaContext, campaign: Campaign, max_chars: int = ABS_MAX_EMBED_CHARACTERS
+        self,
+        ctx: ValentinaContext,
+        campaign: Campaign,
+        max_chars: int = ABS_MAX_EMBED_CHARACTERS,
     ) -> None:
         self.ctx: ValentinaContext = ctx
         self.campaign: Campaign = campaign
@@ -72,8 +75,8 @@ class CampaignViewer:
 {campaign_description}
 ### Details
 ```scala
-{Emoji.DESPERATION.value} Desperation : {num_to_circles(self.campaign.desperation)}
-{Emoji.DANGER.value} Danger      : {num_to_circles(self.campaign.danger)}
+{EmojiDict.DESPERATION} Desperation : {num_to_circles(self.campaign.desperation)}
+{EmojiDict.DANGER} Danger      : {num_to_circles(self.campaign.danger)}
 ```
 ```scala
 Created  : {self.campaign.date_created.strftime("%Y-%M-%d")}
@@ -131,15 +134,23 @@ NPCs     : {len(self.campaign.npcs)}
             buttons.extend(
                 [
                     pages.PaginatorButton(
-                        "prev", label="←", style=discord.ButtonStyle.green, disabled=True
+                        "prev",
+                        label="←",
+                        style=discord.ButtonStyle.green,
+                        disabled=True,
                     ),
                     pages.PaginatorButton(
-                        "page_indicator", style=discord.ButtonStyle.gray, disabled=True
+                        "page_indicator",
+                        style=discord.ButtonStyle.gray,
+                        disabled=True,
                     ),
                     pages.PaginatorButton(
-                        "next", label="→", style=discord.ButtonStyle.green, disabled=False
+                        "next",
+                        label="→",
+                        style=discord.ButtonStyle.green,
+                        disabled=False,
                     ),
-                ]
+                ],
             )
 
         return pages.PageGroup(
@@ -169,7 +180,7 @@ NPCs     : {len(self.campaign.npcs)}
             book_chapter_text += "\n".join([f"{c.number}. {c.name}" for c in chapters])
             book_notes_text = "### Notes\n"
             book_notes_text += "\n".join(
-                [f"- {await n.display(self.ctx)}" for n in book.notes]  # type: ignore [attr-defined]
+                [f"- {await n.display(self.ctx)}" for n in book.notes],  # type: ignore [attr-defined]
             )
 
             full_text = ""
@@ -201,7 +212,9 @@ NPCs     : {len(self.campaign.npcs)}
                 custom_buttons=[
                     pages.PaginatorButton("prev", label="←", style=discord.ButtonStyle.green),
                     pages.PaginatorButton(
-                        "page_indicator", style=discord.ButtonStyle.gray, disabled=True
+                        "page_indicator",
+                        style=discord.ButtonStyle.gray,
+                        disabled=True,
                     ),
                     pages.PaginatorButton("next", label="→", style=discord.ButtonStyle.green),
                 ],

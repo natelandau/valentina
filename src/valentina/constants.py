@@ -65,7 +65,7 @@ class WebUIEnvironment(StrEnum):
     TESTING = "Testing"
 
 
-class Emoji(Enum):
+class EmojiDict:
     """Enum for emojis."""
 
     ALIVE = "🙂"
@@ -114,8 +114,8 @@ class Emoji(Enum):
 class CampaignChannelName(Enum):
     """Enum for common campaign channel names."""
 
-    GENERAL = f"{Emoji.CHANNEL_GENERAL.value}-general"
-    STORYTELLER = f"{Emoji.CHANNEL_PRIVATE.value}-storyteller"
+    GENERAL = f"{EmojiDict.CHANNEL_GENERAL}-general"
+    STORYTELLER = f"{EmojiDict.CHANNEL_PRIVATE}-storyteller"
 
 
 class ChannelPermission(Enum):
@@ -217,7 +217,7 @@ class LogLevel(StrEnum):
     CRITICAL = "CRITICAL"
 
 
-class MaxTraitValue(Enum):
+class MaxTraitValue:
     """Maximum value for a trait.
 
     Note: Maximum values for custom traits are managed in the database.
@@ -317,7 +317,7 @@ class RollResultType(Enum):
     OTHER = 4
 
 
-class XPNew(Enum):
+class XPNew:
     """Experience cost for gaining a wholly new trait. Values are the cost in xp."""
 
     DEFAULT = 1
@@ -334,7 +334,7 @@ class XPNew(Enum):
     GIFTS = 7
 
 
-class XPMultiplier(Enum):
+class XPMultiplier:
     """Experience costs for raising character traits. Values are the multiplier against current rating."""
 
     # TODO: Need ability to charge 10points for 1st dot of a discipline
@@ -396,7 +396,7 @@ class CharClass(Enum):
         description="Receive special abilities based on their concept",
         playable=True,
         chargen_background_dots=1,
-        emoji=Emoji.MORTAL.value,
+        emoji=EmojiDict.MORTAL,
     )
     VAMPIRE = CharClassValue(
         name="Vampire",
@@ -404,7 +404,7 @@ class CharClass(Enum):
         description="Receive a clan and disciplines",
         playable=True,
         chargen_background_dots=5,
-        emoji=Emoji.VAMPIRE.value,
+        emoji=EmojiDict.VAMPIRE,
     )
     WEREWOLF = CharClassValue(
         name="Werewolf",
@@ -412,7 +412,7 @@ class CharClass(Enum):
         description="Receive a tribe and gifts",
         playable=True,
         chargen_background_dots=1,
-        emoji=Emoji.WEREWOLF.value,
+        emoji=EmojiDict.WEREWOLF,
     )
     MAGE = CharClassValue(
         name="Mage",
@@ -420,7 +420,7 @@ class CharClass(Enum):
         description="Receive a tradition and spheres",
         playable=True,
         chargen_background_dots=1,
-        emoji=Emoji.MAGE.value,
+        emoji=EmojiDict.MAGE,
     )
     GHOUL = CharClassValue(
         name="Ghoul",
@@ -428,7 +428,7 @@ class CharClass(Enum):
         description="Receive disciplines and a master",
         playable=True,
         chargen_background_dots=1,
-        emoji=Emoji.GHOUL.value,
+        emoji=EmojiDict.GHOUL,
     )
     CHANGELING = CharClassValue(
         name="Changeling",
@@ -436,7 +436,7 @@ class CharClass(Enum):
         description="",
         playable=True,
         chargen_background_dots=1,
-        emoji=Emoji.CHANGELING.value,
+        emoji=EmojiDict.CHANGELING,
     )
     HUNTER = CharClassValue(
         name="Hunter",
@@ -444,7 +444,7 @@ class CharClass(Enum):
         description="Receive a creed and edges",
         playable=True,
         chargen_background_dots=1,
-        emoji=Emoji.HUNTER.value,
+        emoji=EmojiDict.HUNTER,
     )
     SPECIAL = CharClassValue(
         name="Special",
@@ -452,7 +452,7 @@ class CharClass(Enum):
         description="Examples: Demon, Angel, Exalted, Titan, Mummy, etc. You choose.",
         playable=True,
         chargen_background_dots=3,
-        emoji=Emoji.MONSTER.value,
+        emoji=EmojiDict.MONSTER,
     )
     OTHER = CharClassValue(
         name="Other",
@@ -460,7 +460,7 @@ class CharClass(Enum):
         description=None,
         playable=False,
         chargen_background_dots=0,
-        emoji=Emoji.OTHER.value,
+        emoji=EmojiDict.OTHER,
     )
     NONE = CharClassValue(
         name="None",
@@ -468,7 +468,7 @@ class CharClass(Enum):
         description=None,
         playable=False,
         chargen_background_dots=0,
-        emoji=Emoji.SILHOUETTE.value,
+        emoji=EmojiDict.SILHOUETTE,
     )
     COMMON = CharClassValue(
         name="Common",
@@ -476,7 +476,7 @@ class CharClass(Enum):
         description=None,
         playable=False,
         chargen_background_dots=0,
-        emoji=Emoji.SILHOUETTE.value,
+        emoji=EmojiDict.SILHOUETTE,
     )
 
     @classmethod
@@ -919,7 +919,9 @@ class TraitCategory(Enum):
 
     @classmethod
     def get_members_in_order(
-        cls, section: CharSheetSection = None, char_class: CharClass | None = None
+        cls,
+        section: CharSheetSection = None,
+        char_class: CharClass | None = None,
     ) -> list["TraitCategory"]:
         """Return a list of TraitCategory members in order of their order value. This can be filtered by section and/or class.
 
@@ -1288,10 +1290,12 @@ class WerewolfMetisDeformity(Enum):
     """Enum for Werewolf deformities. All Metis breed characters start with one deformity."""
 
     ALBINO = WerewolfMetisDeformityValue(
-        name="Albino", effect="+2 Penalty to perception in bright light"
+        name="Albino",
+        effect="+2 Penalty to perception in bright light",
     )
     BLIND = WerewolfMetisDeformityValue(
-        name="Blind", effect="Automatically fail all rolls involving sight"
+        name="Blind",
+        effect="Automatically fail all rolls involving sight",
     )
     FITS_OF_MADNESS = WerewolfMetisDeformityValue(
         name="Fits of Madness",
@@ -1300,28 +1304,36 @@ class WerewolfMetisDeformity(Enum):
     HAIRLESS = WerewolfMetisDeformityValue(name="Hairless", effect="+1 difficulty to social rolls")
     HORNS = WerewolfMetisDeformityValue(name="Horns", effect="+1 difficulty to social rolls")
     HUNCHBACK = WerewolfMetisDeformityValue(
-        name="Hunchback", effect="+1 difficulty to social and dexterity rolls"
+        name="Hunchback",
+        effect="+1 difficulty to social and dexterity rolls",
     )
     NO_SENSE_OF_SMELL = WerewolfMetisDeformityValue(
-        name="No Sense of Smell", effect="+2 difficulty to track prey with Primal Urge"
+        name="No Sense of Smell",
+        effect="+2 difficulty to track prey with Primal Urge",
     )
     NO_TAIL = WerewolfMetisDeformityValue(
-        name="No Tail", effect="+1 difficulty to social rolls while in Lupus form"
+        name="No Tail",
+        effect="+1 difficulty to social rolls while in Lupus form",
     )
     SEIZURES = WerewolfMetisDeformityValue(
-        name="Seizures", effect="Must pass Willpower roll (8 Difficulty) when situations get tough"
+        name="Seizures",
+        effect="Must pass Willpower roll (8 Difficulty) when situations get tough",
     )
     TOUGH_HIDE = WerewolfMetisDeformityValue(
-        name="Tough Hide", effect="Appearance can not be great than 1 but +1 to soak"
+        name="Tough Hide",
+        effect="Appearance can not be great than 1 but +1 to soak",
     )
     WASTING_DISEASE = WerewolfMetisDeformityValue(
-        name="Wasting Disease", effect="+2 difficulty to Stamina rolls"
+        name="Wasting Disease",
+        effect="+2 difficulty to Stamina rolls",
     )
     WEAK_IMMUNE_SYSTEM = WerewolfMetisDeformityValue(
-        name="Weak Immune System", effect="No Bruised health level"
+        name="Weak Immune System",
+        effect="No Bruised health level",
     )
     WITHERED_LIMB = WerewolfMetisDeformityValue(
-        name="Withered Limb", effect="+2 difficulty to dexterity rolls when using effected limb"
+        name="Withered Limb",
+        effect="+2 difficulty to dexterity rolls when using effected limb",
     )
 
 
@@ -1466,9 +1478,9 @@ class CharacterConcept(Enum):
                     (
                         "Frenzy",
                         "Ignore the first inflicted health levels of damage with no penalty up until `Mauled`, and cannot be stunned",
-                    )
+                    ),
                 ],
-            }
+            },
         ],
         ability_specialty=TraitCategory.TALENTS,
         attribute_specialty=TraitCategory.PHYSICAL,
@@ -1497,9 +1509,9 @@ class CharacterConcept(Enum):
                     (
                         "Fast Talk",
                         "Performers have an automatic success on any `Charisma`, `Expression` or `Performance` roll, and can immediately command attention. This works even in combat.",
-                    )
+                    ),
                 ],
-            }
+            },
         ],
         ability_specialty=TraitCategory.SKILLS,
         attribute_specialty=TraitCategory.SOCIAL,
@@ -1567,7 +1579,7 @@ class CharacterConcept(Enum):
                 "description": "A trained animal that can carry out simple commands",
                 "traits": [],
                 "custom_sections": [
-                    ("Familiar", "A trained animal that can carry out simple commands")
+                    ("Familiar", "A trained animal that can carry out simple commands"),
                 ],
             },
             {
@@ -1584,7 +1596,7 @@ class CharacterConcept(Enum):
                     (
                         "Spirit Sight",
                         "Can detect supernatural beings, and penetrate spells, illusions and glamour on a `perception` + `occult` roll with a difficulty of `4`",
-                    )
+                    ),
                 ],
             },
             {
@@ -1592,7 +1604,7 @@ class CharacterConcept(Enum):
                 "description": "Learn various qualities of a person from their aura",
                 "traits": [],
                 "custom_sections": [
-                    ("Read Auras", "Learn various qualities of a person from their aura")
+                    ("Read Auras", "Learn various qualities of a person from their aura"),
                 ],
             },
             {
@@ -1600,7 +1612,7 @@ class CharacterConcept(Enum):
                 "description": "Free your mind to travel the world in astral form",
                 "traits": [],
                 "custom_sections": [
-                    ("Astral Projection", "Free your mind to travel the world in astral form")
+                    ("Astral Projection", "Free your mind to travel the world in astral form"),
                 ],
             },
             {
@@ -1611,7 +1623,7 @@ class CharacterConcept(Enum):
                     (
                         "Remove Frenzy",
                         "Can cool vampires frenzy, werewolves' rage, etc. They become passive for two turns.",
-                    )
+                    ),
                 ],
             },
         ],
@@ -1643,7 +1655,7 @@ class CharacterConcept(Enum):
                     (
                         "Firearms Specialist",
                         "Can re-roll any single Firearms roll once per turn. Can also specialize in new firearms at `3`, `4` and `5`, granting an additional dice whenever a specialized weapon is used.",
-                    )
+                    ),
                 ],
             },
             {
@@ -1654,7 +1666,7 @@ class CharacterConcept(Enum):
                     (
                         "Hand to hand",
                         "Can re-roll any single `Brawl` roll once per turn. Can also gain a new specialization at `3`, `4` and `5`, granting an additional die whenever a specialized martial arts style is used.",
-                    )
+                    ),
                 ],
             },
             {
@@ -1665,7 +1677,7 @@ class CharacterConcept(Enum):
                     (
                         "Melee",
                         "Can re-roll any single `Melee` roll once per turn. Can also gain a new specialization at `3`, `4` and `5`, granting an additional die whenever a specialized melee weapon is used.",
-                    )
+                    ),
                 ],
             },
         ],
@@ -1698,7 +1710,7 @@ class CharacterConcept(Enum):
                     (
                         "Focus",
                         "Gathering their Chi, the monk can resist gases, poisons, psionic attacks, and hold their breath one turn per existing `stamina`+ `willpower`.  Monks are immune to the vampiric discipline of `Dominate`.",
-                    )
+                    ),
                 ],
             },
             {
@@ -1709,7 +1721,7 @@ class CharacterConcept(Enum):
                     (
                         "Iron Hand",
                         "Deliver a single punch, once per scene, with damage augmented by spending `willpower`, `1` point per damage level.",
-                    )
+                    ),
                 ],
             },
         ],
@@ -1772,7 +1784,7 @@ class CharacterConcept(Enum):
                     (
                         "Camouflage",
                         "The Ranger can camouflage into their preferred environment given `1` turn of preparation. Any attacks made from this position are considered surprise attacks.",
-                    )
+                    ),
                 ],
             },
             {
@@ -1783,7 +1795,7 @@ class CharacterConcept(Enum):
                     (
                         "Surprise Attack",
                         "Surprise attacks do an additional `3` successes of damage.",
-                    )
+                    ),
                 ],
             },
         ],
@@ -1826,7 +1838,7 @@ class CharacterConcept(Enum):
                     (
                         "Lay Low",
                         "`+2` dots on any rolls to evade pursuit, lose a tail, escape the police, or on any sneak roll.",
-                    )
+                    ),
                 ],
             },
         ],
@@ -1904,7 +1916,7 @@ class CharacterConcept(Enum):
                 "description": "The Businessman can enthrall his enemies and win them over with her powers of facts and logic.  This is less of a fast power and more of a sustained one.",
                 "traits": [("Resources", 2, "BACKGROUNDS")],
                 "custom_sections": [
-                    ("Persuasion", "`1` automatic success to `Leadership` or `Subterfuge` rolls.")
+                    ("Persuasion", "`1` automatic success to `Leadership` or `Subterfuge` rolls."),
                 ],
             },
         ],

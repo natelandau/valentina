@@ -225,50 +225,24 @@
     target-version = "py311"
     [tool.ruff.lint]
         ignore = [
-            "A005",     # shadows a Python standard-library module
-            "ANN001",   # Missing type annotation for function argument `cls`
-            "ANN002",   # Missing type annotation for `*args`
-            "ANN003",   # Missing type annotation for `**kwargs`
-            "ANN204",   # Missing return type annotation for special method `__init__`
-            "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed,
-            "ARG005",   # Unused lambda argument
-            "ASYNC110", # Use `anyio.Event` instead of awaiting `anyio.sleep` in a `while` loop
-            "B006",     # mutable-argument-default
-            "B008",     # function-call-in-default-argument
-            "COM812",   # Trailing comma missing"
-            "CPY001",   # Missing copyright notice at top of file
-            "D107",     # undocumented-public-init
-            "D203",
-            "D204",
-            "D213",
-            "D215",
-            "D404",
-            "D406",     # new-line-after-section-name
-            "D407",     # dashed-underline-after-section
-            "D408",     # section-underline-after-name
-            "D409",     # section-underline-matches-section-length
-            "D413",     # blank-line-after-last-section
-            "DTZ",      # TODO: Fix naive datetime usage
-            "E266",
-            "E501",
-            "FBT001",   # Boolean-typed positional argument in function definition
-            "FBT002",   # Boolean-typed positional argument in function definition
-            "FIX002",   # Line contains TODO, consider resolving the issue"
-            "ISC001",   # single-line-implicit-string-concatenation
-            "N805",     # invalid-first-argument-name-for-method
-            "PD011",    # Use `.to_numpy()` instead of `.values`"
-            "PGH003",
-            "PIE796",   # Enum contains duplicate value
-            "PLR0913",  # too-many-arguments
-            "PLR0917",
-            "RSE102",   # Unnecessary parentheses on raised exception"
-            "S307",
-            "S311",     # suspicious-non-cryptographic-random-usage
-            "S603",     #`subprocess` call: check for execution of untrusted input
-            "TD001",    # invalid-todo-tag
-            "TD002",    # Missing author in TODO
-            "TD003",    # Missing issue link on the line following this TODO
-            "UP007",    # non-pep604-annotation
+            "ANN002", # Missing type annotation for `*args`
+            "ANN003", # Missing type annotation for `**kwargs`
+            "ANN204", # Missing return type annotation for special method `__init__`
+            "ANN401", # Dynamically typed expressions (typing.Any) are disallowed,
+            "B006",   # mutable-argument-default
+            "B008",   # function-call-in-default-argument
+            "COM812", # Trailing comma missing
+            "D107",   # undocumented-public-init
+            "E501",   # line-too-long
+            "FBT001", # Boolean-typed positional argument in function definition
+            "FBT002", # Boolean-typed positional argument in function definition
+            "FIX002", # Line contains TODO, consider resolving the issue"
+            "ISC001", # single-line-implicit-string-concatenation
+            "PD011",  # Use `.to_numpy()` instead of `.values`"
+            "S311",   # suspicious-non-cryptographic-random-usage
+            "TD001",  # invalid-todo-tag
+            "TD002",  # Missing author in TODO
+            "TD003",  # Missing issue link on the line following this TODO
         ]
         per-file-ignores = { "scripts/*.py" = [
             "PLR0912",
@@ -279,12 +253,17 @@
         ], "tests/**/*.py" = [
             "A002",
             "A003",
+            "ANN001",  # Missing type annotation for function argument `cls`
+            "ANN002",  # Missing type annotation for `*args`
+            "ANN003",  # Missing type annotation for `**kwargs`
             "ANN201",  # Missing return type annotation
             "ARG001",  # Unused argument
+            "ARG005",  # Unused lambda argument
             "D102",
             "ERA001",  # Commented out code
             "F403",
             "F405",    # May be undefined from type imports
+            "PGH003",  # Use specific rule codes when ignoring type issues
             "PLR0913",
             "PLR2004",
             "S101",
@@ -302,7 +281,11 @@
             "PLR6301",
         ] }
         select = ["ALL"]
-        unfixable = ["E712", "ERA001", "F401", "F841", "UP007"]
+        unfixable = [
+            "ERA001", # Commented out code
+            "F401",   # unused-import
+            "F841",   # unused-variable
+        ]
 
         [tool.ruff.lint.mccabe]
             # Unlike Flake8, default to a complexity level of 10.

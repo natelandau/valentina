@@ -100,7 +100,9 @@ class FormSessionManager:
 
 
 async def finalize_character_creation(
-    character: Character, session_data: FormSessionManager, view: str = ""
+    character: Character,
+    session_data: FormSessionManager,
+    view: str = "",
 ) -> None:
     """Save initial traits for a character at level 0."""
     sheet_builder = CharacterSheetBuilder(character=character)
@@ -258,7 +260,7 @@ class CreateFull1(MethodView):
                             "character_create.create_2",
                             character_id=str(character.id),
                             char_class=char_class,
-                        )
+                        ),
                     )
                 case _:
                     await finalize_character_creation(
@@ -267,7 +269,7 @@ class CreateFull1(MethodView):
                         view=self.__class__.__name__,
                     )
                     return redirect(
-                        url_for("character_edit.initial_build", character_id=character.id)
+                        url_for("character_edit.initial_build", character_id=character.id),
                     )
 
         # Re-render form with validation errors
@@ -361,7 +363,9 @@ class CreateFull2(MethodView):
             "character_create.CreateFull2",
             form=form,
             post_url=url_for(
-                "character_create.create_2", character_id=character_id, char_class=char_class
+                "character_create.create_2",
+                character_id=character_id,
+                char_class=char_class,
             ),
         )
 
@@ -449,6 +453,8 @@ class CreateFull2(MethodView):
             "character_create.CreateFull2",
             form=form,
             post_url=url_for(
-                "character_create.create_2", character_id=character_id, char_class=char_class
+                "character_create.create_2",
+                character_id=character_id,
+                char_class=char_class,
             ),
         )

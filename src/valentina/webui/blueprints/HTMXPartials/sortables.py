@@ -41,7 +41,7 @@ class SortBooksView(MethodView):
                 page_title=page_title,
                 post_url=post_url,
                 return_url=url_for("campaign.view", campaign_id=parent_id),
-            )
+            ),
         )()
 
     async def post(self, parent_id: str) -> str:
@@ -85,7 +85,8 @@ class SortBooksView(MethodView):
                 await task.save()
 
         await post_to_audit_log(
-            msg=f"Sort books for campaign {parent_campaign.name}", view=self.__class__.__name__
+            msg=f"Sort books for campaign {parent_campaign.name}",
+            view=self.__class__.__name__,
         )
 
         return await run_sync(lambda: catalog.render("HTMXPartials.Sortable.Items", items=books))()
@@ -109,7 +110,7 @@ class SortChaptersView(MethodView):
                 page_title=page_title,
                 post_url=post_url,
                 return_url=url_for("campaign.view", campaign_id=parent_book.campaign),
-            )
+            ),
         )()
 
     async def post(self, parent_id: str) -> str:
@@ -143,9 +144,10 @@ class SortChaptersView(MethodView):
                 await item.save()
 
         await post_to_audit_log(
-            msg=f"Sort chapters for book {parent_book.name}", view=self.__class__.__name__
+            msg=f"Sort chapters for book {parent_book.name}",
+            view=self.__class__.__name__,
         )
 
         return await run_sync(
-            lambda: catalog.render("HTMXPartials.Sortable.Items", items=chapters)
+            lambda: catalog.render("HTMXPartials.Sortable.Items", items=chapters),
         )()

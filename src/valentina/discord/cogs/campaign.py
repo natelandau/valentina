@@ -99,7 +99,10 @@ class CampaignCog(commands.Cog):
 
         title = f"Create new campaign: `{name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -167,7 +170,10 @@ class CampaignCog(commands.Cog):
 
         title = f"Delete campaign: {campaign.name}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -225,7 +231,12 @@ class CampaignCog(commands.Cog):
             text += f"- `{len(characters)}` {p.plural_noun('character', len(characters))}\n"
 
         await auto_paginate(
-            ctx=ctx, title="", text=text, color=EmbedColor.INFO, hidden=hidden, max_chars=900
+            ctx=ctx,
+            title="",
+            text=text,
+            color=EmbedColor.INFO,
+            hidden=hidden,
+            max_chars=900,
         )
 
     ### NPC COMMANDS ####################################################################
@@ -308,7 +319,7 @@ class CampaignCog(commands.Cog):
                     f"**Class:** {npc.npc_class}\n**Description:** {npc.description}",
                 )
                 for npc in sorted(campaign.npcs, key=lambda x: x.name)
-            ]
+            ],
         )
 
         await present_embed(ctx, title="NPCs", fields=fields, level="info", ephemeral=hidden)
@@ -387,7 +398,11 @@ class CampaignCog(commands.Cog):
         self,
         ctx: ValentinaContext,
         index: Option(
-            int, name="npc", description="NPC to edit", required=True, autocomplete=select_npc
+            int,
+            name="npc",
+            description="NPC to edit",
+            required=True,
+            autocomplete=select_npc,
         ),
         hidden: Option(
             bool,
@@ -416,7 +431,10 @@ class CampaignCog(commands.Cog):
 
         title = f"Delete NPC: `{npc.name}` in `{campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -517,7 +535,7 @@ class CampaignCog(commands.Cog):
                     f"{book.description_short}",
                 )
                 for book in sorted(all_books, key=lambda x: x.number)
-            ]
+            ],
         )
 
         await present_embed(ctx, title=f"All Books in {campaign.name}", fields=fields, level="info")
@@ -604,7 +622,10 @@ class CampaignCog(commands.Cog):
 
         title = f"Delete book `{book.number}. {book.name}` from `{campaign.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -616,7 +637,7 @@ class CampaignCog(commands.Cog):
         await campaign.delete_book(book)
 
         for campaign_book in await CampaignBook.find(
-            CampaignBook.campaign == campaign.id
+            CampaignBook.campaign == campaign.id,
         ).to_list():
             await channel_manager.confirm_book_channel(book=campaign_book, campaign=campaign)
             await asyncio.sleep(1)
@@ -669,7 +690,10 @@ class CampaignCog(commands.Cog):
             f"Renumber book `{book.name}` from number `{original_number}` to number `{new_number}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -812,7 +836,7 @@ class CampaignCog(commands.Cog):
                     f"{chapter.description_short}",
                 )
                 for chapter in sorted(chapters, key=lambda x: x.number)
-            ]
+            ],
         )
 
         await present_embed(ctx, title="Chapters", fields=fields, level="info")
@@ -911,7 +935,10 @@ class CampaignCog(commands.Cog):
 
         title = f"Delete Chapter `{chapter.number}. {chapter.name}` from `{book.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:
@@ -976,7 +1003,10 @@ class CampaignCog(commands.Cog):
             f"Renumber book `{book.name}` from number `{original_number}` to number `{new_number}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:

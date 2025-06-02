@@ -123,7 +123,7 @@ class InventoryCog(commands.Cog, name="Inventory"):
             await character.save()
 
             await ctx.post_to_audit_log(
-                f"Update inventory item `{item.name}` for `{character.name}`"
+                f"Update inventory item `{item.name}` for `{character.name}`",
             )
 
     @inventory.command(name="delete", description="Delete an item from a character's inventory")

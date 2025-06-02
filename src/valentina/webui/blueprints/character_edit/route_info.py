@@ -29,7 +29,8 @@ class CustomSectionForm(QuartForm):
     """Form for a custom section."""
 
     title = StringField(
-        "Title", validators=[DataRequired(), Length(min=3, message="Must be at least 3 characters")]
+        "Title",
+        validators=[DataRequired(), Length(min=3, message="Must be at least 3 characters")],
     )
     content = TextAreaField(
         "Content",
@@ -147,7 +148,7 @@ class EditCharacterInfo(MethodView):
 
             if not updated_existing:
                 character.sheet_sections.append(
-                    CharacterSheetSection(title=section_title, content=section_content)
+                    CharacterSheetSection(title=section_title, content=section_content),
                 )
                 msg = "Custom section added"
 
@@ -176,7 +177,7 @@ class EditCharacterInfo(MethodView):
                 post_url=url_for(self.edit_type.value.route, character_id=character_id),
                 tab=self.edit_type.value.tab,
                 hx_target=f"#{self.edit_type.value.div_id}",
-            )
+            ),
         )()
 
     async def post(self, character_id: str) -> str:

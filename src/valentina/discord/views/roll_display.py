@@ -3,7 +3,7 @@
 import discord
 import inflect
 
-from valentina.constants import Emoji
+from valentina.constants import EmojiDict
 from valentina.discord.bot import ValentinaContext
 from valentina.models import CharacterTrait, DiceRoll
 from valentina.utils.helpers import convert_int_to_emoji
@@ -74,11 +74,11 @@ class RollDisplay:
             embed.add_field(name="\u200b", value="\u200b", inline=False)  # spacer
             value = f"""\
 > You must pick either:
-> - {Emoji.DESPAIR.value} **Despair** (Fail your roll)
-> - {Emoji.OVERREACH.value} **Overreach** (Succeed but raise the danger level by 1)
+> - {EmojiDict.DESPAIR} **Despair** (Fail your roll)
+> - {EmojiDict.OVERREACH} **Overreach** (Succeed but raise the danger level by 1)
 """
             embed.add_field(
-                name=f"**{Emoji.FACEPALM.value} {self.roll.desperation_botches} Desperation {p.plural_noun('botch', self.roll.desperation_botches)}**",
+                name=f"**{EmojiDict.FACEPALM} {self.roll.desperation_botches} Desperation {p.plural_noun('botch', self.roll.desperation_botches)}**",
                 value=f"{value}",
                 inline=False,
             )

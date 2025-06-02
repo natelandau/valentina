@@ -39,7 +39,7 @@ class StartCharacterCreate(MethodView):
             [
                 f"<li><strong><code>{c.value.percentile_range[1] - c.value.percentile_range[0]}%</code> {c.value.name}</strong> {c.value.description}</li>"
                 for c in CharClass.playable_classes()
-            ]
+            ],
         )
 
         rng_class_snippet = f"<ul>{rng_class_list}</ul>"

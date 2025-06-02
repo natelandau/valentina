@@ -76,7 +76,8 @@ async def _char_campaign_name(character: Character) -> str:
 
 
 async def fetch_active_campaign(
-    campaign_id: str = "", fetch_links: bool = False
+    campaign_id: str = "",
+    fetch_links: bool = False,
 ) -> Campaign | None:
     """Fetch and return the active campaign based on the session state.
 
@@ -111,7 +112,8 @@ async def fetch_active_campaign(
     # If there is only one campaign, return that campaign
     if len(session["GUILD_CAMPAIGNS"]) == 1:
         campaign = await Campaign.get(
-            next(iter(session["GUILD_CAMPAIGNS"].values())), fetch_links=fetch_links
+            next(iter(session["GUILD_CAMPAIGNS"].values())),
+            fetch_links=fetch_links,
         )
         session["ACTIVE_CAMPAIGN_ID"] = str(campaign.id)
         return campaign
@@ -121,7 +123,8 @@ async def fetch_active_campaign(
 
 
 async def fetch_active_character(
-    character_id: str = "", fetch_links: bool = False
+    character_id: str = "",
+    fetch_links: bool = False,
 ) -> Character | None:
     """Fetch and return the active character based on the session state.
 
@@ -469,7 +472,9 @@ async def update_session() -> None:
 
 
 async def link_terms(
-    value: str, link_type: Literal["markdown", "html"], excludes: list[str] = []
+    value: str,
+    link_type: Literal["markdown", "html"],
+    excludes: list[str] = [],
 ) -> str:
     """Convert dictionary terms in text to markdown links.
 

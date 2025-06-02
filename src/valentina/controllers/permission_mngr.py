@@ -135,11 +135,11 @@ class PermissionManager:
                 character = await Character.get(character_id)
                 author_is_owner = author_id == character.user_owner
                 is_within_24_hours = datetime.now(UTC) - character.date_created <= timedelta(
-                    hours=24
+                    hours=24,
                 )
 
                 return (author_is_owner and is_within_24_hours) or await self.is_storyteller(
-                    author_id
+                    author_id,
                 )
 
             case PermissionsManageTraits.STORYTELLER_ONLY:

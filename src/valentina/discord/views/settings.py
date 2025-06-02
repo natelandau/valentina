@@ -11,7 +11,7 @@ from valentina.constants import (
     CHANNEL_PERMISSIONS,
     ChannelPermission,
     EmbedColor,
-    Emoji,
+    EmojiDict,
     PermissionManageCampaign,
     PermissionsGrantXP,
     PermissionsKillCharacter,
@@ -26,8 +26,7 @@ from valentina.models import Guild
 class SettingsFlags(discord.ui.View):
     """Add buttons to a view to set setting values.
 
-    This class inherits from discord.ui.View and provides buttons to interactively
-    set various settings in a Discord bot.
+    This class inherits from discord.ui.View and provides buttons to interactively set various settings in a Discord bot.
 
     Attributes:
         ctx: The Discord context object.
@@ -57,7 +56,7 @@ class SettingsFlags(discord.ui.View):
         # Create buttons for each option
         for option in options:
             button: Button = Button(
-                label=f"{Emoji.SETTING.value} {option[0]}"
+                label=f"{EmojiDict.SETTING} {option[0]}"
                 if self.current_value == option[1]
                 else option[0],
                 custom_id=str(option[1]),
@@ -67,7 +66,7 @@ class SettingsFlags(discord.ui.View):
             self.add_item(button)
 
     @discord.ui.button(
-        label=f"{Emoji.CANCEL.value} Cancel",
+        label=f"{EmojiDict.CANCEL} Cancel",
         style=discord.ButtonStyle.secondary,
         custom_id="cancel",
     )
@@ -82,7 +81,7 @@ class SettingsFlags(discord.ui.View):
                 child.disabled = True
 
         embed = interaction.message.embeds[0]
-        embed.description = f"## {Emoji.CANCEL.value} Cancelled\nNo settings were changed"
+        embed.description = f"## {EmojiDict.CANCEL} Cancelled\nNo settings were changed"
         embed.color = EmbedColor.WARNING.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
@@ -98,7 +97,7 @@ class SettingsFlags(discord.ui.View):
 
                 if interaction.data.get("custom_id", None) == child.custom_id:
                     setting_name = child.label[2:]
-                    child.label = f"{Emoji.YES.value} {child.label}"
+                    child.label = f"{EmojiDict.YES} {child.label}"
 
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
@@ -112,7 +111,7 @@ class SettingsFlags(discord.ui.View):
 
         # Edit the original message
         embed = interaction.message.embeds[0]
-        embed.description = f"{embed.description}\n## {Emoji.SUCCESS.value} Success\nSettings updated: `{setting_name}`"
+        embed.description = f"{embed.description}\n## {EmojiDict.SUCCESS} Success\nSettings updated: `{setting_name}`"
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
@@ -168,7 +167,9 @@ class SettingsChannelSelect(discord.ui.View):
         if enable and channel is not None:
             channel_manager = ChannelManager(guild=self.ctx.guild)
             await channel_manager.channel_update_or_add(
-                channel=channel, topic=self.channel_topic, permissions=self.permissions
+                channel=channel,
+                topic=self.channel_topic,
+                permissions=self.permissions,
             )
 
             # Update the settings in the database
@@ -193,7 +194,9 @@ class SettingsChannelSelect(discord.ui.View):
         max_values=1,
     )
     async def channel_select_dropdown(
-        self, select: discord.ui.Select, interaction: discord.Interaction
+        self,
+        select: discord.ui.Select,
+        interaction: discord.Interaction,
     ) -> None:
         """Respond to the selection, update the database and the view."""
         for child in self.children:
@@ -208,14 +211,14 @@ class SettingsChannelSelect(discord.ui.View):
 
         # Edit the original message
         embed = interaction.message.embeds[0]
-        embed.description = f"{embed.description}\n## {Emoji.SUCCESS.value} Success\nSettings updated: {selected_channel.mention}"
+        embed.description = f"{embed.description}\n## {EmojiDict.SUCCESS} Success\nSettings updated: {selected_channel.mention}"
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.WARNING.value} Disable",
+        label=f"{EmojiDict.WARNING} Disable",
         style=discord.ButtonStyle.primary,
         custom_id="disable",
     )
@@ -233,14 +236,14 @@ class SettingsChannelSelect(discord.ui.View):
 
         # Edit the original message
         embed = interaction.message.embeds[0]
-        embed.description = f"{embed.description}\n## {Emoji.SUCCESS.value} Channel Disabled\n_No permissions were changed. No one who couldn't see the channel before can see it now._"
+        embed.description = f"{embed.description}\n## {EmojiDict.SUCCESS} Channel Disabled\n_No permissions were changed. No one who couldn't see the channel before can see it now._"
         embed.color = EmbedColor.SUCCESS.value  # type: ignore [method-assign, assignment]
 
         await interaction.response.edit_message(embed=embed, view=self)
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.CANCEL.value} Cancel",
+        label=f"{EmojiDict.CANCEL} Cancel",
         style=discord.ButtonStyle.secondary,
         custom_id="cancel",
     )
@@ -405,7 +408,9 @@ class SettingsManager:
         ]
 
         embed = discord.Embed(
-            title="", description="\n".join(description), color=EmbedColor.INFO.value
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
         )
 
         view = SettingsChannelSelect(
@@ -471,7 +476,7 @@ class SettingsManager:
                 if audit_log_channel is not None
                 else "Log interactions: Disabled",
                 "```",
-            ]
+            ],
         )
 
         view = CancelButton(self.ctx)
@@ -500,7 +505,9 @@ class SettingsManager:
         ]
 
         embed = discord.Embed(
-            title="", description="\n".join(description), color=EmbedColor.INFO.value
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
         )
 
         # Build options for the buttons and the view
@@ -592,7 +599,9 @@ class SettingsManager:
         ]
 
         embed = discord.Embed(
-            title="", description="\n".join(description), color=EmbedColor.INFO.value
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
         )
 
         # Build options for the buttons and the view
@@ -635,7 +644,9 @@ class SettingsManager:
         ]
 
         embed = discord.Embed(
-            title="", description="\n".join(description), color=EmbedColor.INFO.value
+            title="",
+            description="\n".join(description),
+            color=EmbedColor.INFO.value,
         )
 
         # Build options for the buttons and the view

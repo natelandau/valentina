@@ -2,7 +2,6 @@
 
 import re
 from datetime import datetime
-from typing import Optional
 
 from beanie import (
     Document,
@@ -22,8 +21,8 @@ class DictionaryTerm(Document):
     """Represent a term in the dictionary."""
 
     term: str
-    link: Optional[str] = ""
-    definition: Optional[str] = ""
+    link: str = ""
+    definition: str = ""
     guild_id: int
     synonyms: list[str] = Field(default_factory=list)
     date_created: datetime = Field(default_factory=time_now)

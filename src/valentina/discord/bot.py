@@ -69,7 +69,8 @@ class ValentinaContext(discord.ApplicationContext):
             new_name = f"{name1}.{name2}.{name3}"
 
         logger.patch(lambda r: r.update(name=new_name)).log(  # type: ignore [call-arg]
-            level.value, f"{msg} [{', '.join([x for x in command_info if x])}]"
+            level.value,
+            f"{msg} [{', '.join([x for x in command_info if x])}]",
         )
 
     def _message_to_embed(self, message: str) -> discord.Embed:  # pragma: no cover
@@ -103,7 +104,7 @@ class ValentinaContext(discord.ApplicationContext):
             color = EmbedColor.INFO.value
 
         embed = discord.Embed(title=message, color=color)
-        embed.timestamp = datetime.now()
+        embed.timestamp = datetime.now(UTC)
 
         footer = ""
         if hasattr(self, "command"):
@@ -121,7 +122,9 @@ class ValentinaContext(discord.ApplicationContext):
         return embed
 
     async def post_to_error_log(
-        self, message: str | discord.Embed, error: Exception
+        self,
+        message: str | discord.Embed,
+        error: Exception,
     ) -> None:  # pragma: no cover
         """Post an error message or embed to the guild's error log channel.
 
@@ -273,7 +276,8 @@ class Valentina(commands.Bot):
         if (
             db_guild.changelog_posted_version
             and semver.compare(
-                db_guild.changelog_posted_version, db_global_properties.most_recent_version
+                db_guild.changelog_posted_version,
+                db_global_properties.most_recent_version,
             )
             == 0
         ):
@@ -319,7 +323,7 @@ class Valentina(commands.Bot):
                 {
                     "date_modified": datetime.now(UTC).replace(microsecond=0),
                     "name": guild.name,
-                }
+                },
             ),
             on_insert=Guild(id=guild.id, name=guild.name),
             response_type=UpdateResponse.NEW_DOCUMENT,
@@ -336,7 +340,7 @@ class Valentina(commands.Bot):
                             "date_modified": datetime.now(UTC).replace(microsecond=0),
                             "name": member.display_name,
                             "avatar_url": str(member.display_avatar.url),
-                        }
+                        },
                     ),
                     on_insert=User(
                         id=member.id,
@@ -375,7 +379,7 @@ class Valentina(commands.Bot):
 
         if not self.welcomed:
             await self.change_presence(
-                activity=discord.Activity(type=discord.ActivityType.watching, name="for /help")
+                activity=discord.Activity(type=discord.ActivityType.watching, name="for /help"),
             )
 
             if not await GlobalProperty.find_one():
@@ -424,8 +428,10 @@ class Valentina(commands.Bot):
         return None
 
     # Define a custom application context class
-    async def get_application_context(  # type: ignore
-        self, interaction: discord.Interaction, cls=ValentinaContext
+    async def get_application_context(
+        self,
+        interaction: discord.Interaction,
+        cls: type[ValentinaContext] = ValentinaContext,
     ) -> discord.ApplicationContext:
         """Override the get_application_context method to use a custom context.
 

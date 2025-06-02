@@ -191,7 +191,10 @@ async def test_select_storyteller_character(mock_ctx1, character_factory):
 
 @pytest.mark.drop_db
 async def test_select_chapter(
-    mock_ctx1, book_factory, book_chapter_factory, mock_discord_book_channel
+    mock_ctx1,
+    book_factory,
+    book_chapter_factory,
+    mock_discord_book_channel,
 ):
     """Test the select_chapter function."""
     mock_ctx1.channel = mock_discord_book_channel
@@ -217,7 +220,10 @@ async def test_select_chapter(
 
 @pytest.mark.drop_db
 async def test_select_book_from_channel(
-    mock_ctx1, book_factory, campaign_factory, mock_discord_book_channel
+    mock_ctx1,
+    book_factory,
+    campaign_factory,
+    mock_discord_book_channel,
 ):
     """Test the select_book autocomplete function."""
     # GIVEN a book in a channel in the context
@@ -241,7 +247,10 @@ async def test_select_book_from_channel(
 
 @pytest.mark.drop_db
 async def test_select_book_no_campaign(
-    mock_ctx1, book_factory, campaign_factory, mock_discord_unassociated_channel
+    mock_ctx1,
+    book_factory,
+    campaign_factory,
+    mock_discord_unassociated_channel,
 ):
     """Test the select_book autocomplete function."""
     # GIVEN a book in a channel in the context
@@ -267,7 +276,10 @@ async def test_select_char_trait(mock_ctx1, character_factory, trait_factory):
     """Test the select_char_trait function."""
     # GIVEN a character with a trait and a user with an active character
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Dexterity", value=3, max_value=5
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Dexterity",
+        value=3,
+        max_value=5,
     )
     await trait.insert()
     character = character_factory.build(
@@ -297,7 +309,10 @@ async def test_select_char_trait_no_channel(mock_ctx1, character_factory, trait_
     """Test the select_char_trait function."""
     # GIVEN a database without a character associated with the channel where the command is run
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Dexterity", value=3, max_value=5
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Dexterity",
+        value=3,
+        max_value=5,
     )
     await trait.insert()
     character = character_factory.build(
@@ -327,7 +342,10 @@ async def test_select_char_trait_two(mock_ctx1, character_factory, trait_factory
     """Test the select_char_trait_two function."""
     # GIVEN a character with a trait and a user with an active character
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Dexterity", value=3, max_value=5
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Dexterity",
+        value=3,
+        max_value=5,
     )
     await trait.insert()
     character = character_factory.build(
@@ -384,7 +402,10 @@ async def test_select_custom_section(mock_ctx1, character_factory, user_factory)
 
 @pytest.mark.drop_db
 async def test_select_campaign_character_from_user(
-    mock_ctx1, character_factory, user_factory, campaign_factory
+    mock_ctx1,
+    character_factory,
+    user_factory,
+    campaign_factory,
 ):
     """Test the select_campaign_character_from_user function."""
     # GIVEN a user with multiple characters
@@ -497,7 +518,10 @@ async def test_select_any_player_character(mock_ctx1, character_factory, user_fa
 async def test_select_trait_from_char_option(mock_ctx1, character_factory, trait_factory):
     """Test the select_trait_from_char_option function."""
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Dexterity", value=3, max_value=5
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Dexterity",
+        value=3,
+        max_value=5,
     )
     await trait.insert()
     character = character_factory.build(
@@ -526,7 +550,10 @@ async def test_select_trait_from_char_option(mock_ctx1, character_factory, trait
 async def test_select_trait_from_char_option_two(mock_ctx1, character_factory, trait_factory):
     """Test the select_trait_from_char_option_two function."""
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Dexterity", value=3, max_value=5
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Dexterity",
+        value=3,
+        max_value=5,
     )
     await trait.insert()
     character = character_factory.build(

@@ -65,7 +65,11 @@ class Experience(commands.Cog):
         title = f"Add `{amount}` xp to `{user.name}` in `{campaign.name}`"
         description = "View experience with `/user_info`"
         is_confirmed, msg, confirmation_embed = await confirm_action(
-            ctx, title, description=description, hidden=hidden, audit=True
+            ctx,
+            title,
+            description=description,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -116,7 +120,11 @@ class Experience(commands.Cog):
         title = f"Add `{amount}` cool {p.plural_noun('point', amount)} to `{user.name}` in `{campaign.name}`"
         description = "View cool points with `/user_info`"
         is_confirmed, msg, confirmation_embed = await confirm_action(
-            ctx, title, description=description, hidden=hidden, audit=True
+            ctx,
+            title,
+            description=description,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return
@@ -166,7 +174,10 @@ class Experience(commands.Cog):
 
         title = f"Upgrade `{trait.name}` from `{trait.value}` {p.plural_noun('dot', trait.value)} to `{trait.value + 1}` {p.plural_noun('dot', trait.value + 1)} for `{cost_to_upgrade}` xp"
         is_confirmed, msg, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            audit=True,
         )
         if not is_confirmed:
             return

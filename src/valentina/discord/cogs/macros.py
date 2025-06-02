@@ -84,7 +84,7 @@ class Macro(commands.Cog):
         await user.save()
 
         await ctx.post_to_audit_log(
-            f"Create macro: `{name}`(`{trait_one.name}` + `{trait_two.name}`)"
+            f"Create macro: `{name}`(`{trait_one.name}` + `{trait_two.name}`)",
         )
         await present_embed(
             ctx,
@@ -161,7 +161,11 @@ class Macro(commands.Cog):
 
         title = f"Delete macro `{macro.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, footer="This action is irreversible.", audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            footer="This action is irreversible.",
+            audit=True,
         )
 
         if not is_confirmed:

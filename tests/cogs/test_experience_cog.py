@@ -95,7 +95,10 @@ async def test_xp_spend(
     """Test the xp_spend command."""
     # GIVEN a mock context, a user, a trait, and a campaign
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Strength", value=2, max_value=5
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Strength",
+        value=2,
+        max_value=5,
     )
     await trait.insert()
 
@@ -109,7 +112,7 @@ async def test_xp_spend(
         id=async_mock_ctx1.author.id,
         characters=[],
         campaign_experience={
-            str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1)
+            str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1),
         },
         macros=[],
     )
@@ -149,7 +152,10 @@ async def test_xp_spend_not_enough_xp(
 
     # GIVEN a mock context, a user, a trait, and a campaign
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Strength", value=2, max_value=5
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Strength",
+        value=2,
+        max_value=5,
     )
     await trait.insert()
 
@@ -160,7 +166,7 @@ async def test_xp_spend_not_enough_xp(
         id=async_mock_ctx1.author.id,
         characters=[character],
         campaign_experience={
-            str(campaign.id): CampaignExperience(xp_current=10, xp_total=30, cool_points=1)
+            str(campaign.id): CampaignExperience(xp_current=10, xp_total=30, cool_points=1),
         },
         macros=[],
     )

@@ -55,7 +55,11 @@ class Note(commands.Cog):
         title = f"Add note to `{channel_object.name}`"
         description = f"```\n{note.strip().capitalize()}\n```"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, description=description, hidden=hidden, audit=True
+            ctx,
+            title,
+            description=description,
+            hidden=hidden,
+            audit=True,
         )
 
         if not is_confirmed:

@@ -263,7 +263,7 @@ class Statistics:
         ).count()
 
         avg_diff = await RollStatistic.find(RollStatistic.guild == guild_id).avg(
-            RollStatistic.difficulty
+            RollStatistic.difficulty,
         )
         if avg_diff:
             self.average_difficulty = round(avg_diff)
@@ -338,7 +338,7 @@ class Statistics:
         ).count()
 
         avg_diff = await RollStatistic.find(RollStatistic.user == user.id).avg(
-            RollStatistic.difficulty
+            RollStatistic.difficulty,
         )
         if avg_diff:
             self.average_difficulty = round(avg_diff)
@@ -411,13 +411,13 @@ class Statistics:
         ).count()
 
         avg_diff = await RollStatistic.find(RollStatistic.character == str(character.id)).avg(
-            RollStatistic.difficulty
+            RollStatistic.difficulty,
         )
         if avg_diff:
             self.average_difficulty = round(avg_diff)
 
         avg_pool = await RollStatistic.find(RollStatistic.character == str(character.id)).avg(
-            RollStatistic.pool
+            RollStatistic.pool,
         )
         if avg_pool:
             self.average_pool = round(avg_pool)
@@ -487,13 +487,13 @@ class Statistics:
         ).count()
 
         avg_diff = await RollStatistic.find(RollStatistic.campaign == str(campaign.id)).avg(
-            RollStatistic.difficulty
+            RollStatistic.difficulty,
         )
         if avg_diff:
             self.average_difficulty = round(avg_diff)
 
         avg_pool = await RollStatistic.find(RollStatistic.campaign == str(campaign.id)).avg(
-            RollStatistic.pool
+            RollStatistic.pool,
         )
         if avg_pool:
             self.average_pool = round(avg_pool)

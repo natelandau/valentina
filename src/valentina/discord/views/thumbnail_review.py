@@ -4,7 +4,7 @@ import discord
 from discord.ext import pages
 from discord.ui import Button
 
-from valentina.constants import EmbedColor, Emoji, RollResultType
+from valentina.constants import EmbedColor, EmojiDict, RollResultType
 from valentina.discord.bot import ValentinaContext
 from valentina.models import Guild, GuildRollResultThumbnail
 
@@ -13,7 +13,11 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
     """A view for deleting or categorizing a roll result thumbnails."""
 
     def __init__(
-        self, ctx: ValentinaContext, guild: Guild, index: int, thumbnail: GuildRollResultThumbnail
+        self,
+        ctx: ValentinaContext,
+        guild: Guild,
+        index: int,
+        thumbnail: GuildRollResultThumbnail,
     ) -> None:
         super().__init__()
         self.ctx = ctx
@@ -28,14 +32,14 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
                 child.disabled = True
 
     @discord.ui.button(
-        label=f"{Emoji.WARNING.value} Delete thumbnail",
+        label=f"{EmojiDict.WARNING} Delete thumbnail",
         style=discord.ButtonStyle.danger,
         custom_id="delete",
         row=1,
     )
     async def confirm_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the confirm button."""
-        button.label = f"{Emoji.YES.value} Deleted Thumbnail"
+        button.label = f"{EmojiDict.YES} Deleted Thumbnail"
         button.style = discord.ButtonStyle.secondary
         self._disable_all()
 
@@ -49,14 +53,15 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         # Respond to user
         await interaction.response.edit_message(
             embed=discord.Embed(
-                title=f"Deleted thumbnail id `{self.index}`", color=EmbedColor.SUCCESS.value
+                title=f"Deleted thumbnail id `{self.index}`",
+                color=EmbedColor.SUCCESS.value,
             ).set_thumbnail(url=self.thumbnail.url),
             view=None,
         )  # view=None removes all buttons
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.YES.value} Complete Review",
+        label=f"{EmojiDict.YES} Complete Review",
         style=discord.ButtonStyle.primary,
         custom_id="done",
         row=1,
@@ -81,7 +86,7 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         max_values=1,
         options=[discord.SelectOption(label=x.name.title(), value=x.name) for x in RollResultType],
     )
-    async def select_callback(self, select, interaction: discord.Interaction) -> None:  # type: ignore [no-untyped-def]
+    async def select_callback(self, select, interaction: discord.Interaction) -> None:  # type: ignore [no-untyped-def]  # noqa: ANN001
         """Callback for the select menu."""
         # Update the thumbnail in the database
         new_cat = select.values[0]
@@ -146,7 +151,10 @@ class ThumbnailReview:
 
         for index, thumbnail in self.thumbnails.items():
             view = DeleteOrCategorizeThumbnails(
-                ctx=self.ctx, guild=self.guild, index=index, thumbnail=thumbnail
+                ctx=self.ctx,
+                guild=self.guild,
+                index=index,
+                thumbnail=thumbnail,
             )
 
             embed = await self._get_embed(index, thumbnail.url)
@@ -158,7 +166,7 @@ class ThumbnailReview:
                     description="Pages for Things",
                     use_default_buttons=False,
                     custom_view=view,
-                )
+                ),
             )
 
         return pages_to_send

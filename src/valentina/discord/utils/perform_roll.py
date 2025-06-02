@@ -2,13 +2,13 @@
 
 import discord
 
-from valentina.constants import EmbedColor, Emoji
+from valentina.constants import EmbedColor, EmojiDict
 from valentina.discord.bot import ValentinaContext
 from valentina.discord.views import ReRollButton, RollDisplay
 from valentina.models import Campaign, Character, CharacterTrait, DiceRoll
 
 
-async def perform_roll(  # pragma: no cover
+async def perform_roll(  # pragma: no cover  # noqa: PLR0913
     ctx: ValentinaContext,
     pool: int,
     difficulty: int,
@@ -82,7 +82,7 @@ async def perform_roll(  # pragma: no cover
             view=None,
             embed=discord.Embed(
                 title=None,
-                description=f"# {Emoji.OVERREACH.value} Overreach!\nThe character overreached. This roll has succeeded but the danger level has increased to `{campaign.danger}`.",
+                description=f"# {EmojiDict.OVERREACH} Overreach!\nThe character overreached. This roll has succeeded but the danger level has increased to `{campaign.danger}`.",
                 color=EmbedColor.WARNING.value,
             ),
         )
@@ -92,7 +92,7 @@ async def perform_roll(  # pragma: no cover
             view=None,
             embed=discord.Embed(
                 title=None,
-                description=f"# {Emoji.DESPAIR.value} Despair!\n### This roll has failed and the character has entered Despair!\nYou can no longer use desperation dice until you redeem yourself.",
+                description=f"# {EmojiDict.DESPAIR} Despair!\n### This roll has failed and the character has entered Despair!\nYou can no longer use desperation dice until you redeem yourself.",
                 color=EmbedColor.WARNING.value,
             ),
         )

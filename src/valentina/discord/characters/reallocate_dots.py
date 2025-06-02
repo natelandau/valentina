@@ -4,7 +4,7 @@ from typing import cast
 
 import discord
 
-from valentina.constants import EmbedColor, Emoji, TraitCategory
+from valentina.constants import EmbedColor, EmojiDict, TraitCategory
 from valentina.discord.bot import ValentinaContext
 from valentina.discord.views import IntegerButtons
 from valentina.models import Character, CharacterTrait
@@ -81,7 +81,7 @@ class DotsReallocationWizard:  # pragma: no cover
 
         embed = discord.Embed(
             title="Reallocate dots",
-            description=f"{Emoji.CANCEL.value} {msg}",
+            description=f"{EmojiDict.CANCEL} {msg}",
             color=EmbedColor.WARNING.value,
         )
         await self.msg.edit(embed=embed, view=None)
@@ -170,7 +170,7 @@ class DotsReallocationWizard:  # pragma: no cover
         view = SelectCharacterTraitButtons(self.ctx, traits=available_traits)
         embed = discord.Embed(
             title="Reallocate Dots",
-            description=f"{Emoji.SUCCESS.value} You are taking dots from `{self.source.name}`\n\n**Select the **trait** you want to _add dots to_**",
+            description=f"{EmojiDict.SUCCESS} You are taking dots from `{self.source.name}`\n\n**Select the **trait** you want to _add dots to_**",
             color=EmbedColor.INFO.value,
         )
 
@@ -204,7 +204,7 @@ class DotsReallocationWizard:  # pragma: no cover
         # If no dots are available, cancel the wizard and inform the user
         if not available_dots:
             await self._cancel_wizard(
-                f"Cannot add dots to {self.target.name} because no dots are available"
+                f"Cannot add dots to {self.target.name} because no dots are available",
             )
             return None
 
@@ -257,7 +257,7 @@ class DotsReallocationWizard:  # pragma: no cover
         # Update the embed to inform the user of the success
         embed = discord.Embed(
             title="Reallocate Dots",
-            description=f"{Emoji.SUCCESS.value} Reallocated `{num_dots}` dots from `{self.source.name}` to `{self.target.name}`",
+            description=f"{EmojiDict.SUCCESS} Reallocated `{num_dots}` dots from `{self.source.name}` to `{self.target.name}`",
             color=EmbedColor.SUCCESS.value,
         )
         await self.msg.edit(embed=embed, view=None)

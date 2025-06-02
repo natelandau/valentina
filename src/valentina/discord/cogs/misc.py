@@ -65,7 +65,8 @@ class Misc(commands.Cog):
 
         # Build the Embed
         embed = discord.Embed(
-            description=f"## {ctx.guild.name} Information", color=EmbedColor.INFO.value
+            description=f"## {ctx.guild.name} Information",
+            color=EmbedColor.INFO.value,
         )
         embed.add_field(
             name="",
@@ -166,7 +167,10 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
             pool (int): The number of dice to roll
         """
         probabilities = Probability(
-            ctx=ctx, pool=pool, difficulty=difficulty, dice_size=DiceType.D10.value
+            ctx=ctx,
+            pool=pool,
+            difficulty=difficulty,
+            dice_size=DiceType.D10.value,
         )
         embed = await probabilities.get_embed()
         await ctx.respond(embed=embed, ephemeral=hidden)
@@ -294,7 +298,7 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
         """Coinflip!"""
         coin_sides = ["Heads", "Tails"]
         await ctx.respond(
-            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coin_sides)}**!"
+            f"**{ctx.author.name}** flipped a coin and got **{random.choice(coin_sides)}**!",
         )
 
     @commands.slash_command(name="name_generator", help="Generate a random name")
@@ -316,7 +320,10 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
             default="us,gb",
         ),
         number: Option(
-            int, name="number", description="The number of names to generate (default 5)", default=5
+            int,
+            name="number",
+            description="The number of names to generate (default 5)",
+            default=5,
         ),
     ) -> None:
         """Generate a random name."""
@@ -335,7 +342,8 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
         )
 
     @commands.slash_command(
-        name="add_roll_result_image", description="Add images to roll result embeds"
+        name="add_roll_result_image",
+        description="Add images to roll result embeds",
     )
     async def upload_thumbnail(
         self,
@@ -356,7 +364,11 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
         """Add a roll result thumbnail to the bot."""
         title = f"Add roll result image for {roll_type.title()}\n{url}"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, image=url, audit=True
+            ctx,
+            title,
+            hidden=hidden,
+            image=url,
+            audit=True,
         )
 
         if not is_confirmed:

@@ -32,9 +32,7 @@ _rng = default_rng()
 class RNGCharGen:
     """Randomly generate different parts of a character.
 
-    This class provides methods to randomly generate various aspects of a character,
-    including attributes, abilities, and other traits based on the specified
-    experience level and campaign settings.
+    This class provides methods to randomly generate various aspects of a character, including attributes, abilities, and other traits based on the specified experience level and campaign settings.
 
     Args:
         guild_id (int): The ID of the guild where the character is being generated.
@@ -65,7 +63,8 @@ class RNGCharGen:
 
     @staticmethod
     def _redistribute_trait_values(
-        traits: list[CharacterTrait], concept: CharacterConcept
+        traits: list[CharacterTrait],
+        concept: CharacterConcept,
     ) -> list[CharacterTrait]:
         """Redistribute trait values based on the character concept.
 
@@ -111,9 +110,7 @@ class RNGCharGen:
     def _adjust_value_based_on_level(self, value: int) -> int:
         """Adjust the discipline value based on the character's experience level.
 
-        Modify the given discipline value according to the character's experience level.
-        Increment the value for advanced and elite levels, cap it for new and intermediate
-        characters, and ensure the final value is within the valid range.
+        Modify the given discipline value according to the character's experience level. Increment the value for advanced and elite levels, cap it for new and intermediate characters, and ensure the final value is within the valid range.
 
         Args:
             value (int): The initial discipline value.
@@ -135,7 +132,7 @@ class RNGCharGen:
         # Constrain the final value between 1 and 5
         return max(min(value, 5), 1)
 
-    async def generate_base_character(
+    async def generate_base_character(  # noqa: PLR0913
         self,
         char_class: CharClass | None = None,
         concept: CharacterConcept | None = None,
@@ -151,9 +148,7 @@ class RNGCharGen:
     ) -> Character:
         """Generate a base character with random attributes.
 
-        Generate a base character with randomly selected attributes including class,
-        concept, clan (for vampires), creed (for hunters), and name. Traits and
-        customizations are not included in this base generation.
+        Generate a base character with randomly selected attributes including class, concept, clan (for vampires), creed (for hunters), and name. Traits and customizations are not included in this base generation.
 
         Args:
             char_class (CharClass | None): Specific character class. If None, randomly selected.
@@ -215,7 +210,7 @@ class RNGCharGen:
         await character.insert()
         return character
 
-    async def generate_full_character(
+    async def generate_full_character(  # noqa: PLR0913
         self,
         char_class: CharClass | None = None,
         concept: CharacterConcept | None = None,
@@ -295,7 +290,9 @@ class RNGCharGen:
         total_dots = [
             a + b
             for a, b in zip(
-                starting_dot_distribution, extra_dots_map[self.experience_level], strict=True
+                starting_dot_distribution,
+                extra_dots_map[self.experience_level],
+                strict=True,
             )
         ]
 
@@ -361,7 +358,9 @@ class RNGCharGen:
         total_dots = [
             a + b
             for a, b in zip(
-                starting_dot_distribution, extra_dots_map[self.experience_level], strict=True
+                starting_dot_distribution,
+                extra_dots_map[self.experience_level],
+                strict=True,
             )
         ]
 
@@ -433,13 +432,13 @@ class RNGCharGen:
 
         disciplines_to_set = clan.value.disciplines
         other_disciplines = TraitCategory.DISCIPLINES.get_all_class_trait_names(
-            CharClass[character.char_class_name]
+            CharClass[character.char_class_name],
         )
         disciplines_to_set.extend(
             random.sample(
                 [x for x in other_disciplines if x not in disciplines_to_set],
                 extra_disciplines_map.get(self.experience_level, 0),
-            )
+            ),
         )
 
         # Generate trait values from a normal distribution
@@ -482,7 +481,7 @@ class RNGCharGen:
 
         if not (
             virtues := TraitCategory.VIRTUES.get_all_class_trait_names(
-                CharClass[character.char_class_name]
+                CharClass[character.char_class_name],
             )
         ):
             return character
@@ -747,7 +746,7 @@ class RNGCharGen:
                     [
                         CharacterSheetSection(title=title, content=content)
                         for title, content in ability["custom_sections"]
-                    ]
+                    ],
                 )
                 await character.save()
 

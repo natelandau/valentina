@@ -264,7 +264,10 @@ View the [full changelog on Github](https://github.com/natelandau/valentina/rele
 def test_changelog_get_embed_exclude_oldest(changelog, mock_bot):
     """Test the ChangelogParser get_embed method with exclude_oldest."""
     parser = ChangelogParser(
-        mock_bot, oldest_version="1.1.0", newest_version="2.0.0", exclude_oldest_version=True
+        mock_bot,
+        oldest_version="1.1.0",
+        newest_version="2.0.0",
+        exclude_oldest_version=True,
     )
 
     embed = parser.get_embed()

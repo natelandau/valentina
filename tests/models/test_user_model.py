@@ -82,7 +82,8 @@ async def test_spend_spend_campaign_xp(user_factory, campaign_factory) -> None:
     # WHEN trying to spend more experience than a user has
     # THEN check a ValueError is raised
     with pytest.raises(
-        errors.NotEnoughExperienceError, match=r"Can not spend \d+ xp with only \d+ available"
+        errors.NotEnoughExperienceError,
+        match=r"Can not spend \d+ xp with only \d+ available",
     ):
         await user.spend_campaign_xp(campaign, 100)
 

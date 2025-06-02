@@ -39,7 +39,11 @@ async def test_setup(
         bio=None,
     ).insert()
     campaign = await campaign_factory.build(
-        guild=guild.id, books=[], npcs=[], notes=[], description=None
+        guild=guild.id,
+        books=[],
+        npcs=[],
+        notes=[],
+        description=None,
     ).insert()
     book = await book_factory.build(campaign=str(campaign.id), chapters=[], notes=[]).insert()
     campaign.books.append(book)
@@ -78,7 +82,11 @@ async def test_setup(
 )
 @pytest.mark.drop_db
 async def test_edit_table_form_load(
-    test_setup, table_type, id_field, parent_id_source, use_parent_id
+    test_setup,
+    table_type,
+    id_field,
+    parent_id_source,
+    use_parent_id,
 ):
     """Test form load returns empty form."""
     character, campaign, user, book, dictionary_term, test_client = test_setup
@@ -253,7 +261,8 @@ async def test_edit_table_crud_operations_with_parent(
 
     # Given: A test environment with mocked audit log and session updates
     mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
+        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log",
+        return_value=None,
     )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
@@ -266,7 +275,9 @@ async def test_edit_table_crud_operations_with_parent(
     )
 
     response = await test_client.put(
-        f"{base_url}?parent_id={parent.id}", json=create_data, follow_redirects=True
+        f"{base_url}?parent_id={parent.id}",
+        json=create_data,
+        follow_redirects=True,
     )
     # Then: The creation is successful
     assert response.status_code == 200
@@ -280,7 +291,8 @@ async def test_edit_table_crud_operations_with_parent(
 
     # When: Getting the created item's table row
     response = await test_client.get(
-        f"{base_url}?item_id={item_id}&parent_id={parent.id}", follow_redirects=True
+        f"{base_url}?item_id={item_id}&parent_id={parent.id}",
+        follow_redirects=True,
     )
     # Then: The row is retrieved successfully
     assert response.status_code == 200
@@ -297,7 +309,8 @@ async def test_edit_table_crud_operations_with_parent(
 
     # When: Deleting the item
     response = await test_client.delete(
-        f"{base_url}?item_id={item_id}&parent_id={parent.id}", follow_redirects=True
+        f"{base_url}?item_id={item_id}&parent_id={parent.id}",
+        follow_redirects=True,
     )
     # Then: The deletion is successful
     assert response.status_code == 200
@@ -380,7 +393,8 @@ async def test_edit_text_form_crud_operations(
 ):
     """Test create, update, and delete operations."""
     mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
+        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log",
+        return_value=None,
     )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
@@ -422,7 +436,8 @@ async def test_dictionary_term_crud_operations(mocker, debug, test_setup):
     """Test create, update, and delete operations for a dictionary term."""
     # Given: A test environment with mocked dependencies
     mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log", return_value=None
+        "valentina.webui.blueprints.HTMXPartials.route.post_to_audit_log",
+        return_value=None,
     )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
@@ -445,7 +460,9 @@ async def test_dictionary_term_crud_operations(mocker, debug, test_setup):
 
     # When: Updating the dictionary term
     response = await test_client.post(
-        f"{base_url}?item_id={created_item.id}", json=update_data, follow_redirects=True
+        f"{base_url}?item_id={created_item.id}",
+        json=update_data,
+        follow_redirects=True,
     )
 
     # Then: Term is updated successfully
@@ -455,7 +472,8 @@ async def test_dictionary_term_crud_operations(mocker, debug, test_setup):
 
     # When: Deleting the dictionary term
     response = await test_client.delete(
-        f"{base_url}?item_id={created_item.id}", follow_redirects=True
+        f"{base_url}?item_id={created_item.id}",
+        follow_redirects=True,
     )
 
     # Then: Term is deleted successfully

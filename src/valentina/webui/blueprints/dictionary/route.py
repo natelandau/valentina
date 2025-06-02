@@ -32,7 +32,7 @@ class Dictionary(MethodView):
                 "dictionary.Home",
                 terms=terms,
                 table_type_dictionary=TableType.DICTIONARY,
-            )
+            ),
         )()
 
         return await link_terms(result, link_type="html")
@@ -46,7 +46,8 @@ class DictionaryTermView(MethodView):
     async def get(self, term: str) -> str:
         """Get the dictionary term."""
         term = await DictionaryTerm.find_one(
-            DictionaryTerm.guild_id == session["GUILD_ID"], DictionaryTerm.term == term
+            DictionaryTerm.guild_id == session["GUILD_ID"],
+            DictionaryTerm.term == term,
         )
 
         if not term:
@@ -56,6 +57,6 @@ class DictionaryTermView(MethodView):
             lambda: catalog.render(
                 "dictionary.Term",
                 term=term,
-            )
+            ),
         )()
         return await link_terms(result, link_type="html", excludes=[term.term])

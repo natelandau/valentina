@@ -99,7 +99,9 @@ class AWSService:
         return True
 
     def generate_presigned_url(
-        self, key: str, expiration: int = 3600
+        self,
+        key: str,
+        expiration: int = 3600,
     ) -> str | None:  # pragma: no cover
         """Generate a presigned URL for an object in the S3 bucket.
 
@@ -114,7 +116,9 @@ class AWSService:
         """
         try:
             url = self.s3.generate_presigned_url(
-                "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expiration
+                "get_object",
+                Params={"Bucket": self.bucket, "Key": key},
+                ExpiresIn=expiration,
             )
         except ClientError as e:
             logger.error(f"Failed to generate presigned URL for {key}: {e}")
@@ -124,7 +128,9 @@ class AWSService:
 
     @staticmethod
     def get_key_prefix(
-        ctx: discord.ApplicationContext, object_type: str, **kwargs: str | int
+        ctx: discord.ApplicationContext,
+        object_type: str,
+        **kwargs: str | int,
     ) -> str:
         """Generate a key prefix for an object to be uploaded to Amazon S3.
 
@@ -204,7 +210,10 @@ class AWSService:
         return key in self.list_objects(key)
 
     def upload_image(
-        self, data: bytes, key: str, overwrite: bool = False
+        self,
+        data: bytes,
+        key: str,
+        overwrite: bool = False,
     ) -> bool:  # pragma: no cover
         """Upload a an image to an S3 bucket.
 
@@ -221,7 +230,7 @@ class AWSService:
         """
         # Check if the object exists and whether we should overwrite it
         if not overwrite and self.object_exist(key):
-            raise errors.S3ObjectExistsError()
+            raise errors.S3ObjectExistsError
 
         try:
             # Attempt to upload the file to the S3 bucket
@@ -258,7 +267,7 @@ class AWSService:
 
         # Check if the object exists and whether we should overwrite it
         if not overwrite and self.object_exist(key):
-            raise errors.S3ObjectExistsError()
+            raise errors.S3ObjectExistsError
 
         try:
             # Open the file in binary mode
