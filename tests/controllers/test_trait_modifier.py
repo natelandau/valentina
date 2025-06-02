@@ -12,7 +12,10 @@ from valentina.utils import errors
 
 @pytest.mark.drop_db
 async def test_helper_functions(
-    user_factory, campaign_factory, character_factory, trait_factory
+    user_factory,
+    campaign_factory,
+    character_factory,
+    trait_factory,
 ) -> None:
     """Test the helper functions of the TraitModifier class."""
     # GIVEN a user, a campaign, a character, and a trait
@@ -21,12 +24,15 @@ async def test_helper_functions(
 
     user = user_factory.build(
         campaign_experience={
-            str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1)
-        }
+            str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1),
+        },
     )
 
     trait = trait_factory.build(
-        category_name=TraitCategory.SKILLS.name, name="Drive", value=2, max_value=5
+        category_name=TraitCategory.SKILLS.name,
+        name="Drive",
+        value=2,
+        max_value=5,
     )
 
     character = character_factory.build(traits=[trait])
@@ -73,7 +79,10 @@ async def test_helper_functions(
 
 @pytest.mark.drop_db
 async def test_upgrade_with_xp(
-    user_factory, campaign_factory, character_factory, trait_factory
+    user_factory,
+    campaign_factory,
+    character_factory,
+    trait_factory,
 ) -> None:
     """Test upgrading a trait with XP."""
     # GIVEN a user, a campaign, a character, and a trait
@@ -81,12 +90,15 @@ async def test_upgrade_with_xp(
 
     user = user_factory.build(
         campaign_experience={
-            str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1)
-        }
+            str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1),
+        },
     )
 
     trait = trait_factory.build(
-        category_name=TraitCategory.SKILLS.name, name="Drive", value=2, max_value=5
+        category_name=TraitCategory.SKILLS.name,
+        name="Drive",
+        value=2,
+        max_value=5,
     )
     character = character_factory.build(traits=[trait])
 
@@ -108,7 +120,10 @@ async def test_upgrade_with_xp(
 
 @pytest.mark.drop_db
 async def test_downgrade_with_xp(
-    user_factory, campaign_factory, character_factory, trait_factory
+    user_factory,
+    campaign_factory,
+    character_factory,
+    trait_factory,
 ) -> None:
     """Test downgrading a trait with XP."""
     # GIVEN a user, a campaign, a character, and a trait
@@ -116,12 +131,15 @@ async def test_downgrade_with_xp(
 
     user = user_factory.build(
         campaign_experience={
-            str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1)
-        }
+            str(campaign.id): CampaignExperience(xp_current=30, xp_total=30, cool_points=1),
+        },
     )
 
     trait = trait_factory.build(
-        category_name=TraitCategory.SKILLS.name, name="Drive", value=2, max_value=5
+        category_name=TraitCategory.SKILLS.name,
+        name="Drive",
+        value=2,
+        max_value=5,
     )
     character = character_factory.build(traits=[trait])
 
@@ -143,7 +161,10 @@ async def test_downgrade_with_xp(
 
 @pytest.mark.drop_db
 async def test_upgrade_with_freebie(
-    user_factory, campaign_factory, character_factory, trait_factory
+    user_factory,
+    campaign_factory,
+    character_factory,
+    trait_factory,
 ) -> None:
     """Test upgrading a trait with Freebie points."""
     # GIVEN a user, a campaign, a character, and a trait
@@ -152,7 +173,10 @@ async def test_upgrade_with_freebie(
     await user.insert()
 
     trait = trait_factory.build(
-        category_name=TraitCategory.SKILLS.name, name="Drive", value=2, max_value=5
+        category_name=TraitCategory.SKILLS.name,
+        name="Drive",
+        value=2,
+        max_value=5,
     )
     await trait.insert()
     character = character_factory.build(traits=[trait], freebie_points=20)
@@ -176,7 +200,10 @@ async def test_upgrade_with_freebie(
 
 @pytest.mark.drop_db
 async def test_downgrade_with_freebie(
-    user_factory, campaign_factory, character_factory, trait_factory
+    user_factory,
+    campaign_factory,
+    character_factory,
+    trait_factory,
 ) -> None:
     """Test downgrading a trait with Freebie points."""
     # GIVEN a user, a campaign, a character, and a trait
@@ -185,7 +212,10 @@ async def test_downgrade_with_freebie(
     await user.insert()
 
     trait = trait_factory.build(
-        category_name=TraitCategory.SKILLS.name, name="Drive", value=2, max_value=5
+        category_name=TraitCategory.SKILLS.name,
+        name="Drive",
+        value=2,
+        max_value=5,
     )
     await trait.insert()
     character = character_factory.build(traits=[trait], freebie_points=20)

@@ -7,7 +7,7 @@ from discord.ext import pages
 from discord.ui import Button
 from loguru import logger
 
-from valentina.constants import EmbedColor, Emoji
+from valentina.constants import EmbedColor, EmojiDict
 from valentina.discord.bot import ValentinaContext
 from valentina.models import AWSService, Character
 
@@ -28,14 +28,14 @@ class DeleteS3Images(discord.ui.View):
                 child.disabled = True
 
     @discord.ui.button(
-        label=f"{Emoji.WARNING.value} Delete image",
+        label=f"{EmojiDict.WARNING} Delete image",
         style=discord.ButtonStyle.danger,
         custom_id="delete",
         row=1,
     )
     async def confirm_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the confirm button."""
-        button.label = f"{Emoji.SUCCESS.value} Image deleted"
+        button.label = f"{EmojiDict.SUCCESS} Image deleted"
         button.style = discord.ButtonStyle.secondary
         self._disable_all()
 
@@ -49,14 +49,15 @@ class DeleteS3Images(discord.ui.View):
         # Respond to user
         await interaction.response.edit_message(
             embed=discord.Embed(
-                title=f"Delete image id `{self.key}`", color=EmbedColor.SUCCESS.value
+                title=f"Delete image id `{self.key}`",
+                color=EmbedColor.SUCCESS.value,
             ),
             view=None,
         )  # view=None removes all buttons
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.YES.value} Complete Review",
+        label=f"{EmojiDict.YES} Complete Review",
         style=discord.ButtonStyle.primary,
         custom_id="done",
         row=1,
@@ -149,7 +150,7 @@ class S3ImageReview:
                     description="Use the buttons below to delete this image",
                     use_default_buttons=False,
                     custom_view=view,
-                )
+                ),
             )
 
         return pages_to_send

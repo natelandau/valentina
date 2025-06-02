@@ -16,7 +16,8 @@ if TYPE_CHECKING:
 
 
 async def assert_permissions(
-    ctx: "ValentinaContext", **permissions: bool
+    ctx: "ValentinaContext",
+    **permissions: bool,
 ) -> None:  # pragma: no cover
     """Check if the bot has the required permissions to run the command.
 
@@ -243,7 +244,8 @@ async def fetch_channel_object(
     channel_category = discord_channel.category
 
     campaign = await Campaign.find_one(
-        Campaign.channel_campaign_category == channel_category.id, fetch_links=True
+        Campaign.channel_campaign_category == channel_category.id,
+        fetch_links=True,
     )
     book = await CampaignBook.find_one(CampaignBook.channel == discord_channel.id, fetch_links=True)
     character = await Character.find_one(Character.channel == discord_channel.id, fetch_links=True)
@@ -276,7 +278,8 @@ async def fetch_channel_object(
 
 
 def get_user_from_id(
-    guild: discord.Guild, user_id: int
+    guild: discord.Guild,
+    user_id: int,
 ) -> discord.Member | None:  # pragma: no cover
     """Get a discord user object from a user ID.
 

@@ -37,7 +37,8 @@ class UserProfile(MethodView):
             abort(404)
 
         characters = await Character.find(
-            Character.user_owner == user_id, Character.guild == int(session["GUILD_ID"])
+            Character.user_owner == user_id,
+            Character.guild == int(session["GUILD_ID"]),
         ).to_list()
 
         discord_guild = await bot.get_guild_from_id(session["GUILD_ID"])
@@ -59,7 +60,8 @@ class UserProfile(MethodView):
         guild = await fetch_guild(fetch_links=True)
 
         can_grant_xp = await self.permission_manager.can_grant_xp(
-            author_id=session["USER_ID"], target_id=user_id
+            author_id=session["USER_ID"],
+            target_id=user_id,
         )
 
         @dataclass
@@ -75,7 +77,7 @@ class UserProfile(MethodView):
         for campaign in guild.campaigns:
             campaign_xp, campaign_total_xp, campaign_cp = user.fetch_campaign_xp(campaign)
             campaign_experience.append(
-                UserCampaignExperience(campaign.name, campaign_xp, campaign_total_xp, campaign_cp)  # type: ignore [attr-defined]
+                UserCampaignExperience(campaign.name, campaign_xp, campaign_total_xp, campaign_cp),  # type: ignore [attr-defined]
             )
 
         return catalog.render(

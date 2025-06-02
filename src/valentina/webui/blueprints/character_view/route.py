@@ -65,7 +65,10 @@ class CharacterView(MethodView):
         return character
 
     async def _get_campaign_experience(
-        self, character: Character, user: User, campaign: Campaign
+        self,
+        character: Character,
+        user: User,
+        campaign: Campaign,
     ) -> int:
         """Get campaign experience points for a character.
 
@@ -114,7 +117,7 @@ class CharacterView(MethodView):
                 sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
                 storyteller_data = await is_storyteller()
                 profile_data = await sheet_builder.fetch_sheet_profile(
-                    storyteller_view=storyteller_data
+                    storyteller_view=storyteller_data,
                 )
 
                 # Wrap catalog.render in run_sync since it's a blocking operation
@@ -125,7 +128,7 @@ class CharacterView(MethodView):
                         sheet_data=sheet_data,
                         profile_data=profile_data,
                         character_owner=character_owner,
-                    )
+                    ),
                 )()
 
                 # Link game terms in the rendered HTML to their dictionary entries
@@ -140,7 +143,7 @@ class CharacterView(MethodView):
                         text_type_bio=TextType.BIOGRAPHY,
                         can_edit=session["IS_STORYTELLER"]
                         or session["USER_ID"] == character.user_owner,
-                    )
+                    ),
                 )()
 
                 return await link_terms(result, link_type="html")
@@ -153,7 +156,7 @@ class CharacterView(MethodView):
                         CharacterEditableInfo=CharacterEditableInfo,
                         table_type_note=TableType.NOTE,
                         table_type_inventory=TableType.INVENTORYITEM,
-                    )
+                    ),
                 )()
 
                 return await link_terms(result, link_type="html")
@@ -203,7 +206,8 @@ class CharacterView(MethodView):
         sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
         user_is_storyteller = await is_storyteller()
         profile_data = await sheet_builder.fetch_sheet_profile(
-            storyteller_view=user_is_storyteller, is_web_ui=True
+            storyteller_view=user_is_storyteller,
+            is_web_ui=True,
         )
 
         # Enhance owner name with profile link for better navigation and UX
@@ -213,7 +217,9 @@ class CharacterView(MethodView):
             )
 
         campaign_experience = await self._get_campaign_experience(
-            character, character_owner, campaign
+            character,
+            character_owner,
+            campaign,
         )
 
         # Synchronously render template to avoid async issues with Jinja
@@ -230,7 +236,7 @@ class CharacterView(MethodView):
                 dice_sizes=[member.value for member in DiceType],
                 form=gameplay_form,
                 CharacterEditableInfo=CharacterEditableInfo,
-            )
+            ),
         )()
 
         # Process dictionary term links in the rendered HTML

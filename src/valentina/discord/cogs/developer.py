@@ -92,14 +92,18 @@ class Developer(commands.Cog):
 
     ### S3 COMMANDS ################################################################
     @s3.command(
-        name="delete", description="Delete an image from the Amazon S3 bucket for the active guild"
+        name="delete",
+        description="Delete an image from the Amazon S3 bucket for the active guild",
     )
     @commands.is_owner()
     async def delete_from_s3_guild(
         self,
         ctx: ValentinaContext,
         key: discord.Option(
-            str, "Name of file", required=True, autocomplete=select_aws_object_from_guild
+            str,
+            "Name of file",
+            required=True,
+            autocomplete=select_aws_object_from_guild,
         ),
     ) -> None:
         """Delete an image from the Amazon S3 bucket for the active guild.
@@ -120,7 +124,10 @@ class Developer(commands.Cog):
         # Confirm the deletion action
         title = f"Delete `{key}` from S3"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, image=url, thumbnail=self.bot.user.display_avatar.url
+            ctx,
+            title,
+            image=url,
+            thumbnail=self.bot.user.display_avatar.url,
         )
 
         if not is_confirmed:
@@ -289,7 +296,9 @@ class Developer(commands.Cog):
             f"Create `{number}` of test {p.plural_noun('character', number)} on `{ctx.guild.name}`"
         )
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx,
+            title,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -349,7 +358,9 @@ class Developer(commands.Cog):
 
         title = f"Delete `{len(dev_characters)}` developer {p.plural_noun('character', len(dev_characters))} characters from `{ctx.guild.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx,
+            title,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -417,7 +428,8 @@ class Developer(commands.Cog):
     ### BOT COMMANDS ################################################################
 
     @server.command(
-        name="clear_probability_cache", description="Clear probability data from the database"
+        name="clear_probability_cache",
+        description="Clear probability data from the database",
     )
     @commands.is_owner()
     async def clear_probability_cache(
@@ -434,7 +446,9 @@ class Developer(commands.Cog):
 
         title = f"Clear `{len(results)}` probability {p.plural_noun('statistic', len(results))} from the database"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx,
+            title,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -458,7 +472,9 @@ class Developer(commands.Cog):
         """Reloads all cogs."""
         title = "Reload all cogs"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx,
+            title,
+            hidden=hidden,
         )
         if not is_confirmed:
             return
@@ -485,7 +501,10 @@ class Developer(commands.Cog):
         """Shutdown the bot."""
         title = "Shutdown the bot and end all active sessions"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden, footer="This is a destructive action that can not be undone."
+            ctx,
+            title,
+            hidden=hidden,
+            footer="This is a destructive action that can not be undone.",
         )
         if not is_confirmed:
             return
@@ -620,7 +639,9 @@ class Developer(commands.Cog):
         """Change log level."""
         title = f"Set log level to: `{log_level.value}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
-            ctx, title, hidden=hidden
+            ctx,
+            title,
+            hidden=hidden,
         )
         if not is_confirmed:
             return

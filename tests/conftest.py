@@ -42,7 +42,8 @@ async def _init_database(request) -> None:
 
         # Initialize beanie with the Sample document class and a database
         await init_database(
-            client=client, database=client[ValentinaConfig().test_mongo_database_name]
+            client=client,
+            database=client[ValentinaConfig().test_mongo_database_name],
         )
 
         yield
@@ -202,7 +203,11 @@ def mock_guild2(mocker):
 
 @pytest_asyncio.fixture()
 async def async_mock_ctx1(
-    mocker, mock_member, mock_guild1, mock_interaction1, mock_discord_character_channel
+    mocker,
+    mock_member,
+    mock_guild1,
+    mock_interaction1,
+    mock_discord_character_channel,
 ):
     """Create an async mock context object with user 1 run in a character channel."""
     mock_bot = mocker.AsyncMock()
@@ -263,7 +268,8 @@ def caplog(caplog):
             logging.getLogger(record.name).handle(record)
 
     logger.add(
-        PropagateHandler(), format="{message}"
+        PropagateHandler(),
+        format="{message}",
     )  # shunt logs into the standard python logging machinery
     # caplog.set_level(0)  # Tell logging to handle all log levels
     return caplog

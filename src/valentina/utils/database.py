@@ -3,7 +3,7 @@
 import pymongo
 from beanie import init_beanie
 from loguru import logger
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from valentina.models import (
     BrokerTask,
@@ -47,15 +47,17 @@ def test_db_connection() -> bool:  # pragma: no cover
         return True
 
 
-async def init_database(client=None, database=None) -> None:  # type: ignore [no-untyped-def]
-    """Initialize the database connection and set up Beanie ODM.
+async def init_database(
+    client: AsyncIOMotorClient | None = None,
+    database: AsyncIOMotorDatabase | None = None,
+) -> None:
+    """Initialize the MongoDB database connection and configure Beanie ODM for document models.
 
-    This function initializes the database connection using the provided client or creates a new one if not provided.
-    It then sets up the Beanie ODM with the specified document models.
+    Connect to MongoDB using the provided client or create a new one with default configuration. Set up Beanie ODM with the application's document models for object-document mapping. Use an existing database instance or select one from the client based on configuration.
 
     Args:
-        client (AsyncIOMotorClient, optional): The existing database client. If None, a new client will be created.
-        database (AsyncIOMotorDatabase, optional): The existing database instance. If None, a new database will be selected from the client.
+        client (AsyncIOMotorClient | None): The existing database client to use. If None, create a new client with default settings. Defaults to None.
+        database (AsyncIOMotorDatabase | None): The existing database instance to use. If None, select database from client using configured name. Defaults to None.
     """
     logger.debug("DB: Initializing...")
     mongo_uri = ValentinaConfig().mongo_uri

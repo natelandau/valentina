@@ -5,7 +5,7 @@ from typing import cast
 import discord
 from discord.ui import Button
 
-from valentina.constants import Emoji, TraitCategory
+from valentina.constants import EmojiDict, TraitCategory
 from valentina.discord.bot import ValentinaContext
 from valentina.models import Character, CharacterTrait
 
@@ -45,7 +45,7 @@ class SelectTraitCategoryButtons(discord.ui.View):  # pragma: no cover
             self.add_item(button)
 
         cancel_button: Button = Button(
-            label=f"{Emoji.CANCEL.value} Cancel",
+            label=f"{EmojiDict.CANCEL} Cancel",
             style=discord.ButtonStyle.secondary,
             custom_id="cancel",
         )
@@ -65,7 +65,7 @@ class SelectTraitCategoryButtons(discord.ui.View):  # pragma: no cover
         self._disable_all()
 
         # Return the selected character based on the custom_id of the button that was pressed
-        index = int(interaction.data.get("custom_id", None))  # type: ignore
+        index = int(interaction.data.get("custom_id", None))  # type: ignore[call-overload]
         self.selected_category = self.all_categories[index]
 
         self.stop()
@@ -106,7 +106,7 @@ class SelectCharacterTraitButtons(discord.ui.View):  # pragma: no cover
             self.add_item(button)
 
         cancel_button: Button = Button(
-            label=f"{Emoji.CANCEL.value} Cancel",
+            label=f"{EmojiDict.CANCEL} Cancel",
             style=discord.ButtonStyle.secondary,
             custom_id="cancel",
         )
@@ -125,7 +125,7 @@ class SelectCharacterTraitButtons(discord.ui.View):  # pragma: no cover
         self._disable_all()
 
         # Return the selected character based on the custom_id of the button that was pressed
-        index = int(interaction.data.get("custom_id", None))  # type: ignore
+        index = int(interaction.data.get("custom_id", None))  # type: ignore[call-overload]
         self.selected_trait = self.traits[index]
         self.stop()
 

@@ -42,7 +42,9 @@ class SpendPoints(MethodView):
         self.spend_type = spend_type
 
     async def _get_campaign_experience(
-        self, character: "Character", character_owner: User = None
+        self,
+        character: "Character",
+        character_owner: User = None,
     ) -> int:
         """Retrieve experience points for the character's campaign.
 
@@ -61,7 +63,10 @@ class SpendPoints(MethodView):
         return campaign_experience
 
     async def _downgrade_trait(
-        self, character: Character, trait: CharacterTrait, new_value: int
+        self,
+        character: Character,
+        trait: CharacterTrait,
+        new_value: int,
     ) -> str:
         """Reduce a trait's value and recoup points.
 
@@ -84,7 +89,9 @@ class SpendPoints(MethodView):
             case SpendPointsType.EXPERIENCE:
                 campaign = await Campaign.get(character.campaign)
                 downgraded_trait = await trait_modifier.downgrade_with_xp(
-                    trait, campaign, difference
+                    trait,
+                    campaign,
+                    difference,
                 )
             case SpendPointsType.STORYTELLER | SpendPointsType.INITIAL_BUILD:
                 if trait_modifier.can_trait_be_downgraded(trait, difference):
@@ -99,12 +106,14 @@ class SpendPoints(MethodView):
             else ""
         )
         await post_to_audit_log(
-            msg=f"Downgraded {character.name}'s {trait.name} to {downgraded_trait.value}{player_message}"
+            msg=f"Downgraded {character.name}'s {trait.name} to {downgraded_trait.value}{player_message}",
         )
         return f"Downgraded {trait.name} to {downgraded_trait.value}{player_message}"
 
     async def _parse_form_data(
-        self, character: Character, form: dict
+        self,
+        character: Character,
+        form: dict,
     ) -> tuple[CharacterTrait, int]:
         """Extract trait and target value from form data.
 
@@ -146,7 +155,8 @@ class SpendPoints(MethodView):
                 name=custom_trait_name.strip().title(),
                 category_name=category.strip().upper(),
                 max_value=get_max_trait_value(
-                    custom_trait_name.strip().title(), category.strip().upper()
+                    custom_trait_name.strip().title(),
+                    category.strip().upper(),
                 ),
                 value=0,
                 is_custom=True,
@@ -159,7 +169,10 @@ class SpendPoints(MethodView):
         return trait, target_value
 
     async def _upgrade_trait(
-        self, character: Character, trait: CharacterTrait, new_value: int
+        self,
+        character: Character,
+        trait: CharacterTrait,
+        new_value: int,
     ) -> str:
         """Increase a trait's value and spend points.
 
@@ -195,7 +208,7 @@ class SpendPoints(MethodView):
             else ""
         )
         await post_to_audit_log(
-            msg=f"Upgraded {character.name}'s {trait.name} to {upgraded_trait.value}{player_message}"
+            msg=f"Upgraded {character.name}'s {trait.name} to {upgraded_trait.value}{player_message}",
         )
         return f"Upgraded <strong>{trait.name}</strong> to {upgraded_trait.value}{player_message}"
 
@@ -219,12 +232,12 @@ class SpendPoints(MethodView):
         if not session["IS_STORYTELLER"] and character_owner.id != session.get("USER_ID"):
             await flash("You do not have permission to edit this character", "error")
             return redirect(  # type: ignore [return-value]
-                url_for("character_view.view", character_id=character_id)
+                url_for("character_view.view", character_id=character_id),
             )
         if not session["IS_STORYTELLER"] and self.spend_type == SpendPointsType.STORYTELLER:
             await flash("Only storytellers can update characters without spending points", "error")
             return redirect(  # type: ignore [return-value]
-                url_for("character_view.view", character_id=character_id)
+                url_for("character_view.view", character_id=character_id),
             )
 
         campaign_experience = (

@@ -58,7 +58,10 @@ class CharacterCreateStep1(QuartForm):
         filters=[str.strip, str.title],
     )
     dob = DateField(
-        "Date of Birth", description="Used to calculate age", validators=[Optional()], default=""
+        "Date of Birth",
+        description="Used to calculate age",
+        validators=[Optional()],
+        default="",
     )
     submit = SubmitField("Continue to Step 2")
     cancel = SubmitField("Cancel")
@@ -70,7 +73,8 @@ class CharacterCreateStep1(QuartForm):
 
         if (
             await Character.find(
-                Character.name_first == name_first, Character.name_last == name_last
+                Character.name_first == name_first,
+                Character.name_last == name_last,
             ).count()
             > 0
         ):
@@ -84,7 +88,8 @@ class CharacterCreateStep1(QuartForm):
 
         if (
             await Character.find(
-                Character.name_first == name_first, Character.name_last == name_last
+                Character.name_first == name_first,
+                Character.name_last == name_last,
             ).count()
             > 0
         ):

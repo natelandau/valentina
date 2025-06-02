@@ -3,7 +3,7 @@
 import discord
 from discord.ui import Button
 
-from valentina.constants import MAX_BUTTONS_PER_ROW, Emoji
+from valentina.constants import MAX_BUTTONS_PER_ROW, EmojiDict
 
 
 class IntegerButtons(discord.ui.View):
@@ -28,7 +28,7 @@ class IntegerButtons(discord.ui.View):
         rows = len(numbers) // MAX_BUTTONS_PER_ROW
 
         cancel_button: Button = Button(
-            label=f"{Emoji.CANCEL.value} Cancel",
+            label=f"{EmojiDict.CANCEL} Cancel",
             style=discord.ButtonStyle.secondary,
             custom_id="cancel",
             row=rows + 1 if rows < 5 else 5,  # noqa: PLR2004
@@ -51,14 +51,14 @@ class IntegerButtons(discord.ui.View):
                 isinstance(child, Button)
                 and interaction.data.get("custom_id", None) == child.custom_id
             ):
-                child.label = f"{Emoji.YES.value} {child.label}"
+                child.label = f"{EmojiDict.YES} {child.label}"
 
             if isinstance(child, Button | discord.ui.Select):
                 child.disabled = True
 
         # Return the selected character based on the custom_id of the button that was pressed
 
-        self.selection = int(interaction.data.get("custom_id", None))  # type: ignore
+        self.selection = int(interaction.data.get("custom_id", None))  # type: ignore[call-overload]
         self.stop()
 
     async def cancel_callback(self, interaction: discord.Interaction) -> None:
@@ -73,7 +73,7 @@ class IntegerButtons(discord.ui.View):
         if self.author is None:
             return True
 
-        if self.author.guild_permissions.administrator:  # type: ignore
+        if self.author.guild_permissions.administrator:  # type: ignore [union-attr]
             return True
 
         return interaction.user.id == self.author.id
@@ -107,13 +107,15 @@ class ReRollButton(discord.ui.View):
             self.add_item(reroll_button)
 
             done_button: Button = Button(
-                label="Done", custom_id="done", style=discord.ButtonStyle.secondary
+                label="Done",
+                custom_id="done",
+                style=discord.ButtonStyle.secondary,
             )
             done_button.callback = self.button_callback  # type: ignore [method-assign]
             self.add_item(done_button)
         elif desperation_botch:
             overreach_button: Button = Button(
-                label=f"{Emoji.OVERREACH.value} Succeed and increase danger!",
+                label=f"{EmojiDict.OVERREACH} Succeed and increase danger!",
                 custom_id="overreach",
                 style=discord.ButtonStyle.success,
             )
@@ -121,7 +123,7 @@ class ReRollButton(discord.ui.View):
             self.add_item(overreach_button)
 
             despair_button: Button = Button(
-                label=f"{Emoji.DESPAIR.value} Fail and enter Despair!",
+                label=f"{EmojiDict.DESPAIR} Fail and enter Despair!",
                 custom_id="despair",
                 style=discord.ButtonStyle.success,
             )
@@ -136,7 +138,7 @@ class ReRollButton(discord.ui.View):
         # Disable the interaction and grab the setting name
         for child in self.children:
             if isinstance(child, Button) and response == child.custom_id:
-                child.label = f"{Emoji.YES.value} {child.label}"
+                child.label = f"{EmojiDict.YES} {child.label}"
 
         self._disable_all()
         await interaction.response.edit_message(view=None)  # view=None remove all buttons
@@ -165,7 +167,7 @@ class ReRollButton(discord.ui.View):
         if self.author is None:
             return True
 
-        if self.author.guild_permissions.administrator:  # type: ignore
+        if self.author.guild_permissions.administrator:  # type: ignore [union-attr]
             return True
 
         return interaction.user.id == self.author.id
@@ -188,20 +190,20 @@ class ConfirmCancelButtons(discord.ui.View):
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, custom_id="confirm")
     async def confirm_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the confirm button."""
-        button.label += f" {Emoji.YES.value}"
+        button.label += f" {EmojiDict.YES}"
         self._disable_all()
         await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = True
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.CANCEL.value} Cancel",
+        label=f"{EmojiDict.CANCEL} Cancel",
         style=discord.ButtonStyle.secondary,
         custom_id="cancel",
     )
     async def cancel_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the cancel button."""
-        button.label += f" {Emoji.YES.value}"
+        button.label += f" {EmojiDict.YES}"
         self._disable_all()
         await interaction.response.edit_message(view=None)  # view=None remove all buttons
         self.confirmed = False
@@ -229,7 +231,7 @@ class CancelButton(discord.ui.View):
                 child.disabled = True
 
     @discord.ui.button(
-        label=f"{Emoji.CANCEL.value} Cancel",
+        label=f"{EmojiDict.CANCEL} Cancel",
         style=discord.ButtonStyle.secondary,
         custom_id="cancel",
     )

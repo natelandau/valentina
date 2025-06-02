@@ -109,6 +109,7 @@ async def test_get_embed(mock_ctx1):
     # THEN confirm the embed is correct
     assert isinstance(embed, discord.Embed)
     assert embed.description == Regex(
-        r"## Overall success probability: \d{2}\.\d{2}% 👍", re.IGNORECASE
+        r"## Overall success probability: \d{2}\.\d{2}% 👍",
+        re.IGNORECASE,
     )
     assert "Rolling `5d10` against difficulty `6`" in embed.description

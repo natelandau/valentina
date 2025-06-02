@@ -69,7 +69,8 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
 
     # And: The session data includes both characters with character1 as active
     mock_session_data = mock_session(
-        characters=[character1, character2], active_character=character1
+        characters=[character1, character2],
+        active_character=character1,
     )
 
     # When: Setting up the request context
@@ -110,7 +111,7 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
                 owner_name="Test Owner",
                 owner_id=1234,
                 type_storyteller=False,
-            ).__dict__
+            ).__dict__,
         ]
 
         # Then: That character is returned as active
@@ -142,7 +143,8 @@ async def test_fetch_active_character(debug, app_request_context, mock_session, 
 
         # Then: An error is raised since we don't know which character to make active
         with pytest.raises(
-            InternalServerError, match="Multiple characters found and no active character set"
+            InternalServerError,
+            match="Multiple characters found and no active character set",
         ) as excinfo:
             await helpers.fetch_active_character()
         assert excinfo.value.code == 500
@@ -230,17 +232,26 @@ async def test_fetch_user_characters(
 
     # And: User1 has two player characters
     character1 = character_factory.build(
-        user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=True,
+        campaign=str(campaign.id),
     )
     await character1.insert()
     character2 = character_factory.build(
-        user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=True,
+        campaign=str(campaign.id),
     )
     await character2.insert()
 
     # And: User2 has one player character
     character3 = character_factory.build(
-        user_owner=user2.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+        user_owner=user2.id,
+        guild=guild.id,
+        type_player=True,
+        campaign=str(campaign.id),
     )
     await character3.insert()
 
@@ -301,15 +312,24 @@ async def test_fetch_all_characters(
 
     # And: There are 3 player characters and 1 storyteller character
     character1 = character_factory.build(
-        user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=True,
+        campaign=str(campaign.id),
     )
     await character1.insert()
     character2 = character_factory.build(
-        user_owner=user1.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+        user_owner=user1.id,
+        guild=guild.id,
+        type_player=True,
+        campaign=str(campaign.id),
     )
     await character2.insert()
     character3 = character_factory.build(
-        user_owner=user2.id, guild=guild.id, type_player=True, campaign=str(campaign.id)
+        user_owner=user2.id,
+        guild=guild.id,
+        type_player=True,
+        campaign=str(campaign.id),
     )
     await character3.insert()
     character4 = character_factory.build(

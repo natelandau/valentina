@@ -46,10 +46,7 @@ class UserMacro(BaseModel):
 class User(Document):
     """Represent a user in the database and manage user-related data.
 
-    Use this class to create, retrieve, update, and delete user records in the database.
-    Store and manage user information such as ID, avatar, characters, campaign experience,
-    creation date, macros, name, and associated guilds. Implement methods to handle
-    user-specific operations and provide convenient access to user data.
+    Use this class to create, retrieve, update, and delete user records in the database. Store and manage user information such as ID, avatar, characters, campaign experience, creation date, macros, name, and associated guilds. Implement methods to handle user-specific operations and provide convenient access to user data.
     """
 
     id: int  # type: ignore [assignment]
@@ -193,7 +190,10 @@ class User(Document):
         return new_xp
 
     async def add_campaign_xp(
-        self, campaign: Campaign, amount: int, increase_lifetime: bool = True
+        self,
+        campaign: Campaign,
+        amount: int,
+        increase_lifetime: bool = True,
     ) -> int:
         """Add experience points to a user's campaign.
 

@@ -40,8 +40,8 @@ def main() -> None:
     openssl_dir, openssl_cafile = os.path.split(ssl.get_default_verify_paths().openssl_cafile)
 
     console.log("pip install --upgrade certifi")
-    subprocess.check_call(
-        [sys.executable, "-E", "-s", "-m", "pip", "install", "--upgrade", "certifi"]
+    subprocess.check_call(  # noqa: S603
+        [sys.executable, "-E", "-s", "-m", "pip", "install", "--upgrade", "certifi"],
     )
 
     import certifi

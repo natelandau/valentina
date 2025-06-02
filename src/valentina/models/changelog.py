@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class ChangelogPoster:  # pragma: no cover
     """Helper class for posting changelogs to the changelog channel specified in guild settings."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         bot: commands.Bot | None = None,
         ctx: Optional["ValentinaContext"] = None,
@@ -51,7 +51,8 @@ class ChangelogPoster:  # pragma: no cover
         )
 
         self.oldest_version, self.newest_version = self._validate_versions(
-            oldest_version, newest_version
+            oldest_version,
+            newest_version,
         )
 
         self.with_personality = with_personality
@@ -61,9 +62,7 @@ class ChangelogPoster:  # pragma: no cover
     async def _get_channel_from_ctx(self) -> discord.TextChannel | None:
         """Retrieve the changelog channel from the guild settings.
 
-        Fetch the guild object using the context's guild ID and use it to obtain
-        the designated changelog channel. This method relies on the existence of
-        a valid context (self.ctx) to function properly.
+        Fetch the guild object using the context's guild ID and use it to obtain the designated changelog channel. This method relies on the existence of a valid context (self.ctx) to function properly.
 
         Returns:
             discord.TextChannel | None: The designated changelog channel if it exists
@@ -82,8 +81,7 @@ class ChangelogPoster:  # pragma: no cover
     async def _validate_channel(self) -> bool:
         """Validate the existence of the changelog channel.
 
-        Verify that a valid channel for posting the changelog exists. If no channel
-        is set, attempt to retrieve it from the guild settings using the context.
+        Verify that a valid channel for posting the changelog exists. If no channel is set, attempt to retrieve it from the guild settings using the context.
 
         Returns:
             bool: True if a valid changelog channel exists, False otherwise.
@@ -114,8 +112,7 @@ class ChangelogPoster:  # pragma: no cover
     def _validate_versions(self, oldest_version: str, newest_version: str) -> tuple[str, str]:
         """Validate the version inputs for the ChangelogPoster.
 
-        Compare the oldest and newest version strings to ensure they are in the correct order.
-        Check if the provided versions exist in the changelog.
+        Compare the oldest and newest version strings to ensure they are in the correct order. Check if the provided versions exist in the changelog.
 
         Args:
             oldest_version (str): The oldest version to include in the changelog.
@@ -154,9 +151,7 @@ class ChangelogPoster:  # pragma: no cover
     async def post(self) -> None:
         """Post the changelog to the specified Discord channel.
 
-        Validate the channel, check for updates, and send the changelog as an embed.
-        If no updates are found, log the information or respond to the context
-        with an error message. Use personality in the embed if specified.
+        Validate the channel, check for updates, and send the changelog as an embed. If no updates are found, log the information or respond to the context with an error message. Use personality in the embed if specified.
 
         Raises:
             discord.errors.Forbidden: If the bot lacks permissions to send messages.
@@ -316,7 +311,7 @@ class ChangelogParser:
                 # When requested, do not parse the oldest version
                 # This is used when automatically posting the changelog on bot connect
                 if self.exclude_oldest_version and semver.Version.parse(
-                    version_being_parsed
+                    version_being_parsed,
                 ) == semver.Version.parse(self.oldest_version):
                     parse_version = False
                     continue
@@ -334,13 +329,13 @@ class ChangelogParser:
 
                 # Stop parsing if we are below the to_version
                 if semver.Version.parse(version_being_parsed) < semver.Version.parse(
-                    self.oldest_version
+                    self.oldest_version,
                 ):
                     break
 
                 # Do not parse if we are above the from_version
                 if semver.Version.parse(version_being_parsed) > semver.Version.parse(
-                    self.newest_version
+                    self.newest_version,
                 ):
                     parse_version = False
                     continue
@@ -364,14 +359,9 @@ class ChangelogParser:
     def __clean_changelog(self) -> None:
         """Clean up the changelog dictionary by removing excluded categories and empty versions.
 
-        Remove categories listed in the exclusion list from all versions in the changelog.
-        Delete any versions that contain only a date entry and no other changes.
-        Modify the `self.changelog_dict` in-place to reflect these changes.
+        Remove categories listed in the exclusion list from all versions in the changelog. Delete any versions that contain only a date entry and no other changes. Modify the `self.changelog_dict` in-place to reflect these changes.
 
         This method ensures that the changelog contains only relevant and non-empty entries.
-
-        Returns:
-            None
         """
         # Remove excluded categories
         categories_to_remove: dict[str, list[str]] = {

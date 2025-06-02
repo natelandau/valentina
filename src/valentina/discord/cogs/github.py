@@ -93,7 +93,10 @@ class GithubCog(commands.Cog):
         ctx: ValentinaContext,
         title: Option(str, name="title", description="Title of the issue", required=True),
         description: Option(
-            str, name="description", description="Description of the issue", required=True
+            str,
+            name="description",
+            description="Description of the issue",
+            required=True,
         ),
         type_of_issue: Option(
             str,

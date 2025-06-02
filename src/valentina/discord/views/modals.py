@@ -23,7 +23,7 @@ class ChangeNameModal(Modal):
                 value=self.character.name_first,
                 style=discord.InputTextStyle.short,
                 required=True,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -32,7 +32,7 @@ class ChangeNameModal(Modal):
                 value=self.character.name_last,
                 style=discord.InputTextStyle.short,
                 required=True,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -41,7 +41,7 @@ class ChangeNameModal(Modal):
                 value=self.character.name_nick or None,
                 style=discord.InputTextStyle.short,
                 required=False,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -81,7 +81,7 @@ class BioModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -111,7 +111,7 @@ class BookModal(Modal):
                 value=book.name if book else None,
                 required=True,
                 style=discord.InputTextStyle.short,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -121,7 +121,7 @@ class BookModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=500,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -131,7 +131,7 @@ class BookModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -160,7 +160,7 @@ class BookModal(Modal):
         else:
             self.confirmed = False
             await interaction.edit_original_response(
-                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)]
+                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)],
             )
 
         self.stop()
@@ -183,7 +183,7 @@ class ChapterModal(Modal):
                 value=chapter.name if chapter else None,
                 required=True,
                 style=discord.InputTextStyle.short,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -193,7 +193,7 @@ class ChapterModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=500,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -203,7 +203,7 @@ class ChapterModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -232,7 +232,7 @@ class ChapterModal(Modal):
         else:
             self.confirmed = False
             await interaction.edit_original_response(
-                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)]
+                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)],
             )
 
         self.stop()
@@ -260,7 +260,7 @@ class InventoryItemModal(Modal):
                 value=self.item_name or None,
                 required=True,
                 style=discord.InputTextStyle.short,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -269,7 +269,7 @@ class InventoryItemModal(Modal):
                 value=self.item_description or None,
                 style=discord.InputTextStyle.short,
                 required=False,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -281,7 +281,9 @@ class InventoryItemModal(Modal):
         embed_title = "Update inventory" if self.update_existing else "Add item to inventory"
         embed_description = f"### {self.item_name}\n{self.item_description}"
         embed = discord.Embed(
-            title=embed_title, description=embed_description, color=EmbedColor.DEFAULT.value
+            title=embed_title,
+            description=embed_description,
+            color=EmbedColor.DEFAULT.value,
         )
         await interaction.response.send_message(embeds=[embed], ephemeral=True, view=view)
 
@@ -295,13 +297,13 @@ class InventoryItemModal(Modal):
                         title=embed_title,
                         description=embed_description,
                         color=EmbedColor.SUCCESS.value,
-                    )
-                ]
+                    ),
+                ],
             )
         if not view.confirmed:
             self.confirmed = False
             await interaction.edit_original_response(
-                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)]
+                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)],
             )
 
         self.stop()
@@ -329,7 +331,7 @@ class CustomSectionModal(Modal):
                 value=self.section_title or None,
                 required=True,
                 style=discord.InputTextStyle.short,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -339,7 +341,7 @@ class CustomSectionModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -374,7 +376,7 @@ class MacroCreateModal(Modal):
                 value=self.name or None,
                 required=True,
                 style=discord.InputTextStyle.short,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -384,7 +386,7 @@ class MacroCreateModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.short,
                 max_length=4,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -394,7 +396,7 @@ class MacroCreateModal(Modal):
                 required=False,
                 style=discord.InputTextStyle.long,
                 max_length=600,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -425,8 +427,8 @@ class MacroCreateModal(Modal):
             self.confirmed = False
             await interaction.edit_original_response(
                 embeds=[
-                    discord.Embed(title="Macro creation cancelled", color=EmbedColor.ERROR.value)
-                ]
+                    discord.Embed(title="Macro creation cancelled", color=EmbedColor.ERROR.value),
+                ],
             )
 
         self.stop()
@@ -448,7 +450,7 @@ class NoteModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -472,7 +474,7 @@ class NoteModal(Modal):
         else:
             self.confirmed = False
             await interaction.edit_original_response(
-                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)]
+                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)],
             )
 
         self.stop()
@@ -495,7 +497,7 @@ class NPCModal(Modal):
                 value=npc.name if npc else None,
                 required=True,
                 style=discord.InputTextStyle.short,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -504,7 +506,7 @@ class NPCModal(Modal):
                 value=npc.npc_class if npc else None,
                 required=True,
                 style=discord.InputTextStyle.short,
-            )
+            ),
         )
         self.add_item(
             InputText(
@@ -514,7 +516,7 @@ class NPCModal(Modal):
                 required=True,
                 style=discord.InputTextStyle.long,
                 max_length=1900,
-            )
+            ),
         )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -541,7 +543,7 @@ class NPCModal(Modal):
         else:
             self.confirmed = False
             await interaction.edit_original_response(
-                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)]
+                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)],
             )
 
         self.stop()
@@ -578,7 +580,7 @@ class ProfileModal(Modal):
                 required=False,
                 style=discord.InputTextStyle.short,
                 custom_id="concept_name",
-            )
+            ),
         )
 
         if self.character.char_class == CharClass.VAMPIRE:
@@ -590,7 +592,7 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="generation",
-                )
+                ),
             )
 
             self.add_item(
@@ -601,7 +603,7 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="sire",
-                )
+                ),
             )
 
         if self.character.char_class == CharClass.MAGE:
@@ -613,7 +615,7 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="essence",
-                )
+                ),
             )
             self.add_item(
                 InputText(
@@ -623,7 +625,7 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="tradition",
-                )
+                ),
             )
 
         if self.character.char_class == CharClass.WEREWOLF:
@@ -635,7 +637,7 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="breed",
-                )
+                ),
             )
             self.add_item(
                 InputText(
@@ -645,7 +647,7 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="tribe",
-                )
+                ),
             )
             self.add_item(
                 InputText(
@@ -655,7 +657,7 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="auspice",
-                )
+                ),
             )
 
         if self.character.char_class == CharClass.HUNTER:
@@ -669,7 +671,7 @@ class ProfileModal(Modal):
                     required=False,
                     style=discord.InputTextStyle.short,
                     custom_id="creed_name",
-                )
+                ),
             )
 
     async def callback(self, interaction: discord.Interaction) -> None:
@@ -689,7 +691,7 @@ class ProfileModal(Modal):
         else:
             self.confirmed = False
             await interaction.edit_original_response(
-                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)]
+                embeds=[discord.Embed(title="Cancelled", color=EmbedColor.ERROR.value)],
             )
 
         self.stop()

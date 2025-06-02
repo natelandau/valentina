@@ -63,7 +63,8 @@ class EditTableView(MethodView):
         self.table_type: TableType = table_type
 
     async def _get_parent_by_id(
-        self, parent_id: str
+        self,
+        parent_id: str,
     ) -> tuple[CampaignBook | None, Campaign | None, Character | None]:
         """Fetch potential parent object by ID, checking all possible parent types.
 
@@ -117,7 +118,9 @@ class EditTableView(MethodView):
         return None, None
 
     async def _find_macro(
-        self, parent_id: str | int, macro_id: str
+        self,
+        parent_id: str | int,
+        macro_id: str,
     ) -> tuple[User, UserMacro] | None:
         """Retrieve a user macro and its parent user by their IDs.
 
@@ -327,7 +330,7 @@ class EditTableView(MethodView):
                 item=item,
                 TableType=self.table_type,
                 parent_id=parent_id,
-            )
+            ),
         )()
 
         return await link_terms(result, link_type="html")
@@ -389,7 +392,8 @@ class EditTableView(MethodView):
 
                 case TableType.NPC:
                     campaign, npc = await self._find_npc(
-                        form.data["campaign_id"], form.data["uuid"]
+                        form.data["campaign_id"],
+                        form.data["uuid"],
                     )
                     if not npc:
                         abort(HTTPStatus.BAD_REQUEST.value, "NPC not found in post")
@@ -433,7 +437,7 @@ class EditTableView(MethodView):
                     item=item,
                     TableType=self.table_type,
                     parent_id=parent_id,
-                )
+                ),
             )()
 
             return await link_terms(result, link_type="html")
@@ -587,7 +591,7 @@ class EditTableView(MethodView):
                     item=item,
                     TableType=self.table_type,
                     parent_id=parent_id,
-                )
+                ),
             )()
 
             return await link_terms(result, link_type="html")
@@ -785,7 +789,7 @@ class EditTextView(MethodView):
                 "HTMXPartials.EditText.TextDisplayPartial",
                 TextType=self.text_type,
                 text=text,
-            )
+            ),
         )()
 
         return await link_terms(result, link_type="html")
@@ -812,7 +816,7 @@ class EditTextView(MethodView):
                     "HTMXPartials.EditText.TextDisplayPartial",
                     TextType=self.text_type,
                     text=text,
-                )
+                ),
             )()
             return await link_terms(result, link_type="html")
 
@@ -845,7 +849,7 @@ class EditTextView(MethodView):
                     "HTMXPartials.EditText.TextDisplayPartial",
                     TextType=self.text_type,
                     text=text,
-                )
+                ),
             )()
             return await link_terms(result, link_type="html")
 

@@ -48,7 +48,9 @@ class ValentinaForm:
 
 
 async def validate_unique_character_name(
-    name_first: str, name_last: str, character_id: str = ""
+    name_first: str,
+    name_last: str,
+    character_id: str = "",
 ) -> bool:  # pragma: no cover
     """Check if the first + lastname are unique in the database."""
     if character_id:

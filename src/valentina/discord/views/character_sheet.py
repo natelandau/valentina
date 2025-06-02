@@ -12,7 +12,7 @@ from valentina.discord.bot import ValentinaContext
 from valentina.models import AWSService, Character, Statistics
 
 
-async def __embed1(
+async def __embed1(  # noqa: PLR0913
     character: Character,
     owned_by_user: discord.User | None = None,
     title: str | None = None,
@@ -58,7 +58,9 @@ async def __embed1(
             ]
             if trait_values:
                 embed.add_field(
-                    name=category.category.name.title(), value="\n".join(trait_values), inline=True
+                    name=category.category.name.title(),
+                    value="\n".join(trait_values),
+                    inline=True,
                 )
 
     if desc_suffix:
@@ -113,7 +115,9 @@ async def __embed2(
         embed.add_field(name="\u200b", value="**CUSTOM SECTIONS**", inline=False)
         for section in custom_sections:
             embed.add_field(
-                name=f"__**{section.title.title()}**__", value=section.content, inline=True
+                name=f"__**{section.title.title()}**__",
+                value=section.content,
+                inline=True,
             )
 
     stats = Statistics(ctx)
@@ -169,10 +173,13 @@ async def show_sheet(
     embeds.extend(
         [
             await __embed1(
-                character, owned_by_user, show_footer=show_footer, is_storyteller=is_storyteller
+                character,
+                owned_by_user,
+                show_footer=show_footer,
+                is_storyteller=is_storyteller,
             ),
             await __embed2(ctx, character, owned_by_user, show_footer=show_footer),
-        ]
+        ],
     )
 
     if character.images:
@@ -180,7 +187,7 @@ async def show_sheet(
             [
                 __image_embed(character, image_key, owned_by_user, show_footer=show_footer)
                 for image_key in character.images
-            ]
+            ],
         )
 
     paginator = pages.Paginator(pages=embeds)  # type: ignore [arg-type]
@@ -189,7 +196,7 @@ async def show_sheet(
     await paginator.respond(ctx.interaction, ephemeral=ephemeral)
 
 
-async def sheet_embed(
+async def sheet_embed(  # noqa: PLR0913
     ctx: ValentinaContext,
     character: Character,
     owned_by_user: discord.User | None = None,

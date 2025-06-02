@@ -38,7 +38,7 @@ class SetDesperationOrDanger(MethodView):
             abort(HTTPStatus.NOT_FOUND.value, f"Campaign {campaign_id} not found")
 
         form = await DesperationForm.create_form(
-            data={"desperation": campaign.desperation, "danger": campaign.danger}
+            data={"desperation": campaign.desperation, "danger": campaign.danger},
         )
 
         return await run_sync(
@@ -46,7 +46,7 @@ class SetDesperationOrDanger(MethodView):
                 "HTMXPartials.Other.DesperationForm",
                 form=form,
                 campaign_id=campaign_id,
-            )
+            ),
         )()
 
     async def post(self, campaign_id: str) -> str:
@@ -63,7 +63,7 @@ class SetDesperationOrDanger(MethodView):
         """
         campaign = await Campaign.get(campaign_id)
         form = await DesperationForm.create_form(
-            data={"desperation": campaign.desperation, "danger": campaign.danger}
+            data={"desperation": campaign.desperation, "danger": campaign.danger},
         )
         msg = ""
 
@@ -78,7 +78,7 @@ class SetDesperationOrDanger(MethodView):
                 campaign.danger = int(form.danger.data)
                 await campaign.save()
                 await post_to_audit_log(
-                    f"Campaign {campaign_id} desperation or danger set to {form.desperation.data} and {form.danger.data}"
+                    f"Campaign {campaign_id} desperation or danger set to {form.desperation.data} and {form.danger.data}",
                 )
 
             await flash(msg, "success")
@@ -90,7 +90,7 @@ class SetDesperationOrDanger(MethodView):
                 "HTMXPartials.Other.DesperationForm",
                 form=form,
                 campaign_id=campaign_id,
-            )
+            ),
         )()
 
 
@@ -186,7 +186,8 @@ class CharacterImageView(MethodView):
             await character.add_image(extension=extension, data=image.stream.read())
 
             await post_to_audit_log(
-                msg=f"Add image to `{character.name}`", view=self.__class__.__name__
+                msg=f"Add image to `{character.name}`",
+                view=self.__class__.__name__,
             )
 
             return await self.get(character_id, success_msg="Image added")
@@ -222,7 +223,8 @@ class CharacterImageView(MethodView):
         await character.delete_image(image_key)
 
         await post_to_audit_log(
-            msg=f"Delete image from `{character.name}`", view=self.__class__.__name__
+            msg=f"Delete image from `{character.name}`",
+            view=self.__class__.__name__,
         )
 
         return await self.get(character_id, success_msg="Image deleted")
@@ -282,7 +284,8 @@ class AddExperienceView(MethodView):
         guild = await fetch_guild(fetch_links=True)
 
         can_grant_xp = await self.permission_manager.can_grant_xp(
-            author_id=session["USER_ID"], target_id=target_id
+            author_id=session["USER_ID"],
+            target_id=target_id,
         )
 
         @dataclass
@@ -302,7 +305,7 @@ class AddExperienceView(MethodView):
         for campaign in guild.campaigns:
             campaign_xp, campaign_total_xp, campaign_cp = target.fetch_campaign_xp(campaign)
             campaign_experience.append(
-                UserCampaignExperience(campaign.name, campaign_xp, campaign_total_xp, campaign_cp)  # type: ignore [attr-defined]
+                UserCampaignExperience(campaign.name, campaign_xp, campaign_total_xp, campaign_cp),  # type: ignore [attr-defined]
             )
 
         # Generate random ID to ensure success message shows even if same message content
@@ -338,7 +341,8 @@ class AddExperienceView(MethodView):
             abort(HTTPStatus.NOT_FOUND.value, "Target user ID not found")
 
         can_grant_xp = await self.permission_manager.can_grant_xp(
-            author_id=session["USER_ID"], target_id=target_id
+            author_id=session["USER_ID"],
+            target_id=target_id,
         )
 
         if not can_grant_xp:
@@ -379,5 +383,7 @@ class AddExperienceView(MethodView):
             return f'<script>window.location.href="{url}"</script>'
 
         return catalog.render(
-            "HTMXPartials.AddExperience.FormPartial", form=form, target_id=target_id
+            "HTMXPartials.AddExperience.FormPartial",
+            form=form,
+            target_id=target_id,
         )

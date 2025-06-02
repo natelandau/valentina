@@ -1,7 +1,7 @@
 # type: ignore
 """Tests for the converters module."""
 
-import datetime
+from datetime import UTC, datetime
 
 import pytest
 from discord.ext.commands import BadArgument
@@ -185,7 +185,14 @@ async def test_valid_yyyymmdd():
     """Test the ValidYYYYMMDD converter."""
     # WHEN the converter is called with a valid date
     # THEN assert the result is the correct date
-    assert await ValidYYYYMMDD().convert(None, "2021-01-01") == datetime.datetime(2021, 1, 1, 0, 0)
+    assert await ValidYYYYMMDD().convert(None, "2021-01-01") == datetime(
+        2021,
+        1,
+        1,
+        0,
+        0,
+        tzinfo=UTC,
+    )
 
     # WHEN the converter is called with an invalid date
     # THEN assert a BadArgument is raised
@@ -195,7 +202,10 @@ async def test_valid_yyyymmdd():
 
 @pytest.mark.drop_db
 async def test_valid_chapter_number(
-    mock_ctx1, book_chapter_factory, book_factory, mock_discord_book_channel
+    mock_ctx1,
+    book_chapter_factory,
+    book_factory,
+    mock_discord_book_channel,
 ):
     """Test the ValidChapterNumber converter."""
     mock_ctx1.channel = mock_discord_book_channel

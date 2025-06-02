@@ -172,7 +172,7 @@ class CreateStorytellerRNGCharacter(MethodView):
         await task.insert()
 
         await post_to_audit_log(
-            f"{user.name} created storyteller character {generated_character.full_name}"
+            f"{user.name} created storyteller character {generated_character.full_name}",
         )
 
         await update_session()

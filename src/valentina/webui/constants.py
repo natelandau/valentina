@@ -43,7 +43,8 @@ class TextType(Enum):
 
     BIOGRAPHY = EditableItem(name="Biography", route="partials.text_biography")
     CAMPAIGN_DESCRIPTION = EditableItem(
-        name="Description", route="partials.text_campaign_description"
+        name="Description",
+        route="partials.text_campaign_description",
     )
 
 
@@ -144,7 +145,10 @@ class CampaignEditableInfo(Enum):
     """Enum for the editable info of a campaign. Used to build blueprint routes and template variables."""
 
     BOOK = EditItem(
-        name="book", route="campaign.edit_book", div_id="book", tab=CampaignViewTab.BOOKS
+        name="book",
+        route="campaign.edit_book",
+        div_id="book",
+        tab=CampaignViewTab.BOOKS,
     )
 
 

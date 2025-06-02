@@ -1,7 +1,6 @@
 """Campaign models for Valentina."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID, uuid4
 
 import discord
@@ -19,7 +18,7 @@ from beanie import (
 )
 from pydantic import BaseModel, Field
 
-from valentina.constants import Emoji
+from valentina.constants import EmojiDict
 from valentina.utils.helpers import renumber_items, time_now
 
 from .character import Character
@@ -70,7 +69,7 @@ class CampaignBook(Document):
     @property
     def channel_name(self) -> str:
         """Channel name for the book."""
-        return f"{Emoji.BOOK.value}-{self.number:0>2}-{self.name.lower().replace(' ', '-')}"
+        return f"{EmojiDict.BOOK}-{self.number:0>2}-{self.name.lower().replace(' ', '-')}"
 
     async def fetch_chapters(self) -> list[CampaignBookChapter]:
         """Fetch all chapters in the book.
@@ -122,7 +121,7 @@ class Campaign(Document):
 
     date_created: datetime = Field(default_factory=time_now)
     date_modified: datetime = Field(default_factory=time_now)
-    date_in_game: Optional[datetime] = None
+    date_in_game: datetime | None = None
     description: str | None = None
     desperation: int = 0
     danger: int = 0

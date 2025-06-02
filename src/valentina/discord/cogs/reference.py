@@ -42,7 +42,7 @@ class Reference(commands.Cog):
         Crippled      : -5
         Incapacitated :
         ```
-        """
+        """,
         )
 
         await present_embed(
@@ -85,7 +85,7 @@ class Reference(commands.Cog):
             Virtues...............: x2
             Willpower.............: x1
             ```
-            """
+            """,
         )
         await present_embed(
             ctx,
@@ -231,11 +231,15 @@ class Reference(commands.Cog):
             - [Paths Info](https://whitewolf.fandom.com/wiki/Thaumaturgy_(VTM))
             - [Rituals Info](https://whitewolf.fandom.com/wiki/List_of_Thaumaturgy_Rituals)
 
-            """
+            """,
         )
 
         await present_embed(
-            ctx, title="Thaumaturgy", description=page1, level="info", ephemeral=hidden
+            ctx,
+            title="Thaumaturgy",
+            description=page1,
+            level="info",
+            ephemeral=hidden,
         )
 
 

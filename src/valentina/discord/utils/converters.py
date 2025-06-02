@@ -1,7 +1,7 @@
 """Converters, validators, and normalizers for Valentina."""
 
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 
 import aiohttp
 from discord.ext import commands
@@ -282,7 +282,7 @@ class ValidCharacterName(Converter):
 
         if not re.match(r"^[a-zA-Z0-9àèìòñùçëïüÁÉÖÜÑ_ -]+$", argument):
             errors.append(  # type: ignore [unreachable]
-                "`Character names may only contain letters, numbers, spaces, hyphens, and underscores."
+                "`Character names may only contain letters, numbers, spaces, hyphens, and underscores.",
             )
 
         if len(errors) > 0:
@@ -410,7 +410,7 @@ class ValidYYYYMMDD(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> datetime:  # noqa: ARG002
         """Validate and normalize traits."""
         if re.match(r"^\d{4}-\d{2}-\d{2}$", argument):
-            return datetime.strptime(argument, "%Y-%m-%d")
+            return datetime.strptime(argument, "%Y-%m-%d").replace(tzinfo=UTC)
 
         msg = f"`{argument}` is not a valid trait"  # type: ignore [unreachable]
         raise BadArgument(msg)

@@ -11,7 +11,9 @@ blueprint = Blueprint("character_create", __name__)
 
 
 blueprint.add_url_rule(
-    "/create_character", view_func=StartCharacterCreate.as_view("start"), methods=["GET", "POST"]
+    "/create_character",
+    view_func=StartCharacterCreate.as_view("start"),
+    methods=["GET", "POST"],
 )
 
 ### Create Full Characters

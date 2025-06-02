@@ -20,7 +20,8 @@ async def test_sortable_book_reorder(
 ):
     """Test the sortable book reorder route."""
     mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.sortables.post_to_audit_log", return_value=None
+        "valentina.webui.blueprints.HTMXPartials.sortables.post_to_audit_log",
+        return_value=None,
     )
 
     # Given: A campaign with 5 books in sequential order
@@ -104,7 +105,8 @@ async def test_sortable_chapters_reorder(
 ):
     """Test the sortable chapters reorder route."""
     mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.sortables.post_to_audit_log", return_value=None
+        "valentina.webui.blueprints.HTMXPartials.sortables.post_to_audit_log",
+        return_value=None,
     )
 
     # Given: A campaign with 5 books in sequential order
@@ -113,19 +115,29 @@ async def test_sortable_chapters_reorder(
 
     parent = await book_factory.build().insert()
     item1 = await book_chapter_factory.build(
-        book=str(parent.id), name="Chapter 1", number=1
+        book=str(parent.id),
+        name="Chapter 1",
+        number=1,
     ).insert()
     item2 = await book_chapter_factory.build(
-        book=str(parent.id), name="Chapter 2", number=2
+        book=str(parent.id),
+        name="Chapter 2",
+        number=2,
     ).insert()
     item3 = await book_chapter_factory.build(
-        book=str(parent.id), name="Chapter 3", number=3
+        book=str(parent.id),
+        name="Chapter 3",
+        number=3,
     ).insert()
     item4 = await book_chapter_factory.build(
-        book=str(parent.id), name="Chapter 4", number=4
+        book=str(parent.id),
+        name="Chapter 4",
+        number=4,
     ).insert()
     item5 = await book_chapter_factory.build(
-        book=str(parent.id), name="Chapter 5", number=5
+        book=str(parent.id),
+        name="Chapter 5",
+        number=5,
     ).insert()
 
     async with test_client.session_transaction() as session:

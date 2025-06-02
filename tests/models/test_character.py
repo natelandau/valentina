@@ -76,7 +76,10 @@ async def test_add_trait_already_exists(character_factory, trait_factory):
     """Test the add_trait method."""
     # GIVEN a character with an existing trait
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Strength", value=2, max_value=10
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Strength",
+        value=2,
+        max_value=10,
     )
     await trait.save()
     character = character_factory.build(traits=[trait])
@@ -96,7 +99,7 @@ async def test_add_trait_already_exists(character_factory, trait_factory):
                 value=4,
                 max_value=5,
                 character=str(character.id),
-            )
+            ),
         )
 
 
@@ -130,7 +133,10 @@ async def test_fetch_trait_by_name(character_factory, trait_factory):
     """Test the fetch_trait_by_name method."""
     # GIVEN a character with a traits
     trait = trait_factory.build(
-        category_name=TraitCategory.PHYSICAL.name, name="Strength", value=2, max_value=5
+        category_name=TraitCategory.PHYSICAL.name,
+        name="Strength",
+        value=2,
+        max_value=5,
     )
     character = character_factory.build(traits=[trait])
 

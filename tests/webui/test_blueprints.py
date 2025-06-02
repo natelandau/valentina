@@ -81,12 +81,19 @@ async def test_admin_blueprint(debug, mocker, mock_session, test_client, guild_f
 
 @pytest.mark.drop_db
 async def test_character_views(
-    debug, mocker, mock_session, test_client, campaign_factory, character_factory, user_factory
+    debug,
+    mocker,
+    mock_session,
+    test_client,
+    campaign_factory,
+    character_factory,
+    user_factory,
 ) -> None:
     """Test the character blueprint."""
     # Given: The user is not a storyteller
     mocker.patch(
-        "valentina.webui.blueprints.character_view.route.is_storyteller", return_value=False
+        "valentina.webui.blueprints.character_view.route.is_storyteller",
+        return_value=False,
     )
 
     # And: A user exists in the database
@@ -125,7 +132,11 @@ async def test_character_views(
 
 @pytest.mark.drop_db
 async def test_character_edit_routes(
-    debug, mocker, mock_session, test_client, character_factory
+    debug,
+    mocker,
+    mock_session,
+    test_client,
+    character_factory,
 ) -> None:
     """Test the character edit blueprint."""
     # Given: A character exists in the database
@@ -180,15 +191,19 @@ async def test_diceroll_modal(
 
     # And: The user is not a storyteller
     mocker.patch(
-        "valentina.webui.blueprints.character_view.route.is_storyteller", return_value=False
+        "valentina.webui.blueprints.character_view.route.is_storyteller",
+        return_value=False,
     )
 
     # And: The user has an active session
     async with test_client.session_transaction() as session:
         session.update(
             mock_session(
-                characters=[character], user_name=user.name, user_id=user.id, guild_id=guild.id
-            )
+                characters=[character],
+                user_name=user.name,
+                user_id=user.id,
+                guild_id=guild.id,
+            ),
         )
 
     # When: The user visits the main character view
@@ -222,10 +237,10 @@ async def test_diceroll_modal(
             "difficulty": "6",
             "desperation_dice": "0",
             "trait1": json.dumps(
-                {"id": str(trait1.id), "value": trait1.value, "name": trait1.name}
+                {"id": str(trait1.id), "value": trait1.value, "name": trait1.name},
             ),
             "trait2": json.dumps(
-                {"id": str(trait2.id), "value": trait2.value, "name": trait2.name}
+                {"id": str(trait2.id), "value": trait2.value, "name": trait2.name},
             ),
         }
         response = await test_client.post(
@@ -241,7 +256,11 @@ async def test_diceroll_modal(
 
 @pytest.mark.drop_db
 async def test_campaign_view(
-    debug, mock_session, guild_factory, test_client, campaign_factory
+    debug,
+    mock_session,
+    guild_factory,
+    test_client,
+    campaign_factory,
 ) -> None:
     """Test the campaign blueprint."""
     # Given: A guild and campaign exist in the database

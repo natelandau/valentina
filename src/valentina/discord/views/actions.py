@@ -2,12 +2,12 @@
 
 import discord
 
-from valentina.constants import EmbedColor, Emoji, LogLevel
+from valentina.constants import EmbedColor, EmojiDict, LogLevel
 from valentina.discord.bot import ValentinaContext
 from valentina.discord.views import ConfirmCancelButtons, present_embed
 
 
-async def confirm_action(
+async def confirm_action(  # noqa: PLR0913
     ctx: ValentinaContext,
     title: str,
     description: str | None = None,
@@ -48,7 +48,7 @@ async def confirm_action(
     await view.wait()
     if not view.confirmed:
         embed = discord.Embed(
-            title=f"{Emoji.CANCEL.value} Cancelled",
+            title=f"{EmojiDict.CANCEL} Cancelled",
             description=title.rstrip("?"),
             color=EmbedColor.WARNING.value,
         )
@@ -56,7 +56,9 @@ async def confirm_action(
         return (False, msg, None)
 
     response_embed = discord.Embed(
-        title=title.rstrip("?"), description=description, color=EmbedColor.SUCCESS.value
+        title=title.rstrip("?"),
+        description=description,
+        color=EmbedColor.SUCCESS.value,
     )
     if image is not None:
         response_embed.set_image(url=image)

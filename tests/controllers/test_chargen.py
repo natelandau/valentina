@@ -24,10 +24,15 @@ from valentina.models import Character, CharacterTrait
 
 @pytest.mark.drop_db
 @pytest.mark.parametrize(
-    ("char_class"), [(None), (CharClass.VAMPIRE), (CharClass.HUNTER), (CharClass.WEREWOLF)]
+    ("char_class"),
+    [(None), (CharClass.VAMPIRE), (CharClass.HUNTER), (CharClass.WEREWOLF)],
 )
 async def test_generate_full_character(
-    user_factory, campaign_factory, mock_ctx1, mocker, char_class
+    user_factory,
+    campaign_factory,
+    mock_ctx1,
+    mocker,
+    char_class,
 ):
     """Test the generate_full_character method."""
     # MOCK the call the fetch_random_name
@@ -42,7 +47,10 @@ async def test_generate_full_character(
     await campaign.insert()
 
     char_gen = RNGCharGen(
-        guild_id=mock_ctx1.guild.id, user=user, experience_level=RNGCharLevel.NEW, campaign=campaign
+        guild_id=mock_ctx1.guild.id,
+        user=user,
+        experience_level=RNGCharLevel.NEW,
+        campaign=campaign,
     )
 
     # WHEN generate_full_character is called
@@ -67,13 +75,15 @@ async def test_generate_full_character(
         assert character.creed_name in HunterCreed.__members__
         assert (
             await CharacterTrait.find(
-                CharacterTrait.character == str(character.id), CharacterTrait.name == "Conviction"
+                CharacterTrait.character == str(character.id),
+                CharacterTrait.name == "Conviction",
             ).count()
             == 1
         )
         assert (
             await CharacterTrait.find(
-                CharacterTrait.character == str(character.id), CharacterTrait.name == "Willpower"
+                CharacterTrait.character == str(character.id),
+                CharacterTrait.name == "Willpower",
             ).count()
             == 1
         )
@@ -85,7 +95,8 @@ async def test_generate_full_character(
         for trait in ("Rage", "Gnosis", "Willpower", "Rank", "Glory", "Honor", "Wisdom"):
             assert (
                 await CharacterTrait.find(
-                    CharacterTrait.character == str(character.id), CharacterTrait.name == trait
+                    CharacterTrait.character == str(character.id),
+                    CharacterTrait.name == trait,
                 ).count()
                 == 1
             )
@@ -130,7 +141,8 @@ def test__redistribute_trait_values(primary_values, non_primary_values):
 
     # WHEN _redistribute_trait_values is called
     results = RNGCharGen._redistribute_trait_values(
-        primary_traits + non_primary_traits, CharacterConcept.BERSERKER
+        primary_traits + non_primary_traits,
+        CharacterConcept.BERSERKER,
     )
 
     # THEN ensure the traits are redistributed correctly
@@ -152,7 +164,14 @@ def test__redistribute_trait_values(primary_values, non_primary_values):
     ],
 )
 async def test_rngchargen_generate_base_character(
-    user_factory, mock_ctx1, char_class, concept, clan, creed, nick_is_class, mocker
+    user_factory,
+    mock_ctx1,
+    char_class,
+    concept,
+    clan,
+    creed,
+    nick_is_class,
+    mocker,
 ):
     """Test the generate_base_character method."""
     # MOCK the call the fetch_random_name
@@ -339,7 +358,7 @@ async def test_random_abilities(
                 x.value
                 for x in results.traits
                 if x.category_name == concept.value.ability_specialty.name
-            ]
+            ],
         )
         == primary_dots
     )
@@ -350,7 +369,7 @@ async def test_random_abilities(
                 x.value
                 for x in results.traits
                 if x.category_name != concept.value.ability_specialty.name
-            ]
+            ],
         )
         == non_primary_dots
     )
@@ -367,7 +386,13 @@ async def test_random_abilities(
     ],
 )
 async def test_random_disciplines(
-    user_factory, mock_ctx1, char_class, clan, level, num_disciplines, mocker
+    user_factory,
+    mock_ctx1,
+    char_class,
+    clan,
+    level,
+    num_disciplines,
+    mocker,
 ):
     """Test the random_disciplines method."""
     # MOCK the call the fetch_random_name
@@ -441,7 +466,13 @@ async def test_random_virtues(user_factory, mock_ctx1, char_class, level, modifi
     ],
 )
 async def test_concept_special_abilities(
-    user_factory, mock_ctx1, char_class, concept, section_titles, trait_names, mocker
+    user_factory,
+    mock_ctx1,
+    char_class,
+    concept,
+    section_titles,
+    trait_names,
+    mocker,
 ):
     """Test the concept_special_abilities method."""
     # MOCK the call the fetch_random_name

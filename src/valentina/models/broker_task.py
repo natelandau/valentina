@@ -1,7 +1,6 @@
 """Representation of a task for the task broker."""
 
 from datetime import datetime
-from typing import Optional
 
 from beanie import (
     Document,
@@ -23,7 +22,7 @@ class BrokerTask(Document):
 
     task: BrokerTaskType
     guild_id: int
-    author_name: Optional[str] = ""
+    author_name: str = ""
     data: dict = Field(default_factory=dict)
     has_error: bool = False
     date_created: datetime = Field(default_factory=time_now)

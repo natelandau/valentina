@@ -2,7 +2,7 @@
 
 import re
 from datetime import datetime
-from typing import Optional, Union, cast
+from typing import Union, cast
 from uuid import UUID, uuid4
 
 import discord
@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 from valentina.constants import (
     CharacterConcept,
     CharClass,
-    Emoji,
+    EmojiDict,
     HunterCreed,
     TraitCategory,
     VampireClan,
@@ -161,7 +161,7 @@ class Character(Document):
     concept_name: str | None = None  # CharacterConcept enum name
     creed_name: str | None = None  # HunterCreed enum name
     demeanor: str | None = None
-    dob: Optional[datetime] = None
+    dob: datetime | None = None
     essence: str | None = None
     generation: str | None = None
     nature: str | None = None
@@ -192,10 +192,10 @@ class Character(Document):
     def channel_name(self) -> str:
         """Channel name for the book."""
         if self.type_storyteller:
-            emoji = Emoji.CHANNEL_PLAYER.value if self.is_alive else Emoji.CHANNEL_PLAYER_DEAD.value
-            return f"{Emoji.CHANNEL_PRIVATE.value}{emoji}-{self.name.lower().replace(' ', '-')}"
+            emoji = EmojiDict.CHANNEL_PLAYER if self.is_alive else EmojiDict.CHANNEL_PLAYER_DEAD
+            return f"{EmojiDict.CHANNEL_PRIVATE}{emoji}-{self.name.lower().replace(' ', '-')}"
 
-        emoji = Emoji.CHANNEL_PLAYER.value if self.is_alive else Emoji.CHANNEL_PLAYER_DEAD.value
+        emoji = EmojiDict.CHANNEL_PLAYER if self.is_alive else EmojiDict.CHANNEL_PLAYER_DEAD
         return f"{emoji}-{self.name.lower().replace(' ', '-')}"
 
     @property
@@ -420,7 +420,9 @@ class Character(Document):
             await self.save()
 
     def fetch_traits_by_section(
-        self, category: TraitCategory, show_zeros: bool = False
+        self,
+        category: TraitCategory,
+        show_zeros: bool = False,
     ) -> list[CharacterTrait]:
         """Fetch all traits for a specified category.
 

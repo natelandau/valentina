@@ -167,7 +167,8 @@ async def test_manage_traits(
 
     if is_old_char and is_character_owner:
         character = character_factory.build(
-            user_owner=user1.id, date_created=datetime.now(UTC) - timedelta(days=2)
+            user_owner=user1.id,
+            date_created=datetime.now(UTC) - timedelta(days=2),
         )
     elif is_old_char:
         character = character_factory.build(date_created=datetime.now(UTC) - timedelta(days=2))

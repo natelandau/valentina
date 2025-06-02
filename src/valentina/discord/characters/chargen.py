@@ -15,7 +15,7 @@ from valentina.constants import (
     CharacterConcept,
     CharClass,
     EmbedColor,
-    Emoji,
+    EmojiDict,
     RNGCharLevel,
     VampireClan,
 )
@@ -69,7 +69,7 @@ class CharacterPickerButtons(discord.ui.View):  # pragma: no cover
         """Respond to selecting a character."""
         await interaction.response.defer()
         self._disable_all()
-        index = int(interaction.data.get("custom_id", None))  # type: ignore
+        index = int(interaction.data.get("custom_id", None))  # type: ignore[call-overload]
         self.selected = self.characters[index]
         self.pick_character = True
         self.stop()
@@ -81,7 +81,7 @@ class CharacterPickerButtons(discord.ui.View):  # pragma: no cover
                 child.disabled = True
 
     @discord.ui.button(
-        label=f"{Emoji.DICE.value} Reroll (XP will be lost)",
+        label=f"{EmojiDict.DICE} Reroll (XP will be lost)",
         style=discord.ButtonStyle.secondary,
         custom_id="reroll",
         row=2,
@@ -98,7 +98,7 @@ class CharacterPickerButtons(discord.ui.View):  # pragma: no cover
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.CANCEL.value} Cancel (XP will be lost)",
+        label=f"{EmojiDict.CANCEL} Cancel (XP will be lost)",
         style=discord.ButtonStyle.secondary,
         custom_id="cancel",
         row=2,
@@ -145,7 +145,7 @@ class BeginCancelCharGenButtons(discord.ui.View):  # pragma: no cover
                 child.disabled = True
 
     @discord.ui.button(
-        label=f"{Emoji.DICE.value} Roll Characters (10xp)",
+        label=f"{EmojiDict.DICE} Roll Characters (10xp)",
         style=discord.ButtonStyle.success,
         custom_id="roll",
         row=2,
@@ -153,21 +153,21 @@ class BeginCancelCharGenButtons(discord.ui.View):  # pragma: no cover
     async def roll_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the roll button."""
         await interaction.response.defer()
-        button.label += f" {Emoji.YES.value}"
+        button.label += f" {EmojiDict.YES}"
         self._disable_all()
 
         self.roll = True
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.CANCEL.value} Cancel",
+        label=f"{EmojiDict.CANCEL} Cancel",
         style=discord.ButtonStyle.secondary,
         custom_id="cancel",
         row=2,
     )
     async def cancel_callback(self, button: Button, interaction: discord.Interaction) -> None:
         """Callback for the cancel button."""
-        button.label += f" {Emoji.YES.value}"
+        button.label += f" {EmojiDict.YES}"
         button.disabled = True
         self._disable_all()
         await interaction.response.edit_message(view=None)  # view=None remove all buttons
@@ -184,8 +184,7 @@ class BeginCancelCharGenButtons(discord.ui.View):  # pragma: no cover
 class UpdateCharacterButtons(discord.ui.View):  # pragma: no cover
     """Manage buttons for updating a character's attributes.
 
-    This view provides interactive buttons for various character update operations,
-    such as renaming the character or reallocating attribute dots.
+    This view provides interactive buttons for various character update operations, such as renaming the character or reallocating attribute dots.
 
     Args:
         ctx (ValentinaContext): The context of the Discord application.
@@ -217,7 +216,7 @@ class UpdateCharacterButtons(discord.ui.View):  # pragma: no cover
                 child.disabled = True
 
     @discord.ui.button(
-        label=f"{Emoji.PENCIL.value} Rename",
+        label=f"{EmojiDict.PENCIL} Rename",
         style=discord.ButtonStyle.primary,
         custom_id="rename",
         row=2,
@@ -262,7 +261,7 @@ class UpdateCharacterButtons(discord.ui.View):  # pragma: no cover
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.YES.value} Done Reallocating Dots",
+        label=f"{EmojiDict.YES} Done Reallocating Dots",
         style=discord.ButtonStyle.success,
         custom_id="done",
         row=3,
@@ -323,7 +322,7 @@ class FreebiePointsButtons(discord.ui.View):  # pragma: no cover
         self.stop()
 
     @discord.ui.button(
-        label=f"{Emoji.YES.value} Done Spending Freebie Points",
+        label=f"{EmojiDict.YES} Done Spending Freebie Points",
         style=discord.ButtonStyle.success,
         custom_id="done",
         row=3,
@@ -370,7 +369,9 @@ class CharGenWizard:  # pragma: no cover
 
         self.paginator: pages.Paginator = None  # Initialize paginator to None
         self.engine = RNGCharGen(
-            guild_id=self.ctx.guild.id, user=user, experience_level=self.experience_level
+            guild_id=self.ctx.guild.id,
+            user=user,
+            experience_level=self.experience_level,
         )
 
     @staticmethod
@@ -440,7 +441,9 @@ class CharGenWizard:  # pragma: no cover
         )
 
     async def _cancel_character_generation(
-        self, msg: str | None = None, characters: list[Character] = []
+        self,
+        msg: str | None = None,
+        characters: list[Character] = [],
     ) -> None:
         """Cancel the character generation process and clean up resources.
 
@@ -460,7 +463,7 @@ class CharGenWizard:  # pragma: no cover
             await delete_character(character)
 
         embed = discord.Embed(
-            title=f"{Emoji.CANCEL.value} Cancelled",
+            title=f"{EmojiDict.CANCEL} Cancelled",
             description=msg,
             color=EmbedColor.WARNING.value,
         )
@@ -499,7 +502,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
                 [
                     f"- **`{c.value.percentile_range[1] - c.value.percentile_range[0]}%` {c.value.name}** {c.value.description}"
                     for c in CharClass.playable_classes()
-                ]
+                ],
             ),
             color=EmbedColor.INFO.value,
         )
@@ -510,7 +513,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
                     f"- **{c.value.name}** {c.value.description}"
                     for c in CharacterConcept
                     if c.value.percentile_range is not None
-                ]
+                ],
             ),
             color=EmbedColor.INFO.value,
         )
@@ -581,16 +584,19 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
         pages: list[discord.Embed] = [
             discord.Embed(
-                title="Character Generations", description=description, color=EmbedColor.INFO.value
-            )
+                title="Character Generations",
+                description=description,
+                color=EmbedColor.INFO.value,
+            ),
         ]
         pages.extend(
             [
                 await self._generate_character_sheet_embed(
-                    character, suffix=character.concept_description()
+                    character,
+                    suffix=character.concept_description(),
                 )
                 for character in characters
-            ]
+            ],
         )
 
         # present the character selection paginator
@@ -620,7 +626,8 @@ Once you select a character you can re-allocate dots and change the name, but yo
             # Check if the user has enough XP to reroll
             if campaign_xp < 10:  # noqa: PLR2004
                 await self._cancel_character_generation(
-                    msg="Not enough XP to reroll.", characters=characters
+                    msg="Not enough XP to reroll.",
+                    characters=characters,
                 )
                 return
 
@@ -662,9 +669,11 @@ Once you select a character you can re-allocate dots and change the name, but yo
         logger.debug(f"CHARGENL Update the character: {character.full_name}")
 
         # Create the character sheet embed
-        title = f"{Emoji.YES.value} Created {character.full_name}\n"
+        title = f"{EmojiDict.YES} Created {character.full_name}\n"
         embed = await self._generate_character_sheet_embed(
-            character, title=title, suffix=self._special_ability_char_sheet_text(character)
+            character,
+            title=title,
+            suffix=self._special_ability_char_sheet_text(character),
         )
 
         # Update the paginator
@@ -691,7 +700,8 @@ Once you select a character you can re-allocate dots and change the name, but yo
 
             channel_manager = ChannelManager(guild=self.ctx.guild)
             await channel_manager.confirm_character_channel(
-                character=character, campaign=self.campaign
+                character=character,
+                campaign=self.campaign,
             )
             await channel_manager.sort_campaign_channels(self.campaign)
 
@@ -733,7 +743,7 @@ Once you select a character you can re-allocate dots and change the name, but yo
         if view.done:
             # End the wizard
             embed = discord.Embed(
-                title=f"{Emoji.SUCCESS.value} Created {character.name}",
+                title=f"{EmojiDict.SUCCESS} Created {character.name}",
                 description="Thanks for using my character generation wizard.",
                 color=EmbedColor.SUCCESS.value,
             )

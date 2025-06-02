@@ -4,7 +4,7 @@ from typing import cast
 
 import discord
 
-from valentina.constants import EmbedColor, Emoji, TraitCategory
+from valentina.constants import EmbedColor, EmojiDict, TraitCategory
 from valentina.controllers import TraitModifier
 from valentina.discord.bot import ValentinaContext
 from valentina.models import Character, CharacterTrait, User
@@ -64,7 +64,7 @@ class SpendFreebiePoints(discord.ui.View):  # pragma: no cover
             # Update the embed to inform the user of the success
             embed = discord.Embed(
                 title="Reallocate Dots",
-                description=f"{Emoji.SUCCESS.value} Added 1 dot to {self.trait.name} for `{self.upgrade_cost}` freebie points.\n\nYou have `{self.character.freebie_points}` freebie points remaining.",
+                description=f"{EmojiDict.SUCCESS} Added 1 dot to {self.trait.name} for `{self.upgrade_cost}` freebie points.\n\nYou have `{self.character.freebie_points}` freebie points remaining.",
                 color=EmbedColor.SUCCESS.value,
             )
             await self.msg.edit(embed=embed, view=None)
@@ -82,7 +82,7 @@ class SpendFreebiePoints(discord.ui.View):  # pragma: no cover
 
         embed = discord.Embed(
             title="Spend Freebie Points",
-            description=f"{Emoji.CANCEL.value} {msg}",
+            description=f"{EmojiDict.CANCEL} {msg}",
             color=EmbedColor.WARNING.value,
         )
         await self.msg.edit(embed=embed, view=None)
@@ -160,7 +160,7 @@ class SpendFreebiePoints(discord.ui.View):  # pragma: no cover
         # Guard statement, cannot spend more points than available
         if self.upgrade_cost >= self.character.freebie_points:
             await self._cancel_wizard(
-                msg=f"Not enough freebie points, can not update `{self.trait.name}`.\n\nNeeded `{self.upgrade_cost}` and you have `{self.character.freebie_points}` freebie points remaining."
+                msg=f"Not enough freebie points, can not update `{self.trait.name}`.\n\nNeeded `{self.upgrade_cost}` and you have `{self.character.freebie_points}` freebie points remaining.",
             )
             return None
 

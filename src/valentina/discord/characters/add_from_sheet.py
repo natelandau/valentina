@@ -21,8 +21,8 @@ class RatingView(discord.ui.View):  # pragma: no cover
     def __init__(  # type: ignore [no-untyped-def]
         self,
         trait_to_enter: TraitForCreation,
-        callback,
-        failback,
+        callback,  # noqa: ANN001
+        failback,  # noqa: ANN001
     ) -> None:
         """Initialize the view."""
         super().__init__(timeout=300)
@@ -48,7 +48,10 @@ class RatingView(discord.ui.View):  # pragma: no cover
             row = 1 if rating <= MAX_BUTTONS_PER_ROW else 0
 
             button: Button = Button(
-                label=str(rating), custom_id=button_id, style=discord.ButtonStyle.primary, row=row
+                label=str(rating),
+                custom_id=button_id,
+                style=discord.ButtonStyle.primary,
+                row=row,
             )
             button.callback = self.button_pressed  # type: ignore [method-assign]
             self.add_item(button)
@@ -57,12 +60,15 @@ class RatingView(discord.ui.View):  # pragma: no cover
         zero_button_id = str(uuid.uuid4())
         self.ratings[zero_button_id] = 0
         zero_button: Button = Button(
-            label="0", custom_id=zero_button_id, style=discord.ButtonStyle.secondary, row=2
+            label="0",
+            custom_id=zero_button_id,
+            style=discord.ButtonStyle.secondary,
+            row=2,
         )
         zero_button.callback = self.button_pressed  # type: ignore [method-assign]
         self.add_item(zero_button)
 
-    async def button_pressed(self, interaction) -> None:  # type: ignore [no-untyped-def]
+    async def button_pressed(self, interaction) -> None:  # type: ignore [no-untyped-def]  # noqa: ANN001
         """Respond to the button."""
         button_id = interaction.data["custom_id"]
         rating = self.ratings.get(button_id, 0)
@@ -107,7 +113,7 @@ class AddFromSheetWizard:  # pragma: no cover
 
     async def wait_until_done(self) -> Character:
         """Wait until the wizard is done."""
-        while self.trait_list:
+        while self.trait_list:  # noqa: ASYNC110
             await asyncio.sleep(1)  # Wait a bit then check again
 
         return self.character
@@ -132,7 +138,7 @@ class AddFromSheetWizard:  # pragma: no cover
                 "category_name": completed_trait.category.name,
                 "value": rating,
                 "max_value": completed_trait.max_value,
-            }
+            },
         )
 
         if not self.trait_list:
@@ -192,7 +198,8 @@ class AddFromSheetWizard:  # pragma: no cover
         if self.campaign:
             channel_manager = ChannelManager(guild=self.ctx.guild)
             await channel_manager.confirm_character_channel(
-                character=self.character, campaign=self.campaign
+                character=self.character,
+                campaign=self.campaign,
             )
             await channel_manager.sort_campaign_channels(self.campaign)
 
@@ -203,24 +210,31 @@ class AddFromSheetWizard:  # pragma: no cover
             color=EmbedColor.INFO.value,
         )
         embed.set_author(
-            name=f"Valentina on {self.ctx.guild.name}", icon_url=self.ctx.guild.icon or ""
+            name=f"Valentina on {self.ctx.guild.name}",
+            icon_url=self.ctx.guild.icon or "",
         )
         embed.add_field(name="Make a mistake?", value="Use `/character update trait`", inline=False)
         embed.add_field(
-            name="Need to add a trait?", value="Use `/character add trait`", inline=False
+            name="Need to add a trait?",
+            value="Use `/character add trait`",
+            inline=False,
         )
 
         embed.set_footer(text="See /help for further details")
 
         button: discord.ui.Button = Button(
-            label=f"Back to {self.ctx.guild.name}", url=self.ctx.guild.jump_url
+            label=f"Back to {self.ctx.guild.name}",
+            url=self.ctx.guild.jump_url,
         )
 
         self.view.stop()
         await self.edit_message(embed=embed, view=discord.ui.View(button))
 
     async def __send_messages(
-        self, *, interaction: discord.Interaction | None = None, message: str | None = None
+        self,
+        *,
+        interaction: discord.Interaction | None = None,
+        message: str | None = None,
     ) -> None:
         """Send messages to query trait information during character creation.
 

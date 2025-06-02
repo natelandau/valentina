@@ -102,7 +102,10 @@ class ProfileForm(QuartForm):
         filters=[str.strip, str.title],
     )
     dob = DateField(
-        "Date of Birth", description="Used to calculate age", validators=[Optional()], default=""
+        "Date of Birth",
+        description="Used to calculate age",
+        validators=[Optional()],
+        default="",
     )
     sire = StringField(
         "Sire",
@@ -147,7 +150,8 @@ class ProfileForm(QuartForm):
         if is_alive.data != str(character.is_alive):
             permission_manager = PermissionManager(guild_id=session["GUILD_ID"])
             if not await permission_manager.can_kill_character(
-                author_id=session["USER_ID"], character_id=self.character_id.data
+                author_id=session["USER_ID"],
+                character_id=self.character_id.data,
             ):
                 msg = "You do not have permissions to kill or revive this character."
                 raise ValidationError(msg)

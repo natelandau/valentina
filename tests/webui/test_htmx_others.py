@@ -11,7 +11,8 @@ async def test_set_desperation_or_danger(debug, mocker, test_client, campaign_fa
     """Test the set desperation or danger form."""
     # Given: Mock audit log to avoid external calls during test
     mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.others.post_to_audit_log", return_value=None
+        "valentina.webui.blueprints.HTMXPartials.others.post_to_audit_log",
+        return_value=None,
     )
     # And: Create campaign with initial desperation and danger values
     campaign = await campaign_factory.build(desperation=0, danger=0).insert()
@@ -25,7 +26,9 @@ async def test_set_desperation_or_danger(debug, mocker, test_client, campaign_fa
 
     # When: Submit form with incremented desperation and danger values
     response = await test_client.post(
-        url, form={"desperation": 1, "danger": 1, "submit": True}, follow_redirects=True
+        url,
+        form={"desperation": 1, "danger": 1, "submit": True},
+        follow_redirects=True,
     )
     # Then: Accept form submission
     assert response.status_code == 200
@@ -56,11 +59,18 @@ async def test_experience_table_load(debug, mock_session, test_client, guild_fac
 
 @pytest.mark.drop_db
 async def test_experience_table_crud_operations(
-    debug, mocker, guild_factory, mock_session, test_client, campaign_factory, user_factory
+    debug,
+    mocker,
+    guild_factory,
+    mock_session,
+    test_client,
+    campaign_factory,
+    user_factory,
 ):
     """Test experience table crud operations."""
     mocker.patch(
-        "valentina.webui.blueprints.HTMXPartials.others.post_to_audit_log", return_value=None
+        "valentina.webui.blueprints.HTMXPartials.others.post_to_audit_log",
+        return_value=None,
     )
 
     # Given: Create a guild, campaign and user with storyteller permissions
@@ -88,7 +98,9 @@ async def test_experience_table_crud_operations(
         "submit": "true",
     }
     response = await test_client.post(
-        f"/partials/addexperience/{user.id}", json=form_data, follow_redirects=True
+        f"/partials/addexperience/{user.id}",
+        json=form_data,
+        follow_redirects=True,
     )
 
     # Then the request succeeds and experience is updated correctly

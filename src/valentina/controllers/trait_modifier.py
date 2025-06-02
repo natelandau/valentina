@@ -105,7 +105,7 @@ class TraitModifier:
             and self.character.clan
             and trait.name in self.character.clan.value.disciplines
         ):
-            multiplier = XPMultiplier.CLAN_DISCIPLINE.value
+            multiplier = XPMultiplier.CLAN_DISCIPLINE
         else:
             multiplier = get_trait_multiplier(trait.name, trait.trait_category.name)
 
@@ -148,7 +148,7 @@ class TraitModifier:
             and self.character.clan
             and trait.name in self.character.clan.value.disciplines
         ):
-            multiplier = XPMultiplier.CLAN_DISCIPLINE.value
+            multiplier = XPMultiplier.CLAN_DISCIPLINE
         else:
             multiplier = get_trait_multiplier(trait.name, trait.trait_category.name)
 
@@ -168,7 +168,9 @@ class TraitModifier:
         return savings
 
     async def downgrade_with_freebie(
-        self, trait: CharacterTrait, amount: int = 1
+        self,
+        trait: CharacterTrait,
+        amount: int = 1,
     ) -> CharacterTrait:
         """Downgrade a trait using freebie points.
 
@@ -197,7 +199,10 @@ class TraitModifier:
         return trait
 
     async def downgrade_with_xp(
-        self, trait: CharacterTrait, campaign: "Campaign", amount: int = 1
+        self,
+        trait: CharacterTrait,
+        campaign: "Campaign",
+        amount: int = 1,
     ) -> CharacterTrait:
         """Downgrade a trait using experience points.
 
@@ -219,7 +224,9 @@ class TraitModifier:
             savings_from_downgrade = self.savings_from_downgrade(trait, amount)
 
             await self.user.add_campaign_xp(
-                campaign, savings_from_downgrade, increase_lifetime=False
+                campaign,
+                savings_from_downgrade,
+                increase_lifetime=False,
             )
             trait.value = trait.value - amount
             await self._save_trait(trait)
@@ -260,7 +267,10 @@ class TraitModifier:
         return trait
 
     async def upgrade_with_xp(
-        self, trait: CharacterTrait, campaign: "Campaign", amount: int = 1
+        self,
+        trait: CharacterTrait,
+        campaign: "Campaign",
+        amount: int = 1,
     ) -> CharacterTrait:
         """Upgrade a trait using experience points.
 

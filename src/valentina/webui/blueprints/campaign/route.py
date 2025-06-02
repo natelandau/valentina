@@ -82,7 +82,7 @@ class CampaignView(MethodView):
                         campaign_data=campaign_data,
                         text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
                         can_manage_campaign=self.can_manage_campaign,
-                    )
+                    ),
                 )()
                 return await link_terms(result, link_type="html")
 
@@ -97,7 +97,7 @@ class CampaignView(MethodView):
                         can_manage_campaign=self.can_manage_campaign,
                         table_type_note=TableType.NOTE,
                         table_type_chapter=TableType.CHAPTER,
-                    )
+                    ),
                 )()
                 return await link_terms(result, link_type="html")
 
@@ -110,7 +110,7 @@ class CampaignView(MethodView):
                         characters=characters,
                         can_manage_campaign=self.can_manage_campaign,
                         table_type_npc=TableType.NPC,
-                    )
+                    ),
                 )()
                 return await link_terms(result, link_type="html")
 
@@ -124,7 +124,7 @@ class CampaignView(MethodView):
                         statistics=statistics,
                         CampaignEditableInfo=CampaignEditableInfo,
                         can_manage_campaign=self.can_manage_campaign,
-                    )
+                    ),
                 )()
                 return await link_terms(result, link_type="html")
 
@@ -136,7 +136,7 @@ class CampaignView(MethodView):
                         can_manage_campaign=self.can_manage_campaign,
                         TableType=TableType.NOTE,
                         parent_id=campaign.id,
-                    )
+                    ),
                 )()
                 return await link_terms(result, link_type="html")
 
@@ -174,7 +174,7 @@ class CampaignView(MethodView):
         """
         campaign = await fetch_active_campaign(campaign_id, fetch_links=True)
         self.can_manage_campaign = await self.permission_manager.can_manage_campaign(
-            session["USER_ID"]
+            session["USER_ID"],
         )
 
         if self.is_htmx and request.args.get("tab"):
@@ -189,7 +189,7 @@ class CampaignView(MethodView):
                 tabs=CampaignViewTab,
                 text_type_campaign_desc=TextType.CAMPAIGN_DESCRIPTION,
                 can_manage_campaign=self.can_manage_campaign,
-            )
+            ),
         )()
         return await link_terms(result, link_type="html")
 

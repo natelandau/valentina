@@ -10,7 +10,8 @@ from valentina.utils import errors
 
 @pytest.mark.no_db
 @pytest.mark.parametrize(
-    ("guild_id", "author_id", "author_name"), [(None, 1, "name"), (1, None, "name"), (1, 1, None)]
+    ("guild_id", "author_id", "author_name"),
+    [(None, 1, "name"), (1, None, "name"), (1, 1, None)],
 )
 def test_fail_without_init_data(guild_id, author_id, author_name) -> None:
     """Ensure that Roll fails without the required data.
@@ -125,7 +126,8 @@ def test_roll_exceptions(mock_ctx1):
         DiceRoll(ctx=mock_ctx1, pool=-1)
 
     with pytest.raises(
-        errors.ValidationError, match="Difficulty cannot exceed the size of the dice."
+        errors.ValidationError,
+        match="Difficulty cannot exceed the size of the dice.",
     ):
         DiceRoll(ctx=mock_ctx1, difficulty=11, pool=1)
 

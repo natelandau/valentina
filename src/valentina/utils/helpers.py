@@ -98,7 +98,9 @@ def random_string(length: int) -> str:
 
 
 async def fetch_random_name(
-    gender: str | None = None, country: str = "us", results: int = 1
+    gender: str | None = None,
+    country: str = "us",
+    results: int = 1,
 ) -> list[tuple[str, str]] | tuple[str, str]:  # pragma: no cover
     """Fetch a random name from the randomuser.me API.
 
@@ -136,7 +138,10 @@ async def fetch_random_name(
 
 
 def divide_total_randomly(
-    total: int, num: int, max_value: int | None = None, min_value: int = 0
+    total: int,
+    num: int,
+    max_value: int | None = None,
+    min_value: int = 0,
 ) -> list[int]:
     """Distribute a total value into random segments that sum to the total.
 
@@ -188,7 +193,7 @@ def divide_total_randomly(
 
 
 def get_max_trait_value(trait: str, category: str) -> int | None:
-    """Get the maximum value for a trait by looking up the trait in the XPMultiplier enum.
+    """Get the maximum value for a trait by looking up the trait in the MaxTraitValue class.
 
     Args:
         trait (str): The trait to get the max value for.
@@ -199,14 +204,14 @@ def get_max_trait_value(trait: str, category: str) -> int | None:
         int | None: The maximum value for the trait or None if the trait is a custom trait and no default for it's parent category exists.
     """
     # Some traits have their own max value. Check for those first.
-    if trait.upper() in MaxTraitValue.__members__:
-        return MaxTraitValue[trait.upper()].value
+    if hasattr(MaxTraitValue, trait.upper()):
+        return getattr(MaxTraitValue, trait.upper())
 
     # Try to find the max value by looking up the category of the trait
-    if category.upper() in MaxTraitValue.__members__:
-        return MaxTraitValue[category.upper()].value
+    if hasattr(MaxTraitValue, category.upper()):
+        return getattr(MaxTraitValue, category.upper())
 
-    return MaxTraitValue.DEFAULT.value
+    return MaxTraitValue.DEFAULT
 
 
 def get_trait_multiplier(trait: str, category: str) -> int:
@@ -219,17 +224,21 @@ def get_trait_multiplier(trait: str, category: str) -> int:
     Returns:
         int: The multiplier associated with the trait.
     """
-    if trait.upper() in XPMultiplier.__members__:
-        return XPMultiplier[trait.upper()].value
+    # Check if trait has a specific multiplier defined
+    trait_multiplier = getattr(XPMultiplier, trait.upper(), None)
+    if trait_multiplier is not None:
+        return trait_multiplier
 
-    if category.upper() in XPMultiplier.__members__:
-        return XPMultiplier[category.upper()].value
+    # Check if category has a multiplier defined
+    category_multiplier = getattr(XPMultiplier, category.upper(), None)
+    if category_multiplier is not None:
+        return category_multiplier
 
-    return XPMultiplier.DEFAULT.value
+    return XPMultiplier.DEFAULT
 
 
 def get_trait_new_value(trait: str, category: str) -> int:
-    """Get the experience cost of the first dot for a wholly new trait from the XPNew enum.
+    """Get the experience cost of the first dot for a wholly new trait from the XPNew class.
 
     Args:
         trait (str): The trait to get the cost for.
@@ -238,13 +247,17 @@ def get_trait_new_value(trait: str, category: str) -> int:
     Returns:
         int: The cost of the first dot of the trait.
     """
-    if trait.upper() in XPNew.__members__:
-        return XPNew[trait.upper()].value
+    # Check if trait has a specific cost defined
+    trait_cost = getattr(XPNew, trait.upper(), None)
+    if trait_cost is not None:
+        return trait_cost
 
-    if category.upper() in XPNew.__members__:
-        return XPNew[category.upper()].value
+    # Check if category has a cost defined
+    category_cost = getattr(XPNew, category.upper(), None)
+    if category_cost is not None:
+        return category_cost
 
-    return XPNew.DEFAULT.value
+    return XPNew.DEFAULT
 
 
 async def fetch_data_from_url(url: str) -> io.BytesIO:  # pragma: no cover

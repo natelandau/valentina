@@ -26,7 +26,7 @@ async def test_fetch_sheet_character_traits(debug, trait_factory, character_fact
                     value=1,
                     max_value=5,
                     character=str(character.id),
-                )
+                ),
             )
 
     sheet_builder = CharacterSheetBuilder(character=character)
@@ -62,7 +62,12 @@ async def test_fetch_sheet_character_traits(debug, trait_factory, character_fact
 )
 @pytest.mark.drop_db
 async def test_fetch_sheet_profile(
-    debug, character_factory, campaign_factory, user_factory, char_class, keys
+    debug,
+    character_factory,
+    campaign_factory,
+    user_factory,
+    char_class,
+    keys,
 ):
     """Test the fetch_sheet_profile method."""
     campaign = await campaign_factory.build().insert()
@@ -113,7 +118,7 @@ def test_fetch_all_class_traits(debug, character_factory) -> None:
         assert trait.max_value == 5
         assert trait.category == TraitCategory.PHYSICAL
         assert trait.name in TraitCategory.PHYSICAL.get_all_class_trait_names(
-            char_class=CharClass.WEREWOLF
+            char_class=CharClass.WEREWOLF,
         )
 
     assert sheet_data[2].section == CharSheetSection.ADVANTAGES

@@ -60,10 +60,10 @@ async def callback() -> Any:  # pragma: no cover
     if not matched_guilds:
         logger.error(f"User {oauth_user.name} is not in any known guilds.")
         console.print(
-            f"In the DB, user {oauth_user.name} is associated with the following guilds: {db_user.guilds}"
+            f"In the DB, user {oauth_user.name} is associated with the following guilds: {db_user.guilds}",
         )
         console.print(
-            f"In Discord, user {oauth_user.id} is associated with the following guilds: {[x.id for x in oauth_user.fetch_guilds()]}"
+            f"In Discord, user {oauth_user.id} is associated with the following guilds: {[x.id for x in oauth_user.fetch_guilds()]}",
         )
         abort(HTTPStatus.BAD_REQUEST.value, f"User {oauth_user.name} is not in any known guilds.")
 
@@ -76,6 +76,6 @@ async def callback() -> Any:  # pragma: no cover
 
     session["matched_guilds"] = matched_guilds
     logger.info(
-        f"User {oauth_user.name} is known to multiple guilds. Redirecting to guild selection before log in."
+        f"User {oauth_user.name} is known to multiple guilds. Redirecting to guild selection before log in.",
     )
     return redirect(url_for("homepage.select_guild"))

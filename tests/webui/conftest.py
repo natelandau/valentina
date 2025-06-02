@@ -79,7 +79,7 @@ def mock_session() -> Callable[[], dict[str, Any]]:
                         "scope": ["identify", "email", "connections", "guilds.join", "guilds"],
                         "expires_at": 2543075477.311455,
                     },
-                }
+                },
             )
 
         mock_session["ALL_CHARACTERS"] = [

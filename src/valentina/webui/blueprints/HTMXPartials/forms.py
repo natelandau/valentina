@@ -246,7 +246,9 @@ class NoteForm(QuartForm):
     """Form for a campaign note."""
 
     text = TextAreaField(
-        "Text", validators=[DataRequired(), Length(min=5)], description="Markdown is supported"
+        "Text",
+        validators=[DataRequired(), Length(min=5)],
+        description="Markdown is supported",
     )
 
     note_id = HiddenField()
