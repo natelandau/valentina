@@ -83,6 +83,7 @@ duty test
 
 Once the development environment is running, the following slash commands are available in your test Discord Server:
 
+-   `/developer guild reset_discord_channels` - Reset the Discord channels for the current guild. **IMPORTANT:** This is a destructive action and will delete all channels in the guild.
 -   `/developer guild create_dummy_data` - Populate the database and Discord server with dummy data for testing.
 -   `/developer guild create_test_characters` - Create test characters in the database.
 -   `/admin rebuild_campaign_channels` - Rebuild the campaign channels in the Discord server.

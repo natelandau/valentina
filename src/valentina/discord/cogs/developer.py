@@ -14,6 +14,7 @@ from faker import Faker
 from loguru import logger
 
 from valentina.constants import (
+    CHANNEL_PERMISSIONS,
     COGS_PATH,
     PREF_MAX_EMBED_CHARACTERS,
     CharClass,
@@ -251,6 +252,53 @@ class Developer(commands.Cog):
 
         logger.info(f"DATABASE: Dummy data created on {ctx.guild.name}")
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
+
+    @guild.command()
+    @commands.guild_only()
+    @commands.is_owner()
+    async def reset_discord_channels(self, ctx: ValentinaContext) -> None:
+        """Reset the Discord channels for the current guild."""
+        title = f"This is a destructive action and will delete all channels in the guild.\n\nReset the Discord channels for `{ctx.guild.name}`"
+        is_confirmed, msg, confirmation_embed = await confirm_action(ctx, title)
+        if not is_confirmed:
+            return
+
+        for channel in ctx.guild.channels:
+            if channel.name == "general":
+                continue
+            logger.debug(f"Deleting channel {channel.name}")
+            await channel.delete()
+
+        channel_manager = ChannelManager(guild=ctx.guild)
+        audit_log_channel = await channel_manager.channel_update_or_add(
+            name="audit-log",
+            topic="Valentina interaction audit reports",
+            permissions=CHANNEL_PERMISSIONS["audit_log"],
+        )
+        error_log_channel = await channel_manager.channel_update_or_add(
+            name="error-log",
+            topic="Valentina error reports",
+            permissions=CHANNEL_PERMISSIONS["error_log_channel"],
+        )
+        changelog_channel = await channel_manager.channel_update_or_add(
+            name="changelog",
+            topic="Valentina changelog",
+            permissions=CHANNEL_PERMISSIONS["audit_log"],
+        )
+        storyteller_channel = await channel_manager.channel_update_or_add(
+            name="storyteller",
+            topic="Valentina storyteller channel",
+            permissions=CHANNEL_PERMISSIONS["storyteller_channel"],
+        )
+
+        db_guild = await Guild.get(ctx.guild.id)
+        db_guild.channels.audit_log = audit_log_channel.id
+        db_guild.channels.error_log = error_log_channel.id
+        db_guild.channels.changelog = changelog_channel.id
+        db_guild.channels.storyteller = storyteller_channel.id
+        await db_guild.save()
+
+        await msg.edit_original_response(embed=confirmation_embed, view=None)
 
     @guild.command()
     @commands.guild_only()
