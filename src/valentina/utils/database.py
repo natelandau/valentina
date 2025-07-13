@@ -41,7 +41,9 @@ def test_db_connection() -> bool:  # pragma: no cover
         client: pymongo.MongoClient = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=1800)
         client.server_info()
         logger.info("DB: Connection successful")
+        client.close()
     except pymongo.errors.ServerSelectionTimeoutError:
+        client.close()
         return False
     else:
         return True

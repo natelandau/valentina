@@ -4,19 +4,25 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from duty import duty, tools
-from rich import print as rprint
+from rich.console import Console
 
 if TYPE_CHECKING:
     from duty.context import Context
 
+
+console = Console()
+
 PY_SRC_PATHS = (Path(_) for _ in ("src/", "tests/", "duties.py", "scripts/") if Path(_).exists())
 PY_SRC_LIST = tuple(str(_) for _ in PY_SRC_PATHS)
 CI = os.environ.get("CI", "0") in {"1", "true", "yes", ""}
+PROJECT_ROOT = Path(__file__).parent
+DEV_DIR = PROJECT_ROOT / ".dev"
 
 
 def strip_ansi(text: str) -> str:
@@ -46,7 +52,15 @@ def pyprefix(title: str) -> str:
     return title
 
 
-@duty(silent=True)
+@duty()
+def dev_clean(ctx: Context) -> None:  # noqa: ARG001
+    """Clean the development environment."""
+    if DEV_DIR.exists():
+        shutil.rmtree(DEV_DIR)
+        console.print(f"✓ Cleaned dev env in '{DEV_DIR.name}/'")
+
+
+@duty(silent=True, post=[dev_clean])
 def clean(ctx: Context) -> None:
     """Clean the project."""
     ctx.run("rm -rf .coverage*")
@@ -110,32 +124,70 @@ def precommit(ctx: Context) -> None:
     )
 
 
-@duty(pre=[ruff, mypy, typos, precommit])
+@duty(pre=[ruff, mypy, typos, precommit], capture=CI)
 def lint(ctx: Context) -> None:
     """Run all linting duties."""
 
 
-@duty
+@duty()
+def update_dockerfile(ctx: Context) -> None:
+    """Update the Dockerfile with the uv version."""
+    dockerfile = PROJECT_ROOT / "Dockerfile"
+    version = ctx.run(["uv", "--version"], title="uv version", capture=True)
+    version = re.search(r"(\d+\.\d+\.\d+)", version).group(1)
+    dockerfile_content = dockerfile.read_text(encoding="utf-8")
+    if not re.search(rf"uv:{version}", dockerfile_content):
+        dockerfile_content = re.sub(r"uv:\d+\.\d+\.\d+", f"uv:{version}", dockerfile_content)
+        dockerfile.write_text(dockerfile_content, encoding="utf-8")
+        console.print(
+            f"[green]✓[/green] [bold]Dockerfile updated with uv version: {version}[/bold]"
+        )
+
+
+@duty(capture=CI, post=[update_dockerfile])
 def update(ctx: Context) -> None:
     """Update the project."""
-    out = ctx.run(["uv", "lock", "--upgrade"], title="update uv lock")
-    rprint(strip_ansi(out))
-    out = ctx.run(["pre-commit", "autoupdate"], title="pre-commit autoupdate")
-    rprint(strip_ansi(out))
+    ctx.run(["uv", "lock", "--upgrade"], title="update uv lock")
+    ctx.run(["pre-commit", "autoupdate"], title="pre-commit autoupdate")
 
 
 @duty()
-def test(ctx: Context) -> None:
+def test(ctx: Context, *cli_args: str) -> None:
     """Test package and generate coverage reports."""
     ctx.run(
-        [
-            "pytest",
-            "--cov=valentina",
+        tools.pytest(
+            "tests/",
+            config_file="pyproject.toml",
+            color="yes",
+        ).add_args(
+            "--cov",
             "--cov-config=pyproject.toml",
             "--cov-report=xml",
             "--cov-report=term",
-            "tests/",
-        ],
+            *cli_args,
+        ),
         title=pyprefix("Running tests"),
         capture=CI,
+    )
+
+
+@duty(pre=[dev_clean])
+def dev_setup(ctx: Context) -> None:  # noqa: ARG001
+    """Setup the development environment."""
+    directories = [
+        DEV_DIR / "logs",
+        DEV_DIR / "redis",
+        DEV_DIR / "mongodb",
+    ]
+    for directory in directories:
+        if not directory.exists():
+            directory.mkdir(parents=True)
+
+    console.print(
+        """
+✓ Development environment setup complete.
+  Start the development environment with one of the following commands:
+      [green]docker compose up[/green] [dim](Recommended)[/dim]
+      [green]uv run valentina[/green] [dim](Alternative - if MongoDB and Redis are already running)[/dim]
+"""
     )

@@ -6,20 +6,53 @@ from pathlib import Path
 from unittest.mock import AsyncMock
 
 import discord
+import docker
 import pytest
 import pytest_asyncio
 from discord.ext import commands
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
+from rich import print as rprint
 
 from valentina.utils import ValentinaConfig, console
-from valentina.utils.database import init_database
+from valentina.utils.database import init_database, test_db_connection
 
 ### Constants for Testing ###
 CHANNEL_CHARACTER_ID = 1234567890
 CHANNEL_BOOK_ID = 1234567891
 CHANNEL_CATEGORY_CAMPAIGN_ID = 1234567892
 GUILD_ID = 1
+
+
+@pytest.fixture(scope="session", autouse=True)
+def start_mongo_container():
+    """Create a Docker client and start a MongoDB container if mongodb is not running.
+
+    This fixture is automatically run before all tests.
+    """
+    container = None
+    if not test_db_connection():
+        rprint("Creating Docker client")
+        client = docker.from_env()
+        rprint("Creating MongoDB container")
+        container = client.containers.run(
+            image="mongo:latest",
+            ports={"27017/tcp": 27017},
+            name="valentina-pytest-mongo",
+            detach=True,
+            auto_remove=True,
+        )
+        rprint(f"MongoDB container created: {container.id}")
+
+        if not test_db_connection():
+            pytest.exit(
+                "\n\n-----\nMongoDB is not running\nrun `docker compose up` in the tests directory to start it\n-----\n"
+            )
+
+    yield
+    if container:
+        rprint("Stopping MongoDB container")
+        container.stop()
 
 
 ## Database initialization ##

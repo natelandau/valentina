@@ -10,61 +10,23 @@ tmp
 test_cog.py
 *.rdb
 report.html
+.cursor/
+GEMINI.md
+.dev/
+scratch/
 
 # Databases
 *.sqlite*
 *.db
-
-# Scratch folder for temporary files
-scratch/
 
 # Caches
 *_cache/
 .cache/
 __pycache__/
 
-# Coverage.py
-htmlcov/
-reports/
-
-# cruft
-*.rej
-
-# Data
-*.csv*
-*.dat*
-*.pickle*
-*.xls*
-*.zip*
-
-.envrc
-
-# Jupyter
-*.ipynb
-.ipynb_checkpoints/
-notebooks/
-
 # macOS
 .DS_Store
-
-# mypy
-.dmypy.json
-
-# Node.js
-node_modules/
 
 # packaging
 .venv/
 dist/
-
-# PyCharm
-.idea/
-
-# pyenv
-.python-version
-
-# Python
-*.py[cdo]
-
-# act run workflows locally
-bin/act

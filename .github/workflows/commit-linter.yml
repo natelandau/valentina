@@ -11,7 +11,7 @@ on:
             - reopened
             - synchronize
 
-permissions: # added using https://github.com/step-security/secure-workflows
+permissions:
     contents: read
 
 concurrency:
@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
     lint-commits:
-        if: "!contains(github.event.head_commit.message, 'bump(release)')"
+        if: ${{ !contains(github.event.head_commit.message, 'bump(release)') }}
         permissions:
             contents: read # for actions/checkout to fetch code
             pull-requests: read # for wagoid/commitlint-github-action to get commits in PR
