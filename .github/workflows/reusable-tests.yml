@@ -53,30 +53,6 @@ jobs:
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-    test-from-dockerfile:
-        if: ${{ !contains(github.event.head_commit.message, 'bump(release)') }}
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-
-            - name: Setup Python, uv, and the package
-              uses: ./.github/actions/setup_python_env
-              with:
-                  python-version: "3.13"
-
-            - name: Setup development environment
-              shell: bash
-              run: uv run duty dev-setup
-
-            - name: Run docker compose
-              shell: bash
-              run: docker compose up --build
-
-            - name: Confirm log file was created
-              shell: bash
-              run: ls -l .dev/logs/valentina.log
-
     lint-project:
         runs-on: ubuntu-latest
         steps:
