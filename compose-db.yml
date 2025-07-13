@@ -1,0 +1,19 @@
+---
+services:
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning --requirepass redispassword
+    volumes:
+      - .dev/redis:/data
+    attach: false # suppress logs to console
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - .dev/mongodb:/data/db
+    attach: false # suppress logs to console

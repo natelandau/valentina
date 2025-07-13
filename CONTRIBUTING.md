@@ -58,6 +58,16 @@ docker compose up
 docker compose up --build
 ```
 
+Alternatively, you can run the databases from docker and the bot outside of docker for faster development:
+
+```bash
+docker compose -f compose-db.yml up -d
+uv run valentina
+```
+
+> [!WARNING] \
+> Running `duty dev-setup` or `duty dev-clean` will delete all of the data in the development database and Redis instance.
+
 ### Running tests
 
 To run tests, run `duty test`. This will run all tests in the `tests` directory.

@@ -187,7 +187,12 @@ def dev_setup(ctx: Context) -> None:  # noqa: ARG001
         """
 ✓ Development environment setup complete.
   Start the development environment with one of the following commands:
-      [green]docker compose up[/green] [dim](Recommended)[/dim]
-      [green]uv run valentina[/green] [dim](Alternative - if MongoDB and Redis are already running)[/dim]
+
+  Run everything from docker:
+    [green]docker compose up[/green]
+
+  or run the databases from docker and the bot from uv:
+    [green]docker compose -f compose-db.yml up -d[/green]
+    [green]uv run valentina[/green]
 """
     )
