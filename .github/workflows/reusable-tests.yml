@@ -10,6 +10,16 @@ on:
                 type: boolean
                 default: false
 
+env:
+    VALENTINA_LOG_FILE: "/tmp/valentina.log"
+    VALENTINA_TEST_MONGO_URI: "mongodb://localhost:27017"
+    VALENTINA_TEST_MONGO_DATABASE_NAME: "valentina-test"
+    VALENTINA_MONGO_URI: "mongodb://localhost:27017"
+    VALENTINA_MONGO_DATABASE_NAME: "valentina-ci"
+    VALENTINA_DISCORD_TOKEN: ""
+    VALENTINA_GUILDS: ""
+    VALENTINA_OWNER_CHANNELS: ""
+
 jobs:
     test-python-code:
         runs-on: ubuntu-latest
