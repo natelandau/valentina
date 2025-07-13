@@ -22,7 +22,7 @@ async def delete_character(character: Character) -> None:
     Returns:
         None
     """
-    from valentina.bot import bot
+    from valentina.bot import bot  # noqa: PLC0415
 
     guild = await bot.get_guild_from_id(character.guild)
 

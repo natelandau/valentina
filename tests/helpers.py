@@ -27,6 +27,10 @@ class Regex:
         """
         return bool(self._regex.search(actual))
 
+    def __hash__(self):
+        """Hash the regex pattern."""
+        return hash(self._regex.pattern)
+
     def __repr__(self):
         """Error printed on failed tests."""
         return f"Regex: '{self._regex.pattern}'"

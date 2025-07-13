@@ -19,6 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import certifi
 from rich.console import Console
 
 console = Console()
@@ -43,8 +44,6 @@ def main() -> None:
     subprocess.check_call(  # noqa: S603
         [sys.executable, "-E", "-s", "-m", "pip", "install", "--upgrade", "certifi"],
     )
-
-    import certifi
 
     # change working directory to the default SSL directory
     os.chdir(openssl_dir)

@@ -30,7 +30,7 @@ class UserProfile(MethodView):
         Args:
             user_id: The ID of the user to get the profile for.
         """
-        from valentina.bot import bot
+        from valentina.bot import bot  # noqa: PLC0415
 
         user = await User.get(user_id)
         if not user:

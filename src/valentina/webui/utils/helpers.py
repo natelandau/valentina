@@ -122,7 +122,7 @@ async def fetch_active_campaign(
     return None
 
 
-async def fetch_active_character(
+async def fetch_active_character(  # noqa: RET503
     character_id: str = "",
     fetch_links: bool = False,
 ) -> Character | None:
@@ -167,7 +167,7 @@ async def fetch_active_character(
         return await Character.get(existing_character_id, fetch_links=fetch_links)
 
     # When there are multiple characters and no active character set, abort b/c we don't know which one to set as active
-    abort(  # noqa: RET503
+    abort(
         HTTPStatus.INTERNAL_SERVER_ERROR.value,
         "Multiple characters found and no active character set",
     )
@@ -247,7 +247,7 @@ async def fetch_discord_guild(guild_id: int) -> "discord.Guild":
         discord.NotFound: If the guild does not exist or the bot cannot access it.
         discord.HTTPException: If there was an error communicating with Discord.
     """
-    from valentina.bot import bot
+    from valentina.bot import bot  # noqa: PLC0415
 
     return await bot.get_guild_from_id(guild_id)
 
