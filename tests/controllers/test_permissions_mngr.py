@@ -60,7 +60,7 @@ async def test_grant_xp(
         guild.storytellers.append(user1.id)
     await guild.insert()
 
-    # debug("guild", guild)
+    # debug(guild)
 
     manager = PermissionManager(guild.id)
     assert await manager.can_grant_xp(author_id=user1.id, target_id=user2.id) == expected_other
@@ -105,7 +105,7 @@ async def test_manage_campaigns(
         guild.storytellers.append(user1.id)
     await guild.insert()
 
-    # debug("guild", guild)
+    # debug(guild)
 
     manager = PermissionManager(guild.id)
     assert await manager.can_manage_campaign(author_id=user1.id) == expected
@@ -179,7 +179,7 @@ async def test_manage_traits(
 
     await character.insert()
 
-    # debug("character", character)
+    # debug(character)
 
     guild.permissions = GuildPermissions(manage_traits=setting)
 
@@ -189,7 +189,7 @@ async def test_manage_traits(
         guild.storytellers.append(user1.id)
     await guild.insert()
 
-    # debug("guild", guild)
+    # debug(guild, "guild")
 
     manager = PermissionManager(guild.id)
     assert (
@@ -250,7 +250,7 @@ async def test_can_kill_character(
         guild.storytellers.append(user1.id)
     await guild.insert()
 
-    # debug("guild", guild)
+    # debug(guild, "guild")
 
     manager = PermissionManager(guild.id)
     assert (

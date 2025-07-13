@@ -50,7 +50,7 @@ def test_random_string(debug) -> None:
     returned = random_string(10)
     assert isinstance(returned, str)
     assert len(returned) == 10
-    debug("string", returned)
+    # debug(returned, "string")
 
 
 @pytest.mark.no_db

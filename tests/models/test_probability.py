@@ -6,7 +6,6 @@ import re
 import discord
 import pytest
 
-from tests.helpers import Regex
 from valentina.models import Probability, RollProbability
 
 
@@ -94,7 +93,7 @@ async def test_get_description(mock_ctx1):
     result = p._get_description(results=obj)
 
     # THEN confirm the description is correct
-    assert result == Regex(r"## Overall success probability: \d{2}\.\d{2}% 👍", re.IGNORECASE)
+    assert re.search(r"## Overall success probability: \d{2}\.\d{2}% 👍", result, re.IGNORECASE)
     assert "Rolling `5d10` against difficulty `6`" in result
 
 
@@ -108,8 +107,7 @@ async def test_get_embed(mock_ctx1):
 
     # THEN confirm the embed is correct
     assert isinstance(embed, discord.Embed)
-    assert embed.description == Regex(
-        r"## Overall success probability: \d{2}\.\d{2}% 👍",
-        re.IGNORECASE,
+    assert re.search(
+        r"## Overall success probability: \d{2}\.\d{2}% 👍", embed.description, re.IGNORECASE
     )
     assert "Rolling `5d10` against difficulty `6`" in embed.description
