@@ -16,7 +16,7 @@ from valentina.webui.utils.helpers import CharacterSessionObject
 
 
 @pytest.fixture
-async def test_client() -> AsyncGenerator[TestClientProtocol, None]:
+async def test_client() -> AsyncGenerator[TestClientProtocol]:
     """Returns a test client for the Valentina web interface."""
     app = await create_app(WebUIEnvironment.TESTING)
     async with app.test_client() as client:
@@ -24,10 +24,10 @@ async def test_client() -> AsyncGenerator[TestClientProtocol, None]:
 
 
 @pytest.fixture
-def app_request_context() -> Callable[..., AsyncGenerator[Any, None]]:
+def app_request_context() -> Callable[..., AsyncGenerator[Any]]:
     """Create a request context for the Valentina web interface."""
 
-    async def _make_request_context(*args: Any, **kwargs: Any) -> AsyncGenerator[Any, None]:
+    async def _make_request_context(*args: Any, **kwargs: Any) -> AsyncGenerator[Any]:
         app = await create_app(WebUIEnvironment.TESTING)
         async with app.test_request_context(*args, **kwargs) as context:
             yield context

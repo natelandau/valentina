@@ -1,35 +1,113 @@
 # Contributing
 
-This project uses [uv](https://docs.astral.sh/uv/) to manage Python requirements and virtual environments.
+Thank you for your interest in contributing to Valentina! This document provides guidelines and instructions to make the contribution process smooth and effective.
 
-## Setup: Once per project
+## Development Setup
 
-1. Install [uv](https://docs.astral.sh/uv/)
-2. Clone this repository. `git clone https://github.com/natelandau/valentina.git`
-3. Install the virtual environment with `uv sync`.
-4. Activate your virtual environment with `source .venv/bin/activate`
-5. Install the pre-commit hooks with `pre-commit install --install-hooks`.
-6. Install a local MongoDB instance for testing. The easiest way to do this is with [Docker](https://hub.docker.com/_/mongo). `docker run -d -p 27017:27017 --name valentina-mongo mongo:latest` will start a MongoDB instance on port `27017`.
-7. Before running valentina locally, set the minimum required ENV variables with `export VAR=abc` or add them to a `.env` file within the project root.
-    - `VALENTINA_DISCORD_TOKEN`
-    - `VALENTINA_GUILDS`
-    - `VALENTINA_OWNER_IDS`
-    - `VALENTINA_LOG_FILE`
-    - `VALENTINA_MONGO_URI`
-    - `VALENTINA_MONGO_DATABASE_NAME`
-    - `VALENTINA_TEST_MONGO_URI=mongodb://localhost:27017`
-    - `VALENTINA_TEST_MONGO_DATABASE_NAME=valentina_test_db`
+### Prerequisites
 
-## Developing
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management. To start developing:
 
--   This project follows the [Conventional Commits](https://www.conventionalcommits.org/) standard to automate [Semantic Versioning](https://semver.org/) and [Keep A Changelog](https://keepachangelog.com/) with [Commitizen](https://github.com/commitizen-tools/commitizen).
-    -   When you're ready to commit changes run `cz c`
--   Run `duty --help` from within the development environment to print a list of [Duty](https://pawamoy.github.io/duty/) tasks available to run on this project. Common commands:
-    -   `duty lint` runs all linters
-    -   `duty test` runs all tests with Pytest
-    -   `duty clean` cleans the project of temporary files
--   Run `uv add {package}` from within the development environment to install a run time dependency and add it to `pyproject.toml` and `uv.lock`.
--   Run `uv remove {package}` from within the development environment to uninstall a run time dependency and remove it from `pyproject.toml` and `uv.lock`.
+1. Install uv using the [recommended method](https://docs.astral.sh/uv/installation/) for your operating system
+2. Clone this repository: `git clone https://github.com/natelandau/valentina`
+3. Navigate to the repository: `cd valentina`
+4. Install dependencies with uv: `uv sync`
+5. Activate your virtual environment: `source .venv/bin/activate`
+6. Install pre-commit hooks: `pre-commit install --install-hooks`
+7. [Install Docker](https://www.docker.com/get-started/) to run the development environment
+8. Use the [Discord Developer Portal](https://discord.com/developers/applications) to create a test Discord application and bot token and set the `VALENTINA_DISCORD_TOKEN` environment variable.
+
+### Running Tasks
+
+We use [Duty](https://pawamoy.github.io/duty/) as our task runner. Common tasks:
+
+-   `duty --list` - List all available tasks
+-   `duty lint` - Run all linters
+-   `duty test` - Run all tests
+-   `duty clean` - Clean the project of all temporary files
+-   `duty dev-clean` - Clean the development environment
+-   `duty dev-setup` - Set up the development environment in `.dev` including storage for logs, the development database, and Redis instance all of which are mounted as volumes.
+
+### Set environment variables
+
+Copy the `.env` file to `.env.secrets` and add your own values to configure Valentina.
+
+These variables are required for the bot to run:
+
+-   `VALENTINA_DISCORD_TOKEN`
+-   `VALENTINA_GUILDS`
+-   `VALENTINA_OWNER_IDS`
+-   `VALENTINA_MONGO_DATABASE_NAME`
+
+> [!IMPORTANT]\
+> The recommended approach to developing Valentina is to use the [Docker Compose](https://docs.docker.com/compose/) file to start the development environment (more info below). **The following environment variables should not be set in `.env.secrets` unless you know what you are doing.**
+>
+> -   `VALENTINA_MONGO_URI`
+> -   `VALENTINA_REDIS_ADDRESS`
+> -   `VALENTINA_REDIS_PASSWORD`
+
+### Start the development environment
+
+Starting the development environment with a development database and Redis instanceis as easy as running:
+
+```bash
+# Start the development environment
+docker compose up
+
+# Trigger a rebuild of the Valentina container
+docker compose up --build
+```
+
+Alternatively, you can run the databases from docker and the bot outside of docker for faster development:
+
+```bash
+docker compose -f compose-db.yml up -d
+uv run valentina
+```
+
+> [!WARNING]\
+> Running `duty dev-setup` or `duty dev-clean` will delete all of the data in the development database and Redis instance.
+
+### Running tests
+
+To run tests, run `duty test`. This will run all tests in the `tests` directory.
+
+```bash
+duty test
+```
+
+> [!IMPORTANT]\
+> To run tests, you must have a MongoDB instance available on port `localhost:27017`. The development environment will start one for you using docker if you don't have one running.
+
+### Convenience Commands
+
+Once the development environment is running, the following slash commands are available in your test Discord Server:
+
+-   `/developer guild create_dummy_data` - Populate the database and Discord server with dummy data for testing.
+-   `/developer guild create_test_characters` - Create test characters in the database.
+-   `/admin rebuild_campaign_channels` - Rebuild the campaign channels in the Discord server.
+-   `/admin delete_campaign_channels` - Delete the campaign channels in the Discord server.
+
+## Development Guidelines
+
+When developing for ezbak, please follow these guidelines:
+
+-   Write full docstrings
+-   All code should use type hints
+-   Write unit tests for all new functions
+-   Write integration tests for all new features
+-   Follow the existing code style
+
+## Commit Process
+
+1. Create a branch for your feature or fix
+2. Make your changes
+3. Ensure code passes linting with `duty lint`
+4. Ensure tests pass with `duty test`
+5. Commit using [Commitizen](https://github.com/commitizen-tools/commitizen): `cz c`
+6. Push your branch and create a pull request
+
+We use [Semantic Versioning](https://semver.org/) for version management.
 
 ## Common Patterns and Snippets
 

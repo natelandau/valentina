@@ -1,0 +1,48 @@
+---
+services:
+    valentina:
+        build: .
+        hostname: valentina
+        container_name: valentina
+        env_file:
+            - .env.secrets
+        environment:
+            - VALENTINA_MONGO_URI=mongodb://mongodb:27017/
+            - VALENTINA_REDIS_ADDRESS=redis://redis:6379
+            - VALENTINA_REDIS_PASSWORD=redispassword
+        volumes:
+            - .dev:/app/.dev
+        depends_on:
+            - redis
+            - mongodb
+        develop:
+            watch:
+                - action: sync
+                  path: ./src
+                  target: /app/src
+                - action: rebuild
+                  path: ./uv.lock
+                  target: /app/uv.lock
+                - action: rebuild
+                  path: ./pyproject.toml
+                  target: /app/pyproject.toml
+                - action: rebuild
+                  path: ./Dockerfile
+
+    redis:
+        image: redis:alpine
+        restart: always
+        ports:
+            - "6379:6379"
+        command: redis-server --save 20 1 --loglevel warning --requirepass redispassword
+        volumes:
+            - .dev/redis:/data
+        attach: false # suppress logs to console
+
+    mongodb:
+        image: mongo:latest
+        ports:
+            - 27017:27017
+        volumes:
+            - .dev/mongodb:/data/db
+        attach: false # suppress logs to console

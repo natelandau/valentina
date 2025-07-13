@@ -427,15 +427,12 @@ class DiceRoll:
 
     @property
     def num_successes_humanized(self) -> str:
-        """Return the number of successes as a humanized string.
+        """Convert the number of successes to a human-readable string with proper pluralization.
 
-        Generate a string representation of the number of successes rolled,
-        formatted as 'x successes'. Use proper pluralization for 'success'
-        based on the number of successes.
+        Format the roll result as 'x successes' or 'x success' based on the result type and count. Apply appropriate pluralization rules using the inflect library to ensure grammatically correct output for different success counts.
 
         Returns:
-            str: A human-readable string describing the number of successes,
-                 e.g., '1 success', '2 successes', etc.
+            str: A formatted string showing the number of successes with proper pluralization, e.g., '1 success', '2 successes', or empty string for OTHER type.
         """
         description_map = {
             RollResultType.OTHER: "",

@@ -33,7 +33,7 @@ async def user_guide() -> str:
 @blueprint.route("/changelog")
 async def changelog() -> str:
     """Serve the changelog."""
-    from valentina.bot import bot
+    from valentina.bot import bot  # noqa: PLC0415
 
     possible_versions = ChangelogParser(bot).list_of_versions()
     changelog = ChangelogParser(bot, possible_versions[-1], possible_versions[0])

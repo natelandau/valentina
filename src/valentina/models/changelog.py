@@ -192,10 +192,7 @@ class ChangelogPoster:  # pragma: no cover
 class ChangelogParser:
     """Parse and process changelog files.
 
-    Provide methods to read, interpret, and manipulate changelog entries.
-    Handle version comparisons, category filtering, and data extraction
-    from structured changelog files. Support various output formats
-    for changelog information, including Discord embeds.
+    Provide methods to read, interpret, and manipulate changelog entries. Handle version comparisons, category filtering, and data extraction from structured changelog files. Support various output formats for changelog information, including Discord embeds.
     """
 
     def __init__(
@@ -242,9 +239,7 @@ class ChangelogParser:
     def __check_version_schema(version: str) -> bool:
         """Check if the version string follows the correct format.
 
-        Validate that the given version string adheres to the semantic versioning
-        format (MAJOR.MINOR.PATCH). Use a regular expression to ensure the string
-        contains three groups of digits separated by periods.
+        Validate that the given version string adheres to the semantic versioning format (MAJOR.MINOR.PATCH). Use a regular expression to ensure the string contains three groups of digits separated by periods.
 
         Args:
             version (str): The version string to be checked.

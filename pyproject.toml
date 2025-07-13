@@ -1,34 +1,30 @@
-[build-system]
-    build-backend = "hatchling.build"
-    requires      = ["hatchling"]
-
 [project]
-    authors = [{ name = "Nate Landau", email = "valentina@natenate.org" }]
+    authors = [{ name = "Nate Landau", email = "github@natelandau.com" }]
     dependencies = [
         "aiofiles>=24.1.0",
-        "aiohttp>=3.12.6",
+        "aiohttp>=3.12.14",
         "arrow>=1.3.0",
         "audioop-lts>=0.2.1",
-        "beanie>=1.29.0",
-        "boto3>=1.38.27",
-        "botocore>=1.38.27",
-        "certifi>=2025.4.26",
+        "beanie>=1.30.0",
+        "boto3>=1.39.4",
+        "botocore>=1.39.4",
+        "certifi>=2025.7.9",
         "confz>=2.1.0",
-        "faker>=37.3.0",
+        "faker>=37.4.0",
         "flask-discord>=0.1.69",
         "flask>=3.1.1",
         "hypercorn>=0.17.3",
         "inflect>=7.5.0",
-        "jinjax[whitenoise]>=0.57",
+        "jinjax[whitenoise]>=0.60",
         "loguru>=0.7.3",
         "markdown2>=2.5.3",
         "markupsafe>=3.0.2",
         "motor>=3.7.1",
-        "numpy>=2.2.6",
+        "numpy>=2.3.1",
         "py-cord>=2.6.1",
-        "pydantic>=2.11.5",
+        "pydantic>=2.11.7",
         "pygithub>=2.6.1",
-        "pymongo>=4.13.0",
+        "pymongo>=4.13.2",
         "quart-flask-patch>=0.3.0",
         "quart-session>=3.0.0",
         "quart-wtforms>=1.0.3",
@@ -42,6 +38,7 @@
     ]
     description = "Valentina is a Discord bot that helps you run TTRPGs."
     license = "AGPL-3.0-or-later"
+    license-files = ["LICENSE"]
     name = "valentina"
     readme = "README.md"
     requires-python = ">=3.13"
@@ -55,29 +52,34 @@
 
 [dependency-groups]
     dev = [
-        "commitizen>=4.8.2",
-        "coverage>=7.8.2",
+        "commitizen>=4.8.3",
+        "coverage>=7.9.2",
         "deptry>=0.23.0",
         "dirty-equals>=0.9.0",
         "djlint>=1.36.4",
+        "docker>=7.1.0",
         "duty>=1.6.0",
-        "mypy>=1.16.0",
-        "polyfactory>=2.21.0",
+        "mypy>=1.16.1",
+        "polyfactory>=2.22.0",
         "pre-commit>=4.2.0",
         "pytest-asyncio>=1.0.0",
         "pytest-clarity>=1.0.1",
-        "pytest-cov>=6.1.1",
+        "pytest-cov>=6.2.1",
         "pytest-env>=1.1.5",
         "pytest-mock>=3.14.1",
         "pytest-sugar>=1.0.0",
-        "pytest-xdist>=3.7.0",
-        "pytest>=8.3.5",
-        "ruff>=0.11.12",
+        "pytest-xdist>=3.8.0",
+        "pytest>=8.4.1",
+        "ruff>=0.12.3",
         "shellcheck-py>=0.10.0.1",
-        "types-aiofiles>=24.1.0.20250516",
-        "typos>=1.32.0",
+        "types-aiofiles>=24.1.0.20250708",
+        "typos>=1.34.0",
         "yamllint>=1.37.1",
     ]
+
+[build-system]
+    build-backend = "hatchling.build"
+    requires      = ["hatchling"]
 
 [tool.commitizen]
     bump_message               = "bump(release): v$current_version → v$new_version"
@@ -86,7 +88,7 @@
     update_changelog_on_bump   = true
     version                    = "3.0.4"
     version_files              = ["src/valentina/__version__.py:__version__"]
-    version_provider           = "pep621"
+    version_provider           = "uv"
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/latest/config.html#report
     exclude_lines = [
@@ -109,6 +111,7 @@
     precision = 1
     show_missing = true
     skip_covered = true
+    skip_empty = true
 
 [tool.coverage.run]
     branch = true
@@ -194,54 +197,32 @@
 
 [tool.ruff] # https://github.com/charliermarsh/ruff
 
-    exclude = [
-        ".bzr",
-        ".direnv",
-        ".eggs",
-        ".git",
-        ".hg",
-        ".mypy_cache",
-        ".nox",
-        ".pants.d",
-        ".pytype",
-        ".ruff_cache",
-        ".svn",
-        ".tox",
-        ".venv",
-        "__pypackages__",
-        "_build",
-        "buck-out",
-        "build",
-        "dist",
-        "node_modules",
-        # "src/valentina/discord/cogs/test_cog.py",
-        ".cache",
-        "venv",
-    ]
-    fix = true
-    line-length = 100
-    output-format = "grouped"
-    src = ["src", "tests"]
-    target-version = "py311"
+    exclude        = [".cache", ".git", ".venv", "_build", "build", "dist", "tmp"]
+    fix            = true
+    line-length    = 100
+    output-format  = "grouped"
+    src            = ["src", "tests"]
+    target-version = "py313"
     [tool.ruff.lint]
         ignore = [
             "ANN002", # Missing type annotation for `*args`
             "ANN003", # Missing type annotation for `**kwargs`
-            "ANN204", # Missing return type annotation for special method `__init__`
+            "ANN204", # missing return type annotation for special method `__init__`
             "ANN401", # Dynamically typed expressions (typing.Any) are disallowed,
             "B006",   # mutable-argument-default
             "B008",   # function-call-in-default-argument
-            "COM812", # Trailing comma missing
+            "COM812", # Trailing comma missing"
+            "CPY001", # Missing copyright notice at top of file
             "D107",   # undocumented-public-init
             "E501",   # line-too-long
             "FBT001", # Boolean-typed positional argument in function definition
             "FBT002", # Boolean-typed positional argument in function definition
-            "FIX002", # Line contains TODO, consider resolving the issue"
-            "ISC001", # single-line-implicit-string-concatenation
-            "PD011",  # Use `.to_numpy()` instead of `.values`"
+            "FIX002", # Line contains TODO, consider resolving the issue
             "S311",   # suspicious-non-cryptographic-random-usage
             "TD001",  # invalid-todo-tag
             "TD002",  # Missing author in TODO
+            "TD002",  # Missing author in TODO
+            "TD003",  # Missing issue link on the line following this TODO
             "TD003",  # Missing issue link on the line following this TODO
         ]
         per-file-ignores = { "scripts/*.py" = [
