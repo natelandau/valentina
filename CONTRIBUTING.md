@@ -39,7 +39,7 @@ These variables are required for the bot to run:
 -   `VALENTINA_OWNER_IDS`
 -   `VALENTINA_MONGO_DATABASE_NAME`
 
-> [!IMPORTANT] \
+> [!IMPORTANT]\
 > The recommended approach to developing Valentina is to use the [Docker Compose](https://docs.docker.com/compose/) file to start the development environment (more info below). **The following environment variables should not be set in `.env.secrets` unless you know what you are doing.**
 >
 > -   `VALENTINA_MONGO_URI`
@@ -65,7 +65,7 @@ docker compose -f compose-db.yml up -d
 uv run valentina
 ```
 
-> [!WARNING] \
+> [!WARNING]\
 > Running `duty dev-setup` or `duty dev-clean` will delete all of the data in the development database and Redis instance.
 
 ### Running tests
@@ -76,7 +76,7 @@ To run tests, run `duty test`. This will run all tests in the `tests` directory.
 duty test
 ```
 
-> [!IMPORTANT] \
+> [!IMPORTANT]\
 > To run tests, you must have a MongoDB instance available on port `localhost:27017`. The development environment will start one for you using docker if you don't have one running.
 
 ### Convenience Commands
