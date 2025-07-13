@@ -33,4 +33,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT []
 
 # Run valentina by default
-CMD ["uv", "run", "valentina"]
+CMD ["uv", "run", "--no-dev", "valentina"]

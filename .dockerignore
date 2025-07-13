@@ -6,6 +6,7 @@
 .dev/
 .dockerignore
 .env
+.env.secrets
 .git/
 .github/
 .gitignore
@@ -14,13 +15,14 @@
 .venv/
 .vscode/
 .yamllint.yml
-CHANGELOG.md
 CONTRIBUTING.md
 Dockerfile
+GEMINI.md
+TODO.md
 __pycache__/
 codecov.yml
 committed.toml
 compose.yml
 duties.py
+scripts/
 tests/
-GEMINI.md

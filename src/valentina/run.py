@@ -46,7 +46,7 @@ def main(
 ) -> None:
     """Run Valentina."""
     if verbosity == 0:
-        log_level = LogLevel.INFO
+        log_level = LogLevel(ValentinaConfig().log_level)
     elif verbosity == 1:
         log_level = LogLevel.DEBUG
     elif verbosity >= 2:  # noqa: PLR2004

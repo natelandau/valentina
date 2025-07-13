@@ -14,7 +14,8 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management. To
 4. Install dependencies with uv: `uv sync`
 5. Activate your virtual environment: `source .venv/bin/activate`
 6. Install pre-commit hooks: `pre-commit install --install-hooks`
-7. [Install Docker](https://www.docker.com/get-started/)
+7. [Install Docker](https://www.docker.com/get-started/) to run the development environment
+8. Use the [Discord Developer Portal](https://discord.com/developers/applications) to create a test Discord application and bot token and set the `VALENTINA_DISCORD_TOKEN` environment variable.
 
 ### Running Tasks
 
@@ -25,15 +26,18 @@ We use [Duty](https://pawamoy.github.io/duty/) as our task runner. Common tasks:
 -   `duty test` - Run all tests
 -   `duty clean` - Clean the project of all temporary files
 -   `duty dev-clean` - Clean the development environment
--   `duty dev-setup` - Set up the development environment in `.dev` including storage for logs, the development database, and Redis instance all of which are mounted as volumes
+-   `duty dev-setup` - Set up the development environment in `.dev` including storage for logs, the development database, and Redis instance all of which are mounted as volumes.
 
 ### Set environment variables
 
 Copy the `.env` file to `.env.secrets` and add your own values to configure Valentina.
 
-```
-cp .env .env.secrets
-```
+These variables are required for the bot to run:
+
+-   `VALENTINA_DISCORD_TOKEN`
+-   `VALENTINA_GUILDS`
+-   `VALENTINA_OWNER_IDS`
+-   `VALENTINA_MONGO_DATABASE_NAME`
 
 > [!IMPORTANT] \
 > The recommended approach to developing Valentina is to use the [Docker Compose](https://docs.docker.com/compose/) file to start the development environment (more info below). **The following environment variables should not be set in `.env.secrets` unless you know what you are doing.**
@@ -64,6 +68,15 @@ duty test
 
 > [!IMPORTANT] \
 > To run tests, you must have a MongoDB instance available on port `localhost:27017`. The development environment will start one for you using docker if you don't have one running.
+
+### Convenience Commands
+
+Once the development environment is running, the following slash commands are available in your test Discord Server:
+
+-   `/developer guild create_dummy_data` - Populate the database and Discord server with dummy data for testing.
+-   `/developer guild create_test_characters` - Create test characters in the database.
+-   `/admin rebuild_campaign_channels` - Rebuild the campaign channels in the Discord server.
+-   `/admin delete_campaign_channels` - Delete the campaign channels in the Discord server.
 
 ## Development Guidelines
 
