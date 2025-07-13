@@ -521,6 +521,8 @@ class ChannelManager:  # pragma: no cover
         Args:
             campaign (Campaign): The campaign object whose channels are to be deleted.
         """
+        logger.debug(f"Deleting campaign channels for campaign {campaign.name}")
+
         for book in await campaign.fetch_books():
             await self.delete_book_channel(book)
 
