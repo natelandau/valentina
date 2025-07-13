@@ -2,6 +2,7 @@
 """Shared fixtures for tests."""
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -309,35 +310,75 @@ def caplog(caplog):
 
 
 @pytest.fixture
-def debug():
-    """Print debug information to the console. This is used to debug tests while writing them."""
+def debug(tmp_path: Path) -> Callable[[str | Path, str, int, bool], bool]:
+    """Return a debug printing function for test development and troubleshooting.
 
-    def _debug_inner(label: str, value: str | Path, breakpoint: bool = False):  # noqa: ANN202
-        """Print debug information to the console. This is used to debug tests while writing them.
+    Create and return a function that prints formatted debug output to the console during test development and debugging. The returned function allows printing variables, file contents, or directory structures with clear visual separation and optional breakpoints.
+
+    Returns:
+        Callable[[str | Path, str, bool, int], bool]: A function that prints debug info with
+            the following parameters:
+            - value: The data to debug print (string or Path)
+            - label: Optional header text for the output
+            - breakpoint: Whether to pause execution after printing
+            - width: Maximum output width in characters
+
+    Example:
+        def test_complex_data(debug):
+            result = process_data()
+            debug(result, "Processed Data", breakpoint=True)
+    """
+
+    def _debug_inner(
+        value: str | Path,
+        label: str = "",
+        width: int = 80,
+        *,
+        pause: bool = False,
+        strip_tmp_path: bool = True,
+    ) -> bool:
+        """Print debug information during test development and debugging sessions.
+
+        Print formatted debug output to the console with an optional breakpoint. This is particularly useful when developing or debugging tests to inspect variables, file contents, or directory structures. The output is formatted with a labeled header and footer rule for clear visual separation.
 
         Args:
-            label (str): The label to print above the debug information.
-            value (str | Path): The value to print. When this is a path, prints all files in the path.
-            breakpoint (bool, optional): Whether to break after printing. Defaults to False.
+            value (Union[str, Path]): The value to debug print. If a Path to a directory is provided, recursively prints all files in that directory tree.
+            label (str): Optional header text to display above the debug output for context.
+            pause (bool, optional): If True, raises a pytest.fail() after printing to pause execution. Defaults to False.
+            width (int, optional): Maximum width in characters for the console output. Matches pytest's default width of 80 when running without the -s flag. Defaults to 80.
+            strip_tmp_path (bool, optional): If True, strip the tmp_path from the output. Defaults to True.
 
         Returns:
-            bool: Whether to break after printing.
+            bool: Always returns True unless pause=True, in which case raises pytest.fail()
+
+        Example:
+            def test_something(debug):
+                # Print contents of a directory
+                debug(Path("./test_data"), "Test Data Files")
+
+                # Print a variable with a breakpoint
+                debug(my_var, "Debug my_var", pause=True)
         """
-        console.rule(label)
-        if not isinstance(value, Path) or not value.is_dir():
-            console.print(value)
-        else:
+        console.rule(label or "")
+
+        # If a directory is passed, print the contents
+        if isinstance(value, Path) and value.is_dir():
             for p in value.rglob("*"):
-                console.print(p)
+                if strip_tmp_path and p.relative_to(tmp_path):
+                    console.print(f"…/{p.relative_to(tmp_path)!s}", width=width)
+                    continue
+
+                console.print(p, width=width)
+        else:
+            if strip_tmp_path:
+                value = str(value).replace(str(tmp_path), "…")
+            console.print(value, width=width)
 
         console.rule()
 
-        if breakpoint:
+        if pause:  # pragma: no cover
             return pytest.fail("Breakpoint")
 
         return True
 
-    return _debug_inner
-
-
-### Factories for Database Classes ###
+    return _debug_inner  # type: ignore [return-value]

@@ -32,7 +32,7 @@ async def test_fetch_sheet_character_traits(debug, trait_factory, character_fact
     sheet_builder = CharacterSheetBuilder(character=character)
     sheet_data = sheet_builder.fetch_sheet_character_traits(show_zeros=False)
 
-    # debug("sheet_data", sheet_data)
+    # debug(sheet_data)
 
     assert len(sheet_data) == 3
 

@@ -125,7 +125,7 @@ async def test_character_views(
             headers={"HX-Request": "true"},
             follow_redirects=True,
         )
-        # debug("headers", response.headers)
+        # debug(response.headers, "headers")
         # Then: Each tab loads successfully
         assert response.status_code == 200
 
@@ -153,7 +153,7 @@ async def test_character_edit_routes(
             f"/character/{character.id}/edit/{route}",
             follow_redirects=True,
         )
-        # debug("headers", response.headers)
+        # debug(response.headers, "headers")
         # Then: The response is successful
         assert response.status_code == 200
 
@@ -287,7 +287,7 @@ async def test_campaign_view(
             headers={"HX-Request": "true"},
             follow_redirects=True,
         )
-        # debug("headers", response.headers)
+        # debug(response.headers, "headers")
         # Then: Each tab loads successfully
         assert response.status_code == 200
 
@@ -318,7 +318,7 @@ async def test_campaign_edit_routes(
             f"/campaign/{campaign.id}/edit/{route}",
             follow_redirects=True,
         )
-        # debug("headers", response.headers)
+        # debug(response.headers, "headers")
         # Then: The page loads successfully
         assert response.status_code == 200
 
