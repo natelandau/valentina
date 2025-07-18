@@ -1,3 +1,14 @@
+## v3.5.0 (2025-07-18)
+
+### Feat
+
+- **developer**: add server reset command (#237)
+
+### Refactor
+
+- pass new linter rules (#235)
+- pass new linting rules
+
 ## v3.4.0 (2025-03-03)
 
 ### Feat
