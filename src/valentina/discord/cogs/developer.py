@@ -43,11 +43,11 @@ from valentina.models import (
     CharacterSheetSection,
     CharacterTrait,
     GlobalProperty,
-    Guild,
     InventoryItem,
     RollProbability,
     User,
 )
+from valentina.models import Guild as DBGuild
 from valentina.utils import ValentinaConfig, instantiate_logger
 
 p = inflect.engine()
@@ -241,14 +241,14 @@ class Developer(commands.Cog):
             await character.save()
 
         # Create discord channels and add campaigns to the guild
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
 
         channel_manager = ChannelManager(guild=ctx.guild)
         for campaign in created_campaigns:
             await channel_manager.confirm_campaign_channels(campaign)
-            guild.campaigns.append(campaign)
+            db_guild.campaigns.append(campaign)
 
-        await guild.save()
+        await db_guild.save()
 
         logger.info(f"DATABASE: Dummy data created on {ctx.guild.name}")
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
@@ -291,7 +291,7 @@ class Developer(commands.Cog):
             permissions=CHANNEL_PERMISSIONS["storyteller_channel"],
         )
 
-        db_guild = await Guild.get(ctx.guild.id)
+        db_guild = await DBGuild.get(ctx.guild.id)
         db_guild.channels.audit_log = audit_log_channel.id
         db_guild.channels.error_log = error_log_channel.id
         db_guild.channels.changelog = changelog_channel.id
@@ -441,9 +441,9 @@ class Developer(commands.Cog):
         # Update the last posted version in guild settings
         if changelog.posted:
             # Update the last posted version in guild settings
-            guild = await Guild.get(ctx.guild.id)
-            guild.changelog_posted_version = newest_version
-            await guild.save()
+            db_guild = await DBGuild.get(ctx.guild.id)
+            db_guild.changelog_posted_version = newest_version
+            await db_guild.save()
 
             await ctx.respond(
                 embed=discord.Embed(

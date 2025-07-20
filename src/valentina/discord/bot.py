@@ -18,9 +18,9 @@ from valentina.controllers import TaskBroker
 from valentina.models import (
     ChangelogPoster,
     GlobalProperty,
-    Guild,
     User,
 )
+from valentina.models import Guild as DBGuild
 from valentina.utils import ValentinaConfig, errors
 from valentina.utils.database import init_database
 from valentina.webui import create_app
@@ -140,8 +140,8 @@ class ValentinaContext(discord.ApplicationContext):
             discord.DiscordException: If the error message cannot be sent to the channel.
         """
         # Get the database guild object and error log channel
-        guild = await Guild.get(self.guild.id)
-        error_log_channel = guild.fetch_error_log_channel(self.guild)
+        db_guild = await DBGuild.get(self.guild.id)
+        error_log_channel = db_guild.fetch_error_log_channel(self.guild)
 
         # Log to the error log channel if it exists and is enabled
         if error_log_channel:
@@ -169,8 +169,8 @@ class ValentinaContext(discord.ApplicationContext):
             errors.MessageTooLongError: If the message exceeds Discord's character limit.
         """
         # Get the database guild object and error log channel
-        guild = await Guild.get(self.guild.id)
-        audit_log_channel = guild.fetch_audit_log_channel(self.guild)
+        db_guild = await DBGuild.get(self.guild.id)
+        audit_log_channel = db_guild.fetch_audit_log_channel(self.guild)
 
         if isinstance(message, str):
             self.log_command(message, LogLevel.INFO)
@@ -267,7 +267,7 @@ class Valentina(commands.Bot):
         db_global_properties = await GlobalProperty.find_one()
 
         # Post Changelog to the #changelog channel, if set
-        db_guild = await Guild.find_one(Guild.id == guild.id)
+        db_guild = await DBGuild.find_one(DBGuild.id == guild.id)
         if not db_guild:
             logger.error(f"DATABASE: Could not find guild {guild.name} ({guild.id})")
             return
@@ -318,14 +318,14 @@ class Valentina(commands.Bot):
         logger.info(f"CONNECT: Provision {guild.name} ({guild.id})")
 
         # Add/Update the guild in the database
-        guild_object = await Guild.find_one(Guild.id == guild.id).upsert(
+        guild_object = await DBGuild.find_one(DBGuild.id == guild.id).upsert(
             Set(
                 {
                     "date_modified": datetime.now(UTC).replace(microsecond=0),
                     "name": guild.name,
                 },
             ),
-            on_insert=Guild(id=guild.id, name=guild.name),
+            on_insert=DBGuild(id=guild.id, name=guild.name),
             response_type=UpdateResponse.NEW_DOCUMENT,
         )
 
@@ -466,38 +466,38 @@ class Valentina(commands.Bot):
         """
         logger.info("SYNC: Running sync_roles_to_db task")
         for guild in self.guilds:
-            guild_db_obj = await Guild.get(guild.id)
+            db_guild = await DBGuild.get(guild.id)
             for member in [x for x in guild.members if not x.bot]:
                 if (
                     member.guild_permissions.administrator
-                    and member.id not in guild_db_obj.administrators
+                    and member.id not in db_guild.administrators
                 ):
-                    guild_db_obj.administrators.append(member.id)
-                    await guild_db_obj.save()
+                    db_guild.administrators.append(member.id)
+                    await db_guild.save()
                     logger.info(f"PERMS: Add {member.name} as administrator in database")
 
                 if (
                     not member.guild_permissions.administrator
-                    and member.id in guild_db_obj.administrators
+                    and member.id in db_guild.administrators
                 ):
-                    guild_db_obj.administrators.remove(member.id)
-                    await guild_db_obj.save()
+                    db_guild.administrators.remove(member.id)
+                    await db_guild.save()
                     logger.info(f"PERMS: Remove {member.name} as administrator in database")
 
                 if (
                     any(role.name in ("Storyteller", "@Storyteller") for role in member.roles)
-                    and member.id not in guild_db_obj.storytellers
+                    and member.id not in db_guild.storytellers
                 ):
-                    guild_db_obj.storytellers.append(member.id)
-                    await guild_db_obj.save()
+                    db_guild.storytellers.append(member.id)
+                    await db_guild.save()
                     logger.info(f"PERMS: Add {member.name} as @Storyteller in database")
 
                 if (
                     not any(role.name in ("Storyteller", "@Storyteller") for role in member.roles)
-                    and member.id in guild_db_obj.storytellers
+                    and member.id in db_guild.storytellers
                 ):
-                    guild_db_obj.storytellers.remove(member.id)
-                    await guild_db_obj.save()
+                    db_guild.storytellers.remove(member.id)
+                    await db_guild.save()
                     logger.info(f"PERMS: Remove {member.name} as @Storyteller in database")
 
     @tasks.loop(minutes=2)

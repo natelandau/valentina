@@ -20,7 +20,14 @@ from valentina.discord.utils.autocomplete import (
 )
 from valentina.discord.utils.converters import ValidImageURL
 from valentina.discord.views import auto_paginate, confirm_action
-from valentina.models import ChangelogParser, Character, Guild, Probability, Statistics, User
+from valentina.models import (
+    ChangelogParser,
+    Character,
+    Probability,
+    Statistics,
+    User,
+)
+from valentina.models import Guild as DBGuild
 from valentina.utils.helpers import fetch_random_name
 
 p = inflect.engine()
@@ -49,7 +56,7 @@ class Misc(commands.Cog):
         days, hours = divmod(hours, 24)
 
         # Load db objects
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
 
         # Compute data
         created_on = arrow.get(ctx.guild.created_at)
@@ -81,7 +88,7 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
             inline=False,
         )
 
-        campaign_list = "\n".join(f"> - {x.name}" for x in guild.campaigns)
+        campaign_list = "\n".join(f"> - {x.name}" for x in db_guild.campaigns)
         embed.add_field(
             name="Campaigns",
             value=f"{campaign_list}",
@@ -193,7 +200,7 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
         """View information about a user."""
         target = user or ctx.author
         db_user = await User.get(target.id, fetch_links=True)
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
 
         # Variables for embed
         num_characters = len([x for x in db_user.characters if x.type_player])
@@ -234,7 +241,7 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
 `Lifetime Cool Points:` `{lifetime_cp}`
 """
 
-        for campaign in guild.campaigns:
+        for campaign in db_guild.campaigns:
             campaign_xp, campaign_total_xp, campaign_cp = db_user.fetch_campaign_xp(campaign)
             description += f"""\
 
@@ -374,8 +381,8 @@ Roles  : {", ".join([f"@{x.name}" if not x.name.startswith("@") else x.name for 
         if not is_confirmed:
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        await guild.add_roll_result_thumbnail(ctx, RollResultType[roll_type.upper()], url)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
+        await db_guild.add_roll_result_thumbnail(ctx, RollResultType[roll_type.upper()], url)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
 

@@ -6,7 +6,8 @@ from discord.ui import Button
 
 from valentina.constants import EmbedColor, EmojiDict, RollResultType
 from valentina.discord.bot import ValentinaContext
-from valentina.models import Guild, GuildRollResultThumbnail
+from valentina.models import Guild as DBGuild
+from valentina.models import GuildRollResultThumbnail
 
 
 class DeleteOrCategorizeThumbnails(discord.ui.View):
@@ -15,13 +16,14 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
     def __init__(
         self,
         ctx: ValentinaContext,
-        guild: Guild,
+        *,
+        db_guild: DBGuild,
         index: int,
         thumbnail: GuildRollResultThumbnail,
     ) -> None:
         super().__init__()
         self.ctx = ctx
-        self.guild = guild
+        self.db_guild = db_guild
         self.index = index
         self.thumbnail = thumbnail
 
@@ -44,8 +46,8 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         self._disable_all()
 
         # Delete from database
-        self.guild.roll_result_thumbnails.pop(self.index)
-        await self.guild.save()
+        self.db_guild.roll_result_thumbnails.pop(self.index)
+        await self.db_guild.save()
 
         # Log to audit log
         await self.ctx.post_to_audit_log(f"Delete thumbnail `{self.index}`\n{self.thumbnail.url}")
@@ -92,8 +94,8 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
         new_cat = select.values[0]
 
         self.thumbnail.roll_type = RollResultType[new_cat]
-        self.guild.roll_result_thumbnails[self.index] = self.thumbnail
-        await self.guild.save()
+        self.db_guild.roll_result_thumbnails[self.index] = self.thumbnail
+        await self.db_guild.save()
 
         # Log to audit log
         await self.ctx.post_to_audit_log(
@@ -114,10 +116,12 @@ class DeleteOrCategorizeThumbnails(discord.ui.View):
 class ThumbnailReview:
     """A paginated view of all the thumbnails in the database."""
 
-    def __init__(self, ctx: ValentinaContext, guild: Guild, roll_type: RollResultType) -> None:
+    def __init__(
+        self, ctx: ValentinaContext, *, db_guild: DBGuild, roll_type: RollResultType
+    ) -> None:
         """Initialize the thumbnail review."""
         self.ctx = ctx
-        self.guild = guild
+        self.db_guild = db_guild
         self.roll_type = roll_type
         self.thumbnails = self._get_thumbnails()
 
@@ -130,7 +134,7 @@ class ThumbnailReview:
         filtered_thumbs = {}
         original_index = 0
 
-        for thumbnail in self.guild.roll_result_thumbnails:
+        for thumbnail in self.db_guild.roll_result_thumbnails:
             if thumbnail.roll_type == self.roll_type:
                 filtered_thumbs[original_index] = thumbnail
 
@@ -152,7 +156,7 @@ class ThumbnailReview:
         for index, thumbnail in self.thumbnails.items():
             view = DeleteOrCategorizeThumbnails(
                 ctx=self.ctx,
-                guild=self.guild,
+                db_guild=self.db_guild,
                 index=index,
                 thumbnail=thumbnail,
             )

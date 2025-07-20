@@ -9,7 +9,8 @@ from loguru import logger
 
 from valentina.constants import BAD_WORD_PATTERN, BOT_DESCRIPTIONS, EmbedColor
 from valentina.discord.bot import Valentina
-from valentina.models import Guild, User
+from valentina.models import Guild as DBGuild
+from valentina.models import User
 from valentina.models.errors import reporter
 from valentina.utils.helpers import time_now
 
@@ -125,9 +126,9 @@ class Events(commands.Cog, name="Events"):
         if before.name != after.name:
             logger.info(f"DATABASE: Rename guild `{before.name}` => `{after.name}`")
 
-            await Guild.find_one(Guild.id == before.id).upsert(
+            await DBGuild.find_one(DBGuild.id == before.id).upsert(
                 Set({"date_modified": time_now, "name": after.name}),
-                on_insert=Guild(id=after.id, name=after.name),
+                on_insert=DBGuild(id=after.id, name=after.name),
             )
 
     @commands.Cog.listener()
@@ -151,9 +152,9 @@ class Events(commands.Cog, name="Events"):
         logger.info(f"EVENT: Joined {guild.name} ({guild.id})")
 
         logger.debug(f"DATABASE: Update guild `{guild.name}`")
-        await Guild.find_one(Guild.id == guild.id).upsert(
+        await DBGuild.find_one(DBGuild.id == guild.id).upsert(
             Set({"date_modified": time_now, "name": guild.name}),
-            on_insert=Guild(id=guild.id, name=guild.name),
+            on_insert=DBGuild(id=guild.id, name=guild.name),
         )
 
 

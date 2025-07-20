@@ -41,8 +41,8 @@ from valentina.models import (
     CampaignBook,
     CampaignBookChapter,
     CampaignNPC,
-    Guild,
 )
+from valentina.models import Guild as DBGuild
 from valentina.utils.helpers import truncate_string
 
 p = inflect.engine()
@@ -113,10 +113,10 @@ class CampaignCog(commands.Cog):
         campaign = await c.insert()
 
         # Add campaign to guild
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        guild.campaigns.append(campaign)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
+        db_guild.campaigns.append(campaign)
 
-        await guild.save()
+        await db_guild.save()
 
         channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.confirm_campaign_channels(campaign)
@@ -179,8 +179,8 @@ class CampaignCog(commands.Cog):
         if not is_confirmed:
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        await guild.delete_campaign(campaign)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
+        await db_guild.delete_campaign(campaign)
 
         channel_manager = ChannelManager(guild=ctx.guild)
         await channel_manager.delete_campaign_channels(campaign)
@@ -209,9 +209,9 @@ class CampaignCog(commands.Cog):
         ),
     ) -> None:
         """List all campaigns."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
 
-        if len(guild.campaigns) == 0:
+        if len(db_guild.campaigns) == 0:
             await present_embed(
                 ctx,
                 title="No campaigns",
@@ -221,8 +221,8 @@ class CampaignCog(commands.Cog):
             )
             return
 
-        text = f"## {len(guild.campaigns)} {p.plural_noun('campaign', len(guild.campaigns))} on `{ctx.guild.name}`\n"
-        for c in sorted(guild.campaigns, key=lambda x: x.name):
+        text = f"## {len(db_guild.campaigns)} {p.plural_noun('campaign', len(db_guild.campaigns))} on `{ctx.guild.name}`\n"
+        for c in sorted(db_guild.campaigns, key=lambda x: x.name):
             characters = await c.fetch_player_characters()
             text += f"### **{c.name}**\n"
             text += f"{c.description}\n" if c.description else ""

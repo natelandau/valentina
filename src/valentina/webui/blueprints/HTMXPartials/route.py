@@ -57,7 +57,7 @@ class EditTableView(MethodView):
         """Initialize view with specified table type.
 
         Args:
-            table_type (TableType): Enum determining which type of table (Notes, Items, NPCs)
+            table_type (TableType): Enum determining which type of table (Notes, Items, NPCs, etc.)
                                     this view instance will handle
         """
         self.table_type: TableType = table_type

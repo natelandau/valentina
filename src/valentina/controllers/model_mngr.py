@@ -1,4 +1,4 @@
-"""Helper functions for managing Valentinamodels."""
+"""Helper functions for managing Valentina models."""
 
 from beanie import DeleteRules
 from loguru import logger
