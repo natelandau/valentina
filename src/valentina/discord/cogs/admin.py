@@ -21,7 +21,7 @@ from valentina.discord.views import (
     confirm_action,
     present_embed,
 )
-from valentina.models import Guild
+from valentina.models import Guild as DBGuild
 from valentina.utils import errors
 from valentina.utils.helpers import fetch_data_from_url
 
@@ -74,10 +74,10 @@ class AdminCog(commands.Cog):
         if not is_confirmed:
             return
 
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
 
         channel_manager = ChannelManager(guild=ctx.guild)
-        for campaign in guild.campaigns:
+        for campaign in db_guild.campaigns:
             await channel_manager.delete_campaign_channels(campaign)
             await channel_manager.confirm_campaign_channels(campaign)
 
@@ -154,7 +154,7 @@ class AdminCog(commands.Cog):
         ),
     ) -> None:
         """Delete all campaign channels from Discord."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
 
         title = f"Delete all campaign channels from `{ctx.guild.name}`"
         is_confirmed, interaction, confirmation_embed = await confirm_action(
@@ -166,7 +166,7 @@ class AdminCog(commands.Cog):
             return
 
         channel_manager = ChannelManager(guild=ctx.guild)
-        for campaign in guild.campaigns:
+        for campaign in db_guild.campaigns:
             await channel_manager.delete_campaign_channels(campaign)
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
@@ -462,8 +462,8 @@ class AdminCog(commands.Cog):
         ),
     ) -> None:
         """Manage Guild Settings."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        manager = SettingsManager(ctx, guild)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
+        manager = SettingsManager(ctx, db_guild=db_guild)
         paginator = await manager.display_settings_manager()
         await paginator.respond(ctx.interaction, ephemeral=hidden)
         await paginator.wait()
@@ -479,8 +479,8 @@ class AdminCog(commands.Cog):
         roll_type: Option(RollResultType, required=True),
     ) -> None:
         """Review all result thumbnails for this guild."""
-        guild = await Guild.get(ctx.guild.id, fetch_links=True)
-        await ThumbnailReview(ctx, guild, roll_type).send(ctx)
+        db_guild = await DBGuild.get(ctx.guild.id, fetch_links=True)
+        await ThumbnailReview(ctx, db_guild=db_guild, roll_type=roll_type).send(ctx)
 
     @guild.command(name="emoji_add")
     async def emoji_add(

@@ -20,7 +20,7 @@ from valentina.constants import (
 from valentina.controllers import ChannelManager
 from valentina.discord.bot import Valentina, ValentinaContext
 from valentina.discord.views import CancelButton
-from valentina.models import Guild
+from valentina.models import Guild as DBGuild
 
 
 class SettingsFlags(discord.ui.View):
@@ -39,14 +39,15 @@ class SettingsFlags(discord.ui.View):
     def __init__(
         self,
         ctx: ValentinaContext,
-        guild: Guild,
+        *,
+        db_guild: DBGuild,
         key: str,
         options: list[tuple[str, int]] | None = None,
         current_value: int | None = None,
     ):
         super().__init__(timeout=300)
         self.ctx = ctx
-        self.guild = guild
+        self.db_guild = db_guild
         self.bot = cast("Valentina", ctx.bot)
         self.options = options
         self.key = key
@@ -106,8 +107,8 @@ class SettingsFlags(discord.ui.View):
         response = int(interaction.data.get("custom_id", None))  # type: ignore [call-overload]
 
         # Update the database
-        setattr(self.guild.permissions, self.key, response)
-        await self.guild.save()
+        setattr(self.db_guild.permissions, self.key, response)
+        await self.db_guild.save()
 
         # Edit the original message
         embed = interaction.message.embeds[0]
@@ -140,14 +141,15 @@ class SettingsChannelSelect(discord.ui.View):
     def __init__(
         self,
         ctx: ValentinaContext,
-        guild: Guild,
+        *,
+        db_guild: DBGuild,
         key: str,
         permissions: tuple[ChannelPermission, ChannelPermission, ChannelPermission],
         channel_topic: str,
     ):
         super().__init__(timeout=300)
         self.ctx = ctx
-        self.guild = guild
+        self.db_guild = db_guild
         self.key = key
         self.bot = cast("Valentina", ctx.bot)
         self.permissions = permissions
@@ -173,8 +175,8 @@ class SettingsChannelSelect(discord.ui.View):
             )
 
             # Update the settings in the database
-            setattr(self.guild.channels, self.key, channel.id)
-            await self.guild.save()
+            setattr(self.db_guild.channels, self.key, channel.id)
+            await self.db_guild.save()
             logger.debug(f"SettingsManager: {self.key}: {channel.name=}")
 
             # Post changelog to the channel when the changelog channel is set
@@ -183,8 +185,8 @@ class SettingsChannelSelect(discord.ui.View):
 
         else:
             # Remove the channel from the database
-            setattr(self.guild.channels, self.key, None)
-            await self.guild.save()
+            setattr(self.db_guild.channels, self.key, None)
+            await self.db_guild.save()
             logger.debug(f"SettingsManager: {self.key}: None")
 
     @discord.ui.channel_select(
@@ -273,9 +275,9 @@ class SettingsChannelSelect(discord.ui.View):
 class SettingsManager:
     """Manage guild settings."""
 
-    def __init__(self, ctx: ValentinaContext, guild: Guild) -> None:
+    def __init__(self, ctx: ValentinaContext, *, db_guild: DBGuild) -> None:
         self.ctx: ValentinaContext = ctx
-        self.guild: Guild = guild
+        self.db_guild: DBGuild = db_guild
 
     async def _get_pages(self) -> list[pages.PageGroup]:
         """Get the pages for the settings manager.
@@ -314,7 +316,7 @@ class SettingsManager:
 
         view = SettingsChannelSelect(
             self.ctx,
-            self.guild,
+            db_guild=self.db_guild,
             key="audit_log",
             permissions=CHANNEL_PERMISSIONS["audit_log"],
             channel_topic="Valentina interaction audit reports",
@@ -348,7 +350,7 @@ class SettingsManager:
 
         view = SettingsChannelSelect(
             self.ctx,
-            self.guild,
+            db_guild=self.db_guild,
             key="error_log",
             permissions=CHANNEL_PERMISSIONS["error_log_channel"],
             channel_topic="Valentina error reports",
@@ -382,7 +384,7 @@ class SettingsManager:
 
         view = SettingsChannelSelect(
             self.ctx,
-            self.guild,
+            db_guild=self.db_guild,
             key="changelog",
             permissions=CHANNEL_PERMISSIONS["default"],
             channel_topic="Features and bug fixes for Valentina",
@@ -415,7 +417,7 @@ class SettingsManager:
 
         view = SettingsChannelSelect(
             self.ctx,
-            self.guild,
+            db_guild=self.db_guild,
             key="storyteller",
             permissions=CHANNEL_PERMISSIONS["storyteller_channel"],
             channel_topic="Private channel for storytellers",
@@ -438,13 +440,13 @@ class SettingsManager:
             pages.PageGroup: A PageGroup object containing the embed and custom view for the home page.
         """
         settings_home_embed = discord.Embed(title="", color=EmbedColor.DEFAULT.value)
-        guild = await Guild.get(self.ctx.guild.id)
+        db_guild = await DBGuild.get(self.ctx.guild.id)
 
         # Gather information
-        error_log_channel = guild.fetch_error_log_channel(self.ctx.guild)
-        audit_log_channel = guild.fetch_audit_log_channel(self.ctx.guild)
-        storyteller_channel = guild.fetch_storyteller_channel(self.ctx.guild)
-        changelog_channel = guild.fetch_changelog_channel(self.ctx.guild)
+        error_log_channel = db_guild.fetch_error_log_channel(self.ctx.guild)
+        audit_log_channel = db_guild.fetch_audit_log_channel(self.ctx.guild)
+        storyteller_channel = db_guild.fetch_storyteller_channel(self.ctx.guild)
+        changelog_channel = db_guild.fetch_changelog_channel(self.ctx.guild)
 
         settings_home_embed.description = "\n".join(
             [
@@ -455,10 +457,10 @@ class SettingsManager:
                 "### Current Settings",
                 "```yaml",
                 "# Permissions",
-                f"Grant experience   : {self.guild.permissions.grant_xp.name.title()}",
-                f"Manage campaign    : {self.guild.permissions.manage_campaigns.name.title()}",
-                f"Update trait values: {self.guild.permissions.manage_traits.name.title()}",
-                f"Kill Character     : {self.guild.permissions.kill_character.name.title()}",
+                f"Grant experience   : {self.db_guild.permissions.grant_xp.name.title()}",
+                f"Manage campaign    : {self.db_guild.permissions.manage_campaigns.name.title()}",
+                f"Update trait values: {self.db_guild.permissions.manage_traits.name.title()}",
+                f"Kill Character     : {self.db_guild.permissions.kill_character.name.title()}",
                 "",
                 "# Channel Settings:",
                 f"Changelog channel  : Enabled (#{changelog_channel.name})"
@@ -517,10 +519,10 @@ class SettingsManager:
         ]
         view = SettingsFlags(
             self.ctx,
-            self.guild,
+            db_guild=self.db_guild,
             key="kill_character",
             options=options,
-            current_value=self.guild.permissions.kill_character.value,
+            current_value=self.db_guild.permissions.kill_character.value,
         )
 
         return pages.PageGroup(
@@ -565,10 +567,10 @@ class SettingsManager:
         ]
         view = SettingsFlags(
             self.ctx,
-            self.guild,
+            db_guild=self.db_guild,
             key="manage_campaigns",
             options=options,
-            current_value=self.guild.permissions.manage_campaigns.value,
+            current_value=self.db_guild.permissions.manage_campaigns.value,
         )
 
         return pages.PageGroup(
@@ -611,10 +613,10 @@ class SettingsManager:
         ]
         view = SettingsFlags(
             self.ctx,
-            self.guild,
+            db_guild=self.db_guild,
             key="manage_traits",
             options=options,
-            current_value=self.guild.permissions.manage_traits.value,
+            current_value=self.db_guild.permissions.manage_traits.value,
         )
 
         return pages.PageGroup(
@@ -656,10 +658,10 @@ class SettingsManager:
         ]
         view = SettingsFlags(
             self.ctx,
-            self.guild,
+            db_guild=self.db_guild,
             key="grant_xp",
             options=options,
-            current_value=self.guild.permissions.grant_xp.value,
+            current_value=self.db_guild.permissions.grant_xp.value,
         )
 
         return pages.PageGroup(
