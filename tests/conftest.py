@@ -12,7 +12,7 @@ import pytest
 import pytest_asyncio
 from discord.ext import commands
 from loguru import logger
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 from rich import print as rprint
 
 from valentina.utils import ValentinaConfig, console
@@ -64,7 +64,7 @@ async def _init_database(request) -> None:
         # when '@pytest.mark.no_db()' is called, this fixture will not run
         yield
     else:  # Create Motor client
-        client = AsyncIOMotorClient(
+        client = AsyncMongoClient(
             f"{ValentinaConfig().test_mongo_uri}/{ValentinaConfig().test_mongo_database_name}",
             tz_aware=True,
         )
@@ -81,7 +81,7 @@ async def _init_database(request) -> None:
         )
 
         yield
-        client.close()
+        await client.close()
 
 
 ### Mock discord.py objects ###
