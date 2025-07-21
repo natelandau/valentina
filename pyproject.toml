@@ -19,7 +19,6 @@
         "loguru>=0.7.3",
         "markdown2>=2.5.3",
         "markupsafe>=3.0.2",
-        "motor>=3.7.1",
         "numpy>=2.3.1",
         "py-cord>=2.6.1",
         "pydantic>=2.11.7",

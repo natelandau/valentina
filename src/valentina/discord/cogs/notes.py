@@ -70,7 +70,7 @@ class Note(commands.Cog):
             text=note.strip().capitalize(),
             parent_id=str(channel_object.id),
         ).insert()
-        channel_object.notes.append(note)
+        channel_object.notes.append(note)  # type: ignore [arg-type]
         await channel_object.save()
 
         await interaction.edit_original_response(embed=confirmation_embed, view=None)
