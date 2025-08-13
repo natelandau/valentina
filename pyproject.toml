@@ -1,39 +1,39 @@
 [project]
     authors = [{ name = "Nate Landau", email = "github@natelandau.com" }]
     dependencies = [
-        "aiofiles>=24.1.0",
-        "aiohttp>=3.12.14",
-        "arrow>=1.3.0",
-        "audioop-lts>=0.2.1",
-        "beanie>=1.30.0",
-        "boto3>=1.39.4",
-        "botocore>=1.39.4",
-        "certifi>=2025.7.9",
-        "confz>=2.1.0",
-        "faker>=37.4.0",
+        "aiofiles>=24.1.0,<25",
+        "aiohttp>=3.12.15,<4",
+        "arrow>=1.3.0,<2",
+        "audioop-lts>=0.2.2,<1",
+        "beanie>=2.0.0,<3",
+        "boto3>=1.40.6,<2",
+        "botocore>=1.40.6,<2",
+        "certifi>=2025.8.3",
+        "confz>=2.1.0,<3",
+        "faker>=37.5.3",
         "flask-discord>=0.1.69",
-        "flask>=3.1.1",
+        "flask>=3.1.1,<4",
         "hypercorn>=0.17.3",
-        "inflect>=7.5.0",
+        "inflect>=7.5.0,<8",
         "jinjax[whitenoise]>=0.60",
         "loguru>=0.7.3",
-        "markdown2>=2.5.3",
+        "markdown2>=2.5.4",
         "markupsafe>=3.0.2",
-        "numpy>=2.3.1",
-        "py-cord>=2.6.1",
-        "pydantic>=2.11.7",
-        "pygithub>=2.6.1",
-        "pymongo>=4.13.2",
+        "numpy>=2.3.2,<3",
+        "py-cord>=2.6.1,<3",
+        "pydantic>=2.11.7,<3",
+        "pygithub>=2.7.0,<3",
+        "pymongo>=4.14.0,<5",
         "quart-flask-patch>=0.3.0",
         "quart-session>=3.0.0",
         "quart-wtforms>=1.0.3",
         "quart>=0.20.0",
-        "redis>=6.2.0",
-        "rich>=14.0.0",
+        "redis>=6.4.0",
+        "rich>=14.1.0",
         "semver>=3.0.4",
         "typer>=0.16.0",
         "werkzeug>=3.1.3",
-        "wtforms>=3.2.1",
+        "wtforms>=3.2.1,<4",
     ]
     description = "Valentina is a Discord bot that helps you run TTRPGs."
     license = "AGPL-3.0-or-later"
@@ -52,16 +52,16 @@
 [dependency-groups]
     dev = [
         "commitizen>=4.8.3",
-        "coverage>=7.9.2",
-        "deptry>=0.23.0",
+        "coverage>=7.10.2",
+        "deptry>=0.23.1",
         "dirty-equals>=0.9.0",
         "djlint>=1.36.4",
         "docker>=7.1.0",
-        "duty>=1.6.0",
-        "mypy>=1.16.1",
-        "polyfactory>=2.22.0",
-        "pre-commit>=4.2.0",
-        "pytest-asyncio>=1.0.0",
+        "duty>=1.6.2",
+        "mypy>=1.17.1",
+        "polyfactory>=2.22.1",
+        "pre-commit>=4.3.0",
+        "pytest-asyncio>=1.1.0",
         "pytest-clarity>=1.0.1",
         "pytest-cov>=6.2.1",
         "pytest-env>=1.1.5",
@@ -69,16 +69,16 @@
         "pytest-sugar>=1.0.0",
         "pytest-xdist>=3.8.0",
         "pytest>=8.4.1",
-        "ruff>=0.12.3",
-        "shellcheck-py>=0.10.0.1",
-        "types-aiofiles>=24.1.0.20250708",
-        "typos>=1.34.0",
+        "ruff>=0.12.8",
+        "shellcheck-py>=0.11.0.1",
+        "types-aiofiles>=24.1.0.20250809",
+        "typos>=1.35.3",
         "yamllint>=1.37.1",
     ]
 
 [build-system]
-    build-backend = "hatchling.build"
-    requires      = ["hatchling"]
+    build-backend = "uv_build"
+    requires      = ["uv_build>=0.8.4,<0.9.0"]
 
 [tool.commitizen]
     bump_message               = "bump(release): v$current_version → v$new_version"
@@ -212,8 +212,6 @@
             "S311",   # suspicious-non-cryptographic-random-usage
             "TD001",  # invalid-todo-tag
             "TD002",  # Missing author in TODO
-            "TD002",  # Missing author in TODO
-            "TD003",  # Missing issue link on the line following this TODO
             "TD003",  # Missing issue link on the line following this TODO
         ]
         per-file-ignores = { "scripts/*.py" = [

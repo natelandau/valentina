@@ -43,7 +43,7 @@ MAX_FIELD_COUNT = 1010
 MAX_OPTION_LIST_SIZE = 25  # maximum number of options in a discord select menu
 MAX_POOL_SIZE = 100  # maximum number of dice that can be rolled
 PREF_MAX_EMBED_CHARACTERS = 1950  # Preferred maximum number of characters in an embed
-SPACER = "\u200b"  # Zero-width space
+SPACER = "\u200b"  # Zero-width space used in Discord embeds
 VALID_IMAGE_EXTENSIONS = frozenset(["png", "jpg", "jpeg", "gif", "webp"])
 STARTING_FREEBIE_POINTS = 21
 
