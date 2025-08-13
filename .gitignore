@@ -30,3 +30,5 @@ __pycache__/
 # packaging
 .venv/
 dist/
+.github/copilot-instructions.md
+.github/instructions/

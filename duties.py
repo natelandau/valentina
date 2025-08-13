@@ -80,7 +80,7 @@ def ruff(ctx: Context) -> None:
     ctx.run(
         tools.ruff.check(*PY_SRC_LIST, fix=False, config="pyproject.toml"),
         title=pyprefix("code quality check"),
-        command="ruff check --config pyproject.toml --no-fix src/",
+        command=f"ruff check --config pyproject.toml --no-fix {' '.join(PY_SRC_LIST)}",
     )
 
 
@@ -155,6 +155,8 @@ def update(ctx: Context) -> None:
 @duty()
 def test(ctx: Context, *cli_args: str) -> None:
     """Test package and generate coverage reports."""
+    ctx.run("docker info", title="docker info")
+
     ctx.run(
         tools.pytest(
             "tests/",
@@ -190,7 +192,7 @@ def dev_setup(ctx: Context) -> None:  # noqa: ARG001
   Start the development environment with one of the following commands:
 
   Run everything from docker:
-    [green]docker compose up[/green]
+    [green]docker compose up --build[/green]
 
   or run the databases from docker and the bot from uv:
     [green]docker compose -f compose-db.yml up -d[/green]
