@@ -104,7 +104,8 @@ To allow image uploads, an AWS S3 bucket must be configured with appropriate per
 2. Edit the `docker-compose.yml` file
     - In the `volumes` section replace `/path/to/data` with the directory to hold persistent storage
     - In the `environment` section add correct values to each environment variable.
-3. Run `docker compose up`
+3. Run `docker compose up --build`
+4. Access the web UI at `http://localhost:8088`
 
 ### Environment Variables
 
