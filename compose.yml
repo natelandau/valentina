@@ -15,9 +15,11 @@ services:
         depends_on:
             - redis
             - mongodb
+        ports:
+            - 8088:8088
         develop:
             watch:
-                - action: sync
+                - action: rebuild
                   path: ./src
                   target: /app/src
                 - action: rebuild
