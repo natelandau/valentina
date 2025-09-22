@@ -1,11 +1,10 @@
 """Database utilities for Valentina."""
 
-from typing import Any
-
 import pymongo
 from beanie import init_beanie
 from loguru import logger
 from pymongo import AsyncMongoClient, MongoClient
+from pymongo.asynchronous.database import AsyncDatabase
 
 from valentina.models import (
     BrokerTask,
@@ -53,7 +52,7 @@ def test_db_connection() -> bool:  # pragma: no cover
 
 async def init_database(
     client: AsyncMongoClient | None = None,
-    database: Any = None,
+    database: AsyncDatabase | None = None,
 ) -> None:
     """Initialize the MongoDB database connection and configure Beanie ODM for document models.
 
@@ -61,7 +60,7 @@ async def init_database(
 
     Args:
         client (AsyncMongoClient | None): The existing database client to use. If None, create a new client with default settings. Defaults to None.
-        database (Any): The existing database instance to use. If None, select database from client using configured name. Defaults to None.
+        database (AsyncDatabase | None): The existing database instance to use. If None, select database from client using configured name. Defaults to None.
     """
     logger.debug("DB: Initializing...")
     mongo_uri = ValentinaConfig().mongo_uri

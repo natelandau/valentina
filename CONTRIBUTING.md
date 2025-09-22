@@ -13,7 +13,7 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management. To
 3. Navigate to the repository: `cd valentina`
 4. Install dependencies with uv: `uv sync`
 5. Activate your virtual environment: `source .venv/bin/activate`
-6. Install pre-commit hooks: `pre-commit install --install-hooks`
+6. Install prek git hooks: `prek install`
 7. [Install Docker](https://www.docker.com/get-started/) to run the development environment
 8. Use the [Discord Developer Portal](https://discord.com/developers/applications) to create a test Discord application and bot token and set the `VALENTINA_DISCORD_TOKEN` environment variable.
 

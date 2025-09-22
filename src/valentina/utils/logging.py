@@ -60,6 +60,7 @@ def instantiate_logger(log_level: LogLevel | None = None) -> None:  # pragma: no
 
     for service in ["urllib3", "boto3", "botocore", "s3transfer"]:
         logging.getLogger(service).setLevel(level=aws_log_level.upper())
+
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
 

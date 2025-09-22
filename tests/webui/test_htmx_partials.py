@@ -256,7 +256,7 @@ async def test_edit_table_crud_operations_with_parent(
     mocker,
 ):
     """Test create, update, and delete operations."""
-    character, campaign, user, book, dictionary_term, test_client = test_setup
+    character, campaign, user, book, _, test_client = test_setup
     base_url = f"/partials/table/{table_type.value.route_suffix}"
 
     # Given: A test environment with mocked audit log and session updates
@@ -335,7 +335,7 @@ async def test_edit_table_crud_operations_with_parent(
 @pytest.mark.drop_db
 async def test_edit_text_form_load(debug, test_setup, text_type, get_parent_instance):
     """Test form load returns empty form."""
-    character, campaign, user, book, dictionary_term, test_client = test_setup
+    character, campaign, user, book, _, test_client = test_setup
 
     # Get appropriate parent based on table type
     parent = get_parent_instance(character, campaign, user, book)
@@ -441,7 +441,7 @@ async def test_dictionary_term_crud_operations(mocker, debug, test_setup):
     )
     mocker.patch("valentina.webui.blueprints.HTMXPartials.route.update_session", return_value=None)
 
-    character, campaign, user, book, dictionary_term, test_client = test_setup
+    _, _, _, _, _, test_client = test_setup
 
     base_url = f"/partials/table/{TableType.DICTIONARY.value.route_suffix}"
     test_term_name = "test_term_from_test"

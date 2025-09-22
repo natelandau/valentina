@@ -52,7 +52,7 @@ def main() -> None:
     with contextlib.suppress(FileNotFoundError):
         Path(openssl_cafile).unlink()
     console.log("creating symlink to certifi certificate bundle")
-    os.symlink(relpath_to_certifi_cafile, openssl_cafile)
+    Path(openssl_cafile).symlink_to(relpath_to_certifi_cafile)
     console.log("setting permissions")
     os.chmod(openssl_cafile, STAT_0o775)  # noqa: PTH101
     console.log("update complete")

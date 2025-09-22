@@ -42,10 +42,7 @@ p.defnoun("Ability", "Abilities")
 class CharacterSheetSection(BaseModel):
     """Represent a character sheet section as a subdocument within Character.
 
-    Use this class to define and manage individual sections of a character sheet.
-    Each section includes a title and content, allowing for structured organization
-    of character information. Implement this class as an embedded document within
-    the Character model to maintain a clear hierarchy of character data.
+    Use this class to define and manage individual sections of a character sheet. Each section includes a title and content, allowing for structured organization of character information. Implement this class as an embedded document within the Character model to maintain a clear hierarchy of character data.
 
     Attributes:
         title (str): The heading or name of the character sheet section.
@@ -64,10 +61,7 @@ class CharacterSheetSection(BaseModel):
 class CharacterTrait(Document):
     """Represent a character trait value as a subdocument within Character.
 
-    Use this class to define and manage individual traits for a character.
-    Each trait includes properties such as category, name, value, and maximum value.
-    Implement methods to handle trait-specific operations and provide convenient
-    access to trait information.
+    Use this class to define and manage individual traits for a character. Each trait includes properties such as category, name, value, and maximum value. Implement methods to handle trait-specific operations and provide convenient access to trait information.
 
     Note:
     - This class is designed to be embedded within the Character document.
@@ -100,11 +94,7 @@ class CharacterTrait(Document):
 class InventoryItem(Document):
     """Represent an item in a character's inventory.
 
-    Use this class to create, manage, and store information about items
-    that characters possess. Each item includes details such as its name,
-    description, and type. Ensure that the 'character' field is properly
-    indexed for efficient querying and retrieval of inventory items
-    associated with specific characters.
+    Use this class to create, manage, and store information about items that characters possess. Each item includes details such as its name, description, and type. Ensure that the 'character' field is properly indexed for efficient querying and retrieval of inventory items associated with specific characters.
     """
 
     character: Indexed(str)  # type: ignore [valid-type]
@@ -116,14 +106,9 @@ class InventoryItem(Document):
 class Character(Document):
     """Represent a character in the database.
 
-    This class defines the structure and properties of a character entity.
-    It includes fields for basic information, traits, inventory, notes,
-    and various character-specific attributes. Use this class to create,
-    retrieve, update, and manage character data in the database.
+    This class defines the structure and properties of a character entity. It includes fields for basic information, traits, inventory, notes, and various character-specific attributes. Use this class to create, retrieve, update, and manage character data in the database.
 
-    The Character model supports different character types (e.g., player,
-    storyteller, debug) and game-specific attributes (e.g., clan, breed,
-    auspice) for various role-playing game systems.
+    The Character model supports different character types (e.g., player, storyteller, debug) and game-specific attributes (e.g., clan, breed, auspice) for various role-playing game systems.
     """
 
     char_class_name: str  # CharClass enum name

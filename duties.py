@@ -115,12 +115,12 @@ def typos(ctx: Context) -> None:
     )
 
 
-@duty(skip_if=CI, skip_reason="skip pre-commit in CI environments")
+@duty(skip_if=CI, skip_reason="skip prek in CI environments")
 def precommit(ctx: Context) -> None:
-    """Run pre-commit hooks."""
+    """Run prek hooks."""
     ctx.run(
-        "SKIP=mypy,pytest,ruff pre-commit run --all-files",
-        title=pyprefix("pre-commit hooks"),
+        "PREK_SKIP=mypy,pytest,ruff prek run --all-files",
+        title=pyprefix("prek hooks"),
     )
 
 
@@ -149,7 +149,7 @@ def update(ctx: Context) -> None:
     """Update the project."""
     ctx.run(["uv", "lock", "--upgrade"], title="update uv lock")
     ctx.run(["uv", "sync"], title="update uv sync")
-    ctx.run(["pre-commit", "autoupdate"], title="pre-commit autoupdate")
+    ctx.run(["prek", "autoupdate"], title="prek autoupdate")
 
 
 @duty()
@@ -196,6 +196,7 @@ def dev_setup(ctx: Context) -> None:  # noqa: ARG001
 
   or run the databases from docker and the bot from uv:
     [green]docker compose -f compose-db.yml up -d[/green]
+    or
     [green]uv run valentina[/green]
 """
     )

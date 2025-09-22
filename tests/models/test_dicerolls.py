@@ -122,19 +122,19 @@ def test_roll_exceptions(mock_ctx1):
     WHEN an argument is invalid
     THEN raise the appropriate exception
     """
-    with pytest.raises(errors.ValidationError, match="Pool cannot be less than 0."):
+    with pytest.raises(errors.ValidationError, match="Pool cannot be less than 0"):
         DiceRoll(ctx=mock_ctx1, pool=-1)
 
     with pytest.raises(
         errors.ValidationError,
-        match="Difficulty cannot exceed the size of the dice.",
+        match="Difficulty cannot exceed the size of the dice",
     ):
         DiceRoll(ctx=mock_ctx1, difficulty=11, pool=1)
 
-    with pytest.raises(errors.ValidationError, match="Pool cannot exceed 100."):
+    with pytest.raises(errors.ValidationError, match="Pool cannot exceed 100"):
         DiceRoll(ctx=mock_ctx1, pool=101)
 
-    with pytest.raises(errors.ValidationError, match="Difficulty cannot be less than 0."):
+    with pytest.raises(errors.ValidationError, match="Difficulty cannot be less than 0"):
         DiceRoll(ctx=mock_ctx1, difficulty=-1, pool=1)
 
     with pytest.raises(errors.ValidationError, match="Invalid dice size"):
