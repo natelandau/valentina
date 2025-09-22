@@ -24,7 +24,7 @@ jobs:
         needs: run-tests
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   fetch-depth: 0
 
@@ -82,7 +82,7 @@ jobs:
             IMAGE_NAME: ${{ github.repository }}
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - name: Extract metadata (tags, labels) for Docker
               id: meta
